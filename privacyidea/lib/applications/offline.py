@@ -25,6 +25,7 @@
 #
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.error import ValidateError
 import logging
 import passlib.hash
 from privacyidea.lib.token import get_tokens
@@ -84,6 +85,9 @@ class MachineApplication(MachineApplicationBase):
                 # find the value in the old OTP values! This resets the token.count!
                 matching_count = token_obj.check_otp(otpval, first_old_counter, count)
             token_obj.set_otp_count(current_token_counter)
+            # Raise an exception *after* we reset the token counter
+            if matching_count < 0:
+                raise ValidateError("You provided a wrong OTP value.")
             if first_fill:
                 counter_diff = count
             else:

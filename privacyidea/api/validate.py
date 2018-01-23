@@ -176,7 +176,7 @@ def offlinerefill():
     :param pass: the last password (maybe password+OTP) entered by the user
     :return:
     """
-    refilltoken = None
+    result = False
     otps = {}
     serial = getParam(request.all_data, "serial", required)
     refilltoken = getParam(request.all_data, "refilltoken", required)
@@ -190,8 +190,9 @@ def offlinerefill():
             if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
                 # refill
                 refilltoken, otps = MachineApplication.get_refill(serial, password, mdef.get("options"))
+                result = True
 
-    response = send_result(True)
+    response = send_result(result)
     content = json.loads(response.data)
     content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
                                           "response": otps}]}

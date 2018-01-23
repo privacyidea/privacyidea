@@ -434,6 +434,23 @@ class AAValidateOfflineTestCase(MyTestCase):
             self.assertNotEqual(refilltoken_2, refilltoken_3)
             self.assertNotEqual(refilltoken_1, refilltoken_3)
 
+        # A refill with a totally wrong OTP value fails
+        token_obj = get_tokens(serial=self.serials[0])[0]
+        old_counter = token_obj.token.count
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin000000",
+                                                 "refilltoken": refilltoken_3},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            data = json.loads(res.data)
+            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(data.get("result").get("error").get("message"),
+                             u"ERR10: You provided a wrong OTP value.")
+        # The failed refill should not modify the token counter!
+        self.assertEqual(old_counter, token_obj.token.count)
+
 
 class ValidateAPITestCase(MyTestCase):
     """
