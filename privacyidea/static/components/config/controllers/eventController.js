@@ -217,7 +217,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                 angular.forEach($scope.handlerConditions, function(condition, name){
                      if (condition.type === "multi" && Object.keys($scope.conds).indexOf(name) >= 0) {
                         //debug: console.log("The multi condition " + name + " is" +
-                            " configured! We need to tick the values.");
+                        //    " configured! We need to tick the values.");
                         var tickedConditions = $scope.conds[name].split(",");
                         // Now we iterate over the possible values of this
                         // condition
