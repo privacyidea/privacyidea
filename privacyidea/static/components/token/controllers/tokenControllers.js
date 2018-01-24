@@ -192,6 +192,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         hashlib: "sha1",
         'radius.system_settings': true
     };
+    $scope.vasco = {
+        // Note: A primitive does not work in the ng-model of the checkbox!
+        useIt: false
+    };
 
     $scope.formInit = {
         tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
@@ -222,6 +226,31 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
+    };
+
+    $scope.setVascoSerial = function() {
+        if ($scope.form.otpkey.length === 496) {
+                 //console.log('DEBUG: got 496 hexlify otpkey, check vasco serialnumber!');
+
+                 // convert hexlified input blob to ascii and use the serialnumber (first 10 chars)
+                 var vasco_hex = $scope.form.otpkey.toString();//force conversion
+                 var vasco_otpstr = '';
+                 for (var i = 0; i < vasco_hex.length; i += 2)
+                     vasco_otpstr += String.fromCharCode(parseInt(vasco_hex.substr(i, 2), 16));
+                 var vasco_serial = vasco_otpstr.slice(0, 10);
+                 //console.log(vasco_serial);
+                 $scope.vascoSerial = vasco_serial;
+                 if ($scope.vasco.useIt) {
+                    $scope.form.serial = vasco_serial;
+                 } else {
+                    delete $scope.form.serial;
+                 }
+           } else {
+            // If we do not have 496 characters this might be no correct vasco blob.
+            // So we reset the serial
+            $scope.vascoSerial = "";
+            delete $scope.form.serial;
+        }
     };
 
     // These token need to PIN
