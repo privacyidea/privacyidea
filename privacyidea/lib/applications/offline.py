@@ -160,8 +160,8 @@ class MachineApplication(MachineApplicationBase):
                     otppin = ""
                 otps = MachineApplication.get_offline_otps(token_obj,
                                                            otppin,
-                                                           options.get("count", 100),
-                                                           options.get("rounds", ROUNDS))
+                                                           int(options.get("count", 100)),
+                                                           int(options.get("rounds", ROUNDS)))
                 refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
                 ret["response"] = otps
                 ret["refilltoken"] = refilltoken
