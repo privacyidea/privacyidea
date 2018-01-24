@@ -1,10 +1,10 @@
-python-privacyidea (2.21.2-1trusty) trusty; urgency=low
+python-privacyidea (2.21.4-1trusty) trusty; urgency=low
 
   Fixes:
   * HTTP Timeout of HTTP SMS Gateway
   * Remove console.log from webui
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Jan 2018 12:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Jan 2018 16:30:00 +0200
 
 python-privacyidea (2.21.1-1trusty) trusty; urgency=low
 
