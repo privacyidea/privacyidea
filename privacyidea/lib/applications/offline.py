@@ -25,7 +25,7 @@
 #
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import ValidateError
+from privacyidea.lib.error import ValidateError, ParameterError
 import logging
 import passlib.hash
 from privacyidea.lib.token import get_tokens
@@ -54,63 +54,78 @@ class MachineApplication(MachineApplicationBase):
     application_name = "offline"
 
     @staticmethod
-    def get_refill(serial, password, options=None, first_fill=False):
+    def generate_new_refilltoken(token_obj):
         """
-        Returns new authentication items to refill the client
-
-        To do so we also verify the password, which may consist of PIN + OTP
-
-        :param serial:
-        :param password:
-        :param options: dict that might contain "count"
-        :return: tuple of refilltoken and auth_items
+        Generate new refill token and store it in the tokeninfo of the token.
+        :param token_obj: token in question
+        :return: a string
         """
-        otps = []
-        otppin = ""
-        otpval = ""
-        matching_count = 0
+        new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
+        token_obj.add_tokeninfo("refilltoken", new_refilltoken)
+        return new_refilltoken
+
+    @staticmethod
+    def get_offline_otps(token_obj, otppin, amount, rounds=ROUNDS):
+        """
+        Retrieve the desired number of passwords (= PIN + OTP), hash them
+        and return them in a dictionary. Increase the token counter.
+        :param token_obj: token in question
+        :param otppin: The OTP PIN to prepend in the passwords. The PIN is not validated!
+        :param amount: Number of OTP values (non-negative!)
+        :param rounds: Number of PBKDF2 rounds
+        :return: dictionary
+        """
+        if amount < 0:
+            raise ParameterError("Invalid refill amount: {!r}".format(amount))
+        (res, err, otp_dict) = token_obj.get_multi_otp(count=amount, counter_index=True)
+        otps = otp_dict.get("otp")
+        for key in otps.keys():
+            # Return the hash of OTP PIN and OTP values
+            otps[key] = passlib.hash. \
+                pbkdf2_sha512.encrypt(otppin + otps.get(key),
+                                      rounds=rounds,
+                                      salt_size=10)
+        # We do not disable the token, so if all offline OTP values
+        # are used, the token can be used the authenticate online again.
+        # token_obj.enable(False)
+        # increase the counter by the consumed values and
+        # also store it in tokeninfo.
+        token_obj.inc_otp_counter(increment=amount)
+
+        return otps
+
+    @staticmethod
+    def get_appropriate_refill(token_obj, password, options=None):
+        """
+        Returns new authentication OTPs to refill the client
+
+        To do so we also verify the password, which may consist of PIN + OTP.
+
+        :param token_obj: Token object
+        :param password: PIN + OTP
+        :param options: dict that might contain "count" and "rounds"
+        :return: a dictionary of auth items
+        """
         count = int(options.get("count", 100))
         rounds = int(options.get("rounds", ROUNDS))
-        new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
-        toks = get_tokens(serial=serial)
-        if len(toks) == 1:
-            token_obj = toks[0]
-            if password:
-                _r, otppin, otpval = token_obj.split_pin_pass(password)
-            current_token_counter = token_obj.token.count
-            first_old_counter = current_token_counter - count
-            if first_old_counter < 0:
-                first_old_counter = 0
-            if otpval:
-                # find the value in the old OTP values! This resets the token.count!
-                matching_count = token_obj.check_otp(otpval, first_old_counter, count)
-            token_obj.set_otp_count(current_token_counter)
-            # Raise an exception *after* we reset the token counter
-            if matching_count < 0:
-                raise ValidateError("You provided a wrong OTP value.")
-            if first_fill:
-                counter_diff = count
-            else:
-                counter_diff = matching_count - first_old_counter
-            (res, err, otp_dict) = token_obj.get_multi_otp(count=counter_diff, counter_index=True)
-            otps = otp_dict.get("otp")
-            for key in otps.keys():
-                # Return the hash of OTP PIN and OTP values
-                otps[key] = passlib.hash. \
-                    pbkdf2_sha512.encrypt(otppin + otps.get(key),
-                                          rounds=rounds,
-                                          salt_size=10)
-            # We do not disable the token, so if all offline OTP values
-            # are used, the token can be used the authenticate online again.
-            # token_obj.enable(False)
-            # increase the counter by the consumed values and
-            # also store it in tokeninfo.
-            token_obj.inc_otp_counter(increment=counter_diff)
-            token_obj.add_tokeninfo(key="offline_counter",
-                                    value=count)
-            token_obj.add_tokeninfo("refilltoken", new_refilltoken)
-
-        return new_refilltoken, otps
+        _r, otppin, otpval = token_obj.split_pin_pass(password)
+        if not _r:
+            raise ParameterError("Could not split password")
+        current_token_counter = token_obj.token.count
+        first_old_counter = current_token_counter - count
+        if first_old_counter < 0:
+            first_old_counter = 0
+        # find the value in the old OTP values! This resets the token.count!
+        matching_count = token_obj.check_otp(otpval, first_old_counter, count)
+        token_obj.set_otp_count(current_token_counter)
+        # Raise an exception *after* we reset the token counter
+        if matching_count < 0:
+            raise ValidateError("You provided a wrong OTP value.")
+        counter_diff = matching_count - first_old_counter
+        otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
+        token_obj.add_tokeninfo(key="offline_counter",
+                                value=count)
+        return otps
 
     @staticmethod
     def get_authentication_item(token_type,
@@ -137,7 +152,17 @@ class MachineApplication(MachineApplicationBase):
             tokens = get_tokens(serial=serial)
             if len(tokens) == 1:
                 token_obj = tokens[0]
-                refilltoken, otps = MachineApplication.get_refill(serial, password, options, first_fill=True)
+                if password:
+                    _r, otppin, _ = token_obj.split_pin_pass(password)
+                    if not _r:
+                        raise ParameterError("Could not split password")
+                else:
+                    otppin = ""
+                otps = MachineApplication.get_offline_otps(token_obj,
+                                                           otppin,
+                                                           options.get("count", 100),
+                                                           options.get("rounds", ROUNDS))
+                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
                 ret["response"] = otps
                 ret["refilltoken"] = refilltoken
                 user_object = token_obj.user
