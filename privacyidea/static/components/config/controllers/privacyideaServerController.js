@@ -36,8 +36,8 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     $scope.getPrivacyideaServers = function (identifier) {
         ConfigFactory.getPrivacyidea(function(data) {
             $scope.privacyideaServers = data.result.value;
-            console.log("Fetched all privacyidea servers");
-            console.log($scope.privacyideaServers);
+            //debug: console.log("Fetched all privacyidea servers");
+            //debug: console.log($scope.privacyideaServers);
             // return one single privacyIDEA server
             if (identifier) {
                 $scope.params = $scope.privacyideaServers[identifier];

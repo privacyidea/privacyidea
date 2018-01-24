@@ -35,8 +35,8 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
     $scope.getSmtpServers = function (identifier) {
         ConfigFactory.getSmtp(function(data) {
             $scope.smtpServers = data.result.value;
-            console.log("Fetched all smtp servers");
-            console.log($scope.smtpServers);
+            //debug: console.log("Fetched all smtp servers");
+            //debug: console.log($scope.smtpServers);
             // return one single smtp server
             if (identifier) {
                 $scope.params = $scope.smtpServers[identifier];

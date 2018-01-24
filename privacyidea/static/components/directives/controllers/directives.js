@@ -34,8 +34,8 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
         templateUrl: instanceUrl + "/static/components/directives/views/directive.tokendata.html",
         link: function(scope, element, attr, ctrl) {
             scope.loggedInUser = AuthFactory.getUser();
-            console.log("tokenDataEdit");
-            console.log(scope.loggedInUser);
+            //debug: console.log("tokenDataEdit");
+            //debug: console.log(scope.loggedInUser);
         }
     };
 });
@@ -95,9 +95,9 @@ myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, 
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html",
         link: function (scope, element, attr) {
-            console.log("Entering assignUser directive");
-            console.log(scope.realms);
-            console.log(scope.newUserObject);
+            //debug: console.log("Entering assignUser directive");
+            //debug: console.log(scope.realms);
+            //debug: console.log(scope.newUserObject);
 
             // toggle enable/disable loadUsers calls
             scope.toggleLoadUsers = function($toggle) {
@@ -242,7 +242,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
                 headers: {'PI-Authorization': auth_token},
                 params: {any: $viewValue}
             }).then(function ($response) {
-                console.log($response.data.result.value);
+                //debug: console.log($response.data.result.value);
                 return $response.data.result.value.map(function (item) {
                     return item.hostname + " [" + item.ip + "] (" +
                         item.id + " in " + item.resolver_name + ")";
@@ -334,13 +334,13 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
         controller: ['$scope', '$attrs', '$http', function ($scope, $attrs, $http) {
             $scope.downloadCSV = function () {
                 $scope.$emit('download-start');
-                console.log("Download start.");
+                //debug: console.log("Download start.");
                 $scope.getParams();
                 $http.get($attrs.url, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: $scope.params
                 }).then(function (response) {
-                    console.log("Downloaded.");
+                    //debug: console.log("Downloaded.");
                     $scope.$emit('downloaded', response.data);
                 });
             };

@@ -29,15 +29,15 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
     $scope.getEvents = function () {
         ConfigFactory.getEvents(function(data) {
             $scope.events = data.result.value;
-            console.log("Fetched all events");
-            console.log($scope.events);
+            //debug: console.log("Fetched all events");
+            //debug: console.log($scope.events);
         });
     };
 
     $scope.delEvent = function (eventid) {
-        console.log("Deleting event " + eventid);
+        //debug: console.log("Deleting event " + eventid);
         ConfigFactory.delEvent(eventid, function(data) {
-            console.log(data);
+            //debug: console.log(data);
             $scope.getEvents();
             $state.go("config.events.list");
         });
@@ -55,7 +55,7 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
         });
     };
     $scope.orderChanged = function (event) {
-        console.log(event);
+        //debug: console.log(event);
         ConfigFactory.setEvent(event, function() {
             $scope.getEvents();
         }
@@ -83,7 +83,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
-            console.log("Fetching single event " + $scope.eventid);
+            //debug: console.log("Fetching single event " + $scope.eventid);
             // first we need to fetch the action-list:
             ConfigFactory.getHandlerActions(event.result.value[0].handlermodule,
                 function(actions){
@@ -114,7 +114,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                     // get the configured conditions
                     $scope.conds = event.result.value[0].conditions;
                     angular.forEach($scope.conds, function(value, cond){
-                        console.log("[Condition] " + cond + ": " + value);
+                        //debug: console.log("[Condition] " + cond + ": " + value);
                         $scope.conditionCheckBox[cond] = true;
                     });
                     // get the available conditions
@@ -137,21 +137,21 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
 
     $scope.getAvailableEvents = function () {
         ConfigFactory.getEvent("available", function(data) {
-            console.log("getting available events");
+            //debug: console.log("getting available events");
             var events = data.result.value;
             $scope.availableEvents = Array();
             angular.forEach(events, function(event) {
                 $scope.availableEvents.push({"name": event})
             });
-            console.log($scope.availableEvents);
+            //debug: console.log($scope.availableEvents);
         });
     };
 
     $scope.getHandlerModules = function () {
         ConfigFactory.getEvent("handlermodules", function(data) {
-            console.log("getting handlermodules");
+            //debug: console.log("getting handlermodules");
             $scope.handlermodules = data.result.value;
-            console.log($scope.handlermodules );
+            //debug: console.log($scope.handlermodules );
         });
     };
 
@@ -172,7 +172,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
             }
         });
         $scope.form.event = events.join(",");
-        console.log("saving events " + $scope.form.event);
+        //debug: console.log("saving events " + $scope.form.event);
         // Add the activated conditions
         $scope.form.conditions = {};
         angular.forEach($scope.conditionCheckBox, function(activated, value){
@@ -198,32 +198,32 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     };
 
     $scope.getHandlerActions = function () {
-        console.log("getting handler actions for " + $scope.form.handlermodule);
+        //debug: console.log("getting handler actions for " + $scope.form.handlermodule);
         ConfigFactory.getHandlerActions($scope.form.handlermodule,
             function(actions){
                 $scope.handlerOptions = actions.result.value;
                 $scope.handlerActions = Object.keys($scope.handlerOptions);
-                console.log($scope.handlerActions);
-                console.log($scope.form);
+                //debug: console.log($scope.handlerActions);
+                //debug: console.log($scope.form);
             });
     };
 
     $scope.getHandlerConditions = function () {
-        console.log("getting handler conditions for " + $scope.form.handlermodule);
+        //debug: console.log("getting handler conditions for " + $scope.form.handlermodule);
         ConfigFactory.getHandlerConditions($scope.form.handlermodule,
             function (conditions) {
                 $scope.handlerConditions = conditions.result.value;
                 // tick selected handlerConditions, if type===multi
                 angular.forEach($scope.handlerConditions, function(condition, name){
                      if (condition.type === "multi" && Object.keys($scope.conds).indexOf(name) >= 0) {
-                        console.log("The multi condition " + name + " is" +
+                        //debug: console.log("The multi condition " + name + " is" +
                             " configured! We need to tick the values.");
                         var tickedConditions = $scope.conds[name].split(",");
                         // Now we iterate over the possible values of this
                         // condition
                         var possibleValues = $scope.handlerConditions[name].value;
                         for (var i=0; i<possibleValues.length; i++) {
-                            console.log("check " + possibleValues[i].name);
+                            //debug: console.log("check " + possibleValues[i].name);
                             if (tickedConditions.indexOf(
                                 $scope.handlerConditions[name].value[i].name) >= 0) {
                                 $scope.handlerConditions[name].value[i].ticked = true;
