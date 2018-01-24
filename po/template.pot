@@ -1552,11 +1552,11 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:150
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:272
 msgid "No anonymous referral chasing"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:299
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:279
 msgid "No retrieval of schema information"
 msgstr ""
 
@@ -1883,7 +1883,7 @@ msgstr ""
 msgid "Questionnaire Token settings"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:305
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:285
 msgid "Quick Resolver Test"
 msgstr ""
 
@@ -2191,7 +2191,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:202
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:317
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:297
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -2452,7 +2452,7 @@ msgid "Test Email sent successfully."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:198
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:312
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
 msgid "Test LDAP Resolver"
 msgstr ""
 
@@ -3285,7 +3285,7 @@ msgstr ""
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:277
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:257
 msgid "UID Type"
 msgstr ""
 

@@ -25,21 +25,21 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
             URL = url;
         },
         getTemplates: function(callback) {
-            console.log("Going to fetch Policy Templates");
+            //debug: console.log("Going to fetch Policy Templates");
             $http.get(URL + "index.json")
                 .success(callback).error(function (error) {
-                    console.log("Error fetching Policy Templates.");
-                    console.log(error);
+                    //debug: console.log("Error fetching Policy Templates.");
+                    //debug: console.log(error);
                     inform.add(gettextCatalog.getString("Error fetching" +
                         " policy templates."),
                                 {type: "danger", ttl:10000});
             });
         },
         getTemplate: function(templateName, callback) {
-            console.log("Going to fetch Policy Template " + templateName);
+            //debug: console.log("Going to fetch Policy Template " + templateName);
             $http.get(URL + templateName + ".json")
                 .success(callback).error(function (error) {
-                    console.log(error);
+                    //debug: console.log(error);
                     inform.add(gettextCatalog.getString("Error fetching" +
                             " policy template ")
                         + templateName,

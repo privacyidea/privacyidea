@@ -54,7 +54,7 @@ angular.module("privacyideaAuth", [])
             checkRight: function (action) {
                 // check if the action is contained in user.rights
                 var res = (user.rights.indexOf(action) >= 0);
-                //console.log("checking right: " + action + ": " + res);
+                ////debug: console.log("checking right: " + action + ": " + res);
                 return res;
             },
             checkMainMenu: function (menu) {

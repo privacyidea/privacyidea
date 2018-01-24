@@ -1,3 +1,8 @@
+Version 2.21.1, 2018-01-09
+
+  Fixes:
+  * Allow to use TLS1.1 and TLS1.2 for LDAP Resolver (#876)
+
 Version 2.21, 2017-12-20
 
   Features:

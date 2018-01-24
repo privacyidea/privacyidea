@@ -56,7 +56,7 @@ angular.module("privacyideaApp")
     $scope.piExternalLinks = obj.val();
     obj = angular.element(document.querySelector('#REALMS'));
     $scope.piRealms = obj.val().mysplit(",");
-    console.log($scope.piRealms);
+    //debug: console.log($scope.piRealms);
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();
     // Check if registration is allowed
@@ -98,10 +98,10 @@ angular.module("privacyideaApp")
     // can return there
     $rootScope.$on('$stateChangeSuccess',
         function (ev, to, toParams, from, fromParams) {
-            console.log("we changed the state from " + from + " to " + to);
-            console.log(from);
-            console.log(fromParams);
-            console.log(to);
+            //debug: console.log("we changed the state from " + from + " to " + to);
+            //debug: console.log(from);
+            //debug: console.log(fromParams);
+            //debug: console.log(to);
             $rootScope.previousState = {
                 state: from.name,
                 params: fromParams
@@ -110,7 +110,7 @@ angular.module("privacyideaApp")
             $scope.checkReloadListeners();
         });
     $scope.$on('IdleStart', function () {
-        console.log("start idle");
+        //debug: console.log("start idle");
     });
 
     $scope.$on('IdleWarn', function(e, countdown) {
@@ -120,22 +120,22 @@ angular.module("privacyideaApp")
         // you can change the title or display a warning dialog from here.
         // you can let them resume their session by calling Idle.watch()
         $scope.myCountdown = countdown;
-        console.log($scope.myCountdown);
+        //debug: console.log($scope.myCountdown);
         $scope.logoutWarning = true;
         $scope.$apply();
     });
 
     $scope.$on('IdleEnd', function () {
-        console.log("The user has ended idling");
+        //debug: console.log("The user has ended idling");
         $scope.logoutWarning = false;
     });
 
     $scope.$on('IdleTimeout', function () {
         if ($scope.timeout_action == "logout") {
-            console.log("Logout!");
+            //debug: console.log("Logout!");
             $scope.logout();
         } else {
-            console.log("Lock!");
+            //debug: console.log("Lock!");
             $scope.logoutWarning = false;
             $scope.$apply();
             $scope.lock_screen();
@@ -184,7 +184,7 @@ angular.module("privacyideaApp")
     $scope.authenticate = function () {
         $scope.polling = false;
         $scope.image = false;
-        console.log($scope.login);
+        //debug: console.log($scope.login);
         $http.post(authUrl, {
             username: $scope.login.username,
             password: $scope.login.password,
@@ -195,8 +195,8 @@ angular.module("privacyideaApp")
         }).success(function (data) {
             $scope.do_login_stuff(data);
         }).error(function (error) {
-            console.log("challenge response");
-            console.log(error);
+            //debug: console.log("challenge response");
+            //debug: console.log(error);
             $scope.login.password = "";
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
@@ -248,7 +248,7 @@ angular.module("privacyideaApp")
                     }
                 }
 
-                console.log($scope.polling);
+                //debug: console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
                 if ($scope.polling) {
@@ -299,7 +299,7 @@ angular.module("privacyideaApp")
         // This function is used to poll, if a challenge response
         // authentication was performed successfully in the background
         // This is used for the TiQR token.
-        console.log("calling check_authentication.");
+        //debug: console.log("calling check_authentication.");
         $http.post(authUrl, {
             username: $scope.login.username,
             password: "",
@@ -347,15 +347,15 @@ angular.module("privacyideaApp")
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
-            console.log(timeout);
+            //debug: console.log(timeout);
             var idlestart = timeout - 10;
             if (idlestart<=0) {
                 idlestart = 1;
             }
             Idle.setIdle(idlestart);
             Idle.watch();
-            console.log("successfully authenticated");
-            console.log($scope.loggedInUser);
+            //debug: console.log("successfully authenticated");
+            //debug: console.log($scope.loggedInUser);
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal().hide();
                 // Hack, since we can not close the modal and thus the body

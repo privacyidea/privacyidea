@@ -15,14 +15,14 @@ angular.module("privacyideaApp")
 
     $scope.sendRecoveryCode = function () {
         RecoveryFactory.recover($scope.newUser, function(data) {
-            console.log(data);
+            //debug: console.log(data);
             inform.add(gettextCatalog.getString("An Email to reset the" +
                 " password has been sent to you."), {type: "info"});
         })
     };
     $scope.resetPassword = function () {
         RecoveryFactory.reset($scope.params, function(data) {
-            console.log(data);
+            //debug: console.log(data);
             $scope.params = {};
             if (data.result.value) {
                 inform.add(gettextCatalog.getString("Your password has been" +
