@@ -242,6 +242,23 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;
+
+            // auto fill serialnumber with serial from digipass blob
+            $scope.$watch('form.otpkey', function(newValue){
+               if(newValue.length === 496){
+                 //console.log('DEBUG: got 496 hexlify otpkey, check vasco serialnumber!');
+
+                 // convert hexlified input blob to ascii and use the serialnumber (first 10 chars)
+                 var vasco_hex = newValue.toString();//force conversion
+                 var vasco_otpstr = '';
+                 for (var i = 0; i < vasco_hex.length; i += 2)
+                     vasco_otpstr += String.fromCharCode(parseInt(vasco_hex.substr(i, 2), 16));
+                 var vasco_serial = vasco_otpstr.slice(0, 10);
+                 //console.log(vasco_serial);
+                 $scope.form.serial = vasco_serial;
+               }
+            });
+            
         } else {
             $scope.form.genkey = true;
         }
