@@ -1,9 +1,10 @@
-python-privacyidea (2.22~dev2-1trusty) trusty; urgency=low
+python-privacyidea (2.22~dev3-1trusty) trusty; urgency=low
 
   * SMPP Provider
   * Add imrpoved RADIUS attribute mapping
+  * VASCO Token
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 18 Jan 2017 09:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 25 Jan 2017 11:20:00 +0200
 
 python-privacyidea (2.21.4-1trusty) trusty; urgency=low
 
