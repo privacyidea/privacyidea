@@ -2,7 +2,7 @@
 This test file tests the applications definitions standalone
 lib/applications/*
 """
-
+from privacyidea.lib.error import ParameterError
 from .base import MyTestCase
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.applications.ssh import (MachineApplication as
@@ -145,6 +145,10 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(res, -1)
         res = tok.check_otp("378717")  # count = 103
         self.assertEqual(res, 103)
+        # check illegal API usage
+        self.assertRaises(ParameterError,
+                          OfflineApplication.get_offline_otps, tok, 'foo', -1)
+        self.assertEqual(OfflineApplication.get_offline_otps(tok, 'foo', 0), {})
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type
