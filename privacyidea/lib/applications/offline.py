@@ -95,7 +95,7 @@ class MachineApplication(MachineApplicationBase):
         return otps
 
     @staticmethod
-    def get_appropriate_refill(token_obj, password, options=None):
+    def get_refill(token_obj, password, options=None):
         """
         Returns new authentication OTPs to refill the client
 
@@ -106,6 +106,8 @@ class MachineApplication(MachineApplicationBase):
         :param options: dict that might contain "count" and "rounds"
         :return: a dictionary of auth items
         """
+        if options is None:
+            options = {}
         count = int(options.get("count", 100))
         rounds = int(options.get("rounds", ROUNDS))
         _r, otppin, otpval = token_obj.split_pin_pass(password)
