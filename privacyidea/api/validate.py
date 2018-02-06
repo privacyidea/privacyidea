@@ -189,7 +189,7 @@ def offlinerefill():
             tokenobj = get_tokens(serial=serial)[0]
             if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
                 # refill
-                otps = MachineApplication.get_appropriate_refill(tokenobj, password, mdef.get("options"))
+                otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                 refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                 result = True
 
