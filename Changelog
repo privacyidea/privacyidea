@@ -1,3 +1,10 @@
+Version 2.21.4, 
+
+  Fixes:
+  * HTTP Timeout of HTTP SMS Gateway
+  * Remove console.log from webui
+
+
 Version 2.21.1, 2018-01-09
 
   Fixes:
