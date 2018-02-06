@@ -106,8 +106,7 @@ class MachineApplication(MachineApplicationBase):
         :param options: dict that might contain "count" and "rounds"
         :return: a dictionary of auth items
         """
-        if options is None:
-            options = {}
+        options = options or {}
         count = int(options.get("count", 100))
         rounds = int(options.get("rounds", ROUNDS))
         _r, otppin, otpval = token_obj.split_pin_pass(password)
