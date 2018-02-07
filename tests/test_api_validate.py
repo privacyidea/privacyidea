@@ -393,14 +393,15 @@ class AAValidateOfflineTestCase(MyTestCase):
             auth_items = json.loads(res.data).get("auth_items")
             offline = auth_items.get("offline")[0]
             # Check the number of OTP values
-            self.assertEqual(len(offline.get("response")), 2)
+            self.assertEqual(len(offline.get("response")), 3)
             self.assertTrue("102" in offline.get("response"))
             self.assertTrue("103" in offline.get("response"))
+            self.assertTrue("104" in offline.get("response"))
             refilltoken_2 = offline.get("refilltoken")
             self.assertEqual(len(refilltoken_2), 2 * REFILLTOKEN_LENGTH)
             # check the token counter
             tok = get_tokens(serial=self.serials[0])[0]
-            self.assertEqual(tok.token.count, 104)
+            self.assertEqual(tok.token.count, 105)
             # The refilltoken changes each time
             self.assertNotEqual(refilltoken_1, refilltoken_2)
 
@@ -414,7 +415,6 @@ class AAValidateOfflineTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
             data = json.loads(res.data)
-            self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              u"ERR905: Token is not an offline token or refill token is incorrect")
 
@@ -435,16 +435,16 @@ class AAValidateOfflineTestCase(MyTestCase):
             offline = auth_items.get("offline")[0]
             # Check the number of OTP values
             self.assertEqual(len(offline.get("response")), 5)
-            self.assertTrue("104" in offline.get("response"))
             self.assertTrue("105" in offline.get("response"))
             self.assertTrue("106" in offline.get("response"))
             self.assertTrue("107" in offline.get("response"))
             self.assertTrue("108" in offline.get("response"))
+            self.assertTrue("109" in offline.get("response"))
             refilltoken_3 = offline.get("refilltoken")
             self.assertEqual(len(refilltoken_3), 2 * REFILLTOKEN_LENGTH)
             # check the token counter
             tok = get_tokens(serial=self.serials[0])[0]
-            self.assertEqual(tok.token.count, 109)
+            self.assertEqual(tok.token.count, 110)
             # The refilltoken changes each time
             self.assertNotEqual(refilltoken_2, refilltoken_3)
             self.assertNotEqual(refilltoken_1, refilltoken_3)

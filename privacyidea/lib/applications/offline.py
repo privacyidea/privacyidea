@@ -113,16 +113,19 @@ class MachineApplication(MachineApplicationBase):
         if not _r:
             raise ParameterError("Could not split password")
         current_token_counter = token_obj.token.count
-        first_old_counter = current_token_counter - count
-        if first_old_counter < 0:
-            first_old_counter = 0
-        # find the value in the old OTP values! This resets the token.count!
-        matching_count = token_obj.check_otp(otpval, first_old_counter, count)
+        first_offline_counter = current_token_counter - count
+        if first_offline_counter < 0:
+            first_offline_counter = 0
+        # find the value in the offline OTP values! This resets the token.count!
+        matching_count = token_obj.check_otp(otpval, first_offline_counter, count)
         token_obj.set_otp_count(current_token_counter)
         # Raise an exception *after* we reset the token counter
         if matching_count < 0:
             raise ValidateError("You provided a wrong OTP value.")
-        counter_diff = matching_count - first_old_counter
+        # We have to add 1 here: Assume *first_offline_counter* is the counter value of the first offline OTP
+        # we sent to the client. Assume the client then requests a refill with that exact OTP value.
+        # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
+        counter_diff = matching_count - first_offline_counter + 1
         otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
         token_obj.add_tokeninfo(key="offline_counter",
                                 value=count)
