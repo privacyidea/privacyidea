@@ -69,6 +69,7 @@ from privacyidea.lib.user import get_user_from_param
 from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp)
 from privacyidea.api.lib.utils import get_all_params
@@ -181,24 +182,27 @@ def offlinerefill():
     serial = getParam(request.all_data, "serial", required)
     refilltoken = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
-    machine_defs = list_token_machines(serial)
-    # check if is still an offline token:
-    for mdef in machine_defs:
-        if mdef.get("application") == "offline":
-            # check refill token:
-            tokenobj = get_tokens(serial=serial)[0]
-            if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
-                # refill
-                otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
-                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
-                result = True
-
-    response = send_result(result)
-    content = json.loads(response.data)
-    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
-                                          "response": otps}]}
-    response.data = json.dumps(content)
-    return response
+    tokenobj_list = get_tokens(serial=serial)
+    if len(tokenobj_list) != 1:
+        raise ParameterError("The token does not exist")
+    else:
+        tokenobj = tokenobj_list[0]
+        machine_defs = list_token_machines(serial)
+        # check if is still an offline token:
+        for mdef in machine_defs:
+            if mdef.get("application") == "offline":
+                # check refill token:
+                if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
+                    # refill
+                    otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
+                    refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                    response = send_result(True)
+                    content = json.loads(response.data)
+                    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                                                          "response": otps}]}
+                    response.data = json.dumps(content)
+                    return response
+        raise ParameterError("Token is not an offline token or refill token is incorrect")
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
