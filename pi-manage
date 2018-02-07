@@ -231,7 +231,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in ["mysql", "pymysql", "mysql+pymysql"]:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
