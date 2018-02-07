@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from urllib import urlencode
 import json
+
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
@@ -336,7 +337,7 @@ class AAValidateOfflineTestCase(MyTestCase):
         # create offline app
         #tokenobj = get_tokens(self.serials[0])[0]
         from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-        from privacyidea.lib.machine import attach_token
+        from privacyidea.lib.machine import attach_token, detach_token
         from privacyidea.lib.machineresolver import save_resolver, delete_resolver
         mr_obj = save_resolver({"name": "testresolver",
                                 "type": "hosts",
@@ -403,6 +404,20 @@ class AAValidateOfflineTestCase(MyTestCase):
             # The refilltoken changes each time
             self.assertNotEqual(refilltoken_1, refilltoken_2)
 
+        # refill with wrong refill token fails
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin520489",
+                                                 "refilltoken": 'a' * 2 * REFILLTOKEN_LENGTH},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            data = json.loads(res.data)
+            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(data.get("result").get("error").get("message"),
+                             u"ERR905: Token is not an offline token or refill token is incorrect")
+
         # 2nd refill with 10th value
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
@@ -450,6 +465,34 @@ class AAValidateOfflineTestCase(MyTestCase):
                              u"ERR10: You provided a wrong OTP value.")
         # The failed refill should not modify the token counter!
         self.assertEqual(old_counter, token_obj.token.count)
+
+        # A refill with a wrong serial number fails
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": 'ABCDEF123',
+                                                 "pass": "pin000000",
+                                                 "refilltoken": refilltoken_3},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            data = json.loads(res.data)
+            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(data.get("result").get("error").get("message"),
+                             u"ERR905: The token does not exist")
+
+        # Detach the token, refill should then fail
+        r = detach_token(self.serials[0], "offline", "pippin")
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin520489",
+                                                 "refilltoken": refilltoken_3},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            data = json.loads(res.data)
+            self.assertTrue(res.status_code == 400, res)
+            self.assertEqual(data.get("result").get("error").get("message"),
+                             u"ERR905: Token is not an offline token or refill token is incorrect")
 
 
 class ValidateAPITestCase(MyTestCase):
