@@ -83,7 +83,7 @@ import jwt
 import ast
 
 SILENT = True
-
+MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
@@ -231,7 +231,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
-    elif sqltype in ["mysql", "pymysql", "mysql+pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
@@ -333,7 +333,7 @@ def restore(backup_file):
         print("Restore SQLite %s" % productive_file)
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
