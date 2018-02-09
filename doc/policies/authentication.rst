@@ -159,7 +159,7 @@ challenge parameter. This could contain banking transaction data.
 Default: *<otp>*
 
 You can also provide the filename to an email template. The filename must be prefixed with
-``file:`` like ``file:/etc/privacyidea/emailtempalte.html``. The template is
+``file:`` like ``file:/etc/privacyidea/emailtemplate.html``. The template is
 an HTML file and contain the tags ``{otp}`` and ``{serial}``.
 
 .. note:: If a message text is supplied directly, the email is sent as plain text.
