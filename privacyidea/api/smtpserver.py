@@ -73,10 +73,11 @@ def create(identifier=None):
     tls = getParam(param, "tls", default=False)
     tls = tls in ["True", True, "true", "1"]
     description = getParam(param, "description", default="")
+    timeout = int(getParam(param, "timeout", default=10))
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
-                       sender=sender)
+                       sender=sender, timeout=timeout)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -103,7 +104,8 @@ def list_smtpservers():
                                          "port": server.config.port,
                                          "description":
                                              server.config.description,
-                                         "sender": server.config.sender}
+                                         "sender": server.config.sender,
+                                         "timeout": server.config.timeout}
     g.audit_object.log({'success': True})
     return send_result(res)
 
@@ -142,10 +144,11 @@ def test():
     tls = getParam(param, "tls", default=False)
     tls = tls in [True, "True", "true", "1"]
     recipient = getParam(param, "recipient", required)
+    timeout = int(getParam(param, "timeout", default=10))
 
     s = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=password, sender=sender,
-                     tls=tls)
+                     tls=tls, timeout=timeout)
     r = SMTPServer.test_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "

@@ -93,7 +93,8 @@ class SMTPServer(object):
         msg['Reply-To'] = reply_to
 
         mail = smtplib.SMTP(config.server, port=int(config.port),
-                            timeout=TIMEOUT)
+                            timeout=config.timeout)
+        log.debug("Saying EHLO to mailserver {0!s}".format(config.server))
         mail.ehlo()
         # Start TLS if required
         if config.tls:
@@ -119,6 +120,7 @@ class SMTPServer(object):
                                                                   res_id,
                                                                   res_text))
         mail.quit()
+        log.debug("I am done sending your email.")
         return success
 
 
@@ -146,7 +148,7 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
 @log_with(log)
 def send_email_data(mailserver, subject, message, mail_from,
                     recipient, username=None,
-                    password=None, port=25, email_tls=False):
+                    password=None, port=25, email_tls=False, timeout=TIMEOUT):
     """
     Send an email via the given email configuration data.
 
@@ -164,7 +166,7 @@ def send_email_data(mailserver, subject, message, mail_from,
     """
     dbserver = SMTPServerDB(identifier="emailtoken", server=mailserver,
                             sender=mail_from, username=username,
-                            password=password, port=port, tls=email_tls)
+                            password=password, port=port, tls=email_tls, timeout=timeout)
     smtpserver = SMTPServer(dbserver)
     return smtpserver.send_email(recipient, subject, message)
 
@@ -216,7 +218,7 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                   sender="", description="", tls=False):
+                   sender="", description="", tls=False, timeout=TIMEOUT):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -233,8 +235,9 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
     cryptedPassword = encryptPassword(password)
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
-                     description=description, tls=tls).save()
+                     description=description, tls=tls, timeout=timeout).save()
     return r
+
 
 @log_with(log)
 def delete_smtpserver(identifier):

@@ -2161,6 +2161,7 @@ class SMTPServer(MethodsMixin, db.Model):
     sender = db.Column(db.Unicode(255), default=u"")
     tls = db.Column(db.Boolean, default=False)
     description = db.Column(db.Unicode(2000), default=u'')
+    timeout = db.Column(db.Integer, default=10)
 
     def save(self):
         smtp = SMTPServer.query.filter(SMTPServer.identifier ==
@@ -2185,6 +2186,8 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["tls"] = self.tls
             if self.description is not None:
                 values["description"] = self.description
+            if self.timeout is not None:
+                values["timeout"] = self.timeout
             SMTPServer.query.filter(SMTPServer.identifier ==
                                     self.identifier).update(values)
             ret = smtp.id
