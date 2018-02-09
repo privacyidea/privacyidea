@@ -88,7 +88,7 @@ class SmppSMSProvider(ISMSProvider):
             client.connect()
             r = client.bind_transmitter(system_id=sys_id.encode("ascii"),
                                         password=passwd.encode("ascii"))
-            log.debug("bind_tranmitter returns {0!r}".format(r))
+            log.debug("bind_transmitter returns {0!r}".format(r))
             r = client.send_message(source_addr_ton=s_addr_ton,
                                     source_addr_npi=s_addr_npi,
                                     source_addr=s_addr.encode("ascii"),
