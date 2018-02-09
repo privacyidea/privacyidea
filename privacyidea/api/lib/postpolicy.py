@@ -100,7 +100,16 @@ class postpolicy(object):
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
             response = wrapped_function(*args, **kwds)
-            return self.function(self.request, response, *args, **kwds)
+            # We need to compare the old data, since the response is no deep copy
+            old_data = response.data
+            new_response = self.function(self.request, response, *args, **kwds)
+            if new_response.data != old_data and self.request:
+                # The response data has changed.
+                triggered_policy = self.function.__name__
+                log.info(u"The API call {0!s} was modified "
+                         u"by post policy: {1!s}".format(self.request.base_url,
+                                                         triggered_policy))
+            return new_response
 
         return policy_wrapper
 
