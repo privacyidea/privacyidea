@@ -34,6 +34,7 @@ from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
+from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
@@ -91,9 +92,14 @@ def list_smtpservers():
     res = {}
     server_list = get_smtpservers()
     for server in server_list:
+        decrypted_password = decryptPassword(server.config.password)
+        # If the database contains garbage, use the empty password as fallback
+        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
+            decrypted_password = ""
         res[server.config.identifier] = {"server": server.config.server,
                                          "tls": server.config.tls,
                                          "username": server.config.username,
+                                         "password": decrypted_password,
                                          "port": server.config.port,
                                          "description":
                                              server.config.description,
