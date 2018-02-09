@@ -144,7 +144,7 @@ def test():
     tls = getParam(param, "tls", default=False)
     tls = tls in [True, "True", "true", "1"]
     recipient = getParam(param, "recipient", required)
-    timeout = int(getParam(param, "timeout", default=10))
+    timeout = int(getParam(param, "timeout") or 10)
 
     s = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=password, sender=sender,
