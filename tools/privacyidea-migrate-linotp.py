@@ -181,8 +181,11 @@ resolver_map = {"LDAPIdResolver": "ldapresolver",
 
 s = select([linotp_token_table])
 result = conn_linotp.execute(s)
+
+token_values = []
+info_values = []
 for r in result:
-    print("migrating token {0!s}".format(r["LinOtpTokenSerialnumber"]))
+    print("processing token {0!s}".format(r["LinOtpTokenSerialnumber"]))
     # Adapt type
     type = r["LinOtpTokenType"]
     if type.lower() == "hmac":
@@ -201,7 +204,7 @@ for r in result:
     if r["LinOtpTokenInfo"]:
         ti = json.loads(r["LinOtpTokenInfo"])
 
-    ins = token_table.insert().values(
+    token_values.append(dict(
         id=r["LinOtpTokenId"],
         description=r["LinOtpTokenDesc"],
         serial=r["LinOtpTokenSerialnumber"],
@@ -221,17 +224,20 @@ for r in result:
         failcount=r['LinOtpFailCount'],
         count=r['LinOtpCount'],
         count_window=r['LinOtpCountWindow'],
-        sync_window=r['LinOtpSyncWindow'])
-    conn_pi.execute(ins)
+        sync_window=r['LinOtpSyncWindow']))
 
     if ti:
         # Add tokeninfo for this token
         for k, v in ti.iteritems():
-            ins = tokeninfo_table.insert().values(
-                Key=k, Value=v, token_id=r["LinOtpTokenId"])
-            conn_pi.execute(ins)
-            print(" +--- adding tokeninfo {0!s}".format(k))
+            info_values.append(dict(
+                Key=k, Value=v, token_id=r["LinOtpTokenId"]))
+            print(" +--- processing tokeninfo {0!s}".format(k))
 
+print
+print "adding {} tokens ...".format(len(token_values))
+conn_pi.execute(token_table.insert(), token_values)
+print "adding {} token infos ...".format(len(info_values))
+conn_pi.execute(tokeninfo_table.insert(), info_values)
 # Process Realms
 
 s = select([linotp_realm_table])
