@@ -107,6 +107,21 @@ If you are sending a pull request, please note the following:
 * At the beginning of the file, add the date, your name,
   your email address and a description of what you 
   changed in the file!
+* If you need to change the database model, edit ``privacyidea/models.py``
+  accordingly. Then you can use
+  ``./pi-manage`` to create migration scripts. The migration scripts
+  are located at ``migrations/versions/``.
+  To create a migration script to update the database schema run:
+
+      ./pi-manage db migrate
+
+  This will create a new file in ``migrations/versions/``. Edit the description
+  and put a *try-except* around the operations. Take a look at the other scripts.
+  Then you can run:
+
+      ./pi-manage db upgrade
+
+  To update the local database.
 
 Contribution Guidelines
 ~~~~~~~~~~~~~~~~~~~~~~~
