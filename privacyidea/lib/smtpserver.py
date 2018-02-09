@@ -93,9 +93,10 @@ class SMTPServer(object):
         msg['Reply-To'] = reply_to
 
         mail = smtplib.SMTP(config.server, port=int(config.port),
-                            timeout=config.timeout)
+                            timeout=config.timeout or TIMEOUT)
         log.debug("Saying EHLO to mailserver {0!s}".format(config.server))
-        mail.ehlo()
+        r = mail.ehlo()
+        log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
         if config.tls:
             log.debug("Trying to STARTTLS: {0!s}".format(config.tls))

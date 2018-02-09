@@ -72,7 +72,7 @@ def create(identifier=None):
     tls = getParam(param, "tls", default=False)
     tls = tls in ["True", True, "true", "1"]
     description = getParam(param, "description", default="")
-    timeout = int(getParam(param, "timeout", default=10))
+    timeout = int(getParam(param, "timeout") or 10)
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
