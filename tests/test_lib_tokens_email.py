@@ -357,6 +357,8 @@ class EmailTokenTestCase(MyTestCase):
         display_message = c[1]
         self.assertTrue(c[3].get("state"), transactionid)
         self.assertEqual(display_message, "Enter the OTP from the Email:")
+        _, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        self.assertEqual(mimetype, "plain")
 
         # Test AUTOEMAIL
         p = set_policy(name="autoemail",
@@ -386,8 +388,9 @@ class EmailTokenTestCase(MyTestCase):
         transactionid = "123456098714"
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
-        email_text = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        email_text, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
         self.assertTrue("<p>Hello,</p>" in email_text)
+        self.assertEqual(mimetype, "html")
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
