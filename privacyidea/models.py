@@ -2300,7 +2300,7 @@ class Subscription(MethodsMixin, db.Model):
 
 audit_column_length = {"signature": 620,
                        "action": 50,
-                       "serial": 20,
+                       "serial": 40,
                        "token_type": 12,
                        "user": 20,
                        "realm": 20,
