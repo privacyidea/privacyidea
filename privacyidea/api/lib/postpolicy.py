@@ -106,7 +106,7 @@ class postpolicy(object):
             if new_response.data != old_data and self.request:
                 # The response data has changed.
                 triggered_policy = self.function.__name__
-                log.info(u"The API call {0!s} was modified "
+                log.info(u"The API response from {0!s} was modified "
                          u"by post policy: {1!s}".format(self.request.base_url,
                                                          triggered_policy))
             return new_response

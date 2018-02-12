@@ -73,6 +73,7 @@ import functools
 import jwt
 import re
 import importlib
+import hashlib
 
 optional = True
 required = False
@@ -112,8 +113,15 @@ class prepolicy(object):
         """
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
+            old_all_data = hashlib.md5(u"{0!s}".format(self.request.all_data)).digest()
             self.function(request=self.request,
                           action=self.action)
+            if old_all_data != hashlib.md5(u"{0!s}".format(self.request.all_data)).digest():
+                # The request data have been changed
+                triggered_policy = self.function.__name__
+                log.info(u"The API request to {0!s} was modified "
+                         u"by post policy: {1!s}".format(self.request.base_url,
+                                                         triggered_policy))
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
