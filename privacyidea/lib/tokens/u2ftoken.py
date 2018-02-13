@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-02-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow expired attestation certificate
 #  2017-04-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save attestation cert info to tokeninfo
 #  2015-11-22 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -190,6 +192,7 @@ required = False
 class U2FACTION(object):
     FACETS = "u2f_facets"
     REQ = "u2f_req"
+    NO_VERIFY_CERT = "uf2_no_verify_certificate"
 
 
 class U2fTokenClass(TokenClass):
@@ -255,6 +258,12 @@ class U2fTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are allowed "
                                      "to be registered.")
+                       }
+                   },
+                   SCOPE.ENROLL: {
+                       U2FACTION.NO_VERIFY_CERT: {
+                           'type': 'bool',
+                           'desc': _("Do not verify the U2F attestation certificate.")
                        }
                    }
                }
