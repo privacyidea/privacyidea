@@ -284,7 +284,6 @@ if MIGRATE.get("tokens"):
             user_id = None
 
         token_values.append(dict(
-            id=r["LinOtpTokenId"],
             description=r["LinOtpTokenDesc"],
             serial=r["LinOtpTokenSerialnumber"],
             tokentype=type,
@@ -319,7 +318,7 @@ if MIGRATE.get("tokens"):
     conn_pi.execute(token_table.insert(), token_values)
 
     if MIGRATE.get("tokeninfo"):
-        # fet the new token_id's in privacyIDEA
+        # fetch the new token_id's in privacyIDEA
         s = select([token_table])
         result = conn_pi.execute(s)
         for r in result:
