@@ -54,6 +54,13 @@ ASSIGNMENTS = {
     "realm": {"PIResolver": "pirealm"}
 }
 
+"""
+This option splits INSERT statements into chunks of a given size, which is useful
+if the number of migrated tokens is so large that it cannot fit in one INSERT
+statement.
+"""
+INSERT_CHUNK_SIZE = 10000
+
 CONFIGURED = False
 
 if not CONFIGURED:
@@ -216,6 +223,15 @@ privacyidea_session = sessionmaker(bind=privacyidea_engine)()
 conn_linotp = linotp_engine.connect()
 conn_pi = privacyidea_engine.connect()
 
+def insert_chunks(conn, table, values, chunk_size=INSERT_CHUNK_SIZE):
+    """
+    Split **values** into chunks of size **chunk_size** and insert them sequentially.
+    """
+    values_length = len(values)
+    for i in xrange(0, values_length, chunk_size):
+        print 'Insert records {} to {} ...'.format(i, min(i + chunk_size, values_length) - 1)
+        conn.execute(table.insert(), values[i:i+chunk_size])
+
 
 # Values to be imported
 token_values = []
@@ -315,7 +331,7 @@ if MIGRATE.get("tokens"):
 
     print
     print("Adding {} tokens...".format(len(token_values)))
-    conn_pi.execute(token_table.insert(), token_values)
+    insert_chunks(conn_pi, token_table, token_values)
 
     if MIGRATE.get("tokeninfo"):
         # fetch the new token_id's in privacyIDEA
@@ -330,7 +346,7 @@ if MIGRATE.get("tokens"):
             del ti["serial"]
 
         print("Adding {} token infos...".format(len(tokeninfo_values)))
-        conn_pi.execute(tokeninfo_table.insert(), tokeninfo_values)
+        insert_chunks(conn_pi, tokeninfo_table, tokeninfo_values)
 
 if MIGRATE.get("assignments") and resolver:
     # If the token is assigned, we also need to create an entry for tokenrealm
@@ -348,7 +364,7 @@ if MIGRATE.get("assignments") and resolver:
                                       realm_id=realm_id))
 
     print("Adding {} tokenrealms...".format(len(tokenrealm_values)))
-    conn_pi.execute(tokenrealm_table.insert(), tokenrealm_values)
+    insert_chunks(conn_pi, tokenrealm_table, tokenrealm_values)
 
 if warnings:
     print("We need to inform you about the following WARNGINGS:")
