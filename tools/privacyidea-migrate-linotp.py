@@ -14,10 +14,18 @@ You only need an export of the LinOTP "Token" table.
 Please configure below, how your database URIs look like,
 what should be migrated and what should be mapped.
 """
-# You need to change this!
+# ========================================================
+# You need to change the following values:
+#  1. set the database URIs for LinOTP and privacyIDEA
+#  2. configure, what you want to migrate in the
+#     MIGRATE dictionary
+#  3. Set the ASSIGNMENTS dictionary, to define, which
+#     realms you want to have the tokens in.
+#
+#  4. Finally set the value CONFIGURED=True
+# =========================================================
 LINOTP_URI = "mysql://linotp2:linotp2@localhost/linotp2"
 PRIVACYIDEA_URI = "mysql://pitest:pitest@localhost/pitest"
-
 
 """
 Define, what should be migrated:
@@ -45,6 +53,11 @@ ASSIGNMENTS = {
     "resolver": {"lokal": "PIResolver"},
     "realm": {"PIResolver": "pirealm"}
 }
+
+CONFIGURED = False
+
+if not CONFIGURED:
+    raise Exception("You need to configure some data in the script itself!")
 
 # Do not change anything after this line
 # ============================================================================
@@ -134,23 +147,6 @@ resolverrealm_table = Table("resolverrealm", metadata,
 #
 # LinOTP table definitions
 #
-linotp_config_table = Table("Config", metadata,
-                            Column("Key", Unicode(255)),
-                            Column("Value", Unicode(2000)),
-                            Column("Type", Unicode(2000)),
-                            Column("Description", Unicode(2000))
-                            )
-
-linotp_tokenrealm_table = Table("TokenRealm", metadata,
-                         Column("id", Integer(), primary_key=True),
-                         Column("token_id", Integer()),
-                         Column("realm_id", Integer()))
-
-linotp_realm_table = Table("Realm", metadata,
-                    Column("id", Integer, primary_key=True),
-                    Column("name", Unicode(255), default=u''),
-                    Column("default",  Boolean(), default=False),
-                    Column("option", Unicode(40), default=u''))
 
 linotp_token_table = Table('Token',metadata,
                            Column('LinOtpTokenId', Integer(),
