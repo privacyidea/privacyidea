@@ -222,6 +222,8 @@ token_values = []
 tokeninfo_values = []
 tokenrealm_values = []
 
+warnings = []
+
 # Process Assignments in table "tokenrealm"
 if MIGRATE.get("assignments"):
     s = select([realm_table])
@@ -270,6 +272,8 @@ if MIGRATE.get("tokens"):
             user_pin_iv = r['LinOtpTokenPinUserIV']
             # Map the LinOTP-Resolver to the PI-Resolver
             resolver = ASSIGNMENTS.get("resolver").get(linotp_resolver)
+            if not resolver:
+                warnings.append(u"No mapping defined for the LinOTP resolver: {0!s}".format(linotp_resolver))
             resolver_type = resolver_type
             user_id = r['LinOtpUserid']
         else:
@@ -346,4 +350,7 @@ if MIGRATE.get("assignments") and resolver:
     print("Adding {} tokenrealms...".format(len(tokenrealm_values)))
     conn_pi.execute(tokenrealm_table.insert(), tokenrealm_values)
 
-
+if warnings:
+    print("We need to inform you about the following WARNGINGS:")
+    for warning in warnings:
+        print(warning)
