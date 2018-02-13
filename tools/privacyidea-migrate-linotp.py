@@ -317,13 +317,18 @@ if MIGRATE.get("tokens"):
     print("Adding {} tokens...".format(len(token_values)))
     conn_pi.execute(token_table.insert(), token_values)
 
-    if MIGRATE.get("tokeninfo"):
-        # fetch the new token_id's in privacyIDEA
-        s = select([token_table])
-        result = conn_pi.execute(s)
-        for r in result:
-            token_serial_id_map[r["serial"]] = r["id"]
+    # fetch the new token_id's in privacyIDEA and write them to the
+    # token serial id map.
+    s = select([token_table])
+    result = conn_pi.execute(s)
+    for r in result:
+        token_serial_id_map[r["serial"]] = r["id"]
 
+    # rewrite the id's in the token_values list
+    for i in range(0, len(token_values)):
+        token_values[i]["id"] = token_serial_id_map[token_values[i]["serial"]]
+
+    if MIGRATE.get("tokeninfo"):
         # Now we have to rewrite the token_id in the tokeninfo_values
         for ti in tokeninfo_values:
             ti["token_id"] = token_serial_id_map[ti["serial"]]
