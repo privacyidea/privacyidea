@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2018-01-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Fix type cast for timeout
 #    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
 #               Add properties for new SMS provider model
 #    2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -41,6 +43,7 @@ The code is tested in tests/test_lib_smsprovider
 """
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib import _
 import requests
 from urlparse import urlparse
 
@@ -58,7 +61,7 @@ class HttpSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         if self.smsgateway:
             url = self.smsgateway.option_dict.get("URL")
@@ -67,7 +70,11 @@ class HttpSMSProvider(ISMSProvider):
             password = self.smsgateway.option_dict.get("PASSWORD")
             ssl_verify = self.smsgateway.option_dict.get("CHECK_SSL",
                                                          "yes") == "yes"
+            # FIXME: The Proxy option is deprecated and will be removed a version > 2.21
             proxy = self.smsgateway.option_dict.get("PROXY")
+            http_proxy = self.smsgateway.option_dict.get('HTTP_PROXY')
+            https_proxy = self.smsgateway.option_dict.get('HTTPS_PROXY')
+            timeout = self.smsgateway.option_dict.get("TIMEOUT") or 3
             for k, v in self.smsgateway.option_dict.iteritems():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
@@ -78,8 +85,12 @@ class HttpSMSProvider(ISMSProvider):
             username = self.config.get('USERNAME')
             password = self.config.get('PASSWORD')
             ssl_verify = self.config.get('CHECK_SSL', True)
+            # FIXME: The Proxy option is deprecated and will be removed a version > 2.21
             proxy = self.config.get('PROXY')
+            http_proxy = self.config.get('HTTP_PROXY')
+            https_proxy = self.config.get('HTTPS_PROXY')
             parameter = self._get_parameters(message, phone)
+            timeout = self.config.get("TIMEOUT") or 3
 
         if url is None:
             log.warning("can not submit message. URL is missing.")
@@ -97,8 +108,13 @@ class HttpSMSProvider(ISMSProvider):
         if username and password is not None:
             basic_auth = (username, password)
 
-        proxies = None
-        if proxy:
+        proxies = {}
+        if http_proxy:
+            proxies["http"] = http_proxy
+        if https_proxy:
+            proxies["https"] = https_proxy
+        if not proxies and proxy:
+            # No new proxy config but only the old one.
             protocol = proxy.split(":")[0]
             proxies = {protocol: proxy}
 
@@ -118,6 +134,7 @@ class HttpSMSProvider(ISMSProvider):
                       data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
+                      timeout=float(timeout),
                       proxies=proxies)
         log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
                   r.status_code))
@@ -199,36 +216,41 @@ class HttpSMSProvider(ISMSProvider):
                   "parameters": {
                       "URL": {
                           "required": True,
-                          "description": "The base URL of the HTTP Gateway"},
+                          "description": _("The base URL of the HTTP Gateway")},
                       "HTTP_METHOD": {
                           "required": True,
-                          "description": "Should the HTTP Gateway be "
-                                         "connected via an HTTP GET or POST "
-                                         "request.",
+                          "description": _("Should the HTTP Gateway be "
+                                           "connected via an HTTP GET or POST "
+                                           "request."),
                           "values": ["GET", "POST"]},
                       "RETURN_SUCCESS": {
-                          "description": "Specify a substring, "
-                                         "that indicates, that the SMS was "
-                                         "delivered successfully."},
+                          "description": _("Specify a substring, "
+                                           "that indicates, that the SMS was "
+                                           "delivered successfully.")},
                       "RETURN_FAIL": {
-                          "description": "Specify a substring, "
-                                         "that indicates, that the SMS "
-                                         "failed to be delivered."},
+                          "description": _("Specify a substring, "
+                                           "that indicates, that the SMS "
+                                           "failed to be delivered.")},
                       "USERNAME": {
-                          "description": "Username in case of basic "
-                                         "authentication."
+                          "description": _("Username in case of basic "
+                                           "authentication.")
                       },
                       "PASSWORD": {
-                          "description": "Password in case of basic "
-                                         "authentication."
+                          "description": _("Password in case of basic "
+                                           "authentication.")
                       },
                       "CHECK_SSL": {
-                          "description": "Should the SSL certificate be "
-                                         "verified.",
+                          "description": _("Should the SSL certificate be "
+                                           "verified."),
                           "values": ["yes", "no"]
                       },
-                      "PROXY": {"description": "An optional proxy string."},
-                      "TIMEOUT": {"description": "The timeout in seconds."}
+                      "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
+                                                 "this anymore. Rather use HTTP_PROXY for http connections and"
+                                                 "HTTPS_PROXY for https connection. The PROXY option will be"
+                                                 "removed in future.")},
+                      "HTTP_PROXY": {"description": _("Proxy setting for HTTP connections.")},
+                      "HTTPS_PROXY": {"description":_("Proxy setting for HTTPS connections.")},
+                      "TIMEOUT": {"description": _("The timeout in seconds.")}
                   }
                   }
         return params

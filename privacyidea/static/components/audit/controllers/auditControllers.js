@@ -44,11 +44,12 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.userFilter = $stateParams.user;
     }
 
+
     // get statistics
     $scope.getStatistics = function() {
         AuditFactory.statistics($scope.params, function(data) {
             $scope.stats = data.result.value;
-            console.log($scope.stats);
+            //debug: console.log($scope.stats);
         });
     };
 
@@ -66,28 +67,28 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
-        console.log("Request Audit Trail with params");
-        console.log($scope.params);
+        //debug: console.log("Request Audit Trail with params");
+        //debug: console.log($scope.params);
     };
 
     $scope.getAuditList = function () {
         $scope.getParams();
         AuditFactory.get($scope.params, function(data) {
             $scope.auditdata = data.result.value;
-            console.log($scope.auditdata);
+            //debug: console.log($scope.auditdata);
         });
     };
 
     // Change the pagination
     $scope.pageChanged = function () {
-        console.log('Page changed to: ' + $scope.params.page);
+        //debug: console.log('Page changed to: ' + $scope.params.page);
         $scope.getAuditList();
     };
 
     // download function
     $scope.download = function () {
         var filename = "audit.csv";
-        console.log("download audit log");
+        //debug: console.log("download audit log");
         $scope.getParams();
         AuditFactory.download($scope.params, filename, function(data){
             alert("Data received.")
@@ -101,5 +102,9 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     if ($location.path() === "/audit") {
         $location.path("/audit/log");
     }
+
+    $scope.$on("piReload", function() {
+        $scope.getAuditList();
+    });
 
 });

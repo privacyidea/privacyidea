@@ -25,21 +25,21 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
             URL = url;
         },
         getTemplates: function(callback) {
-            console.log("Going to fetch Policy Templates");
+            //debug: console.log("Going to fetch Policy Templates");
             $http.get(URL + "index.json")
                 .success(callback).error(function (error) {
-                    console.log("Error fetching Policy Templates.");
-                    console.log(error);
+                    //debug: console.log("Error fetching Policy Templates.");
+                    //debug: console.log(error);
                     inform.add(gettextCatalog.getString("Error fetching" +
                         " policy templates."),
                                 {type: "danger", ttl:10000});
             });
         },
         getTemplate: function(templateName, callback) {
-            console.log("Going to fetch Policy Template " + templateName);
+            //debug: console.log("Going to fetch Policy Template " + templateName);
             $http.get(URL + templateName + ".json")
                 .success(callback).error(function (error) {
-                    console.log(error);
+                    //debug: console.log(error);
                     inform.add(gettextCatalog.getString("Error fetching" +
                             " policy template ")
                         + templateName,
@@ -54,6 +54,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          policyUrl, eventUrl, smtpServerUrl,
                                          radiusServerUrl, smsgatewayUrl,
                                          defaultRealmUrl, systemUrl,
+                                         privacyideaServerUrl,
                                          CAConnectorUrl, inform) {
     /**
      Each service - just like this service factory - is a singleton.
@@ -67,6 +68,11 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
     };
 
     return {
+        getPGPKeys: function(callback) {
+            $http.get(systemUrl + "/gpgkeys", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback).error(error_func);
+        },
         getSMSProviders: function(callback) {
             $http.get(smsgatewayUrl + "/providers", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
@@ -403,6 +409,32 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         testRadius: function(params, callback) {
             $http.post(radiusServerUrl + "/test_request", params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        getPrivacyidea: function(callback, identifier) {
+            if (!identifier) {identifier = "";}
+            $http.get(privacyideaServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        delPrivacyidea: function(identifier, callback) {
+            $http.delete(privacyideaServerUrl + "/" + identifier, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        addPrivacyidea: function(params, callback) {
+            var identifier = params["identifier"];
+            $http.post(privacyideaServerUrl + "/" + identifier, params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback).error(error_func);
+        },
+        testPrivacyidea: function(params, callback) {
+            $http.post(privacyideaServerUrl + "/test_request", params, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).success(callback).error(error_func);

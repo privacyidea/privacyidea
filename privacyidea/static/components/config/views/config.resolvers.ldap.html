@@ -70,6 +70,17 @@
                        class="form-control"
                        ng-show="params.TLS_VERIFY"
                        placeholder="/etc/privacyidea/ldap-ca.crt"/>
+                
+                <label for="tls_version" class="control-label" translate>
+                    TLS protocol version
+                </label>
+                <select class="form-control"
+                        name="tls_version" id="tls_version"
+                    ng-model="params.TLS_VERSION">
+                        <option value="3">TLSv1</option>
+                        <option value="4">TLSv1.1</option>
+                        <option value="5">TLSv1.2</option>
+                </select>
             </div>
         </div>
     </div>
@@ -143,10 +154,30 @@
         <label for="cachetimeout" class="col-sm-3 control-label"
                 translate>Cache Timeout (seconds)</label>
 
-        <div class="col-sm-3">
+        <div class="col-sm-3"
+             ng-class="{'has-error': !params.CACHE_TIMEOUT }">
             <input name="cachetimeout" class="form-control"
                    ng-model="params.CACHE_TIMEOUT" required
+                   ng-class="{'has-error': !params.CACHE_TIMEOUT }"
                    placeholder="120"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="serverpool-rounds" class="col-sm-3 control-label"
+                translate>Server pool retry rounds</label>
+
+        <div class="col-sm-3">
+            <input name="serverpool-rounds" class="form-control"
+                   ng-model="params.SERVERPOOL_ROUNDS"
+                   placeholder="2" />
+        </div>
+        <label for="serverpool-skip" class="col-sm-3 control-label"
+                translate>Server pool skip timeout (seconds)</label>
+
+        <div class="col-sm-3">
+            <input name="serverpool-skip" class="form-control"
+                   ng-model="params.SERVERPOOL_SKIP"
+                   placeholder="30" />
         </div>
     </div>
     <div class="form-group">
@@ -231,6 +262,15 @@
                        ng-model="params.USERINFO" required
                        placeholder='{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }'
                         />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="multivalueattributes" class="col-sm-3 control-label"
+                translate>Multivalue Attributes</label>
+            <div class="col-sm-9">
+                <input name="multivalueattributes" class="form-control"
+                       ng-model="params.MULTIVALUEATTRIBUTES"
+                       placeholder='["mobile"]'/>
             </div>
         </div>
         <div class="form-group">

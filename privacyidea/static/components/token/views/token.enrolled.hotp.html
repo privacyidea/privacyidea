@@ -1,9 +1,9 @@
 <div class="row">
-    <div class="col-sm-6">
+    <div class="col-sm-6" ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'">
         <img width="{{ qrCodeWidth }}"
              src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div class="col-sm-6" ng-hide="$state.includes('token.wizard')">
+    <div class="col-sm-6" ng-hide="$state.includes('token.wizard') || form['2stepinit']">
         <accordion close-others="oneAtATime">
             <accordion-group heading="{{ 'The OTP key'|translate }}">
                 {{ enrolledToken.otpkey.value }}
@@ -15,6 +15,32 @@
             the QR Code, if you
             want to add the Token to your Google Authenticator.
         </p>
+        <p translate>
+            The QR Code contains the secret key of your token. You need to
+            protect it. <b>If you are in doubt, that someone else saw it, please
+            regenerate the QR Code, when noone else is watching.</b>
+        </p>
+        <button ng-click="regenerateToken()" class="btn btn-warning" translate>
+            Regenerate QR Code
+        </button>
+    </div>
+    <div class="col-sm-4 pull-right" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
+        <p translate>
+            Your token {{ enrolledToken.serial }} is not completely enrolled, yet.
+        </p>
+        <p translate>
+            Please scan the QR code with the privacyIDEA authenticator app and enter
+            the generated code below.
+        </p>
+        <div class="form-group">
+            <label for="clientpart" translate>Client Part</label>
+            <input type="text" ng-model="$parent.clientpart"
+                   autofocus
+                   class="form-control"
+                   name="clientpart">
+            <button type="button" ng-click="sendClientPart()"
+                    class="btn btn-primary" translate>Enroll Token</button>
+        </div>
     </div>
 </div>
 

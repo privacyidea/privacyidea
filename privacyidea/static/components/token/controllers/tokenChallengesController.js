@@ -24,13 +24,13 @@ myApp.controller("tokenChallengesController", function ($scope,
         }
         TokenFactory.getChallenges(function (data) {
             $scope.challengedata = data.result.value;
-            console.log(data.result.value);
+            //debug: console.log(data.result.value);
         }, $scope.params.serial, $scope.params);
     };
 
     // Change the pagination
     $scope.challengePageChanged = function () {
-        console.log('Page changed to: ' + $scope.params.page);
+        //debug: console.log('Page changed to: ' + $scope.params.page);
         $scope.get();
     };
 

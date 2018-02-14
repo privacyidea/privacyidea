@@ -74,6 +74,8 @@ the token in challenge response.
 This code is tested in tests/test_lib_tokens_tiqr.
 """
 
+import urllib
+
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
@@ -91,6 +93,7 @@ from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 
 log = logging.getLogger(__name__)
 optional = True
@@ -107,7 +110,7 @@ class API_ACTIONS(object):
     ALLOWED_ACTIONS = [METADATA, ENROLLMENT, AUTHENTICATION]
 
 
-class TiqrTokenClass(TokenClass):
+class TiqrTokenClass(OcraTokenClass):
     """
     The TiQR Token implementation.
     """
@@ -341,32 +344,6 @@ class TiqrTokenClass(TokenClass):
 
             return "plain", res
 
-    @log_with(log)
-    def is_challenge_request(self, passw, user=None, options=None):
-        """
-        check, if the request would start a challenge
-        In fact every Request that is not a response needs to start a
-        challenge request.
-
-        At the moment we do not think of other ways to trigger a challenge.
-
-        This function is not decorated with
-            @challenge_response_allowed
-        as the TiQR token is always a challenge response token!
-
-        :param passw: The PIN of the token.
-        :param options: dictionary of additional request parameters
-
-        :return: returns true or false
-        """
-        trigger_challenge = False
-        options = options or {}
-        pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
-            trigger_challenge = True
-
-        return trigger_challenge
-
     def create_challenge(self, transactionid=None, options=None):
         """
         This method creates a challenge, which is submitted to the user.
@@ -417,7 +394,10 @@ class TiqrTokenClass(TokenClass):
                                  validitytime=validity)
         db_challenge.save()
 
-        authurl = "tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(user_identifier,
+        # Encode the user to UTF-8 and quote the result
+        encoded_user_identifier = urllib.quote_plus(user_identifier.encode('utf-8'))
+        authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(
+                                              encoded_user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,
                                               challenge)
@@ -427,65 +407,3 @@ class TiqrTokenClass(TokenClass):
                       "hideResponseInput": True}
 
         return True, message, db_challenge.transaction_id, attributes
-
-    def verify_response(self, passw=None, challenge=None):
-        """
-        This method verifies if the *passw* is the valid OCRA response to the
-        *challenge*.
-        In case of success we return a value > 0
-
-        :param passw: the password (pin+otp)
-        :type passw: string
-        :return: return otp_counter. If -1, challenge does not match
-        :rtype: int
-        """
-        ocrasuite = self.get_tokeninfo("ocrasuite")
-        security_object = self.token.get_otpkey()
-        ocra_object = OCRA(ocrasuite, security_object=security_object)
-        # TODO: We might need to add additional Signing or Counter objects
-        r = ocra_object.check_response(passw, question=challenge)
-        return r
-
-    @check_token_locked
-    def check_challenge_response(self, user=None, passw=None, options=None):
-        """
-        This function checks, if the challenge for the given transaction_id
-        was marked as answered correctly.
-        For this we check the otp_status of the challenge with the
-        transaction_id in the database.
-
-        We do not care about the password
-
-        :param user: the requesting user
-        :type user: User object
-        :param passw: the password (pin+otp)
-        :type passw: string
-        :param options: additional arguments from the request, which could
-                        be token specific. Usually "transaction_id"
-        :type options: dict
-        :return: return otp_counter. If -1, challenge does not match
-        :rtype: int
-        """
-        options = options or {}
-        otp_counter = -1
-
-        # fetch the transaction_id
-        transaction_id = options.get('transaction_id')
-        if transaction_id is None:
-            transaction_id = options.get('state')
-
-        # get the challenges for this transaction ID
-        if transaction_id is not None:
-            challengeobject_list = get_challenges(serial=self.token.serial,
-                                                  transaction_id=transaction_id)
-
-            for challengeobject in challengeobject_list:
-                # check if we are still in time.
-                if challengeobject.is_valid() and challengeobject.otp_valid:
-                    # create a positive response
-                    otp_counter = 1
-                    # delete the challenge
-                    challengeobject.delete()
-                    break
-
-        return otp_counter

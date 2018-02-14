@@ -73,6 +73,7 @@ myApp.constant("registerUrl", backendUrl + instance + "/register");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
+myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {
@@ -83,7 +84,7 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             // to active whenever 'contacts.list' or one of its decendents is active.
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
-            console.log("Browser language "+browserLanguage);
+            //debug: console.log("Browser language "+browserLanguage);
             // remove everythin after the - like en-US -> en
             var nlang = browserLanguage.replace('/-\*$/', '');
             if (["de"].indexOf(nlang) === -1) {
@@ -91,7 +92,7 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
                 // we use default to "en"
                 nlang = "en";
             }
-            console.log("Setting language to " + nlang);
+            //debug: console.log("Setting language to " + nlang);
             gettextCatalog.setCurrentLanguage(nlang);
             gettextCatalog.debug = true;
         }
@@ -113,14 +114,14 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
                 return response || $q.when(response);
             },
             responseError: function (rejection) {
-                console.log(rejection);
+                //debug: console.log(rejection);
                 $rootScope.$broadcast('spinnerEvent', {
                     action: 'decrement'
                 });
                 if(rejection.status === 0) {
                     if (rejection.config.timeout) {
                         // The Request was canceled on purpose (getUsers)
-                        console.log("user canceled");
+                        //debug: console.log("user canceled");
                     } else {
                         // The API is offline, not reachable
                         inform.add(gettext("The privacyIDEA system seems to be" +

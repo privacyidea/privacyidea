@@ -36,11 +36,11 @@ The code of this module is tested in tests/test_api_system.py
 from flask import (Blueprint,
                    request,
                    url_for)
-from lib.utils import (getParam,
-                       getLowerParams,
-                       optional,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        getLowerParams,
+                        optional,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from ..lib.policy import (set_policy,
                           PolicyClass, ACTION,
@@ -186,7 +186,7 @@ def set_policy_api(name=None):
     admin_realm = getParam(param, "adminrealm", optional)
 
     g.audit_object.log({'action_detail': name,
-                        'info': "{0!s}".format(param)})
+                        'info': u"{0!s}".format(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
@@ -284,7 +284,7 @@ def get_policy(name=None, export=None):
         ret = response
 
     g.audit_object.log({"success": True,
-                        'info': "name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
+                        'info': u"name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
     return ret
 
 
@@ -401,7 +401,7 @@ def import_policy_api(filename=None):
 
     policy_num = import_policies(file_contents=file_contents)
     g.audit_object.log({"success": True,
-                        'info': "imported {0:d} policies from file {1!s}".format(
+                        'info': u"imported {0:d} policies from file {1!s}".format(
                             policy_num, filename)})
 
     return send_result(policy_num)
@@ -487,7 +487,7 @@ def check_policy_api():
         policy_names = []
         for pol in policies:
             policy_names.append(pol.get("name"))
-        g.audit_object.log({'info': "allowed by policy {0!s}".format(policy_names)})
+        g.audit_object.log({'info': u"allowed by policy {0!s}".format(policy_names)})
     else:
         res["allowed"] = False
         res["info"] = "No policies found"

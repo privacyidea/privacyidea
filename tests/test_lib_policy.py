@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.policy.py
 
@@ -698,3 +699,15 @@ class PolicyTestCase(MyTestCase):
             rid = delete_resolver(reso)
             self.assertTrue(rid > 0, rid)
 
+    def test_22_non_ascii_user(self):
+        set_policy(name="polnonascii",
+                   action="enroll, otppin=1",
+                   user=u'nönäscii',
+                   scope='s')
+
+        P = PolicyClass()
+        p = P.get_policies(action="enroll", user='somebodyelse')
+        self.assertEqual(len(p), 0)
+
+        p = P.get_policies(action="enroll", user=u'nönäscii')
+        self.assertEqual(len(p), 1)

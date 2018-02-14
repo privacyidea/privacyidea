@@ -28,7 +28,7 @@ Applications are used to attach tokens to machines.
 The code of this module is tested in tests/test_api_applications.py
 """
 from flask import (Blueprint)
-from lib.utils import (send_result)
+from .lib.utils import (send_result)
 from ..lib.log import log_with
 from flask import g
 import logging

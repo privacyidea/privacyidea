@@ -52,9 +52,9 @@
 
 from flask import (Blueprint, request, g, current_app)
 from ..lib.log import log_with
-from lib.utils import (optional,
-                       send_result, send_error,
-                       send_csv_result, required, get_all_params)
+from .lib.utils import (optional,
+                        send_result, send_error,
+                        send_csv_result, required, get_all_params)
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -72,7 +72,7 @@ from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from lib.utils import getParam
+from .lib.utils import getParam
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
@@ -83,11 +83,14 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
-                                           u2ftoken_allowed)
+                                           u2ftoken_allowed, twostep_enrollment_activation,
+                                           twostep_enrollment_parameters)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
+from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.lib.tokenclass import TOKENKIND
 
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -112,6 +115,8 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(enroll_pin, request)
+@prepolicy(twostep_enrollment_activation, request)
+@prepolicy(twostep_enrollment_parameters, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
@@ -120,6 +125,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(papertoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
 @postpolicy(save_pin_change, request)
+@CheckSubscription(request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)
 def init():
@@ -142,7 +148,10 @@ def init():
     :jsonparam validity_period_start: The beginning of the validity period
     :jsonparam validity_period_end: The end of the validity period
     :jsonparam 2stepinit: set to =1 in conjunction with genkey=1 if you want
-                    a 2 step initialization process. 
+                    a 2 step initialization process. Additional policies have to be set
+                    see :ref:`2step_enrollment`.
+    :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
+                            hex or base32check (see :ref:`2step_enrollment`)
 
     :return: a json result with a boolean "result": true
 
@@ -391,6 +400,7 @@ def list_api():
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
+@CheckSubscription(request)
 @event("token_assign", request, g)
 @log_with(log)
 def assign_api():
@@ -890,9 +900,13 @@ def loadtokens_api(filename=None):
         #    self.Policy.checkPolicyPre('admin', 'loadtokens',
         #                   {'tokenrealm': tokenrealm })
 
-        init_token(init_param, tokenrealms=tokenrealms)
+        # Imported tokens are usually hardware tokens
+        token = init_token(init_param, tokenrealms=tokenrealms,
+                           tokenkind=TOKENKIND.HARDWARE)
+        if TOKENS[serial].get("counter"):
+            token.set_otp_count(TOKENS[serial].get("counter"))
 
-    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
+    g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
@@ -972,7 +986,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError("The user {0!s} does not own the token {1!s}".format(
+            raise TokenAdminError("The user {0!r} does not own the token {1!s}".format(
                 userobj, serial))
 
     options = {"g": g,
@@ -1030,7 +1044,7 @@ def get_serial_by_otp_api(otp=None):
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": "get {0!s} by OTP. {1!s} tokens".format(
+                        "info": u"get {0!s} by OTP. {1!s} tokens".format(
                             serial, count)})
 
     return send_result({"serial": serial,

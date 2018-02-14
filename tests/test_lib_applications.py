@@ -2,7 +2,7 @@
 This test file tests the applications definitions standalone
 lib/applications/*
 """
-
+from privacyidea.lib.error import ParameterError
 from .base import MyTestCase
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.applications.ssh import (MachineApplication as
@@ -10,7 +10,8 @@ from privacyidea.lib.applications.ssh import (MachineApplication as
 from privacyidea.lib.applications.luks import (MachineApplication as
                                                LUKSApplication)
 from privacyidea.lib.applications.offline import (MachineApplication as
-                                                  OfflineApplication)
+                                                  OfflineApplication,
+                                                  REFILLTOKEN_LENGTH)
 from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
@@ -112,17 +113,42 @@ class OfflineApplicationTestCase(MyTestCase):
         # create ssh token
         init_token({"serial": serial, "type": "hotp", "otpkey": OTPKEY},
                    user=user)
+        # authenticate online initially
+        tok = get_tokens(serial=serial)[0]
+        res = tok.check_otp("359152") # count = 2
+        self.assertEqual(res, 2)
+        # check intermediate counter value
+        self.assertEqual(tok.token.count, 3)
 
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
+        refilltoken = auth_item.get("refilltoken")
+        self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
         self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("755224",
-                                             auth_item.get("response").get(0)))
+                        pbkdf2_sha512.verify("969429", # count = 3
+                                             auth_item.get("response").get(3)))
         self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("254676",
-                                             auth_item.get("response").get(5)))
+                        pbkdf2_sha512.verify("399871", # count = 8
+                                             auth_item.get("response").get(8)))
+        # The token now contains the refill token information:
+        self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
+
         # After calling auth_item the token counter should be increased
-        tok = get_tokens(serial=serial)[0]
-        self.assertEqual(tok.token.count, 101)
+        # 3, because we used the otp value with count = 2 initially
+        # 100, because we obtained 100 offline OTPs
+        self.assertEqual(tok.token.count, 3 + 100)
+        # Assert that we cannot authenticate with the last offline OTP we got
+        self.assertEqual(len(auth_item.get("response")), 100)
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("629694", # count = 102
+                                             auth_item.get("response").get(102)))
+        res = tok.check_otp("629694") # count = 102
+        self.assertEqual(res, -1)
+        res = tok.check_otp("378717")  # count = 103
+        self.assertEqual(res, 103)
+        # check illegal API usage
+        self.assertRaises(ParameterError,
+                          OfflineApplication.get_offline_otps, tok, 'foo', -1)
+        self.assertEqual(OfflineApplication.get_offline_otps(tok, 'foo', 0), {})
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type

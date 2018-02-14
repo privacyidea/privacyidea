@@ -135,21 +135,21 @@ class User(object):
                                                 other.resolver) and (
                 self.realm == other.realm)
 
-    def __str__(self):
-        ret = "<empty user>"
-        if self.is_empty() is False:
-            loginname = ""
-            try:
-                loginname = unicode(self.login)
-            except UnicodeEncodeError:  # pragma: no cover
-                loginname = unicode(self.login.encode(ENCODING))
-
-            conf = ''
-            if self.resolver is not None and self.resolver:
-                conf = '.{0!s}'.format((unicode(self.resolver)))
-            ret = '<{0!s}{1!s}@{2!s}>'.format(loginname, conf, unicode(self.realm))
-
+    def __unicode__(self):
+        ret = u"<empty user>"
+        if not self.is_empty():
+            login = self.login
+            if not isinstance(login, unicode):
+                login = login.decode(ENCODING)
+            # Realm and resolver should always be ASCII
+            conf = u''
+            if self.resolver:
+                conf = u'.{0!s}'.format(self.resolver)
+            ret = u'<{0!s}{1!s}@{2!s}>'.format(login, conf, self.realm)
         return ret
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
     def __repr__(self):
         ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
@@ -353,7 +353,7 @@ class User(object):
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
                 if y.checkPass(uid, password):
-                    success = "{0!s}@{1!s}".format(self.login, self.realm)
+                    success = u"{0!s}@{1!s}".format(self.login, self.realm)
                     log.debug("Successfully authenticated user {0!r}.".format(self))
                 else:
                     log.info("user {0!r} failed to authenticate.".format(self))
@@ -408,7 +408,7 @@ class User(object):
             attributes["password"] = password
         success = False
         try:
-            log.info("User info for user {0!s}@{1!s} about to be updated.".format(self.login, self.realm))
+            log.info("User info for user {0!r}@{1!r} about to be updated.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()
@@ -448,7 +448,7 @@ class User(object):
         """
         success = False
         try:
-            log.info("User {0!s}@{1!s} about to be deleted.".format(self.login, self.realm))
+            log.info("User {0!r}@{1!r} about to be deleted.".format(self.login, self.realm))
             if type(self.login) != unicode:
                 self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()

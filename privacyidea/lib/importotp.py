@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Generate the encryption key for PSKC export
+#             in the HSM
+#  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow export to pskc file
 #  2017-01-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid XML bombs
 #  2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -47,7 +52,7 @@ import base64
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
-from privacyidea.lib.crypto import aes_decrypt
+from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
@@ -467,13 +472,17 @@ def parsePSKCdata(xml_data,
             log.debug("Can not get manufacturer string {0!s}".format(exx))
         serial = key["id"]
         try:
-            serial = key_package.deviceinfo.serialno.string
+            serial = key_package.deviceinfo.serialno.string.strip()
         except Exception as exx:
             log.debug("Can not get serial string from device info {0!s}".format(exx))
         algo = key["algorithm"]
         token["type"] = algo[-4:].lower()
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
+        try:
+            token["hashlib"] = parameters.suite["hashalgo"] or "sha1"
+        except Exception as exx:
+            log.warning("No compatible suite contained.")
         try:
             if key.data.secret.plainvalue:
                 secret = key.data.secret.plainvalue.string
@@ -485,11 +494,8 @@ def parsePSKCdata(xml_data,
                     raise ImportException("We only import PSKC files with "
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
-                enc_data = base64.b64decode(enc_data.strip())
-                enc_iv = enc_data[:16]
-                enc_cipher = enc_data[16:]
-                secret = aes_decrypt(binascii.unhexlify(preshared_key_hex),
-                                     enc_iv, enc_cipher)
+                enc_data = enc_data.strip()
+                secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
                 token["otpkey"] = binascii.hexlify(secret)
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
@@ -553,3 +559,104 @@ class GPGImport(object):
             raise Exception(decrypted.stderr)
 
         return decrypted.data
+
+
+def export_pskc(tokenobj_list, psk=None):
+    """
+    Take a list of token objects and create a beautifulsoup xml object.
+
+    If no preshared key is given, we create one and return it.
+
+    :param tokenobj_list: list of token objects
+    :param psk: pre-shared-key for AES-128-CBC in hex format
+    :return: tuple of (psk, beautifulsoup)
+    """
+    import os
+    if psk:
+        psk = binascii.unhexlify(psk)
+    else:
+        psk = geturandom(16)
+
+    mackey = geturandom(20)
+    encrypted_mackey = aes_encrypt_b64(psk, mackey)
+
+    # define the header
+    soup = BeautifulSoup("""<KeyContainer Version="1.0"
+     xmlns="urn:ietf:params:xml:ns:keyprov:pskc"
+     xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+     xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+     <EncryptionKey>
+         <ds:KeyName>Pre-shared-key</ds:KeyName>
+     </EncryptionKey>
+     <MACMethod Algorithm="http://www.w3.org/2000/09/xmldsig#hmac-sha1">
+         <MACKey>
+             <xenc:EncryptionMethod
+             Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+             <xenc:CipherData>
+                 <xenc:CipherValue>{encrypted_mackey}</xenc:CipherValue>
+             </xenc:CipherData>
+         </MACKey>
+     </MACMethod>
+""".format(encrypted_mackey=encrypted_mackey), "html.parser")
+
+    for tokenobj in tokenobj_list:
+        if tokenobj.type.lower() not in ["totp", "hotp"]:
+            continue
+        type = tokenobj.type.lower()
+        issuer = "privacyIDEA"
+        manufacturer = tokenobj.token.description
+        serial = tokenobj.token.serial
+        otplen = tokenobj.token.otplen
+        counter = tokenobj.token.count
+        suite = tokenobj.get_tokeninfo("hashlib", default="sha1")
+        if type == "totp":
+            timestep = tokenobj.get_tokeninfo("timeStep")
+        else:
+            timestep = 0
+        otpkey = tokenobj.token.get_otpkey().getKey()
+        try:
+            encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+        except TypeError:
+            # Some keys might be odd string length
+            continue
+        kp2 = BeautifulSoup("""<KeyPackage>
+    <DeviceInfo>
+      <Manufacturer>{manufacturer}</Manufacturer>
+      <SerialNo>{serial}</SerialNo>
+    </DeviceInfo>
+    <Key Id="{serial}"
+         Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:{type}">
+             <Issuer>{issuer}</Issuer>
+             <AlgorithmParameters>
+                 <ResponseFormat Length="{otplen}" Encoding="DECIMAL"/>
+                 <Suite hashalgo="{suite}" />
+             </AlgorithmParameters>
+             <Data>
+                <Secret>
+                     <EncryptedValue>
+                         <xenc:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                         <xenc:CipherData>
+                             <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
+                         </xenc:CipherData>
+                     </EncryptedValue>
+                 </Secret>
+                 <ValueMAC>TODOmissing</ValueMAC>
+                <Time>
+                    <PlainValue>0</PlainValue>
+                </Time>
+                <TimeInterval>
+                    <PlainValue>{timestep}</PlainValue>
+                </TimeInterval>
+                <Counter>
+                    {counter}
+                </Counter>
+            </Data>
+    </Key>
+    </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
+                            issuer=issuer, manufacturer=manufacturer,
+                            counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
+                            suite=suite), "html.parser")
+
+        soup.macmethod.insert_after(kp2)
+
+    return binascii.hexlify(psk), soup

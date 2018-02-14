@@ -21,4 +21,5 @@ Frequently Asked Questions
    policies
    performance
    tokenview
+   brute-force
 

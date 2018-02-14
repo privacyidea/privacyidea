@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add additional tags for notification: date, time, client_ip,
+#             ua_string, ua_browser
 #  2016-10-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokentype, tokenrealm and serial
 #             Add multi and regexp
@@ -45,6 +48,7 @@ from privacyidea.lib import _
 from flask import current_app
 import json
 import logging
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -102,14 +106,15 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                        "email via this "
                                                        "email server."),
                                       "value": smtpservers},
+                                "mimetype": {"type": "str",
+                                             "description": _("Either send "
+                                                              "email as plain text or HTML."),
+                                             "value": ["plain", "html"]},
                                 "subject": {"type": "str",
                                             "required": False,
                                             "description": _("The subject of "
                                                              "the mail that "
-                                                             "is sent.")
-
-
-                                },
+                                                             "is sent.")},
                                 "reply_to": {"type": "str",
                                              "required": False,
                                              "description": _("The Reply-To "
@@ -196,9 +201,9 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = {}
 
         tokenowner = self._get_tokenowner(request)
-        log.debug("Executing event for action {0!s}, user {1!s},"
-                  "logged_in_user {2!s}".format(action, tokenowner,
-                                                logged_in_user))
+        log.debug(u"Executing event for action {0!r}, user {1!r}, "
+                  u"logged_in_user {2!r}".format(action, tokenowner,
+                                                 logged_in_user))
 
         # Determine recipient
         recipient = None
@@ -268,6 +273,10 @@ class UserNotificationEventHandler(BaseEventHandler):
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
+            googleurl_value = content.get("detail", {}).get("googleurl",
+                                                            {}).get("value")
+            googleurl_img = content.get("detail", {}).get("googleurl",
+                                                          {}).get("img")
             tokentype = None
             if serial:
                 tokens = get_tokens(serial=serial)
@@ -277,6 +286,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                 token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
 
+            time = datetime.datetime.now().strftime("%H:%M:%S")
+            date = datetime.datetime.now().strftime("%Y-%m-%d")
             body = body.format(
                 admin=logged_in_user.get("username"),
                 realm=logged_in_user.get("realm"),
@@ -291,12 +302,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                 tokentype=tokentype,
                 registrationcode=registrationcode,
                 recipient_givenname=recipient.get("givenname"),
-                recipient_surname=recipient.get("surname")
+                recipient_surname=recipient.get("surname"),
+                googleurl_img=googleurl_img,
+                googleurl_value=googleurl_value,
+                time=time,
+                date=date,
+                client_ip=g.client_ip,
+                ua_browser=request.user_agent.browser,
+                ua_string=request.user_agent.string
             )
 
             # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
+                mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
                 subject = handler_options.get("subject") or \
@@ -305,7 +324,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
                                                 subject=subject, body=body,
-                                                reply_to=reply_to)
+                                                reply_to=reply_to,
+                                                mimetype=mimetype)
                 except Exception as exx:
                     log.error("Failed to send email: {0!s}".format(exx))
                     ret = False

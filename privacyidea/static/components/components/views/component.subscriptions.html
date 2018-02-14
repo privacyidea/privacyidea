@@ -27,8 +27,12 @@
         <translate translate-context="subscription"
                    translate-comment="level of subscription">
             Level</translate>: {{ subscription.level }}<br>
-        <translate>Users</translate>: {{ subscription.num_users }}<br>
-        <translate>Tokens</translate>: {{ subscription.num_tokens }}<br>
+        <translate>Users</translate>: {{ subscription.num_users }}
+            ({{ subscription.active_users }}
+            <translate>distinct users with active tokens</translate>)<br>
+        <translate>Tokens</translate>: {{ subscription.num_tokens }}
+            ({{ subscription.active_tokens }}
+            <translate>active, assigned tokens</translate>) <br>
         <translate>Clients</translate>: {{ subscription.num_clients }}<br>
         <translate>From</translate>: {{ subscription.date_from }}<br>
         <translate>To</translate>: {{ subscription.date_till }}

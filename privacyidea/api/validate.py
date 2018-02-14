@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add offline refill
 # 2016-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add triggerchallenge endpoint
 # 2016-10-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -64,9 +66,10 @@ In case if authenitcating a serial number:
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param
-from lib.utils import send_result, getParam
+from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
-from lib.utils import required
+from .lib.utils import required
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp)
 from privacyidea.api.lib.utils import get_all_params
@@ -80,6 +83,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            check_base_action)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
+                                            check_tokeninfo,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
@@ -98,7 +102,9 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens
-
+from privacyidea.lib.machine import list_token_machines
+from privacyidea.lib.applications.offline import MachineApplication
+import json
 
 log = logging.getLogger(__name__)
 
@@ -157,6 +163,48 @@ def after_request(response):
     return response
 
 
+@validate_blueprint.route('/offlinerefill', methods=['POST'])
+@event("validate_offlinerefill", request, g)
+def offlinerefill():
+    """
+    This endpoint allows to fetch new offline OTP values for a token,
+    that is already offline.
+    According to the definition it will send the missing OTP values, so that
+    the client will have as much otp values as defined.
+
+    :param serial: The serial number of the token, that should be refilled.
+    :param refilltoken: The authorization token, that allows refilling.
+    :param pass: the last password (maybe password+OTP) entered by the user
+    :return:
+    """
+    result = False
+    otps = {}
+    serial = getParam(request.all_data, "serial", required)
+    refilltoken = getParam(request.all_data, "refilltoken", required)
+    password = getParam(request.all_data, "pass", required)
+    tokenobj_list = get_tokens(serial=serial)
+    if len(tokenobj_list) != 1:
+        raise ParameterError("The token does not exist")
+    else:
+        tokenobj = tokenobj_list[0]
+        machine_defs = list_token_machines(serial)
+        # check if is still an offline token:
+        for mdef in machine_defs:
+            if mdef.get("application") == "offline":
+                # check refill token:
+                if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
+                    # refill
+                    otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
+                    refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                    response = send_result(True)
+                    content = json.loads(response.data)
+                    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                                                          "response": otps}]}
+                    response.data = json.dumps(content)
+                    return response
+        raise ParameterError("Token is not an offline token or refill token is incorrect")
+
+
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @postpolicy(construct_radius_response, request=request)
@@ -164,6 +212,7 @@ def after_request(response):
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(offline_info, request=request)
+@postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
@@ -309,6 +358,7 @@ def check():
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
+@postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)

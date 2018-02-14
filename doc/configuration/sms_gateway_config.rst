@@ -211,11 +211,26 @@ will send the OTP via SMS to the given phone number.
    You can use the tags ``{phone}`` and ``{otp}`` to
    replace the phone number or the one time password.
 
-
 The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
 You may change the *SUBJECT* and the *BODY* accordingly.
 
 
+SMPP Provider
+~~~~~~~~~~~~~
+
+The SMPP provider was added in privacyIDEA 2.22. It uses an SMS Center via the SMPP protocol to
+deliver SMS to the users.
+
+You need to specify the **SMSC_HOST** and **SMSC_PORT** to talk to the SMS center.
+privacyIDEA need to authenticate against the SMS center. For this you can add the parameters
+**SYSTEM_ID** and **PASSWORD**. The parameter **S_ADDR** is the sender's number, shown to the users
+receiving an SMS.
+For the other parameters contact your SMS center operator.
+
+
 .. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
 .. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
+
+
+
 

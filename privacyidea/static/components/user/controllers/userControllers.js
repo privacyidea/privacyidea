@@ -46,16 +46,16 @@ angular.module("privacyideaApp")
             if (resolvernames.length > 0) {
                 $scope.resolvername = resolvernames[0];
                 $scope.userAttributes = $scope.getUserAttributes(resolvers);
-                console.log("Getting View Attributes for " + $scope.resolvername);
+                //debug: console.log("Getting View Attributes for " + $scope.resolvername);
                 $scope.getUserAttributesView($scope.resolvername, $scope.userAttributes);
             }
         });
 
         $scope.createUser = function () {
-            console.log($scope.User);
+            //debug: console.log($scope.User);
             UserFactory.createUser($scope.resolvername, $scope.User,
                 function (data) {
-                    console.log(data.result);
+                    //debug: console.log(data.result);
                     inform.add(gettextCatalog.getString("User created."),
                                 {type: "info"});
 
@@ -64,6 +64,9 @@ angular.module("privacyideaApp")
                     $location.path("/user/list");
             });
         };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getEditableResolvers);
     });
 
 angular.module("privacyideaApp")
@@ -82,7 +85,7 @@ angular.module("privacyideaApp")
 
         // Set the password
         $scope.setPassword = function () {
-            //console.log($scope.User);
+            ////debug: console.log($scope.User);
             UserFactory.updateUser($scope.User.resolver,
                 {username: $scope.User.username,
                  password: $scope.User.password}, function (data) {
@@ -92,6 +95,9 @@ angular.module("privacyideaApp")
                     $scope.password2 = "";
                 });
         };
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.getUserDetails);
     });
 
 angular.module("privacyideaApp")
@@ -119,13 +125,13 @@ angular.module("privacyideaApp")
                 page: $scope.params.page
             }, function (data) {
                 $scope.tokendata = data.result.value;
-                console.log("Token for user " + $scope.username);
+                //debug: console.log("Token for user " + $scope.username);
             });
         };
 
         // Change the pagination
         $scope.pageChanged = function () {
-            console.log('Page changed to: ' + $scope.params.page);
+            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope._getUserToken();
         };
 
@@ -205,6 +211,12 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", function() {
+            $scope.getUserDetails();
+            $scope._getUserToken();
+        });
     });
 
 angular.module("privacyideaApp")
@@ -247,21 +259,21 @@ angular.module("privacyideaApp")
                 }
                 UserFactory.getUsers(params,
                     function (data) {
-                        console.log("success");
+                        //debug: console.log("success");
                         var userlist = data.result.value;
                         // The userlist is the complete list of the users.
                         $scope.usercount = userlist.length;
                         var start = ($scope.params.page - 1) * $scope.usersPerPage;
                         var stop = start + $scope.usersPerPage;
                         $scope.userlist = userlist.slice(start, stop);
-                        console.log($scope.userlist);
+                        //debug: console.log($scope.userlist);
                     });
             }
         };
 
         // Change the pagination
         $scope.pageChanged = function () {
-            console.log('Page changed to: ' + $scope.params.page);
+            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope._getUsers();
         };
 
@@ -360,5 +372,9 @@ angular.module("privacyideaApp")
             $scope.leftColumn = userFields.slice(start, middle);
             $scope.rightColumn = userFields.slice(middle, end);
         };
+
+        $scope.$on("piReload", function () {
+            $scope._getUsers(false);
+        });
 
     });

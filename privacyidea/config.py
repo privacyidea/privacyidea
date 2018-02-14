@@ -18,8 +18,10 @@ class Config(object):
     PI_LOGLEVEL = 9
     CACHE_TYPE = "simple"
     PI_EXTERNAL_LINKS = True
+    # PI_GNUPG_HOME = "gpg"
     # PI_LOGO = "otherlogo.png"
     # PI_AUDIT_SQL_URI = sqlite://
+    PI_VASCO_LIBRARY = None
 
 
 class DevelopmentConfig(Config):
@@ -62,8 +64,7 @@ class ProductionConfig(Config):
     # This is used to sign the audit log
     PI_AUDIT_KEY_PRIVATE = os.path.join(config_path, "private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(config_path, "public.pem")
-    PI_LOGLEVEL = logging.WARNING
-    PI_LOGLEVEL = 9
+    PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
 
 

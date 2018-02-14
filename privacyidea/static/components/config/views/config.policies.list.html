@@ -32,7 +32,7 @@
                 {{ policy.scope }}
             </td>
             <td>
-                {{ policy.action | json }}
+                {{ policy.action | json | truncate: 120 }}
             </td>
             <td>
                 {{ policy.realm | json }}

@@ -77,7 +77,7 @@ class SmtpSMSProvider(ISMSProvider):
                           "MAILSERVER and MAILSENDER) needed" % self.config)
                 raise SMSError(-1, "Incomplete SMS config.")
 
-            log.debug("submitting message {0!s} to {1!s}".format(body, phone))
+            log.debug("submitting message {0!r} to {1!s}".format(body, phone))
             recipient = string.replace(recipient, PHONE_TAG, phone)
             subject = string.replace(subject, PHONE_TAG, phone)
             subject = string.replace(subject, MSG_TAG, message)

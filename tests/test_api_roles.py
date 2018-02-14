@@ -211,7 +211,7 @@ class APISelfserviceTestCase(MyTestCase):
         delete_realm("adminrealm")
 
     def test_02_user_allowed_to_get_config(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         # The user is allowed to get the system config
         with self.app.test_request_context('/system/',
                                            method='GET',
@@ -221,7 +221,7 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
 
     def test_02_user_not_allowed(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         # The user is not allowed to write system information
         with self.app.test_request_context('/system/setConfig',
                                            method='POST',
@@ -311,7 +311,7 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
 
     def test_03_user_enroll_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         with self.app.test_request_context('/token/init',
                                            method='POST', data={"genkey": 1},
                                            headers={'Authorization':
@@ -346,7 +346,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertTrue(len(tokenobject_list) == 0, len(tokenobject_list))
 
     def test_04_user_can_not_delete_another_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/{0!s}'.format(self.foreign_serial),
                                            method='DELETE',
@@ -362,7 +362,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertTrue(len(tokenobject_list) == 1, len(tokenobject_list))
 
     def test_04_user_can_not_disable_another_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/disable/{0!s}'.format(
                                                    self.foreign_serial),
@@ -380,7 +380,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertTrue(tokenobject_list[0].token.active)
 
     def test_04_user_can_not_lost_another_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
         with self.app.test_request_context('/token/lost/{0!s}'.format(
                                                    self.foreign_serial),
@@ -392,7 +392,7 @@ class APISelfserviceTestCase(MyTestCase):
 
 
     def test_05_user_can_disable_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         # User can not disable a token, that does not belong to him.
         with self.app.test_request_context('/token/disable/{0!s}'.format(
                                                    self.foreign_serial),
@@ -456,7 +456,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
 
     def test_06_user_can_assign_token(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         # The foreign token ist not assigned yet, so he can assign it
         with self.app.test_request_context('/token/assign',
                                            data={"serial": self.foreign_serial},
@@ -500,7 +500,7 @@ class APISelfserviceTestCase(MyTestCase):
             self.assertTrue(res.status_code == 400, res)
 
     def test_07_user_can_reset_failcount(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         mT = get_tokens(serial=self.my_serial)[0]
         fT = get_tokens(serial=self.foreign_serial)[0]
 
@@ -539,7 +539,7 @@ class APISelfserviceTestCase(MyTestCase):
         self.assertTrue(mT.token.failcount == 0, mT.token.failcount)
 
     def test_08_user_can_set_pin(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         # can not set pin of foreign token
         with self.app.test_request_context('/token/setpin',
                                            data={"serial":
@@ -569,7 +569,7 @@ class APISelfserviceTestCase(MyTestCase):
 
 
     def test_31_user_is_not_allowed_for_some_api_calls(self):
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
         serial = "serial0001"
         tok = Token(serial)
         tok.save()

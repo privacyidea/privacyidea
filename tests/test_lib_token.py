@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.token methods.
 
@@ -18,12 +19,15 @@ OTPKE2 = "31323334353637383930313233343536373839AA"
 
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 import datetime
+import hashlib
+import base64
+import binascii
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
                                    get_token_type, check_serial,
@@ -284,6 +288,12 @@ class TokenTestCase(MyTestCase):
         serial = gen_serial()
         # check the beginning of the serial
         self.assertTrue("PIUN0000" in serial, serial)
+
+        set_privacyidea_config("SerialLength", 12)
+        serial = gen_serial(tokentype="hotp")
+        self.assertTrue("OATH0001" in serial, serial)
+        self.assertEqual(len(serial), len("OATH") + 12)
+        set_privacyidea_config("SerialLength", 8)
 
     def test_15_init_token(self):
         count = get_tokens(count=True)
@@ -787,6 +797,23 @@ class TokenTestCase(MyTestCase):
         # 8: '447589', 9: '903435', 10: '578337', 11: '328281',
         # 12: '191635', 13: '184416', 14: '574561', 15: '797908'
 
+    def test_36b_check_nonascii_pin(self):
+        user = User("cornelius", self.realm1)
+        serial = "nonasciipin"
+        token = init_token({"type": "hotp",
+                            "otpkey": self.otpkey,
+                            "pin": u"ünicøde",
+                            "serial": serial}, user)
+        r = check_user_pass(user, u"µröng287082")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp pin')
+        r = check_user_pass(user, u"ünicøde287082")
+        self.assertEqual(r[0], True)
+        r = check_user_pass(user, u"ünicøde666666")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp value')
+        remove_token(serial)
+
     def test_37_challenge(self):
         # We create a challenge by first sending the PIN of the HOTP token
         # then we answer the challenge by sending the OTP.
@@ -1124,6 +1151,168 @@ class TokenTestCase(MyTestCase):
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test49")
+
+    def test_50_otpkeyformat(self):
+        otpkey = "\x01\x02\x03\x04\x05\x06\x07\x08\x0A"
+        checksum = hashlib.sha1(otpkey).digest()[:4]
+        # base32check(otpkey) = 'FIQVUTQBAIBQIBIGA4EAU==='
+        # hex encoding
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": binascii.hexlify(otpkey),
+                                  "otpkeyformat": "hex"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW001")
+        # unknown encoding
+        self.assertRaisesRegexp(ParameterError,
+                                "Unknown OTP key format",
+                                init_token,
+                                {"serial": "NEW001",
+                                 "type": "hotp",
+                                 "otpkey": binascii.hexlify(otpkey),
+                                 "otpkeyformat": "foobar"},
+                                user=User(login="cornelius",
+                                          realm=self.realm1))
+        remove_token("NEW001")
+        # successful base32check encoding
+        base32check_encoding = base64.b32encode(checksum + otpkey).strip("=")
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW002")
+
+        # successful base32check encoding, but lower case
+        base32check_encoding = base64.b32encode(checksum + otpkey).strip("=")
+        base32check_encoding = base32check_encoding.lower()
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW002")
+
+        # base32check encoding with padding
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        tokenobject = init_token({"serial": "NEW003", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW003")
+        # invalid base32check encoding (incorrect checksum due to typo)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = "A" + base32check_encoding[1:]
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW004", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW004") # TODO: Token is created anyway?
+        # invalid base32check encoding (missing four characters => incorrect checksum)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = base32check_encoding[:-4]
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW005", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW005") # TODO: Token is created anyway?
+        # invalid base32check encoding (too many =)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = base32check_encoding + "==="
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW006") # TODO: Token is created anyway?
+        # invalid base32check encoding (wrong characters)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = "1" + base32check_encoding[1:]
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW006") # TODO: Token is created anyway?
+
+    def test_51_tokenkind(self):
+        # A normal token will be of kind "software"
+        tok = init_token({"type": "totp", "otpkey": self.otpkey})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.SOFTWARE)
+        tok.delete_token()
+
+        # A token, that is imported, will be of kind "hardware"
+        tok = init_token({"type": "totp", "otpkey": self.otpkey},
+                         tokenkind=TOKENKIND.HARDWARE)
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # A yubikey initialized as HOTP is hardware
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey,
+                          "serial": "UBOM111111"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # A yubikey and yubicloud tokentype is hardware
+        tok = init_token({"type": "yubikey", "otpkey": self.otpkey})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        tok = init_token({"type": "yubico",
+                          "yubico.tokenid": "123456789012"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # 4eyes, radius and remote are virtual tokens
+        tok = init_token({"type": "radius", "radius.identifier": "1",
+                          "radius.user": "hans"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
+
+        tok = init_token({"type": "remote", "remote.server": "1",
+                          "radius.user": "hans"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
+
+        tok = init_token({"type": "4eyes", "4eyes": "realm1",
+                          "separator": ","})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
 
 
 class TokenFailCounterTestCase(MyTestCase):

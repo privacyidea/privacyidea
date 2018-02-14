@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# 2017-11-21 Cornelius Kölbel <corenlius.koelbel@netknights.it>
+#            export to CSV including usernames
+# 2017-10-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add token export (HOTP and TOTP) to PSKC
 # 2017-05-02 Friedrich Weber <friedrich.weber@netknights.it>
 #            Improve token matching
 # 2017-04-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -38,6 +42,9 @@ from flask.ext.script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
+from privacyidea.lib.importotp import export_pskc
+
+ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser"]
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -75,14 +82,20 @@ Actions:
         --serial=<regexp>
         --description=<regexp>
         
-        --action=delete|unassign|disable|mark
+        --action={0!s}
         
         --set-description="new description"
         --set-tokeninfo-key=<key>
         --set-tokeninfo-value=<value>    
     
+.. note:: If you fail to redirect the output of this command at the commandline
+   to e.g. a file with a UnicodeEncodeError, you need to set the environment
+   variable like this:
+       export PYTHONIOENCODING=UTF-8
+   Here is a good read about it:
+   https://stackoverflow.com/questions/4545661/unicodedecodeerror-when-redirecting-to-file
 
-"""
+""".format("|".join(ALLOWED_ACTIONS))
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token)
 from privacyidea.app import create_app
@@ -91,6 +104,8 @@ import re
 import sys
 
 __version__ = "0.1"
+
+
 
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
@@ -130,6 +145,7 @@ def _compare_less_than(key, given_value_string):
         except ValueError:
             return False
     return comparator
+
 
 def _parse_datetime(key, value):
     if key == ACTION.LASTAUTH:
@@ -265,6 +281,57 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     return tlist
 
 
+def export_token_data(token_list):
+    """
+    Returns a list of tokens. Each token again is a simple list of data
+
+    :param token_list:
+    :return:
+    """
+    tokens = []
+    for token_obj in token_list:
+        token_data = []
+        token_data.append(u"{0!s}".format(token_obj.token.serial))
+        token_data.append(u"{0!s}".format(token_obj.token.tokentype))
+        if token_obj.user:
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("username", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("givenname", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("surname", "")))
+            token_data.append(u"{0!s}".format(token_obj.user.info.get("userid")))
+            token_data.append(u"{0!s}".format(token_obj.token.resolver))
+        tokens.append(token_data)
+    return tokens
+
+
+def export_user_data(token_list):
+    """
+    Returns a list of users with the information how many tokens this user has assigned
+
+    :param token_list:
+    :return:
+    """
+    users = {}
+    userlist = {}
+    for token_obj in token_list:
+        if token_obj.user:
+            uid = u"{0!s}|{1!s}|{2!s}|{3!s}|{4!s}".format(
+                token_obj.user.info.get("username", ""),
+                token_obj.user.info.get("givenname", ""),
+                token_obj.user.info.get("surname", ""),
+                token_obj.user.info.get("userid", ""),
+                token_obj.token.resolver
+            )
+        else:
+            uid = u"N/A"
+
+        if uid in users.keys():
+            users[uid].append(token_obj.token.serial)
+        else:
+            users[uid] = [token_obj.token.serial]
+
+    return users
+
+
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
 @manager.option('--active', help='True|False|None')
@@ -286,21 +353,28 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
 @manager.option('--serial', help='A regular expression on the serial')
 @manager.option('--description', help='A regular expression on the description')
 @manager.option('--action', help='Which action should be performed on the '
-                                 'found tokens')
+                                 'found tokens. {0!s}'.format("|".join(ALLOWED_ACTIONS)))
 @manager.option('--set-description', help='')
 @manager.option('--set-tokeninfo-key', help='')
 @manager.option('--set-tokeninfo-value', help='')
+@manager.option('--sum', help='In case of the action "listuser", this switch specifies if the output'
+                              ' should only contain the number of tokens owned by the user.',
+                dest='sum', action='store_true')
+@manager.option('--csv', dest='csv', action='store_true',
+                help='In case of a simple find, the output is written as CSV instead of the '
+                     'formatted output.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value):
+         set_tokeninfo_key, set_tokeninfo_value, sum, csv):
     """
     finds all tokens which match the conditions
     """
-    if action and action not in ["disable", "delete", "unassign", "mark"]:
-            sys.stderr.write("Unknown action. Allowed actions are 'disable', "
-                        "'delete', 'unassign', 'mark'\n")
+    if action and action not in ALLOWED_ACTIONS:
+            sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
+                ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+            ))
             sys.exit(1)
     filter = build_tokenvalue_filter(tokeninfo_key,
                                      tokeninfo_value,
@@ -314,39 +388,70 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                            description)
 
     if not action:
-        print("Token serial\tTokeninfo")
-        print("="*42)
-        for token_obj in tlist:
-            print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                token_obj.token.serial,
-                token_obj.token.tokentype,
-                token_obj.token.description,
-                token_obj.get_tokeninfo()))
+        if not csv:
+            print("Token serial\tTokeninfo")
+            print("="*42)
+            for token_obj in tlist:
+                print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                    token_obj.token.serial,
+                    token_obj.token.tokentype,
+                    token_obj.token.description,
+                    token_obj.get_tokeninfo()))
+        else:
+            for token_obj in tlist:
+                print(u"'{!s}','{!s}','{!s}','{!s}'".format(
+                    token_obj.token.serial,
+                    token_obj.token.tokentype,
+                    token_obj.token.description,
+                    token_obj.get_tokeninfo()
+                ))
 
+    elif action == "listuser":
+        if not sum:
+            tokens = export_token_data(tlist)
+            for token in tokens:
+                print(u",".join([u"'{0!s}'".format(x) for x in token]))
+        else:
+            users = export_user_data(tlist)
+            for user, tokens in users.iteritems():
+                print(u"{0!s},{1!s}".format(user, len(tokens)))
+
+    elif action == "export":
+        key, soup = export_pskc(tlist)
+        sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
+        sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                         "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
+        print("{0!s}".format(soup))
     else:
         for token_obj in tlist:
-            if action == "disable":
-                enable_token(serial=token_obj.token.serial, enable=False)
-                print("Disabling token {0!s}".format(token_obj.token.serial))
-            elif action == "delete":
-                remove_token(serial=token_obj.token.serial)
-                print("Deleting token {0!s}".format(token_obj.token.serial))
-            elif action == "unassign":
-                unassign_token(serial=token_obj.token.serial)
-                print("Unassigning token {0!s}".format(token_obj.token.serial))
-            elif action == "mark":
-                if set_description:
-                    print("Setting description for token {0!s}: {1!s}".format(
-                        token_obj.token.serial, set_description))
-                    token_obj.set_description(set_description)
-                    token_obj.save()
-                if set_tokeninfo_value and set_tokeninfo_key:
-                    print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                        token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
-                    token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
-                    token_obj.save()
+            try:
+                if action == "disable":
+                    enable_token(serial=token_obj.token.serial, enable=False)
+                    print("Disabling token {0!s}".format(token_obj.token.serial))
+                elif action == "delete":
+                    remove_token(serial=token_obj.token.serial)
+                    print("Deleting token {0!s}".format(token_obj.token.serial))
+                elif action == "unassign":
+                    unassign_token(serial=token_obj.token.serial)
+                    print("Unassigning token {0!s}".format(token_obj.token.serial))
+                elif action == "mark":
+                    if set_description:
+                        print("Setting description for token {0!s}: {1!s}".format(
+                            token_obj.token.serial, set_description))
+                        token_obj.set_description(set_description)
+                        token_obj.save()
+                    if set_tokeninfo_value and set_tokeninfo_key:
+                        print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                            token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
+                        token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                        token_obj.save()
+            except Exception as exx:
+                print("Failed to process token {0}.".format(
+                    token_obj.token.serial))
+                print(u"{0}".format(exx))
 
 
 if __name__ == '__main__':
     manager.run()
+
 

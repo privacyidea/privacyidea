@@ -41,7 +41,7 @@ token database.
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
@@ -144,14 +144,16 @@ class Audit(AuditBase):
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(search_value))
                     else:
-                        # All other keys are strings
+                        # All other keys are compared as strings
+                        column = getattr(LogEntry, search_key)
+                        if search_key == "date":
+                            # but we cast "date" to a string first (required on postgresql)
+                            column = cast(column, String)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
-                            conditions.append(getattr(LogEntry,
-                                                      search_key).like(search_value))
+                            conditions.append(column.like(search_value))
                         else:
-                            conditions.append(getattr(LogEntry, search_key) ==
-                                              search_value)
+                            conditions.append(column == search_value)
                 except Exception as exx:
                     # The search_key was no search key but some
                     # bullshit stuff in the param
@@ -319,6 +321,8 @@ class Audit(AuditBase):
                                                   le.client,
                                                   le.loglevel,
                                                   le.clearance_level)
+        if type(s) == unicode:
+            s = s.encode("utf-8")
         return s
 
     @staticmethod
@@ -360,7 +364,7 @@ class Audit(AuditBase):
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
             audit_list = audit_dict.values()
-            string_list = ["'{0!s}'".format(x) for x in audit_list]
+            string_list = [u"'{0!s}'".format(x) for x in audit_list]
             yield ",".join(string_list)+"\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):

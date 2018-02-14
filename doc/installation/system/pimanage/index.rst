@@ -76,7 +76,8 @@ log rotation.
 
    pi-manage rotate_audit
 
-You can specify a highwatermark and a lowwatermark.
+You can specify a highwatermark and a lowwatermark, age or a config file. Read more
+about it at :ref:`audit_rotate`.
 
 API Keys
 --------

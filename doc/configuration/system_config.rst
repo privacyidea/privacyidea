@@ -59,6 +59,22 @@ increased. The later behaviour can be adapted by ``FailCounterIncOnFalsePin``.
 If ``FailCounterIncOnFalsePin`` is set and the given OTP PIN does not match
 any token, the failcounter of *all* tokens is increased.
 
+
+.. _clear_failcounter:
+
+Automatically clearing Failcounter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the failcounter reaches the maximum the token gets a timestamp, when the
+max fail count was reached. A successful authentication after the specified a
+amount of minutes in ``failcounter_clear_timeout`` will clear the failcounter
+again and the user can
+authenticate.
+
+A "0" means automatically clearing the fail counter is not used.
+
+Also see :ref:`brute_force`.
+
 Prepend PIN
 ~~~~~~~~~~~
 
@@ -194,3 +210,9 @@ Challenge Validity Time
 authentication. If the response is set after the ChallengeValidityTime, the
 response is not accepted anymore.
 
+SerialLength
+~~~~~~~~~~~~
+
+The default length of generated serial numbers is an 8 digit hex string.
+If you need another length, it can be configured in the database table ``Config``
+with the key word ``SerialLength``.

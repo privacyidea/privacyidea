@@ -5,6 +5,11 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Set Yubikeys to be hardware tokenkind
+#  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add period to key uri for TOTP token
+#
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add get_default_settings to change the parameters before
 #             the token is created
@@ -37,14 +42,20 @@ This code is tested in tests/test_lib_tokens_hotp
 """
 
 import time
+import binascii
+
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import (TokenClass,
+                                        TWOSTEP_DEFAULT_DIFFICULTY,
+                                        TWOSTEP_DEFAULT_CLIENTSIZE,
+                                        TOKENKIND)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, is_true
 from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
@@ -53,6 +64,8 @@ from privacyidea.lib.policy import SCOPE
 from privacyidea.lib import _
 import traceback
 import logging
+
+from passlib.utils.pbkdf2 import pbkdf2
 
 optional = True
 required = False
@@ -104,6 +117,10 @@ class HotpTokenClass(TokenClass):
         desc_self1 = _('Specify the hashlib to be used. '
                        'Can be sha1 (1) or sha2-256 (2).')
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
+        desc_two_step_user =_('Specify whether users are allowed or forced to use '
+                              'two-step enrollment.')
+        desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
+                                'two-step enrollment.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
                'description': _('HOTP: Event based One Time Passwords.'),
@@ -115,6 +132,19 @@ class HotpTokenClass(TokenClass):
                        'yubikey_access_code': {
                            'type': 'str',
                            'desc': _("The Yubikey access code used to initialize Yubikeys.")
+                       },
+                       'hotp_2step_clientsize': {
+                           'type': 'int',
+                           'desc': _("The size of the OTP seed part contributed by the client (in bytes)")
+                       },
+                       'hotp_2step_serversize': {
+                           'type': 'int',
+                           'desc': _("The size of the OTP seed part contributed by the server (in bytes)")
+                       },
+                       'hotp_2step_difficulty': {
+                           'type': 'int',
+                           'desc': _("The difficulty factor used for the OTP seed generation "
+                                     "(should be at least 10000)")
                        }
                    },
                    SCOPE.USER: {
@@ -129,7 +159,15 @@ class HotpTokenClass(TokenClass):
                        'hotp_force_server_generate': {'type': 'bool',
                                                       'desc': _("Force the key to "
                                                                 "be generated on "
-                                                                "the server.")}
+                                                                "the server.")},
+                       'hotp_2step': {'type': 'str',
+                                      'value': ['allow', 'force'],
+                                      'desc': desc_two_step_user}
+                   },
+                   SCOPE.ADMIN: {
+                       'hotp_2step': {'type': 'str',
+                                      'value': ['allow', 'force'],
+                                      'desc': desc_two_step_admin}
                    }
                }
                }
@@ -168,6 +206,14 @@ class HotpTokenClass(TokenClass):
         # If the init_details contain an OTP key the OTP key
         # should be displayed as an enrollment URL
         otpkey = self.init_details.get('otpkey')
+        # Add rollout state the response
+        response_detail['rollout_state'] = self.token.rollout_state
+        # Add two-step initialization parameters to response and QR code
+        extra_data = {}
+        if is_true(params.get("2stepinit")):
+            twostep_parameters = self._get_twostep_parameters()
+            extra_data.update(twostep_parameters)
+            response_detail.update(twostep_parameters)
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
@@ -178,11 +224,12 @@ class HotpTokenClass(TokenClass):
                                         tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
                                         tokenlabel=tokenlabel,
-                                        hash_algo=params.get("hashlib",
-                                                             "sha1"),
+                                        hash_algo=params.get("hashlib", "sha1"),
                                         digits=params.get("otplen", 6),
+                                        period=params.get("timeStep", 30),
                                         issuer=tokenissuer,
-                                        user_obj=user)
+                                        user_obj=user,
+                                        extra_data=extra_data)
                     response_detail["googleurl"] = {"description":
                                                     _("URL for google "
                                                       "Authenticator"),
@@ -196,7 +243,8 @@ class HotpTokenClass(TokenClass):
                                        realm=user.realm,
                                        type=tok_type,
                                        serial=self.get_serial(),
-                                       tokenlabel=tokenlabel)
+                                       tokenlabel=tokenlabel,
+                                       extra_data=extra_data)
                     response_detail["oathurl"] = {"description": _("URL for"
                                                                    " OATH "
                                                                    "token"),
@@ -209,6 +257,15 @@ class HotpTokenClass(TokenClass):
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
                     
         return response_detail
+
+    def _get_twostep_parameters(self):
+        """
+        :return: A dictionary with the keys ``2step_salt``,
+        ``2step_difficulty``, ``2step_output``, mapping each key to an integer.
+        """
+        return {'2step_salt': int(self.get_tokeninfo('2step_clientsize')),
+                '2step_output': int(keylen[self.hashlib]),
+                '2step_difficulty': int(self.get_tokeninfo('2step_difficulty'))}
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
@@ -227,11 +284,23 @@ class HotpTokenClass(TokenClass):
         for k, v in param.items():
             upd_param[k] = v
 
+        # Special handling of 2-step enrollment
+        if is_true(getParam(param, "2stepinit", optional)):
+            # Use the 2step_serversize setting for the size of the server secret
+            # (if it is set)
+            if "2step_serversize" in upd_param:
+                upd_param["keysize"] = int(getParam(upd_param, "2step_serversize", required))
+            # Add twostep settings to the tokeninfo
+            for key, default in [
+                ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
+                ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
+                self.add_tokeninfo(key, getParam(param, key, optional, default))
+
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
             hashlibStr = val
         else:
-            hashlibStr = 'sha1'
+            hashlibStr = self.hashlib
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
@@ -240,7 +309,9 @@ class HotpTokenClass(TokenClass):
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        if "genkey" in upd_param and "otpkey" in upd_param:
+        otpKey = getParam(upd_param, "otpkey", optional)
+        genkey = is_true(getParam(upd_param, "genkey", optional))
+        if genkey and otpKey:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']
@@ -249,15 +320,11 @@ class HotpTokenClass(TokenClass):
         # raised here.
         TokenClass.update(self, upd_param, reset_failcount)
 
-        # add_tokeninfo and set_otplen save the token object to the database.
         self.add_tokeninfo("hashlib", hashlibStr)
-        val = getParam(upd_param, "otplen", optional)
-        if val is not None:
-            self.set_otplen(int(val))
-        else:
-            self.set_otplen(get_from_config("DefaultOtpLen", 6))
 
-
+        # check the tokenkind
+        if self.token.serial.startswith("UB"):
+            self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
 
     @property
     def hashlib(self):
@@ -488,7 +555,7 @@ class HotpTokenClass(TokenClass):
             return ret
 
         ret = True
-        self.inc_otp_counter(counter + 1, True)
+        self.inc_otp_counter(counter + 1, reset=True)
 
         log.debug("end. resync was successful: ret: {0!r}".format((ret)))
         return ret
@@ -537,7 +604,8 @@ class HotpTokenClass(TokenClass):
 
     @log_with(log)
     def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
-                        curTime=None, timestamp=None):
+                      curTime=None, timestamp=None,
+                      counter_index=False):
         """
         return a dictionary of multiple future OTP values of the
         HOTP/HMAC token
@@ -547,10 +615,11 @@ class HotpTokenClass(TokenClass):
 
         :param count: how many otp values should be returned
         :type count: int
-        :epoch_start: Not used in HOTP
-        :epoch_end: Not used in HOTP
-        :curTime: Not used in HOTP
-        :timestamp: not used in HOTP
+        :param epoch_start: Not used in HOTP
+        :param epoch_end: Not used in HOTP
+        :param curTime: Not used in HOTP
+        :param timestamp: not used in HOTP
+        :param counter_index: whether the counter should be used as index
         :return: tuple of status: boolean, error: text and the OTP dictionary
         """
         otp_dict = {"type": "hotp", "otp": {}}
@@ -568,7 +637,10 @@ class HotpTokenClass(TokenClass):
             for i in range(count):
                 otpval = hmac2Otp.generate(self.token.count + i,
                                            inc_counter=False)
-                otp_dict["otp"][i] = otpval
+                if counter_index:
+                    otp_dict["otp"][self.token.count + i] = otpval
+                else:
+                    otp_dict["otp"][i] = otpval
             ret = True
 
         return ret, error, otp_dict
@@ -619,3 +691,39 @@ class HotpTokenClass(TokenClass):
                 ret["otplen"] = otplen_pol[0]
 
         return ret
+
+    def generate_symmetric_key(self, server_component, client_component,
+                               options=None):
+        """
+        Generate a composite key from a server and client component
+        using a PBKDF2-based scheme.
+
+        :param server_component: The component usually generated by privacyIDEA
+        :type server_component: hex string
+        :param client_component: The component usually generated by the
+            client (e.g. smartphone)
+        :type client_component: hex string
+        :param options:
+        :return: the new generated key as hex string
+        """
+        # As /token/init has already been called before, self.hashlib
+        # is already set.
+        keysize = keylen[self.hashlib]
+        rounds = int(self.get_tokeninfo('2step_difficulty'))
+        decoded_client_component = binascii.unhexlify(client_component)
+        expected_client_size = int(self.get_tokeninfo('2step_clientsize'))
+        if expected_client_size != len(decoded_client_component):
+            raise ParameterError('Client Secret Size is expected to be {}, but is {}'.format(
+                expected_client_size, len(decoded_client_component)
+            ))
+        # Based on the two components, we generate a symmetric key using PBKDF2
+        # We pass the hex-encoded server component as the password and the
+        # client component as the salt.
+        secret = pbkdf2(server_component.lower(),
+                        decoded_client_component,
+                        rounds,
+                        keysize)
+        return binascii.hexlify(secret)
+
+
+

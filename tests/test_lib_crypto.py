@@ -8,7 +8,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
                                     get_alphanum_str,
-                                    hash_with_pepper, verify_with_pepper)
+                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 
@@ -141,6 +141,24 @@ class CryptoTestCase(MyTestCase):
         r = encryptPassword("passwörd")
         pin = decryptPassword(r)
         self.assertTrue(pin == "passwörd", (r, pin))
+
+    def test_02_encrypt_decrypt_eas_base64(self):
+        import os
+        key = os.urandom(16)
+        data = "This is so secret!"
+        s = aes_encrypt_b64(key, data)
+        d = aes_decrypt_b64(key, s)
+        self.assertEqual(data, d)
+
+        otp_seed = os.urandom(20)
+        s = aes_encrypt_b64(key, otp_seed)
+        d = aes_decrypt_b64(key, s)
+        self.assertEqual(otp_seed, d)
+
+        otp_seed = os.urandom(32)
+        s = aes_encrypt_b64(key, otp_seed)
+        d = aes_decrypt_b64(key, s)
+        self.assertEqual(otp_seed, d)
 
 
 class RandomTestCase(MyTestCase):

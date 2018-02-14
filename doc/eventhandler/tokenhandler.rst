@@ -61,9 +61,15 @@ set description
 If all conditions are matched the description of the token identified in the
 request will be set.
 
-You can use the tag ``{current_time}`` to set the current timestamp,
-``{client_ip}`` for the client IP address and ``{ua_browser}`` and
-``{ua_string}`` for information on the user agent.
+You can use the tag ``{current_time}`` or ``{now}`` to set the current
+timestamp. In addition you can append an offset to *current_time* or *now*
+like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
+days in the passt or 10 minutes in the future. The plus or minus must follow
+without blank, allowed time identifiers are s (seconds), m (minutes), h
+(hours) and d (days).
+
+Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
+and ``{ua_string}`` for information on the user agent.
 
 set validity
 ............
@@ -122,9 +128,14 @@ attribute for the token. You need to specify the ``key`` of the
 tokeninfo and the ``value``.
 
 In the value field you can use the tag ``{current_time}`` to set the current
-timestamp,
-``{client_ip}`` for the client IP address and ``{ua_browser}`` and
-``{ua_string}`` for information on the user agent and ``{username}`` and
+timestamp. In addition you can append an offset to *current_time* or *now*
+like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
+days in the passt or 10 minutes in the future. The plus or minus must follow
+without blank, allowed time identifiers are s (seconds), m (minutes), h
+(hours) and d (days).
+
+Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
+and ``{ua_string}`` for information on the user agent and ``{username}`` and
 ``{realm}`` for information on the user in the parameters.
 
 .. note:: Some tokens have token specific attributes that are stored in the
@@ -134,6 +145,13 @@ timestamp,
 
 .. note:: You can use this to set the ``timeWindow`` of a TOTP token for
    :ref:`faq_initial_synchronization`.
+
+set failcounter
+...............
+
+Using the action ``set failcounter`` you can reset the fail counter by
+setting it to 0 or also "block" the token by setting the fail counter to what
+ ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
 Code
 ~~~~

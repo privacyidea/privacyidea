@@ -4,6 +4,7 @@ This test file tests the api.lib.policy.py
 The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
+
 from .base import (MyTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -23,6 +24,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            check_tokeninfo,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
@@ -41,6 +43,7 @@ from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
 import jwt
+import passlib
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -1160,6 +1163,17 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("realm2" in req.all_data.get("allowed_audit_realm"))
         self.assertTrue("realm3" in req.all_data.get("allowed_audit_realm"))
 
+        # check that the policy is not honored if inactive
+        set_policy(name="auditrealm2",
+                   active=False)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        allowed_audit_realm(req)
+        self.assertEqual(req.all_data.get("allowed_audit_realm"), ["realm1"])
+
         # finally delete policy
         delete_policy("auditrealm1")
         delete_policy("auditrealm2")
@@ -1213,6 +1227,101 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         r = check_tokentype(req, resp)
         jresult = json.loads(r.data)
         self.assertTrue(jresult.get("result").get("value"))
+
+    def test_01_check_undetermined_tokentype(self):
+        # If there is a tokentype policy but the type can not be
+        # determined, authentication fails.
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 2 tokens",
+                          "type": "undetermined"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does not allow the tokentype
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokentype=hotp", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # The token type can not be determined, so an exception
+        #  is raised.
+        self.assertRaises(PolicyError,
+                          check_tokentype,
+                          req, resp)
+
+    def test_03_check_tokeninfo(self):
+        token_obj = init_token({"type": "SPASS", "serial": "PISP0001"})
+        token_obj.set_tokeninfo({"testkey": "testvalue"})
+
+        # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "PISP0001"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "PISP0001",
+                          "type": "spass"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/test.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        # Set a policy that does NOT match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/NO.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # Set a policy, but the token has no tokeninfo!
+        # Thus the authorization will fail
+        token_obj.del_tokeninfo("testkey")
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # If we set an invalid policy, authorization will succeed
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/missingslash", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        delete_policy("pol1")
+        remove_token("PISP0001")
 
     def test_02_check_serial(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
@@ -1368,7 +1477,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("user" not in jresult.get("detail"), jresult)
 
         # A successful get a user added
-        # Set a policy, that does not allow the detail on success
+        # Set a policy, that adds user info to detail
         set_policy(name="pol_add_user",
                    scope=SCOPE.AUTHZ,
                    action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8")
@@ -1377,7 +1486,24 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = add_user_detail_to_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertTrue("user" in jresult.get("detail"), jresult)
+        self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
+        self.assertFalse("user-realm" in jresult.get("detail"), jresult)
+
+        # set a policy that adds user resolver to detail
+        set_policy(name="pol_add_resolver",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue("user-resolver" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-resolver"), self.resolvername1)
+        self.assertTrue("user-realm" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-realm"), self.realm1)
+
         delete_policy("pol_add_user")
+        delete_policy("pol_add_resolver")
 
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
@@ -1551,8 +1677,23 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         response = auth_items.get("offline")[0].get("response")
         self.assertEqual(len(response), 100)
         # check if the counter of the token was increased to 100
+        # it is only 100, not 102, because the OTP value with counter=1
+        # (287082) has not actually been consumed (because this
+        # test only invoked the policy function)
         tokenobject = get_tokens(serial=serial)[0]
-        self.assertEqual(tokenobject.token.count, 101)
+        self.assertEqual(tokenobject.token.count, 100)
+        # check that we cannot authenticate with an offline value
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline287082",
+                                             response.get('1')))
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline516516",
+                                             response.get('99')))
+        res = tokenobject.check_otp("516516") # count = 99
+        self.assertEqual(res, -1)
+        # check that we can authenticate online with the correct value
+        res = tokenobject.check_otp("295165")  # count = 100
+        self.assertEqual(res, 100)
         delete_policy("pol2")
 
     def test_07_sign_response(self):
@@ -1637,6 +1778,15 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), True)
 
+        # Assert the policy is not honored if inactive
+        set_policy(name="pol_wizard",
+                   active=False)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), False)
+
         delete_policy("pol_wizard")
 
     def test_16_init_token_defaults(self):
@@ -1665,7 +1815,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         init_token_defaults(req)
 
         # Check, if the token defaults were added
-        self.assertEqual(req.all_data.get("totp.hashlib"), "sha256")
+        self.assertEqual(req.all_data.get("hashlib"), "sha256")
         self.assertEqual(req.all_data.get("otplen"), "8")
         self.assertEqual(req.all_data.get("timeStep"), "60")
         # finally delete policy

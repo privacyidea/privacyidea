@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenkind
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add auth_cache
 #  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add support for multiple challenge response token
 #  2016-08-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -87,8 +91,10 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_passthru,
                                               auth_user_timelimit,
                                               auth_lastauth,
+                                              auth_cache,
                                               config_lost_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import TOKENKIND
 from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
@@ -424,6 +430,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                         userobject.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
+                log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
             token_list.append(token_dict)
@@ -807,10 +814,12 @@ def gen_serial(tokentype=None, prefix=None):
     :return: serial number
     :rtype: string
     """
+    serial_len = int(get_from_config("SerialLength") or 8)
+
     def _gen_serial(_prefix, _tokennum):
         h_serial = ''
         num_str = '{:04d}'.format(_tokennum)
-        h_len = 8 - len(num_str)
+        h_len = serial_len - len(num_str)
         if h_len > 0:
             h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
@@ -838,7 +847,8 @@ def gen_serial(tokentype=None, prefix=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None):
+def init_token(param, user=None, tokenrealms=None,
+               tokenkind=None):
     """
     create a new token or update an existing token
 
@@ -851,6 +861,8 @@ def init_token(param, user=None, tokenrealms=None):
     :type user: User Object
     :param tokenrealms: the realms, to which the token should belong
     :type tokenrealms: list
+    :param tokenkind: The kind of the token, can be "software",
+        "hardware" or "virtual"
 
     :return: token object or None
     :rtype: TokenClass object
@@ -928,6 +940,12 @@ def init_token(param, user=None, tokenrealms=None):
         log.error('token create failed!')
         log.debug("{0!s}".format(traceback.format_exc()))
         raise TokenAdminError("token create failed {0!r}".format(e), id=1112)
+
+    # We only set the tokenkind here, if it was explicitly set in the
+    # init_token call.
+    # In all other cases it is set in the update method of the tokenclass.
+    if tokenkind:
+        tokenobject.add_tokeninfo("tokenkind", tokenkind)
 
     # Set the validity period
     validity_period_start = param.get("validity_period_start")
@@ -1576,6 +1594,26 @@ def set_description(serial, description, user=None):
 
 @log_with(log)
 @check_user_or_serial
+def set_failcounter(serial, counter, user=None):
+    """
+    Set the fail counter of a  token.
+    
+    :param serial: The serial number of the token
+    :param counter: THe counter to which the fail counter should be set
+    :param user: An optional user
+    :return: Number of tokens, where the fail counter was set.
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+
+    for tokenobject in tokenobject_list:
+        tokenobject.set_failcount(counter)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_max_failcount(serial, maxfail, user=None):
     """
     Set the maximum fail counts of tokens. This is the maximum number a
@@ -1836,6 +1874,7 @@ def check_otp(serial, otpval):
     return res, reply_dict
 
 
+@libpolicy(auth_cache)
 @libpolicy(auth_user_does_not_exist)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_timelimit)
@@ -1908,11 +1947,18 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     invalid_token_list = []
     valid_token_list = []
 
-    for tokenobject in tokenobject_list:
-        audit = {'serial': tokenobject.get_serial(),
-                 'token_type': tokenobject.get_type(),
-                 'weight': 0}
+    # Remove locked tokens from tokenobject_list
+    if len(tokenobject_list) > 1:
+        for tokenobject in tokenobject_list:
+            if tokenobject.is_revoked():
+                tokenobject_list.remove(tokenobject)
 
+        if len(tokenobject_list) == 0:
+            # If there is no unlocked token left.
+            raise TokenAdminError(_("This action is not possible, since the "
+                                    "token is locked"), id=1007)
+
+    for tokenobject in tokenobject_list:
         log.debug("Found user with loginId {0!r}: {1!r}".format(
                   tokenobject.user, tokenobject.get_serial()))
 
@@ -1984,6 +2030,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
                 res = True
+                if not reply_dict.get("type"):
+                    reply_dict["type"] = token_obj.token.tokentype
+                if reply_dict["type"] != token_obj.token.tokentype:
+                    reply_dict["type"] = "undetermined"
                 # reset the failcounter of valid token
                 try:
                     token_obj.reset()

@@ -445,3 +445,20 @@ The usual setup that one administrative account has only this single policy
 and is only used for triggering challenges.
 
 New in version 2.17.
+
+.. _admin_policy_2step:
+
+hotp_2step and totp_2step
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This allows or forces the administrator to enroll a smartphone based token in two steps.
+In the second step the smartphone generates a part of the OTP secret, which the administrator
+needs to enter. (see :ref:`2step_enrollment`).
+Possible values are *allow* and *force*.
+This works in conjunction with the enrollment parameters :ref:`2step_parameters`.
+
+Such a policy can also be set for the user. See :ref:`user_policy_2step`.
+
+New in version 2.21

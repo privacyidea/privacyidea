@@ -49,3 +49,15 @@ class TtypeAPITestCase(MyTestCase):
             self.assertEqual(res.mimetype, u'application/fido.trusted-apps+json')
             data = json.loads(res.data)
             self.assertTrue("trustedFacets" in data)
+
+        # Check the audit log.
+        with self.app.test_request_context('/audit/?action=*GET /ttype/*',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = json.loads(res.data)
+            result = json_response.get("result")
+            auditdata = result.get("value").get("auditdata")
+            self.assertTrue(len(auditdata) > 0)
+            self.assertEqual(auditdata[0].get("token_type"), "u2f")

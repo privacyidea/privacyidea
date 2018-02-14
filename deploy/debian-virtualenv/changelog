@@ -1,3 +1,56 @@
+privacyidea-venv (2.21.1-1) jessie; urgency=low
+
+  Features:
+   * Allow export of tokens to PKSC file (#790)
+   * Implement two-step enrollment of HOTP/TOTP tokens (#797, #863, #865, #866)
+   * Allow WebUI customization via policies (#795)
+
+  Enhancements:
+   * Add script to decrypt safeword tokens
+   * Allow using tags in the tokenissuer of smartphone tokens
+   * Try to re-establish lost HSM connections (#787)
+   * Allow to rotate audit log based on multiple conditions (#780, #833)
+   * Add dry-run option to audit log rotation (#801)
+   * Allow dots in realm names (#808)
+   * Mark empty but required fields in WebUI (#810)
+   * Display success information after PIN is set (#822)
+   * Add further tags to the user notification event handler (#824)
+   * Add number of users to the subscription view (#800)
+   * Add HTTP/HTTPS proxy settings to HTTP SMS Provider (#835)
+   * Federation Handler allows to forward the authorization token (#838)
+   * Use token janitor to export a user list (#852)
+   * Use HSM for random key generation if possible (#783)
+   * HTTP SMS Provider now takes TIMEOUT parameter into account
+   * Allow to configure length of generated serial numbers (#583)
+
+  Fixes:
+   * Fix handling of only_realm option in token event handler (#809)
+   * Fix scrollbar issues in WebUI (#806, #823)
+   * Fix OTP counter of offline token (#840)
+   * Fix conflicts between check_tokentype and passthru policies (#846)
+   * Properly reset tab tile after session has been locked (#850)
+   * Fix handling of fixed key size during enrollment (#820)
+   * Make sure that only active policies are honored (#825)
+   * Fix various bugs with non-ASCII data (#754)
+   * Fix failcounter_clear_timeout (#831)
+   * Only remove apache host definitions on first installation (#834)
+   * Allow to use TLS1.1 and TLS1.2 for LDAP Resolver (#876)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 09 Jan 2018 12:30:00 +0200
+
+privacyidea-venv (2.20.1-1) jessie; urgency=low
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+   * Optimize the LDAP Resolver Redundancy to avoid LdapServerPoolExhaustedErrors (#802)
+   * Preset default realm in token enrollment (#804)
+   * Fix PassOnNoUser and PassOnNoToken (#798)
+   * Fix genkey=0 error during token enrollment (#793)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 30 Oct 2017 11:30:00 +0200
+
+
 privacyidea-venv (2.19.1-1) jessie; urgency=low
 
   Enhancements:

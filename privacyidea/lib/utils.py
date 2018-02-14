@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use HSM to generate Salt for PasswordHash
+#  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add time offset parsing
 #  2015-04-05 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Added time test function
 #
@@ -25,17 +29,40 @@ This module is tested in tests/test_lib_utils.py
 import logging
 log = logging.getLogger(__name__)
 import binascii
+import base64
 import qrcode
 import StringIO
 import urllib
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.error import ParameterError
 import string
 import re
-from datetime import timedelta, datetime, time
+from datetime import timedelta, datetime
+from datetime import time as dt_time
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+import hashlib
+import crypt
 import traceback
+import os
+import time
+from base64 import (b64decode, b64encode)
+
+
+try:
+    import bcrypt
+    _bcrypt_hashpw = bcrypt.hashpw
+except ImportError:  # pragma: no cover
+    _bcrypt_hashpw = None
+
+# On App Engine, this function is not available.
+if hasattr(os, 'getpid'):
+    _pid = os.getpid()
+else:  # pragma: no cover
+    # Fake PID
+    _pid = urandom.randint(0, 100000)
+
 ENCODING = "utf-8"
 
 
@@ -71,7 +98,7 @@ def check_time_in_range(time_range, check_time=None):
 
     check_time = check_time or datetime.now()
     check_day = check_time.isoweekday()
-    check_hour = time(check_time.hour, check_time.minute)
+    check_hour =dt_time(check_time.hour, check_time.minute)
     # remove whitespaces
     time_range = ''.join(time_range.split())
     # split into list of time ranges
@@ -89,13 +116,13 @@ def check_time_in_range(time_range, check_time=None):
             ts = [int(x) for x in t_start.split(":")]
             te = [int(x) for x in t_end.split(":")]
             if len(ts) == 2:
-                time_start = time(ts[0], ts[1])
+                time_start =dt_time(ts[0], ts[1])
             else:
-                time_start = time(ts[0])
+                time_start =dt_time(ts[0])
             if len(te) == 2:
-                time_end = time(te[0], te[1])
+                time_end =dt_time(te[0], te[1])
             else:
-                time_end = time(te[0])
+                time_end =dt_time(te[0])
 
             # check the day and the time
             if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
@@ -125,6 +152,18 @@ def to_utf8(password):
             # encode it again...
             log.debug("Failed to convert password: {0!s}".format(type(password)))
     return password
+
+
+def to_unicode(s, encoding="utf-8"):
+    """
+    converts a value to unicode if it is of type str.
+    
+    :param s: The utf-8 encoded str 
+    :return: unicode string
+    """
+    if type(s) == str:
+        s = s.decode(encoding)
+    return s
 
 
 def generate_otpkey(key_size=20):
@@ -235,7 +274,42 @@ def checksum(msg):
     return crc
 
 
-def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-]+$"):
+def decode_base32check(encoded_data, always_upper=True):
+    """
+    Decode arbitrary data which is given in the following format::
+
+        strip_padding(base32(sha1(payload)[:4] + payload))
+
+    Raise a ParameterError if the encoded payload is malformed.
+    :param encoded_data: The base32 encoded data.
+    :type encoded_data: basestring
+    :param always_upper: If we should convert lowercase to uppercase
+    :type always_upper: bool
+    :return: hex-encoded payload
+    """
+    # First, add the padding to have a multiple of 8 bytes
+    if always_upper:
+        encoded_data = encoded_data.upper()
+    encoded_length = len(encoded_data)
+    if encoded_length % 8 != 0:
+        encoded_data += "=" * (8 - (encoded_length % 8))
+    assert len(encoded_data) % 8 == 0
+    # Decode as base32
+    try:
+        decoded_data = base64.b32decode(encoded_data)
+    except TypeError:
+        raise ParameterError("Malformed base32check data: Invalid base32")
+    # Extract checksum and payload
+    if len(decoded_data) < 4:
+        raise ParameterError("Malformed base32check data: Too short")
+    checksum, payload = decoded_data[:4], decoded_data[4:]
+    payload_hash = hashlib.sha1(payload).digest()
+    if payload_hash[:4] != checksum:
+        raise ParameterError("Malformed base32check data: Incorrect checksum")
+    return binascii.hexlify(payload)
+
+
+def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
     """
     This function can be used to check the sanity of a name like a resolver,
     ca connector or realm.
@@ -406,7 +480,11 @@ def parse_date(date_string):
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
     d = None
     try:
-        d = parse_date_string(date_string, dayfirst=True)
+        # We only do dayfirst, if the datestring really starts with a 01/
+        # If it stars with a year 2017/... we do NOT dayfirst.
+        # See https://github.com/dateutil/dateutil/issues/457
+        d = parse_date_string(date_string,
+                              dayfirst=re.match("^\d\d[/\.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -490,7 +568,7 @@ def get_client_ip(request, proxy_settings):
     client_ip = request.remote_addr
     # We only do the mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
-                    request.blueprint in ["validate_blueprint",
+                    request.blueprint in ["validate_blueprint", "ttype_blueprint",
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
         mapped_ip = request.all_data.get("client") or \
@@ -614,6 +692,50 @@ def compare_condition(condition, value):
         return value < compare_value
 
 
+def compare_value_value(value1, comparator, value2):
+    """
+    This function compares value1 and value2 with the comparator.
+    The comparator may be "==", ">" or "<".
+    
+    If the values can be converted to integers, they are compared as integers 
+    otherwise as strings.
+    
+    :param value1: First value 
+    :param value2: Second value
+    :param comparator: The comparator
+    :return: True or False
+    """
+    try:
+        int1 = int(value1)
+        int2 = int(value2)
+        # We only converts BOTH values if possible
+        value1 = int1
+        value2 = int2
+    except Exception:
+        log.debug("can not compare values as integers.")
+
+    if type(value1) != int and type(value2) != int:
+        # try to convert both values to a timestamp
+        try:
+            date1 = parse_date(value1)
+            date2 = parse_date(value2)
+            if date1 and date2:
+                # Only use dates, if both values can be converted to dates
+                value1 = date1
+                value2 = date2
+        except Exception:
+            log.debug("error during date conversion.")
+
+    if comparator == "==":
+        return value1 == value2
+    elif comparator == ">":
+        return value1 > value2
+    elif comparator == "<":
+        return value1 < value2
+
+    raise Exception("Unknown comparator: {0!s}".format(comparator))
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.
@@ -648,8 +770,331 @@ def parse_legacy_time(ts, return_date=False):
     d = parse_date_string(ts)
     if not d.tzinfo:
         # we need to reparse the string
-        d = parse_date_string(ts, tzinfos=tzlocal, dayfirst=True)
+        d = parse_date_string(ts,
+                              dayfirst=re.match("^\d\d[/\.]",ts)).replace(
+                                  tzinfo=tzlocal())
     if return_date:
         return d
     else:
         return d.strftime(DATE_FORMAT)
+
+
+def parse_time_delta(s):
+    """
+    parses a string like +5d or -30m and returns a timedelta.
+    Allowed identifiers are s, m, h, d.
+    
+    :param s: a string like +30m or -5d
+    :return: timedelta 
+    """
+    seconds = 0
+    minutes = 0
+    hours = 0
+    days = 0
+    m = re.match("([+-])(\d+)([smhd])$", s)
+    if not m:
+        log.warning("Unsupported timedelta: {0!r}".format(s))
+        raise Exception("Unsupported timedelta")
+    count = int(m.group(2))
+    if m.group(1) == "-":
+        count = - count
+    if m.group(3) == "s":
+        seconds = count
+    elif m.group(3) == "m":
+        minutes = count
+    elif m.group(3) == "h":
+        hours = count
+    elif m.group(3) == "d":
+        days = count
+
+    td = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
+    return td
+
+
+def parse_time_offset_from_now(s):
+    """
+    Parses a string as used in the token event handler
+        "New date {now}+5d. Some {other} {tags}" or
+        "New date {now}-30m! Some {other} {tags}".
+    This returns the string "New date {now}. Some {other} {tags}" and the 
+    timedelta of 5 days.
+    Allowed tags are {now} and {current_time}. Only one tag of {now} or {
+    current_time} is allowed.
+    Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
+        
+    :param s: The string to be parsed.
+    :return: tuple of modified string and timedelta 
+    """
+    td = timedelta()
+    m1 = re.search("(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
+    m2 = re.search("(^.*{now})([+-]\d+[smhd])(.*$)", s)
+    m = m1 or m2
+    if m:
+        s1 = m.group(1)
+        s2 = m.group(2)
+        s3 = m.group(3)
+        s = s1 + s3
+        td = parse_time_delta(s2)
+
+    return s, td
+
+
+def hash_password(password, hashtype):
+    """
+    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+
+    :param password: The password in plain text 
+    :param hashtype: One of the hash types as string
+    :return: The hashed password
+    """
+    hashtype = hashtype.upper()
+    if hashtype == "PHPASS":
+        PH = PasswordHash()
+        password = PH.hash_password(password)
+    elif hashtype == "SHA":
+        password = hashlib.sha1(password).digest()
+        password = "{SHA}" + b64encode(password)
+    elif hashtype == "SSHA":
+        salt = geturandom(20)
+        hr = hashlib.sha1(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA}" + pw
+    elif hashtype == "SSHA256":
+        salt = geturandom(32)
+        hr = hashlib.sha256(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA256}" + pw
+    elif hashtype == "SSHA512":
+        salt = geturandom(64)
+        hr = hashlib.sha512(password)
+        hr.update(salt)
+        pw = b64encode(hr.digest() + salt)
+        return "{SSHA512}" + pw
+    elif hashtype == "OTRS":
+        password = hashlib.sha256(password).hexdigest()
+    else:
+        raise Exception("Unsupported password hashtype. Use PHPASS, SHA, "
+                        "SSHA, SSHA256, SSHA512, OTRS.")
+    return password
+
+
+def check_ssha(pw_hash, password, hashfunc, length):
+    pw_hash_bin = b64decode(pw_hash.split("}")[1])
+    digest = pw_hash_bin[:length]
+    salt = pw_hash_bin[length:]
+    hr = hashfunc(password)
+    hr.update(salt)
+    return digest == hr.digest()
+
+
+def check_sha(pw_hash, password):
+    b64_db_password = pw_hash[5:]
+    hr = hashlib.sha1(password).digest()
+    b64_password = b64encode(hr)
+    return b64_password == b64_db_password
+
+
+def otrs_sha256(pw_hash, password):
+    hr = hashlib.sha256(password)
+    digest = binascii.hexlify(hr.digest())
+    return pw_hash == digest
+
+
+class PasswordHash(object):
+    def __init__(self, iteration_count_log2=8, portable_hashes=True,
+                 algorithm=''):
+        alg = algorithm.lower()
+        if alg in ['blowfish', 'bcrypt'] and _bcrypt_hashpw is None:
+            raise NotImplementedError('The bcrypt module is required')
+        self.itoa64 = \
+            './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        if not (4 <= iteration_count_log2 <= 31):
+            iteration_count_log2 = 8
+        self.iteration_count_log2 = iteration_count_log2
+        self.portable_hashes = portable_hashes
+        self.algorithm = algorithm
+        self.random_state = '{0!r}{1!r}'.format(time.time(), _pid)
+
+    def get_random_bytes(self, count):
+        outp = ''
+        try:
+            outp = geturandom(count)
+        except Exception as exx:  # pragma: no cover
+            log.debug("problem getting urandom: {0!s}".format(exx))
+        if len(outp) < count:  # pragma: no cover
+            outp = ''
+            rem = count
+            while rem > 0:
+                self.random_state = hashlib.md5(str(time.time())
+                                                + self.random_state).hexdigest()
+                outp += hashlib.md5(self.random_state).digest()
+                rem -= 1
+            outp = outp[:count]
+        return outp
+
+    def encode64(self, inp, count):
+        outp = ''
+        cur = 0
+        while cur < count:
+            value = ord(inp[cur])
+            cur += 1
+            outp += self.itoa64[value & 0x3f]
+            if cur < count:
+                value |= (ord(inp[cur]) << 8)
+            outp += self.itoa64[(value >> 6) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            if cur < count:
+                value |= (ord(inp[cur]) << 16)
+            outp += self.itoa64[(value >> 12) & 0x3f]
+            if cur >= count:
+                break
+            cur += 1
+            outp += self.itoa64[(value >> 18) & 0x3f]
+        return outp
+
+    def gensalt_private(self, inp):  # pragma: no cover
+        outp = '$P$'
+        outp += self.itoa64[min([self.iteration_count_log2 + 5, 30])]
+        outp += self.encode64(inp, 6)
+        return outp
+
+    def crypt_private(self, pw, setting):  # pragma: no cover
+        outp = '*0'
+        if setting.startswith(outp):
+            outp = '*1'
+        if setting[0:3] not in ['$P$', '$H$', '$S$']:
+            return outp
+        count_log2 = self.itoa64.find(setting[3])
+        if not (7 <= count_log2 <= 30):
+            return outp
+        count = 1 << count_log2
+        salt = setting[4:12]
+        if len(salt) != 8:
+            return outp
+        if not isinstance(pw, str):
+            pw = pw.encode('utf-8')
+
+        hash_func = hashlib.md5
+        encoding_len = 16
+        if setting.startswith('$S$'):
+            hash_func = hashlib.sha512
+            encoding_len = 33
+
+        hx = hash_func(salt + pw).digest()
+        while count:
+            hx = hash_func(hx + pw).digest()
+            count -= 1
+        hashed_pw = self.encode64(hx, encoding_len)
+
+        if setting.startswith('$S$'):
+            hashed_pw = hashed_pw[:-1]
+        return setting[:12] + hashed_pw
+
+    def gensalt_extended(self, inp):  # pragma: no cover
+        count_log2 = min([self.iteration_count_log2 + 8, 24])
+        count = (1 << count_log2) - 1
+        outp = '_'
+        outp += self.itoa64[count & 0x3f]
+        outp += self.itoa64[(count >> 6) & 0x3f]
+        outp += self.itoa64[(count >> 12) & 0x3f]
+        outp += self.itoa64[(count >> 18) & 0x3f]
+        outp += self.encode64(inp, 3)
+        return outp
+
+    def gensalt_blowfish(self, inp):  # pragma: no cover
+        itoa64 = \
+            './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        outp = '$2a$'
+        outp += chr(ord('0') + self.iteration_count_log2 / 10)
+        outp += chr(ord('0') + self.iteration_count_log2 % 10)
+        outp += '$'
+        cur = 0
+        while True:
+            c1 = ord(inp[cur])
+            cur += 1
+            outp += itoa64[c1 >> 2]
+            c1 = (c1 & 0x03) << 4
+            if cur >= 16:
+                outp += itoa64[c1]
+                break
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 4
+            outp += itoa64[c1]
+            c1 = (c2 & 0x0f) << 2
+            c2 = ord(inp[cur])
+            cur += 1
+            c1 |= c2 >> 6
+            outp += itoa64[c1]
+            outp += itoa64[c2 & 0x3f]
+        return outp
+
+    def hash_password(self, pw):  # pragma: no cover
+        rnd = ''
+        alg = self.algorithm.lower()
+        if (not alg or alg in ['blowfish', 'bcrypt'] and not
+        self.portable_hashes):
+            if _bcrypt_hashpw is None and alg in ['blowfish', 'bcrypt']:
+                raise NotImplementedError('The bcrypt module is required')
+            else:
+                rnd = self.get_random_bytes(16)
+                salt = self.gensalt_blowfish(rnd)
+                hx = _bcrypt_hashpw(pw, salt)
+                if len(hx) == 60:
+                    return hx
+        if (not alg or alg == 'ext-des') and not self.portable_hashes:
+            if len(rnd) < 3:
+                rnd = self.get_random_bytes(3)
+            hx = crypt.crypt(pw, self.gensalt_extended(rnd))
+            if len(hx) == 20:
+                return hx
+        if len(rnd) < 6:
+            rnd = self.get_random_bytes(6)
+        hx = self.crypt_private(pw, self.gensalt_private(rnd))
+        if len(hx) == 34:
+            return hx
+        return '*'
+
+    def check_password(self, pw, stored_hash):
+        # This part is different with the original PHP
+        if stored_hash.startswith('$2a$'):
+            # bcrypt
+            if _bcrypt_hashpw is None:  # pragma: no cover
+                raise NotImplementedError('The bcrypt module is required')
+            hx = _bcrypt_hashpw(pw, stored_hash)
+        elif stored_hash.startswith('_'):
+            # ext-des
+            stored_hash = stored_hash[1:]
+            hx = crypt.crypt(pw, stored_hash)
+        else:
+            # portable hash
+            hx = self.crypt_private(pw, stored_hash)
+        return stored_hash == hx
+
+
+def parse_int(s, default=0):
+    """
+    Returns an integer either to base10 or base16.
+    :param s: A possible string given.
+    :param default: If the value can not be parsed or is None, return this
+        default value
+    :return: An integer
+    """
+    i = default
+    try:
+        i = int(s)
+        return i
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        i = int(s, 16)
+        return i
+    except (ValueError, TypeError):
+        pass
+
+    return i

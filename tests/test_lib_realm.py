@@ -24,6 +24,7 @@ class ResolverTestCase(MyTestCase):
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     realm1 = "realm1"
+    realm_dot = "realm1.com"
     
     def test_01_create_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -41,11 +42,21 @@ class ResolverTestCase(MyTestCase):
                                      self.resolvername2])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 2)
-        
+
+        (added, failed) = set_realm(self.realm_dot,
+                                    [self.resolvername1,
+                                     self.resolvername2])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 2)
+
         # test the realms
         realms = get_realms()
         self.assertTrue(self.realm1 in realms, realms)
         self.assertTrue(realms.get("realm1").get("default"), realms)
+        self.assertTrue(self.realm_dot in realms.keys())
+
+        # delete dot realm
+        delete_realm(self.realm_dot)
         
         # try to create realm with invalid name
         self.assertRaises(Exception, set_realm, "#####")

@@ -181,22 +181,27 @@ class APISmsGatewayTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             value = json.loads(res.data).get("result").get("value")
-            self.assertEqual(len(value), 3)
+            self.assertEqual(len(value), 4)
             self.assertTrue('privacyidea.lib.smsprovider.HttpSMSProvider'
                             '.HttpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SmtpSMSProvider'
                             '.SmtpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SipgateSMSProvider'
                             '.SipgateSMSProvider' in value)
+            self.assertTrue('privacyidea.lib.smsprovider.SmppSMSProvider'
+                            '.SmppSMSProvider' in value)
             http_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'HttpSMSProvider.HttpSMSProvider')
             smtp_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'SmtpSMSProvider.SmtpSMSProvider')
             sipgate_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'SipgateSMSProvider.SipgateSMSProvider')
+            smpp_parameters = value.get('privacyidea.lib.smsprovider.'
+                                        'SmppSMSProvider.SmppSMSProvider')
             self.assertEqual(http_parameters.get("options_allowed"), True)
             self.assertEqual(smtp_parameters.get("options_allowed"), False)
             self.assertEqual(sipgate_parameters.get("options_allowed"), False)
+            self.assertEqual(smpp_parameters.get("options_allowed"), False)
             self.assertTrue("URL" in http_parameters.get("parameters"))
             self.assertTrue("PROXY" in http_parameters.get("parameters"))
             self.assertTrue("HTTP_METHOD" in http_parameters.get("parameters"))

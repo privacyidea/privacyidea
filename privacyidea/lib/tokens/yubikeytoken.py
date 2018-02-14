@@ -66,6 +66,7 @@ import base64
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib import _
 
 optional = True
@@ -452,3 +453,7 @@ h={h}
         (res, opt) = check_token_list(token_list, passw)
         return res, opt
 
+    @log_with(log)
+    def update(self, param, reset_failcount=True):
+        TokenClass.update(self, param, reset_failcount)
+        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)

@@ -64,6 +64,29 @@ this request
    to less secure areas also with a Google
    Authenticator.
 
+.. _policy_tokeninfo:
+
+tokeninfo
+~~~~~~~~~
+
+type: string
+
+Users will only be authorized if the tokeninfo field
+of the token matches this regular expression.
+
+This is checked after the authentication request, so that a valid
+OTP value can not be used anymore, even if authorization is forbidden.
+
+A valid action could look like
+
+   action = key/regexp/
+
+Example:
+
+   action = last_auth/^2018.*/
+
+This would mean the tokeninfo field needs to start with "2018".
+
 setrealm
 ~~~~~~~~
 
@@ -214,3 +237,14 @@ type: bool
 In case of a successful authentication additional user information is added
 to the response. A dictionary containing user information is added in
 ``detail->user``.
+
+.. _policy_add_resolver_in_response:
+
+add_resolver_in_response
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+In case of a successful authentication the resolver and realm of the user are added
+to the response. The names are added in
+``detail->user-resolver`` and ``detail->user-realm``.

@@ -112,7 +112,7 @@ def parse_registration_data(reg_data):
                                            attestation_cert))
     # TODO: Check the issuer of the certificate
     issuer = attestation_cert.get_issuer()
-    log.debug("The attestation certificate is signed by {0!s}".format(issuer))
+    log.debug("The attestation certificate is signed by {0!r}".format(issuer))
     not_after = attestation_cert.get_notAfter()
     not_before = attestation_cert.get_notBefore()
     log.debug("The attestation certificate "

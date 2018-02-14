@@ -1,0 +1,29 @@
+<div class="navbar navbar-inverse navbar-fixed-bottom">
+    <div class="container">
+        <a ng-click="about()"
+            class="navbar-text pull-left">
+            privacyIDEA
+            {{ privacyideaVersionNumber }}
+        </a>
+
+
+        <a class="navbar-btn btn btn-success pull-right"
+           ng-show="piExternalLinks !== 'False'"
+           href="https://netknights.it/en/leistungen/service-level-agreements/"
+           target="_external">
+            <translate>Support</translate>
+        </a>
+        <a class="navbar-text pull-right"
+           ng-show="piExternalLinks !== 'False'"
+                href="https://community.privacyidea.org"
+                target="_external">
+            privacyIDEA Forum</a>
+
+        <a class="navbar-text pull-right"
+           ng-show="privacyideaVersionNumber"
+                href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
+                target="documentation">
+            <translate>Online Documentation</translate>
+        </a>
+    </div>
+</div>

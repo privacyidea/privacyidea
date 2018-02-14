@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokeninfo field policy
+#             Add add_resolver_in_result
+#  2017-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add policy action for customization of menu and baseline
 #  2017-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy action groups
 #  2016-12-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -231,6 +236,7 @@ class ACTION(object):
     MAXTOKENUSER = "max_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
     ADDUSERINRESPONSE = "add_user_in_response"
+    ADDRESOLVERINRESPONSE = "add_resolver_in_response"
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
@@ -267,6 +273,7 @@ class ACTION(object):
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
+    TOKENINFO = "tokeninfo"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
     TRIGGERCHALLENGE = "triggerchallenge"
@@ -281,6 +288,7 @@ class ACTION(object):
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
     RADIUSSERVERWRITE = "radiusserver_write"
+    PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
     SMSGATEWAYWRITE = "smsgateway_write"
@@ -293,6 +301,10 @@ class ACTION(object):
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
+    AUTH_CACHE = "auth_cache"
+    HIDE_WELCOME = "hide_welcome_info"
+    CUSTOM_MENU = "custom_menu"
+    CUSTOM_BASELINE = "custom_baseline"
 
 
 class GROUP(object):
@@ -424,7 +436,7 @@ class PolicyClass(object):
                 # list
                 # check regular expression only for exact matches
                 # avoid matching user1234 -> user1
-                if re.search("^{0!s}$".format(value), searchvalue):
+                if re.search(u"^{0!s}$".format(value), searchvalue):
                     value_found = True
 
         return value_found, value_excluded
@@ -591,7 +603,6 @@ class PolicyClass(object):
         would return a list of allowed serials
 
         :param unique: if set, the function will raise an exception if more
-
             than one value is returned
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
@@ -696,6 +707,9 @@ class PolicyClass(object):
             for action, action_value in pol.get("action").items():
                 if action_value:
                     rights.append(action)
+                    # if the action has an actual non-boolean value, return it
+                    if isinstance(action_value, basestring):
+                        rights.append(u"{}={}".format(action, action_value))
         # check if we have policies at all:
         pols = self.get_policies(scope=scope, active=True)
         if not pols:
@@ -1260,6 +1274,13 @@ def get_static_policy_definitions(scope=None):
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
+                                            'desc': _("Admin is allowed to "
+                                                      "write remote "
+                                                      "privacyIDEA server "
+                                                      "definitions."),
+                                            'mainmenu': [MAIN_MENU.CONFIG],
+                                            'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
@@ -1504,8 +1525,14 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
+            },
+            ACTION.AUTH_CACHE: {
+                'type': 'str',
+                'desc': _('Cache the password used for authentication and '
+                          'allow authentication with the same credentials for a '
+                          'certain amount of time. '
+                          'Specify timeout like 4h or 4h/5m.')
             }
-
         },
         SCOPE.AUTHZ: {
             ACTION.AUTHMAXSUCCESS: {
@@ -1537,6 +1564,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('The user will only be authenticated if the serial '
                           'number of the token matches this regexp.')},
+            ACTION.TOKENINFO: {
+                'type': 'str',
+                'desc': _("The user will only be authenticated if the tokeninfo "
+                          "field matches the regexp. key/<regexp>/")},
             ACTION.SETREALM: {
                 'type': 'str',
                 'value': realms,
@@ -1555,6 +1586,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('In case of successful authentication user data '
                           'will be added in the detail branch of the '
+                          'authentication response.')},
+            ACTION.ADDRESOLVERINRESPONSE: {
+                'type': 'bool',
+                'desc': _('In case of successful authentication the user resolver and '
+                          'realm will be added in the detail branch of the '
                           'authentication response.')},
             ACTION.APIKEY: {
                 'type': 'bool',
@@ -1608,6 +1644,14 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("Set how many users should be displayed in the user "
                           "view on one page.")
             },
+            ACTION.CUSTOM_MENU: {
+                'type': 'str',
+                'desc': _("Use your own html template for the web UI menu.")
+            },
+            ACTION.CUSTOM_BASELINE: {
+                'type': 'str',
+                'desc': _("Use your own html template for the web UI baseline/footer.")
+            },
             ACTION.USERDETAILS: {
                 'type': 'bool',
                 'desc': _("Whether the user ID and the resolver should be "
@@ -1638,8 +1682,14 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
-                'desc': _("If this is checked, a dropdown combobox with the "
-                          "realms is displayed in the login screen.")
+                'desc': _("A comma separated list of realm names, which are "
+                          "displayed in a drop down menu in the WebUI login "
+                          "screen.")
+            },
+            ACTION.HIDE_WELCOME: {
+                'type': 'bool',
+                'desc': _("If this checked, the administrator will not see "
+                          "the welcome dialog anymore.")
             }
         }
 

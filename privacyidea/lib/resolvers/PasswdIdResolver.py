@@ -45,7 +45,7 @@ import re
 import os
 import logging
 import crypt
-
+import codecs
 
 from UserIdResolver import UserIdResolver
 
@@ -128,7 +128,7 @@ class IdResolver (UserIdResolver):
 
         log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,
                                                                 os.getcwd()))
-        with open(self.fileName, "r") as fileHandle:
+        with codecs.open(self.fileName, "r", ENCODING) as fileHandle:
             ID = self.sF["userid"]
             NAME = self.sF["username"]
             PASS = self.sF["cryptpass"]
@@ -141,10 +141,10 @@ class IdResolver (UserIdResolver):
                     continue
 
                 fields = line.split(":", 7)
-                self.nameDict["{0!s}".format(fields[NAME])] = fields[ID]
+                self.nameDict[fields[NAME]] = fields[ID]
 
                 # for speed reason - build a revers lookup
-                self.reversDict[fields[ID]] = "{0!s}".format(fields[NAME])
+                self.reversDict[fields[ID]] = fields[NAME]
 
                 # for full info store the line
                 self.descDict[fields[ID]] = fields
@@ -183,6 +183,9 @@ class IdResolver (UserIdResolver):
         We do not support shadow passwords. so the seconds column
         of the passwd file needs to contain the crypted password
 
+        If the password is a unicode object, it is encoded according
+        to ENCODING first.
+
         :param uid: The uid of the user
         :type uid: int
         :param password: The password in cleartext
@@ -191,6 +194,8 @@ class IdResolver (UserIdResolver):
         :rtype: bool
         """
         log.info("checking password for user uid {0!s}".format(uid))
+        if isinstance(password, unicode):
+            password = password.encode(ENCODING)
         cryptedpasswd = self.passDict[uid]
         log.debug("We found the crypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
@@ -255,15 +260,11 @@ class IdResolver (UserIdResolver):
         """
         search the user id from the login name
 
-        :param LoginName: the login of the user
+        :param LoginName: the login of the user (as unicode)
         :return: the userId
         """
-        # We need the encoding, to be also able to read usernames
-        # with Umlauts from files.
-
-        if type(LoginName) == unicode:
-            LoginName = LoginName.encode(ENCODING)
-
+        # We do not encode the LoginName anymore, as we are
+        # storing unicode in nameDict now.
         if LoginName in self.nameDict.keys():
             return self.nameDict[LoginName]
         else:

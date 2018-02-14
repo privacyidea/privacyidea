@@ -7,7 +7,6 @@ info:
 	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
 	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
 	@echo "make centos       - build .rpm file to be used with CentOS 7"
-	@echo "make jessie	 - build .deb file for Debian Jessie"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
 	@echo "make linitian     - run lintian on debian package"
 	@echo "make translate    - translate WebUI"
@@ -16,7 +15,7 @@ info:
 	@echo "make ppa          - upload to launchpad stable repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.20~dev0
+SHORT_VERSION=2.22~dev4
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
@@ -47,9 +46,9 @@ setversion:
 translate:
 	grunt nggettext_extract
 	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
-	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
+#	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
 	poedit po/de.po
-	poedit po/it.po
+#	poedit po/it.po
 	grunt nggettext_compile
 
 translate-server:
@@ -129,11 +128,6 @@ builddeb:
 	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
 	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	################# Build
-	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
-
-jessie:
-	make debianize
-	cp -r deploy/debian-jessie/* DEBUILD/privacyidea.org/debian/
 	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
 
 venvdeb:

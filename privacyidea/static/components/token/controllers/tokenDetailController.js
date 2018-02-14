@@ -68,7 +68,7 @@ myApp.controller("tokenDetailController", function ($scope,
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {
         prepend = data.result.value.PrependPin;
-        console.log(prepend);
+        //debug: console.log(prepend);
         if (!$scope.isChecked(prepend)) {
             $scope.testTokenPlaceholder = gettextCatalog.getString('Enter OTP + PIN to' +
                 ' check the token.');
@@ -86,7 +86,7 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
             $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
             $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
-            console.log($scope.token);
+            //debug: console.log($scope.token);
             // Add a certificateBlob, if it exists
             if ($scope.token.info.certificate) {
                 var blob = new Blob([ $scope.token.info.certificate ],
@@ -193,7 +193,14 @@ myApp.controller("tokenDetailController", function ($scope,
 
     $scope.setPin = function () {
         TokenFactory.setpin($scope.tokenSerial, "otppin",
-            $scope.pin1, function () {
+            $scope.pin1, function (data) {
+                if (data.result.value >= 1) {
+                    inform.add(gettextCatalog.getString("PIN set successfully."),
+                        {type: "info", ttl: 5000})
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to set PIN."),
+                        {type: "danger", ttl: 10000})
+                }
                 $scope.pin1 = "";
                 $scope.pin2 = "";
                 // in case of certificate tokens we need to reread the token
@@ -232,7 +239,7 @@ myApp.controller("tokenDetailController", function ($scope,
             params["otponly"] = "1";
         }
         ValidateFactory.check(params, function (data) {
-            console.log(data);
+            //debug: console.log(data);
             // refresh the token data
             $scope.get();
             if (data.result.value === true) {
@@ -295,7 +302,7 @@ myApp.controller("tokenDetailController", function ($scope,
             params["application"] = application;
             MachineFactory.saveOptions(params, function (data) {
                 $scope.getMachines();
-                console.log(data);
+                //debug: console.log(data);
             });
         };
 
@@ -303,7 +310,7 @@ myApp.controller("tokenDetailController", function ($scope,
             MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
                     function (data) {
                         machinelist = data.result.value;
-                        console.log(machinelist);
+                        //debug: console.log(machinelist);
                         $scope.machineCount = machinelist.length;
                         var start = ($scope.params.page - 1) * $scope.machinesPerPage;
                         var stop = start + $scope.machinesPerPage;
@@ -312,7 +319,7 @@ myApp.controller("tokenDetailController", function ($scope,
         };
         // Change the pagination
         $scope.pageChanged = function () {
-            console.log('Page changed to: ' + $scope.params.page);
+            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.getMachines();
         };
 
@@ -339,6 +346,9 @@ myApp.controller("tokenDetailController", function ($scope,
         $event.stopPropagation();
         return true;
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
 
 
 });

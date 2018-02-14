@@ -21,7 +21,7 @@
  *
  */
 function fixUser(user) {
-    console.log("User In: " + user);
+    //debug: console.log("User In: " + user);
     if (user) {
         var stripUser = user.match(/^\[.*\] (.*) \(.*\)$/);
         if (stripUser != undefined) {
@@ -30,12 +30,12 @@ function fixUser(user) {
     } else {
         user = "";
     }
-    console.log("User Out: " + user);
+    //debug: console.log("User Out: " + user);
     return user;
 }
 
 function fixSerial(serial) {
-    console.log("Serial In: " + serial);
+    //debug: console.log("Serial In: " + serial);
     if (serial) {
         var stripSerial = serial.match(/^(.*) \(.*\)$/);
         if (stripSerial != undefined) {
@@ -44,7 +44,7 @@ function fixSerial(serial) {
     } else {
         serial = "";
     }
-    console.log("Serial Out: " + serial);
+    //debug: console.log("Serial Out: " + serial);
     return serial;
 }
 
@@ -60,7 +60,7 @@ function fixMachine(machinestr) {
      *  mo.ip
      */
     var machineObject = {};
-    console.log("Machine In: " + machinestr);
+    //debug: console.log("Machine In: " + machinestr);
     if (machinestr) {
         var stripMachine = machinestr.match(/^(.*) \[(.*)\] \((.*) in (.*)\)$/);
         if (stripMachine != undefined) {
@@ -70,7 +70,7 @@ function fixMachine(machinestr) {
     } else {
         machineObject = {id: 0, resolver: "", hostname: "", ip: 0};
     }
-    console.log("Machine Object Out: " + machineObject);
+    //debug: console.log("Machine Object Out: " + machineObject);
     return machineObject;
 }
 

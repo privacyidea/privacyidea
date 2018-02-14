@@ -33,7 +33,7 @@ angular.module("privacyideaAuth")
             return {
                 register_request: function (registerRequest, callback) {
                     u2f.register([registerRequest], [], function (result) {
-                        console.log(result);
+                        //debug: console.log(result);
                         if (result.errorCode > 0) {
                             inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
                                 {type: "danger", ttl: 10000});
@@ -48,21 +48,20 @@ angular.module("privacyideaAuth")
                         }
                     });
                 },
-                sign_request: function (data, username, transactionid,
+                sign_request: function (data, signRequests, username, transactionid,
                                         login_callback) {
-                    var signRequests = [data.detail.attributes.u2fSignRequest];
                     u2f.sign(signRequests, function (result) {
                         inform.clear();
                         if (result.errorCode > 0) {
-                            console.log("U2F error.");
-                            console.log(result);
+                            //debug: console.log("U2F error.");
+                            //debug: console.log(result);
                             inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
                                 {
                                     type: "danger",
                                     ttl: 10000
                                 });
                         } else {
-                            console.log("Got response from U2F device.");
+                            //debug: console.log("Got response from U2F device.");
                             $http.post(authUrl, {
                                 username: username,
                                 password: "",

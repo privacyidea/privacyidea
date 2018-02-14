@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# 2017-02-23 Cornelius Kölbel <cornelisu.koelbel@netknights.it>
+# 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow cleaning up different actions with different
+#            retention times.
+# 2017-07-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add generation of PGP keys
+# 2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add CA sub commands
 # 2017-01-27 Diogenes S. Jesus
 #            Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -48,6 +53,8 @@ from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
 from getpass import getpass
+import gnupg
+import yaml
 
 import flask
 
@@ -67,7 +74,7 @@ from flask_script import Manager, Command
 from privacyidea.app import db
 from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
-from privacyidea.models import Admin
+from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
@@ -76,7 +83,7 @@ import jwt
 import ast
 
 SILENT = True
-
+MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
@@ -224,7 +231,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
@@ -326,7 +333,7 @@ def restore(backup_file):
         print("Restore SQLite %s" % productive_file)
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
@@ -399,6 +406,25 @@ def create_enckey():
     os.chmod(filename, 0400)
     print("The file permission of %s was set to 400!" % filename)
     print("Please ensure, that it is owned by the right user.   ")
+
+
+@manager.command
+def create_pgp_keys(keysize=2048, force=False):
+    """
+    Generate PGP keys to allow encrypted token import.
+    """
+    GPG_HOME = app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg")
+    gpg = gnupg.GPG(gnupghome=GPG_HOME)
+    keys = gpg.list_keys(True)
+    if len(keys) and not force:
+        print("There are already private keys. If you want to "
+              "generate a new private key, use the parameter --force.")
+        print(keys)
+        sys.exit(1)
+    input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
+                                   name_real="privacyIDEA Server",
+                                   name_comment="Import")
+    gpg.gen_key(input_data)
 
 
 @manager.command
@@ -510,12 +536,16 @@ except TypeError:
 @manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
 @manager.option('--age', help="Delete audit entries older than these number "
                               "of days.")
-def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
+@manager.option('--config', help="Read config from the specified yaml file.")
+@manager.option('--dryrun', help="Do not actually delete, only show "
+                                 "what would be done.", action="store_true")
+def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
+                 dryrun=False):
     """
     Clean the SQL audit log.
 
     You can either clean the audit log based on the number of entries of
-    based on the age of the entires.
+    based on the age of the entries.
 
     Cleaning based on number of entries:
 
@@ -525,6 +555,11 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     Cleaning based on age:
 
     Entries older than the specified number of days are deleted.
+
+    Cleaning based on config file:
+
+    You can clean different type of entries with different ages or watermark.
+    See the documentation for the format of the config file
     """
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
@@ -534,10 +569,13 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
     audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
     audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
+    actions = []
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
-    if age:
+    if config:
+        print("Cleaning up with config file.")
+    elif age:
         age = int(age)
         print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
     else:
@@ -550,11 +588,59 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
     session = sessionmaker(bind=engine)()
     # create a Session
     metadata.create_all(engine)
-    if age:
+    if config:
+        with open(config, 'r') as f:
+            Config = yaml.load(f)
+        auditlogs = session.query(LogEntry).all()
+        delete_list = []
+        for log in auditlogs:
+            print("investigating log entry {0!s}".format(log.id))
+            for rule in Config:
+                age = int(rule.get("rotate"))
+                rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
+
+                match = False
+                for key in rule.keys():
+                    if key not in ["rotate"]:
+                        search_value = rule.get(key)
+                        print(" + searching for {0!r} in {1!s}".format(search_value, getattr(LogEntry, key)))
+                        audit_value = getattr(log, key) or ""
+                        m = re.search(search_value, audit_value)
+                        if m:
+                            # it matches!
+                            print(" + -- found {0!r}".format(audit_value))
+                            match = True
+                        else:
+                            # It does not match, we continue to next rule
+                            print(" + NO MATCH - SKIPPING rest of conditions!")
+                            match = False
+                            break
+
+                if match:
+                    if log.date < rotate_date:
+                        # Delete it!
+                        print(" + Deleting {0!s} due to rule {1!s}".format(log.id, rule))
+                        # Delete it
+                        delete_list.append(log.id)
+                    # skip all other rules and go to the next log entry
+                    break
+        if dryrun:
+            print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
+        else:
+            print("Cleaning up {0!s} entries.".format(len(delete_list)))
+            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
+            session.commit()
+
+    elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
-        session.query(LogEntry.date).filter(LogEntry.date < now).delete()
-        session.commit()
+        sqlquery = session.query(LogEntry.date).filter(LogEntry.date < now)
+        if dryrun:
+            r = len(sqlquery.all())
+        else:
+            r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
+            session.commit()
+        print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
         for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
@@ -567,8 +653,13 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0):
             cut_id = last_id - lowwatermark
             # delete all entries less than cut_id
             print("Deleting entries smaller than %i" % cut_id)
-            session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
-            session.commit()
+            sqlquery = session.query(LogEntry.id).filter(LogEntry.id < cut_id)
+            if dryrun:
+                r = len(sqlquery.all())
+            else:
+                r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+                session.commit()
+            print("{0!s} entries deleted.".format(r))
 
 
 @resolver_manager.command

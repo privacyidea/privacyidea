@@ -6,6 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
@@ -19,8 +20,11 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
                                     delete_policy)
 import binascii
 import datetime
+import hashlib
+import base64
 from dateutil.tz import tzlocal
 
+from passlib.utils.pbkdf2 import pbkdf2
 
 class HOTPTokenTestCase(MyTestCase):
     """
@@ -698,3 +702,113 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         delete_policy("pol1")
+
+    def test_28_2step_generation_default(self):
+        serial = "2step"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.update({"2stepinit": "1"})
+        # fetch the server component for later tests
+        server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # generate a 8-byte client component
+        client_component = b'abcdefgh'
+        # construct a secret
+        token.update({"otpkey": binascii.hexlify(client_component)})
+        # check the generated secret
+        secret = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # check the correct lengths
+        self.assertEqual(len(server_component), 20)
+        self.assertEqual(len(client_component), 8)
+        self.assertEqual(len(secret), 20)
+        # check the secret has been generated according to the specification
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        self.assertEqual(secret, expected_secret)
+
+    def test_29_2step_generation_custom(self):
+        serial = "2step2"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.update({
+            "2stepinit": "1",
+            "2step_serversize": "40",
+            "2step_difficulty": "12345",
+            "2step_clientsize": "12",
+            "hashlib": "sha512",
+        })
+        self.assertEqual(token.token.rollout_state, "clientwait")
+        self.assertEqual(token.get_tokeninfo("2step_clientsize"), "12")
+        self.assertEqual(token.get_tokeninfo("2step_difficulty"), "12345")
+        # fetch the server component for later tests
+        server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # too short
+        self.assertRaises(ParameterError, token.update, {
+            "otpkey": binascii.hexlify("="*8)
+        })
+        # generate a 12-byte client component
+        client_component = b'abcdefghijkl'
+        # construct a secret
+        token.update({
+            "otpkey": binascii.hexlify(client_component),
+            # the following values are ignored
+            "2step_serversize": "23",
+            "2step_difficulty": "666666",
+            "2step_clientsize": "13"
+            })
+        # check the generated secret
+        secret = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # check the correct lengths
+        self.assertEqual(len(server_component), 40)
+        self.assertEqual(len(client_component), 12)
+        self.assertEqual(len(secret), 64) # because of SHA-512
+        # check the secret has been generated according to the specification
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, len(secret))
+        self.assertEqual(secret, expected_secret)
+        self.assertTrue(token.token.active)
+
+    def test_30_2step_otpkeyformat(self):
+        serial = "2step3"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.update({
+            "2stepinit": "1",
+            "2step_clientsize": "12",
+            "hashlib": "sha512",
+        })
+        self.assertEqual(token.token.rollout_state, "clientwait")
+        self.assertEqual(token.get_tokeninfo("2step_clientsize"), "12")
+        # fetch the server component for later tests
+        server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # generate a 12-byte client component
+        client_component = b'abcdefghijkl'
+        checksum = hashlib.sha1(client_component).digest()[:4]
+        # wrong checksum
+        self.assertRaisesRegexp(
+            ParameterError,
+            "Incorrect checksum",
+            token.update,
+            {
+                "otpkey": base64.b32encode("\x37" + checksum[1:] + client_component).strip("="),
+                "otpkeyformat": "base32check",
+            })
+        # construct a secret
+        token.update({
+            "otpkey": base64.b32encode(checksum + client_component).strip("="),
+            "otpkeyformat": "base32check",
+            # the following values are ignored
+            "2step_serversize": "23",
+            "2step_difficulty": "666666",
+            "2step_clientsize": "13"
+            })
+        # check the generated secret
+        secret = binascii.unhexlify(token.token.get_otpkey().getKey())
+        # check the correct lengths
+        self.assertEqual(len(server_component), 64) # because of SHA-512
+        self.assertEqual(len(client_component), 12)
+        self.assertEqual(len(secret), 64) # because of SHA-512
+        # check the secret has been generated according to the specification
+        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, len(secret))
+        self.assertEqual(secret, expected_secret)
+        self.assertTrue(token.token.active)

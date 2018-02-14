@@ -10,7 +10,7 @@
                 <h4 class="modal-title" id="myModalLock" translate>
                     privacyIDEA UI is locked</h4>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" ng-hide="transactionid">
                     <form name="formSignin" class="form-signin" role="form"
                           novalidate>
                         <div class="text-center" translate>
@@ -35,7 +35,10 @@
 
                     </form>
             </div>
+            <div class="modal-body" ng-show="transactionid">
+                <div ng-include="instanceUrl+'/static/components/login/views/enter-response.html'"></div>
+            </div>
         </div>
     </div>
 </div>
-</div>
+

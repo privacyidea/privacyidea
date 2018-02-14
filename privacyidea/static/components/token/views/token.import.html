@@ -88,6 +88,22 @@
                     >{{ realmname }}</option>
         </select>
     </div>
+    <div>
+        <accordion close-others="false">
+        <accordion-group ng-repeat="(keyid, key) in pgpkeys">
+            <accordion-heading>
+                <span translate>PGP Key</span> {{ keyid }}
+            </accordion-heading>
+            <p class="help-block" translate>
+                Please pass the public key and the fingerprint to the token
+                provider.
+            </p>
+            <pre>{{ key.armor }}</pre>
+            <span translate>Fingerprint</span>:
+            {{ key.fingerprint }}
+        </accordion-group>
+        </accordion>
+    </div>
 
     <div class="text-center">
         <button class="btn btn-primary" ng-file-select

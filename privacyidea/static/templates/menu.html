@@ -92,6 +92,13 @@
                 <li>
                     <spinner name="spinner" show="false"></spinner>
                 </li>
+                <li ng-show="reloadListeners && loggedInUser.role &&
+                showReload">
+                    <a ng-click="reload()" style="cursor: pointer">
+                    <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+                    <translate>Refresh</translate>
+                    </a>
+                </li>
                 <li ng-class="{active: $state.includes('register')}"
                     ng-show="registrationAllowed">
                     <a ui-sref="register" ng-hide="loggedInUser.username"
@@ -119,7 +126,7 @@
                             <li><a href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
 				target="documentation" translate>
                                 Online Documentation</a></li>
-                            <li><a href="https://groups.google.com/forum/#!forum/privacyidea"
+                            <li><a href="https://community.privacyidea.org"
 				target="_external" translate>Community</a></li>
                             <li><a href="https://netknights.it/leistungen/support/"
 				target="_external" translate

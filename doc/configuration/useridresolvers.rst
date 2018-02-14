@@ -107,14 +107,19 @@ as "NTLM".
    *cn=administrator,cn=users,dc=domain,dc=name*. When using bind type "NTLM"
    you need to specify Bind DN like *DOMAINNAME\\username*.
 
-The ``LoginName`` attribute is the attribute that holds the loginname. It
+The ``LoginName attribute`` is the attribute that holds the loginname. It
 can be changed to your needs.
 
-The searchfilter is used for forward and backward
-search the object in LDAP.
+Starting with version 2.20 you can provide a list of attributes in
+``LoginName Attribute`` like:
+
+    sAMAccountName, userPrincipalName
+
+This way a user can login with either his sAMAccountName or his principalName.
 
 The ``searchfilter`` is used to list all possible users, that can be used
-in this resolver.
+in this resolver. The searchfilter is used for forward and backward
+search the object in LDAP.
 
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
@@ -139,6 +144,20 @@ attribute mapping with a key, you make up and the LDAP attribute like:
 "homeDirectory" and "objectGUID" being the attributes in the LDAP directory
 and "homedir" and "studentID" the keys returned in a SAML authentication
 request.
+
+The ``MULTIVALUEATTRIBUTES`` config value can be used to specify a list of
+user attributes, that should return a list of values. Imagine you have a user mapping like
+``{ "phone" : "telephoneNumber", "email" : "mail", "surname" : "sn", "group": "memberOf"}``.
+Then you could specify ``["email", "group"]`` as the multi value attribute and the user object
+would return the emails and the group memberships of the user from the LDAP server as a list.
+
+.. note:: If the ``MULTIVALUEATTRIBUTES`` is left blank the default setting is "mobile". I.e. the
+   mobile number will be returned as a list.
+
+The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (see :ref:`rest_validate`)
+or with the policy
+:ref:`policy_add_user_in_response`.
+
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
@@ -146,7 +165,7 @@ blank, the distinguished name will be used. In case of OpenLDAP this can be
 can use *ipaUniqueID*.
 
 .. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
-are case sensitive!
+   are case sensitive!
 
 The option ``No retrieval of schema information`` can be used to
 disable the retrieval of schema information [#ldapschema]_ in
@@ -262,6 +281,10 @@ database.
    starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
+
+You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
+used to determine wich hash algorithm should be used, if a password of an
+editable user is written to the database.
 
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.

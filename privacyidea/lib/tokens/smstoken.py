@@ -293,6 +293,7 @@ class SmsTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
                 log.warning(info)
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
 
         validity = self._get_sms_timeout()
@@ -322,7 +323,7 @@ class SmsTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message)
             log.debug("AutoSMS: send new SMS: {0!s}".format(success))
-            log.debug("AutoSMS: {0!s}".format(message))
+            log.debug("AutoSMS: {0!r}".format(message))
         return ret
 
     @log_with(log)
@@ -430,6 +431,9 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
+        
+        options contains data like clientip, g, user and also the Request 
+        parameters like "challenge" or "pass".
 
         :param options: contains user and g object.
         :type options: dict
@@ -459,6 +463,8 @@ class SmsTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = messages[0]
 
+        # Replace the {challenge}:
+        message = message.format(challenge=options.get("challenge"))
         return message
 
     @staticmethod

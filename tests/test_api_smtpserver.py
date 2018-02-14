@@ -50,7 +50,7 @@ class SMTPServerTestCase(MyTestCase):
             self.assertEqual(server1.get("server"), "1.2.3.4")
             self.assertEqual(server1.get("sender"), "privacyidea@local")
             self.assertEqual(server1.get("username"), "cornelius")
-            self.assertTrue("password" not in server1)
+            self.assertEqual(server1.get("password"), "secret")
 
         # delete server
         with self.app.test_request_context('/smtpserver/server1',

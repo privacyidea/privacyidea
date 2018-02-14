@@ -32,7 +32,7 @@ It only provides the method
 from flask import (Blueprint,
                    request, current_app, Response,
                    stream_with_context)
-from lib.utils import (send_result, getParam)
+from .lib.utils import (send_result, getParam)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
                                  allowed_audit_realm)
 from ..api.auth import admin_required

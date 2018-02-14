@@ -97,7 +97,7 @@ class log_with(object):
                  hide_args=None, hide_kwargs=None,
                  hide_args_keywords=None):
         """
-        Write the paramters and the result of the function to the log.
+        Write the parameters and the result of the function to the log.
 
         :param logger: The logger object.
         :param log_entry: Whether the function parameters should be logged

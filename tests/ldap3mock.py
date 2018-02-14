@@ -383,7 +383,14 @@ class Connection(object):
                         entry["type"] = "searchResEntry"
                         matches.append(entry)
                 else:
-                    if str(value) == str(values_from_directory):
+                    # The value, which we compare is unicode, so we convert
+                    # the values_from_directory to unicode rather than str.
+                    if type(values_from_directory) == str:
+                        values_from_directory = values_from_directory.decode(
+                            "utf-8")
+                    elif type(values_from_directory) == int:
+                        values_from_directory = u"{0!s}".format(values_from_directory)
+                    if value == values_from_directory:
                         entry["type"] = "searchResEntry"
                         matches.append(entry)
 
@@ -451,7 +458,7 @@ class Connection(object):
         # Value to contain:
         #   numbers, upper/lower case letters, astrisk, at symbol, minus, full
         #   stop, backslash or a space
-        v = pyparsing.Word(pyparsing.alphanums + "-*@.\\ ")
+        v = pyparsing.Word(pyparsing.alphanums + "-*@.\\ äöü")
         rel = pyparsing.oneOf("= ~= >= <=")
 
         expr = pyparsing.Forward()
@@ -648,10 +655,15 @@ class Connection(object):
         self.result = dict()
 
         try:
+            if type(search_filter) == str:
+                # We need to convert to unicode otherwise pyparsing will not
+                # find the u"ö"
+                search_filter = search_filter.decode("utf-8")
             expr = Connection._parse_filter()
             s_filter = expr.parseString(search_filter).asList()[0]
-        except pyparsing.ParseBaseException:
-            pass
+        except pyparsing.ParseBaseException as exx:
+            # Just for debugging purposes
+            s = "{!s}".format(exx)
 
         for item in s_filter:
             if item[0] in self.operation:

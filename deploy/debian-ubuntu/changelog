@@ -1,8 +1,126 @@
-python-privacyidea (2.20~dev0-1trusty) trusty; urgency=low
+python-privacyidea (2.22~dev4-1trusty) trusty; urgency=low
 
-  * Challenge Response Login #708
+  * SMPP Provider
+  * Add improved RADIUS attribute mapping
+  * VASCO Token
+  * Improvied offline functionality
 
- -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 07 Jul 2017 08:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 09 Feb 2017 20:30:00 +0200
+
+python-privacyidea (2.21.4-1trusty) trusty; urgency=low
+
+  Fixes:
+  * HTTP Timeout of HTTP SMS Gateway
+  * Remove console.log from webui
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Jan 2018 16:30:00 +0200
+
+
+python-privacyidea (2.21-1trusty) trusty; urgency=low
+
+  Features:
+   * Allow export of tokens to PKSC file (#790)
+   * Implement two-step enrollment of HOTP/TOTP tokens (#797, #863, #865, #866)
+   * Allow WebUI customization via policies (#795)
+
+  Enhancements:
+   * Add script to decrypt safeword tokens
+   * Allow using tags in the tokenissuer of smartphone tokens
+   * Try to re-establish lost HSM connections (#787)
+   * Allow to rotate audit log based on multiple conditions (#780, #833)
+   * Add dry-run option to audit log rotation (#801)
+   * Allow dots in realm names (#808)
+   * Mark empty but required fields in WebUI (#810)
+   * Display success information after PIN is set (#822)
+   * Add further tags to the user notification event handler (#824)
+   * Add number of users to the subscription view (#800)
+   * Add HTTP/HTTPS proxy settings to HTTP SMS Provider (#835)
+   * Federation Handler allows to forward the authorization token (#838)
+   * Use token janitor to export a user list (#852)
+   * Use HSM for random key generation if possible (#783)
+   * HTTP SMS Provider now takes TIMEOUT parameter into account
+   * Allow to configure length of generated serial numbers (#583)
+
+  Fixes:
+   * Fix handling of only_realm option in token event handler (#809)
+   * Fix scrollbar issues in WebUI (#806, #823)
+   * Fix OTP counter of offline token (#840)
+   * Fix conflicts between check_tokentype and passthru policies (#846)
+   * Properly reset tab tile after session has been locked (#850)
+   * Fix handling of fixed key size during enrollment (#820)
+   * Make sure that only active policies are honored (#825)
+   * Fix various bugs with non-ASCII data (#754)
+   * Fix failcounter_clear_timeout (#831)
+   * Only remove apache host definitions on first installation (#834)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 20 Dec 2017 00:30:00 +0200
+
+python-privacyidea (2.20.1-1trusty) trusty; urgency=low
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+   * Optimize the LDAP Resolver Redundancy to avoid LdapServerPoolExhaustedErrors (#802)
+   * Preset default realm in token enrollment (#804)
+   * Fix PassOnNoUser and PassOnNoToken (#798)
+   * Fix genkey=0 error during token enrollment (#793)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 30 Oct 2017 11:30:00 +0200
+
+python-privacyidea (2.20-1trusty) trusty; urgency=low
+
+  Features:
+   * New Token-Type OCRA and DisplayTAN to support 
+     transaction signing for online banking (#767)
+   * Federation Handler allows to forward authentication
+     requests and other REST API requests to a child
+     privacyIDEA system (#711)
+   * Improved Subscription Handling 
+   * Allow to login with multiple loginnames (#713)
+   * Authentication Cache policy (#729)
+
+  Enhancements:
+   * !!!NOTE!!! following policies now also honor the resolvers,
+    which they did not previously:
+    (AUTH, challenge_response), (AUTH, otppin), 
+    (AUTHZ, auth_max_success), (AUTHZ, auth_max_fail),
+    (AUTHZ, last_auth), (WEBUI, login_mode),
+    (ENROLL,losttoken_pw_contents), (ENROLL,losttoken_validity),
+    (ENROLL, losttoken_pw_len) (#736)
+   * User can regenerate the QR Code during enrollment
+     of smartphone app (#766)
+   * Administrator can define remote privacyIDEA servers
+     centrally (#711)
+   * Events can now be ordered. This is important for the
+     federation handling (#711)
+   * Specify the hash algorithm that is used to save 
+     SQL users passwords (#745)
+   * Add welcome dialog for administrator (#716)
+   * Allow creating oracle DB (#752)
+   * Event Handler can use timestamps and time offsets in
+     conditions (#741)
+   * Use challenge/response token to unlock the screen of 
+     the web UI (#702)
+   * Support multiple challenge/response token at the same
+     time (#722)
+   * GPG keys are generated during package installation and
+     show the GPG key in the import dialog (#742)
+   * Failcounter clearing timeout in UI (#719)
+   * Allow to send challenge data (like banking transaction) in
+     email text and SMS text.
+
+  Fixes:
+   * Set default loglevel from DEBUG to INFO (#765)
+   * Fixed PIN logging, which could lead to exceptions
+   * Fixed unicode handling in log messages
+   * Make LDAP Resolver work with utf8 (#738)
+   * User can only choose hash algo according to policy (#723)
+   * Add time period 30/60s to rollout URI (#744)
+   * Fix deprecation warning for flask_migrate (#734)
+   * Allow multiple tries for challenge/response (#708)
+   * Fix problem with certificate serial number (#737)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 27 Sep 2017 11:30:00 +0200
 
 python-privacyidea (2.19.1-1trusty) trusty; urgency=low
 

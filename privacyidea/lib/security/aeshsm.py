@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add reinitialization of the PKCS11 module
 #  2016-09-01 Mathias Brossard <mathias@axiadids.com>
 #             Alternate PKCS11 Security Module
 #
@@ -33,6 +35,8 @@ log = logging.getLogger(__name__)
 TOKEN_KEY = 0
 CONFIG_KEY = 1
 VALUE_KEY = 2
+
+MAX_RETRIES = 5
 
 mapping = {
     'token':  TOKEN_KEY,
@@ -92,8 +96,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         self.pkcs11 = PyKCS11.PyKCS11Lib()
         self.pkcs11.load(self.module)
-        self.pkcs11.lib.C_Initialize()
+        self.initialize_hsm()
 
+    def initialize_hsm(self):
+        self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
 
@@ -160,21 +166,43 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         return int_list_to_bytestring(r_integers)
 
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
-        if(len(data) == 0):
+        if len(data) == 0:
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         k = self.key_handles[key_id]
-        r = self.session.encrypt(k, bytes(data), m)
+        retries = 0
+        while True:
+            try:
+                r = self.session.encrypt(k, bytes(data), m)
+                break
+            except PyKCS11.PyKCS11Error as exx:
+                log.warning(u"Encryption failed: {0!s}".format(exx))
+                self.initialize_hsm()
+                retries += 1
+                if retries > MAX_RETRIES:
+                    raise HSMException("Failed to encrypt after multiple retries.")
+
         return int_list_to_bytestring(r)
 
     def decrypt(self, data, iv, key_id=TOKEN_KEY):
-        if(len(data) == 0):
+        if len(data) == 0:
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         k = self.key_handles[key_id]
-        r = self.session.decrypt(k, bytes(data), m)
+        retries = 0
+        while True:
+            try:
+                r = self.session.decrypt(k, bytes(data), m)
+                break
+            except PyKCS11.PyKCS11Error as exx:
+                log.warning(u"Decryption failed: {0!s}".format(exx))
+                self.initialize_hsm()
+                retries += 1
+                if retries > MAX_RETRIES:
+                    raise HSMException("Failed to decrypt after multiple retries.")
+
         return int_list_to_bytestring(r)
 
     def decrypt_password(self, crypt_pass):

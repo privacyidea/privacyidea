@@ -392,7 +392,7 @@ class U2fTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'Please confirm with your U2F token ({0!s})'.format( \
+        message = u'Please confirm with your U2F token ({0!s})'.format( \
                   self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
@@ -403,7 +403,7 @@ class U2fTokenClass(TokenClass):
         challenge = geturandom(32)
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
-                                 transaction_id=None,
+                                 transaction_id=transactionid,
                                  challenge=binascii.hexlify(challenge),
                                  data=None,
                                  session=options.get("session"),
@@ -450,8 +450,7 @@ class U2fTokenClass(TokenClass):
             clientdata_dict = json.loads(clientdata)
             client_challenge = clientdata_dict.get("challenge")
             if challenge_url != client_challenge:
-                raise ValidateError("Challenge mismatch. The U2F key did not "
-                                    "send the original challenge.")
+                return ret
             if clientdata_dict.get("typ") != "navigator.id.getAssertion":
                 raise ValidateError("Incorrect navigator.id")
             #client_origin = clientdata_dict.get("origin")

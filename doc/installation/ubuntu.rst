@@ -14,18 +14,19 @@ Install it like this::
 
    add-apt-repository ppa:privacyidea/privacyidea
    apt-get update
-   apt-get install python-privacyidea privacyideaadm
 
-Optionally you can also install necessary configuration files to run
-privacyIDEA within the Nginx Webserver::
+There are the base packages ``python-privacyidea`` and the administrator
+tool ``privacyideaadm``.
 
-   apt-get install privacyidea-nginx
-
-Alternatively you can install privacyIDEA running in an Apache webserver::
+But we recommend installing the meta package::
 
    apt-get install privacyidea-apache2
 
-After installing in Nginx or Apache2 you only need to create your first
+which will install the code, the webserver and the database and configure
+everything accordingly. If you do not like the Apache2 webserver you could
+alternatively use the meta package ``privacyidea-nginx``.
+
+After installing with Apache2 or Nginx you only need to create your first
 administrator and you are done::
 
    pi-manage admin add admin -e admin@localhost

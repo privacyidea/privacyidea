@@ -68,7 +68,7 @@ def get_version():
 
 def getParam(param, key, optional=True, default=None):
     """
-    returns a paramter from the request parameters.
+    returns a parameter from the request parameters.
     
     :param param: the dictionary of parameters
     :type param: dict

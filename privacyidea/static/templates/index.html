@@ -2,7 +2,7 @@
 
 <!-- Include menu -->
 
-<ng-include src="'{{ instance }}/static/templates/menu.html'">
+<ng-include src="'{{ instance }}/static/{{ customization_menu_file }}'">
 </ng-include>
 <div class="container">
     <div ui-view class="slide"></div>
@@ -14,36 +14,11 @@
 <input type=hidden id=CUSTOMIZATION value="{{ customization }}">
 <input type=hidden id="REALMS" value="{{ realms }}">
 <input type=hidden id="LOGO" value="{{ logo }}">
+<input type=hidden id="EXTERNAL_LINKS" value="{{ external_links }}">
 
-{% raw %}
-<div class="navbar navbar-inverse navbar-fixed-bottom">
-    <div class="container">
-        <a ng-click="about()"
-            class="navbar-text pull-left">
-            privacyIDEA
-            {{ privacyideaVersionNumber }}
-        </a>
-{% endraw %}
-{% if external_links %}
-        <a class="navbar-btn btn btn-success pull-right"
-           href="https://netknights.it/en/leistungen/service-level-agreements/"
-           target="_external">
-            <translate>Support</translate>
-        </a>
-        <a class="navbar-text pull-right"
-                href="https://community.privacyidea.org"
-                target="_external">
-            privacyIDEA Forum</a>
-{% endif %}
-{% raw %}
-        <a class="navbar-text pull-right"
-           ng-show="privacyideaVersionNumber"
-                href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
-                target="documentation">
-            <translate>Online Documentation</translate>
-        </a>
-    </div>
-</div>
-{% endraw %}
+<!-- Include baseline -->
+
+<ng-include src="'{{ instance }}/static/{{ customization_baseline_file }}'">
+</ng-include>
 
 {% include 'footer.html' %}

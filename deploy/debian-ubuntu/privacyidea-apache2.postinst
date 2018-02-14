@@ -95,6 +95,7 @@ create_database() {
 }
 
 enable_apache() {
+    if [ ! -h /etc/apache2/sites-enabled/privacyidea.conf ]; then
         rm -f /etc/apache2/sites-enabled/*
         a2enmod wsgi
         a2enmod headers
@@ -102,6 +103,7 @@ enable_apache() {
         a2ensite privacyidea
         ln -s /etc/ssl/certs/privacyideaserver.pem /etc/ssl/certs/privacyidea-bundle.crt || true
         ln -s /etc/ssl/private/privacyideaserver.key /etc/ssl/private/privacyidea.key || true
+    fi
 }
 
 update_db() {
@@ -109,6 +111,14 @@ update_db() {
 	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations > /dev/null
 	# Upgrade the database
 	pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
+}
+
+create_gpg() {
+	mkdir -p /etc/privacyidea/gpg
+	rngd -r /dev/urandom
+	pi-manage create_pgp_keys || true
+	chown -R $USERNAME /etc/privacyidea/gpg
+	killall -9 rngd
 }
 
 case "$1" in
@@ -123,6 +133,7 @@ case "$1" in
 	#update-rc.d apache2 defaults
 	service apache2 restart
 	update_db
+	create_gpg
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)

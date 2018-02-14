@@ -2,6 +2,8 @@
 #
 #  (c) 2015 Cornelius Kölbel - cornelius@privacyidea.org
 #
+#  2017-12-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add policy for 2step
 #  2016-04-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add get_default_settings to change the parameters before
 #             the token is created
@@ -56,6 +58,7 @@ keylen = {'sha1': 20,
           }
 
 log = logging.getLogger(__name__)
+
 
 class TotpTokenClass(HotpTokenClass):
 
@@ -112,29 +115,51 @@ class TotpTokenClass(HotpTokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {'user': {
-                   'totp_timestep': {'type': 'int',
-                                     'value': [30, 60],
-                                     'desc': 'Specify the time step of '
-                                             'the timebased OTP token.'},
-                   'totp_hashlib': {'type': 'str',
-                                    'value': ["sha1",
-                                              "sha256",
-                                              "sha512"],
-                                    'desc': 'Specify the hashlib to be used. '
-                                            'Can be SHA1, SHA256 or SHA512.'},
-                   'totp_otplen': {'type': 'int',
-                                   'value': [6, 8],
-                                   'desc': "Specify the OTP length to be "
-                                           "used."},
-                   'totp_force_server_generate': {'type': 'bool',
-                                                  'desc': _("Force the key to "
-                                                            "be generated on "
-                                                            "the server.")}
-                                          },
-                          },
+               'policy': {
+                   SCOPE.USER: {
+                       'totp_timestep': {'type': 'int',
+                                         'value': [30, 60],
+                                         'desc': 'Specify the time step of '
+                                                 'the timebased OTP token.'},
+                       'totp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': 'Specify the hashlib to be used. '
+                                                'Can be SHA1, SHA256 or SHA512.'},
+                       'totp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': "Specify the OTP length to be "
+                                               "used."},
+                       'totp_force_server_generate': {'type': 'bool',
+                                                      'desc': _("Force the key to "
+                                                                "be generated on "
+                                                                "the server.")},
+                       '2step': {'type': 'str',
+                                 'value': ['allow', 'force'],
+                                 'desc': _('Specify whether users are allowed or '
+                                           'forced to use two-step enrollment.')}
+                   },
+                   SCOPE.ADMIN: {
+                       '2step': {'type': 'str',
+                                 'value': ['allow', 'force'],
+                                 'desc': _('Specify whether admins are allowed or '
+                                           'forced to use two-step enrollment.')
+                                 }
+                   },
+                   SCOPE.ENROLL: {
+                       '2step_clientsize': {'type': 'int',
+                                            'desc': _("The size of the OTP seed part contributed "
+                                                      "by the client (in bytes)")},
+                       '2step_serversize': {'type': 'int',
+                                            'desc': _("The size of the OTP seed part "
+                                                      "contributed by the server (in bytes)")},
+                       '2step_difficulty': {'type': 'int',
+                                            'desc': _("The difficulty factor used for the "
+                                                      "OTP seed generation ""(should be at least 10000)")}
+                   }
+               },
                }
-
         if key:
             ret = res.get(key, {})
         else:
@@ -146,7 +171,7 @@ class TotpTokenClass(HotpTokenClass):
     @log_with(log)
     def update(self, param, reset_failcount=True):
         """
-        This is called during initialzaton of the token
+        This is called during initialization of the token
         to add additional attributes to the token object.
 
         :param param: dict of initialization parameters
@@ -156,19 +181,12 @@ class TotpTokenClass(HotpTokenClass):
         """
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
 
-        timeStep = param.get("timeStep",
-                             get_from_config("totp.timeStep") or 30)
-
-        timeWindow = param.get("timeWindow",
-                               get_from_config("totp.timeWindow") or 180)
-
-        timeShift = param.get("timeShift",
-                              get_from_config("totp.timeShift") or 0)
+        timeStep = param.get("timeStep", self.timestep)
+        timeWindow = param.get("timeWindow", self.timewindow)
+        timeShift = param.get("timeShift", self.timeshift)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
-        hashlibStr = param.get("totp.hashlib",
-                               get_from_config("totp.hashlib",
-                                               u'sha1'))
+        hashlibStr = param.get("hashlib", self.hashlib)
 
         self.add_tokeninfo("timeWindow", timeWindow)
         self.add_tokeninfo("timeShift", timeShift)
@@ -291,10 +309,6 @@ class TotpTokenClass(HotpTokenClass):
         otplen = int(self.token.otplen)
         options = options or {}
         secretHOtp = self.token.get_otpkey()
-        # oldCounter we have to remove one, as the normal otp handling will
-        # increment
-        # TODO: Migration: Really?
-        # oCount = self.get_otp_count() - 1
         oCount = self.get_otp_count()
         inow = int(time.time())
         window = window or self.timewindow
@@ -310,8 +324,6 @@ class TotpTokenClass(HotpTokenClass):
             # No counter, so we take the current token_time
             counter = self._time2counter(server_time,
                                          timeStepping=self.timestep)
-        otime = self._getTimeFromCounter(oCount, timeStepping=self.timestep)
-        ttime = self._getTimeFromCounter(counter, timeStepping=self.timestep)
 
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,
@@ -644,7 +656,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["totp.hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = hashlib_pol[0]
 
             timestep_pol = policy_object.get_action_values(
                 action="totp_timestep",
@@ -667,17 +679,3 @@ class TotpTokenClass(HotpTokenClass):
                 ret["otplen"] = otplen_pol[0]
 
         return ret
-
-    @log_with(log)
-    def get_init_detail(self, params=None, user=None):
-        """
-        to complete the token initialization some additional details
-        should be returned, which are displayed at the end of
-        the token initialization.
-        This is the e.g. the enrollment URL for a Google Authenticator.
-        """
-        params = params or {}
-        if params.get("totp.hashlib"):
-            params["hashlib"] = params.get("totp.hashlib")
-        response_detail = HotpTokenClass.get_init_detail(self, params, user)
-        return response_detail

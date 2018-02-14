@@ -23,13 +23,14 @@ myApp.controller("policyListController", function($scope, $stateParams,
     if ($location.path() === "/config/policies") {
         $location.path("/config/policies/list");
     }
+    $('html,body').scrollTop(0);
 
     // Get all policies
     $scope.getPolicies = function () {
         ConfigFactory.getPolicies(function(data) {
             $scope.policies = data.result.value;
-            console.log("Fetched all policies");
-            console.log($scope.policies);
+            //debug: console.log("Fetched all policies");
+            //debug: console.log($scope.policies);
         });
     };
 
@@ -69,6 +70,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.policyDefsLoaded = false;
     $scope.scopes = [];
     $scope.viewPolicyTemplates = false;
+    $('html,body').scrollTop(0);
 
     var check_all_loaded = function() {
         if ($scope.resolversLoaded &&
@@ -103,15 +105,15 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
 
     // Get the policy templates from github
     PolicyTemplateFactory.getTemplates(function(data){
-        console.log("Getting Policy Templates.");
-        console.log(data);
+        //debug: console.log("Getting Policy Templates.");
+        //debug: console.log(data);
         $scope.policyTemplates = data;
     });
 
     $scope.getTemplate = function(templateName) {
         PolicyTemplateFactory.getTemplate(templateName, function(data){
-            console.log("Get template ". templateName);
-            console.log(data);
+            //debug: console.log("Get template ". templateName);
+            //debug: console.log(data);
             // Set template data.
             $scope.policyname = data.name;
             $scope.presetEditValues2({name: data.name,
@@ -126,7 +128,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     // get init values from the server
     ConfigFactory.getPolicyDefs(function (data) {
         $scope.policyDefs = data.result.value;
-        console.log($scope.policyDefs);
+        //debug: console.log($scope.policyDefs);
         // fill the scope:
         angular.forEach($scope.policyDefs, function (value, key) {
             $scope.scopes.push({name: key, ticked: false});
@@ -183,10 +185,10 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         // in the case of action values, we need to provide a list of
         // checkboxes and input fields.
         // we can do this with include files like at token.enroll
-        console.log(scope);
-        console.log($scope.policyDefs);
+        //debug: console.log(scope);
+        //debug: console.log($scope.policyDefs);
         var actions = $scope.policyDefs[scope];
-        console.log(actions);
+        //debug: console.log(actions);
         $scope.actions = [];
         $scope.actionGroups = [];
         $scope.isActionValues = false;
@@ -282,31 +284,31 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         } else {
             // We only have boolean actions...
             angular.forEach($scope.selectedActions, function (value, key) {
-                console.log(value);
+                //debug: console.log(value);
                 $scope.params.action.push(value.name);
             });
         }
         // get realms
         angular.forEach($scope.selectedRealms, function(value, key) {
-            console.log(value);
+            //debug: console.log(value);
             realms.push(value.name);
             $scope.params.realm = realms;
         });
         // get resolvers
         angular.forEach($scope.selectedResolvers, function(value, key) {
-            console.log(value);
+            //debug: console.log(value);
             resolvers.push(value.name);
             $scope.params.resolver = resolvers;
         });
         // get admin realms
         angular.forEach($scope.selectedAdminRealms, function(value, key) {
-            console.log(value);
+            //debug: console.log(value);
             adminRealms.push(value.name);
             $scope.params.adminrealm = adminRealms;
         });
         ConfigFactory.setPolicy($scope.policyname, $scope.params,
             function(data) {
-                console.log(data);
+                //debug: console.log(data);
                 // Return to the policy list
                 $scope.getPolicies();
                 $state.go("config.policies.list");
@@ -316,7 +318,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     };
 
     $scope.presetEditValues2 = function(policy) {
-            console.log(policy);
+            //debug: console.log(policy);
             // fill $scope.params
             $scope.params.user = policy.user;
             $scope.params.active = policy.active;
@@ -346,9 +348,9 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         };
 
     $scope.presetEditValues = function () {
-        console.log("presetEditValues");
-        console.log($scope.policies);
-        console.log($scope.policyDefs);
+        //debug: console.log("presetEditValues");
+        //debug: console.log($scope.policies);
+        //debug: console.log($scope.policyDefs);
 
         if ($scope.policies) {
             // We have $scope.policies, since we come from the state policies.list
@@ -422,7 +424,7 @@ myApp.controller("tokenConfigController", function ($scope, $location,
 
     $scope.saveTokenConfig = function () {
         // only save parameters, that have changed!
-        console.log($scope.form);
+        //debug: console.log($scope.form);
         var save_params = {};
         angular.forEach($scope.form, function (value, key) {
             if (value != $scope.original_params[key])
@@ -478,6 +480,7 @@ myApp.controller("configController", function ($scope, $location,
                                                inform, gettextCatalog) {
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
+    $('html,body').scrollTop(0);
     // go to the system view by default
     if ($location.path() === "/config") {
         $location.path("/config/system");
@@ -520,22 +523,22 @@ myApp.controller("configController", function ($scope, $location,
     // Email/SMTP part
     $scope.getSmtpIdentifiers = function() {
         ConfigFactory.getSmtp(function(data){
-            console.log("SMTP Identifiers");
-            console.log(data.result.value);
+            //debug: console.log("SMTP Identifiers");
+            //debug: console.log(data.result.value);
             $scope.smtpIdentifiers = data.result.value;
         });
     };
 
     $scope.getSMSIdentifiers = function() {
         ConfigFactory.getSMSGateways(undefined, function(data){
-            console.log("SMS Identifiers");
+            //debug: console.log("SMS Identifiers");
             // Argh when will we have array comprehension?
             // $scope.smsIdentifiers = [sms.name for (sms of data.result.value)];
-            $scope.smsIdentifiers = Array()
+            $scope.smsIdentifiers = Array();
             angular.forEach(data.result.value, function(sms){
                 $scope.smsIdentifiers.push(sms.name);
-            })
-            console.log($scope.smsIdentifiers);
+            });
+            //debug: console.log($scope.smsIdentifiers);
         });
     };
 
@@ -567,9 +570,9 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.getRealms = function () {
         ConfigFactory.getRealms(function (data) {
-            console.log("getting realms");
+            //debug: console.log("getting realms");
             $scope.realms = data.result.value;
-            console.log($scope.realms);
+            //debug: console.log($scope.realms);
         });
     };
 
@@ -654,15 +657,15 @@ myApp.controller("configController", function ($scope, $location,
 
     $scope.saveSystemConfig = function () {
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
-            console.log($scope.params);
-            console.log(data);
+            //debug: console.log($scope.params);
+            //debug: console.log(data);
             inform.add(gettextCatalog.getString("System Config saved."),
                                 {type: "info"});
         });
     };
     $scope.getSystemConfig = function () {
         ConfigFactory.getSystemConfig(function (data) {
-            console.log(data);
+            //debug: console.log(data);
             $scope.params = data.result.value;
             $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
             $scope.params['PrependPin.type'] = "public";
@@ -674,17 +677,22 @@ myApp.controller("configController", function ($scope, $location,
             $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
             $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
 
-            console.log($scope.params);
+            //debug: console.log($scope.params);
         });
     };
 
     $scope.getSystemDocumentation = function () {
         ConfigFactory.getDocumentation(function (data) {
-            console.log(data);
+            //debug: console.log(data);
             $scope.systemDocumentation = data;
         });
     };
     $scope.getSystemConfig();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", function() {
+        $scope.getSystemConfig();
+    });
 
 });
 
@@ -740,7 +748,6 @@ myApp.controller("hostsResolverController", function ($scope,
             $state.go("config.mresolvers.list");
         });
     };
-
 });
 
 myApp.controller("CAConnectorController", function($scope, ConfigFactory,
@@ -764,11 +771,14 @@ myApp.controller("CAConnectorController", function($scope, ConfigFactory,
     };
 
     $scope.editCAConnector = function(connectorname, c_type) {
-        console.log(connectorname);
+        //debug: console.log(connectorname);
         $state.go("config.caconnectors.edit" + c_type,
                 {'connectorname': connectorname});
         $rootScope.returnTo = "config.caconnectors.list";
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getCAConnectors);
 });
 
 myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
@@ -782,7 +792,7 @@ myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
         /* If we have a connectorname, we do an Edit
          and we need to fill all the $scope.params */
         ConfigFactory.getCAConnector($scope.connectorname, function (data) {
-            console.log(data.result.value);
+            //debug: console.log(data.result.value);
             var caconnector = data.result.value[0];
             $scope.params = caconnector.data;
             $scope.params.type = 'local';
@@ -827,6 +837,9 @@ myApp.controller("machineResolverController", function ($scope,
         $state.go("config.mresolvers.edit" + r_type, {'resolvername': resolvername});
         $rootScope.returnTo = "config.mresolvers.list";
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getMachineResolvers);
 });
 
 myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state,
@@ -847,19 +860,23 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         CACHE_TIMEOUT: 120,
         NOSCHEMAS: false,
         TLS_VERIFY: true,
-        START_TLS: true
+        START_TLS: true,
+        SERVERPOOL_ROUNDS: 2,
+        SERVERPOOL_SKIP: 30
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
     $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
 
+    $('html,body').scrollTop(0);
+
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
          and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
-            console.log(resolver);
+            //debug: console.log(resolver);
             $scope.params = resolver.data;
             $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
             $scope.params.EDITABLE = isTrue($scope.params.EDITABLE);
@@ -932,7 +949,7 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
          and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
-            console.log(resolver);
+            //debug: console.log(resolver);
             $scope.params = resolver.data;
             $scope.params.type = 'scimresolver';
         });
@@ -970,13 +987,16 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
+    $scope.hashtypes = Array("PHPASS", "SHA", "SSHA","SSHA256", "SSHA512", "OTRS");
+
+    $('html,body').scrollTop(0);
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit
          and we need to fill all the $scope.params */
         ConfigFactory.getResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
-            console.log(resolver);
+            //debug: console.log(resolver);
             $scope.params = resolver.data;
             $scope.params.type = 'sqlresolver';
             $scope.params.Editable = isTrue($scope.params.Editable);
@@ -1024,7 +1044,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
 
     $scope.testSQL = function () {
         ConfigFactory.testResolver($scope.params, function (data) {
-            console.log(data.result);
+            //debug: console.log(data.result);
             if (data.result.value >= 0) {
                 inform.add(data.detail.description,
                     {type: "success", ttl: 10000});

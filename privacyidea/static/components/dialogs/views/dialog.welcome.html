@@ -1,0 +1,173 @@
+<!-- Modal -->
+
+<div class="modal fade lock-dialog" id="dialogWelcome" tabindex="-1"
+     role="dialog"
+     ng-show="welcomeStep < 5"
+     data-backdrop="static" data-keyboard="false"
+     aria-labelledby="myModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+
+        <div class="modal-content" ng-show="welcomeStep === 0">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel" translate
+                >Welcome</h4>
+            </div>
+
+            <!-- In case of no subscription and less than 50 users -->
+            <div class="modal-body" ng-show="subscription_state === 0" translate>
+                <p>First, we would like to give you some background
+                    information on privacyIDEA.</p>
+                <p>privacyIDEA is an <b>Enterprise Level</b>
+                    Multi Factor Authentication System. It is open source.
+                    The core developers are employed at NetKnights GmbH, Germany.
+                    NetKnights provides the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
+                    including <b>Support and Service Level Agreements</b>.
+                    Moreover NetKnights provides services, consultancy and
+                    payed programming of new features.
+                </p>
+            </div>
+
+            <!-- In case of no subscription and more than 50 users -->
+            <div class="modal-body" ng-show="subscription_state === 1" translate>
+                <p><b>You are using privacyIDEA with more than 50 users.</b></p>
+                <p>Thank you for your trust!</p>
+                <p>For the productive enterprise use we recommend the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>.
+                </p>
+                <p>NetKnights provides the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
+                    including <b>Support and Service Level Agreements</b>.
+                    Moreover NetKnights provides services, consultancy and
+                    payed programming of new features.
+                </p>
+            </div>
+
+            <!-- In case of expired subscription -->
+            <div class="modal-body" ng-show="subscription_state === 2" translate>
+                <p>Your subscription is not valid anymore. Either you exceeded the number of tokens or the
+                    subscription expired. Please check, if you need to renew your subscription.
+                </p>
+            </div>
+
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default"
+                        ng-click="nextWelcome()" translate>Next
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-content" ng-show="welcomeStep === 1">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel" translate
+                >The value of open source</h4>
+            </div>
+            <div class="modal-body" translate>
+                <p>
+                    You are reading books, which do not belong to you anymore. Your ebook reader
+                    only provides them for the time of reading. You are using software as a service
+                    and you do not have any control, when the software will be updated,
+                    which features will be added or removed or if the service might even be stopped.
+                    You only get a legal right of time limited use.
+                </p>
+                <p>
+                    You could install proprietary software on your own server, but you also have only
+                    limited rights in regards to this installation. You are not allowed to modify or pass along
+                    this proprietary software.
+                </p>
+                <p>
+                    The open source software privacyIDEA now is <b>your property</b>! No one can take away this software
+                    or this installation. According to the license AGPLv3 you can modify or distribute this software.
+                    You do not have to worry about end-of-life.
+                </p>
+                <p>
+                    <b>Using open source is not about spending no money, but is is about full control you get over
+                        your own system! Forever!</b>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default"
+                        ng-click="nextWelcome()" translate>Next
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-content" ng-show="welcomeStep === 2">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel" translate
+                >The added value of privacyIDEA Enterprise Edition</h4>
+            </div>
+            <div class="modal-body">
+                <p translate>According to the
+                    <a target=license href="https://github.com/privacyidea/privacyidea/blob/master/LICENSE">AGPLv3</a>
+                </p>
+                <p class="text-center" translate>
+                    <b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>
+                </p>
+                <p translate>The added values of the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
+                    are</p>
+                <ul translate>
+                    <li>Support and
+                        <a target=netknights href="https://netknights.it/en/leistungen/service-level-agreements/">
+                            Service Level Agreements by NetKnights</a>, Germany.
+                    </li>
+                    <li>Stable enterprise packages for Debian, Ubuntu, RHEL allow for an easy update and secure
+                        operations.
+                    </li>
+                    <li>An exclusive <b>Appliance</b>-Tool, which allows easy setup of RADIUS clients, MySQL master
+                        master replications,
+                        backup and restore...
+                    </li>
+                    <li>Exclusive timely news and bug reports.</li>
+                    <li>Depending on the support level you get help with updates and yearly consultancy.</li>
+                    <li>By buying the
+                        <a target=netknights
+                           href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
+                        you ensure that professional developers can work full time
+                        on privacyIDEA, add new features and fix bugs in a timely manner. In addition you allow for
+                        external services
+                        like code audits.
+                    </li>
+                </ul>
+                <p translate>
+                    <a target=netknights href="https://netknights.it/en/unternehmen/kontakt/">
+                        Ask for the privacyIDEA Enterprise Edition, now!</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default"
+                        ng-click="nextWelcome()" translate>Next
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-content" ng-show="welcomeStep === 3">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLabel" translate
+                >Thank you for improving your security!</h4>
+            </div>
+            <div class="modal-body" translate>
+                <p>Thank you for using privacyIDEA and making your network
+                    and thus this world a more secure place!</p>
+                <p>Have fun using privacyIDEA!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default"
+                        ng-click="resetWelcome()" translate>
+                    Read again
+                </button>
+                <button type="button" class="btn btn-success"
+                        ng-click="nextWelcome()" translate>Dive In!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

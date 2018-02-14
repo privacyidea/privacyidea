@@ -58,6 +58,7 @@ from privacyidea.api.lib.utils import get_all_params, getParam
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
+from privacyidea.lib.subscriptions import subscription_status
 
 
 optional = True
@@ -197,16 +198,18 @@ def check_tokentype(request, response):
     policy_object = g.policy_object
     user_object = request.User
     allowed_tokentypes = policy_object.get_action_values(
-        "tokentype",
+        ACTION.TOKENTYPE,
         scope=SCOPE.AUTHZ,
         user=user_object.login,
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
+        # If we have tokentype policies, but
+        # the tokentype is not allowed, we raise an exception
         g.audit_object.log({"success": False,
-                            'action_detail': "Tokentype not allowed for "
-                                             "authentication"})
+                            'action_detail': "Tokentype {0!r} not allowed for "
+                                             "authentication".format(tokentype)})
         raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
@@ -227,7 +230,7 @@ def check_serial(request, response):
     policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
     # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values("serial",
+    allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
                                                     scope=SCOPE.AUTHZ,
                                                     client=g.client_ip)
 
@@ -242,6 +245,47 @@ def check_serial(request, response):
             g.audit_object.log({"action_detail": "Serial is not allowed for "
                                                  "authentication!"})
             raise PolicyError("Serial is not allowed for authentication!")
+    return response
+
+
+def check_tokeninfo(request, response):
+    """
+    This policy function is used as a decorator for the validate API.
+    It checks after a successful authentication if the token has a matching
+    tokeninfo field. If it does not match, authorization is denied. Then
+    a PolicyException is raised.
+
+    :param response: The response of the decorated function
+    :type response: Response object
+    :return: A new modified response
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+    serial = content.get("detail", {}).get("serial")
+    if serial:
+        tokens = get_tokens(serial=serial)
+        if len(tokens) == 1:
+            token_obj = tokens[0]
+            tokeninfos_pol = policy_object.get_action_values(
+                ACTION.TOKENINFO,
+                scope=SCOPE.AUTHZ,
+                client=g.client_ip,
+                allow_white_space_in_action=True)
+            for tokeninfo_pol in tokeninfos_pol:
+                try:
+                    key, regex, _r = tokeninfo_pol.split("/")
+                    value = token_obj.get_tokeninfo(key, "")
+                    if re.search(regex, value):
+                        log.debug(u"Regular expression {0!s} "
+                                  u"matches the tokeninfo field {1!s}.".format(regex, key))
+                    else:
+                        log.info(u"Tokeninfo field {0!s} with contents {1!s} "
+                                 u"does not match {2!s}".format(key, value, regex))
+                        raise PolicyError("Tokeninfo field {0!s} with contents does not"
+                                          " match regular expression.".format(key))
+                except ValueError:
+                    log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+
     return response
 
 
@@ -287,10 +331,11 @@ def add_user_detail_to_response(request, response):
     content = json.loads(response.data)
     policy_object = g.policy_object
 
+    # Check for ADD USER IN RESPONSE
     detail_pol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
-                                           scope=SCOPE.AUTHZ,
-                                           client=g.client_ip,
-                                           active=True)
+                                            scope=SCOPE.AUTHZ,
+                                            client=g.client_ip,
+                                            active=True)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -301,6 +346,18 @@ def add_user_detail_to_response(request, response):
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui
+        response.data = json.dumps(content)
+
+    # Check for ADD RESOLVER IN RESPONSE
+    detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
+                                            scope=SCOPE.AUTHZ,
+                                            client=g.client_ip,
+                                            active=True)
+
+    if detail_pol and content.get("result", {}).get("value") and request.User:
+        # The policy was set, we need to add the resolver and the realm
+        content["detail"]["user-resolver"] = request.User.resolver
+        content["detail"]["user-realm"] = request.User.realm
         response.data = json.dumps(content)
 
     return response
@@ -483,14 +540,16 @@ def get_webui_settings(request, response):
             policy_object.get_policies(action=ACTION.TOKENWIZARD2ND,
                                        scope=SCOPE.WEBUI,
                                        realm=realm,
-                                       client=client))
+                                       client=client,
+                                       active=True))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
                 action=ACTION.TOKENWIZARD,
                 scope=SCOPE.WEBUI,
                 realm=realm,
-                client=client
+                client=client,
+                active=True
             )
 
             # We also need to check, if the user has not tokens assigned.
@@ -503,14 +562,24 @@ def get_webui_settings(request, response):
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
         search_on_enter = policy_object.get_policies(
             action=ACTION.SEARCH_ON_ENTER,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
+        hide_welcome = policy_object.get_policies(
+            action=ACTION.HIDE_WELCOME,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True
+        )
+        hide_welcome = bool(hide_welcome)
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -557,6 +626,8 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)
     return response
 

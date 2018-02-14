@@ -41,8 +41,8 @@ log = logging.getLogger(__name__)
 SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
     "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
-    "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider"]
-
+    "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
+    "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider"]
 
 class SMSError(Exception):
     def __init__(self, error_id, description):

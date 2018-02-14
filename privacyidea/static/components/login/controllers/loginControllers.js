@@ -52,9 +52,11 @@ angular.module("privacyideaApp")
     $scope.hsmReady = obj.val();
     obj = angular.element(document.querySelector("#CUSTOMIZATION"));
     $scope.piCustomization = obj.val();
+    obj = angular.element(document.querySelector("#EXTERNAL_LINKS"));
+    $scope.piExternalLinks = obj.val();
     obj = angular.element(document.querySelector('#REALMS'));
     $scope.piRealms = obj.val().mysplit(",");
-    console.log($scope.piRealms);
+    //debug: console.log($scope.piRealms);
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();
     // Check if registration is allowed
@@ -62,6 +64,12 @@ angular.module("privacyideaApp")
     RegisterFactory.status(function (data) {
         $scope.registrationAllowed = data.result.value;
     });
+    $scope.welcomeStep = 0;
+
+    // customization
+    $scope.piCustomMenuFile = angular.element(document.querySelector('#CUSTOM_MENU')).val();
+    $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
+    // TODO: We can change this after login, if there is a user dependent customization!
 
     hotkeys.add({
         combo: 'alt+e',
@@ -90,17 +98,19 @@ angular.module("privacyideaApp")
     // can return there
     $rootScope.$on('$stateChangeSuccess',
         function (ev, to, toParams, from, fromParams) {
-            console.log("we changed the state from " + from + " to " + to);
-            console.log(from);
-            console.log(fromParams);
-            console.log(to);
+            //debug: console.log("we changed the state from " + from + " to " + to);
+            //debug: console.log(from);
+            //debug: console.log(fromParams);
+            //debug: console.log(to);
             $rootScope.previousState = {
                 state: from.name,
                 params: fromParams
             };
+
+            $scope.checkReloadListeners();
         });
     $scope.$on('IdleStart', function () {
-        console.log("start idle");
+        //debug: console.log("start idle");
     });
 
     $scope.$on('IdleWarn', function(e, countdown) {
@@ -110,22 +120,22 @@ angular.module("privacyideaApp")
         // you can change the title or display a warning dialog from here.
         // you can let them resume their session by calling Idle.watch()
         $scope.myCountdown = countdown;
-        console.log($scope.myCountdown);
+        //debug: console.log($scope.myCountdown);
         $scope.logoutWarning = true;
         $scope.$apply();
     });
 
     $scope.$on('IdleEnd', function () {
-        console.log("The user has ended idling");
+        //debug: console.log("The user has ended idling");
         $scope.logoutWarning = false;
     });
 
     $scope.$on('IdleTimeout', function () {
         if ($scope.timeout_action == "logout") {
-            console.log("Logout!");
+            //debug: console.log("Logout!");
             $scope.logout();
         } else {
-            console.log("Lock!");
+            //debug: console.log("Lock!");
             $scope.logoutWarning = false;
             $scope.$apply();
             $scope.lock_screen();
@@ -167,13 +177,14 @@ angular.module("privacyideaApp")
 
     $scope.authenticate_remote_user = function () {
         $scope.login = {username: $scope.remoteUser, password: ""};
+        $scope.unlocking = false;
         $scope.authenticate();
     };
 
     $scope.authenticate = function () {
         $scope.polling = false;
         $scope.image = false;
-        console.log($scope.login);
+        //debug: console.log($scope.login);
         $http.post(authUrl, {
             username: $scope.login.username,
             password: $scope.login.password,
@@ -184,35 +195,70 @@ angular.module("privacyideaApp")
         }).success(function (data) {
             $scope.do_login_stuff(data);
         }).error(function (error) {
-            console.log("challenge response");
-            console.log(error);
+            //debug: console.log("challenge response");
+            //debug: console.log(error);
             $scope.login.password = "";
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
                 // have a challenge response and we need to go to the state response
-                $state.go("response");
+                if ($scope.unlocking === false) {
+                    // If we are not unlocking, then we do a "login".
+                    // For this we go to the response-state.
+                    $state.go("response");
+                }
                 inform.add(gettextCatalog.getString("Challenge Response " +
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
-                $scope.challenge_message = error.detail.message;
+                $scope.hideResponseInput = true;
+                $scope.u2fSignRequests = Array();
                 $scope.transactionid = error.detail["transaction_id"];
-                $scope.image = error.detail.attributes.img;
-                if ($scope.image.indexOf("data:image") === -1) {
-                    // In case of an Image link, we prepend the instanceUrl
-                    $scope.image = $scope.instanceUrl + "/" + $scope.image;
+
+                // Challenge Response always containes mult_challenge!
+                var multi_challenge = error.detail.multi_challenge;
+                if (multi_challenge.length > 1) {
+                    $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
+                    $scope.challenge_multiple_tokens = true;
+                } else {
+                    $scope.challenge_message = error.detail.message;
+                    $scope.challenge_multiple_tokens = false;
                 }
-                $scope.hideResponseInput = error.detail.attributes.hideResponseInput;
-                $scope.polling = error.detail.attributes.poll;
-                console.log($scope.polling);
+                for (var i = 0; i < multi_challenge.length; i++) {
+                    if (multi_challenge.length > 1) {
+                        $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
+                    }
+                    var attributes = multi_challenge[i].attributes;
+                    if (attributes === null || attributes.hideResponseInput === false) {
+                        $scope.hideResponseInput = false;
+                    }
+                    if (attributes !== null) {
+                        if (attributes.u2fSignRequest !== null) {
+                           $scope.u2fSignRequests.push(attributes.u2fSignRequest);
+                        }
+                        if (attributes.img !== null) {
+                            $scope.image = attributes.img;
+                            if ($scope.image.indexOf("data:image") === -1) {
+                                // In case of an Image link, we prepend the instanceUrl
+                                $scope.image = $scope.instanceUrl + "/" + $scope.image;
+                            }
+                        }
+                        if (attributes.poll !== null) {
+                            $scope.polling = attributes.poll;
+                        }
+                    }
+                }
+
+                //debug: console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
-                if ($scope.polling)
+                if ($scope.polling) {
                     PollingAuthFactory.start($scope.check_authentication);
+                }
                 // In case of u2f we do:
-                if (error.detail.attributes['u2fSignRequest']) {
+                if ($scope.u2fSignRequests) {
                     $scope.u2f_first_error = error;
-                    U2fFactory.sign_request(error, $scope.login.username,
+                    U2fFactory.sign_request(error, $scope.u2fSignRequests,
+                        $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
             } else {
@@ -227,6 +273,7 @@ angular.module("privacyideaApp")
                     // In case of u2f we do:
                     if ($scope.u2f_first_error) {
                         U2fFactory.sign_request($scope.u2f_first_error,
+                            $scope.u2fSignRequests,
                             $scope.login.username,
                             $scope.transactionid, $scope.do_login_stuff);
                     }
@@ -252,7 +299,7 @@ angular.module("privacyideaApp")
         // This function is used to poll, if a challenge response
         // authentication was performed successfully in the background
         // This is used for the TiQR token.
-        console.log("calling check_authentication.");
+        //debug: console.log("calling check_authentication.");
         $http.post(authUrl, {
             username: $scope.login.username,
             password: "",
@@ -295,18 +342,20 @@ angular.module("privacyideaApp")
             $scope.user_details_in_tokenlist = data.result.value.user_details;
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
+            $scope.hide_welcome = data.result.value.hide_welcome;
+            $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
-            console.log(timeout);
+            //debug: console.log(timeout);
             var idlestart = timeout - 10;
             if (idlestart<=0) {
                 idlestart = 1;
             }
             Idle.setIdle(idlestart);
             Idle.watch();
-            console.log("successfully authenticated");
-            console.log($scope.loggedInUser);
+            //debug: console.log("successfully authenticated");
+            //debug: console.log($scope.loggedInUser);
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal().hide();
                 // Hack, since we can not close the modal and thus the body
@@ -329,15 +378,30 @@ angular.module("privacyideaApp")
         $scope.privacyideaVersionNumber = null;
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
+        $scope.welcomeStep = 0;
         $state.go("login");
         Idle.unwatch();
         // Jump to top when the policy is saved
         $('html,body').scrollTop(0);
     };
 
+    $scope.nextWelcome = function() {
+        $scope.welcomeStep += 1;
+        if ($scope.welcomeStep === 4) {
+            $('#dialogWelcome').modal().hide();
+            // Hack, since we can not close the modal and thus the body
+            // keeps the modal-open and thus has no scroll-bars
+            $("body").removeClass("modal-open");
+        }
+    };
+    $scope.resetWelcome = function() {
+        $scope.welcomeStep = 0;
+    };
+
     $scope.lock_screen = function () {
         // We need to destroy the auth_token
         $scope.loggedInUser.auth_token = null;
+        $scope.welcomeStep = 0;
         Idle.unwatch();
         $('#dialogLock').modal().show();
     };
@@ -379,6 +443,29 @@ angular.module("privacyideaApp")
                 }
         });
 
+    };
+
+    $scope.reload = function() {
+        // emit a signal to the scope, that just listens
+        $scope.$broadcast("piReload");
+    };
+
+    $scope.checkReloadListeners = function () {
+        /*
+         TODO: The a logic, that can hide the reload button.
+         This is not straighforward, since the current number of connected
+         listeners might be confusing:
+
+         connected numbers:
+         var currentListeners = $scope.$$listenerCount["piReload"];
+
+         When the state changes, the scope and thus the current listener is
+         destroyed. But the statechange-success is called, before the scope
+         is destroyed, so there can be two connected listeners, when
+         changing from a state to another state and both have a listener
+         defined.
+        */
+        $scope.reloadListeners = 1;
     };
 
 });

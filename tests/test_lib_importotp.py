@@ -8,6 +8,9 @@ from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
                                        parseSafeNetXML, ImportException,
                                        parsePSKCdata, GPGImport)
+from privacyidea.lib.token import remove_token
+from privacyidea.lib.token import init_token
+from privacyidea.lib.importotp import export_pskc
 import binascii
 
 
@@ -544,6 +547,28 @@ class ImportOTPTestCase(MyTestCase):
                          binascii.hexlify("12345678901234567890"))
         self.assertEqual(tokens["987654321"].get("description"),
                          "TokenVendorAcme")
+
+    def test_06_export_pskc(self):
+        # create three tokens
+        t1 = init_token({"serial": "t1", "type": "hotp", "otpkey": "123456"})
+        t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456"})
+        t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
+        tlist = [t1, t2, t3]
+        # export the tokens
+        psk, soup = export_pskc(tlist)
+        self.assertEqual(len(psk), 32)
+        export = "{0!s}".format(soup)
+        # remote the tokens
+        remove_token("t1")
+        remove_token("t2")
+        remove_token("t3")
+        # import the tokens again
+        tokens = parsePSKCdata(export, preshared_key_hex=psk)
+        self.assertEqual(len(tokens), 2)
+        self.assertEqual(tokens.get("t1").get("type"), "hotp")
+        self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
+        self.assertEqual(tokens.get("t2").get("type"), "totp")
+        self.assertEqual(tokens.get("t2").get("timeStep"), "30")
 
 
 class GPGTestCase(MyTestCase):

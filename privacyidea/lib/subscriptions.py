@@ -38,6 +38,7 @@ import os
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import traceback
+from sqlalchemy import func
 
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -64,9 +65,51 @@ SIGN_FORMAT = """{application}
 
 APPLICATIONS = {"demo_application": 0,
                 "owncloud": 50,
-                "privacyidea-cp": 0}
+                "privacyidea-ldap-proxy": 50,
+                "privacyidea-cp": 0,
+                "privacyidea": 50}
 
 log = logging.getLogger(__name__)
+
+
+def get_users_with_active_tokens():
+    """
+    Returns the numbers of users (userId, Resolver) with active tokens.
+
+    :return: Number of users
+    :rtype: int
+    """
+    from privacyidea.models import Token
+    sql_query = Token.query.with_entities(Token.resolver, Token.user_id).filter(Token.active == True).distinct().count()
+    return sql_query
+
+
+def subscription_status():
+    """
+    Return the status of the subscription
+
+    0: Token count <= 50
+    1: Token count > 50, no subscription at all
+    2: subscription expired
+    3: subscription OK
+
+    :return: subscription state
+    """
+    token_count = get_tokens(assigned=True, active=True, count=True)
+    if token_count <= APPLICATIONS.get("privacyidea", 50):
+        return 0
+
+    subscriptions = get_subscription("privacyidea")
+    if len(subscriptions) == 0:
+        return 1
+
+    try:
+        check_subscription("privacyidea")
+    except SubscriptionError as exx:
+        log.warning(u"{0}".format(exx))
+        return 2
+
+    return 3
 
 
 @log_with(log)
@@ -115,8 +158,8 @@ def save_subscription(subscription):
 
 def get_subscription(application=None):
     """
-    Return a list of subscriptions for a certai application
-    If application is ommitted, all applications are returned.
+    Return a list of subscriptions for a certain application
+    If application is omitted, all applications are returned.
 
     :param application: Name of the application
     :return: list of subscription dictionaries
@@ -124,7 +167,8 @@ def get_subscription(application=None):
     subscriptions = []
     sql_query = Subscription.query
     if application:
-        sql_query = sql_query.filter(Subscription.application == application)
+        sql_query = sql_query.filter(func.lower(Subscription.application) ==
+                                     application.lower())
 
     for sub in sql_query.all():
         subscriptions.append(sub.get())
@@ -176,22 +220,24 @@ def raise_exception_probability(subscription=None):
     return False
 
 
-def check_subscription(application):
+def check_subscription(application, max_free_subscriptions=None):
     """
     This checks if the subscription for the given application is valid.
     In case of a failure an Exception is raised.
 
     :param application: the name of the application to check
+    :param max_free_subscriptions: the maximum number of subscriptions
+        without a subscription file. If not given, the default is used.
     :return: bool
     """
     if application.lower() in APPLICATIONS.keys():
         subscriptions = get_subscription(application) or get_subscription(
             application.lower())
+        # get the number of active assigned tokens
+        active_tokens = get_tokens(assigned=True, active=True, count=True)
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
         if len(subscriptions) == 0:
-            # get the number of active assigned tokens
-            num_tokens = get_tokens(assigned=True, active=True, count=True)
-            if num_tokens > APPLICATIONS.get(application.lower()) \
-                    and raise_exception_probability():
+            if active_tokens > free_subscriptions:
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
         else:
@@ -206,6 +252,12 @@ def check_subscription(application):
             else:
                 # subscription is still valid, so check the signature.
                 check_signature(subscription)
+                if active_tokens > subscription.get("num_tokens"):
+                    # subscription is exceeded
+                    raise SubscriptionError(description="Too many tokens "
+                                                        "enrolled. "
+                                                        "Subscription exceeded.",
+                                            application="privacyIDEA")
 
     return True
 
@@ -274,6 +326,7 @@ class CheckSubscription(object):
             ua_str = "{0!s}".format(ua) or "unknown"
             application = ua_str.split()[0]
             # check and raise if fails
+            #check_subscription("privacyidea")
             check_subscription(application)
             f_result = func(*args, **kwds)
             return f_result

@@ -1,15 +1,18 @@
+# coding: utf-8
 """
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
+from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
 import re
 import binascii
+import hashlib
+from urlparse import urlparse
 from urllib import urlencode
 import json
 from flask import Request, g
@@ -299,6 +302,57 @@ class OCRATestCase(MyTestCase):
         ocra_object=OCRA(ocrasuite, binascii.unhexlify(KEY20))
         self.assertRaises(Exception, ocra_object.create_data_input, question)
 
+        ocrasuite = u"OCRA-1:HOTP-SHA1-8:QH40"
+        dTAN = "83507112  ~320,00~1399458665_G6HNVF"
+        question = binascii.hexlify(hashlib.sha1(dTAN).digest())
+        ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
+        r = ocra_object.create_data_input(question)
+        self.assertEqual(len(r), 128 + len(ocrasuite) + 1)
+
+
+class OcraTokenTestCase(MyTestCase):
+
+    def test_00_users(self):
+        self.setUp_user_realms()
+
+    def test_01_create_token(self):
+        pin = "test"
+        token = init_token({"type": "ocra",
+                            "pin": pin,
+                            "serial": "OCRA1",
+                            "user": "cornelius",
+                            "realm": self.realm1,
+                            "otpkey": KEY20
+                            })
+        self.assertEqual(token.type, "ocra")
+
+        prefix = OcraTokenClass.get_class_prefix()
+        self.assertEqual(prefix, "OCRA")
+
+        info = OcraTokenClass.get_class_info()
+        self.assertEqual(info.get("type"), "ocra")
+
+        info = OcraTokenClass.get_class_info("type")
+        self.assertEqual(info, "ocra")
+
+        # Check the challenge request
+        r = token.is_challenge_request(pin)
+        self.assertEqual(r, True)
+        r = token.is_challenge_request(pin + "123456")
+        self.assertEqual(r, False)
+
+        # Check create_challenge
+        displayTAN_challenge = "83507112  ~320,00~1399458665_G6HNVF"
+        challengeQH40 = binascii.hexlify(hashlib.sha1(
+            displayTAN_challenge).digest())
+        r = token.create_challenge(options={"challenge": challengeQH40})
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], "Please answer the challenge")
+
+        # answer the challenge
+        r = token.verify_response(passw="90065298", challenge=challengeQH40)
+        self.assertTrue(r > 0, r)
+
 
 class TiQRTokenTestCase(MyTestCase):
     serial1 = "ser1"
@@ -308,12 +362,12 @@ class TiQRTokenTestCase(MyTestCase):
     def test_00_users(self):
         self.setUp_user_realms()
 
-    def test_01_create_token(self):
+    def _test_create_token(self, user):
         pin = "test"
         token = init_token({"type": "tiqr",
                             "pin": pin,
                             "serial": "TIQR1",
-                            "user": "cornelius",
+                            "user": user,
                             "realm": self.realm1})
         self.assertEqual(token.type, "tiqr")
 
@@ -345,11 +399,11 @@ class TiQRTokenTestCase(MyTestCase):
         self.assertTrue("img" in r[3], r[3])
         self.assertTrue("value" in r[3], r[3])
 
-    def test_02_api_endpoint(self):
+    def _test_api_endpoint(self, user, expected_netloc):
         pin = "tiqr"
         token = init_token({"type": "tiqr",
                             "pin": pin,
-                            "user": "cornelius",
+                            "user": user,
                             "realm": self.realm1})
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
@@ -409,7 +463,7 @@ class TiQRTokenTestCase(MyTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='GET',
                                            query_string=urlencode({
-                                               "user": "cornelius",
+                                               "user": user.encode('utf-8'),
                                                "realm": self.realm1,
                                                "pass": pin})):
             res = self.app.full_dispatch_request()
@@ -429,14 +483,19 @@ class TiQRTokenTestCase(MyTestCase):
             session = r[3]
             challenge = r[4]
 
+        # check the URL
+        parsed_url = urlparse(image_url)
+        self.assertEqual(parsed_url.netloc, expected_netloc)
+
         ocrasuite = token.get_tokeninfo("ocrasuite")
         ocra_object = OCRA(ocrasuite, key=binascii.unhexlify(KEY20))
         # Calculate Response with the challenge.
         response = ocra_object.get_response(challenge)
 
+        encoded_user_id = u"{!s}_{!s}".format(user, self.realm1).encode('utf-8')
         # First, send a wrong response
         req.all_data = {"response": "12345",
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -445,7 +504,7 @@ class TiQRTokenTestCase(MyTestCase):
 
         # Send the correct response
         req.all_data = {"response": response,
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -455,7 +514,7 @@ class TiQRTokenTestCase(MyTestCase):
         # Send the same response a second time would not work
         # since the Challenge is marked as answered
         req.all_data = {"response": response,
-                        "userId": "cornelius_{0!s}".format(self.realm1),
+                        "userId": encoded_user_id,
                         "sessionKey": session,
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
@@ -473,4 +532,14 @@ class TiQRTokenTestCase(MyTestCase):
                                                     transaction_id})
         self.assertTrue(r < 0, r)
 
+    def test_01_create_token(self):
+        self._test_create_token('cornelius')
 
+    def test_02_api_endpoint(self):
+        self._test_api_endpoint('cornelius', 'cornelius_realm1@org.privacyidea')
+
+    def test_03_create_token_nonascii(self):
+        self._test_create_token(u'nönäscii')
+
+    def test_04_api_endpoint_nonascii(self):
+        self._test_api_endpoint(u'nönäscii', 'n%C3%B6n%C3%A4scii_realm1@org.privacyidea')

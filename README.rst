@@ -32,22 +32,10 @@ privacyIDEA
 ..    :alt: Code Climate
 ..    :target: https://codeclimate.com/github/privacyidea/privacyidea
 
-.. image:: https://www.quantifiedcode.com/api/v1/project/c2e431a6764443268aa0eddb0da6b1fb/badge.svg
-  :target: https://www.quantifiedcode.com/app/project/c2e431a6764443268aa0eddb0da6b1fb
-  :alt: Code issues
-
 .. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
     
-.. image:: https://img.shields.io/issuestats/i/github/privacyidea/privacyidea.svg
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
-
-.. image:: https://img.shields.io/issuestats/p/github/privacyidea/privacyidea.svg
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
-
 .. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
     :alt: privacyIDEA on twitter
     

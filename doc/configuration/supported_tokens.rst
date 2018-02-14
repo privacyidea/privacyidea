@@ -54,10 +54,18 @@ Smartphone Apps
 
 .. index:: Software Tokens
 
+.. _privacyidea_authenticator:
+
+**privacyIDEA Authenticator**. Our own privacyIDEA Authenticator is based
+on the concept of the Google Authenticator and works with the usual QR Code key URI
+enrollment. But on top it also allows for a more secure
+enrollment process (See :ref:`2step_enrollment`).
+It can be used for :ref:`hotp_token` and :ref:`totp_token`.
+
 **Google Authenticator**. The Google Authenticator is working well in
 :ref:`hotp_token`
 and :ref:`totp_token` mode. If you choose "Generate OTP Key on the Server"
-durcing
+during
 enrollment, you can scan a QR Code with the Google Authenticator.
 See :ref:`first_steps_token` to learn how to do this.
 

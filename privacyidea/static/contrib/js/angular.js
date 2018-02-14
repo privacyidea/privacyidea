@@ -6260,14 +6260,14 @@ function $TemplateCacheProvider() {
  * ```js
  * function linkingFn(scope, elm, attrs, ctrl) {
  *   // get the attribute value
- *   console.log(attrs.ngModel);
+ *   //debug: console.log(attrs.ngModel);
  *
  *   // change the attribute
  *   attrs.$set('ngModel', 'new value');
  *
  *   // observe changes to interpolated attribute
  *   attrs.$observe('ngModel', function(value) {
- *     console.log('ngModel has changed value to ' + value);
+ *     //debug: console.log('ngModel has changed value to ' + value);
  *   });
  * }
  * ```
@@ -22814,7 +22814,7 @@ var ngControllerDirective = [function() {
             getAndClearSevereErrors().then(function(filteredLog) {
               expect(filteredLog.length).toEqual(0);
               if (filteredLog.length) {
-                console.log('browser console errors: ' + util.inspect(filteredLog));
+                //debug: console.log('browser console errors: ' + util.inspect(filteredLog));
               }
             });
           }
@@ -26018,7 +26018,7 @@ var styleDirective = valueFn({
 
   if (window.angular.bootstrap) {
     //AngularJS is already loaded, so we can return here...
-    console.log('WARNING: Tried to load angular more than once.');
+    //debug: console.log('WARNING: Tried to load angular more than once.');
     return;
   }
 

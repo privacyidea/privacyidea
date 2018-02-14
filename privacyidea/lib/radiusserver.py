@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-10-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add timeout handling
 #  2016-02-19 Cornelius Kölbel <cornelius@privacyidea.org>
 #             RADIUS Server implementation
 #
@@ -25,6 +27,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 import pyrad.packet
 from pyrad.client import Client
+from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
 
@@ -68,6 +71,8 @@ class RADIUSServer(object):
         * config.server
         * config.port
         * config.secret
+        * config.retries
+        * config.timeout
 
         :param config: The RADIUS configuration
         :type config: RADIUSServer Database Model
@@ -93,20 +98,30 @@ class RADIUSServer(object):
                      secret=decryptPassword(config.secret),
                      dict=Dictionary(r_dict))
 
+        # Set retries and timeout of the client
+        if config.timeout:
+            srv.timeout = config.timeout
+        if config.retries:
+            srv.retries = config.retries
+
         req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
                                    User_Name=user.encode('ascii'),
                                    NAS_Identifier=nas_identifier.encode('ascii'))
 
         req["User-Password"] = req.PwCrypt(password)
-        response = srv.SendPacket(req)
-        if response.code == pyrad.packet.AccessAccept:
-            log.info("Radiusserver %s granted "
-                     "access to user %s." % (config.server, user))
-            success = True
-        else:
-            log.warning("Radiusserver %s"
-                        "rejected access to user %s." %
-                        (config.server, user))
+        try:
+            response = srv.SendPacket(req)
+
+            if response.code == pyrad.packet.AccessAccept:
+                log.info("Radiusserver %s granted "
+                         "access to user %s." % (config.server, user))
+                success = True
+            else:
+                log.warning("Radiusserver %s"
+                            "rejected access to user %s." %
+                            (config.server, user))
+        except Timeout:
+            log.warning("Receiving timeout from remote radius server {0!s}".format(config.server))
 
         return success
 
@@ -159,7 +174,7 @@ def get_radiusservers(identifier=None, server=None):
 
 @log_with(log)
 def add_radius(identifier, server, secret, port=1812, description="",
-               dictionary='/etc/privacyidea/dictionary'):
+               dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5):
     """
     This adds a RADIUS server to the RADIUSServer database table.
 
@@ -186,7 +201,8 @@ def add_radius(identifier, server, secret, port=1812, description="",
                                id=2234)
     r = RADIUSServerDB(identifier=identifier, server=server, port=port,
                        secret=cryptedSecret, description=description,
-                       dictionary=dictionary).save()
+                       dictionary=dictionary,
+                       retries=retries, timeout=timeout).save()
     return r
 
 

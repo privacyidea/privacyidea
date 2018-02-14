@@ -11,6 +11,8 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
+from privacyidea.lib.config import (set_privacyidea_config,
+                                    delete_privacyidea_config)
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
@@ -509,11 +511,6 @@ class TokenBaseTestCase(MyTestCase):
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
         # Failed update: genkey and otpkey used at the same time
         self.assertRaises(Exception,
                           token.update,
@@ -800,7 +797,6 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(db_token.active, False)
         serial = db_token.serial
         details = token_obj.init_details
-        server_component = details.get("otpkey")
 
         # 2. step
         client_component = "AAAAAA"
@@ -810,5 +806,57 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(db_token.rollout_state, "")
         self.assertEqual(db_token.active, True)
 
+        # Given a client component of K bytes, the base algorithm
+        # simply replaces the last K bytes of the server component
+        # with the client component.
+        server_component = details.get("otpkey")[:-len(client_component)]
+        expected_otpkey = server_component + client_component
+
+        self.assertEqual(db_token.get_otpkey().getKey(),
+                         expected_otpkey)
+
         token_obj.delete_token()
 
+    def test_40_failcounter_exceeded(self):
+        from privacyidea.lib.tokenclass import (FAILCOUNTER_EXCEEDED,
+                                                FAILCOUNTER_CLEAR_TIMEOUT)
+        db_token = Token("failcounter", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        for i in range(0, 11):
+            token_obj.inc_failcount()
+        now = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        # Now the FAILCOUNTER_EXCEEDED is set
+        ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        # We only compare the date
+        self.assertEqual(ti[:10], now[:10])
+        # and the timezone
+        self.assertEqual(ti[-5:], now[-5:])
+        # reset the failcounter
+        token_obj.reset()
+        ti = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        self.assertEqual(ti, None)
+
+        # Now check with failcounter clear, with timeout 5 minutes
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        token_obj.set_failcount(10)
+        failed_recently = (datetime.datetime.now(tzlocal()) -
+                           datetime.timedelta(minutes=3)).strftime(DATE_FORMAT)
+        token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
+
+        r = token_obj.check_failcount()
+        # the fail is only 3 minutes ago, so we will not reset and check will
+        #  be false
+        self.assertFalse(r)
+
+        # Set the timeout to a shorter value
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 2)
+        r = token_obj.check_failcount()
+        # The fail is longer ago.
+        self.assertTrue(r)
+
+        # The tokeninfo of this token is deleted and the failcounter is 0
+        self.assertEqual(token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED), None)
+        self.assertEqual(token_obj.get_failcount(), 0)
+
+        token_obj.delete_token()

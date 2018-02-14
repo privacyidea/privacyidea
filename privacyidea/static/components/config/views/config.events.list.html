@@ -2,8 +2,9 @@
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
+            <th translate>Order</th>
             <th translate>Active</th>
-            <th translate>Id</th>
+            <!--<th translate>Id</th>-->
             <th translate>Description</th>
             <th translate>Events</th>
             <th translate>Handlermodule</th>
@@ -15,6 +16,11 @@
         <tbody>
         <tr ng-repeat="event in events">
             <td>
+                <input type="number" ng-model="event.ordering"
+                       class="form-control" min="0"
+                       ng-change="orderChanged(event)" />
+            </td>
+            <td>
                 <span ng-show="event.active"
                       class="glyphicon glyphicon-ok"
                       ng-click="disableEvent(event.id)">
@@ -24,10 +30,12 @@
                       ng-click="enableEvent(event.id)">
                 </span>
             </td>
+            <!--
             <td>
                 <a ui-sref="config.events.details({eventid: event.id})">
                     {{ event.id }}</a>
             </td>
+            -->
             <td>
                 <a ui-sref="config.events.details({eventid: event.id})">
                     {{ event.name }}</a>
