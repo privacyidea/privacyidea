@@ -288,7 +288,7 @@ if MIGRATE.get("tokens"):
             user_pin_iv = r['LinOtpTokenPinUserIV']
             # Map the LinOTP-Resolver to the PI-Resolver
             resolver = ASSIGNMENTS.get("resolver").get(linotp_resolver)
-            if not resolver:
+            if not resolver and linotp_resolver:
                 warnings.append(u"No mapping defined for the LinOTP resolver: {0!s}".format(linotp_resolver))
             resolver_type = resolver_type
             user_id = r['LinOtpUserid']
@@ -311,6 +311,7 @@ if MIGRATE.get("tokens"):
             resolver_type=resolver_type,
             user_id=user_id,
             pin_seed=r['LinOtpSeed'],
+            pin_hash=r['LinOtpPinHash'],
             key_enc=r['LinOtpKeyEnc'],
             key_iv=r['LinOtpKeyIV'],
             maxfail=r['LinOtpMaxFail'],
@@ -359,14 +360,15 @@ if MIGRATE.get("assignments") and resolver:
     for token in token_values:
         token_id = token.get("id")
         resolver = token.get("resolver")
-        realm = ASSIGNMENTS.get("realm").get(resolver)
-        realm_id = realm_id_map.get(realm)
-        print("Assigning token {} for resolver {} to realm_id {} (realm {})").format(token_id,
-                                                                                     resolver,
-                                                                                     realm_id,
-                                                                                     realm)
-        tokenrealm_values.append(dict(token_id=token_id,
-                                      realm_id=realm_id))
+        if resolver:
+            realm = ASSIGNMENTS.get("realm").get(resolver)
+            realm_id = realm_id_map.get(realm)
+            print("Assigning token {} for resolver {} to realm_id {} (realm {})").format(token_id,
+                                                                                         resolver,
+                                                                                         realm_id,
+                                                                                         realm)
+            tokenrealm_values.append(dict(token_id=token_id,
+                                          realm_id=realm_id))
 
     print("Adding {} tokenrealms...".format(len(tokenrealm_values)))
     insert_chunks(conn_pi, tokenrealm_table, tokenrealm_values)
