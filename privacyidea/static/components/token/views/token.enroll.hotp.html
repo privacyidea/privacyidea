@@ -64,3 +64,9 @@ The HOTP token is an event based token. You can paste a secret key or
         The Google Authenticator only supports the SHA1 algorithm.
     </p>
 </div>
+<div class="form-group">
+    <label for="description" translate>Description</label>
+    <input type="text" class="form-control"
+            placeholder="{{ 'Some nice words...'|translate }}"
+            ng-model="form.description" />
+</div>
