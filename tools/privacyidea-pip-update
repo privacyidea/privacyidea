@@ -18,6 +18,9 @@ privacyidea-pip-update
 def update():
     for dist in pip.get_installed_distributions():
         call("pip install --upgrade " + dist.project_name, shell=True)
+    # Now we need again to upgrade privacyIDEA, so that we get pinned
+    # dependencies like ldap3 or pyasn1. This call will downgrade packages
+    call("pip install --upgrade privacyidea", shell=True)
 
 
 def update_db_schema(environment):
