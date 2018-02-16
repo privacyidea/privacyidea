@@ -32,6 +32,7 @@ class EmailTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "SE123456"
+    serial2 = "SE000000"
     otpkey = "3132333435363738393031323334353637383930"
 
     success_body = "ID 12345"
@@ -73,6 +74,22 @@ class EmailTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PIEM", class_prefix)
         self.assertTrue(token.get_class_type() == "email", token)
+
+        # create token with dynamic email
+        db_token = Token(self.serial2, tokentype="email")
+        db_token.save()
+        token = EmailTokenClass(db_token)
+        token.update({"dynamic_email": True})
+        token.save()
+        self.assertEqual(token.get_tokeninfo("dynamic_email"), "1")
+        self.assertTrue(token.token.serial == self.serial2, token)
+        self.assertTrue(token.token.tokentype == "email", token.token)
+        self.assertTrue(token.type == "email", token.type)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "PIEM", class_prefix)
+        self.assertTrue(token.get_class_type() == "email", token)
+        token.set_user(User(login="cornelius",
+                            realm=self.realm1))
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -325,6 +342,27 @@ class EmailTokenTestCase(MyTestCase):
         set_privacyidea_config("email.username", "password")
         set_privacyidea_config("email.tls", True)
         db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+
+    @smtpmock.activate
+    def test_18a_challenge_request_dynamic(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098712"
+        # send the email with the old configuration
+        set_privacyidea_config("email.mailserver", "localhost")
+        set_privacyidea_config("email.username", "user")
+        set_privacyidea_config("email.username", "password")
+        set_privacyidea_config("email.tls", True)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
         token = EmailTokenClass(db_token)
         self.assertTrue(token.check_otp("123456", 1, 10) == -1)
         c = token.create_challenge(transactionid)

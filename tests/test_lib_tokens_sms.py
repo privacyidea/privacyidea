@@ -28,6 +28,7 @@ class SMSTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "SE123456"
+    serial2 = "SE222222"
     otpkey = "3132333435363738393031323334353637383930"
 
     SMSHttpUrl = "http://smsgateway.com/sms_send_api.cgi"
@@ -84,6 +85,21 @@ class SMSTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PISM", class_prefix)
         self.assertTrue(token.get_class_type() == "sms", token)
+
+        db_token = Token(self.serial2, tokentype="sms")
+        db_token.save()
+        token = SmsTokenClass(db_token)
+        token.update({"dynamic_phone": True})
+        token.save()
+        self.assertTrue(token.token.serial == self.serial2, token)
+        self.assertTrue(token.token.tokentype == "sms", token.token)
+        self.assertEqual(token.get_tokeninfo("dynamic_phone"), "1")
+        self.assertTrue(token.type == "sms", token.type)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "PISM", class_prefix)
+        self.assertTrue(token.get_class_type() == "sms", token)
+        token.set_user(User(login="cornelius",
+                            realm=self.realm1))
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -353,6 +369,28 @@ class SMSTokenTestCase(MyTestCase):
         transactionid = "123456098712"
         set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
         db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = SmsTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp,
+                                           options={"transaction_id":
+                                                        transactionid})
+        self.assertTrue(r, r)
+
+    @responses.activate
+    def test_18a_challenge_request_dynamic(self):
+        # Send a challenge request for an SMS token with a dynamic phone number
+        responses.add(responses.POST,
+                      self.SMSHttpUrl,
+                      body=self.success_body)
+        transactionid = "123456098712"
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
         token = SmsTokenClass(db_token)
         self.assertTrue(token.check_otp("123456", 1, 10) == -1)
         c = token.create_challenge(transactionid)

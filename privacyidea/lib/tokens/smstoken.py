@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2018-02-16   Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Allow to use a dynamic_phone
 #  2016-06-20   Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
 #               Use sms.identifier, central SMS gateway definition, to send
 #               the OTP value via SMS.
@@ -45,7 +47,8 @@ import datetime
 import traceback
 
 from privacyidea.api.lib.utils import getParam
-from privacyidea.api.lib.utils import required
+from privacyidea.api.lib.utils import required, optional
+from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE
@@ -222,9 +225,12 @@ class SmsTokenClass(HotpTokenClass):
         :type param: dict
         :return: nothing
         """
-        # specific - phone
-        phone = getParam(param, "phone", required)
-        self.add_tokeninfo("phone", phone)
+        if getParam(param, "dynamic_phone", optional):
+            self.add_tokeninfo("dynamic_phone", True)
+        else:
+            # specific - phone
+            phone = getParam(param, "phone", required)
+            self.add_tokeninfo("phone", phone)
 
         # in case of the sms token, only the server must know the otpkey
         # thus if none is provided, we let create one (in the TokenClass)
@@ -338,9 +344,10 @@ class SmsTokenClass(HotpTokenClass):
         :return: submitted message
         :rtype: string
         """
-        ret = None
-
-        phone = self.get_tokeninfo("phone")
+        if is_true(self.get_tokeninfo("dynamic_phone")):
+            phone = self.user.get_user_phone("mobile")
+        else:
+            phone = self.get_tokeninfo("phone")
         otp = self.get_otp()[2]
         serial = self.get_serial()
 

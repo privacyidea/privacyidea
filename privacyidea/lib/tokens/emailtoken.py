@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#  2018-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add dynamic email address. Dynamically read from user source.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add email templates
 #  2015-12-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -65,6 +67,7 @@ import traceback
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
@@ -101,7 +104,11 @@ class EmailTokenClass(HotpTokenClass):
 
     @property
     def _email_address(self):
-        return self.get_tokeninfo(self.EMAIL_ADDRESS_KEY)
+        if is_true(self.get_tokeninfo("dynamic_email")):
+            email = self.user.info.get(self.EMAIL_ADDRESS_KEY)
+        else:
+            email = self.get_tokeninfo(self.EMAIL_ADDRESS_KEY)
+        return email
 
     @_email_address.setter
     def _email_address(self, value):
@@ -179,10 +186,13 @@ class EmailTokenClass(HotpTokenClass):
         :return: nothing
 
         """
-        # specific - e-mail
-        self._email_address = getParam(param,
-                                       self.EMAIL_ADDRESS_KEY,
-                                       optional=False)
+        if getParam(param, "dynamic_email", optional=True):
+            self.add_tokeninfo("dynamic_email", True)
+        else:
+            # specific - e-mail
+            self._email_address = getParam(param,
+                                           self.EMAIL_ADDRESS_KEY,
+                                           optional=False)
 
         # in case of the e-mail token, only the server must know the otpkey
         # thus if none is provided, we let create one (in the TokenClass)
