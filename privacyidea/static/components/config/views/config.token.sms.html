@@ -20,6 +20,19 @@
     </select>
 </div>
 
+<div class="form-group">
+    <label for="smsValidity" translate>OTP validity time</label>
+    <p class="help-block" translate>
+        The time in seconds for which the sent OTP value is valid for
+        authentication.
+    </p>
+    <input type="text"
+           class="form-control"
+           placeholder="300"
+           ng-model="form['sms.providerTimeout']" name="smsValidity">
+</div>
+
+
 <h3 translate>Obsolete settings</h3>
 <div class="form-group">
     <label for="smsProvider" translate>SMS Provider</label>
@@ -28,15 +41,6 @@
            ng-model="form['sms.Provider']" name="smsProvider"
         ng-options="select for select in formInit.smsProviders">
     </select>
-</div>
-
-<div class="form-group">
-    <label for="smsTimeout" translate>Timeout</label>
-    <input type="text"
-           ng-disabled="true"
-           class="form-control"
-           placeholder="300"
-           ng-model="form['sms.providerTimeout']" name="smsTimeout">
 </div>
 
 <div class="form-group">

@@ -296,7 +296,6 @@ class SmsTokenClass(HotpTokenClass):
                 log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
 
-        validity = self._get_sms_timeout()
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
         attributes['valid_until'] = "{0!s}".format(expiry_date)
