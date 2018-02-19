@@ -458,7 +458,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
 def loadtokens(pskc, preshared_key_hex):
     from privacyidea.lib.importotp import parsePSKCdata
     from privacyidea.lib.token import init_token, TOKENKIND
-    
+
     with open(pskc, 'r') as pskcfile:
         file_contents = pskcfile.read()
 
