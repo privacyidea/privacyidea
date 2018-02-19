@@ -604,7 +604,10 @@ def export_pskc(tokenobj_list, psk=None):
             continue
         type = tokenobj.type.lower()
         issuer = "privacyIDEA"
-        manufacturer = tokenobj.token.description
+        try:
+            manufacturer = tokenobj.token.description.encode("ascii")
+        except UnicodeEncodeError:
+            manufacturer = "simplified"
         serial = tokenobj.token.serial
         otplen = tokenobj.token.otplen
         counter = tokenobj.token.count
@@ -619,44 +622,47 @@ def export_pskc(tokenobj_list, psk=None):
         except TypeError:
             # Some keys might be odd string length
             continue
-        kp2 = BeautifulSoup("""<KeyPackage>
-    <DeviceInfo>
-      <Manufacturer>{manufacturer}</Manufacturer>
-      <SerialNo>{serial}</SerialNo>
-    </DeviceInfo>
-    <Key Id="{serial}"
-         Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:{type}">
-             <Issuer>{issuer}</Issuer>
-             <AlgorithmParameters>
-                 <ResponseFormat Length="{otplen}" Encoding="DECIMAL"/>
-                 <Suite hashalgo="{suite}" />
-             </AlgorithmParameters>
-             <Data>
-                <Secret>
-                     <EncryptedValue>
-                         <xenc:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
-                         <xenc:CipherData>
-                             <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
-                         </xenc:CipherData>
-                     </EncryptedValue>
-                 </Secret>
-                 <ValueMAC>TODOmissing</ValueMAC>
-                <Time>
-                    <PlainValue>0</PlainValue>
-                </Time>
-                <TimeInterval>
-                    <PlainValue>{timestep}</PlainValue>
-                </TimeInterval>
-                <Counter>
-                    {counter}
-                </Counter>
-            </Data>
-    </Key>
-    </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
-                            issuer=issuer, manufacturer=manufacturer,
-                            counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
-                            suite=suite), "html.parser")
+        try:
+            kp2 = BeautifulSoup("""<KeyPackage>
+        <DeviceInfo>
+          <Manufacturer>{manufacturer}</Manufacturer>
+          <SerialNo>{serial}</SerialNo>
+        </DeviceInfo>
+        <Key Id="{serial}"
+             Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:{type}">
+                 <Issuer>{issuer}</Issuer>
+                 <AlgorithmParameters>
+                     <ResponseFormat Length="{otplen}" Encoding="DECIMAL"/>
+                     <Suite hashalgo="{suite}" />
+                 </AlgorithmParameters>
+                 <Data>
+                    <Secret>
+                         <EncryptedValue>
+                             <xenc:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                             <xenc:CipherData>
+                                 <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
+                             </xenc:CipherData>
+                         </EncryptedValue>
+                     </Secret>
+                     <ValueMAC>TODOmissing</ValueMAC>
+                    <Time>
+                        <PlainValue>0</PlainValue>
+                    </Time>
+                    <TimeInterval>
+                        <PlainValue>{timestep}</PlainValue>
+                    </TimeInterval>
+                    <Counter>
+                        {counter}
+                    </Counter>
+                </Data>
+        </Key>
+        </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
+                                issuer=issuer, manufacturer=manufacturer,
+                                counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
+                                suite=suite), "html.parser")
 
-        soup.macmethod.insert_after(kp2)
+            soup.macmethod.insert_after(kp2)
+        except Exception as e:
+            log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
 
     return binascii.hexlify(psk), soup
