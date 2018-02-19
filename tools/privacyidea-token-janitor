@@ -451,6 +451,44 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 print(u"{0}".format(exx))
 
 
+@manager.option('--pskc', dest='pskc',
+                help='Import this PSKC file.')
+@manager.option('--preshared_key_hex', dest='preshared_key_hex',
+                help='The AES encryption key.')
+def loadtokens(pskc, preshared_key_hex):
+    from privacyidea.lib.importotp import parsePSKCdata
+    from privacyidea.lib.token import init_token, TOKENKIND
+    
+    with open(pskc, 'r') as pskcfile:
+        file_contents = pskcfile.read()
+
+    TOKENS = parsePSKCdata(file_contents, preshared_key_hex)
+    success = 0
+    failed = 0
+    failed_tokens = []
+    for serial in TOKENS:
+        try:
+            print("Importing token {0!s}".format(serial))
+            init_param = {'serial': serial,
+                          'type': TOKENS[serial]['type'],
+                          'description': TOKENS[serial].get("description",
+                                                            "imported"),
+                          'otpkey': TOKENS[serial]['otpkey'],
+                          'otplen': TOKENS[serial].get('otplen'),
+                          'timeStep': TOKENS[serial].get('timeStep'),
+                          'hashlib': TOKENS[serial].get('hashlib')}
+
+            # Imported tokens are usually hardware tokens
+            init_token(init_param, tokenkind=TOKENKIND.HARDWARE)
+            success = success + 1
+        except Exception as e:
+            failed = failed + 1
+            failed_tokens.append(serial)
+            print("--- Failed to import token. {0!s}".format(e))
+    print("Successfully imported {0!s} tokens.".format(success))
+    print("Failed to import {0!s} tokens: {1!s}".format(failed, failed_tokens))
+
+
 if __name__ == '__main__':
     manager.run()
 
