@@ -257,6 +257,18 @@ is fetched from the attestation certificate.
 Only if the attribute in the attestation certificate matches accordingly the
 token can be registered.
 
+.. _policy_u2f_no_verify_certificate:
+
+u2f_no_verify_certificate
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+By default the validity period of the attestation certificate of a U2F device gets
+verified during the registration process.
+If you do not want to verify the validity period, you can check this action.
+
+
 .. _2step_parameters:
 
 {type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
