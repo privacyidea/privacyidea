@@ -73,6 +73,9 @@ import functools
 import jwt
 import re
 import importlib
+# Token specific imports!
+from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
+from privacyidea.lib.tokens.u2f import x509name_to_string
 
 optional = True
 required = False
@@ -1132,12 +1135,55 @@ def save_client_application_type(request, action):
     return True
 
 
+def u2ftoken_verify_cert(request, action):
+    """
+    This is a token specific wrapper for u2f token for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ENROLL,
+    action=U2FACTION.NO_VERIFY_CERT it can add a parameter to the
+    enrollment parameters to not verify the attestation certificate.
+    The default is to verify the cert.
+    :param request:
+    :param action:
+    :return:
+    """
+    # Get the registration data of the 2nd step of enrolling a U2F device
+    ttype = request.all_data.get("type")
+    if ttype.lower() == "u2f":
+        policy_object = g.policy_object
+        # Add the default to verify the cert.
+        request.all_data["u2f.verify_cert"] = True
+        user_object = request.User
+
+        if user_object:
+            token_user = user_object.login
+            token_realm = user_object.realm
+            token_resolver = user_object.resolver
+        else:
+            token_realm = token_resolver = token_user = None
+
+        do_not_verify_the_cert = policy_object.get_policies(
+            action=U2FACTION.NO_VERIFY_CERT,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            active=True,
+            client=g.client_ip)
+        if do_not_verify_the_cert:
+            request.all_data["u2f.verify_cert"] = False
+
+        log.debug("Should we not verify the attestation certificate? "
+                  "Policies: {0!s}".format(do_not_verify_the_cert))
+    return True
+
+
 def u2ftoken_allowed(request, action):
     """
     This is a token specific wrapper for u2f token for the endpoint
      /token/init.
      According to the policy scope=SCOPE.ENROLL,
-     action=U2FACTINO.REQ it checks, if the assertion certificate is an 
+     action=U2FACTION.REQ it checks, if the assertion certificate is an
      allowed U2F token type.
 
      If the token, which is enrolled contains a non allowed attestation 
@@ -1147,9 +1193,6 @@ def u2ftoken_allowed(request, action):
     :param action: 
     :return: 
     """
-    from privacyidea.lib.tokens.u2ftoken import (U2FACTION,
-                                                 parse_registration_data)
-    from privacyidea.lib.tokens.u2f import x509name_to_string
     policy_object = g.policy_object
     # Get the registration data of the 2nd step of enrolling a U2F device
     reg_data = request.all_data.get("regdata")
@@ -1158,8 +1201,11 @@ def u2ftoken_allowed(request, action):
         serial = request.all_data.get("serial")
         user_object = request.User
 
+        # We just check, if the issuer is allowed, not if the certificate
+        # is still valid! (verify_cert=False)
         attestation_cert, user_pub_key, key_handle, \
-        signature, description = parse_registration_data(reg_data)
+        signature, description = parse_registration_data(reg_data,
+                                                         verify_cert=False)
 
         cert_info = {
             "attestation_issuer":

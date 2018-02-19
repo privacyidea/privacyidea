@@ -83,7 +83,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
-                                           u2ftoken_allowed, twostep_enrollment_activation,
+                                           u2ftoken_allowed, u2ftoken_verify_cert,
+                                           twostep_enrollment_activation,
                                            twostep_enrollment_parameters)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
@@ -124,6 +125,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(init_token_defaults, request)
 @prepolicy(papertoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
+@prepolicy(u2ftoken_verify_cert, request)
 @postpolicy(save_pin_change, request)
 @CheckSubscription(request)
 @event("token_init", request, g)
