@@ -22,7 +22,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age,
-                                           papertoken_count, allowed_audit_realm)
+                                           papertoken_count, allowed_audit_realm,
+                                           u2ftoken_verify_cert)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -1177,6 +1178,40 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("auditrealm1")
         delete_policy("auditrealm2")
+
+    def test_21_u2f_verify_cert(self):
+        # Usually the attestation certificate gets verified during enrollment unless
+        # we set the policy scope=enrollment, action=no_verifcy
+        from privacyidea.lib.tokens.u2ftoken import U2FACTION
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        # The default behaviour is to verify the certificate
+        req.all_data = {
+            "type": "u2f"}
+        u2ftoken_verify_cert(req, "init")
+        self.assertTrue(req.all_data.get("u2f.verify_cert"))
+
+        # Set a policy that defines to NOT verify the certificate
+        set_policy(name="polu2f1",
+                   scope=SCOPE.ENROLL,
+                   action=U2FACTION.NO_VERIFY_CERT)
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "u2f"}
+        u2ftoken_verify_cert(req, "init")
+        self.assertFalse(req.all_data.get("u2f.verify_cert"))
+
+        # finally delete policy
+        delete_policy("polu2f1")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

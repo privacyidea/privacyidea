@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-01-21 21:48+0100\n"
-"PO-Revision-Date: 2018-01-21 21:49+0100\n"
+"POT-Creation-Date: 2018-02-19 09:59+0100\n"
+"PO-Revision-Date: 2018-02-19 10:00+0100\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
 msgid "T'check' is an invalid policy name."
 msgstr "'check' ist ein ungültiger Name für eine Richtlinie."
 
-#: lib/decorators.py:42 lib/token.py:1946
+#: lib/decorators.py:42 lib/token.py:1958
 msgid "This action is not possible, since the token is locked"
 msgstr "Diese Aktion kann nicht durchgeführt werden, weil der Token gesperrt ist."
 
@@ -531,25 +531,25 @@ msgstr "Dem Administrator wird der Willkommen-Dialog nicht mehr angezeigt."
 msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
-#: lib/token.py:2195
+#: lib/token.py:2207
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr "Der Administrator kann %s Token ausrollen."
 
-#: lib/token.py:2204
+#: lib/token.py:2216
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr "Der Benutzer darf einen %s Token ausrollen."
 
-#: lib/token.py:2235
+#: lib/token.py:2247
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2242
+#: lib/token.py:2254
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2248
+#: lib/token.py:2260
 msgid "Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
@@ -817,39 +817,39 @@ msgstr "Proxy-Einstellung für HTTPS-Verbindungen."
 msgid "The timeout in seconds."
 msgstr "Timeout in Sekunden."
 
-#: lib/smsprovider/SmppSMSProvider.py:125
+#: lib/smsprovider/SmppSMSProvider.py:128
 msgid "SMSC Host IP"
 msgstr "SMSC IP Adresse"
 
-#: lib/smsprovider/SmppSMSProvider.py:128
+#: lib/smsprovider/SmppSMSProvider.py:131
 msgid "SMSC Port"
 msgstr "SMSC Port"
 
-#: lib/smsprovider/SmppSMSProvider.py:130
+#: lib/smsprovider/SmppSMSProvider.py:133
 msgid "SMSC Service ID"
 msgstr "Service ID, mit dem sich privacyIDEA beim SMSC meldet."
 
-#: lib/smsprovider/SmppSMSProvider.py:132
+#: lib/smsprovider/SmppSMSProvider.py:135
 msgid "Password for authentication on SMSC"
 msgstr "Das Passwort, mit dem sich privacyIDEA am SMSC authentisiert."
 
-#: lib/smsprovider/SmppSMSProvider.py:134
+#: lib/smsprovider/SmppSMSProvider.py:137
 msgid "SOURCE_ADDR_TON Special Flag"
 msgstr "Code des Nummerntyps des Senders. Wird vom SMSC Operator mitgeteilt."
 
-#: lib/smsprovider/SmppSMSProvider.py:136
+#: lib/smsprovider/SmppSMSProvider.py:139
 msgid "S_ADDR_NPI Special Flag"
 msgstr "Code des Nummernplans des Senders. Wird vom SMSC Operator mitgeteilt."
 
-#: lib/smsprovider/SmppSMSProvider.py:138
+#: lib/smsprovider/SmppSMSProvider.py:141
 msgid "Source address (SMS sender)"
 msgstr "Absender-Telefonnummer"
 
-#: lib/smsprovider/SmppSMSProvider.py:139
+#: lib/smsprovider/SmppSMSProvider.py:142
 msgid "DESTINATION_ADDR_TON Special Flag"
 msgstr "Code des Nummertyps des Empfängers. Wird vom SMSC Operator mitgeteilt."
 
-#: lib/smsprovider/SmppSMSProvider.py:140
+#: lib/smsprovider/SmppSMSProvider.py:143
 msgid "D_ADDR_NPI Special Flag"
 msgstr "Code des Nummernplans des Empfängers. Wird vom SMSC Operator mitgeteilt."
 
@@ -881,55 +881,55 @@ msgstr "Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> verw
 msgid "If set, a new EMail OTP will be sent after successful authentication with one EMail OTP."
 msgstr "Ein neues Einmalpasswort wird per Email versendet, direkt nachdem sich der Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
 
-#: lib/tokens/foureyestoken.py:123
+#: lib/tokens/foureyestoken.py:125
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
 msgstr "Vier-Augen-Token: Zwei oder mehr Personen müssen zusammenkommen, damit sich ein Account anmelden kann."
 
-#: lib/tokens/hotptoken.py:112
+#: lib/tokens/hotptoken.py:117
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
 msgstr "Der zu verwendende Hash-Algorithmus. SHA1 (1) oder SHA2-256 (2)."
 
-#: lib/tokens/hotptoken.py:114
+#: lib/tokens/hotptoken.py:119
 msgid "Specify the otplen to be used. Can be 6 or 8 digits."
 msgstr "Die OTP-Länge. Entweder 6 oder 8 Zeichen."
 
-#: lib/tokens/hotptoken.py:115 lib/tokens/totptoken.py:140
+#: lib/tokens/hotptoken.py:120 lib/tokens/totptoken.py:140
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr "Benutzer dürfen oder müssen den Zwei-Schritt-Rollout verwenden."
 
-#: lib/tokens/hotptoken.py:117 lib/tokens/totptoken.py:146
+#: lib/tokens/hotptoken.py:122 lib/tokens/totptoken.py:146
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr "Administratoren dürfen oder müssen den Zwei-Schritt-Rollout verwenden."
 
-#: lib/tokens/hotptoken.py:121
+#: lib/tokens/hotptoken.py:126
 msgid "HOTP: Event based One Time Passwords."
 msgstr "HOTP: Ereignisbasiertes Einmalpasswort."
 
-#: lib/tokens/hotptoken.py:129
+#: lib/tokens/hotptoken.py:134
 msgid "The Yubikey access code used to initialize Yubikeys."
 msgstr "Yubikey Access Code, der benötigt wird, um Yubikeys zu initialisieren."
 
-#: lib/tokens/hotptoken.py:133 lib/tokens/totptoken.py:152
+#: lib/tokens/hotptoken.py:138 lib/tokens/totptoken.py:152
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "Die Größe des Smartphone-Anteils (in Byte)"
 
-#: lib/tokens/hotptoken.py:137 lib/tokens/totptoken.py:155
+#: lib/tokens/hotptoken.py:142 lib/tokens/totptoken.py:155
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "Die Große des Server-Anteils (in Byte)"
 
-#: lib/tokens/hotptoken.py:141 lib/tokens/totptoken.py:158
+#: lib/tokens/hotptoken.py:146 lib/tokens/totptoken.py:158
 msgid "The difficulty factor used for the OTP seed generation (should be at least 10000)"
 msgstr "Die Schweregrad zur Generierung des OTP Seeds. (Sollte wenigstens 10000 sein)"
 
-#: lib/tokens/hotptoken.py:155 lib/tokens/totptoken.py:135
+#: lib/tokens/hotptoken.py:160 lib/tokens/totptoken.py:135
 msgid "Force the key to be generated on the server."
 msgstr "Den Key auf dem Server generieren."
 
-#: lib/tokens/hotptoken.py:229
+#: lib/tokens/hotptoken.py:234
 msgid "URL for google Authenticator"
 msgstr "URL für Google Authenticator und vergleichbare Apps"
 
-#: lib/tokens/hotptoken.py:243
+#: lib/tokens/hotptoken.py:248
 msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
@@ -958,7 +958,7 @@ msgstr "Fragenkatalog: Einen Fragenkatalog-Token ausrollen."
 msgid "You need to provide at least %s answers."
 msgstr "Sie müssen wenigstens %s Antworten angeben."
 
-#: lib/tokens/radiustoken.py:97
+#: lib/tokens/radiustoken.py:99
 msgid "RADIUS: Forward authentication request to a RADIUS server."
 msgstr "RADIUS: Die Authentifizierungsanfrage an einen RADIUS-Server weiterleiten."
 
@@ -966,7 +966,7 @@ msgstr "RADIUS: Die Authentifizierungsanfrage an einen RADIUS-Server weiterleite
 msgid "Registration: A token that creates a registration code that can be used as a second factor once."
 msgstr "Registrierung: Ein Token, der einen Registrierungs-Code erzeugt, den der Benutzer einmal verwenden kann."
 
-#: lib/tokens/remotetoken.py:109
+#: lib/tokens/remotetoken.py:111
 msgid "Remote Token: Forward authentication request to another server."
 msgstr "Remote Token: Die Authentifizierungsanfrage an einen anderen privacyIDEA Server weiterleiten."
 
@@ -1006,19 +1006,23 @@ msgstr "URL zum Ausrollen des TiQR Token"
 msgid "TOTP: Time based One Time Passwords."
 msgstr "TOTP: Zeitbasiertes Einmalpasswort."
 
-#: lib/tokens/u2ftoken.py:243
+#: lib/tokens/u2ftoken.py:247
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
 msgstr "Die Liste der FQDNs, bei denen der registrierte U2F-Token verwendet werden kann."
 
-#: lib/tokens/u2ftoken.py:249
+#: lib/tokens/u2ftoken.py:253
 msgid "Only specified U2F tokens are authorized."
 msgstr "Nur die angegebenen U2F Geräten sind für die Anmeldung autorisiert."
 
-#: lib/tokens/u2ftoken.py:256
+#: lib/tokens/u2ftoken.py:260
 msgid "Only specified U2F tokens are allowed to be registered."
 msgstr "Nur die angegebenen U2F Geräte dürfen registriert werden."
 
-#: lib/tokens/u2ftoken.py:331
+#: lib/tokens/u2ftoken.py:265
+msgid "Do not verify the U2F attestation certificate."
+msgstr "Das U2F Attestation Zertifikat NICHT überprüfen."
+
+#: lib/tokens/u2ftoken.py:344
 msgid "You need to define the appId in the token config!"
 msgstr "Sie müssen in der Token-Konfiguration die AppId definieren!"
 
@@ -1030,7 +1034,7 @@ msgstr ""
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
 msgstr "Yubikey Cloud Modus: Die Authentifizierungsanfrage wird an die YubiCloud weitergeleitet."
 
-#: lib/tokens/yubikeytoken.py:159
+#: lib/tokens/yubikeytoken.py:160
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
 msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
@@ -1050,12 +1054,4 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 #~ msgstr "Allgemein"
 
 #~ msgid ""
-#~ msgstr ""
-
-#~ msgid ""
-#~ "The text that will be send via "
-#~ "EMail for an EMail token. Use "
-#~ "<otp> and <serial> as parameters. You"
-#~ " may also specify a filename as "
-#~ "email template starting with \"file:\"."
 #~ msgstr ""

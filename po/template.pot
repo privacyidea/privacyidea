@@ -420,7 +420,7 @@ msgstr ""
 msgid "Certificate Template"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:214
+#: privacyidea/static/components/token/controllers/tokenControllers.js:218
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
@@ -731,7 +731,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.radius.list.html:8
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:38
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:6
-#: privacyidea/static/components/config/views/config.smtp.edit.html:84
+#: privacyidea/static/components/config/views/config.smtp.edit.html:94
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:123
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
@@ -803,7 +803,7 @@ msgstr ""
 msgid "EMail Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:210
+#: privacyidea/static/components/token/controllers/tokenControllers.js:214
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
@@ -1087,7 +1087,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</a>!"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:216
+#: privacyidea/static/components/token/controllers/tokenControllers.js:220
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
@@ -1135,7 +1135,7 @@ msgstr ""
 msgid "HOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:197
+#: privacyidea/static/components/token/controllers/tokenControllers.js:201
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
@@ -1238,7 +1238,7 @@ msgstr ""
 msgid "Identifier"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:67
+#: privacyidea/static/components/config/views/config.smtp.edit.html:77
 msgid ""
 "If the SMTP server requires authentication you need to\n"
 "                specify the user."
@@ -1552,11 +1552,11 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:150
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:272
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
 msgid "No anonymous referral chasing"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:279
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:299
 msgid "No retrieval of schema information"
 msgstr ""
 
@@ -1694,7 +1694,7 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:221
+#: privacyidea/static/components/token/controllers/tokenControllers.js:225
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
@@ -1727,7 +1727,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:70
 #: privacyidea/static/components/config/views/config.radius.edit.html:102
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
-#: privacyidea/static/components/config/views/config.smtp.edit.html:74
+#: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:26
 #: privacyidea/static/components/login/views/login.html:64
@@ -1883,7 +1883,7 @@ msgstr ""
 msgid "Questionnaire Token settings"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:285
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:305
 msgid "Quick Resolver Test"
 msgstr ""
 
@@ -1917,7 +1917,7 @@ msgstr ""
 msgid "RADIUS servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:208
+#: privacyidea/static/components/token/controllers/tokenControllers.js:212
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
@@ -1948,7 +1948,7 @@ msgstr ""
 msgid "Received"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:105
+#: privacyidea/static/components/config/views/config.smtp.edit.html:115
 msgid "Recipient for testing"
 msgstr ""
 
@@ -1992,7 +1992,7 @@ msgstr ""
 msgid "Remote Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:204
+#: privacyidea/static/components/token/controllers/tokenControllers.js:208
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 
@@ -2106,7 +2106,7 @@ msgstr ""
 msgid "SMS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:212
+#: privacyidea/static/components/token/controllers/tokenControllers.js:216
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
@@ -2126,11 +2126,11 @@ msgstr ""
 msgid "SMTP servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:199
+#: privacyidea/static/components/token/controllers/tokenControllers.js:203
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:201
+#: privacyidea/static/components/token/controllers/tokenControllers.js:205
 msgid "SSH Public Key: The public SSH key"
 msgstr ""
 
@@ -2169,7 +2169,7 @@ msgstr ""
 msgid "Save SMS gateway"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:121
+#: privacyidea/static/components/config/views/config.smtp.edit.html:131
 msgid "Save SMTP server"
 msgstr ""
 
@@ -2191,7 +2191,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:202
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:297
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:317
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -2264,7 +2264,7 @@ msgstr ""
 msgid "Send Reset Code"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:112
+#: privacyidea/static/components/config/views/config.smtp.edit.html:122
 msgid "Send Test Email"
 msgstr ""
 
@@ -2280,7 +2280,7 @@ msgstr ""
 msgid "Sender"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:45
+#: privacyidea/static/components/config/views/config.smtp.edit.html:55
 msgid "Sender Email"
 msgstr ""
 
@@ -2435,7 +2435,7 @@ msgstr ""
 msgid "TOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:198
+#: privacyidea/static/components/token/controllers/tokenControllers.js:202
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
@@ -2452,7 +2452,7 @@ msgid "Test Email sent successfully."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:198
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:312
 msgid "Test LDAP Resolver"
 msgstr ""
 
@@ -2695,6 +2695,13 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:55
 msgid "The URL that contains the logo of the service."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.vasco.html:27
+msgid ""
+"The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial\n"
+"    number within privacyIDEA, activate the checkbox. Otherwise privacyIDEA will create a new\n"
+"    unique serial number."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:1
@@ -3068,7 +3075,7 @@ msgstr ""
 msgid "This is the display name of your service in the TiQR app."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:52
+#: privacyidea/static/components/config/views/config.smtp.edit.html:62
 msgid ""
 "This is the email address of the\n"
 "                sender. Usually this should be an email address identifying\n"
@@ -3155,11 +3162,12 @@ msgstr ""
 msgid "TiQR Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:218
+#: privacyidea/static/components/token/controllers/tokenControllers.js:222
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
+#: privacyidea/static/components/config/views/config.smtp.edit.html:45
 #: privacyidea/static/components/config/views/config.token.sms.html:34
 msgid "Timeout"
 msgstr ""
@@ -3281,11 +3289,11 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:220
+#: privacyidea/static/components/token/controllers/tokenControllers.js:224
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:257
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:277
 msgid "UID Type"
 msgstr ""
 
@@ -3336,7 +3344,7 @@ msgstr ""
 msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:100
+#: privacyidea/static/components/config/views/config.smtp.edit.html:110
 msgid "Use TLS"
 msgstr ""
 
@@ -3395,7 +3403,7 @@ msgstr ""
 msgid "UserId"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:60
+#: privacyidea/static/components/config/views/config.smtp.edit.html:70
 #: privacyidea/static/components/directives/views/directive.assignuser.html:14
 #: privacyidea/static/components/login/views/login.html:49
 #: privacyidea/static/components/login/views/login.html:53
@@ -3581,11 +3589,11 @@ msgstr ""
 msgid "Yubico URL"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:202
+#: privacyidea/static/components/token/controllers/tokenControllers.js:206
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:206
+#: privacyidea/static/components/token/controllers/tokenControllers.js:210
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
@@ -3707,7 +3715,7 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:200
+#: privacyidea/static/components/token/controllers/tokenControllers.js:204
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 
@@ -3877,6 +3885,10 @@ msgstr ""
 msgid ""
 "type (default hotp), otplen (default 6), timeStep (default 30) and\n"
 "            ocrasuite are optional."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.vasco.html:23
+msgid "use VASCO Serial"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:53

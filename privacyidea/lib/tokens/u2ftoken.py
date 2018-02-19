@@ -41,7 +41,8 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.utils import is_true
 import base64
 import binascii
 import json
@@ -181,7 +182,8 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 """
 
 IMAGES = {"yubico": "static/css/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "static/css/plugup.jpg"}
+          "plug-up": "static/css/plugup.jpg",
+          "u2fzero.com": "static/css/u2fzero.png"}
 U2F_Version = "U2F_V2"
 
 log = logging.getLogger(__name__)
@@ -192,7 +194,7 @@ required = False
 class U2FACTION(object):
     FACETS = "u2f_facets"
     REQ = "u2f_req"
-    NO_VERIFY_CERT = "uf2_no_verify_certificate"
+    NO_VERIFY_CERT = "u2f_no_verify_certificate"
 
 
 class U2fTokenClass(TokenClass):
@@ -257,13 +259,12 @@ class U2fTokenClass(TokenClass):
                        U2FACTION.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are allowed "
-                                     "to be registered.")
-                       }
-                   },
-                   SCOPE.ENROLL: {
+                                     "to be registered."),
+                           'group': GROUP.TOKEN},
                        U2FACTION.NO_VERIFY_CERT: {
                            'type': 'bool',
-                           'desc': _("Do not verify the U2F attestation certificate.")
+                           'desc': _("Do not verify the U2F attestation certificate."),
+                           'group': GROUP.TOKEN
                        }
                    }
                }
@@ -300,10 +301,12 @@ class U2fTokenClass(TokenClass):
         TokenClass.update(self, param)
         description = "U2F initialization"
         reg_data = getParam(param, "regdata")
+        verify_cert = is_true(getParam(param, "u2f.verify_cert", True))
         if reg_data:
             self.init_step = 2
             attestation_cert, user_pub_key, key_handle, \
-                signature, description = parse_registration_data(reg_data)
+                signature, description = parse_registration_data(reg_data,
+                                                                 verify_cert=verify_cert)
             client_data = getParam(param, "clientdata", required)
             client_data_str = url_decode(client_data)
             app_id = self.get_tokeninfo("appId", "")

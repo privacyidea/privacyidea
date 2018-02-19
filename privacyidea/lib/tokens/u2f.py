@@ -93,6 +93,7 @@ def parse_registration_data(reg_data, verify_cert=True):
     -20150514/fido-u2f-raw-message-formats.html#registration-messages
 
     :param reg_data: base64 encoded registration data
+    :param verify_cert: whether the attestation certificate should be verified
     :return: tuple
     """
     reg_data_bin = url_decode(reg_data)
