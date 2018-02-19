@@ -1149,7 +1149,7 @@ def u2ftoken_verify_cert(request, action):
     """
     # Get the registration data of the 2nd step of enrolling a U2F device
     ttype = request.all_data.get("type")
-    if ttype.lower() == "u2f":
+    if ttype and ttype.lower() == "u2f":
         policy_object = g.policy_object
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
