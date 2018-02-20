@@ -956,7 +956,7 @@ def create(name, scope, action, filename=None):
                                          ' Defaults to 365.')
 @api_manager.option('-R', '--realm', help='The realm of the admin. Defaults to "API"')
 @api_manager.option('-u', '--username', help='The username of the admin.')
-def createtoken(role=ROLE.ADMIN, days=365, Realm="API", Username=None):
+def createtoken(role=ROLE.ADMIN, days=365, realm="API", username=None):
     """
     Create an API authentication token
     for administrative or validate use.
@@ -965,12 +965,12 @@ def createtoken(role=ROLE.ADMIN, days=365, Realm="API", Username=None):
     if role not in ["admin", "validate"]:
         print("ERROR: The role must be 'admin' or 'validate'!")
         sys.exit(1)
-    username = Username or geturandom(hex=True)
+    username = username or geturandom(hex=True)
     secret = app.config.get("SECRET_KEY")
     authtype = "API"
     validity = timedelta(days=int(days))
     token = jwt.encode({"username": username,
-                        "realm": Realm,
+                        "realm": realm,
                         "nonce": geturandom(hex=True),
                         "role": role,
                         "authtype": authtype,
@@ -978,7 +978,7 @@ def createtoken(role=ROLE.ADMIN, days=365, Realm="API", Username=None):
                         "rights": "TODO"},
                        secret)
     print("Username:   {0!s}".format(username))
-    print("Realm:      {0!s}".format(Realm))
+    print("Realm:      {0!s}".format(realm))
     print("Role:       {0!s}".format(role))
     print("Validity:   {0!s} days".format(days))
     print("Auth-Token: {0!s}".format(token))
