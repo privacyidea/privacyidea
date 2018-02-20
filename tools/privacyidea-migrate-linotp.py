@@ -365,18 +365,25 @@ def migrate():
             if resolver:
                 realm = ASSIGNMENTS.get("realm").get(resolver)
                 realm_id = realm_id_map.get(realm)
-                print("Assigning token {} for resolver {} to realm_id {} (realm {})").format(token_id,
-                                                                                             resolver,
-                                                                                             realm_id,
-                                                                                             realm)
+                print("Assigning token {} for resolver {} to realm_id {} (realm {})".format(token_id,
+                                                                                            resolver,
+                                                                                            realm_id,
+                                                                                            realm))
                 tokenrealm_values.append(dict(token_id=token_id,
                                               realm_id=realm_id))
+            else:
+                # The token has no resolver and thus is not assigned
+                for tokenrealm in ASSIGNMENTS.get("unassigned_tokens"):
+                    realm_id = realm_id_map.get(tokenrealm)
+                    if realm_id:
+                        tokenrealm_values.append(dict(token_id=token_id,
+                                                      realm_id=realm_id))
 
         print("Adding {} tokenrealms...".format(len(tokenrealm_values)))
         insert_chunks(conn_pi, tokenrealm_table, tokenrealm_values)
 
     if warnings:
-        print("We need to inform you about the following WARNGINGS:")
+        print("We need to inform you about the following WARNINGS:")
         for warning in warnings:
             print(warning)
 
