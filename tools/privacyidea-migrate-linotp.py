@@ -21,8 +21,6 @@ what should be migrated and what should be mapped.
 #     MIGRATE dictionary
 #  3. Set the ASSIGNMENTS dictionary, to define, which
 #     realms you want to have the tokens in.
-#
-#  4. Finally set the value CONFIGURED=True
 # =========================================================
 LINOTP_URI = "mysql://linotp2:linotp2@localhost/linotp2"
 PRIVACYIDEA_URI = "mysql://pitest:pitest@localhost/pitest"
