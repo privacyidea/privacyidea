@@ -108,6 +108,8 @@ class EmailTokenClass(HotpTokenClass):
             email = self.user.info.get(self.EMAIL_ADDRESS_KEY)
         else:
             email = self.get_tokeninfo(self.EMAIL_ADDRESS_KEY)
+        if not email:  # pragma: no cover
+            log.warning("Token {0!s} does not have an email address!".format(self.token.serial))
         return email
 
     @_email_address.setter

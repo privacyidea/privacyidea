@@ -348,6 +348,8 @@ class SmsTokenClass(HotpTokenClass):
             phone = self.user.get_user_phone("mobile")
         else:
             phone = self.get_tokeninfo("phone")
+        if not phone:  # pragma: no cover
+            log.warning("Token {0!s} does not have a phone number!".format(self.token.serial))
         otp = self.get_otp()[2]
         serial = self.get_serial()
 
