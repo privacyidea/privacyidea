@@ -555,7 +555,9 @@ class ImportOTPTestCase(MyTestCase):
         t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
         tlist = [t1, t2, t3]
         # export the tokens
-        psk, soup = export_pskc(tlist)
+        psk, token_num, soup = export_pskc(tlist)
+        # Only 2 tokens exported, the spass token does not get exported!
+        self.assertEqual(token_num, 2)
         self.assertEqual(len(psk), 32)
         export = "{0!s}".format(soup)
         # remote the tokens

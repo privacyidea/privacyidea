@@ -417,8 +417,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 print(u"{0!s},{1!s}".format(user, len(tokens)))
 
     elif action == "export":
-        key, soup = export_pskc(tlist)
-        sys.stderr.write("\n{0!s} tokens exported.\n".format(len(tlist)))
+        key, token_num, soup = export_pskc(tlist)
+        sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
         sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
                          "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
         print("{0!s}".format(soup))

@@ -569,9 +569,8 @@ def export_pskc(tokenobj_list, psk=None):
 
     :param tokenobj_list: list of token objects
     :param psk: pre-shared-key for AES-128-CBC in hex format
-    :return: tuple of (psk, beautifulsoup)
+    :return: tuple of (psk, number of tokens, beautifulsoup)
     """
-    import os
     if psk:
         psk = binascii.unhexlify(psk)
     else:
@@ -579,6 +578,7 @@ def export_pskc(tokenobj_list, psk=None):
 
     mackey = geturandom(20)
     encrypted_mackey = aes_encrypt_b64(psk, mackey)
+    number_of_exported_tokens = 0
 
     # define the header
     soup = BeautifulSoup("""<KeyContainer Version="1.0"
@@ -662,7 +662,8 @@ def export_pskc(tokenobj_list, psk=None):
                                 suite=suite), "html.parser")
 
             soup.macmethod.insert_after(kp2)
+            number_of_exported_tokens += 1
         except Exception as e:
             log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
 
-    return binascii.hexlify(psk), soup
+    return binascii.hexlify(psk), number_of_exported_tokens, soup
