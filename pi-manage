@@ -949,7 +949,13 @@ def create(name, scope, action, filename=None):
         return r
 
 
-@api_manager.command
+@api_manager.option('-r', '--role', help="The role of the API key can either be"
+                                         "'admin' or 'validate' to access the admin"
+                                         "API or the validate API.")
+@api_manager.option('-d', '--days', help='The number of days the access token should be valid.'
+                                         ' Defaults to 365.')
+@api_manager.option('-R', '--realm', help='The realm of the admin. Defaults to "API"')
+@api_manager.option('-u', '--username', help='The username of the admin.')
 def createtoken(role=ROLE.ADMIN, days=365, Realm="API", Username=None):
     """
     Create an API authentication token
