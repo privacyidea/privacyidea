@@ -373,7 +373,7 @@ def migrate():
                                               realm_id=realm_id))
             else:
                 # The token has no resolver and thus is not assigned
-                for tokenrealm in ASSIGNMENTS.get("unassigned_tokens"):
+                for tokenrealm in ASSIGNMENTS.get("unassigned_tokens", []):
                     realm_id = realm_id_map.get(tokenrealm)
                     if realm_id:
                         tokenrealm_values.append(dict(token_id=token_id,
