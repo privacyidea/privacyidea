@@ -607,7 +607,7 @@ def export_pskc(tokenobj_list, psk=None):
         try:
             manufacturer = tokenobj.token.description.encode("ascii")
         except UnicodeEncodeError:
-            manufacturer = "simplified"
+            manufacturer = "deleted during export"
         serial = tokenobj.token.serial
         otplen = tokenobj.token.otplen
         counter = tokenobj.token.count
