@@ -476,7 +476,7 @@ def parsePSKCdata(xml_data,
         except Exception as exx:
             log.debug("Can not get serial string from device info {0!s}".format(exx))
         algo = key["algorithm"]
-        token["type"] = algo[-4:].lower()
+        token["type"] = algo.split(":")[-1].lower()
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
         try:
@@ -603,7 +603,7 @@ def export_pskc(tokenobj_list, psk=None):
 """.format(encrypted_mackey=encrypted_mackey), "html.parser")
 
     for tokenobj in tokenobj_list:
-        if tokenobj.type.lower() not in ["totp", "hotp"]:
+        if tokenobj.type.lower() not in ["totp", "hotp", "pw"]:
             continue
         type = tokenobj.type.lower()
         issuer = "privacyIDEA"
