@@ -847,6 +847,43 @@ def gen_serial(tokentype=None, prefix=None):
 
 
 @log_with(log)
+def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
+    """
+    This function is used during the import of a PSKC file.
+
+    :param serial: The serial number of the token
+    :param token_dict: A dictionary describing the token like:
+        {"type": ...,
+         "description": ...,
+         "otpkey": ...,
+         "counter: ...,
+         "timeShift": ...}
+    :param default_hashlib:
+    :return: the token object
+    """
+    init_param = {'serial': serial,
+                  'type': token_dict['type'],
+                      'description': token_dict.get("description",
+                                                        "imported"),
+                      'otpkey': token_dict['otpkey'],
+                      'otplen': token_dict.get('otplen'),
+                      'timeStep': token_dict.get('timeStep'),
+                      'hashlib': token_dict.get('hashlib')}
+
+    if default_hashlib and default_hashlib != "auto":
+        init_param['hashlib'] = default_hashlib
+
+    # Imported tokens are usually hardware tokens
+    token = init_token(init_param, tokenrealms=tokenrealms,
+                       tokenkind=TOKENKIND.HARDWARE)
+    if token_dict.get("counter"):
+        token.set_otp_count(token_dict.get("counter"))
+    if token_dict.get("timeShift"):
+        token.add_tokeninfo("timeShift", token_dict.get("timeShift"))
+    return token
+
+
+@log_with(log)
 def init_token(param, user=None, tokenrealms=None,
                tokenkind=None):
     """
