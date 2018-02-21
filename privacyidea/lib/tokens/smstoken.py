@@ -346,6 +346,9 @@ class SmsTokenClass(HotpTokenClass):
         """
         if is_true(self.get_tokeninfo("dynamic_phone")):
             phone = self.user.get_user_phone("mobile")
+            if type(phone) == list and phone:
+                # if there is a non-empty list, we use the first entry
+                phone = phone[0]
         else:
             phone = self.get_tokeninfo("phone")
         if not phone:  # pragma: no cover

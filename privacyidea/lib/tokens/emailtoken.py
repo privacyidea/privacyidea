@@ -106,6 +106,9 @@ class EmailTokenClass(HotpTokenClass):
     def _email_address(self):
         if is_true(self.get_tokeninfo("dynamic_email")):
             email = self.user.info.get(self.EMAIL_ADDRESS_KEY)
+            if type(email) == list and email:
+                # If there is a non-empty list, we use the first entry
+                email = email[0]
         else:
             email = self.get_tokeninfo(self.EMAIL_ADDRESS_KEY)
         if not email:  # pragma: no cover
