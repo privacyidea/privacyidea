@@ -301,7 +301,7 @@ class U2fTokenClass(TokenClass):
         TokenClass.update(self, param)
         description = "U2F initialization"
         reg_data = getParam(param, "regdata")
-        verify_cert = is_true(getParam(param, "u2f.verify_cert", True))
+        verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
         if reg_data:
             self.init_step = 2
             attestation_cert, user_pub_key, key_handle, \
