@@ -44,11 +44,11 @@
 It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
-
 import defusedxml.ElementTree as etree
 import re
 import binascii
 import base64
+import cgi
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
 from privacyidea.lib.log import log_with
@@ -664,11 +664,11 @@ def export_pskc(tokenobj_list, psk=None):
                     </TimeDrift>
                 </Data>
         </Key>
-        </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
-                                issuer=issuer, manufacturer=manufacturer,
+        </KeyPackage>""".format(serial=cgi.escape(serial), type=cgi.escape(type), otplen=otplen,
+                                issuer=cgi.escape(issuer), manufacturer=cgi.escape(manufacturer),
                                 counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
                                 timedrift=timedrift,
-                                suite=suite), "html.parser")
+                                suite=cgi.escape(suite)), "html.parser")
 
             soup.macmethod.insert_after(kp2)
             number_of_exported_tokens += 1

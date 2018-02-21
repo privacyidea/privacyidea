@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.importotp
 
@@ -580,8 +581,10 @@ class ImportOTPTestCase(MyTestCase):
 
     def test_06_export_pskc(self):
         # create three tokens
-        t1 = init_token({"serial": "t1", "type": "hotp", "otpkey": "123456"})
-        t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456"})
+        t1 = init_token({"serial": "t1", "type": "hotp", "otpkey": "123456",
+                         "description": u"söme ünicøde"})
+        t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456",
+                         "description": "something <with> xml!"})
         t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
         tlist = [t1, t2, t3]
         # export the tokens
@@ -599,8 +602,11 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(len(tokens), 2)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
+        # unicode does not get exported
+        self.assertEqual(tokens.get("t1").get("description"), "deleted during export")
         self.assertEqual(tokens.get("t2").get("type"), "totp")
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
+        self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
 
 
 class GPGTestCase(MyTestCase):
