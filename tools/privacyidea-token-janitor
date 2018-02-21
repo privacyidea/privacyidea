@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#
+# 2018-02-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow to import PSKC file
 # 2017-11-21 Cornelius Kölbel <corenlius.koelbel@netknights.it>
 #            export to CSV including usernames
 # 2017-10-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -97,7 +100,7 @@ Actions:
 
 """.format("|".join(ALLOWED_ACTIONS))
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token)
+                                   unassign_token, import_token)
 from privacyidea.app import create_app
 from flask.ext.script import Manager
 import re
@@ -469,17 +472,7 @@ def loadtokens(pskc, preshared_key_hex):
     for serial in TOKENS:
         try:
             print("Importing token {0!s}".format(serial))
-            init_param = {'serial': serial,
-                          'type': TOKENS[serial]['type'],
-                          'description': TOKENS[serial].get("description",
-                                                            "imported"),
-                          'otpkey': TOKENS[serial]['otpkey'],
-                          'otplen': TOKENS[serial].get('otplen'),
-                          'timeStep': TOKENS[serial].get('timeStep'),
-                          'hashlib': TOKENS[serial].get('hashlib')}
-
-            # Imported tokens are usually hardware tokens
-            init_token(init_param, tokenkind=TOKENKIND.HARDWARE)
+            import_token(serial, TOKENS[serial])
             success = success + 1
         except Exception as e:
             failed = failed + 1

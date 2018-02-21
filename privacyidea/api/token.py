@@ -65,7 +65,8 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start, add_tokeninfo, delete_tokeninfo)
+                         set_validity_period_end, set_validity_period_start, add_tokeninfo,
+                         delete_tokeninfo, import_token)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
@@ -90,8 +91,6 @@ from privacyidea.api.lib.postpolicy import (save_pin_change,
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.subscriptions import CheckSubscription
-from privacyidea.lib.tokenclass import TOKENKIND
-
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -884,27 +883,10 @@ def loadtokens_api(filename=None):
         log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
                                                               tokenrealms))
 
-        init_param = {'serial': serial,
-                      'type': TOKENS[serial]['type'],
-                      'description': TOKENS[serial].get("description",
-                                                        "imported"),
-                      'otpkey': TOKENS[serial]['otpkey'],
-                      'otplen': TOKENS[serial].get('otplen'),
-                      'timeStep': TOKENS[serial].get('timeStep'),
-                      'hashlib': TOKENS[serial].get('hashlib')}
-
-        if hashlib and hashlib != "auto":
-            init_param['hashlib'] = hashlib
-
-        #if tokenrealm:
-        #    self.Policy.checkPolicyPre('admin', 'loadtokens',
-        #                   {'tokenrealm': tokenrealm })
-
-        # Imported tokens are usually hardware tokens
-        token = init_token(init_param, tokenrealms=tokenrealms,
-                           tokenkind=TOKENKIND.HARDWARE)
-        if TOKENS[serial].get("counter"):
-            token.set_otp_count(TOKENS[serial].get("counter"))
+        import_token(serial,
+                     TOKENS[serial],
+                     tokenrealms=tokenrealms,
+                     default_hashlib=hashlib)
 
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,

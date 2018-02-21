@@ -231,6 +231,12 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
         <TimeInterval>
           <PlainValue>60</PlainValue>
         </TimeInterval>
+        <Counter>
+          <PlainValue>121212</PlainValue>
+        </Counter>
+        <TimeDrift>
+            <PlainValue>-122</PlainValue>
+        </TimeDrift>
       </Data>
       <Policy>
         <StartDate>2012-08-01T00:00:00Z</StartDate>
@@ -520,6 +526,9 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(len(tokens), 6)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
+        # Check the TOTP counter...
+        self.assertEqual(tokens["2600135004013"].get("counter"), "121212")
+        self.assertEqual(tokens["2600135004013"].get("timeShift"), "-122")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
 
     def test_04_import_pskc_aes(self):

@@ -55,7 +55,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, remove_token, delete_tokeninfo)
+                                   set_validity_period_start, remove_token, delete_tokeninfo,
+                                   import_token)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
@@ -1313,6 +1314,18 @@ class TokenTestCase(MyTestCase):
         kind = tok.get_tokeninfo("tokenkind")
         self.assertEqual(kind, TOKENKIND.VIRTUAL)
         tok.delete_token()
+
+    def test_52_import_token(self):
+        tok = import_token("IMP001",
+                           {"type": "totp",
+                            "timeShift": "-122",
+                            "timeStep": "30",
+                            "otpkey": self.otpkey,
+                            "counter": "121212"})
+        self.assertEqual(tok.get_tokeninfo("timeShift"), "-122")
+        self.assertEqual(tok.get_tokeninfo("timeStep"), "30")
+        self.assertEqual(tok.get_otp_count(), 121212)
+        remove_token("IMP001")
 
 
 class TokenFailCounterTestCase(MyTestCase):

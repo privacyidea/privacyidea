@@ -502,10 +502,13 @@ def parsePSKCdata(xml_data,
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
-        if token["type"] == "hotp" and key.data.counter:
-                token["counter"] = key.data.counter.text.strip()
-        elif token["type"] == "totp" and key.data.timeinterval:
+        if token["type"] in ["hotp", "totp"] and key.data.counter:
+            token["counter"] = key.data.counter.text.strip()
+        if token["type"] == "totp":
+            if key.data.timeinterval:
                 token["timeStep"] = key.data.timeinterval.text.strip()
+            if key.data.timedrift:
+                token["timeShift"] = key.data.timedrift.text.strip()
 
         tokens[serial] = token
     return tokens
@@ -614,8 +617,10 @@ def export_pskc(tokenobj_list, psk=None):
         suite = tokenobj.get_tokeninfo("hashlib", default="sha1")
         if type == "totp":
             timestep = tokenobj.get_tokeninfo("timeStep")
+            timedrift = tokenobj.get_tokeninfo("timeShift")
         else:
             timestep = 0
+            timedrift = 0
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
             encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
@@ -652,13 +657,17 @@ def export_pskc(tokenobj_list, psk=None):
                         <PlainValue>{timestep}</PlainValue>
                     </TimeInterval>
                     <Counter>
-                        {counter}
+                        <PlainValue>{counter}</PlainValue>
                     </Counter>
+                    <TimeDrift>
+                        <PlainValue>{timedrift}</PlainValue>
+                    </TimeDrift>
                 </Data>
         </Key>
         </KeyPackage>""".format(serial=serial, type=type, otplen=otplen,
                                 issuer=issuer, manufacturer=manufacturer,
                                 counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
+                                timedrift=timedrift,
                                 suite=suite), "html.parser")
 
             soup.macmethod.insert_after(kp2)
