@@ -244,6 +244,22 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
       </Policy>
     </Key>
   </KeyPackage>
+  <KeyPackage>
+    <DeviceInfo>
+      <Manufacturer>privacyIDEA rocks</Manufacturer>
+      <SerialNo>PW001</SerialNo>
+    </DeviceInfo>
+    <Key Id="PW001" Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:pw">
+      <AlgorithmParameters>
+        <ResponseFormat Length="12" Encoding="DECIMAL"/>
+      </AlgorithmParameters>
+      <Data>
+        <Secret>
+          <PlainValue>MTIzNDU2Nzg5MDEy</PlainValue>
+        </Secret>
+      </Data>
+    </Key>
+  </KeyPackage>
 </KeyContainer>
 '''
 
@@ -523,13 +539,18 @@ class ImportOTPTestCase(MyTestCase):
 
     def test_03_import_pskc(self):
         tokens = parsePSKCdata(XML_PSKC)
-        self.assertEqual(len(tokens), 6)
+        self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
         # Check the TOTP counter...
         self.assertEqual(tokens["2600135004013"].get("counter"), "121212")
         self.assertEqual(tokens["2600135004013"].get("timeShift"), "-122")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
+        # check the PW token
+        self.assertEqual(tokens["PW001"].get("type"), "pw")
+        self.assertEqual(tokens["PW001"].get("otplen"), "12")
+        # The secret (password) of the pw token is "123456789012"
+        self.assertEqual(tokens["PW001"].get("otpkey"), binascii.hexlify("123456789012"))
 
     def test_04_import_pskc_aes(self):
         encryption_key_hex = "12345678901234567890123456789012"
