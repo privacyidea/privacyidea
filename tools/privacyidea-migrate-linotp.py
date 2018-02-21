@@ -356,7 +356,7 @@ def migrate():
             print("Adding {} token infos...".format(len(tokeninfo_values)))
             insert_chunks(conn_pi, tokeninfo_table, tokeninfo_values)
 
-    if MIGRATE.get("assignments") and resolver:
+    if MIGRATE.get("assignments"):
         # If the token is assigned, we also need to create an entry for tokenrealm
         # We need to determine the realm_id for this resolver!
         for token in token_values:
