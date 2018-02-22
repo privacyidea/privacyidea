@@ -18,6 +18,7 @@ from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 import datetime
 from dateutil.tz import tzlocal
 import smtpmock
+import mock
 
 
 class EmailTokenTestCase(MyTestCase):
@@ -373,6 +374,17 @@ class EmailTokenTestCase(MyTestCase):
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
+
+    def test_18b_challenge_request_dynamic_multivalue(self):
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = EmailTokenClass(db_token)
+        # if the email is a multi-value attribute, the first address should be chosen
+        new_user_info = token.user.info.copy()
+        new_user_info['email'] = ['email1@example.com', 'email2@example.com']
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+            mock_user_info.return_value = new_user_info
+            self.assertEqual(token._email_address, 'email1@example.com')
+
 
     @smtpmock.activate
     def test_19_emailtext(self):

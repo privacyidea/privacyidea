@@ -13,6 +13,7 @@ from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 import datetime
+import mock
 import responses
 
 
@@ -403,6 +404,25 @@ class SMSTokenTestCase(MyTestCase):
                                            options={"transaction_id":
                                                         transactionid})
         self.assertTrue(r, r)
+
+    @responses.activate
+    def test_18b_challenge_request_dynamic_multivalue(self):
+        responses.add(responses.POST,
+                      self.SMSHttpUrl,
+                      body=self.success_body)
+        transactionid = "123456098712"
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = SmsTokenClass(db_token)
+        # if the email is a multi-value attribute, the first address should be chosen
+        new_user_info = token.user.info.copy()
+        new_user_info['mobile'] = ['1234', '5678']
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+            mock_user_info.return_value = new_user_info
+            c = token.create_challenge(transactionid)
+            self.assertTrue(c[0], c)
+            self.assertIn('destination=1234', responses.calls[0].request.body)
+            self.assertNotIn('destination=5678', responses.calls[0].request.body)
 
     @responses.activate
     def test_19_smstext(self):
