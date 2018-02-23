@@ -318,7 +318,10 @@ def init_hsm():
                 if key.startswith("PI_HSM_MODULE_"):
                     param = key[len("PI_HSM_MODULE_"):].lower()
                     hsm_parameters[param] = config.get(key)
-            log.info("calling HSM module with parameters {0}".format(hsm_parameters))
+            logging_params = dict(hsm_parameters)
+            if "password" in logging_params:
+                logging_params["password"] = "XXXX"
+            log.info("calling HSM module with parameters {0}".format(logging_params))
 
         HSM_config = {"obj": hsm_class(hsm_parameters)}
         current_app.config["pi_hsm"] = HSM_config

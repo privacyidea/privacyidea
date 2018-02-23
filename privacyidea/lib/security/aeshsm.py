@@ -88,9 +88,14 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             l = ('{0!s}_{1!s}'.format(label_prefix, k)) if l is None else l
             self.key_labels[k] = l
 
-        self.slot = config.get("slot", 1)
+        log.debug("Setting key labels: {0!s}".format(self.key_labels))
+        # convert the slot to int
+        self.slot = int(config.get("slot", 1))
+        log.debug("Setting slot: {0!s}".format(self.slot))
         self.password = config.get("password")
+        log.debug("Setting a password: {0!s}".format(bool(password)))
         self.module = config.get("module")
+        log.debug("Setting the modules: {0!s}".format(self.module))
         self.session = None
         self.key_handles = {}
 
