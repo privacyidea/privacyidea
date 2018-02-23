@@ -62,6 +62,7 @@ The code is tested in tests/test_lib_tokens_email
 
 import logging
 import traceback
+import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
@@ -225,6 +226,7 @@ class EmailTokenClass(HotpTokenClass):
         options = options or {}
         return_message = "Enter the OTP from the Email:"
         attributes = {'state': transactionid}
+        validity = int(get_from_config("email.validtime", 120))
 
         if self.is_active() is True:
             counter = self.get_otp_count()
@@ -238,7 +240,6 @@ class EmailTokenClass(HotpTokenClass):
                 subject_template, _ = self._get_email_text_or_subject(options,
                                                                    EMAILACTION.EMAILSUBJECT,
                                                                    "Your OTP")
-                validity = int(get_from_config("email.validtime", 120))
 
                 # Create the challenge in the database
                 db_challenge = Challenge(self.token.serial,
@@ -260,6 +261,10 @@ class EmailTokenClass(HotpTokenClass):
                 log.warning(info)
                 log.debug(u"{0!s}".format(traceback.format_exc(e)))
                 return_message = info
+
+        expiry_date = datetime.datetime.now() + \
+                                    datetime.timedelta(seconds=validity)
+        attributes['valid_until'] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, attributes
 
