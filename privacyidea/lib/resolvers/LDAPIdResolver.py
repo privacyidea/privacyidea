@@ -555,6 +555,8 @@ class IdResolver (UserIdResolver):
             # Simple fix for ignored sizelimit with Active Directory
             if len(ret) >= self.sizelimit:
                 break
+            if entry['type'] == 'searchResRef':
+                continue
             try:
                 attributes = entry.get("attributes")
                 user = self._ldap_attributes_to_user_object(attributes)
