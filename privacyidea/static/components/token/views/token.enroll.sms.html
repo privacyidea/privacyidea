@@ -9,7 +9,13 @@
     <a ui-sref="config.tokens({tokentype:'sms'})">SMS Token Config</a>!
 </div>
 
+
 <div class="form-group">
+    <input type="checkbox" ng-model="form.dynamic_phone"
+           name="dynamic_phone" id="dynamic_phone">
+    <label for="dynamic_phone" translate>Read number dynamically from user source on each request.</label>
+</div>
+<div ng-hide="form.dynamic_phone" class="form-group">
     <label for="phone" translate>Phone number</label>
     <input type="text"
            autofocus
@@ -22,9 +28,12 @@
             {{ phone }}
         </button>
     </div>
+</div>
+<div class="form-group">
     <label for="description" translate>Description</label>
     <input type="text" class="form-control"
             placeholder="{{ 'Some nice words...'|translate }}"
             ng-model="form.description" />
 </div>
+
 
