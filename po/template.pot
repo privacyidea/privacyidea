@@ -182,7 +182,7 @@ msgstr ""
 msgid "Admin-Realm"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:65
+#: privacyidea/static/components/audit/views/audit.stats.html:122
 msgid "Administrative actions"
 msgstr ""
 
@@ -734,9 +734,11 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.smtp.edit.html:94
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:123
-#: privacyidea/static/components/token/views/token.enroll.email.html:18
-#: privacyidea/static/components/token/views/token.enroll.sms.html:25
+#: privacyidea/static/components/token/views/token.enroll.email.html:24
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.sms.html:33
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
+#: privacyidea/static/components/token/views/token.enroll.totp.html:76
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr ""
@@ -914,7 +916,7 @@ msgstr ""
 msgid "Email"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.email.html:12
+#: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
 msgstr ""
 
@@ -1011,13 +1013,13 @@ msgstr ""
 msgid "Fail counter"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:43
-#: privacyidea/static/components/audit/views/audit.stats.html:45
+#: privacyidea/static/components/audit/views/audit.stats.html:100
+#: privacyidea/static/components/audit/views/audit.stats.html:102
 msgid "Failed authentication requests per token"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:54
-#: privacyidea/static/components/audit/views/audit.stats.html:56
+#: privacyidea/static/components/audit/views/audit.stats.html:111
+#: privacyidea/static/components/audit/views/audit.stats.html:113
 msgid "Failed authentication requests per user"
 msgstr ""
 
@@ -1625,6 +1627,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:19
+#: privacyidea/static/components/config/views/config.token.sms.html:24
 msgid "OTP validity time"
 msgstr ""
 
@@ -1636,7 +1639,7 @@ msgstr ""
 msgid "Object classes of a new created user object"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.sms.html:23
+#: privacyidea/static/components/config/views/config.token.sms.html:36
 msgid "Obsolete settings"
 msgstr ""
 
@@ -1678,7 +1681,7 @@ msgstr ""
 msgid "Other Error"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:76
+#: privacyidea/static/components/audit/views/audit.stats.html:133
 msgid "Overall token usage"
 msgstr ""
 
@@ -1759,7 +1762,7 @@ msgstr ""
 msgid "Phone"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+#: privacyidea/static/components/token/views/token.enroll.sms.html:19
 msgid "Phone number"
 msgstr ""
 
@@ -1855,7 +1858,7 @@ msgstr ""
 msgid "Progress: {{ progressPercentage }}%"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.sms.html:43
+#: privacyidea/static/components/config/views/config.token.sms.html:47
 msgid "Provider Config"
 msgstr ""
 
@@ -1925,6 +1928,14 @@ msgstr ""
 msgid "Read again"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.email.html:15
+msgid "Read email address dynamically from user source on each request."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:16
+msgid "Read number dynamically from user source on each request."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
 #: privacyidea/static/components/login/views/login.html:55
@@ -1952,7 +1963,7 @@ msgstr ""
 msgid "Recipient for testing"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:4
+#: privacyidea/static/components/audit/views/audit.stats.html:65
 #: privacyidea/static/templates/menu.html:99
 msgid "Refresh"
 msgstr ""
@@ -2090,6 +2101,10 @@ msgstr ""
 msgid "Run search"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.stats.html:4
+msgid "Run statistics for the last number of days..."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
 msgstr ""
@@ -2098,7 +2113,7 @@ msgstr ""
 msgid "SMS Gateways"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.token.sms.html:25
+#: privacyidea/static/components/config/views/config.token.sms.html:38
 msgid "SMS Provider"
 msgstr ""
 
@@ -2356,13 +2371,27 @@ msgstr ""
 msgid "Size Limit"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:27
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:70
+#: privacyidea/static/components/token/views/token.enroll.sms.html:35
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
+#: privacyidea/static/components/token/views/token.enroll.totp.html:78
 msgid "Some nice words..."
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.html:26
 msgid "Statistics"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:41
+msgid "Statistics end time"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:70
+msgid "Statistics from {{stats.time_start}} to {{ stats.time_end }}"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:19
+msgid "Statistics start time"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
@@ -2925,12 +2954,13 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.email.html:20
+#: privacyidea/static/components/config/views/config.token.sms.html:25
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:25
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:29
 msgid "The token is enrolled."
 msgstr ""
 
@@ -3002,14 +3032,14 @@ msgid ""
 "                        contain this resolver."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:20
+#: privacyidea/static/components/audit/views/audit.stats.html:77
 msgid ""
 "These are the validate-requests (authentication) grouped by\n"
 "                users.\n"
 "                The successful and the failed requests are listed."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:32
+#: privacyidea/static/components/audit/views/audit.stats.html:89
 msgid ""
 "These are the validate-requests (authentication) grouped by the\n"
 "                serial number of the token.\n"
@@ -3086,7 +3116,7 @@ msgstr ""
 msgid "This is the number of answers a user needs to define to enroll a token."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:78
+#: privacyidea/static/components/audit/views/audit.stats.html:135
 msgid ""
 "This is the overall token usage with\n"
 "                any\n"
@@ -3168,7 +3198,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:45
-#: privacyidea/static/components/config/views/config.token.sms.html:34
 msgid "Timeout"
 msgstr ""
 
@@ -3434,11 +3463,11 @@ msgstr ""
 msgid "Valid time"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:30
+#: privacyidea/static/components/audit/views/audit.stats.html:87
 msgid "Validate Requests per token"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:18
+#: privacyidea/static/components/audit/views/audit.stats.html:75
 msgid "Validate Requests per users"
 msgstr ""
 
@@ -3492,7 +3521,7 @@ msgstr ""
 msgid "Where statement"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:67
+#: privacyidea/static/components/audit/views/audit.stats.html:124
 msgid "Which administrative request where the most popular."
 msgstr ""
 
@@ -3538,7 +3567,7 @@ msgstr ""
 msgid "You may pass this registration code to the user."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:19
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:23
 msgid ""
 "You need to confirm the registration with your token\n"
 "                    either by pushing the blinking button or by\n"

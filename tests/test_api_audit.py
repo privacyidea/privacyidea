@@ -2,6 +2,9 @@ import json
 from .base import MyTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.models import Audit
+import datetime
+from dateutil.parser import parse as parse_time_string
+from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
@@ -30,6 +33,41 @@ class APIAuditTestCase(MyTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("serial_plot" in json_response.get(
                 "result").get("value"), json_response.get("result"))
+
+        start = datetime.datetime.now(tzlocal()) - datetime.timedelta(days=10)
+        start_str = start.strftime("%Y-%m-%dT%H:%M%Z")
+        # We need to reparse it, to get rid of the seconds and milliseconds
+        start = parse_time_string(start_str)
+        with self.app.test_request_context('/audit/statistics',
+                                           method='GET',
+                                           data={"start": start_str},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = json.loads(res.data)
+            self.assertTrue(json_response.get("result").get("status"), res)
+            self.assertTrue("serial_plot" in json_response.get(
+                "result").get("value"), json_response.get("result"))
+            d = parse_time_string(json_response.get("result").get("value").get("time_start"))
+            self.assertEqual(d, start)
+
+        end = datetime.datetime.now(tzlocal()) - datetime.timedelta(days=10)
+        end_str = end.strftime("%Y-%m-%dT%H:%M%Z")
+        # We need to reparse it, to get rid of the seconds and milliseconds
+        end = parse_time_string(end_str)
+        with self.app.test_request_context('/audit/statistics',
+                                           method='GET',
+                                           data={"end": end_str},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = json.loads(res.data)
+            self.assertTrue(json_response.get("result").get("status"), res)
+            self.assertTrue("serial_plot" in json_response.get(
+                "result").get("value"), json_response.get("result"))
+            d = parse_time_string(json_response.get("result").get("value").get("time_end"))
+            self.assertEqual(d, end)
+
 
     def test_02_get_allowed_audit_realm(self):
         # Check that an administrator is only allowed to see log entries of

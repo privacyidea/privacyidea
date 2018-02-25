@@ -282,7 +282,7 @@ msgstr "Administrator"
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:65
+#: privacyidea/static/components/audit/views/audit.stats.html:122
 msgid "Administrative actions"
 msgstr "Administrative Aktionen"
 
@@ -852,9 +852,11 @@ msgstr "Benutzer löschen"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:94
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/token/views/token.details.html:123
-#: privacyidea/static/components/token/views/token.enroll.email.html:18
-#: privacyidea/static/components/token/views/token.enroll.sms.html:25
+#: privacyidea/static/components/token/views/token.enroll.email.html:24
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.sms.html:33
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
+#: privacyidea/static/components/token/views/token.enroll.totp.html:76
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
 msgstr "Beschreibung"
@@ -1036,7 +1038,7 @@ msgstr "Benutzerquelle editierbar"
 msgid "Email"
 msgstr "EMail"
 
-#: privacyidea/static/components/token/views/token.enroll.email.html:12
+#: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
 msgstr "EMail-Adresse"
 
@@ -1135,13 +1137,13 @@ msgstr "Erweiterte Attribute"
 msgid "Fail counter"
 msgstr "Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:43
-#: privacyidea/static/components/audit/views/audit.stats.html:45
+#: privacyidea/static/components/audit/views/audit.stats.html:100
+#: privacyidea/static/components/audit/views/audit.stats.html:102
 msgid "Failed authentication requests per token"
 msgstr "Fehlgeschlagene Authentisierungen pro Token"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:54
-#: privacyidea/static/components/audit/views/audit.stats.html:56
+#: privacyidea/static/components/audit/views/audit.stats.html:111
+#: privacyidea/static/components/audit/views/audit.stats.html:113
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
 
@@ -1796,6 +1798,7 @@ msgid ""
 msgstr "OTP-Länge von neu ausgerollten Token"
 
 #: privacyidea/static/components/config/views/config.token.email.html:19
+#: privacyidea/static/components/config/views/config.token.sms.html:24
 msgid "OTP validity time"
 msgstr "Gültigkeitszeitraum für OTP"
 
@@ -1807,7 +1810,7 @@ msgstr "OTRS"
 msgid "Object classes of a new created user object"
 msgstr "Objektklassen eines neu erzeugten Benutzerobjekts"
 
-#: privacyidea/static/components/config/views/config.token.sms.html:23
+#: privacyidea/static/components/config/views/config.token.sms.html:36
 msgid "Obsolete settings"
 msgstr "Nicht mehr verwendete Einstellungen"
 
@@ -1852,7 +1855,7 @@ msgstr "Reihenfolge"
 msgid "Other Error"
 msgstr "Unbekanter Fehler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:76
+#: privacyidea/static/components/audit/views/audit.stats.html:133
 msgid "Overall token usage"
 msgstr "Allgemeine Tokennutzung"
 
@@ -1933,7 +1936,7 @@ msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein."
 msgid "Phone"
 msgstr "Telefon"
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+#: privacyidea/static/components/token/views/token.enroll.sms.html:19
 msgid "Phone number"
 msgstr "Telefonnummer"
 
@@ -2036,7 +2039,7 @@ msgstr "OTP-Liste drucken"
 msgid "Progress: {{ progressPercentage }}%"
 msgstr "Fortschritt: {{ progressPercentage }}%"
 
-#: privacyidea/static/components/config/views/config.token.sms.html:43
+#: privacyidea/static/components/config/views/config.token.sms.html:47
 msgid "Provider Config"
 msgstr "Provider-Konfiguration"
 
@@ -2108,6 +2111,14 @@ msgstr ""
 msgid "Read again"
 msgstr "Nochmal lesen"
 
+#: privacyidea/static/components/token/views/token.enroll.email.html:15
+msgid "Read email address dynamically from user source on each request."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.sms.html:16
+msgid "Read number dynamically from user source on each request."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
 #: privacyidea/static/components/login/views/login.html:55
@@ -2135,7 +2146,7 @@ msgstr "Empfangen"
 msgid "Recipient for testing"
 msgstr "Empfänger für Test-Emails"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:4
+#: privacyidea/static/components/audit/views/audit.stats.html:65
 #: privacyidea/static/templates/menu.html:99
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -2277,6 +2288,10 @@ msgstr "Rollout Status"
 msgid "Run search"
 msgstr "Suche starten"
 
+#: privacyidea/static/components/audit/views/audit.stats.html:4
+msgid "Run statistics for the last number of days..."
+msgstr "Statistik für die zurückliegenden Tage..."
+
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
 msgstr "SMS-Gateway Konfiguration"
@@ -2285,7 +2300,7 @@ msgstr "SMS-Gateway Konfiguration"
 msgid "SMS Gateways"
 msgstr "SMS-Gateways"
 
-#: privacyidea/static/components/config/views/config.token.sms.html:25
+#: privacyidea/static/components/config/views/config.token.sms.html:38
 msgid "SMS Provider"
 msgstr "SMS-Provider"
 
@@ -2558,14 +2573,28 @@ msgstr "Zeige nur aktivierte Aktionen"
 msgid "Size Limit"
 msgstr "Größenbeschränkung"
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:27
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:70
+#: privacyidea/static/components/token/views/token.enroll.sms.html:35
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
+#: privacyidea/static/components/token/views/token.enroll.totp.html:78
 msgid "Some nice words..."
 msgstr "Ein paar nette Worte..."
 
 #: privacyidea/static/components/audit/views/audit.html:26
 msgid "Statistics"
 msgstr "Statistik"
+
+#: privacyidea/static/components/audit/views/audit.stats.html:41
+msgid "Statistics end time"
+msgstr "Statistik bis"
+
+#: privacyidea/static/components/audit/views/audit.stats.html:70
+msgid "Statistics from {{stats.time_start}} to {{ stats.time_end }}"
+msgstr "Statistik von {{stats.time_start}} bis {{ stats.time_end }}"
+
+#: privacyidea/static/components/audit/views/audit.stats.html:19
+msgid "Statistics start time"
+msgstr "Statistik von"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
@@ -3301,6 +3330,7 @@ msgstr ""
 "DDThh:mm+oooo</em> angegeben werden."
 
 #: privacyidea/static/components/config/views/config.token.email.html:20
+#: privacyidea/static/components/config/views/config.token.sms.html:25
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
@@ -3308,7 +3338,7 @@ msgstr ""
 "Die Zeit in Sekunden, für die der versendete OTP-Wert zur Authentisierung "
 "gültig ist."
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:25
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:29
 msgid "The token is enrolled."
 msgstr "Der Token wurde ausgerollt."
 
@@ -3403,7 +3433,7 @@ msgstr ""
 "in diesen Resolver hinzufügen. Der Benutzer erscheint dann in den Realm, in "
 "denen dieser Resolver enthalten ist."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:20
+#: privacyidea/static/components/audit/views/audit.stats.html:77
 msgid ""
 "These are the validate-requests (authentication) grouped by\n"
 "                users.\n"
@@ -3413,7 +3443,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:32
+#: privacyidea/static/components/audit/views/audit.stats.html:89
 msgid ""
 "These are the validate-requests (authentication) grouped by the\n"
 "                serial number of the token.\n"
@@ -3519,7 +3549,7 @@ msgstr ""
 "Dies ist die Anzahl der Antworten, die ein Benutzer definieren muss, um "
 "einen Token auszurollen."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:78
+#: privacyidea/static/components/audit/views/audit.stats.html:135
 msgid ""
 "This is the overall token usage with\n"
 "                any\n"
@@ -3613,7 +3643,6 @@ msgstr "TiQR: Authentisierung mit Smartphone durch Scannen eines QR-Codes."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:45
-#: privacyidea/static/components/config/views/config.token.sms.html:34
 msgid "Timeout"
 msgstr "Time-out"
 
@@ -3883,11 +3912,11 @@ msgstr "Gültige Subskription"
 msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:30
+#: privacyidea/static/components/audit/views/audit.stats.html:87
 msgid "Validate Requests per token"
 msgstr "Validate-Requests pro Token"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:18
+#: privacyidea/static/components/audit/views/audit.stats.html:75
 msgid "Validate Requests per users"
 msgstr "Validate-Requests pro Benutzer"
 
@@ -3941,7 +3970,7 @@ msgstr "Willkommen"
 msgid "Where statement"
 msgstr "WHERE-Ausdruck"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:67
+#: privacyidea/static/components/audit/views/audit.stats.html:124
 msgid "Which administrative request where the most popular."
 msgstr "Die meistgenutzen administrativen Requests."
 
@@ -4000,7 +4029,7 @@ msgstr ""
 msgid "You may pass this registration code to the user."
 msgstr "Sie können diesen Registrierungscode an den Benutzer übergeben."
 
-#: privacyidea/static/components/token/views/token.enrolled.u2f.html:19
+#: privacyidea/static/components/token/views/token.enrolled.u2f.html:23
 msgid ""
 "You need to confirm the registration with your token\n"
 "                    either by pushing the blinking button or by\n"

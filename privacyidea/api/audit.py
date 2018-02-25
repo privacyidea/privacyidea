@@ -43,6 +43,8 @@ from ..lib.audit import search, getAudit
 from ..lib.stats import get_statistics
 import datetime
 from privacyidea.lib.utils import parse_timedelta
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -160,6 +162,15 @@ def statistics():
     """
     get the statistics values from the audit log
 
+    :jsonparam days: The number of days to run the stats
+    :jsonparam start: The start time to run the stats
+    :jsonparam end: The end time to run the stats
+
+    If start or end is missing, the ``days`` are used.
+
+    The time is to be passed in the format
+        yyyy-MM-ddTHH:mmZ
+
     **Example request**:
 
     .. sourcecode:: http
@@ -190,8 +201,27 @@ def statistics():
         }
     """
     days = int(getParam(request.all_data, "days", default=7))
+    start = getParam(request.all_data, "start")
+    if start:
+        start = parse_date_string(start)
+
+    end = getParam(request.all_data, "end")
+    if end:
+        end = parse_date_string(end)
+
+    if not end and not start:
+        end = datetime.datetime.now(tzlocal())
+        start = end - datetime.timedelta(days=days)
+
+    else:
+        if not end:
+            end = start + datetime.timedelta(days=days)
+        elif not start:
+            start = end - datetime.timedelta(days=days)
+
     stats = get_statistics(g.audit_object,
-                           start_time=datetime.datetime.now()
-                                      -datetime.timedelta(days=days))
+                           start_time=start, end_time=end)
+    stats["time_start"] = start
+    stats["time_end"] = end
     g.audit_object.log({'success': True})
     return send_result(stats)

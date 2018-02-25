@@ -1,16 +1,73 @@
 <div class="well">
-    <button class="btn btn-default" ng-click="getStatistics()">
-        <span class="glyphicon glyphicon-refresh"></span>
-        <span translate>Refresh</span>
-    </button>
+    <form>
+        <div class="form-group">
+            <label for="number_of_days"
+                   class="col-sm-9 control-label"
+                   translate>
+                Run statistics for the last number of days...
+            </label>
+            <div class="col-sm-3">
+                <input type="number"
+                       class="form-control"
+                       id="number_of_days"
+                       name="number_of_days"
+                       ng-model="params.days"/>
+            </div>
+        </div>
 
-    <select class="form-control"
-            ng-model="params.days">
-        <option>1</option>
-        <option selected>7</option>
-        <option>30</option>
-        <option>180</option>
-    </select>
+        <div class="form-group">
+            <label for="stats_start"
+                    translate>Statistics start time
+            </label>
+            <p class="input-group">
+                <input type="text" class="form-control"
+                       name="stats_start"
+                       datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                       is-open="startOpened"
+                       ng-model="params.start"
+                       max-date="today"
+                       show-button-bar="false"
+                       close-text="Close"/>
+              <span class="input-group-btn">
+                <button type="button" class="btn btn-default"
+                        ng-click="startOpened = openDate($event)">
+                    <i class="glyphicon glyphicon-calendar"></i>
+                </button>
+              </span>
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label for="stats_end"
+                    translate>Statistics end time
+            </label>
+            <p class="input-group">
+                <input type="text" class="form-control"
+                       name="stats_end"
+                       datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                       ng-model="params.end"
+                       is-open="endOpened"
+                       max-date="today"
+                       show-button-bar="false"
+                       close-text="Close"/>
+              <span class="input-group-btn">
+                <button type="button" class="btn btn-default"
+                        ng-click="endOpened = openDate($event)">
+                    <i class="glyphicon glyphicon-calendar"></i>
+                </button>
+              </span>
+            </p>
+        </div>
+
+        <div class="text-center form-group">
+            <button class="btn btn-default" ng-click="getStatistics()">
+                <span class="glyphicon glyphicon-refresh"></span>
+                <span translate>Refresh</span>
+            </button>
+        </div>
+    </form>
+
+    <h3 ng-show="stats.time_start" translate>Statistics from {{stats.time_start}} to {{ stats.time_end }}</h3>
 
     <accordion close-others="false">
         <accordion-group>
