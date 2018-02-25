@@ -3,8 +3,7 @@
         <div class="form-group">
             <label for="number_of_days"
                    class="col-sm-9 control-label"
-                   translate>
-                Run statistics for the last number of days...
+                   translate>Run statistics for the last number of days...
             </label>
             <div class="col-sm-3">
                 <input type="number"
@@ -82,6 +81,7 @@
             <img width="700" src="{{ stats.validate_user_plot }}"
                  alt="{{ stats.validate_user_plot }}"/>
         </accordion-group>
+
         <accordion-group>
             <accordion-heading>
                 <translate>Validate Requests per token</translate>
@@ -104,6 +104,19 @@
             </p>
             <img width="700" src="{{ stats.validate_failed_serial_plot }}"
                  alt="{{ stats.validate_failed_serial_plot }}"/>
+
+
+            <table class="table table-hover">
+                <tr>
+                    <th translate>Serial</th><th translate>Count</th>
+                </tr>
+              <tr ng-repeat="v in stats.validate_failed_serial">
+                <td><a ui-sref="token.details({tokenSerial:v.key})"
+                       ng-click="$rootScope.returnTo=audit.stats;">{{ v.key}}</a>
+                </td>
+                <td>{{ v.count }}</td>
+              </tr>
+            </table>
         </accordion-group>
 
         <accordion-group>
@@ -115,6 +128,18 @@
             </p>
             <img width="700" src="{{ stats.validate_failed_user_plot }}"
                  alt="{{ stats.validate_failed_user_plot }}"/>
+
+            <table class="table table-hover">
+                <tr>
+                    <th translate>User</th><th translate>Count</th>
+                </tr>
+              <tr ng-repeat="v in stats.validate_failed_user">
+                <td><a ui-sref="user.details({username:v.key})"
+                       ng-click="$rootScope.returnTo=audit.stats;">{{ v.key }}</a>
+                </td>
+                <td>{{ v.count }}</td>
+              </tr>
+            </table>
         </accordion-group>
 
         <accordion-group>
@@ -126,6 +151,17 @@
             </p>
             <img width="700" src="{{ stats.admin_plot }}"
                  alt="{{ stats.admin_plot }}"/>
+
+            <table class="table table-hover">
+                <tr>
+                    <th translate>REST API Call</th><th translate>Count</th>
+                </tr>
+              <tr ng-repeat="c in stats.admin">
+                <td>{{ c.key }}
+                </td>
+                <td>{{ c.count }}</td>
+              </tr>
+            </table>
         </accordion-group>
 
         <accordion-group>
@@ -137,6 +173,19 @@
                 kind of action in regards to the serial number.</p>
             <img width="700" src="{{ stats.serial_plot }}"
                  alt="{{ stats.serial_plot }}"/>
+
+            <table class="table table-hover">
+                <tr>
+                    <th translate>Serial</th><th translate>Count</th>
+                </tr>
+                  <tr ng-repeat="s in stats.serial">
+                <td><a ui-sref="token.details({tokenSerial:s.key})"
+                       ng-click="$rootScope.returnTo=audit.stats;">
+                    {{ s.key }}</a>
+                </td>
+                <td>{{ s.count }}</td>
+              </tr>
+            </table>
         </accordion-group>
     </accordion>
 </div>

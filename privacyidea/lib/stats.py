@@ -64,13 +64,13 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
 
     # get simple usage
     for key in ["serial", "action"]:
-        result["{0!s}_plot".format(key)] = _get_number_of(df, key)
+        result["{0!s}_plot".format(key)], result["{0!s}".format(key)] = _get_number_of(df, key)
 
     # failed authentication requests
     for key in ["user", "serial"]:
-        result["validate_failed_{0!s}_plot".format(key)] = _get_fail(df, key)
+        result["validate_failed_{0!s}_plot".format(key)], result["validate_failed_{0!s}".format(key)] = _get_fail(df, key)
 
-    result["admin_plot"] = _get_number_of(df, "action", nums=20)
+    result["admin_plot"], result["admin"] = _get_number_of(df, "action", nums=20)
 
     return result
 
@@ -79,6 +79,7 @@ def _get_success_fail(df, key):
 
     try:
         output = StringIO.StringIO()
+        # in this case series is actually a dataframe
         series = df[df.action.isin(["POST /validate/check",
                                     "GET /validate/check"])].groupby([key,
                                                                 'success']).size().unstack()
@@ -98,15 +99,16 @@ def _get_success_fail(df, key):
     return image_uri
 
 
-def _get_fail(df, key):
+def _get_fail(df, key, nums=5):
 
     try:
         output = StringIO.StringIO()
         series = df[(df.success==0)
                     & (df.action.isin(["POST /validate/check",
                                        "GET /validate/check"]))][
-                     key].value_counts()[:5]
+                     key].value_counts(sort=True, dropna=True)[:nums]
 
+        series_list = [{"key": series.keys()[i], "count": series.tolist()[i]} for i in range(series.size)]
         plot_canvas = matplotlib.pyplot.figure()
         ax = plot_canvas.add_subplot(1,1,1)
 
@@ -124,7 +126,8 @@ def _get_fail(df, key):
     except Exception as exx:
         log.info(exx)
         image_uri = "{0!s}".format(exx)
-    return image_uri
+        series_list = []
+    return image_uri, series_list
 
 
 def _get_number_of(df, key, nums=5):
@@ -135,7 +138,7 @@ def _get_number_of(df, key, nums=5):
     :param df: The DataFrame
     :type df: Pandas DataFrame
     :param key: The key, which should be plotted.
-    :param count: how many of the most often values should be plotted
+    :param num: how many of the most often values should be plotted
     :return: A data url
     """
     output = StringIO.StringIO()
@@ -144,7 +147,8 @@ def _get_number_of(df, key, nums=5):
         plot_canvas = matplotlib.pyplot.figure()
         ax = plot_canvas.add_subplot(1, 1, 1)
 
-        series = df[key].value_counts()[:nums]
+        series = df[key].value_counts(sort=True, dropna=True)[:nums]
+        series_list = [{"key": series.keys()[i], "count": series.tolist()[i]} for i in range(series.size)]
         fig = series.plot(ax=ax, kind="bar", colormap="Blues",
                           legend=False,
                           stacked=False,
@@ -158,4 +162,5 @@ def _get_number_of(df, key, nums=5):
     except Exception as exx:
         log.info(exx)
         image_uri = "No data"
-    return image_uri
+        series_list = []
+    return image_uri, series_list

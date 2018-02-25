@@ -32,10 +32,6 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         28: "Last 4 Weeks"};
     $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
 
-    if ($location.path() === "/audit/statistics") {
-        $scope.getStatistics();
-    }
-
     // If the state is called with some filter values
     if ($stateParams.serial) {
         $scope.serialFilter = $stateParams.serial;
@@ -104,7 +100,11 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     }
 
     $scope.$on("piReload", function() {
-        $scope.getAuditList();
+        if ($location.path() === "/audit/stats") {
+            $scope.getStatistics();
+        } else {
+            $scope.getAuditList();
+        }
     });
 
     // ===========================================================

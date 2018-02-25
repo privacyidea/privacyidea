@@ -282,7 +282,7 @@ msgstr "Administrator"
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:122
+#: privacyidea/static/components/audit/views/audit.stats.html:148
 msgid "Administrative actions"
 msgstr "Administrative Aktionen"
 
@@ -673,6 +673,10 @@ msgstr "Verbindungsparameter"
 msgid "Connector name"
 msgstr "Konnektorname"
 
+#: privacyidea/static/components/audit/views/audit.stats.html:112
+#: privacyidea/static/components/audit/views/audit.stats.html:135
+#: privacyidea/static/components/audit/views/audit.stats.html:158
+#: privacyidea/static/components/audit/views/audit.stats.html:180
 #: privacyidea/static/components/token/views/token.details.html:97
 msgid "Count"
 msgstr "Zähler"
@@ -1137,13 +1141,13 @@ msgstr "Erweiterte Attribute"
 msgid "Fail counter"
 msgstr "Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:100
-#: privacyidea/static/components/audit/views/audit.stats.html:102
+#: privacyidea/static/components/audit/views/audit.stats.html:101
+#: privacyidea/static/components/audit/views/audit.stats.html:103
 msgid "Failed authentication requests per token"
 msgstr "Fehlgeschlagene Authentisierungen pro Token"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:111
-#: privacyidea/static/components/audit/views/audit.stats.html:113
+#: privacyidea/static/components/audit/views/audit.stats.html:125
+#: privacyidea/static/components/audit/views/audit.stats.html:127
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
 
@@ -1855,7 +1859,7 @@ msgstr "Reihenfolge"
 msgid "Other Error"
 msgstr "Unbekanter Fehler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:133
+#: privacyidea/static/components/audit/views/audit.stats.html:170
 msgid "Overall token usage"
 msgstr "Allgemeine Tokennutzung"
 
@@ -2106,6 +2110,10 @@ msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS-Server "
 "weitergeleitet."
+
+#: privacyidea/static/components/audit/views/audit.stats.html:158
+msgid "REST API Call"
+msgstr "REST API-Aufruf"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:162
 msgid "Read again"
@@ -2503,6 +2511,8 @@ msgstr "Absende-Email-Adresse"
 msgid "Separator"
 msgstr "Trennzeichen"
 
+#: privacyidea/static/components/audit/views/audit.stats.html:112
+#: privacyidea/static/components/audit/views/audit.stats.html:180
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:5
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
 #: privacyidea/static/components/machine/views/machine.details.html:50
@@ -3443,7 +3453,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:89
+#: privacyidea/static/components/audit/views/audit.stats.html:90
 msgid ""
 "These are the validate-requests (authentication) grouped by the\n"
 "                serial number of the token.\n"
@@ -3549,7 +3559,7 @@ msgstr ""
 "Dies ist die Anzahl der Antworten, die ein Benutzer definieren muss, um "
 "einen Token auszurollen."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:135
+#: privacyidea/static/components/audit/views/audit.stats.html:172
 msgid ""
 "This is the overall token usage with\n"
 "                any\n"
@@ -3831,6 +3841,7 @@ msgstr "TLS verwenden"
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 
+#: privacyidea/static/components/audit/views/audit.stats.html:135
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
@@ -3912,7 +3923,7 @@ msgstr "Gültige Subskription"
 msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:87
+#: privacyidea/static/components/audit/views/audit.stats.html:88
 msgid "Validate Requests per token"
 msgstr "Validate-Requests pro Token"
 
@@ -3970,7 +3981,7 @@ msgstr "Willkommen"
 msgid "Where statement"
 msgstr "WHERE-Ausdruck"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:124
+#: privacyidea/static/components/audit/views/audit.stats.html:150
 msgid "Which administrative request where the most popular."
 msgstr "Die meistgenutzen administrativen Requests."
 
