@@ -555,7 +555,8 @@ class IdResolver (UserIdResolver):
             # Simple fix for ignored sizelimit with Active Directory
             if len(ret) >= self.sizelimit:
                 break
-            if entry['type'] == 'searchResRef':
+            # Fix for searchResRef entries which have no attributes
+            if entry.get('type') == 'searchResRef':
                 continue
             try:
                 attributes = entry.get("attributes")
