@@ -93,7 +93,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.slot = int(config.get("slot", 1))
         log.debug("Setting slot: {0!s}".format(self.slot))
         self.password = config.get("password")
-        log.debug("Setting a password: {0!s}".format(bool(password)))
+        log.debug("Setting a password: {0!s}".format(bool(self.password)))
         self.module = config.get("module")
         log.debug("Setting the modules: {0!s}".format(self.module))
         self.session = None
