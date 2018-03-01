@@ -24,6 +24,7 @@ audit data using pandas.
 This module is tested in tests/test_lib_stats.py
 """
 import logging
+import traceback
 from privacyidea.lib.log import log_with
 import datetime
 import StringIO
@@ -95,7 +96,8 @@ def _get_success_fail(df, key):
         image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
-        image_uri = "{0!s}".format(exx)
+        log.debug(traceback.format_exc())
+        image_uri = "No statistics available. Maybe you are missing the matplotlib installation."
     return image_uri
 
 
@@ -125,7 +127,8 @@ def _get_fail(df, key, nums=5):
         image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
-        image_uri = "{0!s}".format(exx)
+        log.debug(traceback.format_exc())
+        image_uri = "No statistics available. Maybe you are missing the matplotlib installation."
         series_list = []
     return image_uri, series_list
 
@@ -161,6 +164,7 @@ def _get_number_of(df, key, nums=5):
         image_uri = 'data:image/png;base64,{0!s}'.format(image_data)
     except Exception as exx:
         log.info(exx)
-        image_uri = "No data"
+        log.debug(traceback.format_exc())
+        image_uri = "No statistics available. Maybe you are missing the matplotlib installation."
         series_list = []
     return image_uri, series_list
