@@ -2296,6 +2296,39 @@ class Subscription(MethodsMixin, db.Model):
         return d
 
 
+class EventCounter(db.Model):
+    """
+    This table stores counters of the event hanlder "Counter".
+    """
+    __tablename__ = 'eventcounter'
+    counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
+    counter_value = db.Column(db.Integer, default=0)
+
+    def __init__(self, name, value=0):
+        self.counter_value = value
+        self.counter_name = name
+        self.save()
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+        return self.counter_name
+
+    def delete(self):
+        ret = self.counter_name
+        db.session.delete(self)
+        db.session.commit()
+        return ret
+
+    def increase(self):
+        """
+        Increase the value of a counter
+        :return:
+        """
+        self.counter_value = self.counter_value + 1
+        self.save()
+
+
 ### Audit
 
 audit_column_length = {"signature": 620,

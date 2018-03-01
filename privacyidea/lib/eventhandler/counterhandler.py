@@ -25,12 +25,9 @@ These counters can be used by rrdtool to monitor values and print time series of
 certain parameters.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.config import get_from_config
 from privacyidea.lib import _
-import json
+from privacyidea.lib.counter import increase
 import logging
-import subprocess
-import os
 import traceback
 
 log = logging.getLogger(__name__)
@@ -73,12 +70,15 @@ class CounterEventHandler(BaseEventHandler):
         :return:
         """
         ret = True
-        g = options.get("g")
+        #g = options.get("g")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
-        counter_name = handler_options.get("counter_name")
-        # Find the database
+        if action == "increase_counter":
+            counter_name = handler_options.get("counter_name")
+            r = increase(counter_name)
+            log.debug(u"Increased the counter {0!s} to {1!s}.".format(counter_name,
+                                                                      r))
 
         return ret
 
