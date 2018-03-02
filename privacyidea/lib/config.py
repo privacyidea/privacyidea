@@ -105,7 +105,7 @@ class ConfigClass(object):
         """
         if not self.timestamp or \
             self.timestamp + datetime.timedelta(seconds=current_app.config.get(
-                "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+                "PI_CHECK_RELOAD_CONFIG", 1)) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 self.config = {}
