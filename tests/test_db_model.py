@@ -12,7 +12,8 @@ from privacyidea.models import (Token,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
                                 EventHandlerCondition, PrivacyIDEAServer,
-                                ClientApplication, Subscription, UserCache)
+                                ClientApplication, Subscription, UserCache,
+                                EventCounter)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -691,3 +692,19 @@ class TokenModelTestCase(MyTestCase):
         pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
         # The server does not exist anymore
         self.assertEqual(pi2, None)
+
+    def test_25_eventcounter(self):
+        counter = EventCounter("test_counter", 10)
+        counter.save()
+        counter2 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter2.counter_value, 10)
+
+        counter2.increase()
+        counter2.increase()
+
+        counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter3.counter_value, 12)
+
+        counter3.delete()
+        counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter3, None)

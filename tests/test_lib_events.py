@@ -13,6 +13,8 @@ from privacyidea.lib.eventhandler.usernotification import (
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
@@ -420,6 +422,47 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertEqual(r, False)
+
+
+class CounterEventTestCase(MyTestCase):
+
+    def test_01_increase_counter(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "counter_name": "hallo_counter"}
+                   }
+                   }
+
+        t_handler = CounterEventHandler()
+        res = t_handler.do("increase_counter", options=options)
+        self.assertTrue(res)
+
+        res = t_handler.do("increase_counter", options=options)
+        self.assertTrue(res)
+
+        counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+        self.assertEqual(counter.counter_value, 2)
 
 
 class ScriptEventTestCase(MyTestCase):
