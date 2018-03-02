@@ -89,6 +89,7 @@ def _get_success_fail(df, key):
                           title="Authentications",
                           grid=True,
                           color=customcmap).get_figure()
+        matplotlib.pyplot.tight_layout()
         fig.savefig(output, format="png")
         o_data = output.getvalue()
         output.close()
@@ -115,11 +116,11 @@ def _get_fail(df, key, nums=5):
         ax = plot_canvas.add_subplot(1,1,1)
 
         fig = series.plot(ax=ax, kind="bar",
-                          colormap="Reds",
                           stacked=False,
                           legend=False,
                           grid=True,
                           title="Failed Authentications").get_figure()
+        matplotlib.pyplot.tight_layout()
         fig.savefig(output, format="png")
         o_data = output.getvalue()
         output.close()
@@ -152,11 +153,12 @@ def _get_number_of(df, key, nums=5):
 
         series = df[key].value_counts(sort=True, dropna=True)[:nums]
         series_list = [{"key": series.keys()[i], "count": series.tolist()[i]} for i in range(series.size)]
-        fig = series.plot(ax=ax, kind="bar", colormap="Blues",
+        fig = series.plot(ax=ax, kind="bar",
                           legend=False,
                           stacked=False,
                           title="Numbers of {0!s}".format(key),
                           grid=True).get_figure()
+        matplotlib.pyplot.tight_layout()
         fig.savefig(output, format="png")
         o_data = output.getvalue()
         output.close()
