@@ -22,7 +22,7 @@ def upgrade():
                         sa.PrimaryKeyConstraint('counter_name')
                         )
     except Exception as exx:
-        print("Could not create table eventcounter. Probably already exsists!")
+        print("Could not create table eventcounter. Probably already exists!")
         print (exx)
 
 

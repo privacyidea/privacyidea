@@ -37,7 +37,7 @@ class CounterEventHandler(BaseEventHandler):
     """
     An CounterEventHandler needs to return a list of actions, which it can handle.
     It also returns a list of allowed action and conditions
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the eventhandling definitions
     """
 
     identifier = "Counter"
