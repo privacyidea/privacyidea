@@ -1,11 +1,12 @@
-python-privacyidea (2.22~dev5-1trusty) trusty; urgency=low
+python-privacyidea (2.22~dev6-1trusty) trusty; urgency=low
 
   * SMPP Provider
   * Add improved RADIUS attribute mapping
   * VASCO Token
   * Improvied offline functionality
+  * Add Counter Event Handler
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 15 Feb 2017 20:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 02 Mar 2017 22:30:00 +0200
 
 python-privacyidea (2.21.4-1trusty) trusty; urgency=low
 
