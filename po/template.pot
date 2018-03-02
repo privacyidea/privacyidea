@@ -182,7 +182,7 @@ msgstr ""
 msgid "Admin-Realm"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:122
+#: privacyidea/static/components/audit/views/audit.stats.html:148
 msgid "Administrative actions"
 msgstr ""
 
@@ -555,6 +555,10 @@ msgstr ""
 msgid "Connector name"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.stats.html:112
+#: privacyidea/static/components/audit/views/audit.stats.html:135
+#: privacyidea/static/components/audit/views/audit.stats.html:158
+#: privacyidea/static/components/audit/views/audit.stats.html:180
 #: privacyidea/static/components/token/views/token.details.html:97
 msgid "Count"
 msgstr ""
@@ -1013,13 +1017,13 @@ msgstr ""
 msgid "Fail counter"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:100
-#: privacyidea/static/components/audit/views/audit.stats.html:102
+#: privacyidea/static/components/audit/views/audit.stats.html:101
+#: privacyidea/static/components/audit/views/audit.stats.html:103
 msgid "Failed authentication requests per token"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:111
-#: privacyidea/static/components/audit/views/audit.stats.html:113
+#: privacyidea/static/components/audit/views/audit.stats.html:125
+#: privacyidea/static/components/audit/views/audit.stats.html:127
 msgid "Failed authentication requests per user"
 msgstr ""
 
@@ -1681,7 +1685,7 @@ msgstr ""
 msgid "Other Error"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:133
+#: privacyidea/static/components/audit/views/audit.stats.html:170
 msgid "Overall token usage"
 msgstr ""
 
@@ -1922,6 +1926,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:212
 msgid "RADIUS: Forward authentication request to a RADIUS server"
+msgstr ""
+
+#: privacyidea/static/components/audit/views/audit.stats.html:158
+msgid "REST API Call"
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:162
@@ -2303,6 +2311,8 @@ msgstr ""
 msgid "Separator"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.stats.html:112
+#: privacyidea/static/components/audit/views/audit.stats.html:180
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:5
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
 #: privacyidea/static/components/machine/views/machine.details.html:50
@@ -3039,7 +3049,7 @@ msgid ""
 "                The successful and the failed requests are listed."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:89
+#: privacyidea/static/components/audit/views/audit.stats.html:90
 msgid ""
 "These are the validate-requests (authentication) grouped by the\n"
 "                serial number of the token.\n"
@@ -3116,7 +3126,7 @@ msgstr ""
 msgid "This is the number of answers a user needs to define to enroll a token."
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:135
+#: privacyidea/static/components/audit/views/audit.stats.html:172
 msgid ""
 "This is the overall token usage with\n"
 "                any\n"
@@ -3382,6 +3392,7 @@ msgstr ""
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr ""
 
+#: privacyidea/static/components/audit/views/audit.stats.html:135
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
@@ -3463,7 +3474,7 @@ msgstr ""
 msgid "Valid time"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:87
+#: privacyidea/static/components/audit/views/audit.stats.html:88
 msgid "Validate Requests per token"
 msgstr ""
 
@@ -3521,7 +3532,7 @@ msgstr ""
 msgid "Where statement"
 msgstr ""
 
-#: privacyidea/static/components/audit/views/audit.stats.html:124
+#: privacyidea/static/components/audit/views/audit.stats.html:150
 msgid "Which administrative request where the most popular."
 msgstr ""
 
