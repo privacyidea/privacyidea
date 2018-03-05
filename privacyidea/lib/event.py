@@ -118,6 +118,7 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
     from privacyidea.lib.eventhandler.federationhandler import \
         FederationEventHandler
+    from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
@@ -127,6 +128,8 @@ def get_handler_object(handlername):
         h_obj = ScriptEventHandler()
     if handlername == "Federation":
         h_obj = FederationEventHandler()
+    if handlername == "Counter":
+        h_obj = CounterEventHandler()
     return h_obj
 
 
