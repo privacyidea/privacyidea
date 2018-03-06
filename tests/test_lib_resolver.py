@@ -11,6 +11,7 @@ The lib.resolver.py only depends on the database model.
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 import ldap3mock
+import mock
 import responses
 import uuid
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
@@ -551,6 +552,20 @@ class LDAPResolverTestCase(MyTestCase):
 
         ret = y.getUserList({"username": "bob"})
         self.assertTrue(len(ret) == 1, ret)
+
+        # user list with searchResRef entries
+        # we are mocking the mock here
+        original_search = y.l.extend.standard.paged_search
+        with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
+            def _search_with_ref(*args, **kwargs):
+                results = original_search(*args, **kwargs)
+                results.append({'type': 'searchResRef', 'foo': 'bar'})
+                return results
+
+            mock_search.side_effect = _search_with_ref
+            ret = y.getUserList({"username": "bob"})
+            self.assertTrue(mock_search.called)
+            self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
