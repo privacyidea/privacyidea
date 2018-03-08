@@ -1447,7 +1447,7 @@ class UserNotificationTestCase(MyTestCase):
 
         uhandler = UserNotificationEventHandler()
         resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        resp.data = """{"result": {"value": false, "status": false}}"""
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
         req = Request(env)
@@ -1463,6 +1463,13 @@ class UserNotificationTestCase(MyTestCase):
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {"conditions": {"result_value": True}},
+             "response": resp,
+             "request": req})
+        self.assertEqual(r, False)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_status": True}},
              "response": resp,
              "request": req})
         self.assertEqual(r, False)
