@@ -288,11 +288,11 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
-
     from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
-    if g:
+    if get_tokens(user=user_object, count=True) == 0 and g:
+        # We only go to passthru, if the user has no tokens!
         clientip = options.get("clientip")
         policy_object = g.policy_object
         pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
@@ -302,13 +302,13 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                user=user_object.login,
                                                client=clientip, active=True)
         if len(pass_thru) > 1:
+            log.debug(u"Contradicting passthru policies: {0!s}".format(pass_thru))
             raise PolicyError("Contradicting passthru policies.")
-        if pass_thru and get_tokens(user=user_object, count=True) == 0:
-            # If the user has NO Token, authenticate against the user store
-            # Now we need to check the userstore password
+        if pass_thru:
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
             if pass_thru_action in ["userstore", True]:
+                # Now we need to check the userstore password
                 if user_object.check_password(passw):
                     return True, {"message": "The user authenticated against "
                                              "his userstore according to "
