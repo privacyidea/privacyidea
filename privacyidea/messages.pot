@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-02-19 09:59+0100\n"
+"POT-Creation-Date: 2018-03-08 19:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.3.4\n"
+"Generated-By: Babel 1.3\n"
 
 #: api/policy.py:171
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
@@ -25,7 +25,7 @@ msgstr ""
 msgid "T'check' is an invalid policy name."
 msgstr ""
 
-#: lib/decorators.py:42 lib/token.py:1958
+#: lib/decorators.py:42 lib/token.py:1995
 msgid "This action is not possible, since the token is locked"
 msgstr ""
 
@@ -626,25 +626,25 @@ msgstr ""
 msgid "The RADIUS secret is too long"
 msgstr ""
 
-#: lib/token.py:2207
+#: lib/token.py:2244
 #, python-format
 msgid "Admin is allowed to initalize %s tokens."
 msgstr ""
 
-#: lib/token.py:2216
+#: lib/token.py:2253
 #, python-format
 msgid "The user is allowed to enroll a %s token."
 msgstr ""
 
-#: lib/token.py:2247
+#: lib/token.py:2284
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2254
+#: lib/token.py:2291
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr ""
 
-#: lib/token.py:2260
+#: lib/token.py:2297
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -745,6 +745,10 @@ msgstr ""
 msgid ""
 "Here you can enter a regular expression. The condition only applies if "
 "the regular expression matches the detail->message in the response."
+msgstr ""
+
+#: lib/eventhandler/counterhandler.py:57
+msgid "The identifier/key of the counter."
 msgstr ""
 
 #: lib/eventhandler/federationhandler.py:73
@@ -898,14 +902,14 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:859
+#: lib/resolvers/LDAPIdResolver.py:862
 #, python-format
 msgid ""
 "Your LDAP config found %i user objects, but only %i with the specified "
 "uidtype"
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:861
+#: lib/resolvers/LDAPIdResolver.py:864
 #, python-format
 msgid "Your LDAP config seems to be OK, %i user objects found."
 msgstr ""
@@ -1003,28 +1007,28 @@ msgstr ""
 msgid "event based OTP token using the HOTP algorithm"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:135
+#: lib/tokens/emailtoken.py:148
 msgid "EMail Token"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:137
+#: lib/tokens/emailtoken.py:150
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:145
+#: lib/tokens/emailtoken.py:158
 msgid ""
 "The text that will be sent via EMail for an EMail token. Use <otp> and "
 "<serial> as parameters. You may also specify a filename as email template"
 " starting with \"file:\"."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:151
+#: lib/tokens/emailtoken.py:164
 msgid ""
 "The subject of the EMail for an EMail token. Use <otp> and <serial> as "
 "parameters."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:156
+#: lib/tokens/emailtoken.py:169
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
@@ -1125,21 +1129,21 @@ msgstr ""
 msgid "Remote Token: Forward authentication request to another server."
 msgstr ""
 
-#: lib/tokens/smstoken.py:185
+#: lib/tokens/smstoken.py:188
 msgid "SMS Token"
 msgstr ""
 
-#: lib/tokens/smstoken.py:187
+#: lib/tokens/smstoken.py:190
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
-#: lib/tokens/smstoken.py:196
+#: lib/tokens/smstoken.py:199
 msgid ""
 "The text that will be send via SMS for an SMS token. Use <otp> and "
 "<serial> as parameters."
 msgstr ""
 
-#: lib/tokens/smstoken.py:201
+#: lib/tokens/smstoken.py:204
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with "
 "one SMS OTP."
@@ -1165,23 +1169,23 @@ msgstr ""
 msgid "TOTP: Time based One Time Passwords."
 msgstr ""
 
-#: lib/tokens/u2ftoken.py:247
+#: lib/tokens/u2ftoken.py:248
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
 msgstr ""
 
-#: lib/tokens/u2ftoken.py:253
+#: lib/tokens/u2ftoken.py:254
 msgid "Only specified U2F tokens are authorized."
 msgstr ""
 
-#: lib/tokens/u2ftoken.py:260
+#: lib/tokens/u2ftoken.py:261
 msgid "Only specified U2F tokens are allowed to be registered."
 msgstr ""
 
-#: lib/tokens/u2ftoken.py:265
+#: lib/tokens/u2ftoken.py:266
 msgid "Do not verify the U2F attestation certificate."
 msgstr ""
 
-#: lib/tokens/u2ftoken.py:344
+#: lib/tokens/u2ftoken.py:343
 msgid "You need to define the appId in the token config!"
 msgstr ""
 
