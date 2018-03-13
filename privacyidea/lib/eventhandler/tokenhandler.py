@@ -137,6 +137,13 @@ class TokenEventHandler(BaseEventHandler):
                              "description": _("Set the realm of the newly "
                                               "created token."),
                              "value": realm_list},
+                        "dynamic_phone": {
+                            "type": "bool",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "sms",
+                            "description": _("Dynamically read the mobile number "
+                                             "from the user store.")
+                        },
                         "motppin": {
                             "type": "str",
                             "visibleIf": "tokentype",
@@ -327,11 +334,14 @@ class TokenEventHandler(BaseEventHandler):
                 # will fail to enroll.
                 # TODO: Other tokentypes will require additional parameters
                 if tokentype == "sms":
-                    init_param['phone'] = user.get_user_phone(
-                        phone_type='mobile')
-                    if not init_param['phone']:
-                        log.warning("Enrolling SMS token. But the user "
-                                    "{0!r} has no mobile number!".format(user))
+                    if handler_options.get("dynamic_phone"):
+                        init_param["dynamic_phone"] = 1
+                    else:
+                        init_param['phone'] = user.get_user_phone(
+                            phone_type='mobile')
+                        if not init_param['phone']:
+                            log.warning("Enrolling SMS token. But the user "
+                                        "{0!r} has no mobile number!".format(user))
                 elif tokentype == "email":
                     init_param['email'] = user.info.get("email", "")
                     if not init_param['email']:

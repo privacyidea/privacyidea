@@ -746,7 +746,6 @@ class FederationEventTestCase(MyTestCase):
                          "https://remote/token/init")
 
 
-
 class TokenEventTestCase(MyTestCase):
 
     def test_01_set_tokenrealm(self):
@@ -1040,6 +1039,26 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(tokentype="motp")[0]
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
+        remove_token(t.token.serial)
+
+        # Enroll an SMS token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "sms",
+                                        "user": "1",
+                                        "dynamic_phone": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="sms")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("dynamic_phone"), "1")
         remove_token(t.token.serial)
 
     def test_06_set_description(self):
