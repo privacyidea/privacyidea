@@ -63,6 +63,8 @@ from UserIdResolver import UserIdResolver
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Server, Tls, Connection
+from ldap3.core.exceptions import LDAPOperationResult
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
 
 import os.path
@@ -138,6 +140,29 @@ def get_info_configuration(noschemas):
         get_schema_info = ldap3.NONE
     log.debug("Get LDAP schema info: {0!r}".format(get_schema_info))
     return get_schema_info
+
+
+def ignore_sizelimit_exception(conn, generator):
+    """
+    Wrapper for ``paged_search``, which (since ldap3 2.3) throws an exception if the size limit has been
+    reached. This function wraps the generator and ignores this exception.
+
+    Additionally, this checks ``conn.response`` for any leftover entries that were not yet returned
+    by the generator.
+    """
+    while True:
+        try:
+            yield next(generator)
+        except StopIteration:
+            # If the generator is exceed, we stop
+            break
+        except LDAPOperationResult as e:
+            # If the size limit has been reached, we stop. All other exceptions are re-raised.
+            if e.result == RESULT_SIZE_LIMIT_EXCEEDED:
+                for entry in conn.response:
+                    yield entry
+                break
+            raise
 
 
 def cache(func):
@@ -559,7 +584,7 @@ class IdResolver (UserIdResolver):
                                                 size_limit=self.sizelimit,
                                                 generator=True)
         # returns a generator of dictionaries
-        for entry in g:
+        for entry in ignore_sizelimit_exception(self.l, g):
             # Simple fix for ignored sizelimit with Active Directory
             if len(ret) >= self.sizelimit:
                 break
@@ -854,7 +879,7 @@ class IdResolver (UserIdResolver):
             # returns a generator of dictionaries
             count = 0
             uidtype_count = 0
-            for entry in g:
+            for entry in ignore_sizelimit_exception(l, g):
                 try:
                     userid = cls._get_uid(entry, uidtype)
                     count += 1
