@@ -319,6 +319,14 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
+            if uidtype.lower() == "objectguid":
+                # For ldap3 versions <= 2.4.1, objectGUID attribute values are returned as UUID strings.
+                # For versions greater than 2.4.1, they are returned in the curly-braced string
+                # representation, i.e. objectGUID := "{" UUID "}"
+                # In order to ensure backwards compatibility for user mappings,
+                # we strip the curly braces from objectGUID values.
+                # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
+                uid = uid.strip("{").strip("}")
         return uid
 
     def _trim_user_id(self, userId):
