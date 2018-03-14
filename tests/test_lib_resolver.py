@@ -102,7 +102,30 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 "objectGUID": objectGUIDs[1],
                                 'oid': "1"}}
                        ]
-
+# Same as above, but with curly-braced string representation of objectGUID
+# to imitate ldap3 > 2.4.1
+LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
+                 "attributes": {'cn': 'bob',
+                                "sn": "Marley",
+                                "givenName": "Robert",
+                                "email": "bob@example.com",
+                                "mobile": "123456",
+                                "homeDirectory": "/home/bob",
+                                'userPassword': 'bobpwééé',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": "{" + objectGUIDs[0] + "}",
+                                'oid': "3"}},
+                {"dn": 'cn=manager,ou=example,o=test',
+                 "attributes": {'cn': 'manager',
+                                "givenName": "Corny",
+                                "sn": "keule",
+                                "email": "ck@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": "{" + objectGUIDs[1] + "}",
+                                'oid': "1"}}
+                       ]
 
 class SQLResolverTestCase(MyTestCase):
     """
@@ -950,6 +973,42 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(res)
 
         user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "test")
+        self.assertTrue(res)
+
+    @ldap3mock.activate
+    def test_09b_test_curly_braced_objectGUID(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory_curly_objectGUID)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"password" : "userPassword",'
+                                  '"email" : "mail",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
+        })
+        user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "bobpwééé")
+        self.assertTrue(res)
+
+        # Test changing the password
+        res = y.update_user(user_id, {"password": "test"})
+        self.assertTrue(res)
+
+        user_id = y.getUserId("bob")
+        self.assertEqual(user_id, objectGUIDs[0])
+        self.assertNotIn("{", user_id)
+        self.assertNotIn("}", user_id)
         res = y.checkPass(user_id, "test")
         self.assertTrue(res)
 
