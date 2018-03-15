@@ -1466,7 +1466,8 @@ class UserNotificationTestCase(MyTestCase):
 
         uhandler = UserNotificationEventHandler()
         resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        # The actual result_status is false and the result_value is false.
+        resp.data = """{"result": {"value": false, "status": false}}"""
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
         req = Request(env)
@@ -1479,12 +1480,37 @@ class UserNotificationTestCase(MyTestCase):
              "request": req})
         self.assertEqual(r, False)
 
+        # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {"result_value": True}},
+             "handler_def": {"conditions": {"result_value": "True"}},
              "response": resp,
              "request": req})
         self.assertEqual(r, False)
+
+        # We expect the result_value to be False, and it is.
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_value": "False"}},
+             "response": resp,
+             "request": req})
+        self.assertEqual(r, True)
+
+        # We expect the result_status to be True, but it is not!
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_status": "True"}},
+             "response": resp,
+             "request": req})
+        self.assertEqual(r, False)
+
+        # We expect the result_status to be False, and it is!
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_status": "False"}},
+             "response": resp,
+             "request": req})
+        self.assertEqual(r, True)
 
         # check a locked token with maxfail = failcount
         builder = EnvironBuilder(method='POST',

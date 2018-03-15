@@ -39,7 +39,7 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
-                                   parse_time_offset_from_now)
+                                   parse_time_offset_from_now, is_true)
 import datetime
 from dateutil.tz import tzlocal
 import re
@@ -67,6 +67,8 @@ class CONDITION(object):
     TOKENINFO = "tokeninfo"
     DETAIL_ERROR_MESSAGE = "detail_error_message"
     DETAIL_MESSAGE = "detail_message"
+    RESULT_VALUE = "result_value"
+    RESULT_STATUS = "result_status"
 
 
 class BaseEventHandler(object):
@@ -129,9 +131,15 @@ class BaseEventHandler(object):
                 "desc": _("The logged in user is of the following type."),
                 "value": (ROLE.ADMIN, ROLE.USER)
             },
-            "result_value": {
+            CONDITION.RESULT_VALUE: {
                 "type": "str",
                 "desc": _("The result.value within the response is "
+                          "True or False."),
+                "value": ("True", "False")
+            },
+            CONDITION.RESULT_STATUS: {
+                "type": "str",
+                "desc": _("The result.status within the response is "
                           "True or False."),
                 "value": ("True", "False")
             },
@@ -308,10 +316,16 @@ class BaseEventHandler(object):
             if user_role != conditions.get("logged_in_user"):
                 return False
 
-        if "result_value" in conditions:
-            condition_value = conditions.get("result_value")
+        if CONDITION.RESULT_VALUE in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_VALUE)
             result_value = content.get("result", {}).get("value")
-            if condition_value != str(result_value):
+            if is_true(condition_value) != is_true(result_value):
+                return False
+
+        if CONDITION.RESULT_STATUS in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_STATUS)
+            result_status = content.get("result", {}).get("status")
+            if is_true(condition_value) != is_true(result_status):
                 return False
 
         # checking of max-failcounter state of the token
