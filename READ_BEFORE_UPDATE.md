@@ -12,5 +12,7 @@
 * Depending on your requirements, you may consider using ldap3 2.1.1 and pyasn1 0.1.9.
   While this combination does not exhibit any of the problems listed above, both software
   releases are quite old and several security fixes have been incorporated since then!
+* By default, Ubuntu installations will have ldap3 2.1.1 and pyasn1 0.1.9 installed,
+  whereas pip/virtualenv installations will have ldap3 2.1.1 and pyasn1 0.4.2.
 * The size of the ``serial`` column in the ``pidea_audit`` database table was increased from 20 to 40 characters.
   Please verify that your database can handle this increasing of the table size!
