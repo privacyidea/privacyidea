@@ -14,7 +14,6 @@ import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import mock
-from itertools import islice
 import responses
 import uuid
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
@@ -1576,9 +1575,8 @@ class LDAPResolverTestCase(MyTestCase):
                                        paged_cookie=None)
                 result = self.connection.response
                 assert kwargs['generator']
-                # Only return two results
-                for result in islice(result, 1):
-                    yield result
+                # Only return one result
+                yield next(result)
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
 
             mock_search.side_effect = _search_with_exception
