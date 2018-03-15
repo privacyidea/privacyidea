@@ -148,21 +148,36 @@ def ignore_sizelimit_exception(conn, generator):
     reached. This function wraps the generator and ignores this exception.
 
     Additionally, this checks ``conn.response`` for any leftover entries that were not yet returned
-    by the generator.
+    by the generator and yields them.
     """
+    last_entry = None
     while True:
         try:
-            yield next(generator)
+            last_entry = next(generator)
+            yield last_entry
         except StopIteration:
             # If the generator is exceed, we stop
             break
         except LDAPOperationResult as e:
             # If the size limit has been reached, we stop. All other exceptions are re-raised.
             if e.result == RESULT_SIZE_LIMIT_EXCEEDED:
-                for entry in conn.response:
-                    yield entry
+                # Workaround: In ldap3 <= 2.4.1, the generator may "forget" to yield some entries that
+                # were transmitted just before the "size limit exceeded" message. In other words,
+                # the exception is raised *before* the generator has yielded those entries.
+                # These leftover entries can still be found in ``conn.response``, so we
+                # just yield them here.
+                # However, as future versions of ldap3 may fix this behavior and
+                # may actually yield those elements as well, this workaround may result in
+                # duplicate entries.
+                # Thus, we check if the last entry we got from the generator can be found
+                # in ``conn.response``. If that is the case, we assume the generator works correctly
+                # and *all* of ``conn.response`` have been yielded already.
+                if last_entry is None or last_entry not in conn.response:
+                    for entry in conn.response:
+                        yield entry
                 break
-            raise
+            else:
+                raise
 
 
 def cache(func):
