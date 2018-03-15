@@ -1519,7 +1519,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("value2" in info.get("piAttr"))
 
     @ldap3mock.activate
-    def test_01_sizelimit(self):
+    def test_29_sizelimit(self):
         # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         y = LDAPResolver()
@@ -1576,7 +1576,7 @@ class LDAPResolverTestCase(MyTestCase):
                 result = self.connection.response
                 assert kwargs['generator']
                 # Only return one result
-                yield next(result)
+                yield result[0]
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
 
             mock_search.side_effect = _search_with_exception
