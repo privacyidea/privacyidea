@@ -135,7 +135,11 @@ class Connection(object):
                                        paged_size=kwargs.get("page_size"),
                                        size_limit=kwargs.get("size_limit"),
                                        paged_cookie=None)
-                return self.connection.response
+                result = self.connection.response
+                if kwargs.get("generator", False):
+                    # If ``generator=True`` is passed, ``paged_search`` should return an iterator.
+                    result = iter(result)
+                return result
 
         def __init__(self, connection):
             self.standard = self.Standard(connection)
