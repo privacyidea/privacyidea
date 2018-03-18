@@ -22,7 +22,7 @@ Version 2.22, TDB
     thousands of tokens (#914)
   * pi-manage can create API tokens with a chosen validity time (#931)
   * Allow user to set token description for HOTP and TOTP tokens 
-    during enrollment (#928)
+    during enrollment (#928) (Thanks to Taylor Chase for this contribution!)
   * Add timeout to SMTP server configuration (#919)
   * Allow complex email templates for email tokens (#684)
   * LDAP resolver now supports arbitrary multivalue attributes (#881)
@@ -33,17 +33,19 @@ Version 2.22, TDB
     other issues (#911, #980, #982, #887)
   * Skip misguiding LDAP error "AttributeError NonType" in log file (#948)
   * Add missing validity time in /validate/check response for email tokens (#946)
+    (Thanks to Kleber Rocha/klinux for this contribution!)
   * Fix the handling of the SMS expiration date (#937)
   * Fix serial length in the audit table to match the serial length in the token table (#929)
-  * Fix TypeError in HTTPSmsProvider timeout (#889)
+    (Thanks to Salvo Rapisarda for this contribution!)
   * Fix Mail content sent by email token is rendered as attachment (#915)
   * Fix Editing SMTP Server definition clears the password (#923)
+  * Fix pi-manage backup crash (Thanks to Pavol Ipoth for this contribution!)
 
 
 Version 2.21.4, 2018-01-24
 
   Fixes:
-  * HTTP Timeout of HTTP SMS Gateway
+  * HTTP Timeout of HTTP SMS Gateway (#889)
   * Remove console.log from webui
 
 
