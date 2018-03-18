@@ -26,12 +26,14 @@ Version 2.22, TDB
   * Add timeout to SMTP server configuration (#919)
   * Allow complex email templates for email tokens (#684)
   * LDAP resolver now supports arbitrary multivalue attributes (#881)
+  * Allow Event Handler to match failing authentication (#971)
 
   Fixes:
   * Several fixes to cope with ldap3/pyasn1 version issues (#911,
   * Skip misguiding LDAP error "AttributeError NonType" in log file (#948)
   * Add missing validity time in /validate/check response for email tokens (#946)
-  * Fix the handling of the SMS expiration date (#937)  
+  * Fix the handling of the SMS expiration date (#937)
+  * Fix serial length in the audit table to match the serial length in the token table (#929)
 
 
 Version 2.21.4, 2018-01-24
