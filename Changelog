@@ -29,7 +29,8 @@ Version 2.22, TDB
   * Allow Event Handler to match failing authentication (#971)
 
   Fixes:
-  * Several fixes to cope with ldap3/pyasn1 version issues (#911,
+  * Several fixes in LDAP resolver to cope with ldap3/pyasn1 version issues and
+    other issues (#911, #980, #982, #887)
   * Skip misguiding LDAP error "AttributeError NonType" in log file (#948)
   * Add missing validity time in /validate/check response for email tokens (#946)
   * Fix the handling of the SMS expiration date (#937)
