@@ -34,6 +34,9 @@ Version 2.22, TDB
   * Add missing validity time in /validate/check response for email tokens (#946)
   * Fix the handling of the SMS expiration date (#937)
   * Fix serial length in the audit table to match the serial length in the token table (#929)
+  * Fix TypeError in HTTPSmsProvider timeout (#889)
+  * Fix Mail content sent by email token is rendered as attachment (#915)
+  * Fix Editing SMTP Server definition clears the password (#923)
 
 
 Version 2.21.4, 2018-01-24
