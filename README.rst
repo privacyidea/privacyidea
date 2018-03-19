@@ -28,9 +28,9 @@ privacyIDEA
     :alt: License
     :target: https://pypi.python.org/pypi/privacyidea/
     
-.. image:: https://readthedocs.org/projects/privacyidea/badge/?version=latest
+.. image:: https://readthedocs.org/projects/privacyidea/badge/?version=master
     :alt: Documentation
-    :target: http://privacyidea.readthedocs.org/en/latest/
+    :target: http://privacyidea.readthedocs.org/en/master/
 
 .. .. image:: https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg
 ..    :alt: Code Climate

@@ -282,7 +282,7 @@ msgstr "Administrator"
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:148
+#: privacyidea/static/components/audit/views/audit.stats.html:147
 msgid "Administrative actions"
 msgstr "Administrative Aktionen"
 
@@ -673,10 +673,10 @@ msgstr "Verbindungsparameter"
 msgid "Connector name"
 msgstr "Konnektorname"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:112
-#: privacyidea/static/components/audit/views/audit.stats.html:135
-#: privacyidea/static/components/audit/views/audit.stats.html:158
-#: privacyidea/static/components/audit/views/audit.stats.html:180
+#: privacyidea/static/components/audit/views/audit.stats.html:111
+#: privacyidea/static/components/audit/views/audit.stats.html:134
+#: privacyidea/static/components/audit/views/audit.stats.html:157
+#: privacyidea/static/components/audit/views/audit.stats.html:179
 #: privacyidea/static/components/token/views/token.details.html:97
 msgid "Count"
 msgstr "Zähler"
@@ -1141,13 +1141,13 @@ msgstr "Erweiterte Attribute"
 msgid "Fail counter"
 msgstr "Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:101
-#: privacyidea/static/components/audit/views/audit.stats.html:103
+#: privacyidea/static/components/audit/views/audit.stats.html:100
+#: privacyidea/static/components/audit/views/audit.stats.html:102
 msgid "Failed authentication requests per token"
 msgstr "Fehlgeschlagene Authentisierungen pro Token"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:125
-#: privacyidea/static/components/audit/views/audit.stats.html:127
+#: privacyidea/static/components/audit/views/audit.stats.html:124
+#: privacyidea/static/components/audit/views/audit.stats.html:126
 msgid "Failed authentication requests per user"
 msgstr "Fehlgeschlagene Authentisierungen pro Benutzer"
 
@@ -1859,7 +1859,7 @@ msgstr "Reihenfolge"
 msgid "Other Error"
 msgstr "Unbekanter Fehler"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:170
+#: privacyidea/static/components/audit/views/audit.stats.html:169
 msgid "Overall token usage"
 msgstr "Allgemeine Tokennutzung"
 
@@ -2111,7 +2111,7 @@ msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS-Server "
 "weitergeleitet."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:158
+#: privacyidea/static/components/audit/views/audit.stats.html:157
 msgid "REST API Call"
 msgstr "REST API-Aufruf"
 
@@ -2122,10 +2122,14 @@ msgstr "Nochmal lesen"
 #: privacyidea/static/components/token/views/token.enroll.email.html:15
 msgid "Read email address dynamically from user source on each request."
 msgstr ""
+"Die Email-Adresse wird bei jeder Authentifizierung dynamisch aus der "
+"Benutzerquelle gelesen."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:16
 msgid "Read number dynamically from user source on each request."
 msgstr ""
+"Die Mobilnummer wird bei jeder Authentifizierung dynamisch aus der "
+"Benutzerquelle gelesen."
 
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
@@ -2154,7 +2158,7 @@ msgstr "Empfangen"
 msgid "Recipient for testing"
 msgstr "Empfänger für Test-Emails"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:65
+#: privacyidea/static/components/audit/views/audit.stats.html:64
 #: privacyidea/static/templates/menu.html:99
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -2511,8 +2515,8 @@ msgstr "Absende-Email-Adresse"
 msgid "Separator"
 msgstr "Trennzeichen"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:112
-#: privacyidea/static/components/audit/views/audit.stats.html:180
+#: privacyidea/static/components/audit/views/audit.stats.html:111
+#: privacyidea/static/components/audit/views/audit.stats.html:179
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:5
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
 #: privacyidea/static/components/machine/views/machine.details.html:50
@@ -2594,15 +2598,15 @@ msgstr "Ein paar nette Worte..."
 msgid "Statistics"
 msgstr "Statistik"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:41
+#: privacyidea/static/components/audit/views/audit.stats.html:40
 msgid "Statistics end time"
 msgstr "Statistik bis"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:70
+#: privacyidea/static/components/audit/views/audit.stats.html:69
 msgid "Statistics from {{stats.time_start}} to {{ stats.time_end }}"
 msgstr "Statistik von {{stats.time_start}} bis {{ stats.time_end }}"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:19
+#: privacyidea/static/components/audit/views/audit.stats.html:18
 msgid "Statistics start time"
 msgstr "Statistik von"
 
@@ -3024,6 +3028,11 @@ msgid ""
 "will create a new\n"
 "    unique serial number."
 msgstr ""
+"Die Seriennummer des VASCO Tokens wird aus dem VASCO Blob gelesen. Wenn Sie "
+"diese VASCO Seriennummer\n"
+" als Seriennummer in privacyIDEA verwenden wollen, aktivieren Sie die "
+"Checkbox. Andernfalls wird privacyIDEA \n"
+"eine neue eindeutige Seriennummer erzeugen."
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:1
 msgid ""
@@ -3443,7 +3452,7 @@ msgstr ""
 "in diesen Resolver hinzufügen. Der Benutzer erscheint dann in den Realm, in "
 "denen dieser Resolver enthalten ist."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:77
+#: privacyidea/static/components/audit/views/audit.stats.html:76
 msgid ""
 "These are the validate-requests (authentication) grouped by\n"
 "                users.\n"
@@ -3453,7 +3462,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:90
+#: privacyidea/static/components/audit/views/audit.stats.html:89
 msgid ""
 "These are the validate-requests (authentication) grouped by the\n"
 "                serial number of the token.\n"
@@ -3559,7 +3568,7 @@ msgstr ""
 "Dies ist die Anzahl der Antworten, die ein Benutzer definieren muss, um "
 "einen Token auszurollen."
 
-#: privacyidea/static/components/audit/views/audit.stats.html:172
+#: privacyidea/static/components/audit/views/audit.stats.html:171
 msgid ""
 "This is the overall token usage with\n"
 "                any\n"
@@ -3841,7 +3850,7 @@ msgstr "TLS verwenden"
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:135
+#: privacyidea/static/components/audit/views/audit.stats.html:134
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
@@ -3923,11 +3932,11 @@ msgstr "Gültige Subskription"
 msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:88
+#: privacyidea/static/components/audit/views/audit.stats.html:87
 msgid "Validate Requests per token"
 msgstr "Validate-Requests pro Token"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:75
+#: privacyidea/static/components/audit/views/audit.stats.html:74
 msgid "Validate Requests per users"
 msgstr "Validate-Requests pro Benutzer"
 
@@ -3981,7 +3990,7 @@ msgstr "Willkommen"
 msgid "Where statement"
 msgstr "WHERE-Ausdruck"
 
-#: privacyidea/static/components/audit/views/audit.stats.html:150
+#: privacyidea/static/components/audit/views/audit.stats.html:149
 msgid "Which administrative request where the most popular."
 msgstr "Die meistgenutzen administrativen Requests."
 
@@ -4406,9 +4415,8 @@ msgstr ""
 "und OCRA-Suite sind optional."
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:23
-#, fuzzy
 msgid "use VASCO Serial"
-msgstr "Seriennummer bestimmen"
+msgstr "VASCO Seriennummer verwenden"
 
 #: privacyidea/static/components/audit/views/audit.log.html:53
 #: privacyidea/static/components/token/views/token.list.html:63

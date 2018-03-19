@@ -11,6 +11,8 @@ The lib.resolver.py only depends on the database model.
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 import ldap3mock
+from ldap3.core.exceptions import LDAPOperationResult
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import mock
 import responses
 import uuid
@@ -102,7 +104,30 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 "objectGUID": objectGUIDs[1],
                                 'oid': "1"}}
                        ]
-
+# Same as above, but with curly-braced string representation of objectGUID
+# to imitate ldap3 > 2.4.1
+LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
+                 "attributes": {'cn': 'bob',
+                                "sn": "Marley",
+                                "givenName": "Robert",
+                                "email": "bob@example.com",
+                                "mobile": "123456",
+                                "homeDirectory": "/home/bob",
+                                'userPassword': 'bobpwééé',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": "{" + objectGUIDs[0] + "}",
+                                'oid': "3"}},
+                {"dn": 'cn=manager,ou=example,o=test',
+                 "attributes": {'cn': 'manager',
+                                "givenName": "Corny",
+                                "sn": "keule",
+                                "email": "ck@o",
+                                "mobile": "123354",
+                                'userPassword': 'ldaptest',
+                                "accountExpires": 9223372036854775807,
+                                "objectGUID": "{" + objectGUIDs[1] + "}",
+                                'oid': "1"}}
+                       ]
 
 class SQLResolverTestCase(MyTestCase):
     """
@@ -559,8 +584,10 @@ class LDAPResolverTestCase(MyTestCase):
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
-                results.append({'type': 'searchResRef', 'foo': 'bar'})
-                return results
+                # paged_search returns an iterator
+                for result in results:
+                    yield result
+                yield {'type': 'searchResRef', 'foo': 'bar'}
 
             mock_search.side_effect = _search_with_ref
             ret = y.getUserList({"username": "bob"})
@@ -950,6 +977,42 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(res)
 
         user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "test")
+        self.assertTrue(res)
+
+    @ldap3mock.activate
+    def test_09b_test_curly_braced_objectGUID(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory_curly_objectGUID)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"password" : "userPassword",'
+                                  '"email" : "mail",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
+        })
+        user_id = y.getUserId("bob")
+        res = y.checkPass(user_id, "bobpwééé")
+        self.assertTrue(res)
+
+        # Test changing the password
+        res = y.update_user(user_id, {"password": "test"})
+        self.assertTrue(res)
+
+        user_id = y.getUserId("bob")
+        self.assertEqual(user_id, objectGUIDs[0])
+        self.assertNotIn("{", user_id)
+        self.assertNotIn("}", user_id)
         res = y.checkPass(user_id, "test")
         self.assertTrue(res)
 
@@ -1455,6 +1518,88 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
 
+    @ldap3mock.activate
+    def test_29_sizelimit(self):
+        # This tests usernames are entered in the LDAPresolver as unicode.
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn, email',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "email", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName",'
+                                  '"piAttr": "someAttr"}',
+                      'UIDTYPE': 'DN',
+                      "SIZELIMIT": "3"
+                      })
+
+        result = y.getUserList({'username': '*'})
+        self.assertEqual(len(result), 3)
+
+        # We imitate ldap3 2.4.1 and raise an exception without having returned any entries
+        original_search = y.l.extend.standard.paged_search
+        with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
+            def _search_with_exception(*args, **kwargs):
+                results = original_search(*args, **kwargs)
+                raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
+                # This ``yield`` is needed to turn this function into a generator.
+                # If we omit this, the exception above would be raised immediately when ``paged_search`` is called.
+                yield
+
+            mock_search.side_effect = _search_with_exception
+            ret = y.getUserList({"username": "*"})
+            self.assertTrue(mock_search.called)
+            # We get all three entries, due to the workaround in ``ignore_sizelimit_exception``!
+            self.assertEqual(len(ret), 3)
+
+
+        # We imitate a hypothetical later ldap3 version and raise an exception *after having returned all entries*!
+        # As ``getUserList`` stops consuming the generator after the size limit has been reached, we can only
+        # test this using testconnection.
+        with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search', autospec=True) as mock_search:
+            # This is essentially a reimplementation of ``paged_search``
+            def _search_with_exception(self, **kwargs):
+                self.connection.search(search_base=kwargs.get("search_base"),
+                                       search_scope=kwargs.get("search_scope"),
+                                       search_filter=kwargs.get(
+                                           "search_filter"),
+                                       attributes=kwargs.get("attributes"),
+                                       paged_size=kwargs.get("page_size"),
+                                       size_limit=kwargs.get("size_limit"),
+                                       paged_cookie=None)
+                result = self.connection.response
+                assert kwargs['generator']
+                # Only return one result
+                yield result[0]
+                raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
+
+            mock_search.side_effect = _search_with_exception
+            ret = y.testconnection({'LDAPURI': 'ldap://localhost',
+                                    'LDAPBASE': 'o=test',
+                                    'BINDDN': 'cn=manager,ou=example,o=test',
+                                    'BINDPW': 'ldaptest',
+                                    'LOGINNAMEATTRIBUTE': 'cn',
+                                    'LDAPSEARCHFILTER': '(cn=*)',
+                                    'USERINFO': '{ "username": "cn",'
+                                                '"phone" : "telephoneNumber", '
+                                                '"mobile" : "mobile"'
+                                                ', "email" : "mail", '
+                                                '"surname" : "sn", '
+                                                '"givenname" : "givenName" }',
+                                    'UIDTYPE': 'oid',
+                                    'CACHE_TIMEOUT': 0,
+                                    'SIZELIMIT': '1',
+                                    })
+            self.assertTrue(mock_search.called)
+            # We do not get any duplicate entries, due to the workaround in ``ignore_sizelimit_exception``!
+            self.assertTrue(ret[0])
+            self.assertEqual(ret[1], u'Your LDAP config seems to be OK, 1 user objects found.')
 
 class BaseResolverTestCase(MyTestCase):
 

@@ -63,6 +63,8 @@ from UserIdResolver import UserIdResolver
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Server, Tls, Connection
+from ldap3.core.exceptions import LDAPOperationResult
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
 
 import os.path
@@ -138,6 +140,44 @@ def get_info_configuration(noschemas):
         get_schema_info = ldap3.NONE
     log.debug("Get LDAP schema info: {0!r}".format(get_schema_info))
     return get_schema_info
+
+
+def ignore_sizelimit_exception(conn, generator):
+    """
+    Wrapper for ``paged_search``, which (since ldap3 2.3) throws an exception if the size limit has been
+    reached. This function wraps the generator and ignores this exception.
+
+    Additionally, this checks ``conn.response`` for any leftover entries that were not yet returned
+    by the generator and yields them.
+    """
+    last_entry = None
+    while True:
+        try:
+            last_entry = next(generator)
+            yield last_entry
+        except StopIteration:
+            # If the generator is exceed, we stop
+            break
+        except LDAPOperationResult as e:
+            # If the size limit has been reached, we stop. All other exceptions are re-raised.
+            if e.result == RESULT_SIZE_LIMIT_EXCEEDED:
+                # Workaround: In ldap3 <= 2.4.1, the generator may "forget" to yield some entries that
+                # were transmitted just before the "size limit exceeded" message. In other words,
+                # the exception is raised *before* the generator has yielded those entries.
+                # These leftover entries can still be found in ``conn.response``, so we
+                # just yield them here.
+                # However, as future versions of ldap3 may fix this behavior and
+                # may actually yield those elements as well, this workaround may result in
+                # duplicate entries.
+                # Thus, we check if the last entry we got from the generator can be found
+                # in ``conn.response``. If that is the case, we assume the generator works correctly
+                # and *all* of ``conn.response`` have been yielded already.
+                if last_entry is None or last_entry not in conn.response:
+                    for entry in conn.response:
+                        yield entry
+                break
+            else:
+                raise
 
 
 def cache(func):
@@ -319,6 +359,14 @@ class IdResolver (UserIdResolver):
                 uid = attributes.get(uidtype)[0]
             else:
                 uid = attributes.get(uidtype)
+            if uidtype.lower() == "objectguid":
+                # For ldap3 versions <= 2.4.1, objectGUID attribute values are returned as UUID strings.
+                # For versions greater than 2.4.1, they are returned in the curly-braced string
+                # representation, i.e. objectGUID := "{" UUID "}"
+                # In order to ensure backwards compatibility for user mappings,
+                # we strip the curly braces from objectGUID values.
+                # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
+                uid = uid.strip("{").strip("}")
         return uid
 
     def _trim_user_id(self, userId):
@@ -551,7 +599,7 @@ class IdResolver (UserIdResolver):
                                                 size_limit=self.sizelimit,
                                                 generator=True)
         # returns a generator of dictionaries
-        for entry in g:
+        for entry in ignore_sizelimit_exception(self.l, g):
             # Simple fix for ignored sizelimit with Active Directory
             if len(ret) >= self.sizelimit:
                 break
@@ -846,7 +894,7 @@ class IdResolver (UserIdResolver):
             # returns a generator of dictionaries
             count = 0
             uidtype_count = 0
-            for entry in g:
+            for entry in ignore_sizelimit_exception(l, g):
                 try:
                     userid = cls._get_uid(entry, uidtype)
                     count += 1

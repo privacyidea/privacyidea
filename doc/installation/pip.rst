@@ -31,6 +31,7 @@ Now you can install privacyIDEA like this::
 Now you are within the python virtual environment.
 Within the environment you can now run::
 
+  pip install --upgrade setuptools
   pip install privacyidea
 
 .. _configuration:
