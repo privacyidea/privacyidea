@@ -8,6 +8,7 @@ Version 2.22, TDB
   * Support Vasco tokens via Import and via Web Enrollment (#904, #903, #891)
   * Add arbitrary tokeninfo field to authorization policy (#873)
   * New SMPP SMS provider (#878)
+  * New event handler Counter for counting events for statistics and monitoring (#951)
 
   Enhancements:
   * Enhance the statistics possibilities in WebUI (#950)
