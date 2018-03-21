@@ -49,7 +49,7 @@ Example
 ~~~~~~~
 
 Your privacyIDEA system is running in the URL sub path ``/pi``.
-The files could be addressed via a path componente ``mydesign`` (in this case ``pi/mydesign``).
+The files could be addressed via a path component ``mydesign`` (in this case ``pi/mydesign``).
 Thus the WebUI will look for the files in the URL path ``/pi/mydesign/views/includes/``.
 
 So you set in ``pi.cfg``:
