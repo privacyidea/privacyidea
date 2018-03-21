@@ -6,13 +6,14 @@
   privacyIDEA depends on.
 
   **Our recommendations**:
-  * Use either **ldap3 2.1.1** and **pyasn1 0.1.9** or **ldap3 2.1.1** and **pyasn1 0.4.2**.
+  * Use either **ldap3 2.1.1** and **pyasn1 0.1.9**
+    or **ldap3 2.1.1** and **pyasn1 0.4.2**.
     * The Ubuntu installation comes with ldap3 2.1.1 and pyasn1 0.1.9.
     * Virtualenv installation comes with ldap3 2.1.1 and pyasn1 0.4.2.
-      With pyasn1 0.4.2 StartTLS will not work! LDAPS will work.
+      With ldap3 2.1.1 and pyasn1 0.4.2, StartTLS will not work! LDAPS will work.
   * We added pull requests to ldap3 and also added workarounds in privacyIDEA 2.22. With the next
     release of ldap3 all version conflicts should be solved.
-  * Here are some of the issues resulting fromt he version conflicts:
+  * Here are some of the issues resulting from the version conflicts:
     * ldap3 2.1.1, pyasn1 0.4.2: Attempts to use STARTTLS fail with an exception (Issue #885)
     * ldap3 >= 2.4: User attributes are not retrieved properly (Issue #911)
     * ldap3 == 2.4.1: UnicodeError on authentication, token view displays resolver errors (Issue #911)
