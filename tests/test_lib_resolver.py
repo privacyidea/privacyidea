@@ -1599,7 +1599,10 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(mock_search.called)
             # We do not get any duplicate entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertTrue(ret[0])
-            self.assertEqual(ret[1], u'Your LDAP config seems to be OK, 1 user objects found.')
+            self.assertTrue(ret[1] in [u'Your LDAP config seems to be OK, 1 user objects found.',
+                                       u'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
+                            ret[1])
+
 
 class BaseResolverTestCase(MyTestCase):
 
