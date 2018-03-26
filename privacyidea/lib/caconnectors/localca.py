@@ -473,7 +473,7 @@ class LocalCAConnector(BaseCAConnector):
         if self.template_file:
             with open(self.template_file, 'r') as content_file:
                 file_content = content_file.read()
-                content = yaml.load(file_content)
+                content = yaml.safe_load(file_content)
         return content
 
     def publish_cert(self):
