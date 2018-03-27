@@ -1,4 +1,4 @@
-python-privacyidea (2.22~dev7-1trusty) trusty; urgency=low
+python-privacyidea (2.22-1trusty) trusty; urgency=low
 
   Features:
   * Add automatic offline refill for Offline OTP tokens (#839)
@@ -42,7 +42,7 @@ python-privacyidea (2.22~dev7-1trusty) trusty; urgency=low
   * Fix Editing SMTP Server definition clears the password (#923)
   * Fix pi-manage backup crash (Thanks to Pavol Ipoth for this contribution!)
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 21 Mar 2018 12:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 26 Mar 2018 09:30:00 +0200
 
 python-privacyidea (2.21.4-1trusty) trusty; urgency=low
 

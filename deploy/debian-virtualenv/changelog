@@ -1,3 +1,50 @@
+privacyidea-venv (2.22-1) jessie; urgency=low
+
+  Features:
+  * Add automatic offline refill for Offline OTP tokens (#839)
+  * Return realm and resolver of the user and allow mapping
+    group membership to the RADIUS protocol (#896)
+  * Add new tokenkind (hardware, software, virtual) for all tokens (#828)
+  * Support Vasco tokens via Import and via Web Enrollment (#904, #903, #891)
+  * Add arbitrary tokeninfo field to authorization policy (#873)
+  * New SMPP SMS provider (#878)
+  * New event handler Counter for counting events for statistics and monitoring (#951)
+
+  Enhancements:
+  * Enhance the statistics possibilities in WebUI (#950)
+  * Allow reencryption of the database by importing PSKC to
+    a new database (#940)
+  * Allow token janitor to export "PW" token type to PSKC (#942)
+  * Also export and import the counter values of HOTP/TOTP to PSKC (#943)
+  * SMS token can dynamically read phone number from user source (#932)
+  * Email token can dynamically read email address from user source (#932)
+  * Add policy to ignore the validity of a U2F attestation certificate (#926)
+  * Improve the speed of the LinOTP migration script to cope with tens of
+    thousands of tokens (#914)
+  * pi-manage can create API tokens with a chosen validity time (#931)
+  * Allow user to set token description for HOTP and TOTP tokens 
+    during enrollment (#928) (Thanks to Taylor Chase for this contribution!)
+  * Add timeout to SMTP server configuration (#919)
+  * Allow complex email templates for email tokens (#684)
+  * LDAP resolver now supports arbitrary multivalue attributes (#881)
+  * Allow Event Handler to match failing authentication (#971)
+
+  Fixes:
+  * Several fixes in LDAP resolver to cope with ldap3/pyasn1 version issues and
+    other issues (#911, #980, #982, #887)
+  * Skip misguiding LDAP error "AttributeError NonType" in log file (#948)
+  * Add missing validity time in /validate/check response for email tokens (#946)
+    (Thanks to Kleber Rocha/klinux for this contribution!)
+  * Fix the handling of the SMS expiration date (#937)
+  * Fix serial length in the audit table to match the serial length in the token table (#929)
+    (Thanks to Salvo Rapisarda for this contribution!)
+  * Fix Mail content sent by email token is rendered as attachment (#915)
+  * Fix Editing SMTP Server definition clears the password (#923)
+  * Fix pi-manage backup crash (Thanks to Pavol Ipoth for this contribution!)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 26 Mar 2018 09:30:00 +0200
+
+
 privacyidea-venv (2.21.1-1) jessie; urgency=low
 
   Features:
