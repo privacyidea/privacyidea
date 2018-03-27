@@ -1,4 +1,4 @@
-Version 2.22, TDB
+Version 2.22, 2018-03-27
 
   Features:
   * Add automatic offline refill for Offline OTP tokens (#839)
