@@ -272,7 +272,7 @@ class SmsTokenClass(HotpTokenClass):
         sms = ""
         options = options or {}
         return_message = "Enter the OTP from the SMS:"
-        attributes = {'state': transactionid}
+        attributes = {'state': transactionid, 'hideResponseInput': False}
         validity = self._get_sms_timeout()
 
         if self.is_active() is True:
@@ -442,8 +442,8 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
-        
-        options contains data like clientip, g, user and also the Request 
+
+        options contains data like clientip, g, user and also the Request
         parameters like "challenge" or "pass".
 
         :param options: contains user and g object.

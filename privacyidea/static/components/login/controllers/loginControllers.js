@@ -216,7 +216,7 @@ angular.module("privacyideaApp")
 
                 // Challenge Response always containes mult_challenge!
                 var multi_challenge = error.detail.multi_challenge;
-                if (multi_challenge.length > 1) {
+                if (multi_challenge.length >= 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
                     $scope.challenge_multiple_tokens = true;
                 } else {
@@ -224,7 +224,7 @@ angular.module("privacyideaApp")
                     $scope.challenge_multiple_tokens = false;
                 }
                 for (var i = 0; i < multi_challenge.length; i++) {
-                    if (multi_challenge.length > 1) {
+                    if (multi_challenge.length >= 1) {
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     var attributes = multi_challenge[i].attributes;
