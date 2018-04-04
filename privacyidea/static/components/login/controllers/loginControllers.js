@@ -228,7 +228,7 @@ angular.module("privacyideaApp")
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     var attributes = multi_challenge[i].attributes;
-                    if (attributes === null || attributes.hideResponseInput === false) {
+                    if (attributes === null || attributes.hideResponseInput !== true) {
                         $scope.hideResponseInput = false;
                     }
                     if (attributes !== null) {
