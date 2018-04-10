@@ -232,17 +232,17 @@ angular.module("privacyideaApp")
                         $scope.hideResponseInput = false;
                     }
                     if (attributes !== null) {
-                        if (attributes.u2fSignRequest !== null) {
+                        if (attributes.u2fSignRequest) {
                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
-                        if (attributes.img !== null) {
+                        if (attributes.img) {
                             $scope.image = attributes.img;
                             if ($scope.image.indexOf("data:image") === -1) {
                                 // In case of an Image link, we prepend the instanceUrl
                                 $scope.image = $scope.instanceUrl + "/" + $scope.image;
                             }
                         }
-                        if (attributes.poll !== null) {
+                        if (attributes.poll) {
                             $scope.polling = attributes.poll;
                         }
                     }
