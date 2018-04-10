@@ -1,6 +1,3 @@
-Please participate in the current privacyIDEA User Survey:
-
-https://goo.gl/forms/KgkLmCNre7bvV9Zm2
 
 privacyIDEA
 ===========
