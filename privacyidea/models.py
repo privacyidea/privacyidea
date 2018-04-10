@@ -946,10 +946,10 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                        .filter_by(name=resolver)\
                                        .first()\
                                        .id
-        self.Key = Key
-        self.Value = Value
-        self.Type = Type
-        self.Description = Description
+        self.Key = unicode(Key)
+        self.Value = unicode(Value)
+        self.Type = unicode(Type)
+        self.Description = unicode(Description)
 
     def save(self):
         c = ResolverConfig.query.filter_by(resolver_id=self.resolver_id,
