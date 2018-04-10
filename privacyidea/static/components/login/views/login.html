@@ -3,7 +3,7 @@
     <div class="container" ng-show="!loginWithCredentials">
         <form name="formRemoteUserLogin" class="form-signin" role="form">
             <div class="text-center">
-                <img src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                      width="90px">
             </div>
             <h2 class="form-signin-heading" translate>Login as
@@ -42,7 +42,7 @@
         <div class="container">
             <form name="formSignin" class="form-signin" role="form" novalidate>
                 <div class="text-center">
-                    <img src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                    <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                          width="90px">
                 </div>
                 <h2 class="form-signin-heading" translate>Please sign in</h2>
