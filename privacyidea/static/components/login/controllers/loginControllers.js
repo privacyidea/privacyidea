@@ -255,7 +255,7 @@ angular.module("privacyideaApp")
                     PollingAuthFactory.start($scope.check_authentication);
                 }
                 // In case of u2f we do:
-                if ($scope.u2fSignRequests) {
+                if ($scope.u2fSignRequests.length > 0) {
                     $scope.u2f_first_error = error;
                     U2fFactory.sign_request(error, $scope.u2fSignRequests,
                         $scope.login.username,
