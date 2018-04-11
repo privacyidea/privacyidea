@@ -44,6 +44,7 @@ The code is tested in tests/test_lib_tokens_remote
 import logging
 import traceback
 import requests
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
@@ -243,10 +244,7 @@ class RemoteTokenClass(TokenClass):
                                      False, return_bool=True) or False
 
         if type(ssl_verify) in [str, unicode]:
-            if ssl_verify.lower() in ["true", "1"]:
-                ssl_verify = True
-            else:
-                ssl_verify = False
+            ssl_verify = is_true(ssl_verify.lower())
 
         # here we also need to check for remote.user and so on....
         log.debug("checking OTP len:%r remotely on server: %r,"
