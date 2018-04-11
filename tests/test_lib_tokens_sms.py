@@ -7,6 +7,7 @@ from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
 from privacyidea.models import (Token, Config, Challenge)
@@ -94,7 +95,7 @@ class SMSTokenTestCase(MyTestCase):
         token.save()
         self.assertTrue(token.token.serial == self.serial2, token)
         self.assertTrue(token.token.tokentype == "sms", token.token)
-        self.assertEqual(token.get_tokeninfo("dynamic_phone"), "1")
+        self.assertEqual(is_true(token.get_tokeninfo("dynamic_phone")))
         self.assertTrue(token.type == "sms", token.type)
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PISM", class_prefix)
