@@ -32,6 +32,7 @@ from .lib.utils import (getParam,
 from ..lib.log import log_with
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..lib.utils import is_true
 from flask import g
 import logging
 from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
@@ -63,7 +64,7 @@ def create(identifier=None):
     param = request.all_data
     identifier = identifier.replace(" ", "_")
     url = getParam(param, "url", required)
-    tls = bool(int(getParam(param, "tls", default="1")))
+    tls = is_true(getParam(param, "tls", default="1"))
     description = getParam(param, "description", default="")
 
     r = add_privacyideaserver(identifier, url=url, tls=tls,
@@ -127,7 +128,7 @@ def test():
     param = request.all_data
     identifier = getParam(param, "identifier", required)
     url = getParam(param, "url", required)
-    tls = bool(int(getParam(param, "tls", default="1")))
+    tls = is_true(getParam(param, "tls", default="1"))
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
 

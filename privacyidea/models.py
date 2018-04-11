@@ -47,6 +47,7 @@ from .lib.crypto import (encrypt,
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
+from .lib.utils import is_true
 log = logging.getLogger(__name__)
 
 #
@@ -1288,10 +1289,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                  resolver="", user="", client="", time="", condition=0,
                  check_all_resolvers=False):
         if type(active) in [str, unicode]:
-            if active.lower() in ["true", "1"]:
-                active = True
-            else:
-                active = False
+            active = is_true(active.lower())
         self.name = name
         self.action = action
         self.scope = scope
