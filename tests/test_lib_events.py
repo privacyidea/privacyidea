@@ -33,6 +33,7 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -1058,7 +1059,7 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(tokentype="sms")[0]
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
-        self.assertEqual(t.get_tokeninfo("dynamic_phone"), "1")
+        self.assertEqual(is_true(t.get_tokeninfo("dynamic_phone")))
         remove_token(t.token.serial)
 
     def test_06_set_description(self):

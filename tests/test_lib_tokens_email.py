@@ -8,6 +8,7 @@ from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
 from privacyidea.models import (Token, Config, Challenge)
@@ -82,7 +83,7 @@ class EmailTokenTestCase(MyTestCase):
         token = EmailTokenClass(db_token)
         token.update({"dynamic_email": True})
         token.save()
-        self.assertEqual(token.get_tokeninfo("dynamic_email"), "1")
+        self.assertEqual(is_true(token.get_tokeninfo("dynamic_email")))
         self.assertTrue(token.token.serial == self.serial2, token)
         self.assertTrue(token.token.tokentype == "email", token.token)
         self.assertTrue(token.type == "email", token.type)
