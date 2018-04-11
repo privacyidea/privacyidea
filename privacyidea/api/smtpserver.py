@@ -36,6 +36,7 @@ from .lib.utils import (getParam,
 from ..lib.log import log_with
 from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policy import ACTION
+from ..lib.utils import is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 from flask_babel import gettext as _
@@ -70,8 +71,7 @@ def create(identifier=None):
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = getParam(param, "tls", default=False)
-    tls = tls in ["True", True, "true", "1"]
+    tls = is_true(getParam(param, "tls", default=False))
     description = getParam(param, "description", default="")
     timeout = int(getParam(param, "timeout") or 10)
 
@@ -141,8 +141,7 @@ def test():
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = getParam(param, "tls", default=False)
-    tls = tls in [True, "True", "true", "1"]
+    tls = is_true(getParam(param, "tls", default=False))
     recipient = getParam(param, "recipient", required)
     timeout = int(getParam(param, "timeout") or 10)
 
