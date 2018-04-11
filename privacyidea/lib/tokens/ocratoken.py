@@ -250,42 +250,16 @@ class OcraTokenClass(TokenClass):
         return r
 
     @check_token_locked
-    def check_challenge_response(self, user=None, passw=None, options=None):
+    def check_otp(self, otpval, counter=None, window=None, options=None):
         """
-        This function checks if the given password matches the expected response
-        for the challenge identified by the given transaction_id.
+        This function is invoked by ``TokenClass.check_challenge_response``
+        and checks if the given password matches the expected response
+        for the given challenge.
 
-        :param user: the requesting user
-        :type user: User object
-        :param passw: the password (pin+otp)
-        :type passw: string
-        :param options: additional arguments from the request, which could
-                        be token specific. Usually "transaction_id"
-        :type options: dict
-        :return: return otp_counter. If -1, challenge does not match
-        :rtype: int
+        :param otpval: the password (pin + otp)
+        :param counter: ignored
+        :param window: ignored
+        :param options: dictionary that *must* contain "challenge"
+        :return: >=0 if the challenge matches, -1 otherwise
         """
-        options = options or {}
-        otp_counter = -1
-
-        # fetch the transaction_id
-        transaction_id = options.get('transaction_id')
-        if transaction_id is None:
-            transaction_id = options.get('state')
-
-        # get the challenges for this transaction ID
-        if transaction_id is not None:
-            challengeobject_list = get_challenges(serial=self.token.serial,
-                                                  transaction_id=transaction_id)
-
-            for challengeobject in challengeobject_list:
-                # check if we are still in time.
-                if challengeobject.is_valid():
-                    if self.verify_response(passw, challengeobject.challenge) > 0:
-                        # create a positive response
-                        otp_counter = 1
-                        # delete the challenge
-                        challengeobject.delete()
-                        break
-
-        return otp_counter
+        return self.verify_response(otpval, options['challenge'])
