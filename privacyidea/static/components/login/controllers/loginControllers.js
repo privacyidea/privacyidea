@@ -228,21 +228,21 @@ angular.module("privacyideaApp")
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     var attributes = multi_challenge[i].attributes;
-                    if (attributes === null || attributes.hideResponseInput === false) {
+                    if (attributes === null || attributes.hideResponseInput !== true) {
                         $scope.hideResponseInput = false;
                     }
                     if (attributes !== null) {
-                        if (attributes.u2fSignRequest !== null) {
+                        if (attributes.u2fSignRequest) {
                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
-                        if (attributes.img !== null) {
+                        if (attributes.img) {
                             $scope.image = attributes.img;
                             if ($scope.image.indexOf("data:image") === -1) {
                                 // In case of an Image link, we prepend the instanceUrl
                                 $scope.image = $scope.instanceUrl + "/" + $scope.image;
                             }
                         }
-                        if (attributes.poll !== null) {
+                        if (attributes.poll) {
                             $scope.polling = attributes.poll;
                         }
                     }
@@ -255,7 +255,7 @@ angular.module("privacyideaApp")
                     PollingAuthFactory.start($scope.check_authentication);
                 }
                 // In case of u2f we do:
-                if ($scope.u2fSignRequests) {
+                if ($scope.u2fSignRequests.length > 0) {
                     $scope.u2f_first_error = error;
                     U2fFactory.sign_request(error, $scope.u2fSignRequests,
                         $scope.login.username,
