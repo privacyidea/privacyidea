@@ -252,12 +252,8 @@ class OcraTokenClass(TokenClass):
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
-        This function checks, if the challenge for the given transaction_id
-        was marked as answered correctly.
-        For this we check the otp_status of the challenge with the
-        transaction_id in the database.
-
-        We do not care about the password
+        This function checks if the given password matches the expected response
+        for the challenge identified by the given transaction_id.
 
         :param user: the requesting user
         :type user: User object
@@ -285,7 +281,7 @@ class OcraTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 # check if we are still in time.
                 if challengeobject.is_valid():
-                    if self.verify_response(passw, challengeobject.challenge):
+                    if self.verify_response(passw, challengeobject.challenge) > 0:
                         # create a positive response
                         otp_counter = 1
                         # delete the challenge
