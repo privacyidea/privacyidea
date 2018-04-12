@@ -45,6 +45,7 @@ import logging
 
 import traceback
 import binascii
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam, ParameterError
