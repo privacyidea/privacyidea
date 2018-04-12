@@ -83,7 +83,7 @@ class EmailTokenTestCase(MyTestCase):
         token = EmailTokenClass(db_token)
         token.update({"dynamic_email": True})
         token.save()
-        self.assertEqual(is_true(token.get_tokeninfo("dynamic_email")))
+        self.assertTrue(is_true(token.get_tokeninfo("dynamic_email")))
         self.assertTrue(token.token.serial == self.serial2, token)
         self.assertTrue(token.token.tokentype == "email", token.token)
         self.assertTrue(token.type == "email", token.type)

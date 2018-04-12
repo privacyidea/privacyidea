@@ -157,7 +157,7 @@ class RemoteTokenClass(TokenClass):
 
         :return: bool
         """
-        local_check = 1 == int(self.get_tokeninfo("remote.local_checkpin"))
+        local_check = is_true(self.get_tokeninfo("remote.local_checkpin"))
         log.debug(" local checking pin? {0!r}".format(local_check))
 
         return local_check
