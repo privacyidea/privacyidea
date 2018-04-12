@@ -95,7 +95,7 @@ class SMSTokenTestCase(MyTestCase):
         token.save()
         self.assertTrue(token.token.serial == self.serial2, token)
         self.assertTrue(token.token.tokentype == "sms", token.token)
-        self.assertEqual(is_true(token.get_tokeninfo("dynamic_phone")))
+        self.assertTrue(is_true(token.get_tokeninfo("dynamic_phone")))
         self.assertTrue(token.type == "sms", token.type)
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PISM", class_prefix)
