@@ -1059,7 +1059,7 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(tokentype="sms")[0]
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
-        self.assertEqual(is_true(t.get_tokeninfo("dynamic_phone")))
+        self.assertTrue(is_true(t.get_tokeninfo("dynamic_phone")))
         remove_token(t.token.serial)
 
     def test_06_set_description(self):
