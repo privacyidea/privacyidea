@@ -1438,3 +1438,17 @@ class APITokenTestCase(MyTestCase):
             seed = seed_url[len('seed://'):]
             self.assertEqual(len(seed.decode('hex')), 42)
         remove_token(serial)
+
+    def test_27_fail_to_assign_empty_serial(self):
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": "",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("status"), False)
+            self.assertEqual(result.get("error").get("code"), 905)
