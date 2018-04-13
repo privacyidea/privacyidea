@@ -275,11 +275,11 @@ myApp.directive('equals', function() {
 
       var validate = function() {
         // values
-        var val1 = ngModel.$viewValue;
-        var val2 = attrs.equals;
+        var val1 = ngModel.$viewValue || "";
+        var val2 = attrs.equals || "";
 
         // set validity
-        ngModel.$setValidity('equals', ! val1 || ! val2 || val1 === val2);
+        ngModel.$setValidity('equals', val1 === val2);
       };
     }
   };
