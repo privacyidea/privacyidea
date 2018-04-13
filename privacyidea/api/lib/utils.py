@@ -66,7 +66,7 @@ def get_version():
     return "privacyIDEA {0!s}".format(version)
 
 
-def getParam(param, key, optional=True, default=None):
+def getParam(param, key, optional=True, default=None, allow_empty=True):
     """
     returns a parameter from the request parameters.
     
@@ -79,6 +79,9 @@ def getParam(param, key, optional=True, default=None):
     :type optional: bool
     :param default: The value to assign to the parameter, if it is not
                     contained in the param.
+    :param allow_empty: Set to False is the parameter is a string and is
+        not allowed to be empty
+    :type allow_empty: bool
     
     :return: the value (literal) of the parameter if exists or nothing
              in case the parameter is optional, otherwise throw an exception
@@ -91,6 +94,9 @@ def getParam(param, key, optional=True, default=None):
         ret = default
     elif not optional:
         raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
+
+    if not allow_empty and ret == "":
+        raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
 
     return ret
 

@@ -415,7 +415,7 @@ def assign_api():
     :rtype: json object
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "serial", required)
+    serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
     encrypt_pin = getParam(request.all_data, "encryptpin")
     res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin)
