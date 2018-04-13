@@ -636,7 +636,9 @@ class TokenInfo(MethodsMixin, db.Model):
         """
         self.token_id = token_id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
 
@@ -727,7 +729,9 @@ class Config(TimestampMethodsMixin, db.Model):
     @log_with(log)
     def __init__(self, Key, Value, Type=u'', Description=u''):
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
 
@@ -853,7 +857,9 @@ class CAConnectorConfig(db.Model):
                                        .first()\
                                        .id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
 
@@ -948,7 +954,9 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                        .first()\
                                        .id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
 
@@ -1671,7 +1679,9 @@ class EventHandlerCondition(db.Model):
     def __init__(self, eventhandler_id, Key, Value, comparator="equal"):
         self.eventhandler_id = eventhandler_id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.comparator = comparator
         self.save()
 
@@ -1718,7 +1728,9 @@ class EventHandlerOption(db.Model):
     def __init__(self, eventhandler_id, Key, Value, Type="", Description=""):
         self.eventhandler_id = eventhandler_id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
         self.save()
@@ -1809,7 +1821,9 @@ class MachineResolverConfig(db.Model):
                                 .first()\
                                 .id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.Description = Description
 
@@ -2013,7 +2027,9 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         """
         self.gateway_id = gateway_id
         self.Key = Key
-        self.Value = unicode(Value)
+        if Value is not None:
+            Value = unicode(Value)
+        self.Value = Value
         self.Type = Type
         self.save()
 
