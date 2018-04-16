@@ -728,12 +728,12 @@ class Config(TimestampMethodsMixin, db.Model):
 
     @log_with(log)
     def __init__(self, Key, Value, Type=u'', Description=u''):
-        self.Key = Key
+        self.Key = unicode(Key)
         if Value is not None:
             Value = unicode(Value)
         self.Value = Value
-        self.Type = Type
-        self.Description = Description
+        self.Type = unicode(Type)
+        self.Description = unicode(Description)
 
     def __unicode__(self):
         return "<{0!s} ({1!s})>".format(self.Key, self.Type)
@@ -953,12 +953,12 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                        .filter_by(name=resolver)\
                                        .first()\
                                        .id
-        self.Key = Key
+        self.Key = unicode(Key)
         if Value is not None:
             Value = unicode(Value)
         self.Value = Value
-        self.Type = Type
-        self.Description = Description
+        self.Type = unicode(Type)
+        self.Description = unicode(Description)
 
     def save(self):
         c = ResolverConfig.query.filter_by(resolver_id=self.resolver_id,
