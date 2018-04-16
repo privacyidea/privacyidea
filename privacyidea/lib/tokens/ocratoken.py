@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #  http://www.privacyidea.org
+#  2018-04-16 Friedrich Weber <friedrich.weber@netknights.it>
+#             Fix validation of challenge responses
 #  2017-08-29 Cornelis Kölbel <cornelius.koelbel@netknights.it>
 #             Initial implementation of OCRA base token
 #
