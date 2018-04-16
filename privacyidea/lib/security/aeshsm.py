@@ -104,6 +104,15 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.initialize_hsm()
 
     def initialize_hsm(self):
+        """
+        Initialize the HSM:
+        * initialize PKCS11 library
+        * login to HSM
+        * get session
+        :return:
+        """
+        # Reset the is_ready state, so that we login again.
+        self.is_ready = False
         self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
