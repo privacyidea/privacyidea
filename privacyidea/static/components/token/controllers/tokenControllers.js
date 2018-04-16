@@ -59,7 +59,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         }
     };
 
-    if ($scope.loggedInUser.role == "admin") {
+    if ($scope.loggedInUser.role === "admin") {
         /*
         * Functions to check and to create a default realm. At the moment this is
         * in the tokenview, as the token view is the first view. This could be
@@ -69,7 +69,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             // Check if there is a realm defined, or if we should display the
             // Auto Create Dialog
             var number_of_realms = Object.keys(data.result.value).length;
-            if (number_of_realms == 0) {
+            if (number_of_realms === 0) {
                 $('#dialogAutoCreateRealm').modal();
             }
         });
@@ -105,12 +105,12 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     };
 
 
-    if ($location.path() == "/token/list") {
+    if ($location.path() === "/token/list") {
         $scope.get();
     }
 
     // go to the list view by default
-    if ($location.path() == "/token") {
+    if ($location.path() === "/token") {
         $location.path("/token/list");
     }
     // go to token.wizard, if the wizard is defined
@@ -281,7 +281,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // Set the default value of the "2stepinit" field if twostep enrollment should be forced
     $scope.setTwostepEnrollmentDefault = function () {
         $scope.form["2stepinit"] = $scope.checkRight($scope.form.type + "_2step=force");
-    }
+    };
 
     // Initially set the default value
     $scope.setTwostepEnrollmentDefault();
@@ -297,7 +297,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         });
 
     // Get the realms and fill the realm dropdown box
-    if (AuthFactory.getRole() == 'admin') {
+    if (AuthFactory.getRole() === 'admin') {
         ConfigFactory.getRealms(function (data) {
             $scope.realms = data.result.value;
             // Set the default realm
@@ -314,30 +314,30 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                     //debug: console.log($scope.newUser);
                 }
             });
-        });
-        // init the user, if token.enroll was called from the user.details
-        if ($stateParams.realmname) {
-            $scope.newUser.realm = $stateParams.realmname;
-        }
-        if ($stateParams.username) {
-            $scope.newUser.user = $stateParams.username;
-            // preset the mobile and email for SMS or EMAIL token
-            UserFactory.getUsers({realm: $scope.newUser.realm,
-                username: $scope.newUser.user},
-                function(data) {
-                    var userObject = data.result.value[0];
-                    $scope.form.email = userObject.email;
-                    if (typeof userObject.mobile === "string") {
-                        $scope.form.phone = userObject.mobile;
-                    } else {
-                        $scope.phone_list = userObject.mobile;
-                        if ($scope.phone_list.length === 1) {
-                            $scope.form.phone = $scope.phone_list[0];
+            // init the user, if token.enroll was called from the user.details
+            if ($stateParams.realmname) {
+                $scope.newUser.realm = $stateParams.realmname;
+            }
+            if ($stateParams.username) {
+                $scope.newUser.user = $stateParams.username;
+                // preset the mobile and email for SMS or EMAIL token
+                UserFactory.getUsers({realm: $scope.newUser.realm,
+                    username: $scope.newUser.user},
+                    function(data) {
+                        var userObject = data.result.value[0];
+                        $scope.form.email = userObject.email;
+                        if (typeof userObject.mobile === "string") {
+                            $scope.form.phone = userObject.mobile;
+                        } else {
+                            $scope.phone_list = userObject.mobile;
+                            if ($scope.phone_list.length === 1) {
+                                $scope.form.phone = $scope.phone_list[0];
+                            }
                         }
-                    }
-            });
-        }
-    } else if (AuthFactory.getRole() == 'user') {
+                });
+            }
+        });
+    } else if (AuthFactory.getRole() === 'user') {
         // init the user, if token.enroll was called as a normal user
         $scope.newUser.user = AuthFactory.getUser().username;
         $scope.newUser.realm = AuthFactory.getUser().realm;
