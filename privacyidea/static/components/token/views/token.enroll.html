@@ -24,7 +24,7 @@
         </ng-include>
 
         <!-- User Assignment -->
-        <div ng-show="loggedInUser.role == 'admin'">
+        <div ng-if="loggedInUser.role == 'admin'">
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms"
@@ -37,7 +37,7 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-show="loggedInUser.role == 'user' && !hidePin &&
+             ng-if="loggedInUser.role == 'user' && !hidePin &&
                     !$state.includes('token.wizard') &&
                     checkRight('enrollpin')">
             <label for="otppin" translate>PIN</label>
