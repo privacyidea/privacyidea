@@ -217,6 +217,8 @@ def after_request(response):
     return response
 
 @realm_blueprint.app_errorhandler(NonExistentResourceError)
+@smsgateway_blueprint.app_errorhandler(NonExistentResourceError)
+@eventhandling_blueprint.app_errorhandler(NonExistentResourceError)
 @resolver_blueprint.app_errorhandler(NonExistentResourceError)
 @policy_blueprint.app_errorhandler(NonExistentResourceError)
 @postrequest(sign_response, request=request)
