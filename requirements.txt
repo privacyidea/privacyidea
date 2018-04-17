@@ -24,7 +24,7 @@ imagesize==0.7.1
 ipaddress==1.0.16
 itsdangerous==0.24
 Jinja2==2.8
-ldap3==2.4
+ldap3==2.5
 lxml==4.1.1
 Mako==1.0.0
 MarkupSafe==0.23
@@ -38,7 +38,7 @@ passlib==1.6.2
 Pillow==2.6.1
 psycopg2>=2.6
 py==1.4.30
-pyasn1>=0.1.9
+pyasn1==0.4.2
 pycparser>=2.14
 pycrypto==2.6.1
 Pygments==2.1.3
