@@ -61,7 +61,7 @@ from .subscriptions import subscriptions_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
-                         PolicyError)
+                         PolicyError, NonExistentResourceError)
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
 
