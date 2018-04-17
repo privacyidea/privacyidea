@@ -27,6 +27,10 @@ CONTRIB7=PyKCS
 VERSION7=1.3.2
 URL7=https://pypi.python.org/packages/source/p/pykcs11/PyKCS11-$(VERSION7).tar.gz
 
+CONTRIB8=pyasn1
+VERSION8=0.4.2
+URL8=https://files.pythonhosted.org/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 #series=trusty
@@ -45,6 +49,7 @@ ubuntu:
 	make ldap3
 	make flask-sqlalchemy
 	make pymysql
+	make pyasn1
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -56,6 +61,15 @@ ldap3:
 	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild -b)
 	(cp $(CONTRIB3)/deb_dist/* DEBUILD || true)
 
+pyasn1:
+	mkdir -p $(CONTRIB8)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB8); curl $(URL8) -o pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8); py2dsc -m '$(ME)' pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); dch -v $(VERSION8)-1$(series)1 --distribution $(series) -M "build for privacyidea")
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -sa -S)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -b)
+	(cp $(CONTRIB8)/deb_dist/* DEBUILD || true)
 
 pyjwt:
 	mkdir -p $(CONTRIB2)
@@ -131,6 +145,7 @@ ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.chages || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
@@ -138,6 +153,7 @@ ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyasn1_${VERSION8}-1${series}1_source.changes || true)
 
 	
 
@@ -149,5 +165,6 @@ clean:
 	rm -fr $(CONTRIB5)
 	rm -fr $(CONTRIB6)
 	rm -fr $(CONTRIB7)
+	rm -fr $(CONTRIB8)
 	rm -fr pymysql_sa
 	rm -fr DEBUILD
