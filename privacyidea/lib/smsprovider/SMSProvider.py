@@ -134,15 +134,15 @@ def get_sms_provider_class(packageName, className):
     """
     helper method to load the SMSProvider class from a given
     package in literal:
-    
+
     example:
-    
+
         get_sms_provider_class("HTTPSMSProvider", "SMSProvider")()
-    
+
     check:
         checks, if the submit_message method exists
         if not an error is thrown
-    
+
     """
     mod = __import__(packageName, globals(), locals(), [className])
     klass = getattr(mod, className)
@@ -188,6 +188,10 @@ def delete_smsgateway(identifier):
     gw = SMSGateway.query.filter_by(identifier=identifier).first()
     if gw:
         r = gw.delete()
+    else
+        raise NonExistentResourceError('Non-existent resource!',
+                        'You are trying to delete object which does not exists.',
+                         status=404)
     return r
 
 
