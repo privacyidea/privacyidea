@@ -241,7 +241,7 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
-    else
+    else:
         raise NonExistentResourceError('Non-existent resource!',
                         'You are trying to delete object which does not exists.',
                          status=404)

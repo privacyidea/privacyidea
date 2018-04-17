@@ -188,7 +188,7 @@ def delete_smsgateway(identifier):
     gw = SMSGateway.query.filter_by(identifier=identifier).first()
     if gw:
         r = gw.delete()
-    else
+    else:
         raise NonExistentResourceError('Non-existent resource!',
                         'You are trying to delete object which does not exists.',
                          status=404)

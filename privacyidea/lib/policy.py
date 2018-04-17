@@ -907,7 +907,7 @@ def delete_policy(name):
     p = Policy.query.filter_by(name=name).first()
     if p:
         res = p.delete()
-    else
+    else:
         raise NonExistentResourceError('Non-existent resource!',
                         'You are trying to delete object which does not exists.',
                          status=404)
