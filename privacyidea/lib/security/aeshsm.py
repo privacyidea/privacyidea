@@ -104,6 +104,15 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.initialize_hsm()
 
     def initialize_hsm(self):
+        """
+        Initialize the HSM:
+        * initialize PKCS11 library
+        * login to HSM
+        * get session
+        :return:
+        """
+        # Reset the is_ready state, so that we login again.
+        self.is_ready = False
         self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
@@ -166,7 +175,18 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :param length: length of the random bytestring
         :return:
         """
-        r_integers = self.session.generateRandom(length)
+        retries = 0
+        while True:
+            try:
+                r_integers = self.session.generateRandom(length)
+                break
+            except PyKCS11.PyKCS11Error as exx:
+                log.warning(u"Generate Random failed: {0!s}".format(exx))
+                self.initialize_hsm()
+                retries += 1
+                if retries > MAX_RETRIES:
+                    raise HSMException("Failed to generate random number after multiple retries.")
+
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
 
