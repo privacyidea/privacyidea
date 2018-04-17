@@ -59,6 +59,7 @@ from flask import g
 from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.utils import is_true
 #from privacyidea.lib.cache import cache
+from privacyidea.lib.error import NonExistentResourceError
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ def save_resolver(params):
                     log.warn("the passed key %r is not a "
                              "parameter for the resolver %r" % (k,
                                                                 resolvertype))
-                        
+
     # Check that there is no type or desc without the data itself.
     # i.e. if there is a type.BindPW=password, then there must be a
     # BindPW=....
@@ -240,6 +241,11 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
+    else
+        raise NonExistentResourceError('Non-existent resource!',
+                        'You are trying to delete object which does not exists.',
+                         status=404)
+
     # Delete resolver object from cache
     if 'resolver_objects' in g:
         if g.resolver_objects.get(resolvername):
@@ -300,7 +306,7 @@ def get_resolver_class(resolver_type):
     :return: resolver object class
     '''
     ret = None
-    
+
     (resolver_clazzes, resolver_types) = get_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -315,7 +321,7 @@ def get_resolver_class(resolver_type):
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername
-    
+
     :param resolvername: THe name of the resolver
     :return: The type of the resolver
     :rtype: string

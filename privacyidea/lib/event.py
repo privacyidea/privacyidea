@@ -21,7 +21,7 @@
 #
 #
 from privacyidea.models import EventHandler, EventHandlerOption, db
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, NonExistentResourceError
 from privacyidea.lib.audit import getAudit
 import functools
 import logging
@@ -200,6 +200,11 @@ def delete_event(event_id):
     """
     event_id = int(event_id)
     ev = EventHandler.query.filter_by(id=event_id).first()
+
+    if not ev:
+        raise NonExistentResourceError('Non-existent resource!',
+                        'You are trying to delete object which does not exists.',
+                         status=404)
     r = ev.delete()
     return r
 
@@ -250,4 +255,3 @@ class EventConfiguration(object):
         q = EventHandler.query.order_by(EventHandler.ordering)
         for e in q:
             self.eventlist.append(e.get())
-
