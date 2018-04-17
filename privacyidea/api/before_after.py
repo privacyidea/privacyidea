@@ -216,6 +216,17 @@ def after_request(response):
     response.headers['Cache-Control'] = 'no-cache'
     return response
 
+@realm_blueprint.app_errorhandler(NonExistentResourceError)
+@resolver_blueprint.app_errorhandler(NonExistentResourceError)
+@policy_blueprint.app_errorhandler(NonExistentResourceError)
+@postrequest(sign_response, request=request)
+def nonexistentresource_error(error):
+    if "audit_object" in g:
+        g.audit_object.log({"info": error.description})
+        g.audit_object.finalize_log()
+    return send_error(error.description,
+                      error_code=-404,
+                      details=error.details), error.status_code
 
 @system_blueprint.errorhandler(AuthError)
 @realm_blueprint.app_errorhandler(AuthError)
