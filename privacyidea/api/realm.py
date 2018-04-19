@@ -60,7 +60,7 @@ from flask import g
 from privacyidea.lib.auth import ROLE
 from flask_babel import gettext as _
 import logging
-from privacyidea.lib.decorators import check_resource_exists
+from ..lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 

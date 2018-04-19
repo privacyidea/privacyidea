@@ -47,7 +47,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-from privacyidea.lib.decorators import check_resource_exists
+from ..lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 

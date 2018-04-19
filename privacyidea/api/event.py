@@ -38,7 +38,7 @@ from ..lib.policy import ACTION
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
 from privacyidea.lib.utils import is_true
 import json
-from privacyidea.lib.decorators import check_resource_exists
+from ..lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 
