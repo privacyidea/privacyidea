@@ -341,6 +341,7 @@ def get_default_realm_api():
 
 
 @realm_blueprint.route('/<identity>', methods=['DELETE'])
+@check_resource_exists('Realm', 'name')
 @log_with(log)
 #@system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
