@@ -59,7 +59,7 @@ from cgi import FieldStorage
 
 import logging
 import re
-
+from privacyidea.lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 
