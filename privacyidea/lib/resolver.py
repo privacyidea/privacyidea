@@ -59,7 +59,6 @@ from flask import g
 from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.utils import is_true
 #from privacyidea.lib.cache import cache
-from privacyidea.lib.error import NonExistentResourceError
 
 log = logging.getLogger(__name__)
 
@@ -241,11 +240,6 @@ def delete_resolver(resolvername):
                                    "realm %r." % (resolvername, realmname))
         reso.delete()
         ret = reso.id
-    else:
-        raise NonExistentResourceError('Non-existent resource!',
-                        'You are trying to delete object which does not exists.',
-                         status=404)
-
     # Delete resolver object from cache
     if 'resolver_objects' in g:
         if g.resolver_objects.get(resolvername):

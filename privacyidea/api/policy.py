@@ -288,10 +288,11 @@ def get_policy(name=None, export=None):
     return ret
 
 
-@policy_blueprint.route('/<name>', methods=['DELETE'])
+@policy_blueprint.route('/<identity>', methods=['DELETE'])
+@check_resource_exists('Policy', 'name')
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.POLICYDELETE)
-def delete_policy_api(name=None):
+def delete_policy_api(identity=None):
     """
     This deletes the policy of the given name.
 
@@ -329,9 +330,9 @@ def delete_policy_api(name=None):
           "version": "privacyIDEA unknown"
        }
     """
-    ret = delete_policy(name)
+    ret = delete_policy(identity)
     g.audit_object.log({'success': ret,
-                        'info': name})
+                        'info': identity})
     return send_result(ret)
 
 

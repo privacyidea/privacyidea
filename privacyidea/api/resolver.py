@@ -47,7 +47,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-
+from privacyidea.lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 
@@ -141,10 +141,11 @@ def set_resolver(resolver=None):
     return send_result(res)
 
 
-@resolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@resolver_blueprint.route('/<identity>', methods=['DELETE'])
+@check_resource_exists('Resolver', 'name')
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
-def delete_resolver_api(resolver=None):
+def delete_resolver_api(identity=None):
     """
     This function deletes an existing resolver.
     A resolver can not be deleted, if it is contained in a realm
@@ -152,9 +153,9 @@ def delete_resolver_api(resolver=None):
     :param resolver: the name of the resolver to delete.
     :return: json with success or fail
     """
-    res = delete_resolver(resolver)
+    res = delete_resolver(identity)
     g.audit_object.log({"success": res,
-                        "info": resolver})
+                        "info": identity})
 
     return send_result(res)
 
@@ -186,4 +187,3 @@ def test_resolver():
     rtype = getParam(param, "type", required)
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
-

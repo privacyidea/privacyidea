@@ -45,7 +45,7 @@ from privacyidea.lib.config import ConfigClass
 import logging
 from privacyidea.lib.utils import sanity_name_check
 log = logging.getLogger(__name__)
-from privacyidea.lib.error import NonExistentResourceError
+
 
 @log_with(log)
 #@cache.memoize(10)
@@ -155,12 +155,6 @@ def delete_realm(realmname):
     hadDefRealmBefore = (defRealm != "")
 
     realm = Realm.query.filter_by(name=realmname).first()
-
-    if not realm:
-        raise NonExistentResourceError('Non-existent resource!',
-                        'You are trying to delete object which does not exists.',
-                         status=404)
-
     ret = realm.delete()
 
     # If there was a default realm before

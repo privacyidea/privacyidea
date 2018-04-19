@@ -161,7 +161,7 @@ from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
 from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
-from privacyidea.lib.error import ParameterError, PolicyError, NonExistentResourceError
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
@@ -907,10 +907,6 @@ def delete_policy(name):
     p = Policy.query.filter_by(name=name).first()
     if p:
         res = p.delete()
-    else:
-        raise NonExistentResourceError('Non-existent resource!',
-                        'You are trying to delete object which does not exists.',
-                         status=404)
     return res
 
 
