@@ -1,3 +1,25 @@
+privacyidea-venv (2.22.1-1) jessie; urgency=medium
+
+  Fixes in WebUI:
+  * Allow to display the messages of several C/R tokens (#995, #1004)
+  * Use ng-if instead of ng-show to avoid errors in the javascript console (#963)
+  * Remove reference to not-used system.addons.js to avoid errors in the javascript console
+  * Remove reference to not-used system.addons.html to avoid errors in the javascript console
+  * Use ng-src instead of src to avoid errors in the javascript console
+  * Avoid request to /false is image is not existing - avoid error in the javascript console
+  * Fix handling of U2F token in the WebUI login
+  * Require serial number in the assignment form (#1011)
+  * Fix PIN comparison in token enroll and token assign (#1010)
+  * Fix the empty username in token enroll or assign (#918)
+
+  Fixes in Server:
+  * Add check for serial number present (#1011)
+  * Fix validation of OCRA and TiQR token (#1008)
+  * Add retry to cope with HSM issues (#1003)
+  * Fix unicode in resolverconf database table with Oracle (#999)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 20 Apr 2018 15:00:00 +0200
+
 privacyidea-venv (2.22-1) jessie; urgency=low
 
   Features:
