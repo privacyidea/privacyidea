@@ -247,7 +247,7 @@ class APIConfigTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 404, res)
             result = json.loads(res.data).get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"] is False, result)
 
         # check policy
         with self.app.test_request_context('/policy/pol_update_del',
@@ -403,7 +403,7 @@ class APIConfigTestCase(MyTestCase):
             print(res.data)
             result = json.loads(res.data).get("result")
             self.assertTrue(res.status_code == 404, res)
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"] is False, result)
             # Trying to delete a non existing resolver returns -1
             self.assertTrue(result["value"] == -1, result)
 
