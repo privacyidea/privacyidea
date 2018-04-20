@@ -40,11 +40,11 @@ def check_resource_exists(model, identifier):
     def resource_exists(func):
 
         @functools.wraps(func)
-        def resource_exists_wrapper(identity, *args, **kwds):
+        def resource_exists_wrapper(*args, **kwds):
             my_class = getattr(privacyidea.models, model)
 
             params = {}
-            params[identifier] = identity
+            params[identifier] = kwds['identity']
             models = my_class.query.filter_by(**params).first()
 
             if not models:
@@ -52,7 +52,7 @@ def check_resource_exists(model, identifier):
                                 'You are trying to delete object which does not exists.',
                                  status=404)
 
-            f_result = func(identity, *args, **kwds)
+            f_result = func(*args, **kwds)
             return f_result
 
         return resource_exists_wrapper
