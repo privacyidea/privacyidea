@@ -18,7 +18,7 @@ privacyidea-venv (2.22.1-1) jessie; urgency=medium
   * Add retry to cope with HSM issues (#1003)
   * Fix unicode in resolverconf database table with Oracle (#999)
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 20 Apr 2018 09:30:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 20 Apr 2018 15:00:00 +0200
 
 privacyidea-venv (2.22-1) jessie; urgency=low
 
