@@ -404,8 +404,6 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(res.status_code == 404, res)
             self.assertTrue(result["status"] is False, result)
-            # Trying to delete a non existing resolver returns -1
-            self.assertTrue(result["value"] == -1, result)
 
     def test_09_handle_realms(self):
         resolvername = "reso1_with_realm"
