@@ -179,7 +179,7 @@ def disable_event_api(eventid):
     return send_result(p)
 
 
-@eventhandling_blueprint.route('/<eid>', methods=['DELETE'])
+@eventhandling_blueprint.route('/<identity>', methods=['DELETE'])
 @check_resource_exists('EventHandler', 'id')
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
