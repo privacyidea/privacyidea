@@ -21,7 +21,7 @@ class APIConfigTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue('"status": true' in res.data, res.data)
-            
+
     def test_00_failed_auth(self):
         with self.app.test_request_context('/system/',
                                            method='GET'):
@@ -70,7 +70,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["DefaultOtpLen"] == "insert",
                             result)
-            
+
         with self.app.test_request_context('/system/DefaultMaxFailCount',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
@@ -79,7 +79,7 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1,result)
-        
+
         with self.app.test_request_context('/system/DefaultMaxFailCount',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -181,7 +181,7 @@ class APIConfigTestCase(MyTestCase):
             body = res.data
             self.assertTrue('name = pol1' in body, res.data)
             self.assertTrue("[pol1]" in body, res.data)
-            
+
     def test_07_update_and_delete_policy(self):
         with self.app.test_request_context('/policy/pol_update_del',
                                            data={'action': "enroll",
@@ -200,7 +200,7 @@ class APIConfigTestCase(MyTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
-        
+
         # update policy
         with self.app.test_request_context('/policy/pol_update_del',
                                            data={'action': "enroll",
@@ -214,7 +214,7 @@ class APIConfigTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
-            
+
         # get policy
         with self.app.test_request_context('/policy/pol_update_del',
                                            method='GET',
@@ -230,7 +230,7 @@ class APIConfigTestCase(MyTestCase):
                     break
             self.assertTrue("1.1.1.1" in policy.get("client"),
                             res.data)
-            
+
         # delete policy again does not do anything
         with self.app.test_request_context('/policy/pol_update_del',
                                            method='DELETE',
@@ -245,7 +245,7 @@ class APIConfigTestCase(MyTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.status_code == 404, res)
             result = json.loads(res.data).get("result")
             self.assertTrue(result["status"] is True, result)
 
@@ -262,7 +262,7 @@ class APIConfigTestCase(MyTestCase):
     # Resolvers
     """
     We should move this to LDAP resolver tests and mock this.
-    
+
     def test_08_pretestresolver(self):
         # This test fails, as there is no server at localhost.
         param = {'LDAPURI': 'ldap://localhost',
@@ -402,7 +402,7 @@ class APIConfigTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             print(res.data)
             result = json.loads(res.data).get("result")
-            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.status_code == 404, res)
             self.assertTrue(result["status"] is True, result)
             # Trying to delete a non existing resolver returns -1
             self.assertTrue(result["value"] == -1, result)
