@@ -4,14 +4,14 @@ This tests the file lib.utils
 """
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
+from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
-                                   parse_time_delta, to_unicode,
+                                   parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
                                    check_sha, otrs_sha256, parse_int)
 from datetime import timedelta, datetime
@@ -329,19 +329,21 @@ class UtilsTestCase(MyTestCase):
             ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
 
     def test_13_parse_time_offset_from_now(self):
-        td = parse_time_delta("+5s")
+        td = parse_timedelta("+5s")
         self.assertEqual(td, timedelta(seconds=5))
-        td = parse_time_delta("-12m")
+        td = parse_timedelta("-12m")
         self.assertEqual(td, timedelta(minutes=-12))
-        td = parse_time_delta("+123h")
+        td = parse_timedelta("+123h")
         self.assertEqual(td, timedelta(hours=123))
-        td = parse_time_delta("+2d")
+        td = parse_timedelta("+2d")
         self.assertEqual(td, timedelta(days=2))
 
-        # Does not start with plus or minus
-        self.assertRaises(Exception, parse_time_delta, "12d")
+        # It is allowed to start without a +/- which would mean a +
+        td = parse_timedelta("12d")
+        self.assertEqual(td, timedelta(days=12))
+
         # Does not contains numbers
-        self.assertRaises(Exception, parse_time_delta, "+twod")
+        self.assertRaises(Exception, parse_timedelta, "+twod")
 
         s, td = parse_time_offset_from_now("Hello {now}+5d with 5 days.")
         self.assertEqual(s, "Hello {now} with 5 days.")
