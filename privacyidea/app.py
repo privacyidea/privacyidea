@@ -24,6 +24,7 @@ import os.path
 import logging
 import logging.config
 import sys
+from werkzeug.contrib.fixers import ProxyFix
 from flask import Flask, request
 
 import privacyidea.api.before_after
@@ -118,6 +119,7 @@ def create_app(config_name="development",
               config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
+    app.wsgi_app = ProxyFix(app.wsgi_app)
     if config_name:
         app.config.from_object(config[config_name])
 
