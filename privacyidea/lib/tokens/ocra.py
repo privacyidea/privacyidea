@@ -266,8 +266,9 @@ class OCRA(object):
             question += '\0' * (128-len(question))
             data_input += question
         elif self.ocrasuite_obj.challenge_type == "QH":  # pragma: no cover
-            # TODO: Implement OCRA QH
-            raise NotImplementedError("OCRA Questsion QH not implemented, yet.")
+            question = binascii.unhexlify(question)
+            question += '\0' * (128-len(question))
+            data_input += question
 
         # in case of PIN
         if self.ocrasuite_obj.signature_type == "P":

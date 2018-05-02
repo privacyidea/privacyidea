@@ -33,7 +33,7 @@ The scripts can take parameters like
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.config import get_from_config
-from gettext import gettext as _
+from privacyidea.lib import _
 import json
 import logging
 import subprocess

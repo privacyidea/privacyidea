@@ -8,8 +8,7 @@ Creating a simple pass token for a user, eases the performance testing.
 
 Then you can run
 
-   ab -n 200 -c 8 -s 30 'https://localhost/validate/check?user=yourUser&pass
- =yourPassword'
+   ab -l -n 200 -c 8 -s 30 'https://localhost/validate/check?user=yourUser&pass=yourPassword'
 
 The performance depends on several aspects like the connection speed to your
 database and the connection speed to your user stores.
@@ -59,3 +58,5 @@ Remove unused resolvers and policies. Have a realm with several resolvers is
 a bit slower than one realm with one resolver. Finding the user in the first
 resolver is faster than in the last resolver.
 Although e.g. the LDAP resolver utilizes caching.
+
+Also see :ref:`performance_tokenview`.

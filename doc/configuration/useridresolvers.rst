@@ -107,24 +107,23 @@ as "NTLM".
    *cn=administrator,cn=users,dc=domain,dc=name*. When using bind type "NTLM"
    you need to specify Bind DN like *DOMAINNAME\\username*.
 
-The ``LoginName`` attribute is the attribute that holds the loginname. It
+The ``LoginName attribute`` is the attribute that holds the loginname. It
 can be changed to your needs.
 
-The searchfilter and the userfilter are used for forward and backward 
-search the object in LDAP.
+Starting with version 2.20 you can provide a list of attributes in
+``LoginName Attribute`` like:
+
+    sAMAccountName, userPrincipalName
+
+This way a user can login with either his sAMAccountName or his principalName.
 
 The ``searchfilter`` is used to list all possible users, that can be used
-in this resolver.
-
-The ``userfilter`` is used to find the LDAP object for a given loginname.
-This is why the ``userfilter`` contains the python string replacement parameter
-``%s``, which will be filled with the given loginname to find the 
-LDAP object.
+in this resolver. The searchfilter is used for forward and backward
+search the object in LDAP.
 
 The ``attribute mapping`` maps LDAP object attributes to user attributes in
 privacyIDEA. privacyIDEA knows the following attributes:
 
- * username *(mandatory)*,
  * phone,
  * mobile,
  * email,
@@ -145,12 +144,50 @@ attribute mapping with a key, you make up and the LDAP attribute like:
 "homeDirectory" and "objectGUID" being the attributes in the LDAP directory
 and "homedir" and "studentID" the keys returned in a SAML authentication
 request.
+
+The ``MULTIVALUEATTRIBUTES`` config value can be used to specify a list of
+user attributes, that should return a list of values. Imagine you have a user mapping like
+``{ "phone" : "telephoneNumber", "email" : "mail", "surname" : "sn", "group": "memberOf"}``.
+Then you could specify ``["email", "group"]`` as the multi value attribute and the user object
+would return the emails and the group memberships of the user from the LDAP server as a list.
+
+.. note:: If the ``MULTIVALUEATTRIBUTES`` is left blank the default setting is "mobile". I.e. the
+   mobile number will be returned as a list.
+
+The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (see :ref:`rest_validate`)
+or with the policy
+:ref:`policy_add_user_in_response`.
+
   
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
-*entryUUID* and in case of Active Directory *objectGUID*.
+*entryUUID* and in case of Active Directory *objectGUID*. For FreeIPA you
+can use *ipaUniqueID*.
 
-.. note:: The attributes *entryUUID* and *objectGUID* are case sensitive!
+.. note:: The attributes *entryUUID*, *objectGUID*, and *ipaUniqueID*
+   are case sensitive!
+
+The option ``No retrieval of schema information`` can be used to
+disable the retrieval of schema information [#ldapschema]_ in
+order to improve performance. This checkbox is deactivated by default
+and should only be activated after having ensured that schema information
+are unnecessary.
+
+TLS certificates
+~~~~~~~~~~~~~~~~
+
+Starting with privacyIDEA 2.18 in case of encrypted LDAPS
+connections privacyIDEA can verify  the TLS
+certificate. (Python >= 2.7.9 required)
+To have privacyIDEA verify the TLS certificate you need to check the
+according checkbox.
+
+You can specify a file with the trusted CA certificate, that signed the
+TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
+and can contain a list of base64 encoded CA certificates.
+PrivacyIDEA will use the CA file if specifed. If you leave the field empty
+it will also try the system certificate store (*/etc/ssl/certs/ca-certificates.crt*
+or */etc/ssl/certs/ca-bundle.crt*).
 
 Modifying users
 ~~~~~~~~~~~~~~~
@@ -245,6 +282,10 @@ database.
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
 
+You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
+used to determine wich hash algorithm should be used, if a password of an
+editable user is written to the database.
+
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
 
@@ -283,8 +324,50 @@ The available attributes for the ``Attribute mapping`` are:
  * mobile,
  * email.
 
+.. _usercache:
+
+User Cache
+..........
+
+.. index:: user cache, caching
+
+privacyIDEA does not implement local user management by design and relies on UserIdResolvers to
+connect to external user stores instead. Consequently, privacyIDEA queries user stores quite frequently,
+e.g. to resolve a login name to a user ID while processing an authentication request, which
+may introduce a significant slowdown.
+In order to optimize the response time of authentication requests, privacyIDEA 2.19 introduces the *user cache*
+which is located in the local database. It can be enabled in the system configuration (see :ref:`user_cache_timeout`).
+
+A user cache entry stores the association of a login name in a specific UserIdResolver with a specific
+user ID for a predefined time called the *expiration timeout*, e.g. for one week.
+The processing of further authentication requests by the same user during this timespan
+does not require any queries to the user store, but only to the user cache.
+
+The user cache should only be enabled if the association of users and user ID is not expected to change often:
+In case a user is deleted from the user store, but can still be found in the user cache and still has assigned
+tokens, the user will still be able to authenticate during the expiration timeout! Likewise, any changes to the
+user ID will not be noticed by privacyIDEA until the corresponding cache entry expires.
+
+Expired cache entries are *not* deleted from the user cache table automatically. Instead, the tool
+``privacyidea-usercache-cleanup`` should be used to delete expired cache entries from the database,
+e.g. in a cronjob.
+
+However, cache entries are removed at some defined events:
+
+* If a UserIdResolver is modified or deleted, all cache entries belonging to this resolver are deleted.
+* If a user is modified or deleted in an editable UserIdResolver, all cache entries belonging to this user
+  are deleted.
+
+.. note:: Realms with multiple UserIdResolvers are a special case: If a user ``userX`` tries to authenticate in a
+   realm with two UserIdResolvers ``resolverA`` (with highest priority) and ``resolverB``, the user cache is queried
+   to find the user ID of ``userX`` in the UserIdResolver ``resolverA``. If the cache contains no matching entry,
+   ``resolverA`` itself is queried for a matching user ID! Only if ``resolverA`` does not find a corresponding
+   user, the user cache is queried to determine the user ID of ``userX`` in ``resolverB``. If no matching entry
+   can be found, ``resolverB`` is queried.
+
 .. rubric:: Footnotes
 
 .. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
 .. [#osiam] http://www.osiam.org
 .. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
+.. [#ldapschema] http://ldap3.readthedocs.io/schema.html

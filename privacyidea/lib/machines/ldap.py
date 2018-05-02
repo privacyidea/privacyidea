@@ -35,16 +35,20 @@ This file is tested in tests/test_lib_machine_resolver_ldap.py in the class
 LdapMachineTestCase
 """
 
-from .base import Machine
-from .base import BaseMachineResolver
-from .base import MachineResolverError
-import ldap3
 import netaddr
 import traceback
 import logging
-from privacyidea.lib.resolvers.LDAPIdResolver import AUTHTYPE
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver
-from gettext import gettext as _
+
+import ldap3
+from ldap3 import Tls
+import ssl
+
+from .base import Machine
+from .base import BaseMachineResolver
+from .base import MachineResolverError
+from privacyidea.lib.utils import is_true
+from privacyidea.lib.resolvers.LDAPIdResolver import AUTHTYPE, DEFAULT_CA_FILE, IdResolver
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 
@@ -61,14 +65,14 @@ class LdapMachineResolver(BaseMachineResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = IdResolver.get_serverpool(self.uri, self.timeout)
+            server_pool = IdResolver.get_serverpool(self.uri, self.timeout,
+                                                    tls_context=self.tls_context)
             self.l = IdResolver.create_connection(authtype=self.authtype,
                                                   server=server_pool,
                                                   user=self.binddn,
                                                   password=self.bindpw,
-                                                  auto_referrals=not
-                                                  self.noreferrals)
-            self.l.open()
+                                                  auto_referrals=not self.noreferrals,
+                                                  start_tls=self.start_tls)
             if not self.l.bind():
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
@@ -253,10 +257,18 @@ class LdapMachineResolver(BaseMachineResolver):
         self.search_filter = config.get("SEARCHFILTER",
                                         "(objectClass=computer)")
 
-        self.noreferrals = config.get("NOREFERRALS", False)
-        self.editable = config.get("EDITABLE", False)
-        self.certificate = config.get("CACERTIFICATE")
+        self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
+        self.start_tls = is_true(config.get("START_TLS", False))
+        self.tls_verify = is_true(config.get("TLS_VERIFY", False))
+        self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+        if self.tls_verify and (self.uri.lower().startswith("ldaps") or
+                                    self.start_tls):
+            self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                                   version=ssl.PROTOCOL_TLSv1,
+                                   ca_certs_file=self.tls_ca_file)
+        else:
+            self.tls_context = None
 
     @classmethod
     def get_config_description(cls):
@@ -271,9 +283,11 @@ class LdapMachineResolver(BaseMachineResolver):
                                              "IPATTRIBUTE": "string",
                                              "SEARCHFILTER": "string",
                                              "NOREFERRALS": "bool",
-                                             "EDITABLE": "bool",
-                                             "CACERTIFICATE": "string",
-                                             "AUTHTYPE": "string"}}}
+                                             "AUTHTYPE": "string",
+                                             "TLS_VERIFY": "bool",
+                                             "TLS_CA_FILE": "string",
+                                             "START_TLS": "bool"
+                                             }}}
 
         return description
 
@@ -287,10 +301,21 @@ class LdapMachineResolver(BaseMachineResolver):
         :return:
         """
         success = False
+        ldap_uri = params.get("LDAPURI")
+        if is_true(params.get("TLS_VERIFY")) \
+                and (ldap_uri.lower().startswith("ldaps") or
+                                    params.get("START_TLS")):
+            tls_ca_file = params.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+            tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                              version=ssl.PROTOCOL_TLSv1,
+                              ca_certs_file=tls_ca_file)
+        else:
+            tls_context = None
         try:
-            server_pool = IdResolver.get_serverpool(params.get("LDAPURI"),
+            server_pool = IdResolver.get_serverpool(ldap_uri,
                                                     float(params.get(
-                                                        "TIMEOUT", 5)))
+                                                        "TIMEOUT", 5)),
+                                                    tls_context=tls_context)
             l = IdResolver.create_connection(authtype=\
                                                  params.get("AUTHTYPE",
                                                             AUTHTYPE.SIMPLE),
@@ -298,8 +323,8 @@ class LdapMachineResolver(BaseMachineResolver):
                                              user=params.get("BINDDN"),
                                              password=params.get("BINDPW"),
                                              auto_referrals=not params.get(
-                                                 "NOREFERRALS"))
-            l.open()
+                                                 "NOREFERRALS"),
+                                             start_tls=params.get("START_TLS", False))
             if not l.bind():
                 raise Exception("Wrong credentials")
             # search for users...

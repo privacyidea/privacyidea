@@ -194,3 +194,10 @@ V	170418163203Z		100000C5	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
 V	170418163203Z		100000C6	unknown	/CN=Steve Test/emailAddress=steve@openssl.org
 V	170418163444Z		100000C7	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
 V	170418164232Z		100000C8	unknown	/CN=selfservice,CN=user,O=realm1/emailAddress=meine
+V	180122104001Z		100000C9	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	180122104228Z		100000CA	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	180122104229Z		100000CB	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=usercert
+V	180122104229Z		100000CC	unknown	/CN=Steve Test/emailAddress=steve@openssl.org
+V	180122104840Z		100000CD	unknown	/C=DE/ST=Hessen/O=privacyidea/CN=requester.localdomain
+V	180122104843Z		100000CE	unknown	/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain
+V	180122105921Z		100000CF	unknown	/CN=selfservice,CN=user,O=realm1/emailAddress=meine

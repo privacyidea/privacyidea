@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib/passwordreset.py
 """
@@ -93,4 +94,30 @@ class RecoveryTestCase(MyTestCase):
         # create policy that does not allow password_reset
         set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.DELETE)
         r = is_password_reset()
+        self.assertEqual(r, False)
+
+    @smtpmock.activate
+    def test_04_create_recovery_nonascii(self):
+        smtpmock.setdata(response={"user@localhost.localdomain": (200, "OK")})
+        recoverycode = "reccode"
+        # create resolver and realm
+        param = self.parameters
+        param["resolver"] = "register"
+        param["type"] = "sqlresolver"
+        r = save_resolver(param)
+        self. assertTrue(r > 0)
+        # recover password with "recovery.identifier"
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4")
+        self.assertTrue(r > 0)
+        set_privacyidea_config("recovery.identifier", "myserver")
+        r = create_recoverycode(User(u"nönäscii", "register"), recoverycode=recoverycode)
+        self.assertEqual(r, True)
+
+        user = User(u"nönäscii", "register")
+
+        r = check_recoverycode(user, recoverycode)
+        self.assertEqual(r, True)
+
+        # The recovery code is not valid a second time
+        r = check_recoverycode(user, recoverycode)
         self.assertEqual(r, False)

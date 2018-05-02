@@ -33,6 +33,49 @@
                    placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
         </div>
     </div>
+    <div class="form-group"
+        ng_show="params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:'">
+        <label for="starttls"
+            class="col-sm-3 control-label" translate>
+            STARTTLS
+        </label>
+        <div class="col-sm-9">
+            <input name="starttls" id="starttls"
+                   ng-model="params.START_TLS"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Use STARTTLS on a plain LDAP connection usually on port 389.
+            </p>
+        </div>
+    </div>
+    <div class="form-group"
+        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+                 params.START_TLS">
+        <label for="tls"
+            class="col-sm-3 control-label" translate>
+            Verify TLS
+        </label>
+        <div class="col-sm-9">
+            <input name="tls" id="tls"
+                   ng-model="params.TLS_VERIFY"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Verify the TLS cerificate of the server.
+            </p>
+            <div class="well" ng-show="params.TLS_VERIFY">
+                <label for="tls_ca_file" class="control-label" translate>
+                    The file containing the CA certificate which signed the
+                    LDAP TLS certificate.
+                </label>
+                <input name="tls_ca_file" id="tls_ca_file"
+                       ng-model="params.TLS_CA_FILE"
+                       type="text"
+                       class="form-control"
+                       ng-show="params.TLS_VERIFY"
+                       placeholder="/etc/privacyidea/ldap-ca.crt"/>
+            </div>
+        </div>
+    </div>
     <div class="form-group">
         <label for="basedn" class="col-sm-3 control-label"
                 translate>Base DN</label>
@@ -60,6 +103,7 @@
         <div class="col-sm-3">
             <input name="bindpw" class="form-control"
                    type="password"
+                   autocomplete="off"
                    ng-model="params.BINDPW"
                    placeholder="topsecret"/>
         </div>

@@ -24,7 +24,9 @@ myApp.controller("ldapMachineResolverController", function ($scope,
                                                       $state, $stateParams) {
     $scope.params = {
         type: 'ldap',
-        AUTHTYPE: "Simple"
+        AUTHTYPE: "Simple",
+        TLS_VERIFY: true,
+        START_TLS: true
     };
     $scope.authtypes = ["Simple", "SASL Digest-MD5"];
 
@@ -38,6 +40,8 @@ myApp.controller("ldapMachineResolverController", function ($scope,
             $scope.params = resolver.data;
             $scope.params.type = 'ldap';
             $scope.params.NOREFERRALS = isTrue($scope.params.NOREFERRALS);
+            $scope.params.TLS_VERIFY = isTrue($scope.params.TLS_VERIFY);
+            $scope.params.START_TLS = isTrue($scope.params.START_TLS);
         });
     }
 

@@ -18,7 +18,8 @@ The ``user`` in the admin policies refers to the name of the administrator.
 
 Starting with privacyIDEA 2.4 admin policies can also store a field "admin
 realm". This is used, if you define realms to be superuser realms. See
-:ref:`cfgfile` for information how to do this.
+:ref:`cfgfile` for information how to do this. Read :ref:`faq_admins` for
+more information on the admin realms.
 
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.
@@ -108,6 +109,77 @@ If the action ``enrollpin`` is defined, the administrator
 can set a token PIN during enrollment. If the action is not defined and
 the administrator tries to set a PIN during enrollment, this PIN is deleted
 from the request.
+
+otp_pin_maxlength
+~~~~~~~~~~~~~~~~~
+
+.. index:: PIN policy, Token specific PIN policy
+
+type: integer
+
+range: 0 - 31
+
+This is the maximum allowed PIN length the admin is allowed to
+use when setting the OTP PIN.
+
+.. note:: There can be token type specific policies like
+``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
+``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
+priority of the common PIN policy.
+
+otp_pin_minlength
+~~~~~~~~~~~~~~~~~
+
+type: integer
+
+range: 0 - 31
+
+This is the minimum required PIN the admin must use when setting the
+OTP PIN.
+
+otp_pin_contents
+~~~~~~~~~~~~~~~~
+
+type: string
+
+contents: cns
+
+This defines what characters an OTP PIN should contain when the admin
+sets it.
+
+**c** are letters matching [a-zA-Z].
+
+**n** are digits matching [0-9].
+
+**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
+
+**Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
+require the admin to choose OTP PINs that consist of letters and digits
+which have a minimum length of 8.
+
+``cn``
+
+   *test1234* and *test12$$* would be valid OTP PINs. *testABCD* would
+   not be a valid OTP PIN.
+
+The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
+characters ``+`` and ``-``.
+
+``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
+and it must not contain any other characters.
+
+``-cn`` (substraction)
+
+   *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
+   not be valid OTP PINs. The later since it does not contain digits, the first
+   (*test12$$*) since it does contain a special character ($), which it should not.
+
+``+cn`` (grouping)
+
+   combines the two required groups. I.e. the OTP PIN should contain
+   characters from the sum of the two groups.
+   *test1234*, *test12$$*, *test*
+   and *1234* would all be valid OTP PINs.
 
 resync
 ~~~~~~
@@ -331,7 +403,9 @@ auditlog
 
 type: bool
 
-The administrators are allowed to view the audit log.
+The administrators are allowed to view the audit log. If the policy contains
+a user realm, than the administrator is only allowed to see entries which
+contain this very user realm. A list of user realms may be defined.
 
 To learn more about the audit log, see :ref:`audit`.
 
@@ -371,3 +445,20 @@ The usual setup that one administrative account has only this single policy
 and is only used for triggering challenges.
 
 New in version 2.17.
+
+.. _admin_policy_2step:
+
+hotp_2step and totp_2step
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This allows or forces the administrator to enroll a smartphone based token in two steps.
+In the second step the smartphone generates a part of the OTP secret, which the administrator
+needs to enter. (see :ref:`2step_enrollment`).
+Possible values are *allow* and *force*.
+This works in conjunction with the enrollment parameters :ref:`2step_parameters`.
+
+Such a policy can also be set for the user. See :ref:`user_policy_2step`.
+
+New in version 2.21

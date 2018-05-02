@@ -38,6 +38,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib import _
 optional = True
 required = False
 
@@ -109,12 +110,12 @@ class DaplugTokenClass(HotpTokenClass):
         """
         res = {'type': 'daplug',
                'title': 'Daplug Event Token',
-               'description': ("event based OTP token using "
-                               "the HOTP algorithm"),
+               'description': _("event based OTP token using "
+                                "the HOTP algorithm"),
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res

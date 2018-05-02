@@ -2,18 +2,24 @@
 This test file tests the lib.tokens.smstoken
 """
 PWFILE = "tests/testdata/passwords"
+TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
 from privacyidea.models import (Token, Config, Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
+                                    delete_privacyidea_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 import datetime
+from dateutil.tz import tzlocal
 import smtpmock
+import mock
 
 
 class EmailTokenTestCase(MyTestCase):
@@ -28,6 +34,7 @@ class EmailTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "SE123456"
+    serial2 = "SE000000"
     otpkey = "3132333435363738393031323334353637383930"
 
     success_body = "ID 12345"
@@ -69,6 +76,22 @@ class EmailTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PIEM", class_prefix)
         self.assertTrue(token.get_class_type() == "email", token)
+
+        # create token with dynamic email
+        db_token = Token(self.serial2, tokentype="email")
+        db_token.save()
+        token = EmailTokenClass(db_token)
+        token.update({"dynamic_email": True})
+        token.save()
+        self.assertTrue(is_true(token.get_tokeninfo("dynamic_email")))
+        self.assertTrue(token.token.serial == self.serial2, token)
+        self.assertTrue(token.token.tokentype == "email", token.token)
+        self.assertTrue(token.type == "email", token.type)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "PIEM", class_prefix)
+        self.assertTrue(token.get_class_type() == "email", token)
+        token.set_user(User(login="cornelius",
+                            realm=self.realm1))
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -200,15 +223,15 @@ class EmailTokenTestCase(MyTestCase):
         self.assertFalse(token.check_auth_counter())
 
         # handle validity end date
-        token.set_validity_period_end("30/12/14 16:00")
+        token.set_validity_period_end("2014-12-30T16:00+0200")
         end = token.get_validity_period_end()
-        self.assertTrue(end == "30/12/14 16:00", end)
+        self.assertTrue(end == "2014-12-30T16:00+0200", end)
         self.assertRaises(Exception,
                           token.set_validity_period_end, "wrong date")
         # handle validity start date
-        token.set_validity_period_start("30/12/13 16:00")
+        token.set_validity_period_start("2013-12-30T16:00+0200")
         start = token.get_validity_period_start()
-        self.assertTrue(start == "30/12/13 16:00", start)
+        self.assertTrue(start == "2013-12-30T16:00+0200", start)
         self.assertRaises(Exception,
                           token.set_validity_period_start, "wrong date")
 
@@ -216,33 +239,33 @@ class EmailTokenTestCase(MyTestCase):
 
         # check validity period
         # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
+        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 5 days
-        start_date = datetime.datetime.now() - datetime.timedelta(5)
+        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(5)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertTrue(token.check_validity_period())
 
         # check before start date
         # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
+        end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # + 2 days
-        start_date = datetime.datetime.now() + datetime.timedelta(2)
+        start_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(2)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
 
         # check after enddate
         # -1 day
-        end_date = datetime.datetime.now() - datetime.timedelta(1)
+        end_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(1)
         end = end_date.strftime(DATE_FORMAT)
         token.set_validity_period_end(end)
         # - 10 days
-        start_date = datetime.datetime.now() - datetime.timedelta(10)
+        start_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(10)
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
@@ -315,6 +338,7 @@ class EmailTokenTestCase(MyTestCase):
     def test_18_challenge_request(self):
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
         transactionid = "123456098712"
+        # send the email with the old configuration
         set_privacyidea_config("email.mailserver", "localhost")
         set_privacyidea_config("email.username", "user")
         set_privacyidea_config("email.username", "password")
@@ -330,6 +354,38 @@ class EmailTokenTestCase(MyTestCase):
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
+
+    @smtpmock.activate
+    def test_18a_challenge_request_dynamic(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098712"
+        # send the email with the old configuration
+        set_privacyidea_config("email.mailserver", "localhost")
+        set_privacyidea_config("email.username", "user")
+        set_privacyidea_config("email.username", "password")
+        set_privacyidea_config("email.tls", True)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = EmailTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+
+    def test_18b_challenge_request_dynamic_multivalue(self):
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = EmailTokenClass(db_token)
+        # if the email is a multi-value attribute, the first address should be chosen
+        new_user_info = token.user.info.copy()
+        new_user_info['email'] = ['email1@example.com', 'email2@example.com']
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+            mock_user_info.return_value = new_user_info
+            self.assertEqual(token._email_address, 'email1@example.com')
+
 
     @smtpmock.activate
     def test_19_emailtext(self):
@@ -352,6 +408,8 @@ class EmailTokenTestCase(MyTestCase):
         display_message = c[1]
         self.assertTrue(c[3].get("state"), transactionid)
         self.assertEqual(display_message, "Enter the OTP from the Email:")
+        _, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        self.assertEqual(mimetype, "plain")
 
         # Test AUTOEMAIL
         p = set_policy(name="autoemail",
@@ -366,6 +424,29 @@ class EmailTokenTestCase(MyTestCase):
 
         r = token.check_otp("287922", options=options)
         self.assertTrue(r > 0, r)
+
+        # create a EMAILTEXT policy with template
+        p = set_policy(name="emailtext",
+                       action="{0!s}=file:{1!s}".format(EMAILACTION.EMAILTEXT, TEMPLATE_FILE),
+                       scope=SCOPE.AUTH)
+        self.assertTrue(p > 0)
+
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
+        transactionid = "123456098714"
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        email_text, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        self.assertTrue("<p>Hello,</p>" in email_text)
+        self.assertEqual(mimetype, "html")
+        c = token.create_challenge(transactionid, options=options)
+        self.assertTrue(c[0], c)
+        display_message = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertEqual(display_message, "Enter the OTP from the Email:")
 
     @smtpmock.activate
     def test_20_sending_email_exception(self):
@@ -387,3 +468,24 @@ class EmailTokenTestCase(MyTestCase):
                                          "email.recipient": "user@example.com"})
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], TEST_SUCCESSFUL)
+
+    @smtpmock.activate
+    def test_22_new_email_config(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098717"
+        # send the email with the new configuration
+        r = add_smtpserver(identifier="myServer", server="1.2.3.4")
+        set_privacyidea_config("email.identifier", "myServer")
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+        delete_smtpserver("myServer")
+        delete_privacyidea_config("email.identifier")

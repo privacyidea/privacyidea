@@ -48,7 +48,7 @@ privacyIDEA, you can setup one MySQL server per privacyIDEA instance and
 configure the MySQL servers to run in a master-master-replication.
 
 .. note:: The master-master-replication only works with two MySQL
-servers.
+    servers.
 
 There are some good howtos out there like [#mastermasterhowto]_.
 

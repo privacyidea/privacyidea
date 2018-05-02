@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow cleaning up different actions with different
+#            retention times.
+# 2017-07-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add generation of PGP keys
+# 2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add CA sub commands
+# 2017-01-27 Diogenes S. Jesus
+#            Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add creation of more detailed policy
 # 2016-04-15 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add backup for pymysql driver
 # 2016-01-29 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -41,29 +51,39 @@ import sys
 import datetime
 from datetime import timedelta
 import re
-from subprocess import call, Popen
+from subprocess import call, Popen, PIPE
 from getpass import getpass
+import gnupg
+import yaml
+
+import flask
+
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
+from privacyidea.lib.caconnector import (get_caconnector_list,
+                                         get_caconnector_class,
+                                         get_caconnector_object,
+                                         save_caconnector)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
-from flask_script import Manager
+from flask_script import Manager, Command
 from privacyidea.app import db
 from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
-from privacyidea.models import Admin
+from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from Crypto.PublicKey import RSA
 import jwt
+import ast
 
-SILENT = False
-
+SILENT = True
+MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
@@ -74,6 +94,7 @@ realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 api_manager = Manager(usage="Manage API keys")
+ca_manager = Manager(usage="Manage Certificate Authorities")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -81,6 +102,53 @@ manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
 manager.add_command('api', api_manager)
+manager.add_command('ca', ca_manager)
+
+
+@ca_manager.command
+def list(verbose=False):
+    l = get_caconnector_list()
+    for ca in l:
+        print("{ca!s} (type {typ!s})".format(ca=ca.get("connectorname"),
+                                             typ=ca.get("type")))
+        if verbose:
+            for k, v in ca.get("data").iteritems():
+                print("\t{key!s:20}: {value!s}".format(key=k, value=v))
+
+
+@ca_manager.command
+def create_crl(ca, force=False):
+    ca_obj = get_caconnector_object(ca)
+    r = ca_obj.create_crl(check_validity=not force)
+    if not r:
+        print("The CRL was not created.")
+    else:
+        print("The CRL {name!s} was created.".format(name=r))
+
+
+@ca_manager.option('name', help='The name of the new CA')
+@ca_manager.option('-t', '--type', help='The type of the new CA. The default '
+                                        'is "local"')
+def create(name, type):
+    """
+    Create a new CA connector. In case of the "localca" also the directory
+    structure, the openssl.cnf and the key pair is created.
+    """
+    ca = get_caconnector_object(name)
+    if ca:
+        print("A CA connector with the name '{0!s}' already exists.".format(
+            name))
+        sys.exit(1)
+    if not type:
+        type = "local"
+    print("Creating CA connector of type {0!s}.".format(type))
+    ca_class = get_caconnector_class(type)
+    ca_params = ca_class.create_ca(name)
+    r = save_caconnector(ca_params)
+    if r:
+        print("Saved CA Connector with ID {0!s}.".format(r))
+    else:
+        print("Error saving CA connector.")
 
 
 @admin_manager.command
@@ -99,6 +167,7 @@ def add(username, email=None, password=None):
     create_db_admin(app, username, email, password)
     print('Admin {0} was registered successfully.'.format(username))
 
+
 @admin_manager.command
 def list():
     """
@@ -106,12 +175,14 @@ def list():
     """
     list_db_admin()
 
+
 @admin_manager.command
 def delete(username):
     """
     Delete an existing administrator.
     """
     delete_db_admin(username)
+
 
 @admin_manager.command
 def change(username, email=None, password_prompt=False):
@@ -129,18 +200,27 @@ def change(username, email=None, password_prompt=False):
 
     create_db_admin(app, username, email, password)
 
+
 @backup_manager.command
-def create(directory="/var/lib/privacyidea/backup/"):
+def create(directory="/var/lib/privacyidea/backup/",
+           conf_dir="/etc/privacyidea/",
+           enckey=False):
     """
-    Create a new backup of the database and the configuration. This does not
-    backup the encryption key!
+    Create a new backup of the database and the configuration. The default
+    does not include the encryption key. Use the 'enckey' option to also
+    backup the encryption key. Then you should make sure, that the backups
+    are stored safely.
     """
-    CONF_DIR = "/etc/privacyidea/"
-    # INIFILE = "%s/pi.cfg" % CONF_DIR
+    CONF_DIR = conf_dir
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
     
     call(["mkdir", "-p", directory])
+    # set correct owner, if possible
+    if os.geteuid() == 0:
+        encfile_stat = os.stat(app.config.get("PI_ENCFILE"))
+        os.chown(directory, encfile_stat.st_uid, encfile_stat.st_gid)
+
     sqlfile = "%s/dbdump-%s.sql" % (directory, DATE)
     backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
 
@@ -151,66 +231,119 @@ def create(directory="/var/lib/privacyidea/backup/"):
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
-        call("mysqldump -u %s --password=%s -h %s %s > %s" % (username,
-                                                              password,
-                                                              datahost,
-                                                              database,
-                                                              sqlfile),
-             shell=True)
-
+        defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
+        _write_mysql_defaults(defaults_file, username, password)
+        call("mysqldump --defaults-file=%s -h %s %s > %s" % (
+            defaults_file,
+            datahost,
+            database, sqlfile), shell=True)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
+    enc_file = app.config.get("PI_ENCFILE")
 
-    call(["tar", "-zcf", backup_file, CONF_DIR, sqlfile])
+    backup_call = ["tar", "-zcf",
+          backup_file, CONF_DIR, sqlfile]
+    if not enckey:
+        # Exclude enckey from backup
+        backup_call.append("--exclude={0!s}".format(enc_file))
+
+    call(backup_call)
     os.unlink(sqlfile)
     os.chmod(backup_file, 0600)
+
+
+def _write_mysql_defaults(filename, username, password):
+    """
+    Write the defaults_file for mysql commands
+
+    :param filename: THe name of the file
+    :param username: The username to connect to the database
+    :param password: The password to connect to the database
+    :return:
+    """
+    f = open(filename, "w")
+    f.write("""[client]
+user={0!s}
+password={1!s}""".format(username, password))
+    f.close()
+    os.chmod(filename, 0600)
+    # set correct owner, if possible
+    if os.geteuid() == 0:
+        directory_stat = os.stat(os.path.dirname(filename))
+        os.chown(filename, directory_stat.st_uid, directory_stat.st_gid)
+
 
 @backup_manager.command
 def restore(backup_file):
     """
     Restore a previously made backup. You need to specify the tgz file.
     """
-    SQLALCHEMY_DATABASE_URI = None
-    directory = os.path.dirname(backup_file)
+    sqluri = None
+    config_file = None
+    sqlfile = None
+    enckey_contained = False
+
+    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE)
+    std_out, err_out = p.communicate()
+    for line in std_out.split("\n"):
+        if re.search("/pi.cfg$", line):
+            config_file = "/{0!s}".format(line.strip())
+        elif re.search("\.sql", line):
+            sqlfile = "/{0!s}".format(line.strip())
+        elif re.search("/enckey", line):
+            enckey_contained = True
+
+    if not config_file:
+        raise Exception("Missing config file pi.cfg in backup file.")
+    if not sqlfile:
+        raise Exception("Missing database dump in backup file.")
+
+    if enckey_contained:
+        print("Also restoring encryption key 'enckey'")
+    else:
+        print("NO FILE 'enckey' CONTAINED! BE SURE TO RESTORE THE ENCRYPTION "
+              "KEY MANUALLY!")
+    print("Restoring to {0!s} with data from {1!s}".format(config_file,
+                                                           sqlfile))
+
     call(["tar", "-zxf", backup_file, "-C", "/"])
     print(60*"=")
-    """
-    The restore of the SQL file will not work, since at the moment we "
-    can not be sure to know the correct SQLALCHEMY_DATABASE_URI. The "
-    right URI "
-    was just restored to /etc/privacyidea/pi.cfg. So please take a "
-    look into that file and restore the SQL dumb from the file "
-    /var/lib/privacyidea/backup/*.[sql,sqlite]")
-    """
-    execfile("/etc/privacyidea/pi.cfg")
-    # Now we know the variable SQLALCHEMY_DATABASE_URI
-    sqluri = SQLALCHEMY_DATABASE_URI
+    f = open(config_file, "r")
+    # Determine the SQLAlchemy URI
+    for line in f:
+        if re.search("^SQLALCHEMY_DATABASE_URI", line):
+            key, value = line.split("=", 1)
+            # Strip whitespaces, and ' "
+            sqluri = value.strip().strip("'").strip('"')
+    f.close()
+
     if sqluri is None:
-        print("No SQLALCHEMY_DATABASE_URI found in /etc/privacyidea/pi.cfg")
+        print("No SQLALCHEMY_DATABASE_URI found in {0!s}".format(config_file))
         sys.exit(2)
     sqltype = sqluri.split(":")[0]
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
         print("Restore SQLite %s" % productive_file)
-        sqlfile = "%s/db-*.sqlite" % directory
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
-    elif sqltype in ["mysql", "pymysql"]:
+    elif sqltype in MYSQL_DIALECTS:
         m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
-        sqlfile = "%s/dbdump-*.sql" % directory
-        call("mysql -u %s --password=%s -h %s %s < %s" % (username,
-                                                          password,
+        defaults_file = "/etc/privacyidea/mysql.cnf"
+        _write_mysql_defaults(defaults_file, username, password)
+        # Rewriting database
+        print("Restoring database.")
+        call("mysql --defaults-file=%s -h %s %s < %s" % (defaults_file,
                                                           datahost,
                                                           database,
                                                           sqlfile), shell=True)
@@ -228,6 +361,7 @@ def test():
     call(['nosetests', '-v',
           '--with-coverage', '--cover-package=privacyidea', '--cover-branches',
           '--cover-erase', '--cover-html', '--cover-html-dir=cover'])
+
 
 @manager.command
 def encrypt_enckey(encfile):
@@ -272,6 +406,25 @@ def create_enckey():
     os.chmod(filename, 0400)
     print("The file permission of %s was set to 400!" % filename)
     print("Please ensure, that it is owned by the right user.   ")
+
+
+@manager.command
+def create_pgp_keys(keysize=2048, force=False):
+    """
+    Generate PGP keys to allow encrypted token import.
+    """
+    GPG_HOME = app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg")
+    gpg = gnupg.GPG(gnupghome=GPG_HOME)
+    keys = gpg.list_keys(True)
+    if len(keys) and not force:
+        print("There are already private keys. If you want to "
+              "generate a new private key, use the parameter --force.")
+        print(keys)
+        sys.exit(1)
+    input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
+                                   name_real="privacyIDEA Server",
+                                   name_comment="Import")
+    gpg.gen_key(input_data)
 
 
 @manager.command
@@ -348,25 +501,65 @@ def validate(user, password, realm=None, client=None):
         print("ERROR=%s" % exx)
 
 
-@manager.command
+class CommandOutsideRequestContext(Command):
+    """
+    In contrast to flask_script's `Command`, this command class does
+    not push a request context before running the command.
+    """
+    def __call__(self, app=None, *args, **kwargs):
+        return self.run(*args, **kwargs)
+
 def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
     """
     from werkzeug.contrib.profiler import ProfilerMiddleware
+    if flask.has_request_context():
+        print("WARNING: The app may behave unrealistically during profiling.")
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
                                       profile_dir=profile_dir)
     app.run()
 
+# If flask_script's `Command` is used here instead of `CommandOutsideRequestContext`,
+# the request context will persist over requests. Thus, `g` is not
+# cleared properly between requests, which makes privacyIDEA behave unrealistically.
+try:
+    manager.add_command('profile', CommandOutsideRequestContext(profile))
+except TypeError:
+    # Apparently, we are using Flask-Script 0.6.7, which does not support the API used above.
+    # So we just add the `profile` command without using `CommandOutsideRequestContext`.
+    profile = manager.command(profile)
 
-@manager.option('--highwatermark', help="If entries exceed this value, "
+
+@manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
                                         "old entries are deleted.")
-@manager.option('--lowwatermark', help="Keep this number of entries.")
-def rotate_audit(highwatermark=10000, lowwatermark=5000):
+@manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
+@manager.option('--age', help="Delete audit entries older than these number "
+                              "of days.")
+@manager.option('--config', help="Read config from the specified yaml file.")
+@manager.option('--dryrun', help="Do not actually delete, only show "
+                                 "what would be done.", action="store_true")
+def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
+                 dryrun=False):
     """
-    Rotate the SQL audit log.
+    Clean the SQL audit log.
+
+    You can either clean the audit log based on the number of entries of
+    based on the age of the entries.
+
+    Cleaning based on number of entries:
+
     If more than 'highwatermark' entries are in the audit log old entries
     will be deleted, so that 'lowwatermark' entries remain.
+
+    Cleaning based on age:
+
+    Entries older than the specified number of days are deleted.
+
+    Cleaning based on config file:
+
+    You can clean different type of entries with different ages or watermark.
+    See the documentation for the format of the config file
     """
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
@@ -376,10 +569,17 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000):
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
     audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
     audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
+    actions = []
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
-    print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
+    if config:
+        print("Cleaning up with config file.")
+    elif age:
+        age = int(age)
+        print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
+    else:
+        print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
                                                       lowwatermark,
                                                       audit_db_uri))
 
@@ -388,19 +588,78 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000):
     session = sessionmaker(bind=engine)()
     # create a Session
     metadata.create_all(engine)
-    count = session.query(LogEntry.id).count()
-    for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
-        last_id = l[0]
-    print("The log audit log has %i entries, the last one is %i" % (count,
-                                                                    last_id))
-    # deleting old entries
-    if count > highwatermark:
-        print("More than %i entries, deleting..." % highwatermark)
-        cut_id = last_id - lowwatermark
-        # delete all entries less than cut_id
-        print("Deleting entries smaller than %i" % cut_id)
-        session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
-        session.commit()
+    if config:
+        with open(config, 'r') as f:
+            Config = yaml.load(f)
+        auditlogs = session.query(LogEntry).all()
+        delete_list = []
+        for log in auditlogs:
+            print("investigating log entry {0!s}".format(log.id))
+            for rule in Config:
+                age = int(rule.get("rotate"))
+                rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
+
+                match = False
+                for key in rule.keys():
+                    if key not in ["rotate"]:
+                        search_value = rule.get(key)
+                        print(" + searching for {0!r} in {1!s}".format(search_value, getattr(LogEntry, key)))
+                        audit_value = getattr(log, key) or ""
+                        m = re.search(search_value, audit_value)
+                        if m:
+                            # it matches!
+                            print(" + -- found {0!r}".format(audit_value))
+                            match = True
+                        else:
+                            # It does not match, we continue to next rule
+                            print(" + NO MATCH - SKIPPING rest of conditions!")
+                            match = False
+                            break
+
+                if match:
+                    if log.date < rotate_date:
+                        # Delete it!
+                        print(" + Deleting {0!s} due to rule {1!s}".format(log.id, rule))
+                        # Delete it
+                        delete_list.append(log.id)
+                    # skip all other rules and go to the next log entry
+                    break
+        if dryrun:
+            print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
+        else:
+            print("Cleaning up {0!s} entries.".format(len(delete_list)))
+            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
+            session.commit()
+
+    elif age:
+        now = datetime.datetime.now() - datetime.timedelta(days=age)
+        print("Deleting entries older than {0!s}".format(now))
+        sqlquery = session.query(LogEntry.date).filter(LogEntry.date < now)
+        if dryrun:
+            r = len(sqlquery.all())
+        else:
+            r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
+            session.commit()
+        print("{0!s} entries deleted.".format(r))
+    else:
+        count = session.query(LogEntry.id).count()
+        for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
+            last_id = l[0]
+        print("The log audit log has %i entries, the last one is %i" % (count,
+                                                                        last_id))
+        # deleting old entries
+        if count > highwatermark:
+            print("More than %i entries, deleting..." % highwatermark)
+            cut_id = last_id - lowwatermark
+            # delete all entries less than cut_id
+            print("Deleting entries smaller than %i" % cut_id)
+            sqlquery = session.query(LogEntry.id).filter(LogEntry.id < cut_id)
+            if dryrun:
+                r = len(sqlquery.all())
+            else:
+                r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
+                session.commit()
+            print("{0!s} entries deleted.".format(r))
 
 
 @resolver_manager.command
@@ -416,7 +675,6 @@ def create(name, rtype, filename):
     :return:
     """
     from privacyidea.lib.resolver import save_resolver
-    import ast
 
     f = open(filename, 'r')
     contents = f.read()
@@ -425,6 +683,7 @@ def create(name, rtype, filename):
     params["resolver"] = name
     params["type"] = rtype
     save_resolver(params)
+
 
 @resolver_manager.command
 def create_internal(name):
@@ -577,37 +836,159 @@ def delete(name):
     r = delete_policy(name)
     print(r)
 
+
 @policy_manager.command
-def create(name, scope, action):
+def p_export(filename=None):
     """
-    create a new policy
+    Export all policies to a file as a JSON format, list of dictionaries.
+    If the filename is omitted, the policies are written to stdout.    
     """
-    r = set_policy(name, scope, action)
-    return r
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    P = PolicyClass()
+    policies = P.get_policies()
+    pol_str = pp.pformat(policies)
+    if filename:
+        f = open(filename, 'w')
+        f.write(pol_str)
+        f.close()
+    else:
+        print(pol_str)
 
 
-@api_manager.command
-def createtoken(role=ROLE.ADMIN):
+@policy_manager.command
+def p_import(filename, cleanup=False):
+    """
+    Import the policies from a file.
+    If 'cleanup' is specified the existing policies are deleted before the 
+    policies from the file are imported.
+    """
+    if cleanup:
+        print("Cleanup old policies.")
+        P = PolicyClass()
+        policies = P.get_policies()
+        for policy in policies:
+            name = policy.get("name")
+            r = delete_policy(name)
+            print("Deleted policy {0!s} with result {1!s}".format(name, r))
+
+    f = open(filename, 'r')
+    contents = f.read()
+    f.close()
+    policies = ast.literal_eval(contents)
+    for policy in policies:
+        name = policy.get("name")
+        r = set_policy(name,
+                       action=policy.get("action"),
+                       active=policy.get("active", True),
+                       adminrealm=policy.get("adminrealm"),
+                       check_all_resolvers=policy.get(
+                           "check_all_resolvers", False),
+                       client=policy.get("client"),
+                       #condition=policy.get("condition"),
+                       realm=policy.get("realm"),
+                       resolver=policy.get("resolver"),
+                       scope=policy.get("scope"),
+                       time=policy.get("time"),
+                       user=policy.get("user"))
+        print("Added policy {0!s} with result {1!s}".format(name, r))
+
+
+@policy_manager.command
+def create(name, scope, action, filename=None):
+    """
+    create a new policy. 'FILENAME' must contain a dictionary and its content
+    takes precedence over CLI parameters. 
+    I.e. if you are specifying a FILENAME,
+    the parameters name, scope and action need to be specified, but are ignored.
+    
+    Note: This will only create one policy per file.
+    """
+    if filename:
+        try:
+            f = open(filename, 'r')
+            contents = f.read()
+            f.close()
+
+            params = ast.literal_eval(contents)
+
+            if params.get("scope") and params.get("scope")!=scope:
+                print("Found scope '{0!s}' in file, will use that instead of "
+                      "'{1!s}'.".format(params.get("scope"), scope))
+            else:
+                print("scope not defined in file, will use the cli value "
+                      "{0!s}.".format(scope))
+                params["scope"] = scope
+
+            if params.get("action") and params.get("action")!=action:
+                print("Found action in file: '{0!s}', will use that instead "
+                      "of: '{1!s}'.".format(params.get("action"), action))
+            else:
+                print("action not defined in file, will use the cli value "
+                      "{0!s}.".format(action))
+                params["action"]=action
+
+            r = set_policy(name, scope=params.get("scope"),
+                           action=params.get("action"),
+                           realm=params.get("realm"),
+                           resolver=params.get("resolver"),
+                           user=params.get("user"),
+                           time=params.get("time"),
+                           client=params.get("client"),
+                           active=params.get("active", True),
+                           adminrealm=params.get("adminrealm"),
+                           check_all_resolvers=params.get(
+                               "check_all_resolvers", False))
+            return r
+
+        except Exception:
+            print("Unexpected error: {0!s}".format(sys.exc_info()[1]))
+
+    else:
+        r = set_policy(name, scope, action)
+        return r
+
+
+@api_manager.option('-r', '--role',
+                    help="The role of the API key can either be "
+                         "'admin' or 'validate' to access the admin "
+                         "API or the validate API.",
+                    default=ROLE.ADMIN)
+@api_manager.option('-d', '--days',
+                    help='The number of days the access token should be valid.'
+                         ' Defaults to 365.',
+                    default=365)
+@api_manager.option('-R', '--realm',
+                    help='The realm of the admin. Defaults to "API"',
+                    default="API")
+@api_manager.option('-u', '--username',
+                    help='The username of the admin.')
+def createtoken(role, days, realm, username):
     """
     Create an API authentication token
     for administrative or validate use.
     Possible roles are "admin" or "validate".
     """
-    username = geturandom(hex=True)
+    if role not in ["admin", "validate"]:
+        print("ERROR: The role must be 'admin' or 'validate'!")
+        sys.exit(1)
+    username = username or geturandom(hex=True)
     secret = app.config.get("SECRET_KEY")
     authtype = "API"
-    validity = timedelta(days=365)
+    validity = timedelta(days=int(days))
     token = jwt.encode({"username": username,
-                        "realm": "API",
+                        "realm": realm,
                         "nonce": geturandom(hex=True),
                         "role": role,
                         "authtype": authtype,
                         "exp": datetime.datetime.utcnow() + validity,
                         "rights": "TODO"},
                        secret)
-    print("Username:   %s" % username)
-    print("Role:       %s" % role)
-    print("Auth-Token: %s" % token)
+    print("Username:   {0!s}".format(username))
+    print("Realm:      {0!s}".format(realm))
+    print("Role:       {0!s}".format(role))
+    print("Validity:   {0!s} days".format(days))
+    print("Auth-Token: {0!s}".format(token))
 
 
 if __name__ == '__main__':

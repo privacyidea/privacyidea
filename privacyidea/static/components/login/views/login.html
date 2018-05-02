@@ -3,7 +3,7 @@
     <div class="container" ng-show="!loginWithCredentials">
         <form name="formRemoteUserLogin" class="form-signin" role="form">
             <div class="text-center">
-                <img src="{{ instanceUrl }}/static/css/privacyIDEA1.png"
+                <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                      width="90px">
             </div>
             <h2 class="form-signin-heading" translate>Login as
@@ -42,7 +42,7 @@
         <div class="container">
             <form name="formSignin" class="form-signin" role="form" novalidate>
                 <div class="text-center">
-                    <img src="{{ instanceUrl }}/static/css/privacyIDEA1.png"
+                    <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                          width="90px">
                 </div>
                 <h2 class="form-signin-heading" translate>Please sign in</h2>
@@ -62,7 +62,7 @@
                         ng-options="realm for realm in piRealms">
                 </select>
                 <label for="password" class="sr-only" translate>Password</label>
-                <input name="password" type="password"
+                <input name="password" type="password" autocomplete="off"
                        id="password" class="form-control round-bottom"
                        ng-model="login.password" required
                        placeholder="{{ 'Password'|translate }}"/>

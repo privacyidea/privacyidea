@@ -4,6 +4,7 @@ This test file tests the modules:
  lib.smsprovider.httpsmsprovider
  lib.smsprovider.sipgateprovider
  lib.smsprovider.smtpsmsprovider
+ lib.smsprovider.smppsmsprovider
 """
 
 from .base import MyTestCase
@@ -11,6 +12,7 @@ from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
+from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -21,6 +23,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
 import smtpmock
+import smppmock
 
 
 class SMSTestCase(MyTestCase):
@@ -46,6 +49,10 @@ class SMSTestCase(MyTestCase):
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
+        
+        _provider =get_sms_provider_class(
+            "privacyidea.lib.smsprovider.SmppSMSProvider",
+            "SmppSMSProvider")
 
         # A non-existing module will raise an error
         self.assertRaises(Exception,
@@ -433,3 +440,86 @@ class HttpSMSTestCase(MyTestCase):
         self.assertTrue(r)
 
         delete_smsgateway(identifier)
+
+    @responses.activate
+    def test_11_send_nonascii_sms_post_success(self):
+        responses.add(responses.POST,
+                      self.post_url,
+                      body=self.success_body)
+        # Here we need to send the SMS
+        r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
+        self.assertTrue(r)
+
+
+class SmppSMSTestCase(MyTestCase):
+
+    config = {'SMSC_HOST': "192.168.1.1",
+              'SMSC_PORT': "1234",
+              'SYSTEM_ID': "privacyIDEA",
+              'PASSWORD': "secret",
+              'SYSTEM_ID': "privacyIDEA",
+              'S_ADDR_TON': "0x5",
+              'S_ADDR_NPI': "0x1",
+              'S_ADDR': "privacyIDEA",
+              'D_ADDR_TON': "0x5",
+              'D_ADDR_NPI': "0x1"}
+    provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
+                      ".SmppSMSProvider"
+
+    def setUp(self):
+
+        # Use a the gateway definition for configuring the provider
+        identifier = "mySmppGW"
+        id = set_smsgateway(identifier, self.provider_module, description="test",
+                            options=self.config)
+        self.assertTrue(id > 0)
+        self.provider = create_sms_instance(identifier=identifier)
+        self.assertEqual(type(self.provider), SmppSMSProvider)
+
+    def test_00_config(self):
+        r = SmppSMSProvider.parameters()
+        self.assertEqual(r.get("options_allowed"), False)
+        params = r.get("parameters")
+        self.assertEqual(params.get("SMSC_HOST").get("required"), True)
+
+    def test_00_errors(self):
+        # No smsgateway defined
+        s = SmppSMSProvider()
+        self.assertRaises(SMSError, s.submit_message, "phone", "message")
+
+        # No host defined
+        set_smsgateway("missing_host", self.provider_module,
+                       options={"SMSC_PORT": "1234"})
+        p = create_sms_instance(identifier="missing_host")
+        self.assertRaises(SMSError, p.submit_message, "phone", "message")
+        delete_smsgateway("missing_host")
+
+        # No port defined
+        set_smsgateway("missing_port", self.provider_module,
+                       options={"SMSC_HOST": "1.1.1.1"})
+        p = create_sms_instance(identifier="missing_port")
+        self.assertRaises(SMSError, p.submit_message, "phone", "message")
+        delete_smsgateway("missing_port")
+
+    @smppmock.activate
+    def test_01_success(self):
+        # Here we need to send the SMS
+        smppmock.setdata(connection_success=True,
+                         systemid="privacyIDEA",
+                         password="secret")
+        r = self.provider.submit_message("123456", "Hello")
+        self.assertTrue(r)
+
+    @smppmock.activate
+    def test_02_fail_connection(self):
+        smppmock.setdata(connection_success=False,
+                         systemid="privacyIDEA",
+                         password="secret")
+        self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")
+
+    @smppmock.activate
+    def test_03_fail_wrong_credentials(self):
+        smppmock.setdata(connection_success=True,
+                         systemid="privacyIDEA",
+                         password="wrong")
+        self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")

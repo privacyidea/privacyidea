@@ -36,7 +36,7 @@ angular.module("privacyideaApp")
 
         // Change the pagination
         $scope.pageChanged = function () {
-            console.log('Page changed to: ' + $scope.params.page);
+            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.getMachineTokens();
         };
 
@@ -100,7 +100,7 @@ angular.module("privacyideaApp")
             params["application"] = application;
             MachineFactory.saveOptions(params, function (data) {
                 $scope.getMachineTokens();
-                console.log(data);
+                //debug: console.log(data);
             });
         };
     });

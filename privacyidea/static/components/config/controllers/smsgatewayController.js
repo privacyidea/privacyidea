@@ -36,8 +36,8 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.getSMSGateways = function (gwid) {
         ConfigFactory.getSMSGateways(gwid, function(data) {
             $scope.smsgateways = data.result.value;
-            console.log("Fetched all SMS gateways");
-            console.log($scope.smsgateways);
+            //debug: console.log("Fetched all SMS gateways");
+            //debug: console.log($scope.smsgateways);
             if (gwid) {
                 $scope.form = $scope.smsgateways[0];
                 $scope.form.module = $scope.form.providermodule;
@@ -60,8 +60,8 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.getSMSProviders = function () {
         ConfigFactory.getSMSProviders(function(data) {
             $scope.smsproviders = data.result.value;
-            console.log("Fetched all SMS providers");
-            console.log($scope.smsproviders);
+            //debug: console.log("Fetched all SMS providers");
+            //debug: console.log($scope.smsproviders);
         });
     };
 
@@ -101,6 +101,8 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
         $scope.opts[$scope.newoption] = $scope.newvalue;
         $scope.newoption = "";
         $scope.newvalue = "";
-    }
+    };
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getSMSGateways);
 });

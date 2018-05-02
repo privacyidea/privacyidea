@@ -2,7 +2,7 @@ Source: privacyidea-venv
 Maintainer: Cornelius Kölbel <cornelius@privacyidea.org>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3), dh-virtualenv (>= 0.6)
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.7), debhelper (>= 7.4.3), dh-virtualenv (>= 1.0)
 Standards-Version: 3.9.5
 
 Package: privacyidea-venv

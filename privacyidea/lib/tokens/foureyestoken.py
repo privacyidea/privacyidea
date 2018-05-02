@@ -3,6 +3,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenkind
 #  2015-08-28 Initial writeup of the 4eyes token
 #             according to
 #             https://github.com/privacyidea/privacyidea/issues/167
@@ -34,10 +36,11 @@ The code is tested in tests/test_lib_tokens_4eyes.
 import logging
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 optional = True
@@ -119,8 +122,8 @@ class FourEyesTokenClass(TokenClass):
         """
         res = {'type': '4eyes',
                'title': '4Eyes Token',
-               'description': ('4Eyes Token: Use tokens of two or more users '
-                               'to authenticate'),
+               'description': _('4Eyes Token: Use tokens of two or more users '
+                                'to authenticate'),
                'init': {},
                'config': {},
                'user':  [],
@@ -129,8 +132,8 @@ class FourEyesTokenClass(TokenClass):
                'policy': {},
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -211,6 +214,7 @@ class FourEyesTokenClass(TokenClass):
         self.convert_realms(realms)
         self.add_tokeninfo("separator", separator)
         self.add_tokeninfo("4eyes", realms)
+        self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
     @log_with(log)
     @check_token_locked

@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2018-02-16   Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Allow to use a dynamic_phone
 #  2016-06-20   Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
 #               Use sms.identifier, central SMS gateway definition, to send
 #               the OTP value via SMS.
@@ -45,7 +47,8 @@ import datetime
 import traceback
 
 from privacyidea.api.lib.utils import getParam
-from privacyidea.api.lib.utils import required
+from privacyidea.api.lib.utils import required, optional
+from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE
@@ -53,13 +56,11 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance)
 from json import loads
-from gettext import gettext as _
+from privacyidea.lib import _
 
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
-
-
 import logging
 from privacyidea.lib.policydecorators import challenge_response_allowed
 log = logging.getLogger(__name__)
@@ -207,8 +208,8 @@ class SmsTokenClass(HotpTokenClass):
                },
         }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -224,9 +225,12 @@ class SmsTokenClass(HotpTokenClass):
         :type param: dict
         :return: nothing
         """
-        # specific - phone
-        phone = getParam(param, "phone", required)
-        self.add_tokeninfo("phone", phone)
+        if getParam(param, "dynamic_phone", optional):
+            self.add_tokeninfo("dynamic_phone", True)
+        else:
+            # specific - phone
+            phone = getParam(param, "phone", required)
+            self.add_tokeninfo("phone", phone)
 
         # in case of the sms token, only the server must know the otpkey
         # thus if none is provided, we let create one (in the TokenClass)
@@ -295,9 +299,9 @@ class SmsTokenClass(HotpTokenClass):
                 info = ("The PIN was correct, but the "
                         "SMS could not be sent: %r" % e)
                 log.warning(info)
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
 
-        validity = self._get_sms_timeout()
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
         attributes['valid_until'] = "{0!s}".format(expiry_date)
@@ -324,7 +328,7 @@ class SmsTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message)
             log.debug("AutoSMS: send new SMS: {0!s}".format(success))
-            log.debug("AutoSMS: {0!s}".format(message))
+            log.debug("AutoSMS: {0!r}".format(message))
         return ret
 
     @log_with(log)
@@ -339,9 +343,15 @@ class SmsTokenClass(HotpTokenClass):
         :return: submitted message
         :rtype: string
         """
-        ret = None
-
-        phone = self.get_tokeninfo("phone")
+        if is_true(self.get_tokeninfo("dynamic_phone")):
+            phone = self.user.get_user_phone("mobile")
+            if type(phone) == list and phone:
+                # if there is a non-empty list, we use the first entry
+                phone = phone[0]
+        else:
+            phone = self.get_tokeninfo("phone")
+        if not phone:  # pragma: no cover
+            log.warning("Token {0!s} does not have a phone number!".format(self.token.serial))
         otp = self.get_otp()[2]
         serial = self.get_serial()
 
@@ -432,6 +442,9 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
+        
+        options contains data like clientip, g, user and also the Request 
+        parameters like "challenge" or "pass".
 
         :param options: contains user and g object.
         :type options: dict
@@ -461,6 +474,8 @@ class SmsTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = messages[0]
 
+        # Replace the {challenge}:
+        message = message.format(challenge=options.get("challenge"))
         return message
 
     @staticmethod

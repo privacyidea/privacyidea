@@ -156,7 +156,7 @@ def attach_token(serial, application, hostname=None, machine_id=None,
     :param resolver_name: The resolver_name of the machine you want attach
     the token to.
     :type resolver_name: basestring
-    :param options: addtional options
+    :param options: additional options
     :return: the new MachineToken Object
     """
     machine_id, resolver_name = _get_host_identifier(hostname, machine_id,

@@ -66,6 +66,8 @@ import base64
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -103,7 +105,7 @@ def yubico_api_signature(data, api_key):
 def yubico_check_api_signature(data, api_key, signature=None):
     """
     Verfiy the signature of the data.
-    Either provide the signatrue as parameter or take it from the data
+    Either provide the signature as parameter or take it from the data
 
     :param data: The data to be signed
     :type data: dict
@@ -155,18 +157,16 @@ class YubikeyTokenClass(TokenClass):
         """
         res = {'type': 'yubikey',
                'title': 'Yubikey in AES mode',
-               'description': 'Yubikey AES mode: One Time Passwords with '
-                              'Yubikey.',
-               'init': {},
-               'config': {},
+               'description': _('Yubikey AES mode: One Time Passwords with '
+                                'Yubikey.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {}
         }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -453,3 +453,7 @@ h={h}
         (res, opt) = check_token_list(token_list, passw)
         return res, opt
 
+    @log_with(log)
+    def update(self, param, reset_failcount=True):
+        TokenClass.update(self, param, reset_failcount)
+        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)

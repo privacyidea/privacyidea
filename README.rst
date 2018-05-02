@@ -1,3 +1,4 @@
+
 privacyIDEA
 ===========
 
@@ -24,29 +25,20 @@ privacyIDEA
     :alt: License
     :target: https://pypi.python.org/pypi/privacyidea/
     
-.. image:: https://readthedocs.org/projects/privacyidea/badge/?version=latest
+.. image:: https://readthedocs.org/projects/privacyidea/badge/?version=master
     :alt: Documentation
-    :target: http://privacyidea.readthedocs.org/en/latest/
+    :target: http://privacyidea.readthedocs.org/en/master/
 
 .. .. image:: https://codeclimate.com/github/privacyidea/privacyidea/badges/gpa.svg
 ..    :alt: Code Climate
 ..    :target: https://codeclimate.com/github/privacyidea/privacyidea
 
-.. image:: https://www.quantifiedcode.com/api/v1/project/c2e431a6764443268aa0eddb0da6b1fb/badge.svg
-  :target: https://www.quantifiedcode.com/app/project/c2e431a6764443268aa0eddb0da6b1fb
-  :alt: Code issues
-
 .. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
     
-.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/pr?style=flat
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
-
-.. image:: http://issuestats.com/github/privacyidea/privacyidea/badge/issue?style=flat
-    :alt: Issue stats
-    :target: http://issuestats.com/github/privacyidea/privacyidea
+.. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
+    :alt: privacyIDEA on twitter
     
 privacyIDEA is an open solution for strong two-factor authentication like 
 OTP tokens, SMS, smartphones or SSH keys.
@@ -55,6 +47,16 @@ Using privacyIDEA you can enhance your existing applications like local login
 VPN, remote access, SSH connections, access to web sites or web portals with 
 a second factor during authentication. Thus boosting the security of your 
 existing applications.
+
+Overview
+========
+
+privacyIDEA runs as an additional service in your network and you can connect different 
+applications to privacyIDEA.
+
+.. image:: https://privacyidea.org/wp-content/uploads/2017/privacyIDEA-Integration.png
+    :alt: privacyIDEA Integration
+    :scale: 50 %
 
 privacyIDEA does not bind you to any decision of the authentication
 protocol or it does not dictate you where your user information should be
@@ -74,8 +76,8 @@ web UI is based on angularJS and bootstrap.
 A MachineToken design lets you assign tokens to machines. Thus you can use
 your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
 
-You may join the Google Group to give feedback, discuss questions and ideas:
-https://groups.google.com/forum/#!forum/privacyidea
+You may join the discourse discussion forum to give feedback, help other users, discuss questions and ideas:
+https://community.privacyidea.org
 
 
 Setup
@@ -100,6 +102,11 @@ Getting and updating submodules
 
 Some authentication modules and the admin client are located in git submodules.
 To fetch the latest release of these run::
+
+   git submodule init
+   git submodule update
+
+Later you can update the submodules like this::
 
    git pull --recurse-submodules
 

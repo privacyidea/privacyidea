@@ -28,7 +28,7 @@ The code of this module is tested in tests/test_api_events.py
 """
 from flask import (Blueprint,
                    request)
-from lib.utils import getParam, send_result
+from .lib.utils import getParam, send_result
 from ..lib.log import log_with
 from ..lib.event import set_event, delete_event, enable_event
 from flask import g
@@ -65,7 +65,7 @@ def get_eventhandling(eventid=None):
         res = AVAILABLE_EVENTS
     elif eventid == "handlermodules":
         # TODO: We need to provide a dynamic list of event handlers
-        res = ["UserNotification", "Token", "Script"]
+        res = ["UserNotification", "Token", "Federation", "Script", "Counter"]
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})

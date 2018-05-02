@@ -53,13 +53,14 @@ class SMTPServer(object):
         """
         self.config = db_smtpserver_object
 
-    def send_email(self, recipient, subject, body, sender=None, reply_to=None):
+    def send_email(self, recipient, subject, body, sender=None,
+                   reply_to=None, mimetype="plain"):
         return self.test_email(self.config, recipient, subject, body, sender,
-                               reply_to)
+                               reply_to, mimetype)
 
     @staticmethod
     def test_email(config, recipient, subject, body, sender=None,
-                   reply_to=None):
+                   reply_to=None, mimetype="plain"):
         """
         Sends an email via the SMTP Database Object
 
@@ -77,13 +78,14 @@ class SMTPServer(object):
         :type sender: basestring
         :param reply_to: The Reply-To parameter
         :type reply_to: basestring
+        :param mimetype: The type of the email to send. Can by plain or html
         :return: True or False
         """
         if type(recipient) != list:
             recipient = [recipient]
         mail_from = sender or config.sender
         reply_to = reply_to or mail_from
-        msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
+        msg = MIMEText(body.encode('utf-8'), mimetype, 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)
@@ -91,8 +93,11 @@ class SMTPServer(object):
         msg['Reply-To'] = reply_to
 
         mail = smtplib.SMTP(config.server, port=int(config.port),
-                            timeout=TIMEOUT)
-        mail.ehlo()
+                            timeout=config.timeout or TIMEOUT)
+        log.debug(u"submitting message to {0!s}".format(msg["To"]))
+        log.debug("Saying EHLO to mailserver {0!s}".format(config.server))
+        r = mail.ehlo()
+        log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
         if config.tls:
             log.debug("Trying to STARTTLS: {0!s}".format(config.tls))
@@ -113,16 +118,17 @@ class SMTPServer(object):
             res_id, res_text = r.get(one_recipient, (200, "OK"))
             if res_id != 200 and res_text != "OK":
                 success = False
-                log.error("Failed to send email to {0!s}: {1!s}, {2!s}".format(one_recipient,
+                log.error("Failed to send email to {0!r}: {1!r}, {2!r}".format(one_recipient,
                                                                   res_id,
                                                                   res_text))
         mail.quit()
+        log.debug("I am done sending your email.")
         return success
 
 
 @log_with(log)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
-                          reply_to=None):
+                          reply_to=None, mimetype="plain"):
     """
     Send the an email via the specified SMTP server configuration.
 
@@ -137,13 +143,14 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
     :return: True or False
     """
     smtp_server = get_smtpserver(identifier)
-    return smtp_server.send_email(recipient, subject, body, sender, reply_to)
+    return smtp_server.send_email(recipient, subject, body, sender, reply_to,
+                                  mimetype)
 
 
 @log_with(log)
 def send_email_data(mailserver, subject, message, mail_from,
                     recipient, username=None,
-                    password=None, port=25, email_tls=False):
+                    password=None, port=25, email_tls=False, timeout=TIMEOUT):
     """
     Send an email via the given email configuration data.
 
@@ -161,7 +168,7 @@ def send_email_data(mailserver, subject, message, mail_from,
     """
     dbserver = SMTPServerDB(identifier="emailtoken", server=mailserver,
                             sender=mail_from, username=username,
-                            password=password, port=port, tls=email_tls)
+                            password=password, port=port, tls=email_tls, timeout=timeout)
     smtpserver = SMTPServer(dbserver)
     return smtpserver.send_email(recipient, subject, message)
 
@@ -213,7 +220,7 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                   sender="", description="", tls=False):
+                   sender="", description="", tls=False, timeout=TIMEOUT):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -230,8 +237,9 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
     cryptedPassword = encryptPassword(password)
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
-                     description=description, tls=tls).save()
+                     description=description, tls=tls, timeout=timeout).save()
     return r
+
 
 @log_with(log)
 def delete_smtpserver(identifier):

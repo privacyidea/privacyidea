@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.importotp
 
@@ -8,6 +9,9 @@ from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
                                        parseSafeNetXML, ImportException,
                                        parsePSKCdata, GPGImport)
+from privacyidea.lib.token import remove_token
+from privacyidea.lib.token import init_token
+from privacyidea.lib.importotp import export_pskc
 import binascii
 
 
@@ -228,11 +232,33 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
         <TimeInterval>
           <PlainValue>60</PlainValue>
         </TimeInterval>
+        <Counter>
+          <PlainValue>121212</PlainValue>
+        </Counter>
+        <TimeDrift>
+            <PlainValue>-122</PlainValue>
+        </TimeDrift>
       </Data>
       <Policy>
         <StartDate>2012-08-01T00:00:00Z</StartDate>
         <ExpiryDate>2037-12-31T00:00:00Z</ExpiryDate>
       </Policy>
+    </Key>
+  </KeyPackage>
+  <KeyPackage>
+    <DeviceInfo>
+      <Manufacturer>privacyIDEA rocks</Manufacturer>
+      <SerialNo>PW001</SerialNo>
+    </DeviceInfo>
+    <Key Id="PW001" Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:pw">
+      <AlgorithmParameters>
+        <ResponseFormat Length="12" Encoding="DECIMAL"/>
+      </AlgorithmParameters>
+      <Data>
+        <Secret>
+          <PlainValue>MTIzNDU2Nzg5MDEy</PlainValue>
+        </Secret>
+      </Data>
     </Key>
   </KeyPackage>
 </KeyContainer>
@@ -514,10 +540,18 @@ class ImportOTPTestCase(MyTestCase):
 
     def test_03_import_pskc(self):
         tokens = parsePSKCdata(XML_PSKC)
-        self.assertEqual(len(tokens), 6)
+        self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
+        # Check the TOTP counter...
+        self.assertEqual(tokens["2600135004013"].get("counter"), "121212")
+        self.assertEqual(tokens["2600135004013"].get("timeShift"), "-122")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
+        # check the PW token
+        self.assertEqual(tokens["PW001"].get("type"), "pw")
+        self.assertEqual(tokens["PW001"].get("otplen"), "12")
+        # The secret (password) of the pw token is "123456789012"
+        self.assertEqual(tokens["PW001"].get("otpkey"), binascii.hexlify("123456789012"))
 
     def test_04_import_pskc_aes(self):
         encryption_key_hex = "12345678901234567890123456789012"
@@ -544,6 +578,35 @@ class ImportOTPTestCase(MyTestCase):
                          binascii.hexlify("12345678901234567890"))
         self.assertEqual(tokens["987654321"].get("description"),
                          "TokenVendorAcme")
+
+    def test_06_export_pskc(self):
+        # create three tokens
+        t1 = init_token({"serial": "t1", "type": "hotp", "otpkey": "123456",
+                         "description": u"söme ünicøde"})
+        t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456",
+                         "description": "something <with> xml!"})
+        t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
+        tlist = [t1, t2, t3]
+        # export the tokens
+        psk, token_num, soup = export_pskc(tlist)
+        # Only 2 tokens exported, the spass token does not get exported!
+        self.assertEqual(token_num, 2)
+        self.assertEqual(len(psk), 32)
+        export = "{0!s}".format(soup)
+        # remote the tokens
+        remove_token("t1")
+        remove_token("t2")
+        remove_token("t3")
+        # import the tokens again
+        tokens = parsePSKCdata(export, preshared_key_hex=psk)
+        self.assertEqual(len(tokens), 2)
+        self.assertEqual(tokens.get("t1").get("type"), "hotp")
+        self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
+        # unicode does not get exported
+        self.assertEqual(tokens.get("t1").get("description"), "deleted during export")
+        self.assertEqual(tokens.get("t2").get("type"), "totp")
+        self.assertEqual(tokens.get("t2").get("timeStep"), "30")
+        self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
 
 
 class GPGTestCase(MyTestCase):

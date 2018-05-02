@@ -23,6 +23,7 @@ from privacyidea.lib.crypto import zerome
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -86,9 +87,9 @@ class PasswordTokenClass(TokenClass):
         """
         res = {'type': 'pw',
                'title': 'Password Token',
-               'description': ('A token with a fixed password. Can be '
-                               'combined  with the OTP PIN. Is used for the '
-                               'lost token scenario.'),
+               'description': _('A token with a fixed password. Can be '
+                                'combined  with the OTP PIN. Is used for the '
+                                'lost token scenario.'),
                'init': {},
                'config': {},
                'user':  [],
@@ -98,7 +99,7 @@ class PasswordTokenClass(TokenClass):
                }
         # I don't think we need to define the lost token policies here...
 
-        if key is not None and key in res:
+        if key:
             ret = res.get(key)
         else:
             if ret == 'all':

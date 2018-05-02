@@ -8,6 +8,7 @@ from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.utils import int_to_hex
 import os
 from OpenSSL import crypto
 
@@ -210,4 +211,8 @@ class CertificateTokenTestCase(MyTestCase):
 
         # check for pkcs12
         self.assertTrue(detail.get("pkcs12"))
+
+        # revoke the token
+        r = token.revoke()
+        self.assertEqual(r, int_to_hex(x509obj.get_serial_number()))
 

@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenkind
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add auth_cache
+#  2017-04-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add support for multiple challenge response token
 #  2016-08-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Reset failcounter of all user tokens.
 #  2016-06-21 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -75,7 +81,7 @@ from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types,
                                     get_inc_fail_count_on_false_pin)
 from privacyidea.lib.user import get_user_info
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.policy import ACTION, SCOPE
@@ -85,7 +91,11 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_passthru,
                                               auth_user_timelimit,
                                               auth_lastauth,
+                                              auth_cache,
                                               config_lost_token)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import TOKENKIND
+from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -149,11 +159,11 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(func.lower(Token.tokentype) ==
                                          tokentype.lower())
 
-    if description is not None and tokentype.strip("*"):
+    if description is not None and description.strip("*"):
         # filter for Description
         if "*" in description:
             # match with "like"
-            sql_query = sql_query.filter(Token.description.like(
+            sql_query = sql_query.filter(func.lower(Token.description).like(
                 description.lower().replace("*", "%")))
         else:
             # exact match
@@ -420,6 +430,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                         userobject.resolver).editable
             except Exception as exx:
                 log.error("User information can not be retrieved: {0!s}".format(exx))
+                log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
             token_list.append(token_dict)
@@ -541,20 +552,15 @@ def token_exist(serial):
 
 
 @log_with(log)
-def token_has_owner(serial):
-    """
-    returns true if the token is owned by any user
-    """
-    return get_tokens(serial=serial, count=True, assigned=True) > 0
-
-
-@log_with(log)
 def get_token_owner(serial):
     """
     returns the user object, to which the token is assigned.
     the token is identified and retrieved by it's serial number
 
     If the token has no owner, None is returned
+    
+    In case the serial number matches several tokens (like when containing a 
+    wildcard), also None is returned.
 
     :param serial: serial number of the token
     :type serial: basestring
@@ -566,7 +572,7 @@ def get_token_owner(serial):
 
     tokenobject_list = get_tokens(serial=serial)
 
-    if tokenobject_list and token_has_owner(serial):
+    if len(tokenobject_list) == 1:
         tokenobject = tokenobject_list[0]
         user = tokenobject.user
 
@@ -799,29 +805,6 @@ def get_serial_by_otp(token_list, otp="", window=10):
 
 
 @log_with(log)
-def get_tokenserial_of_transaction(transaction_id):
-    """
-    get the serial number of a token from a challenge state / transaction
-
-    :param transaction_id: the state / transaction id
-    :type transaction_id: basestring
-    :return: the serial number or None
-    :rtype: basestring
-    """
-    serial = None
-
-    challenge = Challenge.query.filter(Challenge.transaction_id == u'' +
-                                      transaction_id).first()
-
-    if challenge:
-        serial = challenge.serial
-    else:
-        log.info('no challenge found for transaction_id {0!r}'.format(transaction_id))
-
-    return serial
-
-
-@log_with(log)
 def gen_serial(tokentype=None, prefix=None):
     """
     generate a serial for a given tokentype
@@ -831,10 +814,12 @@ def gen_serial(tokentype=None, prefix=None):
     :return: serial number
     :rtype: string
     """
+    serial_len = int(get_from_config("SerialLength") or 8)
+
     def _gen_serial(_prefix, _tokennum):
         h_serial = ''
         num_str = '{:04d}'.format(_tokennum)
-        h_len = 8 - len(num_str)
+        h_len = serial_len - len(num_str)
         if h_len > 0:
             h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
@@ -862,7 +847,45 @@ def gen_serial(tokentype=None, prefix=None):
 
 
 @log_with(log)
-def init_token(param, user=None, tokenrealms=None):
+def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
+    """
+    This function is used during the import of a PSKC file.
+
+    :param serial: The serial number of the token
+    :param token_dict: A dictionary describing the token like:
+        {"type": ...,
+         "description": ...,
+         "otpkey": ...,
+         "counter: ...,
+         "timeShift": ...}
+    :param default_hashlib:
+    :return: the token object
+    """
+    init_param = {'serial': serial,
+                  'type': token_dict['type'],
+                      'description': token_dict.get("description",
+                                                        "imported"),
+                      'otpkey': token_dict['otpkey'],
+                      'otplen': token_dict.get('otplen'),
+                      'timeStep': token_dict.get('timeStep'),
+                      'hashlib': token_dict.get('hashlib')}
+
+    if default_hashlib and default_hashlib != "auto":
+        init_param['hashlib'] = default_hashlib
+
+    # Imported tokens are usually hardware tokens
+    token = init_token(init_param, tokenrealms=tokenrealms,
+                       tokenkind=TOKENKIND.HARDWARE)
+    if token_dict.get("counter"):
+        token.set_otp_count(token_dict.get("counter"))
+    if token_dict.get("timeShift"):
+        token.add_tokeninfo("timeShift", token_dict.get("timeShift"))
+    return token
+
+
+@log_with(log)
+def init_token(param, user=None, tokenrealms=None,
+               tokenkind=None):
     """
     create a new token or update an existing token
 
@@ -875,6 +898,8 @@ def init_token(param, user=None, tokenrealms=None):
     :type user: User Object
     :param tokenrealms: the realms, to which the token should belong
     :type tokenrealms: list
+    :param tokenkind: The kind of the token, can be "software",
+        "hardware" or "virtual"
 
     :return: token object or None
     :rtype: TokenClass object
@@ -952,6 +977,12 @@ def init_token(param, user=None, tokenrealms=None):
         log.error('token create failed!')
         log.debug("{0!s}".format(traceback.format_exc()))
         raise TokenAdminError("token create failed {0!r}".format(e), id=1112)
+
+    # We only set the tokenkind here, if it was explicitly set in the
+    # init_token call.
+    # In all other cases it is set in the update method of the tokenclass.
+    if tokenkind:
+        tokenobject.add_tokeninfo("tokenkind", tokenkind)
 
     # Set the validity period
     validity_period_start = param.get("validity_period_start")
@@ -1465,6 +1496,30 @@ def add_tokeninfo(serial, info, value=None,
 
 @log_with(log)
 @check_user_or_serial
+def delete_tokeninfo(serial, key, user=None):
+    """
+    Delete a specific token info field in the database.
+
+    :param serial: The serial number of the token
+    :type serial: basestring
+    :param key: The key of the info in the dict
+    :param value: The value of the info
+    :param user: The owner of the tokens, that should be modified
+    :type user: User object
+    :return: the number of tokens matching the serial and user. This number also includes tokens that did not have
+    the token info *key* set in the first place!
+    :rtype: int
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+    for tokenobject in tokenobject_list:
+        tokenobject.del_tokeninfo(key)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_validity_period_start(serial, user, start):
     """
     Set the validity period for the given token.
@@ -1569,6 +1624,26 @@ def set_description(serial, description, user=None):
 
     for tokenobject in tokenobject_list:
         tokenobject.set_description(description)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
+def set_failcounter(serial, counter, user=None):
+    """
+    Set the fail counter of a  token.
+    
+    :param serial: The serial number of the token
+    :param counter: THe counter to which the fail counter should be set
+    :param user: An optional user
+    :return: Number of tokens, where the fail counter was set.
+    """
+    tokenobject_list = get_tokens(serial=serial, user=user)
+
+    for tokenobject in tokenobject_list:
+        tokenobject.set_failcount(counter)
         tokenobject.save()
 
     return len(tokenobject_list)
@@ -1732,10 +1807,8 @@ def lost_token(serial, new_serial=None, password=None,
         res['pin'] = copy_token_pin(serial, new_serial)
 
         # set validity period
-        end_date = (datetime.date.today()
-                    + datetime.timedelta(days=validity)).strftime("%d/%m/%y")
-
-        end_date = "{0!s} 23:59".format(end_date)
+        end_date = (datetime.datetime.now(tzlocal())
+                    + datetime.timedelta(days=validity)).strftime(DATE_FORMAT)
         tokenobject_list = get_tokens(serial=new_serial)
         for tokenobject in tokenobject_list:
             tokenobject.set_validity_period_end(end_date)
@@ -1838,12 +1911,13 @@ def check_otp(serial, otpval):
     return res, reply_dict
 
 
+@libpolicy(auth_cache)
 @libpolicy(auth_user_does_not_exist)
 @libpolicy(auth_user_has_no_token)
 @libpolicy(auth_user_timelimit)
 @libpolicy(auth_lastauth)
 @libpolicy(auth_user_passthru)
-@log_with(log)
+@log_with(log, hide_kwargs=["passw"])
 def check_user_pass(user, passw, options=None):
     """
     This function checks the otp for a given user.
@@ -1910,11 +1984,18 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     invalid_token_list = []
     valid_token_list = []
 
-    for tokenobject in tokenobject_list:
-        audit = {'serial': tokenobject.get_serial(),
-                 'token_type': tokenobject.get_type(),
-                 'weight': 0}
+    # Remove locked tokens from tokenobject_list
+    if len(tokenobject_list) > 1:
+        for tokenobject in tokenobject_list:
+            if tokenobject.is_revoked():
+                tokenobject_list.remove(tokenobject)
 
+        if len(tokenobject_list) == 0:
+            # If there is no unlocked token left.
+            raise TokenAdminError(_("This action is not possible, since the "
+                                    "token is locked"), id=1007)
+
+    for tokenobject in tokenobject_list:
         log.debug("Found user with loginId {0!r}: {1!r}".format(
                   tokenobject.user, tokenobject.get_serial()))
 
@@ -1986,6 +2067,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
                 res = True
+                if not reply_dict.get("type"):
+                    reply_dict["type"] = token_obj.token.tokentype
+                if reply_dict["type"] != token_obj.token.tokentype:
+                    reply_dict["type"] = "undetermined"
                 # reset the failcounter of valid token
                 try:
                     token_obj.reset()
@@ -2046,48 +2131,61 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 res = True
                 tokenobject.inc_count_auth_success()
                 reply_dict["message"] = "Found matching challenge"
-                reply_dict["serial"] = challenge_response_token_list[0].token.serial
+                reply_dict["serial"] = tokenobject.token.serial
                 tokenobject.challenge_janitor()
+                # clean up all other challenges from other tokens. I.e.
+                # all challenges with this very transaction_id!
+                transaction_id = options.get("transaction_id") or \
+                                 options.get("state")
+                Challenge.query.filter(Challenge.transaction_id == u'' +
+                                       transaction_id).delete()
+
                 # Reset the fail counter of the challenge response token
                 tokenobject.reset()
+                # We have one successful authentication, so we bail out
+                break
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
         active_challenge_token = [t for t in challenge_request_token_list
                                   if t.token.active ]
-        if len(active_challenge_token) == 1:
-            message_list = []
-            token_obj = active_challenge_token[0]
-            # Check if the max auth is succeeded
-            if token_obj.check_all(message_list):
-                r_chal, message, transaction_id, \
-                attributes = token_obj.create_challenge(options=options)
-                # Add the reply to the response
-                message_list.append(message)
-                if r_chal:
-                    reply_dict["transaction_id"] = transaction_id
-                    reply_dict["attributes"] = attributes
-                    reply_dict["serial"] = token_obj.token.serial
-                    # If exist, add next pin and next password change
-                    next_pin = challenge_request_token_list[0].get_tokeninfo(
-                            "next_pin_change")
-                    if next_pin:
-                        reply_dict["next_pin_change"] = next_pin
-                        reply_dict["pin_change"] = \
-                            challenge_request_token_list[0].is_pin_change()
-                    next_passw = challenge_request_token_list[0].get_tokeninfo(
-                            "next_password_change")
-                    if next_passw:
-                        reply_dict["next_password_change"] = next_passw
-                        reply_dict["password_change"] = \
-                            challenge_request_token_list[0].is_pin_change(
-                                password=True)
-            reply_dict["message"] = ", ".join(message_list)
-        elif len(active_challenge_token) == 0:
+        if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
-            reply_dict["message"] = "Multiple tokens to create a challenge " \
-                                    "found!"
+            reply_dict["multi_challenge"] = []
+            transaction_id = None
+            for token_obj in active_challenge_token:
+                message_list = []
+                # Check if the max auth is succeeded
+                if token_obj.check_all(message_list):
+                    r_chal, message, transaction_id, attributes = \
+                        token_obj.create_challenge(
+                            transactionid=transaction_id, options=options)
+                    # Add the reply to the response
+                    message_list.append(message)
+                    reply_dict["message"] = ", ".join(message_list)
+                    if r_chal:
+                        challenge_info = {}
+                        challenge_info["transaction_id"] = transaction_id
+                        challenge_info["attributes"] = attributes
+                        challenge_info["serial"] = token_obj.token.serial
+                        # If exist, add next pin and next password change
+                        next_pin = challenge_request_token_list[0].get_tokeninfo(
+                                "next_pin_change")
+                        if next_pin:
+                            challenge_info["next_pin_change"] = next_pin
+                            challenge_info["pin_change"] = \
+                                challenge_request_token_list[0].is_pin_change()
+                        next_passw = challenge_request_token_list[0].get_tokeninfo(
+                                "next_password_change")
+                        if next_passw:
+                            challenge_info["next_password_change"] = next_passw
+                            challenge_info["password_change"] = \
+                                challenge_request_token_list[0].is_pin_change(
+                                    password=True)
+                        for k, v in challenge_info.items():
+                            reply_dict[k] = v
+                        reply_dict["multi_challenge"].append(challenge_info)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
@@ -2133,7 +2231,7 @@ def get_dynamic_policy_definitions(scope=None):
     this scope.
     :return: The policy definition for the token or only for the scope.
     """
-    from privacyidea.lib.policy import SCOPE, MAIN_MENU
+    from privacyidea.lib.policy import SCOPE, MAIN_MENU, GROUP
 
     pol = {SCOPE.ADMIN: {},
            SCOPE.USER: {},
@@ -2145,14 +2243,16 @@ def get_dynamic_policy_definitions(scope=None):
             = {'type': 'bool',
                'desc': _('Admin is allowed to initalize %s tokens.') %
                        ttype.upper(),
-               'mainmenu': [MAIN_MENU.TOKENS]}
+               'mainmenu': [MAIN_MENU.TOKENS],
+               'group': GROUP.ENROLLMENT}
 
         conf = get_tokenclass_info(ttype, section='user')
         if 'enroll' in conf:
             pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
                 'desc': _("The user is allowed to enroll a %s token.") % ttype,
-                'mainmenu': [MAIN_MENU.TOKENS]}
+                'mainmenu': [MAIN_MENU.TOKENS],
+                'group': GROUP.ENROLLMENT}
 
         # now merge the dynamic Token policy definition
         # into the global definitions
@@ -2173,6 +2273,33 @@ def get_dynamic_policy_definitions(scope=None):
                         set_def = '{0!s}_{1!s}'.format(ttype, pol_def)
 
                     pol[pol_section][set_def] = pol_entry.get(pol_def)
+
+        # If the token class should provide specific PIN policies, now merge
+        # PIN policies
+        pin_scopes = get_tokenclass_info(ttype, section='pin_scopes') or []
+        for pin_scope in pin_scopes:
+            pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
+                'type': 'int',
+                'value': range(0, 32),
+                "desc": _("Set the maximum allowed PIN length of the {0!s}"
+                          " token.").format(ttype.upper()),
+                'group': GROUP.PIN
+            }
+            pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
+                'type': 'int',
+                'value': range(0, 32),
+                "desc": _("Set the minimum required PIN length of the {0!s}"
+                          " token.").format(ttype.upper()),
+                'group': GROUP.PIN
+            }
+            pol[pin_scope]['{0!s}_otp_pin_contents'.format(ttype.lower())] = {
+                'type': 'str',
+                "desc": _("Specifiy the required PIN contents of the "
+                          "{0!s} token. "
+                          "(c)haracters, (n)umeric, "
+                          "(s)pecial, (o)thers. [+/-]!").format(ttype.upper()),
+                'group': GROUP.PIN
+            }
 
     # return sub section, if scope is defined
     # make sure that scope is in the policy key

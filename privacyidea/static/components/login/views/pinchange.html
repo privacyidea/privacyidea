@@ -9,13 +9,13 @@
 
             <label for="pin1" class="sr-only" translate>New PIN</label>
             <input name="pin1" type="password" class="form-control"
-                   ng-model="newpin"
+                   ng-model="newpin" autocomplete="off"
                    equals="{{ newpin2 }}"
                    placeholder="{{ 'New PIN' | translate }}" />
 
             <label for="pin2" class="sr-only" translate>New PIN</label>
             <input name="pin2" type="password" class="form-control"
-                   ng-model="newpin2"
+                   ng-model="newpin2" autocomplete="off"
                    equals="{{ newpin }}"
                    placeholder="{{ 'Repeat new PIN' | translate }}"/>
 

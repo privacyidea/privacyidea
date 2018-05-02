@@ -33,10 +33,10 @@ The TiQR Token uses this API to implement its special functionalities. See
 """
 from flask import (Blueprint,
                    request)
-from lib.utils import (getParam,
-                       optional,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        optional,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from flask import g, jsonify, current_app, Response
 import logging
@@ -48,7 +48,7 @@ from privacyidea.lib.config import (get_token_class, get_from_config,
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.lib.utils import get_client_ip
-
+import json
 
 log = logging.getLogger(__name__)
 
@@ -117,11 +117,14 @@ def token(ttype=None):
                         "user": user.login,
                         "realm": user.realm,
                         "serial": serial,
-                        "tokentype": ttype})
+                        "token_type": ttype})
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
         return Response(res[1], mimetype="text/{0!s}".format(res[0]))
+    elif len(res) == 2:
+        return Response(json.dumps(res[1]),
+                        mimetype="application/{0!s}".format(res[0]))
     else:
         return Response(res[1], mimetype="application/octet-binary",
                         headers=res[2])

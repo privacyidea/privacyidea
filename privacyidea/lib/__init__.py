@@ -15,3 +15,10 @@ in a realm. And of course the user object itself can be found in a resolver.
 But you need to have working resolver.py and realm.py to be able to
 work with user.py
 '''
+
+import gettext
+import os
+curdir = os.path.dirname(__file__)
+_ = gettext.translation('messages',
+                        '{0!s}/../translations/'.format(curdir),
+                        fallback=True).ugettext

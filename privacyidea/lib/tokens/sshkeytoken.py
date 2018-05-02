@@ -27,7 +27,7 @@ The code is tested in tests/test_lib_tokens_ssh
 """
 
 import logging
-from gettext import gettext as _
+from privacyidea.lib import _
 log = logging.getLogger(__name__)
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
@@ -82,19 +82,14 @@ class SSHkeyTokenClass(TokenClass):
         res = {'type': 'sshkey',
                'title': 'SSHkey Token',
                'description': _('SSH Public Key: The public SSH key.'),
-               'init': {'page': {'html': 'sshkeytoken.mako',
-                                 'scope': 'enroll'},
-                        'title': {'html': 'sshkeytoken.mako',
-                                  'scope': 'enroll.title'},
-                        },
                'config': {},
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {},
                }
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -143,4 +138,4 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = ti.get("ssh_comment")
         # get the ssh key directly, otherwise it will not be decrypted
         sshkey = self.get_tokeninfo("ssh_key")
-        return "{0!s} {1!s} {2!s}".format(key_type, sshkey, key_comment)
+        return u"{0!s} {1!s} {2!s}".format(key_type, sshkey, key_comment)

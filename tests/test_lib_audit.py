@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This tests the files
   lib/audit.py and
@@ -153,13 +154,19 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"serial": "oath"})
         self.Audit.finalize_log()
 
+        self.Audit.log({"serial": "oath", "user": u"nöäscii"})
+        self.Audit.finalize_log()
+
         audit_log = self.Audit.csv_generator()
         self.assertTrue(type(audit_log).__name__ == "generator",
                         type(audit_log).__name__)
 
+        count = 0
         for audit_entry in audit_log:
             self.assertTrue(type(audit_entry).__name__ in ["unicode", "str"],
                             type(audit_entry).__name__)
+            count += 1
+        self.assertEqual(count, 5)
 
     def test_05_dataframe(self):
         self.Audit.log({"action": "action1",
@@ -193,3 +200,15 @@ class AuditTestCase(MyTestCase):
                          column_length.get("serial"))
         self.assertEqual(len(self.Audit.audit_data.get("token_type")),
                          column_length.get("token_type"))
+
+    def test_07_sign_non_ascii_entry(self):
+        # Log a username as unicode with a non-ascii character
+        self.Audit.log({"serial": "1234",
+                        "action": "token/assign",
+                        "success": True,
+                        "user": u"kölbel"})
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"user": u"kölbel"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")

@@ -7,12 +7,13 @@ VERSION2=1.3.0
 URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-$(VERSION2).tar.gz
 
 CONTRIB3=python-ldap3
-VERSION3=2.1.0
-URL3=https://pypi.python.org/packages/44/53/b458da2329ad57fa0044717cace2fa901ea6999bc141e6d65245f77e4eb8/ldap3-$(VERSION3).tar.gz
+VERSION3=2.5
+URL3=https://files.pythonhosted.org/packages/bf/5b/4848db7aa210a27793d7fc218c7deb588a5f2b23f5359a0537285ee1ee60/ldap3-2.5.tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
-VERSION4=2.0
-URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
+VERSION4=2.1
+#URL4=https://pypi.python.org/packages/source/F/Flask-SQLAlchemy/Flask-SQLAlchemy-$(VERSION4).tar.gz
+URL4=https://pypi.python.org/packages/b3/52/227aaf4e8cebb153e239c518a9e916590b2fe0e4350e6b02d92b546b69b7/Flask-SQLAlchemy-2.1.tar.gz
 
 CONTRIB5=python-pymysql
 VERSION5=0.7.1
@@ -26,13 +27,17 @@ CONTRIB7=PyKCS
 VERSION7=1.3.2
 URL7=https://pypi.python.org/packages/source/p/pykcs11/PyKCS11-$(VERSION7).tar.gz
 
+CONTRIB8=pyasn1
+VERSION8=0.4.2
+URL8=https://files.pythonhosted.org/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 #series=trusty
 series=xenial
 
 info:
-	@echo "make ubuntu  - build packages for ubuntu 14.04LTS"
+	@echo "make ubuntu  - build packages for ubuntu $(series)"
 	@echo "make ppa-dev - upload to ppa devel"
 	@echo "make ppa     - upload to ppa"
 	@echo "make clean."
@@ -44,6 +49,7 @@ ubuntu:
 	make ldap3
 	make flask-sqlalchemy
 	make pymysql
+	make pyasn1
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -55,6 +61,15 @@ ldap3:
 	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild -b)
 	(cp $(CONTRIB3)/deb_dist/* DEBUILD || true)
 
+pyasn1:
+	mkdir -p $(CONTRIB8)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB8); curl $(URL8) -o pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8); py2dsc -m '$(ME)' pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); dch -v $(VERSION8)-1$(series)1 --distribution $(series) -M "build for privacyidea")
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -sa -S)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -b)
+	(cp $(CONTRIB8)/deb_dist/* DEBUILD || true)
 
 pyjwt:
 	mkdir -p $(CONTRIB2)
@@ -130,6 +145,7 @@ ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.chages || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
@@ -137,6 +153,7 @@ ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyasn1_${VERSION8}-1${series}1_source.changes || true)
 
 	
 
@@ -146,4 +163,8 @@ clean:
 	rm -fr $(CONTRIB3)
 	rm -fr $(CONTRIB4)
 	rm -fr $(CONTRIB5)
+	rm -fr $(CONTRIB6)
+	rm -fr $(CONTRIB7)
+	rm -fr $(CONTRIB8)
+	rm -fr pymysql_sa
 	rm -fr DEBUILD

@@ -8,7 +8,8 @@ Standards-Version: 3.9.6
 Package: python-privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-flask-migrate, python-qrcode, python-netaddr,
- python-pyrad, python-yaml, python-configobj, python-bs4, python-pandas, python-matplotlib, python-ecdsa, python-gnupg, python-openssl
+ python-pyrad, python-yaml, python-configobj, python-bs4, python-pandas, python-matplotlib, python-ecdsa, python-gnupg, python-openssl,
+ python-dateutil
 Replaces: privacyidea (<< 2.0)
 Breaks: privacyidea (<< 2.0)
 X-Python-Version: >= 2.7
@@ -86,7 +87,7 @@ Description: two-factor authenticaion system. This is a metapackage to install e
 Package: privacyidea-nginx
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, nginx-full, uwsgi, 
- uwsgi-plugin-python, mysql-server, mysql-client
+ uwsgi-plugin-python, mysql-server|mariadb-server, mysql-client|mariadb-client
 Conflicts: apache2, privacyidea-apache2
 Description: 2FA system. This is a meta package to install privacyidea with nginx
  privacyIDEA: identity, multifactor authentication, authorization.
@@ -97,7 +98,7 @@ Description: 2FA system. This is a meta package to install privacyidea with ngin
 Package: privacyidea-apache2
 Architecture: all
 Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, apache2,
- mysql-server, mysql-client, libapache2-mod-wsgi
+ mysql-server|mariadb-server, mysql-client|mariadb-client, libapache2-mod-wsgi, rng-tools
 Conflicts: nginx, nginx-full, privacyidea-nginx
 Description: 2FA system. This is a meta package to install privacyidea with apache2
  privacyIDEA: identity, multifactor authentication, authorization.
@@ -107,7 +108,7 @@ Description: 2FA system. This is a meta package to install privacyidea with apac
 
 Package: privacyidea-mysql
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, mysql-server, mysql-client
+Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, mysql-server|mariadb-server, mysql-client|mariadb-client
 Conflicts: nginx, nginx-full, privacyidea-nginx, privacyidea-apache2
 Description: 2FA system. privacyIDEA application and MySQL configuration
  privacyIDEA: identity, multifactor authentication, authorization.

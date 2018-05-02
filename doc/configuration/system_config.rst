@@ -59,11 +59,29 @@ increased. The later behaviour can be adapted by ``FailCounterIncOnFalsePin``.
 If ``FailCounterIncOnFalsePin`` is set and the given OTP PIN does not match
 any token, the failcounter of *all* tokens is increased.
 
+
+.. _clear_failcounter:
+
+Automatically clearing Failcounter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the failcounter reaches the maximum the token gets a timestamp, when the
+max fail count was reached. A successful authentication after the specified a
+amount of minutes in ``failcounter_clear_timeout`` will clear the failcounter
+again and the user can
+authenticate.
+
+A "0" means automatically clearing the fail counter is not used.
+
+Also see :ref:`brute_force`.
+
 Prepend PIN
 ~~~~~~~~~~~
 
 ``PrependPin`` defines if the OTP PIN should be given in front ("pin123456") 
 or in the back ("12345pin") of the OTP value.
+
+.. _autosync:
 
 .. index:: autoresync, autosync
 
@@ -89,6 +107,20 @@ provides a wrong OTP value. AutoResync works like this:
    Email tokens.
 
 .. index:: authenticating client, client, override client
+
+.. _user_cache_timeout:
+
+User Cache
+~~~~~~~~~~
+
+The setting ``User Cache expiration in seconds`` is used to enable the user cache and
+configure its expiration timeout. If its value is set to ``0`` (which is the default value),
+the user cache is disabled.
+Otherwise, the value determines the time in seconds after which entries of the user
+cache expire. For more information read :ref:`usercache`.
+
+.. note:: If the user cache is already enabled and you increase the expiration timeout,
+   expired entries that still exist in the user cache could be considered active again!
 
 .. _override_client:
 
@@ -178,3 +210,9 @@ Challenge Validity Time
 authentication. If the response is set after the ChallengeValidityTime, the
 response is not accepted anymore.
 
+SerialLength
+~~~~~~~~~~~~
+
+The default length of generated serial numbers is an 8 digit hex string.
+If you need another length, it can be configured in the database table ``Config``
+with the key word ``SerialLength``.

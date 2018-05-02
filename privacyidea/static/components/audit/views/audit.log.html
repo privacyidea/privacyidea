@@ -4,9 +4,6 @@
                   ng-show="loggedInUser.role === 'admin' &&
                         checkRight('auditlog_download')">
     </csv-download>
-    <button class="btn btn-default" ng-click="getAuditList()">
-        <span class="glyphicon glyphicon-refresh"></span>
-        <span translate>Refresh</span></button>
 
     <pagination ng-show="auditdata.count > 10"
                 total-items="auditdata.count" ng-model="params.page"

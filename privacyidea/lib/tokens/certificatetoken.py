@@ -40,6 +40,7 @@ from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
 from privacyidea.lib.decorators import check_token_locked
 import base64
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -147,8 +148,8 @@ class CertificateTokenClass(TokenClass):
         """
         res = {'type': 'certificate',
                'title': 'Certificate Token',
-               'description': ('Certificate: Enroll an x509 Certificate '
-                               'Token.'),
+               'description': _('Certificate: Enroll an x509 Certificate '
+                                'Token.'),
                'init': {},
                'config': {},
                'user':  ['enroll'],
@@ -157,8 +158,8 @@ class CertificateTokenClass(TokenClass):
                'policy': {},
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -177,6 +178,7 @@ class CertificateTokenClass(TokenClass):
         spkac = getParam(param, "spkac", optional)
         certificate = getParam(param, "certificate", optional)
         generate = getParam(param, "genkey", optional)
+        template_name = getParam(param, "template", optional)
         if request or generate:
             # If we do not upload a user certificate, then we need a CA do
             # sign the uploaded request or generated certificate.
@@ -187,7 +189,8 @@ class CertificateTokenClass(TokenClass):
             # During the initialization process, we need to create the
             # certificate
             x509object = cacon.sign_request(request,
-                                            options={"spkac": spkac})
+                                            options={"spkac": spkac,
+                                                     "template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
         elif generate:
@@ -215,12 +218,15 @@ class CertificateTokenClass(TokenClass):
             req.set_pubkey(key)
             req.sign(key, "sha256")
             x509object = cacon.sign_request(crypto.dump_certificate_request(
-                crypto.FILETYPE_PEM, req))
+                crypto.FILETYPE_PEM, req), options={"template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
             # Save the private key to the encrypted key field of the token
             s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
             self.add_tokeninfo("privatekey", s, value_type="password")
+
+        if "pin" in param:
+            self.set_pin(param.get("pin"), encrypt=True)
 
         if certificate:
             self.add_tokeninfo("certificate", certificate)
@@ -298,3 +304,31 @@ class CertificateTokenClass(TokenClass):
         """
         storeHashed = False
         self.token.set_pin(pin, storeHashed)
+
+    def revoke(self):
+        """
+        This revokes the token. We need to determine the CA, which issues the
+        certificate, contact the connector and revoke the certificate
+
+        Some token types may revoke a token without locking it.
+        """
+        TokenClass.revoke(self)
+
+        # determine the CA and its connector.
+        ti = self.get_tokeninfo()
+        ca_specifier = ti.get("CA")
+        log.debug("Revoking certificate {0!s} on CA {1!s}.".format(
+            self.token.serial, ca_specifier))
+        certificate_pem = ti.get("certificate")
+
+        # call CAConnector.revoke_cert()
+        ca_obj = get_caconnector_object(ca_specifier)
+        revoked = ca_obj.revoke_cert(certificate_pem)
+        log.info("Certificate {0!s} revoked on CA {1!s}.".format(revoked,
+                                                                 ca_specifier))
+
+        # call CAConnector.create_crl()
+        crl = ca_obj.create_crl()
+        log.info("CRL {0!s} created.".format(crl))
+
+        return revoked

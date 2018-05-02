@@ -50,8 +50,11 @@ This sets the issuer label for a newly enrolled Google Authenticator.
 This policy takes a fixed string, to add additional information about the
 issuer of the soft token.
 
+Starting with version 2.20 you can use the tags ``{user}``, ``{realm}``, ``{serial}``
+and as new tags ``{givenname}`` and ``{surname}`` in the field issuer.
+
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
-   installation.
+   installation or the name of your company.
 
 tokenlabel
 ~~~~~~~~~~
@@ -66,10 +69,15 @@ The default behaviour is to use the serial number.
 
 .. note:: This is useful to identify the token in the Authenticator App.
 
-.. warning:: If you are only using <u> as tokenlabel and you enroll the token
-   without a user, this will result in an invalid QR code, since it will have
-   an empty label. You should rather use a label like "user: <u>", which would
-   result in "user: ".
+.. note:: Starting with version 2.19 the usage of ``<u>``, ``<s>`` and ``<r>``
+   is deprecated. Instead you should use ``{user}``, ``{realm}``,
+   ``{serial}`` and as new tags ``{givenname}`` and ``{surname}``.
+
+.. warning:: If you are only using ``<u>`` or ``{user}`` as tokenlabel and you
+   enroll the token without a user, this will result in an invalid QR code,
+   since it will have an empty label.
+   You should rather use a label like "{user}@{realm}",
+   which would result in "@".
 
 
 .. _autoassignment:
@@ -231,3 +239,50 @@ type: int
 
 This is a specific action of the paper token. Here the administrator can
 define how many OTP values should be printed on the paper token.
+
+
+u2f_req
+~~~~~~~
+
+type: string
+
+Only the specified U2F devices are allowed to be registered.
+The action can be specified like this:
+
+    u2f_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the U2F device the information
+is fetched from the attestation certificate.
+Only if the attribute in the attestation certificate matches accordingly the
+token can be registered.
+
+.. _policy_u2f_no_verify_certificate:
+
+u2f_no_verify_certificate
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+By default the validity period of the attestation certificate of a U2F device gets
+verified during the registration process.
+If you do not want to verify the validity period, you can check this action.
+
+
+.. _2step_parameters:
+
+{type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+These are token type specific parameters. They control the key generation during the
+2step token enrollment (see :ref:`2step_enrollment`).
+
+The ``serversize`` is the optional size (in bytes) of the server's key part.
+The ``clientsize`` is the size (in bytes) of the smartphone's key part.
+The ``difficulty`` is a parameter for the key generation.
+In the implementation in version 2.21 PBKDF2 is used. In this case the ``difficulty``
+specifies the number of rounds.
+
+This is new in version 2.21

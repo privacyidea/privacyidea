@@ -1,0 +1,9 @@
+user:
+    days: 365
+    extensions: "user"
+webserver:
+    days: 750
+    extensions: "server"
+template3:
+    days: 10
+    extensions: "user"

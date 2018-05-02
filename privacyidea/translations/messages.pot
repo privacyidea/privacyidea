@@ -1,0 +1,921 @@
+# Translations template for PROJECT.
+# Copyright (C) 2017 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2017-01-22 13:16+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.3.4\n"
+
+#: privacyidea/api/policy.py:171
+msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
+msgstr ""
+
+#: privacyidea/api/policy.py:175
+msgid "T'check' is an invalid policy name."
+msgstr ""
+
+#: privacyidea/lib/decorators.py:42
+msgid "This action is not possible, since the token is locked"
+msgstr ""
+
+#: privacyidea/lib/decorators.py:90
+msgid "You need to specify a serial or a user."
+msgstr ""
+
+#: privacyidea/lib/error.py:168
+msgid "You either need to provide user or serial"
+msgstr ""
+
+#: privacyidea/lib/policy.py:968
+msgid "Define in which resolver the user should be registered."
+msgstr ""
+
+#: privacyidea/lib/policy.py:972
+msgid "Define in which realm the user should be registered."
+msgstr ""
+
+#: privacyidea/lib/policy.py:976
+msgid ""
+"The SMTP server configuration, that should be used to send the "
+"registration email."
+msgstr ""
+
+#: privacyidea/lib/policy.py:980
+msgid ""
+"Only users with this email address are allowed to register. This is a "
+"regular expression."
+msgstr ""
+
+#: privacyidea/lib/policy.py:985
+msgid ""
+"The body of the registration email. Use '{regkey}' as tagfor the "
+"registration key."
+msgstr ""
+
+#: privacyidea/lib/policy.py:991
+msgid "Admin is allowed to enable tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:995
+msgid "Admin is allowed to disable tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:999
+msgid "Admin is allowed to set token properties."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1004
+msgid "Admin is allowed to set the OTP PIN of tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1010
+msgid "Admin is allowed to set the OTP PIN during enrollment."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1015
+msgid "Admin is allowed to resync tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1019
+msgid "Admin is allowed to reset the Failcounter of a token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1025
+msgid "Admin is allowed to revoke a token"
+msgstr ""
+
+#: privacyidea/lib/policy.py:1029
+msgid "Admin is allowed to assign a token to a user."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1035
+msgid "Admin is allowed to remove the token from a user, i.e. unassign a token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1042
+msgid "Admin is allowed to import token files."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1047
+msgid "Admin is allowed to remove tokens from the database."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1053
+msgid "Admin is allowed to view the list of the users."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1059
+msgid "The Admin is allowed to list the machines."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1064
+msgid "The Admin is allowed to attach and detach tokens to machines."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1071
+msgid ""
+"The Admin is allowed to fetch authentication items of tokens assigned to "
+"machines."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1076
+msgid "Admin is allowed to manage the realms of a token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1081
+msgid "Admin is allowed to retrieve a serial for a given OTP value."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1086
+msgid "Admin is allowed to retrieve random keys from privacyIDEA."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1090
+msgid "Admin is allowed to copy the PIN of one token to another token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1096
+msgid ""
+"Admin is allowed to copy the assigned user to another token, i.e. assign "
+"a user ot another token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1103
+msgid "Admin is allowed to trigger the lost token workflow."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1110
+msgid "Admin is allowed to write and modify the system configuration."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1115
+msgid "Admin is allowed to delete keys in the system configuration."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1121
+msgid ""
+"Admin is allowed to export a documentation of the complete configuration "
+"including resolvers and realm."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1129
+msgid "Admin is allowed to write and modify the policies."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1134
+msgid "Admin is allowed to delete policies."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1139
+msgid "Admin is allowed to write and modify the resolver and realm configuration."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1146
+msgid "Admin is allowed to delete resolvers and realms."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1151
+msgid ""
+"Admin is allowed to create new CA Connector definitions and modify "
+"existing ones."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1157
+msgid "Admin is allowed to delete CA Connector definitions."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1162
+msgid "Admin is allowed to write and modify the machine resolvers."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1168
+msgid "Admin is allowed to delete machine resolvers."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1175 privacyidea/lib/policy.py:1329
+msgid "Set the maximum allowed length of the OTP PIN."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1180 privacyidea/lib/policy.py:1334
+msgid "Set the minimum required length of the OTP PIN."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1184 privacyidea/lib/policy.py:1338
+msgid ""
+"Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
+"(s)pecial, (o)thers. [+/-]!"
+msgstr ""
+
+#: privacyidea/lib/policy.py:1190
+msgid "Admin is allowed to view the Audit log."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1194
+msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1199
+msgid "The admin is allowed to download the complete auditlog."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1204
+msgid "Admin is allowed to add users in a userstore/UserIdResolver."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1209
+msgid "Admin is allowed to update the users data in a userstore."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1214
+msgid "Admin is allowed to delete a user object in a userstore."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1219
+msgid "Admin is allowed to set the password of the HSM/Security Module."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1223
+msgid "Admin is allowed to retrieve the list of active challenges."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1229
+msgid "Admin is allowed to write new SMTP server definitions."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1234
+msgid "Admin is allowed to write new RADIUS server definitions."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1240
+msgid "Admin is allowed to write and modify the event handling configuration."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1246
+msgid "Admin is allowed to write and modify SMS gateway definitions."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1252
+msgid "Admin is allowed to get the list of authenticated clients and their types."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1259
+msgid "Admin is allowed to add and delete component subscriptions."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1265
+msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1275
+msgid ""
+"The user is allowed to assign an existing token that is not yet assigned "
+"using the token serial number."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1281
+msgid "The user is allowed to disable his own tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1287
+msgid "The user is allowed to enable his own tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1293
+msgid "The user is allowed to delete his own tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1299
+msgid "The user is allowed to unassign his own tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1304
+msgid "The user is allowed to resyncronize his tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1309
+msgid "The user is allowed to revoke a token"
+msgstr ""
+
+#: privacyidea/lib/policy.py:1314
+msgid "The user is allowed to reset the failcounter of his tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1319
+msgid "The user is allowed to set the OTP PIN of his tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1324
+msgid "The user is allowed to set the OTP PIN during enrollment."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1346
+msgid "Allow the user to view his own token history."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1349
+msgid "The user will only see audit entries of the last 10d, 3m or 2y."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1353
+msgid "The user is allowed to view his own user information."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1357
+msgid ""
+"The user is allowed to update his own user information, like changing his"
+" password."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1362
+msgid "The user is allowed to do a password reset in an editable UserIdResolver."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1371
+msgid "Limit the number of allowed tokens in a realm."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1375
+msgid "Limit the number of tokens a user may have assigned."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1381
+msgid "Set a random OTP PIN with this length for a token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1386
+msgid "In case of a random OTP PIN use this python module to process the PIN."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1391
+msgid ""
+"If the administrator sets the OTP PIN during enrollment or later, the "
+"user will have to change the PIN during first use."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1398
+msgid ""
+"The user needs to change his PIN on a regular basis. To change the PIN "
+"every 180 days, enter '180d'."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1405
+msgid ""
+"The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
+"behaviour."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1410
+msgid ""
+"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
+"(user), <r> (realm), <s> (serial)."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1416
+msgid "This is the issuer label for new enrolled Google Authenticators."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1423
+msgid ""
+"Users can assign a token just by using the unassigned token to "
+"authenticate."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1429
+msgid "The length of the password in case of temporary token (lost token)."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1433
+msgid ""
+"The contents of the temporary password, described by the characters C, c,"
+" n, s."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1438
+msgid "The length of the validity for the temporary token (in days)."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1446
+msgid ""
+"Either use the Token PIN , use the Userstore Password or use no fixed "
+"password component."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1451
+msgid ""
+"This is a whitespace separated list of tokentypes, that can be used with "
+"challenge response."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1457
+msgid ""
+"If set, the user in this realm will be authenticated against the "
+"userstore or against the given RADIUS config, if the user has no tokens "
+"assigned."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1464
+msgid ""
+"If the user has no token, the authentication request for this user will "
+"always be true."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1469
+msgid ""
+"If the user user does not exist, the authentication request for this non-"
+"existing user will always be true."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1475
+msgid ""
+"Can be used to modify the parameters pass, user and realm in an "
+"authentication request. See the documentation for an example."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1481
+msgid ""
+"If a user authenticates successfully reset the failcounter of all of his "
+"tokens."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1489
+msgid ""
+"You can specify how many successful authentication requests a user is "
+"allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
+"being second, minute and hour."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1496
+msgid ""
+"You can specify how many failed authentication requests a user is allowed"
+" to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+"second, minute and hour."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1503
+msgid ""
+"You can specify in which time frame the user needs to authenticate again "
+"with this token. If the user authenticates later, authentication will "
+"fail. Specify like 30h, 7d or 1y."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1510
+msgid "The user will only be authenticated with this very tokentype."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1514
+msgid ""
+"The user will only be authenticated if the serial number of the token "
+"matches this regexp."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1519
+msgid ""
+"The Realm of the user is set to this very realm. This is important if the"
+" user is not contained in the default realm and can not pass his realm."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1524
+msgid ""
+"In case of successful authentication additional no detail information "
+"will be returned."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1528
+msgid ""
+"In case of failed authentication additional no detail information will be"
+" returned."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1532
+msgid ""
+"In case of successful authentication user data will be added in the "
+"detail branch of the authentication response."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1537
+msgid ""
+"The sending of an API Auth Key is required duringauthentication. This "
+"avoids rogue authenticate requests against the /validate/check interface."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1546
+msgid ""
+"If set to \"privacyIDEA\" the users and admins need to authenticate "
+"against privacyIDEA when they log in to the Web UI. Defaults to "
+"\"userstore\""
+msgstr ""
+
+#: privacyidea/lib/policy.py:1555
+msgid ""
+"When searching in the user list, the search will only performed when "
+"pressing enter."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1561
+msgid ""
+"The REMOTE_USER set by the webserver can be used to login to privacyIDEA "
+"or it will be ignored. Defaults to \"disable\"."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1567
+msgid ""
+"Set the time in seconds after which the user will be logged out from the "
+"WebUI. Default: 120"
+msgstr ""
+
+#: privacyidea/lib/policy.py:1572
+msgid "Set how many tokens should be displayed in the token view on one page."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1577
+msgid "Set how many users should be displayed in the user view on one page."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1582
+msgid ""
+"Whether the user ID and the resolver should be displayed in the token "
+"list."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1587
+msgid ""
+"The URL of a repository, where the policy templates can be found.  "
+"(Default https: //raw.githubusercontent.com/ privacyidea/policy-templates"
+" /master/templates/)"
+msgstr ""
+
+#: privacyidea/lib/policy.py:1594
+msgid "As long as a user has no token, he will only see a token wizard in the UI."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1599
+msgid ""
+"The tokenwizard will be displayed in the token menu, even if the user "
+"already has a token."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1604
+msgid "This is the default token type in the token enrollment dialog."
+msgstr ""
+
+#: privacyidea/lib/policy.py:1610
+msgid ""
+"If this is checked, a dropdown combobox with the realms is displayed in "
+"the login screen."
+msgstr ""
+
+#: privacyidea/lib/radiusserver.py:185
+msgid "The RADIUS secret is too long"
+msgstr ""
+
+#: privacyidea/lib/token.py:2146
+#, python-format
+msgid "Admin is allowed to initalize %s tokens."
+msgstr ""
+
+#: privacyidea/lib/token.py:2155
+#, python-format
+msgid "The user is allowed to enroll a %s token."
+msgstr ""
+
+#: privacyidea/lib/token.py:2186
+msgid "Set the maximum allowed PIN length of the {0!s} token."
+msgstr ""
+
+#: privacyidea/lib/token.py:2193
+msgid "Set the minimum required PIN length of the {0!s} token."
+msgstr ""
+
+#: privacyidea/lib/token.py:2199
+msgid ""
+"Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
+"(n)umeric, (s)pecial, (o)thers. [+/-]!"
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:101
+msgid "The user realm, for which this event should apply."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:106
+msgid "The token realm, for which this event should apply."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:112
+msgid "The type of the token."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:117
+msgid "The logged in user is of the following type."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:122
+msgid "The result.value within the response is True or False."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:128
+msgid "Check if the max failcounter of the token is reached."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:134
+msgid "The token has a user assigned."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:139
+msgid ""
+"The token has a user assigned, but the user does not exist in the "
+"userstore anymore."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:145
+msgid "Action is triggered, if the serial matches this regular expression."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:150
+msgid "Action is triggered, if the user has this number of tokens assigned."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:155
+msgid "Action is triggered, if the counter of the token equals this setting."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:160
+msgid ""
+"Action is triggered, if the last authentication of the token is older "
+"than 7h, 10d or 1y."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:165
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
+"100."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:171
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
+"exactly 100."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/base.py:178
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"difference between the tokeninfo field 'count_auth' and "
+"'count_auth_success is bigger than 100, less than 99 or exactly 100."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/scripthandler.py:77
+msgid "Add '--serial <serial number>' as script parameter."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/scripthandler.py:82
+msgid "Add '--user <username>' as script parameter."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/scripthandler.py:87
+msgid "Add '--realm <realm>' as script parameter."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/scripthandler.py:92
+msgid ""
+"Add the username of the logged in user as script parameter like '--"
+"logged_in_user <username>'."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/scripthandler.py:98
+msgid ""
+"Add the role (either admin or user) of the logged in user as script "
+"parameter like '--logged_in_role <role>'."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:100
+msgid "set a new realm of the token"
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:104
+msgid ""
+"The new realm will be the only realm of the token. I.e. all other realms "
+"will be removed from this token. Otherwise the realm will be added to the"
+" token."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:119
+msgid "Token type to create"
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:124
+msgid "Assign token to user in request or to tokenowner."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:129
+msgid "Set the realm of the newly created token."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:136
+msgid ""
+"Set the MOTP PIN of the MOTP token during enrollment. This is a required "
+"value for enrolling MOTP tokens."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:145
+msgid "The new description of the token."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:152
+msgid ""
+"The token will be valid starting at the given date. Can be a fixed date "
+"or an offset like +10m, +24h, +7d."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:159
+msgid ""
+"The token will be valid until the given date. Can be a fixed date or an "
+"offset like +10m, +24h, +7d."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:172
+msgid "Set the new count window of the token."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:181
+msgid "Set this tokeninfo key."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/tokenhandler.py:186
+msgid "Set the above key the this value."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:101
+msgid "Send notification email via this email server."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:107
+msgid "The subject of the mail that is sent."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:115
+msgid "The Reply-To header in the sent email."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:120
+msgid "The body of the mail that is sent."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:125
+#: privacyidea/lib/eventhandler/usernotification.py:168
+msgid "Send notification to this user."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:148
+msgid "Any email address, to which the notification should be sent."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:157
+msgid "Send the user notification via a predefined SMS gateway."
+msgstr ""
+
+#: privacyidea/lib/eventhandler/usernotification.py:164
+msgid "The text of the SMS."
+msgstr ""
+
+#: privacyidea/lib/machines/ldap.py:313
+#, python-format
+msgid "Your LDAP config seems to be OK, %i machine objects found."
+msgstr ""
+
+#: privacyidea/lib/resolvers/LDAPIdResolver.py:722
+#, python-format
+msgid ""
+"Your LDAP config found %i user objects, but only %i with the specified "
+"uidtype"
+msgstr ""
+
+#: privacyidea/lib/resolvers/LDAPIdResolver.py:724
+#, python-format
+msgid "Your LDAP config seems to be OK, %i user objects found."
+msgstr ""
+
+#: privacyidea/lib/tokens/emailtoken.py:134
+msgid "EMail Token"
+msgstr ""
+
+#: privacyidea/lib/tokens/emailtoken.py:136
+msgid "EMail: Send a One Time Password to the users email address."
+msgstr ""
+
+#: privacyidea/lib/tokens/emailtoken.py:144
+msgid ""
+"The text that will be send via EMail for an EMail token. Use <otp> and "
+"<serial> as parameters."
+msgstr ""
+
+#: privacyidea/lib/tokens/emailtoken.py:149
+msgid ""
+"The subject of the EMail for an EMail token. Use <otp> and <serial> as "
+"parameters."
+msgstr ""
+
+#: privacyidea/lib/tokens/emailtoken.py:154
+msgid ""
+"If set, a new EMail OTP will be sent after successful authentication with"
+" one EMail OTP."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:105
+msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:107
+msgid "Specify the otplen to be used. Can be 6 or 8 digits."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:110
+msgid "HOTP: Event based One Time Passwords."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:118
+msgid "The Yubikey access code used to initialize Yubikeys."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:131
+#: privacyidea/lib/tokens/totptoken.py:132
+msgid "Force the key to be generated on the server."
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:187
+msgid "URL for google Authenticator"
+msgstr ""
+
+#: privacyidea/lib/tokens/hotptoken.py:200
+msgid "URL for OATH token"
+msgstr ""
+
+#: privacyidea/lib/tokens/motptoken.py:139
+msgid "URL for MOTP token"
+msgstr ""
+
+#: privacyidea/lib/tokens/papertoken.py:108
+msgid "The number of OTP values, which are printed on the paper."
+msgstr ""
+
+#: privacyidea/lib/tokens/questionnairetoken.py:90
+msgid "Questionnaire: Enroll Questions for the user."
+msgstr ""
+
+#: privacyidea/lib/tokens/questionnairetoken.py:137
+#, python-format
+msgid "You need to provide at least %s answers."
+msgstr ""
+
+#: privacyidea/lib/tokens/smstoken.py:187
+msgid "SMS Token"
+msgstr ""
+
+#: privacyidea/lib/tokens/smstoken.py:189
+msgid "SMS: Send a One Time Password to the users mobile phone."
+msgstr ""
+
+#: privacyidea/lib/tokens/smstoken.py:198
+msgid ""
+"The text that will be send via SMS for an SMS token. Use <otp> and "
+"<serial> as parameters."
+msgstr ""
+
+#: privacyidea/lib/tokens/smstoken.py:203
+msgid ""
+"If set, a new SMS OTP will be sent after successful authentication with "
+"one SMS OTP."
+msgstr ""
+
+#: privacyidea/lib/tokens/sshkeytoken.py:84
+msgid "SSH Public Key: The public SSH key."
+msgstr ""
+
+#: privacyidea/lib/tokens/tiqrtoken.py:216
+msgid "URL for TiQR enrollment"
+msgstr ""
+
+#: privacyidea/lib/tokens/totptoken.py:112
+msgid "TOTP: Time based One Time Passwords."
+msgstr ""
+
+#: privacyidea/lib/tokens/u2ftoken.py:237
+msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
+msgstr ""
+
+#: privacyidea/lib/tokens/u2ftoken.py:301
+msgid "You need to define the appId in the token config!"
+msgstr ""
+

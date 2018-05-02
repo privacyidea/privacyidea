@@ -27,9 +27,9 @@ like RADIUS-Token or RADIUS-passthru policies.
 The code of this module is tested in tests/test_api_radiusserver.py
 """
 from flask import (Blueprint, request)
-from lib.utils import (getParam,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        required,
+                        send_result)
 from ..lib.log import log_with
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -65,12 +65,15 @@ def create(identifier=None):
     server = getParam(param, "server", required)
     port = int(getParam(param, "port", default=1812))
     secret = getParam(param, "secret", required)
+    retries = int(getParam(param, "retries", default=3))
+    timeout = int(getParam(param, "timeout", default=5))
     description = getParam(param, "description", default="")
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
 
     r = add_radius(identifier, server, secret, port=port,
-                   description=description, dictionary=dictionary)
+                   description=description, dictionary=dictionary,
+                   retries=retries, timeout=timeout)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -92,13 +95,17 @@ def list_radius():
                                              "port": server.config.port,
                                              "dictionary": server.config.dictionary,
                                              "description":
-                                                 server.config.description}
+                                                 server.config.description,
+                                             "timeout": server.config.timeout,
+                                             "retries": server.config.retries}
         else:
             # We do not pass any information to a normal user!
             res[server.config.identifier] = {"server": "",
                                              "port": "",
                                              "dictionary": "",
-                                             "description": ""}
+                                             "description": "",
+                                             "timeout": 0,
+                                             "retries": 0}
 
     g.audit_object.log({'success': True})
     return send_result(res)
@@ -106,7 +113,7 @@ def list_radius():
 
 @radiusserver_blueprint.route('/<identifier>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
     """
@@ -123,7 +130,7 @@ def delete_server(identifier=None):
 
 @radiusserver_blueprint.route('/test_request', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
+@prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def test():
     """
@@ -135,13 +142,16 @@ def test():
     server = getParam(param, "server", required)
     port = int(getParam(param, "port", default=1812))
     secret = getParam(param, "secret", required)
+    retries = int(getParam(param, "retries", default=3))
+    timeout = int(getParam(param, "timeout", default=5))
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
 
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=secret, dictionary=dictionary)
+                       secret=secret, dictionary=dictionary,
+                       retries=retries, timeout=timeout)
     r = RADIUSServer.request(s, user, password)
 
     g.audit_object.log({'success': r > 0,

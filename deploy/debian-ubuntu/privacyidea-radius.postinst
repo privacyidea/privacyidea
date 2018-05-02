@@ -20,7 +20,7 @@ HERE
 }
 
 set_not_thread_safe() {
-# The perl module is not thread safe.
+# The perl module is not thread safe for ubuntu 12.04
 # So we need to set the option -t
 cat > /etc/default/freeradius << HERE
 # Options for the FreeRADIUS daemon adapted by privacyidea-radius
@@ -44,7 +44,6 @@ case "$1" in
   configure)
 	set_perl
 	activate_site
-	set_not_thread_safe
 	set_user
 	service freeradius restart
   ;;

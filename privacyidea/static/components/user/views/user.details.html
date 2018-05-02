@@ -126,12 +126,12 @@
     </div>
 
     <div ng-show="checkRight('assign')">
-        <h3 translate>Assign a new token {{ newTokenObject.serial }}</h3>
+        <h3 translate>Assign a new token {{ newToken.serial }}</h3>
 
         <form name="formAssignToken" role="form" validate>
             <div assign-token new-token-object="newToken"></div>
             <div class="text-center">
-                <button ng-click="assignToken()"
+                <button type="button" ng-click="assignToken()"
                         id="assignButton"
                         ng-disabled="formAssignToken.$invalid"
                         class="btn btn-primary" translate>Assign Token

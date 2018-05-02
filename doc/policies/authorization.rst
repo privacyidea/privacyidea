@@ -64,6 +64,29 @@ this request
    to less secure areas also with a Google
    Authenticator.
 
+.. _policy_tokeninfo:
+
+tokeninfo
+~~~~~~~~~
+
+type: string
+
+Users will only be authorized if the tokeninfo field
+of the token matches this regular expression.
+
+This is checked after the authentication request, so that a valid
+OTP value can not be used anymore, even if authorization is forbidden.
+
+A valid action could look like
+
+   action = key/regexp/
+
+Example:
+
+   action = last_auth/^2018.*/
+
+This would mean the tokeninfo field needs to start with "2018".
+
 setrealm
 ~~~~~~~~
 
@@ -105,6 +128,8 @@ the authentication request failed.
 
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
+
+.. _policy_api_key:
 
 api_key_required
 ~~~~~~~~~~~~~~~~
@@ -185,3 +210,41 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 
 The date of the last successful authentication is store in the `tokeninfo`
 field of a token and denoted in UTC.
+
+u2f_req
+~~~~~~~
+
+type: string
+
+Only the specified U2F devices are authorized to authenticate.
+The administrator can specify the action like this:
+
+    u2f_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the U2F device the information
+from the attestation certificate is stored in the tokeninfo.
+Only if the regexp matches this value, the authentication with such U2F
+device is authorized.
+
+.. _policy_add_user_in_response:
+
+add_user_in_response
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+In case of a successful authentication additional user information is added
+to the response. A dictionary containing user information is added in
+``detail->user``.
+
+.. _policy_add_resolver_in_response:
+
+add_resolver_in_response
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+In case of a successful authentication the resolver and realm of the user are added
+to the response. The names are added in
+``detail->user-resolver`` and ``detail->user-realm``.

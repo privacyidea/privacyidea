@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.token methods.
 
@@ -14,27 +15,29 @@ getToken....
 """
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
+OTPKE2 = "31323334353637383930313233343536373839AA"
 
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 import datetime
+import hashlib
+import base64
+import binascii
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
                                    get_token_type, check_serial,
                                    get_num_tokens_in_realm,
                                    get_realms_of_token,
-                                   token_exist, token_has_owner,
-                                   get_token_owner, is_token_owner,
+                                   token_exist, get_token_owner, is_token_owner,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver,
                                    get_all_token_users, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
-                                   get_tokenserial_of_transaction,
                                    gen_serial, init_token, remove_token,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
@@ -52,10 +55,13 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, remove_token)
+                                   set_validity_period_start, remove_token, delete_tokeninfo,
+                                   import_token)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from dateutil.tz import tzlocal
 
 
 class TokenTestCase(MyTestCase):
@@ -200,10 +206,6 @@ class TokenTestCase(MyTestCase):
         self.assertFalse(token_exist(""))
 
     def test_08_token_owner(self):
-        # token_has_owner
-        self.assertTrue(token_has_owner("hotptoken"))
-        self.assertFalse(token_has_owner(self.serials[0]))
-
         # get_token_owner
         user = get_token_owner("hotptoken")
         self.assertTrue(user.login == "cornelius", user)
@@ -275,19 +277,6 @@ class TokenTestCase(MyTestCase):
                           get_tokens(), "287922")
         db_token.delete()
 
-    def test_13_challenges_transaction(self):
-        transaction_id = "some_id"
-        challenge = Challenge("hotptoken", transaction_id=transaction_id,
-                              challenge="You dont guess this")
-        challenge.save()
-
-        serial = get_tokenserial_of_transaction(transaction_id)
-        self.assertTrue(serial == "hotptoken", serial)
-
-        # Challenge does not exist
-        serial = get_tokenserial_of_transaction("other id")
-        self.assertTrue(serial is None, serial)
-
     def test_14_gen_serial(self):
         serial = gen_serial(tokentype="hotp")
         # check the beginning of the serial
@@ -300,6 +289,12 @@ class TokenTestCase(MyTestCase):
         serial = gen_serial()
         # check the beginning of the serial
         self.assertTrue("PIUN0000" in serial, serial)
+
+        set_privacyidea_config("SerialLength", 12)
+        serial = gen_serial(tokentype="hotp")
+        self.assertTrue("OATH0001" in serial, serial)
+        self.assertEqual(len(serial), len("OATH") + 12)
+        set_privacyidea_config("SerialLength", 8)
 
     def test_15_init_token(self):
         count = get_tokens(count=True)
@@ -533,13 +528,26 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(tinfo.get("count_auth_success") == "102", tinfo)
         self.assertTrue(tinfo.get("count_auth_success_max") == "103", tinfo)
 
-    def test_25_add_tokeninfo(self):
+    def test_25_add_delete_tokeninfo(self):
         serial = "t1"
         tokenobject = init_token({"serial": serial, "genkey": 1})
         r = add_tokeninfo(serial, "something", "new")
         self.assertTrue(r == 1, r)
-        tinfo = tokenobject.token.get_info()
-        self.assertTrue(tinfo.get("something") == "new", tinfo)
+        tinfo1 = tokenobject.token.get_info()
+        self.assertTrue(tinfo1.get("something") == "new", tinfo1)
+        # delete existing tokeninfo entry
+        r = delete_tokeninfo(serial, "something")
+        self.assertEqual(r, 1)
+        tinfo2 = tokenobject.token.get_info()
+        self.assertNotIn("something", tinfo2)
+        # delete non-existing tokeninfo entry
+        r = delete_tokeninfo(serial, "somethingelse")
+        self.assertEqual(r, 1) # this still returns 1, because 1 token was matched!
+        # tokeninfo has not changed
+        self.assertEqual(tokenobject.token.get_info(), tinfo2)
+        # try to delete non-existing tokeninfo
+        r = delete_tokeninfo('UNKNOWN-SERIAL', 'something')
+        self.assertEqual(r, 0)
         remove_token(serial)
 
     def test_26_set_sync_window(self):
@@ -645,7 +653,10 @@ class TokenTestCase(MyTestCase):
 
         # call the losttoken
         self.assertRaises(TokenAdminError, lost_token, "doesnotexist")
+        validity = 10
         r = lost_token(serial1)
+        end_date = (datetime.datetime.now(tzlocal())
+                    + datetime.timedelta(days=validity)).strftime(DATE_FORMAT)
         """
         r = {'end_date': '16/12/14 23:59',
              'pin': True, 'valid_to': 'xxxx', 'init': True, 'disable': 1,
@@ -656,6 +667,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r.get("init") == True, r)
         self.assertTrue(r.get("user") == True, r)
         self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
+        self.assertTrue(r.get("end_date") == end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
@@ -786,6 +798,23 @@ class TokenTestCase(MyTestCase):
         # 8: '447589', 9: '903435', 10: '578337', 11: '328281',
         # 12: '191635', 13: '184416', 14: '574561', 15: '797908'
 
+    def test_36b_check_nonascii_pin(self):
+        user = User("cornelius", self.realm1)
+        serial = "nonasciipin"
+        token = init_token({"type": "hotp",
+                            "otpkey": self.otpkey,
+                            "pin": u"ünicøde",
+                            "serial": serial}, user)
+        r = check_user_pass(user, u"µröng287082")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp pin')
+        r = check_user_pass(user, u"ünicøde287082")
+        self.assertEqual(r[0], True)
+        r = check_user_pass(user, u"ünicøde666666")
+        self.assertEqual(r[0], False)
+        self.assertEqual(r[1]['message'], 'wrong otp value')
+        remove_token(serial)
+
     def test_37_challenge(self):
         # We create a challenge by first sending the PIN of the HOTP token
         # then we answer the challenge by sending the OTP.
@@ -808,25 +837,6 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(reply.get("message") == "Found matching challenge",
                         reply)
 
-        # create two tokens with the same OTP Key and the same PIN, so
-        # this token will create the same challenge
-        # creating a challenge will not work!
-        tokenobject = init_token({"serial": "CHALL001", "type": "hotp",
-                                  "otpkey": self.otpkey})
-        tokenobject = init_token({"serial": "CHALL002", "type": "hotp",
-                                  "otpkey": self.otpkey})
-        user = User("cornelius", realm=self.realm1)
-        assign_token("CHALL001", user)
-        assign_token("CHALL002", user)
-        set_pin("CHALL001", "challpin")
-        set_pin("CHALL002", "challpin")
-        r, reply = check_user_pass(user, "challpin")
-        self.assertFalse(r)
-        self.assertTrue("Multiple tokens to create a challenge found"
-                        in reply.get("message"), reply)
-        remove_token("CHALL001")
-        remove_token("CHALL002")
-
     def test_40_dynamic_policies(self):
         p = get_dynamic_policy_definitions()
         self.assertTrue("user" in p, p)
@@ -836,6 +846,11 @@ class TokenTestCase(MyTestCase):
         self.assertTrue("enrollTOTP" in p, p)
         self.assertTrue("enrollHOTP" in p, p)
         self.assertTrue("enrollPW" in p, p)
+
+        # The SPASS token can have his own PIN policy
+        self.assertTrue("spass_otp_pin_contents" in p, p)
+        self.assertTrue("spass_otp_pin_maxlength" in p, p)
+        self.assertTrue("spass_otp_pin_minlength" in p, p)
 
     def test_41_get_tokens_paginate(self):
         # create some tokens
@@ -973,15 +988,15 @@ class TokenTestCase(MyTestCase):
                     "pin": "Hallo"})
         tokenobj = get_tokens(serial=serial)[0]
 
-        r = set_validity_period_start(serial, None, "22/05/15 20:21")
+        r = set_validity_period_start(serial, None, "2015-05-22T20:21+0200")
         self.assertEqual(r, 1)
-        r = set_validity_period_end(serial, None, "28/05/15 20:22")
+        r = set_validity_period_end(serial, None, "2015-05-28T20:22+0200")
         self.assertEqual(r, 1)
 
         vp = tokenobj.get_validity_period_start()
-        self.assertEqual(vp, "22/05/15 20:21")
+        self.assertEqual(vp, "2015-05-22T20:21+0200")
         vp = tokenobj.get_validity_period_end()
-        self.assertEqual(vp, "28/05/15 20:22")
+        self.assertEqual(vp, "2015-05-28T20:22+0200")
 
     def test_45_check_realm_pass(self):
         # create a bunch of tokens in the realm
@@ -1043,13 +1058,13 @@ class TokenTestCase(MyTestCase):
     def test_46_init_with_validity_period(self):
         token = init_token({"type": "hotp",
                             "genkey": 1,
-                            "validity_period_start": "22/05/14 22:00",
-                            "validity_period_end": "23/10/14 23:00"})
+                            "validity_period_start": "2014-05-22T22:00+0200",
+                            "validity_period_end": "2014-10-23T23:00+0200"})
         self.assertEqual(token.type, "hotp")
         start = token.get_tokeninfo("validity_period_start")
         end = token.get_tokeninfo("validity_period_end")
-        self.assertEqual(start, "22/05/14 22:00")
-        self.assertEqual(end, "23/10/14 23:00")
+        self.assertEqual(start, "2014-05-22T22:00+0200")
+        self.assertEqual(end, "2014-10-23T23:00+0200")
 
     def test_47_use_yubikey_and_hotp(self):
         # fix problem https://github.com/privacyidea/privacyidea/issues/279
@@ -1089,6 +1104,228 @@ class TokenTestCase(MyTestCase):
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test48")
+
+    def test_49_challenge_request_multiple_tokens(self):
+        # Test the challenges for multiple active tokens
+        user = User("cornelius", self.realm1)
+        pin = "test49"
+        token_a = init_token({"serial": "CR2A",
+                              "type": "hotp",
+                              "otpkey": OTPKE2,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+        r, r_dict = check_token_list([token_a, token_b], pin, user)
+        multi_challenge = r_dict.get("multi_challenge")
+        transaction_id = r_dict.get("transaction_id")
+        self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
+        self.assertEqual(transaction_id,
+                         multi_challenge[0].get("transaction_id"))
+        self.assertEqual(transaction_id,
+                         multi_challenge[1].get("transaction_id"))
+        self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
+
+        # There are two challenges in the database
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                   transaction_id).all()
+        self.assertEqual(len(r), 2)
+
+        # Check the second response to the challenge, the second step in
+        # challenge response:
+        r, r_dict = check_token_list([token_a, token_b], "287082", user,
+                                     options={"transaction_id": transaction_id})
+        # The response is successfull
+        self.assertTrue(r)
+        # The matching token was CR2B
+        self.assertEqual(r_dict.get("serial"), "CR2B")
+        # All challenges of the transaction_id have been deleted on
+        # successful authentication
+        r = Challenge.query.filter(Challenge.transaction_id ==
+                                transaction_id).all()
+        self.assertEqual(len(r), 0)
+
+        remove_token("CR2A")
+        remove_token("CR2B")
+        delete_policy("test49")
+
+    def test_50_otpkeyformat(self):
+        otpkey = "\x01\x02\x03\x04\x05\x06\x07\x08\x0A"
+        checksum = hashlib.sha1(otpkey).digest()[:4]
+        # base32check(otpkey) = 'FIQVUTQBAIBQIBIGA4EAU==='
+        # hex encoding
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": binascii.hexlify(otpkey),
+                                  "otpkeyformat": "hex"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW001")
+        # unknown encoding
+        self.assertRaisesRegexp(ParameterError,
+                                "Unknown OTP key format",
+                                init_token,
+                                {"serial": "NEW001",
+                                 "type": "hotp",
+                                 "otpkey": binascii.hexlify(otpkey),
+                                 "otpkeyformat": "foobar"},
+                                user=User(login="cornelius",
+                                          realm=self.realm1))
+        remove_token("NEW001")
+        # successful base32check encoding
+        base32check_encoding = base64.b32encode(checksum + otpkey).strip("=")
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW002")
+
+        # successful base32check encoding, but lower case
+        base32check_encoding = base64.b32encode(checksum + otpkey).strip("=")
+        base32check_encoding = base32check_encoding.lower()
+        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW002")
+
+        # base32check encoding with padding
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        tokenobject = init_token({"serial": "NEW003", "type": "hotp",
+                                  "otpkey": base32check_encoding,
+                                  "otpkeyformat": "base32check"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        self.assertTrue(tokenobject.token.tokentype == "hotp",
+                        tokenobject.token)
+        self.assertEqual(tokenobject.token.get_otpkey().getKey(),
+                         binascii.hexlify(otpkey))
+        remove_token("NEW003")
+        # invalid base32check encoding (incorrect checksum due to typo)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = "A" + base32check_encoding[1:]
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW004", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW004") # TODO: Token is created anyway?
+        # invalid base32check encoding (missing four characters => incorrect checksum)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = base32check_encoding[:-4]
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW005", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW005") # TODO: Token is created anyway?
+        # invalid base32check encoding (too many =)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = base32check_encoding + "==="
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW006") # TODO: Token is created anyway?
+        # invalid base32check encoding (wrong characters)
+        base32check_encoding = base64.b32encode(checksum + otpkey)
+        base32check_encoding = "1" + base32check_encoding[1:]
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
+        remove_token("NEW006") # TODO: Token is created anyway?
+
+    def test_51_tokenkind(self):
+        # A normal token will be of kind "software"
+        tok = init_token({"type": "totp", "otpkey": self.otpkey})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.SOFTWARE)
+        tok.delete_token()
+
+        # A token, that is imported, will be of kind "hardware"
+        tok = init_token({"type": "totp", "otpkey": self.otpkey},
+                         tokenkind=TOKENKIND.HARDWARE)
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # A yubikey initialized as HOTP is hardware
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey,
+                          "serial": "UBOM111111"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # A yubikey and yubicloud tokentype is hardware
+        tok = init_token({"type": "yubikey", "otpkey": self.otpkey})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        tok = init_token({"type": "yubico",
+                          "yubico.tokenid": "123456789012"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        tok.delete_token()
+
+        # 4eyes, radius and remote are virtual tokens
+        tok = init_token({"type": "radius", "radius.identifier": "1",
+                          "radius.user": "hans"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
+
+        tok = init_token({"type": "remote", "remote.server": "1",
+                          "radius.user": "hans"})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
+
+        tok = init_token({"type": "4eyes", "4eyes": "realm1",
+                          "separator": ","})
+        kind = tok.get_tokeninfo("tokenkind")
+        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        tok.delete_token()
+
+    def test_52_import_token(self):
+        tok = import_token("IMP001",
+                           {"type": "totp",
+                            "timeShift": "-122",
+                            "timeStep": "30",
+                            "otpkey": self.otpkey,
+                            "counter": "121212"})
+        self.assertEqual(tok.get_tokeninfo("timeShift"), "-122")
+        self.assertEqual(tok.get_tokeninfo("timeStep"), "30")
+        self.assertEqual(tok.get_otp_count(), 121212)
+        remove_token("IMP001")
 
 
 class TokenFailCounterTestCase(MyTestCase):

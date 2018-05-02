@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-#
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add condition for detail->error->message
+#  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add possibility to compare tokeninfo field against fixed time
+#             and also {now} with offset.
 #  2016-05-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writup
 #
@@ -27,15 +31,21 @@ The event handler module is bound to an event together with
 * an action
 * optional options ;-)
 """
-from gettext import gettext as _
+from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, UserError
+from privacyidea.lib.utils import (compare_condition, compare_value_value,
+                                   parse_time_offset_from_now, is_true)
+import datetime
+from dateutil.tz import tzlocal
 import re
 import json
 import logging
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 log = logging.getLogger(__name__)
 
@@ -46,9 +56,19 @@ class CONDITION(object):
     """
     TOKEN_HAS_OWNER = "token_has_owner"
     TOKEN_IS_ORPHANED = "token_is_orphaned"
+    TOKEN_VALIDITY_PERIOD = "token_validity_period"
     USER_TOKEN_NUMBER = "user_token_number"
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
+    LAST_AUTH = "last_auth"
+    COUNT_AUTH = "count_auth"
+    COUNT_AUTH_SUCCESS = "count_auth_success"
+    COUNT_AUTH_FAIL = "count_auth_fail"
+    TOKENINFO = "tokeninfo"
+    DETAIL_ERROR_MESSAGE = "detail_error_message"
+    DETAIL_MESSAGE = "detail_message"
+    RESULT_VALUE = "result_value"
+    RESULT_STATUS = "result_status"
 
 
 class BaseEventHandler(object):
@@ -111,9 +131,15 @@ class BaseEventHandler(object):
                 "desc": _("The logged in user is of the following type."),
                 "value": (ROLE.ADMIN, ROLE.USER)
             },
-            "result_value": {
+            CONDITION.RESULT_VALUE: {
                 "type": "str",
                 "desc": _("The result.value within the response is "
+                          "True or False."),
+                "value": ("True", "False")
+            },
+            CONDITION.RESULT_STATUS: {
+                "type": "str",
+                "desc": _("The result.status within the response is "
                           "True or False."),
                 "value": ("True", "False")
             },
@@ -134,6 +160,11 @@ class BaseEventHandler(object):
                           "not exist in the userstore anymore."),
                 "value": ("True", "False")
             },
+            CONDITION.TOKEN_VALIDITY_PERIOD: {
+                "type": "str",
+                "desc": _("Check if the token is within its validity period."),
+                "value": ("True", "False")
+            },
             "serial": {
                 "type": "regexp",
                 "desc": _("Action is triggered, if the serial matches this "
@@ -148,6 +179,50 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
                           "equals this setting.")
+            },
+            CONDITION.LAST_AUTH: {
+                "type": "str",
+                "desc": _("Action is triggered, if the last authentication of "
+                          "the token is older than 7h, 10d or 1y.")
+            },
+            CONDITION.COUNT_AUTH: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the tokeninfo field 'count_auth' is "
+                          "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.COUNT_AUTH_SUCCESS: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the tokeninfo field "
+                          "'count_auth_success' is "
+                          "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.COUNT_AUTH_FAIL: {
+                "type": "str",
+                "desc": _("This can be '>100', '<99', or '=100', to trigger "
+                          "the action, if the difference between the tokeninfo "
+                          "field 'count_auth' and 'count_auth_success is "
+                          "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.TOKENINFO: {
+                "type": "str",
+                "desc": _("This condition can check any arbitrary tokeninfo "
+                          "field. You need to enter something like "
+                          "'<fieldname> == <fieldvalue>', '<fieldname> > "
+                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
+            },
+            CONDITION.DETAIL_ERROR_MESSAGE: {
+                "type": "str",
+                "desc": _("Here you can enter a regular expression. The "
+                          "condition only applies if the regular expression "
+                          "matches the detail->error->message in the response.")
+            },
+            CONDITION.DETAIL_MESSAGE: {
+                "type": "str",
+                "desc": _("Here you can enter a regular expression. The "
+                          "condition only applies if the regular expression "
+                          "matches the detail->message in the response.")
             }
         }
         return cond
@@ -180,6 +255,14 @@ class BaseEventHandler(object):
                 log.info("Could not determine tokenowner for {0!s}. Maybe the "
                          "user does not exist anymore.".format(serial))
                 log.debug(exx)
+        # We now check, if the user exists at all!
+        try:
+            ui = user.info
+        except UserError as exx:
+            if exx.id == 905:
+                user = User()
+            else:
+                raise exx
         return user
 
     def check_condition(self, options):
@@ -188,7 +271,6 @@ class BaseEventHandler(object):
         The the conditions are met, we return "True"
         :return: True
         """
-        res = True
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
@@ -210,23 +292,20 @@ class BaseEventHandler(object):
         if serial:
             # We have determined the serial number from the request.
             token_obj_list = get_tokens(serial=serial)
-            if token_obj_list:
-                token_obj = token_obj_list[0]
-                tokenrealms = token_obj.get_realms()
-                tokentype = token_obj.get_tokentype()
         else:
             # We have to determine the token via the user object. But only if
             #  the user has only one token
             token_obj_list = get_tokens(user=user)
-            if len(token_obj_list) == 1:
-                token_obj = token_obj_list[0]
-                tokenrealms = token_obj.get_realms()
-                tokentype = token_obj.get_tokentype()
+        if len(token_obj_list) == 1:
+            token_obj = token_obj_list[0]
+            tokenrealms = token_obj.get_realms()
+            tokentype = token_obj.get_tokentype()
 
         if "realm" in conditions:
-            res = user.realm == conditions.get("realm")
+            if user.realm != conditions.get("realm"):
+                return False
 
-        if "logged_in_user" in conditions and res:
+        if "logged_in_user" in conditions:
             # Determine the role of the user
             try:
                 logged_in_user = g.logged_in_user
@@ -234,77 +313,166 @@ class BaseEventHandler(object):
             except Exception:
                 # A non-logged-in-user is a User, not an admin
                 user_role = ROLE.USER
-            res = user_role == conditions.get("logged_in_user")
+            if user_role != conditions.get("logged_in_user"):
+                return False
 
-        # Check result_value only if the check condition is still True
-        if "result_value" in conditions and res:
-            condition_value = conditions.get("result_value")
+        if CONDITION.RESULT_VALUE in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_VALUE)
             result_value = content.get("result", {}).get("value")
-            res = condition_value == str(result_value)
+            if is_true(condition_value) != is_true(result_value):
+                return False
+
+        if CONDITION.RESULT_STATUS in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_STATUS)
+            result_status = content.get("result", {}).get("status")
+            if is_true(condition_value) != is_true(result_status):
+                return False
 
         # checking of max-failcounter state of the token
-        if "token_locked" in conditions and res:
+        if "token_locked" in conditions:
             if token_obj:
                 locked = token_obj.get_failcount() >= \
                          token_obj.get_max_failcount()
-                res = (conditions.get("token_locked") in ["True", True]) == \
-                      locked
+                if (conditions.get("token_locked") in ["True", True]) != \
+                      locked:
+                    return False
             else:
                 # check all tokens of the user, if any token is maxfail
                 token_objects = get_tokens(user=user, maxfail=True)
                 if not ','.join([tok.get_serial() for tok in token_objects]):
-                    res = False
+                    return False
 
-        if "tokenrealm" in conditions and res and tokenrealms:
+        if "tokenrealm" in conditions and tokenrealms:
             res = False
             for trealm in tokenrealms:
                 if trealm in conditions.get("tokenrealm").split(","):
                     res = True
                     break
+            if not res:
+                return False
 
-        if CONDITION.TOKENTYPE in conditions and res and tokentype:
-            res = False
-            if tokentype in conditions.get(CONDITION.TOKENTYPE).split(","):
-                res = True
-
-        if "serial" in conditions and res and serial:
+        if "serial" in conditions and serial:
             serial_match = conditions.get("serial")
-            res = bool(re.match(serial_match, serial))
+            if not bool(re.match(serial_match, serial)):
+                return False
 
-        if CONDITION.TOKEN_HAS_OWNER in conditions and res and token_obj:
-            uid = token_obj.get_user_id()
-            check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
-            if uid and check in ["True", True]:
-                res = True
-            elif not uid and check in ["False", False]:
-                res = True
-            else:
-                log.debug("Condition token_has_owner for token {0!r} "
-                          "not fulfilled.".format(token_obj))
-                res = False
-
-        if CONDITION.TOKEN_IS_ORPHANED in conditions and res and token_obj:
-            uid = token_obj.get_user_id()
-            orphaned = uid and not user
-            check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
-            if orphaned and check in ["True", True]:
-                res = True
-            elif not orphaned and check in ["False", False]:
-                res = True
-            else:
-                log.debug("Condition token_is_orphaned for token {0!r} not "
-                          "fulfilled.".format(token_obj))
-                res = False
-
-        if CONDITION.USER_TOKEN_NUMBER in conditions and res and user:
+        if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
-            res = num_tokens == int(conditions.get(CONDITION.USER_TOKEN_NUMBER))
+            if num_tokens != int(conditions.get(
+                    CONDITION.USER_TOKEN_NUMBER)):
+                return False
 
-        if CONDITION.OTP_COUNTER in conditions and res and token_obj:
-            res = token_obj.token.count == \
-                  int(conditions.get(CONDITION.OTP_COUNTER))
+        if CONDITION.DETAIL_ERROR_MESSAGE in conditions:
+            message = content.get("detail", {}).get("error", {}).get("message")
+            search_exp = conditions.get(CONDITION.DETAIL_ERROR_MESSAGE)
+            m = re.search(search_exp, message)
+            if not bool(m):
+                return False
 
-        return res
+        if CONDITION.DETAIL_MESSAGE in conditions:
+            message = content.get("detail", {}).get("message")
+            search_exp = conditions.get(CONDITION.DETAIL_MESSAGE)
+            m = re.search(search_exp, message)
+            if not bool(m):
+                return False
+
+        # Token specific conditions
+        if token_obj:
+            if CONDITION.TOKENTYPE in conditions:
+                if tokentype not in conditions.get(CONDITION.TOKENTYPE).split(
+                        ","):
+                    return False
+
+            if CONDITION.TOKEN_HAS_OWNER in conditions:
+                uid = token_obj.get_user_id()
+                check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
+                if uid and check in ["True", True]:
+                    res = True
+                elif not uid and check in ["False", False]:
+                    res = True
+                else:
+                    log.debug("Condition token_has_owner for token {0!r} "
+                              "not fulfilled.".format(token_obj))
+                    return False
+
+            if CONDITION.TOKEN_IS_ORPHANED in conditions:
+                uid = token_obj.get_user_id()
+                orphaned = uid and not user
+                check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
+                if orphaned and check in ["True", True]:
+                    res = True
+                elif not orphaned and check in ["False", False]:
+                    res = True
+                else:
+                    log.debug("Condition token_is_orphaned for token {0!r} not "
+                              "fulfilled.".format(token_obj))
+                    return False
+
+            if CONDITION.TOKEN_VALIDITY_PERIOD in conditions:
+                valid = token_obj.check_validity_period()
+                if (conditions.get(CONDITION.TOKEN_VALIDITY_PERIOD)
+                       in ["True", True]) != valid:
+                    return False
+
+            if CONDITION.OTP_COUNTER in conditions:
+                if token_obj.token.count != \
+                      int(conditions.get(CONDITION.OTP_COUNTER)):
+                    return False
+
+            if CONDITION.LAST_AUTH in conditions:
+                if token_obj.check_last_auth_newer(conditions.get(
+                    CONDITION.LAST_AUTH)):
+                    return False
+
+            if CONDITION.COUNT_AUTH in conditions:
+                count = token_obj.get_count_auth()
+                cond = conditions.get(CONDITION.COUNT_AUTH)
+                if not compare_condition(cond, count):
+                    return False
+
+            if CONDITION.COUNT_AUTH_SUCCESS in conditions:
+                count = token_obj.get_count_auth_success()
+                cond = conditions.get(CONDITION.COUNT_AUTH_SUCCESS)
+                if not compare_condition(cond, count):
+                    return False
+
+            if CONDITION.COUNT_AUTH_FAIL in conditions:
+                count = token_obj.get_count_auth()
+                c_success = token_obj.get_count_auth_success()
+                c_fail = count - c_success
+                cond = conditions.get(CONDITION.COUNT_AUTH_FAIL)
+                if not compare_condition(cond, c_fail):
+                    return False
+
+            if CONDITION.TOKENINFO in conditions:
+                cond = conditions.get(CONDITION.TOKENINFO)
+                # replace {now} in condition
+                cond, td = parse_time_offset_from_now(cond)
+                s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
+                    DATE_FORMAT)
+                cond = cond.format(now=s_now)
+                if len(cond.split("==")) == 2:
+                    key, value = [x.strip() for x in cond.split("==")]
+                    if not compare_value_value(token_obj.get_tokeninfo(key),
+                                              "==", value):
+                        return False
+                elif len(cond.split(">")) == 2:
+                    key, value = [x.strip() for x in cond.split(">")]
+                    if not compare_value_value(token_obj.get_tokeninfo(key),
+                                              ">", value):
+                        return False
+                elif len(cond.split("<")) == 2:
+                    key, value = [x.strip() for x in cond.split("<")]
+                    if not compare_value_value(token_obj.get_tokeninfo(key),
+                                              "<", value):
+                        return False
+                else:
+                    # There is a condition, but we do not know it!
+                    log.warning("Misconfiguration in your tokeninfo "
+                                "condition: {0!s}".format(cond))
+                    return False
+
+        return True
 
     def do(self, action, options=None):
         """

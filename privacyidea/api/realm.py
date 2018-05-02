@@ -43,9 +43,9 @@ The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
                    request, current_app)
-from lib.utils import (getParam,
-                       required,
-                       send_result, get_priority_from_param)
+from .lib.utils import (getParam,
+                        required,
+                        send_result, get_priority_from_param)
 from ..lib.log import log_with
 from ..lib.realm import get_realms
 
@@ -58,7 +58,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
-from gettext import gettext as _
+from flask_babel import gettext as _
 import logging
 
 log = logging.getLogger(__name__)

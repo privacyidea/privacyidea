@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2017-01-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2017, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+__doc__ = """
+This script searches tokens that have not been used for a while.
+To do so, it checks for the tokeninfo field "last_auth".
+If the last authentication is to old, the script can delete, disable or mark
+these tokens.
+
+You can call the script like this:
+
+    privacyidea-get-unused-tokens list 10h|7d|2y
+    privacyidea-get-unused-tokens disable 10h|7d|2y
+    privacyidea-get-unused-tokens delete 10h|7d|2y
+    privacyidea-get-unused-tokens mark 10h|7d|2y --description="new
+    value"
+
+"""
+__version__ = "0.1"
+
+from privacyidea.lib.token import get_tokens, remove_token, enable_token
+from privacyidea.lib.policy import ACTION
+from privacyidea.app import create_app
+from flask.ext.script import Manager
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app)
+
+def _get_tokenlist(age):
+    tlist = []
+    tokenobj_list = get_tokens()
+    for token_obj in tokenobj_list:
+        if not token_obj.check_last_auth_newer(age):
+            tlist.append(token_obj)
+    return tlist
+
+
+@manager.option('age', help='Can be something like 10h, 7d, or 2y')
+def list(age):
+    """
+    finds all tokens, where the last_auth is too old.
+    """
+    # Oh bad performance, we have to look at *ALL* tokens!
+    tlist = _get_tokenlist(age)
+    print("Token serial\tLast authentication")
+    print("="*42)
+    for token_obj in tlist:
+        print("{0!s}\t{1!s}".format(token_obj.token.serial,
+                                    token_obj.get_tokeninfo(ACTION.LASTAUTH)))
+
+
+@manager.option('age', help='Can be something like 10h, 7d, or 2y')
+@manager.option('-d', '--description', help='The description that will be set.')
+@manager.option('-t', '--tokeninfo',
+                help='The tokeninfo that will be set. It needs a key and a '
+                     'value and should be specified like key=value.')
+def mark(age, description=None, tokeninfo=None):
+    """
+    Find unused tokens and mark them either by setting the description or by
+    setting a tokeninfo.
+
+    Tokeninfo parameter needs to be provided like key=value.
+    """
+    tlist = _get_tokenlist(age)
+    for token_obj in tlist:
+        if description:
+            print("Setting description for token {0!s}: {1!s}".format(
+                token_obj.token.serial, description))
+            token_obj.set_description(description)
+            token_obj.save()
+        if tokeninfo:
+            key, value = tokeninfo.split("=")
+            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                token_obj.token.serial, key, value))
+            token_obj.add_tokeninfo(key, value)
+            token_obj.save()
+
+
+@manager.option('age', help='Can be something like 10h, 7d, or 2y')
+def delete(age):
+    """
+    Find unused tokens and delete them.
+    """
+    tlist = _get_tokenlist(age)
+    for token_obj in tlist:
+        serial = token_obj.token.serial
+        remove_token(serial)
+        print("Token {0!s} deleted.".format(serial))
+
+
+@manager.option('age', help='Can be something like 10h, 7d, or 2y')
+def disable(age):
+    """
+    Find unused tokens and delete them.
+    """
+    tlist = _get_tokenlist(age)
+    for token_obj in tlist:
+        serial = token_obj.token.serial
+        enable_token(serial, enable=False)
+        print("Token {0!s} disabled.".format(serial))
+
+
+if __name__ == '__main__':
+    manager.run()
+

@@ -35,13 +35,31 @@ but with the option ``--filename`` to write to token configuration into the
 specified file.  The resulting file can then be imported into privacyidea:
 Select Tokens -> Import Tokens, select "OATH CSV" and the file you just created.
 
-Third and last you can use this dialog to enroll a Yubikey AES mode token, if you have
+Using the yubikey personalization GUI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Third and last you can use the privacyIDEA Web UI to enroll a
+Yubikey AES mode token, if you have
 initialized the yubikey with the external *ykpersonalize* tool.
+
+.. figure:: images/yk-personalization-gui.png
+   :width: 500
+
+   *Use the yubikey-personalization-gui to initialize the yubikey*
+
+When using the yubikey personalization GUI you need to copy the value of
+"Secret Key (16 bytes Hex)". This is the secret OTP key, which you need to
+copy and paste in the field "OTP Key" in the privacyIDEA Web UI. (Remove
+possible white spaces!)
 
 .. figure:: images/enroll_yubikey.png
    :width: 500
 
    *Enroll a Yubikey AES mode token*
+
+In the field "Test Yubikey" push the Yubikey button. This will grab the
+yubikey's public identifier and also determine the lenght of the *otp value*.
+The field *OTP value* is automatically filled.
 
 Redirect api url to privacyideas /ttype/yubikey
 ...............................................

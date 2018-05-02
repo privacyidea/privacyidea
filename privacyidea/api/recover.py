@@ -26,8 +26,8 @@ user managed in privacyIDEA.
 The methods are also tested in the file tests/test_api_register.py
 """
 from flask import (Blueprint, request, g, current_app)
-from lib.utils import send_result, getParam
-from lib.utils import required
+from .lib.utils import send_result, getParam
+from .lib.utils import required
 from privacyidea.lib.user import get_user_from_param
 import logging
 from privacyidea.lib.passwordreset import (create_recoverycode,
@@ -60,7 +60,7 @@ def get_recover_code():
     email = getParam(param, "email", required)
     r = create_recoverycode(user_obj, email, base_url=request.base_url)
     g.audit_object.log({"success": r,
-                        "info": "{0!s}".format(user_obj)})
+                        "info": u"{0!s}".format(user_obj)})
     return send_result(r)
 
 
@@ -85,5 +85,5 @@ def reset_password():
         # set password
         r = user_obj.update_user_info({"password": password})
         g.audit_object.log({"success": r,
-                            "info": "{0!s}".format(user_obj)})
+                            "info": u"{0!s}".format(user_obj)})
     return send_result(r)

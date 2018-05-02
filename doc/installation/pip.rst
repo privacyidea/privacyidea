@@ -31,6 +31,7 @@ Now you can install privacyIDEA like this::
 Now you are within the python virtual environment.
 Within the environment you can now run::
 
+  pip install --upgrade setuptools
   pip install privacyidea
 
 .. _configuration:
@@ -46,7 +47,7 @@ Then create the encryption key and the signing keys::
 Create the database and the first administrator::
 
    pi-manage createdb
-   pi-manage admin add admin admin@localhost
+   pi-manage admin add admin -e admin@localhost
 
 Now you can run the server for your first test::
 

@@ -71,7 +71,7 @@ class PinHandler(object):
         :rtype: bool
         """
         # The most simple way of handling a random PIN! ;-)
-        log.info("handling pin {0!s} for token {1!s} of user {2!s}".format(pin, serial,
+        log.info("handling pin {0!r} for token {1!s} of user {2!r}".format(pin, serial,
                                                               user))
-        log.info("The token was enrolled by {0!s}@{1!s}".format(logged_in_user.get("username"), logged_in_user.get("realm")))
+        log.info("The token was enrolled by {0!r}@{1!s}".format(logged_in_user.get("username"), logged_in_user.get("realm")))
         return True

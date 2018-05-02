@@ -4,6 +4,7 @@ This test file tests the api.lib.policy.py
 The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
+
 from .base import (MyTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -21,8 +22,10 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age,
-                                           papertoken_count)
+                                           papertoken_count, allowed_audit_realm,
+                                           u2ftoken_verify_cert)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            check_tokeninfo,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
@@ -41,7 +44,10 @@ from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
 import jwt
+import passlib
 from datetime import datetime, timedelta
+from dateutil.tz import tzlocal
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -623,6 +629,128 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
 
+    def test_09_pin_policies_admin(self):
+        g.logged_in_user = {"username": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines PIN policy
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
+                                                 ACTION.OTPPINMINLEN, "4",
+                                                 ACTION.OTPPINCONTENTS, "cn"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home"}
+        # The minimum OTP length is 4
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "12345566890012"}
+        # Fail maximum OTP length
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "123456"}
+        # Good OTP length, but missing character A-Z
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {
+                        "user": "cornelius",
+                        "realm": "home",
+                        "pin": "abc123"}
+        # Good length and good contents
+        self.assertTrue(check_otp_pin(req))
+
+        # A token that does not use pins is ignored.
+        init_token({"type": "certificate",
+                    "serial": "certificate"})
+        req.all_data = {"serial": "certificate",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
+        self.assertTrue(check_otp_pin(req))
+
+        init_token({"type": "sshkey",
+                    "serial": "sshkey",
+                    "sshkey": SSHKEY})
+        req.all_data = {"serial": "sshkey",
+                        "realm": "somerealm",
+                        "user": "cornelius",
+                        "pin": ""}
+        self.assertTrue(check_otp_pin(req))
+
+        # finally delete policy
+        delete_policy("pol1")
+
+    def test_01b_token_specific_pin_policy(self):
+        g.logged_in_user = {"username": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy that defines a default PIN policy
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       ACTION.OTPPINMAXLEN, "10",
+                       ACTION.OTPPINMINLEN, "4",
+                       ACTION.OTPPINCONTENTS, "cn"),
+                   realm="home")
+
+        # Set a policy that defines a SPASS PIN policy
+        set_policy(name="pol2",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       "spass_otp_pin_maxlength", "11",
+                       "spass_otp_pin_minlength", "8",
+                       "spass_otp_pin_contents", "n"),
+                   realm="home")
+        g.policy_object = PolicyClass()
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "pin": "123456",
+                        "type": "spass"}
+        # The minimum OTP length is 8
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "spass",
+                        "pin": "12345678901"}
+        # The maximum PIN length of 11 is ok.
+        r = check_otp_pin(req)
+        self.assertTrue(r)
+
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "spass",
+                        "pin": "abcdefghij"}
+        # Good OTP length, but missing nummbers
+        self.assertRaises(PolicyError, check_otp_pin, req)
+
+        # finally delete policy
+        delete_policy("pol1")
+
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
                             "role": "user"}
@@ -723,6 +851,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         mangle(req)
         # Check if the user was modified
         self.assertEqual(req.all_data.get("user"), "user")
+        self.assertEqual(req.User, User("user", "realm1"))
 
         # Set a mangle policy to remove blanks from realm name
         set_policy(name="mangle2",
@@ -735,6 +864,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         mangle(req)
         # Check if the realm was modified
         self.assertEqual(req.all_data.get("realm"), "lowerRealm")
+        self.assertEqual(req.User, User("", "lowerrealm"))
 
         # finally delete policy
         delete_policy("mangle1")
@@ -878,7 +1008,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
                           "fetch_authentication_items, enrollDAPLUG, "
                           "mresolverwrite, losttoken, enrollSSHKEY, "
                           "importtokens, assign, delete",
-                   user="adminA",
+                   user="admin[aA]",
                    realm="realmA, realmB",
                    resolver="resolverA, resolverB",
                    )
@@ -1001,6 +1131,88 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("paperpol")
 
+    def test_20_allowed_audit_realm(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        #
+        set_policy(name="auditrealm1",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.AUDIT,
+                   user="admin1",
+                   realm="realm1")
+        set_policy(name="auditrealm2",
+                   scope=SCOPE.ADMIN,
+                   action=ACTION.AUDIT,
+                   user="admin1",
+                   realm=["realm2", "realm3"])
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        allowed_audit_realm(req)
+
+        # Check if the allowed_audit_realm is set
+        self.assertTrue("realm1" in req.all_data.get("allowed_audit_realm"))
+        self.assertTrue("realm2" in req.all_data.get("allowed_audit_realm"))
+        self.assertTrue("realm3" in req.all_data.get("allowed_audit_realm"))
+
+        # check that the policy is not honored if inactive
+        set_policy(name="auditrealm2",
+                   active=False)
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        allowed_audit_realm(req)
+        self.assertEqual(req.all_data.get("allowed_audit_realm"), ["realm1"])
+
+        # finally delete policy
+        delete_policy("auditrealm1")
+        delete_policy("auditrealm2")
+
+    def test_21_u2f_verify_cert(self):
+        # Usually the attestation certificate gets verified during enrollment unless
+        # we set the policy scope=enrollment, action=no_verifcy
+        from privacyidea.lib.tokens.u2ftoken import U2FACTION
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        # The default behaviour is to verify the certificate
+        req.all_data = {
+            "type": "u2f"}
+        u2ftoken_verify_cert(req, "init")
+        self.assertTrue(req.all_data.get("u2f.verify_cert"))
+
+        # Set a policy that defines to NOT verify the certificate
+        set_policy(name="polu2f1",
+                   scope=SCOPE.ENROLL,
+                   action=U2FACTION.NO_VERIFY_CERT)
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "u2f"}
+        u2ftoken_verify_cert(req, "init")
+        self.assertFalse(req.all_data.get("u2f.verify_cert"))
+
+        # finally delete policy
+        delete_policy("polu2f1")
+
 
 class PostPolicyDecoratorTestCase(MyTestCase):
 
@@ -1050,6 +1262,101 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         r = check_tokentype(req, resp)
         jresult = json.loads(r.data)
         self.assertTrue(jresult.get("result").get("value"))
+
+    def test_01_check_undetermined_tokentype(self):
+        # If there is a tokentype policy but the type can not be
+        # determined, authentication fails.
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 2 tokens",
+                          "type": "undetermined"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does not allow the tokentype
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokentype=hotp", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # The token type can not be determined, so an exception
+        #  is raised.
+        self.assertRaises(PolicyError,
+                          check_tokentype,
+                          req, resp)
+
+    def test_03_check_tokeninfo(self):
+        token_obj = init_token({"type": "SPASS", "serial": "PISP0001"})
+        token_obj.set_tokeninfo({"testkey": "testvalue"})
+
+        # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "PISP0001"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        # The response contains the token type SPASS
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "PISP0001",
+                          "type": "spass"}}
+        resp = Response(json.dumps(res))
+
+        # Set a policy, that does match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/test.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        # Set a policy that does NOT match
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/NO.*/", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # Set a policy, but the token has no tokeninfo!
+        # Thus the authorization will fail
+        token_obj.del_tokeninfo("testkey")
+        self.assertRaises(PolicyError,
+                          check_tokeninfo,
+                          req, resp)
+
+        # If we set an invalid policy, authorization will succeed
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTHZ,
+                   action="tokeninfo=testkey/missingslash", client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        r = check_tokeninfo(req, resp)
+        jresult = json.loads(r.data)
+        self.assertTrue(jresult.get("result").get("value"))
+
+        delete_policy("pol1")
+        remove_token("PISP0001")
 
     def test_02_check_serial(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
@@ -1205,7 +1512,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertTrue("user" not in jresult.get("detail"), jresult)
 
         # A successful get a user added
-        # Set a policy, that does not allow the detail on success
+        # Set a policy, that adds user info to detail
         set_policy(name="pol_add_user",
                    scope=SCOPE.AUTHZ,
                    action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8")
@@ -1214,7 +1521,24 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = add_user_detail_to_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertTrue("user" in jresult.get("detail"), jresult)
+        self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
+        self.assertFalse("user-realm" in jresult.get("detail"), jresult)
+
+        # set a policy that adds user resolver to detail
+        set_policy(name="pol_add_resolver",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertTrue("user-resolver" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-resolver"), self.resolvername1)
+        self.assertTrue("user-realm" in jresult.get("detail"), jresult)
+        self.assertEqual(jresult.get("detail").get("user-realm"), self.realm1)
+
         delete_policy("pol_add_user")
+        delete_policy("pol_add_resolver")
 
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
@@ -1388,8 +1712,23 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         response = auth_items.get("offline")[0].get("response")
         self.assertEqual(len(response), 100)
         # check if the counter of the token was increased to 100
+        # it is only 100, not 102, because the OTP value with counter=1
+        # (287082) has not actually been consumed (because this
+        # test only invoked the policy function)
         tokenobject = get_tokens(serial=serial)[0]
-        self.assertEqual(tokenobject.token.count, 101)
+        self.assertEqual(tokenobject.token.count, 100)
+        # check that we cannot authenticate with an offline value
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline287082",
+                                             response.get('1')))
+        self.assertTrue(passlib.hash.\
+                        pbkdf2_sha512.verify("offline516516",
+                                             response.get('99')))
+        res = tokenobject.check_otp("516516") # count = 99
+        self.assertEqual(res, -1)
+        # check that we can authenticate online with the correct value
+        res = tokenobject.check_otp("295165")  # count = 100
+        self.assertEqual(res, 100)
         delete_policy("pol2")
 
     def test_07_sign_response(self):
@@ -1474,6 +1813,15 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), True)
 
+        # Assert the policy is not honored if inactive
+        set_policy(name="pol_wizard",
+                   active=False)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), False)
+
         delete_policy("pol_wizard")
 
     def test_16_init_token_defaults(self):
@@ -1502,7 +1850,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         init_token_defaults(req)
 
         # Check, if the token defaults were added
-        self.assertEqual(req.all_data.get("totp.hashlib"), "sha256")
+        self.assertEqual(req.all_data.get("hashlib"), "sha256")
         self.assertEqual(req.all_data.get("otplen"), "8")
         self.assertEqual(req.all_data.get("timeStep"), "60")
         # finally delete policy
@@ -1551,8 +1899,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                             "type": "spass"}, tokenrealms=[self.realm1])
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = datetime.now().strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        self.assertEqual(ti, ndate)
 
         #
         # check a token without a given serial
@@ -1578,8 +1926,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
 
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = datetime.now().strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = datetime.now(tzlocal()).strftime(DATE_FORMAT)
+        self.assertTrue(ti, ndate)
 
         # Now the user changes the PIN. Afterwards the next_pin_change is empty
         g.logged_in_user = {"username": "hans",
@@ -1595,8 +1943,8 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
-        ndate = (datetime.now() + timedelta(1)).strftime("%d/%m/%y")
-        self.assertTrue(ti.startswith(ndate))
+        ndate = (datetime.now(tzlocal()) + timedelta(1)).strftime(DATE_FORMAT)
+        self.assertTrue(ti, ndate)
 
         # finally delete policy
         delete_policy("pol1")

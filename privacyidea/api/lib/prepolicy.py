@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add wrapper for U2F token
+#  2017-01-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add token specific PIN policies based on
+#             Quynh's pull request.
 #  2016-11-29 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add timelimit for audit entries
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -59,7 +64,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import (generate_password, get_client_ip,
-                                   parse_timedelta)
+                                   parse_timedelta, is_true)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -68,6 +73,9 @@ import functools
 import jwt
 import re
 import importlib
+# Token specific imports!
+from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
+from privacyidea.lib.tokens.u2f import x509name_to_string
 
 optional = True
 required = False
@@ -185,7 +193,8 @@ def realmadmin(request=None, action=None):
             po = policy_object.get_policies(
                 action=action, scope=SCOPE.ADMIN,
                 user=g.logged_in_user.get("username"),
-                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip)
+                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
+                active=True)
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -198,86 +207,113 @@ def check_otp_pin(request=None, action=None):
     """
     This policy function checks if the OTP PIN that is about to be set
     follows the OTP PIN policies ACTION.OTPPINMAXLEN, ACTION.OTPPINMINLEN and
-    ACTION.OTPPINCONTENTS in the SCOPE.USER. It is used to decorate the API
-    functions.
+    ACTION.OTPPINCONTENTS and token-type-specific PIN policy actions in the
+    SCOPE.USER or SCOPE.ADMIN. It is used to decorate the API functions.
 
-    The pin is investigated in the params as pin = params.get("pin")
+    The pin is investigated in the params as "otppin" or "pin"
 
     In case the given OTP PIN does not match the requirements an exception is
     raised.
     """
-    # This policy is only used for USER roles at the moment:
-    if g.logged_in_user.get("role") == ROLE.USER:
-        params = request.all_data
-        pin = params.get("otppin", "") or params.get("pin", "")
-        serial = params.get("serial")
-        if serial:
-            # if this is a token, that does not use a pin, we ignore this check
-            # And immediately return true
-            tokensobject_list = get_tokens(serial=serial)
-            if (len(tokensobject_list) == 1 and
-                    tokensobject_list[0].using_pin is False):
+    params = request.all_data
+    realm = params.get("realm")
+    pin = params.get("otppin", "") or params.get("pin", "")
+    serial = params.get("serial")
+    tokentype = params.get("type")
+    if not serial and action == ACTION.SETPIN:
+        path_elems = request.path.split("/")
+        serial = path_elems[-1]
+        # Also set it for later use
+        request.all_data["serial"] = serial
+    if serial:
+        # if this is a token, that does not use a pin, we ignore this check
+        # And immediately return true
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            if tokensobject_list[0].using_pin is False:
                 return True
-        policy_object = g.policy_object
-        user_object = get_user_from_param(params)
-        # get the policies for minimum length, maximum length and PIN contents
-        pol_minlen = policy_object.get_action_values(action=ACTION.OTPPINMINLEN,
-                                                     scope=SCOPE.USER,
-                                                     user=user_object.login,
-                                                     realm=user_object.realm,
-                                                     client=g.client_ip,
-                                                     unique=True)
-        pol_maxlen = policy_object.get_action_values(action=ACTION.OTPPINMAXLEN,
-                                                     scope=SCOPE.USER,
-                                                     user=user_object.login,
-                                                     realm=user_object.realm,
-                                                     client=g.client_ip,
-                                                     unique=True)
-        pol_contents = policy_object.get_action_values(action=ACTION.OTPPINCONTENTS,
-                                                       scope=SCOPE.USER,
-                                                       user=user_object.login,
-                                                       realm=user_object.realm,
-                                                       client=g.client_ip,
-                                                       unique=True)
+            tokentype = tokensobject_list[0].token.tokentype
+    # the default tokentype is still HOTP
+    tokentype = tokentype or "hotp"
+    policy_object = g.policy_object
+    role = g.logged_in_user.get("role")
+    username = g.logged_in_user.get("username")
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        admin_realm = g.logged_in_user.get("realm")
+        realm = params.get("realm", "")
+    else:
+        scope = SCOPE.USER
+        realm = g.logged_in_user.get("realm")
+        admin_realm = None
+    # get the policies for minimum length, maximum length and PIN contents
+    # first try to get a token specific policy - otherwise fall back to
+    # default policy
+    pol_minlen = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                 policy_object.get_action_values(
+                     action=ACTION.OTPPINMINLEN, scope=scope, user=username,
+                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
+                     unique=True)
 
-        if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
-            # check the minimum length requirement
-            raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                              pol_minlen[0]))
+    pol_maxlen = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                 policy_object.get_action_values(
+                     action=ACTION.OTPPINMAXLEN, scope=scope, user=username,
+                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
+                     unique=True)
 
-        if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
-            # check the maximum length requirement
-            raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                              pol_minlen[0]))
+    pol_contents = policy_object.get_action_values(
+        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
+        client=g.client_ip, unique=True) or \
+                   policy_object.get_action_values(
+                       action=ACTION.OTPPINCONTENTS, scope=scope,
+                       user=username, realm=realm, adminrealm=admin_realm,
+                       client=g.client_ip, unique=True)
 
-        if len(pol_contents) == 1:
-            # check the contents requirement
-            chars = "[a-zA-Z]"  # c
-            digits = "[0-9]"    # n
-            special = "[.:,;-_<>+*!/()=?$§%&#~\^]"  # s
-            no_others = False
-            grouping = False
+    if len(pol_minlen) == 1 and len(pin) < int(pol_minlen[0]):
+        # check the minimum length requirement
+        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
+                          pol_minlen[0]))
 
-            if pol_contents[0] == "-":
-                no_others = True
-                pol_contents = pol_contents[1:]
-            elif pol_contents[0] == "+":
-                grouping = True
-                pol_contents = pol_contents[1:]
-            #  TODO implement grouping and substraction
-            if "c" in pol_contents[0] and not re.search(chars, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(chars))
-            if "n" in pol_contents[0] and not re.search(digits, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(digits))
-            if "s" in pol_contents[0] and not re.search(special, pin):
-                raise PolicyError("Missing character in PIN: {0!s}".format(special))
+    if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen[0]):
+        # check the maximum length requirement
+        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
+                          pol_maxlen[0]))
+
+    if len(pol_contents) == 1:
+        # check the contents requirement
+        chars = "[a-zA-Z]"  # c
+        digits = "[0-9]"    # n
+        special = "[.:,;_<>+*!/()=?$§%&#~\^-]"  # s
+        no_others = False
+        grouping = False
+
+        if pol_contents[0] == "-":
+            no_others = True
+            pol_contents = pol_contents[1:]
+        elif pol_contents[0] == "+":
+            grouping = True
+            pol_contents = pol_contents[1:]
+        #  TODO implement grouping and substraction
+        if "c" in pol_contents[0] and not re.search(chars, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(chars))
+        if "n" in pol_contents[0] and not re.search(digits, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(digits))
+        if "s" in pol_contents[0] and not re.search(special, pin):
+            raise PolicyError("Missing character in PIN: {0!s}".format(special))
 
     return True
 
 
 def papertoken_count(request=None, action=None):
     """
-    This is a token specifc wrapper for paper token for the endpoint
+    This is a token specific wrapper for paper token for the endpoint
     /token/init.
     According to the policy scope=SCOPE.ENROLL,
     action=PAPERACTION.PAPER_COUNT it sets the parameter papertoken_count to
@@ -434,6 +470,119 @@ def init_tokenlabel(request=None, action=None):
     return True
 
 
+def twostep_enrollment_activation(request=None, action=None):
+    """
+    This policy function enables the two-step enrollment process according
+    to the configured policies.
+    It is used to decorate the ``/token/init`` endpoint.
+
+    If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
+    If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    """
+    policy_object = g.policy_object
+    user_object = get_user_from_param(request.all_data)
+    serial = getParam(request.all_data, "serial", optional)
+    token_type = getParam(request.all_data, "type", optional, "hotp")
+    token_exists = False
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+            token_exists = True
+    token_type = token_type.lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        adminrealm = g.logged_in_user.get("realm")
+    else:
+        scope = SCOPE.USER
+        adminrealm = None
+    realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user).
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
+    action = "{}_2step".format(token_type)
+    twostep_enabled_pols = policy_object.get_action_values(action=action,
+                                                           scope=scope,
+                                                           unique=True,
+                                                           user=user,
+                                                           realm=realm,
+                                                           client=g.client_ip,
+                                                           adminrealm=adminrealm)
+    if twostep_enabled_pols:
+        enabled_setting = twostep_enabled_pols[0]
+        if enabled_setting == "allow":
+            # The user is allowed to pass 2stepinit=1
+            pass
+        elif enabled_setting == "force":
+            # We force 2stepinit to be 1 (if the token does not exist yet)
+            if not token_exists:
+                request.all_data["2stepinit"] = 1
+        else:
+            raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
+    else:
+        # If no policy matches, the user is not allowed
+        # to pass 2stepinit
+        # Force two-step initialization to be None
+        if "2stepinit" in request.all_data:
+            del request.all_data["2stepinit"]
+    return True
+
+
+def twostep_enrollment_parameters(request=None, action=None):
+    """
+    If the ``2stepinit`` parameter is set to true, this policy function
+    reads additional configuration from policies and adds it
+    to ``request.all_data``, that is:
+
+     * ``{type}_2step_serversize`` is written to ``2step_serversize``
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
+
+    If no policy matches, the value passed by the user is kept.
+
+    This policy function is used to decorate the ``/token/init`` endpoint.
+    """
+    policy_object = g.policy_object
+    user_object = get_user_from_param(request.all_data)
+    serial = getParam(request.all_data, "serial", optional)
+    token_type = getParam(request.all_data, "type", optional, "hotp")
+    if serial:
+        tokensobject_list = get_tokens(serial=serial)
+        if len(tokensobject_list) == 1:
+            token_type = tokensobject_list[0].token.tokentype
+    token_type = token_type.lower()
+    role = g.logged_in_user.get("role")
+    # Differentiate between an admin enrolling a token for the
+    # user and a user self-enrolling a token.
+    if role == ROLE.ADMIN:
+        adminrealm = g.logged_in_user.get("realm")
+    else:
+        adminrealm = None
+    realm = user_object.realm
+    # In any case, the policy's user attribute is matched against the
+    # currently logged-in user (which may be the admin or the
+    # self-enrolling user).
+    user = g.logged_in_user.get("username")
+    # Tokentypes have separate twostep actions
+    if is_true(getParam(request.all_data, "2stepinit", optional)):
+        parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
+        for parameter in parameters:
+            action = u"{}_{}".format(token_type, parameter)
+            action_values = policy_object.get_action_values(action=action,
+                                                            scope=SCOPE.ENROLL,
+                                                            unique=True,
+                                                            user=user,
+                                                            realm=realm,
+                                                            client=g.client_ip,
+                                                            adminrealm=adminrealm)
+            if action_values:
+                request.all_data[parameter] = action_values[0]
+
 def check_max_token_user(request=None, action=None):
     """
     Pre Policy
@@ -566,7 +715,7 @@ def required_email(request=None, action=None):
 
     :param request: The Request Object
     :param action: An optional Action
-    :return: Modifies the request paramters or raises an Exception
+    :return: Modifies the request parameters or raises an Exception
     """
     email = getParam(request.all_data, "email")
     email_found = False
@@ -589,7 +738,7 @@ def required_email(request=None, action=None):
 def auditlog_age(request=None, action=None):
     """
     This pre condition checks for the policy auditlog_age and set the
-    "timelimit" paramter of the audit search API.
+    "timelimit" parameter of the audit search API.
 
     Check ACTION.AUDIT_AGE
 
@@ -678,6 +827,8 @@ def mangle(request=None, action=None):
             log.debug("mangling authentication data: {0!s}".format(mangle_key))
             request.all_data[mangle_key] = re.sub(search, replace,
                                                   mangle_value)
+            if mangle_key in ["user", "realm"]:
+                request.User = get_user_from_param(request.all_data)
     return True
 
 
@@ -736,10 +887,8 @@ def check_base_action(request=None, action=None, anonymous=False):
     role = g.logged_in_user.get("role")
     scope = SCOPE.ADMIN
     admin_realm = g.logged_in_user.get("realm")
-    realm = params.get("realm")
-    resolver = params.get("resolver")
-    if type(realm) == list and len(realm) == 1:
-        realm = realm[0]
+    realm = None
+    resolver = None
 
     if role == ROLE.USER:
         scope = SCOPE.USER
@@ -749,6 +898,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 
     # In certain cases we can not resolve the user by the serial!
     if action not in [ACTION.AUDIT]:
+        realm = params.get("realm")
+        if type(realm) == list and len(realm) == 1:
+            realm = realm[0]
+        resolver = params.get("resolver")
         # get the realm by the serial:
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
@@ -980,3 +1133,148 @@ def save_client_application_type(request, action):
     ua = request.user_agent
     save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
     return True
+
+
+def u2ftoken_verify_cert(request, action):
+    """
+    This is a token specific wrapper for u2f token for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ENROLL,
+    action=U2FACTION.NO_VERIFY_CERT it can add a parameter to the
+    enrollment parameters to not verify the attestation certificate.
+    The default is to verify the cert.
+    :param request:
+    :param action:
+    :return:
+    """
+    # Get the registration data of the 2nd step of enrolling a U2F device
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "u2f":
+        policy_object = g.policy_object
+        # Add the default to verify the cert.
+        request.all_data["u2f.verify_cert"] = True
+        user_object = request.User
+
+        if user_object:
+            token_user = user_object.login
+            token_realm = user_object.realm
+            token_resolver = user_object.resolver
+        else:
+            token_realm = token_resolver = token_user = None
+
+        do_not_verify_the_cert = policy_object.get_policies(
+            action=U2FACTION.NO_VERIFY_CERT,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            active=True,
+            client=g.client_ip)
+        if do_not_verify_the_cert:
+            request.all_data["u2f.verify_cert"] = False
+
+        log.debug("Should we not verify the attestation certificate? "
+                  "Policies: {0!s}".format(do_not_verify_the_cert))
+    return True
+
+
+def u2ftoken_allowed(request, action):
+    """
+    This is a token specific wrapper for u2f token for the endpoint
+     /token/init.
+     According to the policy scope=SCOPE.ENROLL,
+     action=U2FACTION.REQ it checks, if the assertion certificate is an
+     allowed U2F token type.
+
+     If the token, which is enrolled contains a non allowed attestation 
+     certificate, we bail out.
+
+    :param request: 
+    :param action: 
+    :return: 
+    """
+    policy_object = g.policy_object
+    # Get the registration data of the 2nd step of enrolling a U2F device
+    reg_data = request.all_data.get("regdata")
+    if reg_data:
+        # We have a registered u2f device!
+        serial = request.all_data.get("serial")
+        user_object = request.User
+
+        # We just check, if the issuer is allowed, not if the certificate
+        # is still valid! (verify_cert=False)
+        attestation_cert, user_pub_key, key_handle, \
+        signature, description = parse_registration_data(reg_data,
+                                                         verify_cert=False)
+
+        cert_info = {
+            "attestation_issuer":
+                x509name_to_string(attestation_cert.get_issuer()),
+            "attestation_serial": "{!s}".format(
+                attestation_cert.get_serial_number()),
+            "attestation_subject": x509name_to_string(
+                attestation_cert.get_subject())}
+
+        if user_object:
+            token_user = user_object.login
+            token_realm = user_object.realm
+            token_resolver = user_object.resolver
+        else:
+            token_realm = token_resolver = token_user = None
+
+        allowed_certs_pols = policy_object.get_action_values(
+            U2FACTION.REQ,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            client=g.client_ip)
+        for allowed_cert in allowed_certs_pols:
+            tag, matching, _rest = allowed_cert.split("/", 3)
+            tag_value = cert_info.get("attestation_{0!s}".format(tag))
+            # if we do not get a match, we bail out
+            m = re.search(matching, tag_value)
+            if not m:
+                log.warning("The U2F device {0!s} is not "
+                            "allowed to be registered due to policy "
+                            "restriction".format(
+                    serial))
+                raise PolicyError("The U2F device is not allowed "
+                                  "to be registered due to policy "
+                                  "restriction.")
+                # TODO: Maybe we should delete the token, as it is a not
+                # usable U2F token, now.
+
+    return True
+
+
+def allowed_audit_realm(request=None, action=None):
+    """
+    This decorator function takes the request and adds additional parameters 
+    to the request according to the policy
+    for the SCOPE.ADMIN or ACTION.AUDIT
+    :param request:
+    :param action:
+    :return: True
+    """
+    admin_user = g.logged_in_user
+    policy_object = g.policy_object
+    pols = policy_object.get_policies(
+        action=ACTION.AUDIT,
+        scope=SCOPE.ADMIN,
+        user=admin_user.get("username"),
+        client=g.client_ip,
+        active=True)
+
+    if pols:
+        # get all values in realm:
+        allowed_audit_realms = []
+        for pol in pols:
+            if pol.get("realm"):
+                allowed_audit_realms += pol.get("realm")
+        request.all_data["allowed_audit_realm"] = list(set(
+            allowed_audit_realms))
+
+    return True
+
+

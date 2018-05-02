@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib.user
 
@@ -59,6 +60,9 @@ class UserTestCase(MyTestCase):
         
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
+        # check proper unicode() and str() handling
+        self.assertIsInstance(str(user), bytes)
+        self.assertIsInstance(unicode(user), unicode)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
@@ -71,14 +75,14 @@ class UserTestCase(MyTestCase):
         user = User(login="root",
                     realm=self.realm1)
 
-        resolvers = user.get_resolvers()
+        resolvers = user._get_resolvers()
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
         
         user2 = User(login="root",
                      realm=self.realm1,
                      resolver=self.resolvername1)
-        resolvers = user2.get_resolvers()
+        resolvers = user2._get_resolvers()
         self.assertTrue(self.resolvername1 in resolvers, resolvers)
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
         
@@ -338,3 +342,29 @@ class UserTestCase(MyTestCase):
         self.assertEqual(r[3], "resolver1")
 
         delete_realm("sort_realm")
+
+    def test_17_check_nonascii_user(self):
+        realm = "sqlrealm"
+        resolver = "SQL1"
+        parameters = self.parameters
+        parameters["resolver"] = resolver
+        parameters["type"] = "sqlresolver"
+
+        rid = save_resolver(parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(realm, [resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        # check non-ascii password of non-ascii user
+        self.assertFalse(User(login=u"nönäscii",
+                             realm=realm).check_password("wrong"))
+        self.assertTrue(User(login=u"nönäscii",
+                             realm=realm).check_password(u"sömepassword"))
+
+        # check proper unicode() and str() handling
+        user_object = User(login=u"nönäscii", realm=realm)
+        self.assertEqual(unicode(user_object), u'<nönäscii.SQL1@sqlrealm>')
+        self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+

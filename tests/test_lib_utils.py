@@ -1,14 +1,24 @@
+# -*- coding: utf-8 -*-
 """
 This tests the file lib.utils
 """
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
+from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
-                                   parse_date)
+                                   parse_date, compare_condition,
+                                   get_data_from_params, parse_legacy_time,
+                                   int_to_hex, compare_value_value,
+                                   parse_time_offset_from_now,
+                                   parse_timedelta, to_unicode,
+                                   hash_password, PasswordHash, check_ssha,
+                                   check_sha, otrs_sha256, parse_int)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+from dateutil.tz import tzlocal, tzoffset
+from privacyidea.lib.tokenclass import DATE_FORMAT
+import hashlib
 
 
 class UtilsTestCase(MyTestCase):
@@ -182,19 +192,19 @@ class UtilsTestCase(MyTestCase):
 
     def test_07_parse_date(self):
         d = parse_date("+12m")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12m ")
-        self.assertTrue(datetime.now() < d)
+        self.assertTrue(datetime.now(tzlocal()) < d)
 
         d = parse_date(" +12H ")
-        self.assertTrue(datetime.now() + timedelta(hours=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(hours=11) < d)
 
         d = parse_date(" +12d ")
-        self.assertTrue(datetime.now() + timedelta(days=11) < d)
+        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) < d)
 
         d = parse_date("")
-        self.assertTrue(datetime.now() >= d)
+        self.assertTrue(datetime.now(tzlocal()) >= d)
 
         d = parse_date("2016/12/23")
         self.assertEqual(d, datetime(2016, 12, 23))
@@ -214,6 +224,191 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("23.12.2016 6:30")
         self.assertEqual(d, datetime(2016, 12, 23, hour=6, minute=30))
 
-        # Non-matching date returns None
         d = parse_date("23.12.16")
-        self.assertEqual(d, None)
+        self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
+
+        d = parse_date("2017-04-27T12:00+0200")
+        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+                                     tzinfo=tzoffset(None, 7200)))
+
+        d = parse_date("2016/04/03")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
+        d = parse_date("03.04.2016")
+        # April 3rd
+        self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+
+        # Non matching date returns None
+        self.assertEqual(parse_date("7 Januar 17"), None)
+
+    def test_08_compare_condition(self):
+        self.assertTrue(compare_condition("100", 100))
+        self.assertTrue(compare_condition("=100", 100))
+        self.assertTrue(compare_condition(" = 100 ", 100))
+
+        self.assertFalse(compare_condition("100 ", 99))
+
+        self.assertTrue(compare_condition(">100", 101))
+        self.assertFalse(compare_condition(">100", 100))
+        self.assertFalse(compare_condition(">100", 1))
+
+        self.assertTrue(compare_condition("<100", 10))
+        self.assertTrue(compare_condition("  <100", 10))
+        self.assertFalse(compare_condition("<100", 1000))
+        self.assertFalse(compare_condition("<100", 100))
+
+    def test_09_get_data_from_params(self):
+        config_description = {
+            "local":  {
+                'cakey': 'string',
+                'cacert': 'string',
+                'openssl.cnf': 'string',
+                'WorkingDir': 'string',
+                'CSRDir': 'sting',
+                'CertificateDir': 'string',
+                'CRLDir': 'string',
+                'CRL_Validity_Period': 'int',
+                'CRL_Overlap_Period': 'int'}}
+        params = {"type": "local", "cakey": "key", "cacert": "cert",
+                  "bindpw": "secret", "type.bindpw": "password"}
+        data, types, desc = get_data_from_params(params,
+                                                 ["caconnector", "type"],
+                                                 config_description,
+                                                 "CA connector",
+                                                 "local")
+        self.assertEqual(data.get("cakey"), "key")
+        self.assertEqual(data.get("bindpw"), "secret")
+        self.assertEqual(types.get("bindpw"), "password")
+
+    def test_10_parse_legacy_time(self):
+        s = parse_legacy_time("01/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-01T10:00"))
+
+        s = parse_legacy_time("30/04/17 10:00")
+        self.assertTrue(s.startswith("2017-04-30T10:00"))
+
+        s = parse_legacy_time("2017-04-01T10:00+0200")
+        self.assertEqual(s, "2017-04-01T10:00+0200")
+
+    def test_11_int_to_hex(self):
+        h = int_to_hex(32)
+        self.assertEqual(h, "20")
+
+        h = int_to_hex(1)
+        self.assertEqual(h, "01")
+
+        h = int_to_hex(10)
+        self.assertEqual(h, "0A")
+
+        h = int_to_hex(256)
+        self.assertEqual(h, "0100")
+
+        h = int_to_hex(4096)
+        self.assertEqual(h, "1000")
+
+        h = int_to_hex(65536)
+        self.assertEqual(h, "010000")
+
+    def test_12_compare_value_value(self):
+        self.assertTrue(compare_value_value("1000", ">", "999"))
+        self.assertTrue(compare_value_value("ABD", ">", "ABC"))
+        self.assertTrue(compare_value_value(1000, "==", "1000"))
+        self.assertTrue(compare_value_value("99", "<", "1000"))
+
+        # compare dates
+        self.assertTrue(compare_value_value(
+                        datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
+                        "2017-01-01T10:00+0200"))
+        self.assertFalse(compare_value_value(
+            datetime.now(tzlocal()).strftime(DATE_FORMAT), "<",
+            "2017-01-01T10:00+0200"))
+        # The timestamp in 10 hours is bigger than the current time
+        self.assertTrue(compare_value_value(
+            (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
+            ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+
+    def test_13_parse_time_offset_from_now(self):
+        td = parse_timedelta("+5s")
+        self.assertEqual(td, timedelta(seconds=5))
+        td = parse_timedelta("-12m")
+        self.assertEqual(td, timedelta(minutes=-12))
+        td = parse_timedelta("+123h")
+        self.assertEqual(td, timedelta(hours=123))
+        td = parse_timedelta("+2d")
+        self.assertEqual(td, timedelta(days=2))
+
+        # It is allowed to start without a +/- which would mean a +
+        td = parse_timedelta("12d")
+        self.assertEqual(td, timedelta(days=12))
+
+        # Does not contains numbers
+        self.assertRaises(Exception, parse_timedelta, "+twod")
+
+        s, td = parse_time_offset_from_now("Hello {now}+5d with 5 days.")
+        self.assertEqual(s, "Hello {now} with 5 days.")
+        self.assertEqual(td, timedelta(days=5))
+
+        s, td = parse_time_offset_from_now("Hello {current_time}+5m!")
+        self.assertEqual(s, "Hello {current_time}!")
+        self.assertEqual(td, timedelta(minutes=5))
+
+        s, td = parse_time_offset_from_now("Hello {current_time}-3habc")
+        self.assertEqual(s, "Hello {current_time}abc")
+        self.assertEqual(td, timedelta(hours=-3))
+
+    def test_14_to_unicode(self):
+        s = "kölbel"
+        su = to_unicode(s)
+        self.assertEqual(su, u"kölbel")
+
+        s = u"kölbel"
+        su = to_unicode(s)
+        self.assertEqual(su, u"kölbel")
+
+    def test_15_hash_passwords(self):
+        p_hash = hash_password("pass0rd", "phpass")
+        PH = PasswordHash()
+        self.assertTrue(PH.check_password("pass0rd", p_hash))
+        self.assertFalse(PH.check_password("passord", p_hash))
+
+        # {SHA}
+        p_hash = hash_password("passw0rd", "sha")
+        self.assertTrue(check_sha(p_hash, "passw0rd"))
+        self.assertFalse(check_sha(p_hash, "password"))
+
+        # OTRS
+        p_hash = hash_password("passw0rd", "otrs")
+        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
+        self.assertFalse(otrs_sha256(p_hash, "password"))
+
+        # {SSHA}
+        p_hash = hash_password("passw0rd", "ssha")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
+
+        # {SSHA256}
+        p_hash = hash_password("passw0rd", "ssha256")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
+
+        # {SSHA512}
+        p_hash = hash_password("passw0rd", "ssha512")
+        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
+        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
+
+    def test_16_parse_int(self):
+        r = parse_int("xxx", 12)
+        self.assertEqual(r, 12)
+        r = parse_int("ABC", 11)
+        self.assertEqual(r, 2748)
+        r = parse_int("ABCX", 11)
+        self.assertEqual(r, 11)
+        r = parse_int(123)
+        self.assertEqual(r, 123)
+        r = parse_int(0x12)
+        self.assertEqual(r, 18)
+        r = parse_int("0x12")
+        self.assertEqual(r, 18)
+        r = parse_int("123")
+        self.assertEqual(r, 123)

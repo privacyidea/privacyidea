@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Generate the nonce on an HSM
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Use central yubico_api_signature function
 #  2015-01-28 Rewrite during flask migration
@@ -42,13 +44,15 @@ from privacyidea.lib.decorators import check_token_locked
 import traceback
 import requests
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
 import os
 import binascii
+from privacyidea.lib import _
 
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
@@ -90,26 +94,16 @@ class YubicoTokenClass(TokenClass):
         """
         res = {'type': 'yubico',
                'title': 'Yubico Token',
-               'description': 'Yubikey Cloud mode: Forward authentication '
-                              'request to YubiCloud.',
-               'init': {'page': {'html': 'yubicotoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'yubicotoken.mako',
-                                   'scope': 'enroll.title'}
-               },
-               'config': {'page': {'html': 'yubicotoken.mako',
-                                   'scope': 'config'},
-                          'title': {'html': 'yubicotoken.mako',
-                                    'scope': 'config.title'}
-               },
+               'description': _('Yubikey Cloud mode: Forward authentication '
+                                'request to YubiCloud.'),
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy' : {},
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -128,6 +122,7 @@ class YubicoTokenClass(TokenClass):
         param['otplen'] = 44
         TokenClass.update(self, param)
         self.add_tokeninfo("yubico.tokenid", self.tokenid)
+        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
 
     @log_with(log)
     @check_token_locked
@@ -155,7 +150,7 @@ class YubicoTokenClass(TokenClass):
             log.warning("The tokenid in the OTP value does not match "
                         "the assigned token!")
         else:
-            nonce = binascii.hexlify(os.urandom(20))
+            nonce = geturandom(20, hex=True)
             p = {'nonce': nonce,
                  'otp': anOtpVal,
                  'id': apiId}

@@ -2,6 +2,9 @@
 This testcase is used to test the REST API  in api/machines.py
 to fetch machine information and to attach token to machines
 """
+import passlib
+
+from privacyidea.lib.user import User
 from .base import MyTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens
@@ -325,9 +328,12 @@ class APIMachinesTestCase(MyTestCase):
 
     def test_12_auth_items_offline(self):
         #create HOTP token for offline usage
+        self.setUp_user_realms()
         token_obj = init_token({"serial": self.serial4, "type": "hotp",
-                                "otpkey": OTPKEY})
+                                "otpkey": OTPKEY,
+                                "pin": "test"}, User("cornelius", self.realm1))
         self.assertEqual(token_obj.type, "hotp")
+        self.assertEqual(token_obj.token.count, 0)
 
         # Attach the token to the machine "gandalf" with the application offline
         r = attach_token(hostname="gandalf", serial=self.serial4,
@@ -348,5 +354,35 @@ class APIMachinesTestCase(MyTestCase):
             username = offline_auth_item.get("user")
             self.assertEqual(username, "cornelius")
             # check, if we got 17 otp values
-            self.assertEqual(len(offline_auth_item.get("response")), 17)
+            response = offline_auth_item.get("response")
+            self.assertEqual(len(response), 17)
+            self.assertEqual(token_obj.token.count, 17)
+            self.assertTrue(passlib.hash.\
+                            pbkdf2_sha512.verify("755224",
+                                                 response.get('0')))
 
+        self.assertEqual(token_obj.check_otp('187581'), -1) # count = 16
+        with self.app.test_request_context(
+                '/validate/check?user=cornelius&pass=test447589', # count = 17
+                environ_base={'REMOTE_ADDR': '192.168.0.1'},
+                method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data)
+            self.assertTrue(result['result']['status'])
+            self.assertTrue(result['result']['value'])
+            offline_auth_item = result["auth_items"]["offline"][0]
+            username = offline_auth_item.get("user")
+            self.assertEqual(username, "cornelius")
+            # check, if we got 17 otp values
+            response = offline_auth_item.get("response")
+            self.assertEqual(len(response), 17)
+            self.assertEqual(token_obj.token.count, 35) # 17 + 17 + 1, because we consumed 447589
+            self.assertTrue(passlib.hash. \
+                            pbkdf2_sha512.verify("test903435", # count = 18
+                                                 response.get('18')))
+            self.assertTrue(passlib.hash. \
+                            pbkdf2_sha512.verify("test749439", # count = 34
+                                                 response.get('34')))
+        self.assertEqual(token_obj.check_otp('747439'), -1) # count = 34
+        self.assertEqual(token_obj.check_otp('037211'), 35) # count = 35

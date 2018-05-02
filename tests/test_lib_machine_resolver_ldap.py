@@ -134,5 +134,39 @@ class LdapMachineTestCase(MyTestCase):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         (success, desc) = LdapMachineResolver.testconnection(MYCONFIG)
         self.assertTrue(success)
-        self.assertEqual(desc, "Your LDAP config seems to be OK, 3 "
-                               "machine objects found.")
+        self.assertTrue("3" in desc)
+        # "Your LDAP config seems to be OK, 3 machine objects found."
+
+    @ldap3mock.activate
+    def test_08_start_tls(self):
+        # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = MYCONFIG.copy()
+        config['START_TLS'] = '1'
+        config['TLS_VERIFY'] = '1'
+        start_tls_resolver = LdapMachineResolver("myResolver", config=config)
+        machines = start_tls_resolver.get_machines()
+        self.assertEqual(len(machines), 3)
+        # We check two things:
+        # 1) start_tls has actually been called!
+        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertFalse(kwargs['use_ssl'])
+
+
+    @ldap3mock.activate
+    def test_09_ldaps(self):
+        # Check that use_ssl and tls are actually passed to the Connection
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = MYCONFIG.copy()
+        config['LDAPURI'] = 'ldaps://1.2.3.4'
+        config['TLS_VERIFY'] = '1'
+        ldaps_resolver = LdapMachineResolver("myResolver", config=config)
+        machines = ldaps_resolver.get_machines()
+        self.assertEqual(len(machines), 3)
+        # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertTrue(kwargs['use_ssl'])

@@ -76,6 +76,11 @@ for the RADIUS server.
    The authentication request of users without a token is forwarded to the
    specified RADIUS server.
 
+.. note:: The passthru policy overrides the authorization policy
+   for :ref:`tokentype_policy`. I.e. a user may authenticate due
+   to the passthru    policy (since he has no token)
+   although a tokentype policy is active!
+
 .. warning:: If the user has the right to delete his
    tokens in selfservice portal, the user could 
    delete all his tokens and then authenticate with
@@ -118,6 +123,10 @@ This is the text that is sent via SMS to the user trying to
 authenticate with an SMS token.
 You can use the tags *<otp>* and *<serial>*.
 
+Starting with version 2.20 you can use the tag *{challenge}*. This will add
+the challenge data that was passed in the first authentication request in the
+challenge parameter. This could contain banking transaction data.
+
 Default: *<otp>*
 
 smsautosend
@@ -143,7 +152,18 @@ This is the text that is sent via Email to be used with Email Token. This
 text should contain the OTP value.
 You can use the tags *<otp>* and *<serial>*.
 
+Starting with version 2.20 you can use the tag *{challenge}*. This will add
+the challenge data that was passed in the first authentication request in the
+challenge parameter. This could contain banking transaction data.
+
 Default: *<otp>*
+
+You can also provide the filename to an email template. The filename must be prefixed with
+``file:`` like ``file:/etc/privacyidea/emailtemplate.html``. The template is
+an HTML file and contain the tags ``{otp}`` and ``{serial}``.
+
+.. note:: If a message text is supplied directly, the email is sent as plain text.
+   If the email template is read from a file, a HTML-only email is sent instead.
 
 emailsubject
 ~~~~~~~~~~~~
@@ -257,3 +277,30 @@ type: bool
 
 If a user authenticates successfully all failcounter of all of his tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
+
+
+.. _policy_auth_cache:
+
+auth_cache
+~~~~~~~~~~
+
+.. index:: AuthCache, Authentication Cache
+
+type: string
+
+The Authentication Cache caches the credentials of a successful
+authentication and allows to use the same credentials - also with an OTP
+value - for the specified amount of time.
+
+The time to cache the credentials can be specified like "4h", "5m", "2d"
+(hours, minutes days) or "4h/5m". The notation 4h/5m means, that credentials
+are cached for 4 hours, but only may be used again, if every 5 minutes the
+authentication occurs. If the authentication with the same credentials would
+not occur within 5 minutes, the credentials can not be used anymore.
+
+In future implementations the caching of the credentials could also be
+dependent on the clients IP address and the user agent.
+
+.. note:: The AuthCache only works for user authentication, not for
+   authentication with serials.
+

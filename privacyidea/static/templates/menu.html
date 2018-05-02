@@ -12,7 +12,7 @@
 <div class="navbar navbar-default navbar-fixed-top">
     <div class="container">
         <a class="navbar-brand" ui-sref="token.list">
-            <img src="{{ instanceUrl }}/static/css/privacyIDEA1.png"
+            <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                          width="28px">
         </a>
         <button type="button" class="navbar-toggle"
@@ -89,6 +89,16 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <spinner name="spinner" show="false"></spinner>
+                </li>
+                <li ng-show="reloadListeners && loggedInUser.role &&
+                showReload">
+                    <a ng-click="reload()" style="cursor: pointer">
+                    <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+                    <translate>Refresh</translate>
+                    </a>
+                </li>
                 <li ng-class="{active: $state.includes('register')}"
                     ng-show="registrationAllowed">
                     <a ui-sref="register" ng-hide="loggedInUser.username"
@@ -113,15 +123,18 @@
                             <span class="sr-only">Toggle Dropdown</span>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}" 
+                            <li><a href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
 				target="documentation" translate>
                                 Online Documentation</a></li>
-                            <li><a href="https://groups.google.com/forum/#!forum/privacyidea" 
+                            <li><a href="https://community.privacyidea.org"
 				target="_external" translate>Community</a></li>
                             <li><a href="https://netknights.it/leistungen/support/"
 				target="_external" translate
 				>Support</a></li>
                             <li class="divider"></li>
+                            <li ng-click="lock_screen()">
+                                <a translate>Lock screen</a>
+                            </li>
                             <li ng-click="logout()">
                                 <a href="#" translate>Logout</a></li>
                         </ul>

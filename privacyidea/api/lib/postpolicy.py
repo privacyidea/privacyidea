@@ -43,7 +43,7 @@ import datetime
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError
-from flask import g, current_app
+from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token
@@ -54,10 +54,11 @@ import json
 import re
 import netaddr
 from privacyidea.lib.crypto import Sign
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, getParam
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
+from privacyidea.lib.subscriptions import subscription_status
 
 
 optional = True
@@ -65,6 +66,7 @@ required = False
 DEFAULT_LOGOUT_TIME = 120
 DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
+DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
 
@@ -196,16 +198,18 @@ def check_tokentype(request, response):
     policy_object = g.policy_object
     user_object = request.User
     allowed_tokentypes = policy_object.get_action_values(
-        "tokentype",
+        ACTION.TOKENTYPE,
         scope=SCOPE.AUTHZ,
         user=user_object.login,
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
+        # If we have tokentype policies, but
+        # the tokentype is not allowed, we raise an exception
         g.audit_object.log({"success": False,
-                            'action_detail': "Tokentype not allowed for "
-                                             "authentication"})
+                            'action_detail': "Tokentype {0!r} not allowed for "
+                                             "authentication".format(tokentype)})
         raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
@@ -226,7 +230,7 @@ def check_serial(request, response):
     policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
     # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values("serial",
+    allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
                                                     scope=SCOPE.AUTHZ,
                                                     client=g.client_ip)
 
@@ -241,6 +245,47 @@ def check_serial(request, response):
             g.audit_object.log({"action_detail": "Serial is not allowed for "
                                                  "authentication!"})
             raise PolicyError("Serial is not allowed for authentication!")
+    return response
+
+
+def check_tokeninfo(request, response):
+    """
+    This policy function is used as a decorator for the validate API.
+    It checks after a successful authentication if the token has a matching
+    tokeninfo field. If it does not match, authorization is denied. Then
+    a PolicyException is raised.
+
+    :param response: The response of the decorated function
+    :type response: Response object
+    :return: A new modified response
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+    serial = content.get("detail", {}).get("serial")
+    if serial:
+        tokens = get_tokens(serial=serial)
+        if len(tokens) == 1:
+            token_obj = tokens[0]
+            tokeninfos_pol = policy_object.get_action_values(
+                ACTION.TOKENINFO,
+                scope=SCOPE.AUTHZ,
+                client=g.client_ip,
+                allow_white_space_in_action=True)
+            for tokeninfo_pol in tokeninfos_pol:
+                try:
+                    key, regex, _r = tokeninfo_pol.split("/")
+                    value = token_obj.get_tokeninfo(key, "")
+                    if re.search(regex, value):
+                        log.debug(u"Regular expression {0!s} "
+                                  u"matches the tokeninfo field {1!s}.".format(regex, key))
+                    else:
+                        log.info(u"Tokeninfo field {0!s} with contents {1!s} "
+                                 u"does not match {2!s}".format(key, value, regex))
+                        raise PolicyError("Tokeninfo field {0!s} with contents does not"
+                                          " match regular expression.".format(key))
+                except ValueError:
+                    log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+
     return response
 
 
@@ -286,10 +331,11 @@ def add_user_detail_to_response(request, response):
     content = json.loads(response.data)
     policy_object = g.policy_object
 
+    # Check for ADD USER IN RESPONSE
     detail_pol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
-                                           scope=SCOPE.AUTHZ,
-                                           client=g.client_ip,
-                                           active=True)
+                                            scope=SCOPE.AUTHZ,
+                                            client=g.client_ip,
+                                            active=True)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -300,6 +346,18 @@ def add_user_detail_to_response(request, response):
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui
+        response.data = json.dumps(content)
+
+    # Check for ADD RESOLVER IN RESPONSE
+    detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
+                                            scope=SCOPE.AUTHZ,
+                                            client=g.client_ip,
+                                            active=True)
+
+    if detail_pol and content.get("result", {}).get("value") and request.User:
+        # The policy was set, we need to add the resolver and the realm
+        content["detail"]["user-resolver"] = request.User.resolver
+        content["detail"]["user-realm"] = request.User.realm
         response.data = json.dumps(content)
 
     return response
@@ -457,6 +515,13 @@ def get_webui_settings(request, response):
             realm=realm,
             client=client,
             unique=True)
+        timeout_action_pol = policy_object.get_action_values(
+            action=ACTION.TIMEOUT_ACTION,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            unique=True
+        )
         token_page_size_pol = policy_object.get_action_values(
             action=ACTION.TOKENPAGESIZE,
             scope=SCOPE.WEBUI,
@@ -475,14 +540,16 @@ def get_webui_settings(request, response):
             policy_object.get_policies(action=ACTION.TOKENWIZARD2ND,
                                        scope=SCOPE.WEBUI,
                                        realm=realm,
-                                       client=client))
+                                       client=client,
+                                       active=True))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
                 action=ACTION.TOKENWIZARD,
                 scope=SCOPE.WEBUI,
                 realm=realm,
-                client=client
+                client=client,
+                active=True
             )
 
             # We also need to check, if the user has not tokens assigned.
@@ -495,14 +562,24 @@ def get_webui_settings(request, response):
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
         search_on_enter = policy_object.get_policies(
             action=ACTION.SEARCH_ON_ENTER,
             scope=SCOPE.WEBUI,
             realm=realm,
-            client=client
+            client=client,
+            active=True
         )
+        hide_welcome = policy_object.get_policies(
+            action=ACTION.HIDE_WELCOME,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True
+        )
+        hide_welcome = bool(hide_welcome)
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -525,6 +602,10 @@ def get_webui_settings(request, response):
         if len(logout_time_pol) == 1:
             logout_time = int(logout_time_pol[0])
 
+        timeout_action = DEFAULT_TIMEOUT_ACTION
+        if len(timeout_action_pol) == 1:
+            timeout_action = timeout_action_pol[0]
+
         policy_template_url_pol = policy_object.get_action_values(
             action=ACTION.POLICYTEMPLATEURL,
             scope=SCOPE.WEBUI,
@@ -544,6 +625,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
+        content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)
     return response
 
@@ -632,3 +716,24 @@ def autoassign(request, response):
                                 break
 
     return response
+
+def construct_radius_response(request, response):
+    """
+    This decorator implements the /validate/radiuscheck endpoint.
+    In case this URL was requested, a successful authentication
+    results in an empty response with a HTTP 204 status code.
+    An unsuccessful authentication results in an empty response
+    with a HTTP 400 status code.
+    :return:
+    """
+    if request.url_rule.rule == '/validate/radiuscheck':
+        return_code = 400 # generic 400 error by default
+        content = json.loads(response.data)
+        if content['result']['status']:
+            if content['result']['value']:
+                # user was successfully authenticated
+                return_code = 204
+        # send empty body
+        return make_response('', return_code)
+    else:
+        return response

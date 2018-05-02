@@ -44,8 +44,8 @@ from flask import (Blueprint,
                    request,
                    current_app,
                    g)
-from lib.utils import (send_result, get_all_params,
-                       verify_auth_token)
+from .lib.utils import (send_result, get_all_params,
+                        verify_auth_token)
 from ..lib.crypto import geturandom, init_hsm
 from ..lib.error import AuthError
 from ..lib.auth import verify_db_admin, db_admin_exist
@@ -356,4 +356,6 @@ def get_rights():
     """
     enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip,
                                                             g.logged_in_user)
+
+    g.audit_object.log({"success": True})
     return send_result(enroll_types)

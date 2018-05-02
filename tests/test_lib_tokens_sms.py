@@ -7,12 +7,14 @@ from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
 from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 import datetime
+import mock
 import responses
 
 
@@ -28,6 +30,7 @@ class SMSTokenTestCase(MyTestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     serial1 = "SE123456"
+    serial2 = "SE222222"
     otpkey = "3132333435363738393031323334353637383930"
 
     SMSHttpUrl = "http://smsgateway.com/sms_send_api.cgi"
@@ -84,6 +87,21 @@ class SMSTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PISM", class_prefix)
         self.assertTrue(token.get_class_type() == "sms", token)
+
+        db_token = Token(self.serial2, tokentype="sms")
+        db_token.save()
+        token = SmsTokenClass(db_token)
+        token.update({"dynamic_phone": True})
+        token.save()
+        self.assertTrue(token.token.serial == self.serial2, token)
+        self.assertTrue(token.token.tokentype == "sms", token.token)
+        self.assertTrue(is_true(token.get_tokeninfo("dynamic_phone")))
+        self.assertTrue(token.type == "sms", token.type)
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "PISM", class_prefix)
+        self.assertTrue(token.get_class_type() == "sms", token)
+        token.set_user(User(login="cornelius",
+                            realm=self.realm1))
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -281,54 +299,6 @@ class SMSTokenTestCase(MyTestCase):
         token.set_count_auth_success_max(10)
         self.assertFalse(token.check_auth_counter())
 
-        # handle validity end date
-        token.set_validity_period_end("30/12/14 16:00")
-        end = token.get_validity_period_end()
-        self.assertTrue(end == "30/12/14 16:00", end)
-        self.assertRaises(Exception,
-                          token.set_validity_period_end, "wrong date")
-        # handle validity start date
-        token.set_validity_period_start("30/12/13 16:00")
-        start = token.get_validity_period_start()
-        self.assertTrue(start == "30/12/13 16:00", start)
-        self.assertRaises(Exception,
-                          token.set_validity_period_start, "wrong date")
-
-        self.assertFalse(token.check_validity_period())
-
-        # check validity period
-        # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # - 5 days
-        start_date = datetime.datetime.now() - datetime.timedelta(5)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertTrue(token.check_validity_period())
-
-        # check before start date
-        # +5 days
-        end_date = datetime.datetime.now() + datetime.timedelta(5)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # + 2 days
-        start_date = datetime.datetime.now() + datetime.timedelta(2)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertFalse(token.check_validity_period())
-
-        # check after enddate
-        # -1 day
-        end_date = datetime.datetime.now() - datetime.timedelta(1)
-        end = end_date.strftime(DATE_FORMAT)
-        token.set_validity_period_end(end)
-        # - 10 days
-        start_date = datetime.datetime.now() - datetime.timedelta(10)
-        start = start_date.strftime(DATE_FORMAT)
-        token.set_validity_period_start(start)
-        self.assertFalse(token.check_validity_period())
-
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
@@ -413,6 +383,47 @@ class SMSTokenTestCase(MyTestCase):
                                            options={"transaction_id":
                                                         transactionid})
         self.assertTrue(r, r)
+
+    @responses.activate
+    def test_18a_challenge_request_dynamic(self):
+        # Send a challenge request for an SMS token with a dynamic phone number
+        responses.add(responses.POST,
+                      self.SMSHttpUrl,
+                      body=self.success_body)
+        transactionid = "123456098712"
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = SmsTokenClass(db_token)
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp,
+                                           options={"transaction_id":
+                                                        transactionid})
+        self.assertTrue(r, r)
+
+    @responses.activate
+    def test_18b_challenge_request_dynamic_multivalue(self):
+        responses.add(responses.POST,
+                      self.SMSHttpUrl,
+                      body=self.success_body)
+        transactionid = "123456098712"
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        db_token = Token.query.filter_by(serial=self.serial2).first()
+        token = SmsTokenClass(db_token)
+        # if the email is a multi-value attribute, the first address should be chosen
+        new_user_info = token.user.info.copy()
+        new_user_info['mobile'] = ['1234', '5678']
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+            mock_user_info.return_value = new_user_info
+            c = token.create_challenge(transactionid)
+            self.assertTrue(c[0], c)
+            self.assertIn('destination=1234', responses.calls[0].request.body)
+            self.assertNotIn('destination=5678', responses.calls[0].request.body)
 
     @responses.activate
     def test_19_smstext(self):

@@ -32,6 +32,7 @@ from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import generate_password
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -116,9 +117,9 @@ class RegistrationTokenClass(PasswordTokenClass):
         """
         res = {'type': 'registration',
                'title': 'Registration Code Token',
-               'description': ('Registration: A token that creates a '
-                               'registration code that '
-                               'can be used as a second factor once.'),
+               'description': _('Registration: A token that creates a '
+                                'registration code that '
+                                'can be used as a second factor once.'),
                'init': {},
                'config': {},
                'user':  [],
@@ -127,7 +128,7 @@ class RegistrationTokenClass(PasswordTokenClass):
                'policy': {},
                }
 
-        if key is not None and key in res:
+        if key:
             ret = res.get(key)
         else:
             if ret == 'all':

@@ -1,4 +1,50 @@
 
+function date_object_to_string(date_obj) {
+    var s = "";
+    if (date_obj) {
+        var Y = date_obj.getFullYear();
+        var D = date_obj.getDate();
+        D = (D>9 ? '' : '0') + D;
+        var M = date_obj.getMonth()+1;
+        M = (M>9 ? '' : '0') + M;
+        var h = date_obj.getHours();
+        h = (h>9 ? '' : '0') + h;
+        var m = date_obj.getMinutes();
+        m = (m>9 ? '' : '0') + m;
+
+        var tz = date_obj.getTimezoneOffset();
+        var tz_abs = Math.abs(tz);
+        var hours = Math.floor(tz_abs/60);
+        hours = (hours>9 ? '': '0') + hours;
+        var minutes = tz_abs % 60;
+        minutes = (minutes>9 ? '': '0') + minutes;
+        var sign = "-";
+        if (tz < 0) {
+            // The offset for +0100 is -60!
+            sign = "+";
+        }
+        var o = sign + hours + minutes;
+        s = Y + "-" + M + "-" + D + "T" + h + ":" + m + o;
+    }
+    return s;
+}
+
+function string_to_date_object(s) {
+    date_obj = null;
+    if (s) {
+        if (s.substring(2, 3) === "/") {
+            var day = s.substring(0, 2);
+            var month = s.substring(3, 5);
+            var rest = s.substring(6);
+            s = month + "/" + day + "/" + rest;
+        }
+        var date_obj = new Date();
+        var d = Date.parse(s);
+        date_obj.setTime(d);
+    }
+    return date_obj;
+}
+
 myApp.controller("tokenDetailController", function ($scope,
                                                     TokenFactory, UserFactory,
                                                     $stateParams,
@@ -22,7 +68,7 @@ myApp.controller("tokenDetailController", function ($scope,
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {
         prepend = data.result.value.PrependPin;
-        console.log(prepend);
+        //debug: console.log(prepend);
         if (!$scope.isChecked(prepend)) {
             $scope.testTokenPlaceholder = gettextCatalog.getString('Enter OTP + PIN to' +
                 ' check the token.');
@@ -38,7 +84,9 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.token = data.result.value.tokens[0];
             $scope.max_auth_count = parseInt($scope.token.info.count_auth_max);
             $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
-            console.log($scope.token);
+            $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
+            $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
+            //debug: console.log($scope.token);
             // Add a certificateBlob, if it exists
             if ($scope.token.info.certificate) {
                 var blob = new Blob([ $scope.token.info.certificate ],
@@ -57,6 +105,10 @@ myApp.controller("tokenDetailController", function ($scope,
             }
         });
     };
+
+    // initialize
+    $scope.get();
+
 
     $scope.return_to = function () {
         // After deleting the token, we return here.
@@ -116,11 +168,13 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.saveTokenInfo = function () {
+        var start = date_object_to_string($scope.validity_period_start);
+        var end = date_object_to_string($scope.validity_period_end);
         TokenFactory.set_dict($scope.tokenSerial,
             {count_auth_max: $scope.max_auth_count,
              count_auth_success_max: $scope.max_success_auth_count,
-             validity_period_end: $scope.validity_period_end,
-             validity_period_start: $scope.validity_period_start},
+             validity_period_end: end,
+             validity_period_start: start},
             $scope.get);
     };
 
@@ -139,7 +193,14 @@ myApp.controller("tokenDetailController", function ($scope,
 
     $scope.setPin = function () {
         TokenFactory.setpin($scope.tokenSerial, "otppin",
-            $scope.pin1, function () {
+            $scope.pin1, function (data) {
+                if (data.result.value >= 1) {
+                    inform.add(gettextCatalog.getString("PIN set successfully."),
+                        {type: "info", ttl: 5000})
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to set PIN."),
+                        {type: "danger", ttl: 10000})
+                }
                 $scope.pin1 = "";
                 $scope.pin2 = "";
                 // in case of certificate tokens we need to reread the token
@@ -178,7 +239,7 @@ myApp.controller("tokenDetailController", function ($scope,
             params["otponly"] = "1";
         }
         ValidateFactory.check(params, function (data) {
-            console.log(data);
+            //debug: console.log(data);
             // refresh the token data
             $scope.get();
             if (data.result.value === true) {
@@ -190,10 +251,6 @@ myApp.controller("tokenDetailController", function ($scope,
             }
         });
     };
-
-
-    // initialize
-    $scope.get();
 
     //----------------------------------------------------------------
     //   Admin functions
@@ -245,7 +302,7 @@ myApp.controller("tokenDetailController", function ($scope,
             params["application"] = application;
             MachineFactory.saveOptions(params, function (data) {
                 $scope.getMachines();
-                console.log(data);
+                //debug: console.log(data);
             });
         };
 
@@ -253,7 +310,7 @@ myApp.controller("tokenDetailController", function ($scope,
             MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
                     function (data) {
                         machinelist = data.result.value;
-                        console.log(machinelist);
+                        //debug: console.log(machinelist);
                         $scope.machineCount = machinelist.length;
                         var start = ($scope.params.page - 1) * $scope.machinesPerPage;
                         var stop = start + $scope.machinesPerPage;
@@ -262,7 +319,7 @@ myApp.controller("tokenDetailController", function ($scope,
         };
         // Change the pagination
         $scope.pageChanged = function () {
-            console.log('Page changed to: ' + $scope.params.page);
+            //debug: console.log('Page changed to: ' + $scope.params.page);
             $scope.getMachines();
         };
 
@@ -289,6 +346,9 @@ myApp.controller("tokenDetailController", function ($scope,
         $event.stopPropagation();
         return true;
     };
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
 
 
 });

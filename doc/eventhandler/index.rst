@@ -16,6 +16,11 @@ With event handlers you do not change the way the system reacts. But on
 certain events you can *trigger a new action* in addition to the behaviour
 defined in the policies.
 
+These additional actions are also logged to the audit log. These actions are
+marked as *EVENT* in the audit log and you can see, which event triggered
+these actions. Thus a single API call can cause several audit log entries:
+One for the API call and more for the triggered actions.
+
 Events
 ------
 
@@ -65,6 +70,17 @@ Basic conditions
 ~~~~~~~~~~~~~~~~
 
 The basic event handler module has the following conditions.
+
+**last_auth**
+
+This condition checks if the last authentication is older than the specified
+time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
+(years). Specifying *180d* would mean, that the action is triggered if the
+last successful authentication witht he token was berformed more than 180
+days ago.
+
+This can be used to send notifications to users or administrators to inform
+them, that there is a token, that might be orphaned.
 
 **logged_in_user**
 
@@ -143,6 +159,14 @@ does not exist anymore.
 This can be used to trigger the deletion of the token, if the token owner was
 removed from the userstore.
 
+**token_validity_period**
+
+Checks if the token is in the current validity period or not. Can be set to
+*True* or *False*.
+
+.. note:: ``token_validity_period==False`` will trigger an action if either the
+   validitiy period is either *over* or has not *started*, yet.
+
 **user_token_number**
 
 The action is only triggered, if the user in the event has the given number
@@ -151,6 +175,73 @@ of tokens assigned.
 This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left (token_number == 0) of to notify the administrator if
 the user has to many tokens assigned.
+
+**tokeninfo**
+
+The tokeninfo condition can compare any arbitrary tokeninfo field against a
+fixed value. You can compare strings and integers. Integers are converted
+automatically. Valid compares are:
+
+    myValue == 1000
+    myValue > 1000
+    myValue < 99
+    myTokenInfoField == EnrollmentState
+    myTokenInfoField < ABC
+    myTokenInfoField > abc
+
+"myValue" and "myTokenInfoField" being any possible tokeninfo fields.
+
+Starting with version 2.20 you can also compare dates in the isoformat like
+that:
+
+    myValue > 2017-10-12T10:00+0200
+    myValue < 2020-01-01T00:00+0000
+
+In addition you can also use the tag *{now}* to compare to the curren time
+*and* you can add offsets to *{now}* in seconds, minutes, hours or days:
+
+    myValue < {now}
+    myValue > {now}+10d
+    myValue < {now}-5h
+
+Which would match if the tokeninfo *myValue* is a date, which is later than
+10 days from now or it the tokeninfo *myValue* is a date, which is 5 more
+than 5 hours in the past.
+
+
+**detail_error_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the HTTP response. The field ``detail->error->message`` is evaluated.
+
+Error messages can be manyfold. In case of authentication you could get error
+messages like:
+
+"The user can not be found in any resolver in this realm!"
+
+With ``token/init`` you could get:
+
+"missing Authorization header"
+
+..note:: The field ``detail->error->message is only available in case of an
+   internal error, i.e. if the response status is ``False``.
+
+**detail_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the HTTP response. The field ``detail->message`` is evaluated.
+
+Those messages can be manyfold like:
+
+"wrong otp pin"
+
+"wrong otp value"
+
+"Only 2 failed authentications per 1:00:00"
+
+
+..note:: The field ``detail->message`` is available in case of status ``True``,
+   like an authentication request that was handled successfully but failed.
 
 
 Available Handler Modules
@@ -162,3 +253,5 @@ Available Handler Modules
    usernotification
    tokenhandler
    scripthandler
+   counterhandler
+   federationhandler

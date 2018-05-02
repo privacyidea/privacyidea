@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add tokenkind
 #  2015-01-28 Rewrite for migration to flask
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -42,12 +44,14 @@ The code is tested in tests/test_lib_tokens_remote
 import logging
 import traceback
 import requests
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib import _
 
 optional = True
 required = False
@@ -105,29 +109,16 @@ class RemoteTokenClass(TokenClass):
         """
         res = {'type': 'remote',
                'title': 'Remote Token',
-               'description': ('Remote Token: Forward authentication request '
-                               'to another server.'),
-
-               'init': {'page': {'html': 'remotetoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'remotetoken.mako',
-                                  'scope': 'enroll.title', },
-                        },
-
-               'config': {'page': {'html': 'remotetoken.mako',
-                                   'scope': 'config', },
-                          'title': {'html': 'remotetoken.mako',
-                                    'scope': 'config.title', },
-                          },
-
+               'description': _('Remote Token: Forward authentication request '
+                                'to another server.'),
                'user': [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
                'policy': {},
                }
 
-        if key is not None and key in res:
-            ret = res.get(key)
+        if key:
+            ret = res.get(key, {})
         else:
             if ret == 'all':
                 ret = res
@@ -157,6 +148,8 @@ class RemoteTokenClass(TokenClass):
             if val is not None:
                 self.add_tokeninfo(key, val)
 
+        self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
+
     @property
     def check_pin_local(self):
         """
@@ -164,7 +157,7 @@ class RemoteTokenClass(TokenClass):
 
         :return: bool
         """
-        local_check = 1 == int(self.get_tokeninfo("remote.local_checkpin"))
+        local_check = is_true(self.get_tokeninfo("remote.local_checkpin"))
         log.debug(" local checking pin? {0!r}".format(local_check))
 
         return local_check
@@ -251,10 +244,7 @@ class RemoteTokenClass(TokenClass):
                                      False, return_bool=True) or False
 
         if type(ssl_verify) in [str, unicode]:
-            if ssl_verify.lower() in ["true", "1"]:
-                ssl_verify = True
-            else:
-                ssl_verify = False
+            ssl_verify = is_true(ssl_verify.lower())
 
         # here we also need to check for remote.user and so on....
         log.debug("checking OTP len:%r remotely on server: %r,"

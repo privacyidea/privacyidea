@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use HSM for iv in aes_encrypt
+#  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add encryption/decryption for PSKC containers.
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if statements
 #
@@ -47,6 +51,8 @@ from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
+import os
+import base64
 try:
     from Crypto.Signature import pkcs1_15
     SIGN_WITH_RSA = False
@@ -312,7 +318,10 @@ def init_hsm():
                 if key.startswith("PI_HSM_MODULE_"):
                     param = key[len("PI_HSM_MODULE_"):].lower()
                     hsm_parameters[param] = config.get(key)
-            log.info("calling HSM module with parameters {0}".format(hsm_parameters))
+            logging_params = dict(hsm_parameters)
+            if "password" in logging_params:
+                logging_params["password"] = "XXXX"
+            log.info("calling HSM module with parameters {0}".format(logging_params))
 
         HSM_config = {"obj": hsm_class(hsm_parameters)}
         current_app.config["pi_hsm"] = HSM_config
@@ -421,8 +430,61 @@ def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
     """
     aes = AES.new(key, mode, iv)
     output = aes.decrypt(cipherdata)
+    padding = ord(output[-1])
     # remove padding
-    output = output[0:-ord(output[-1])]
+    output = output[0:-padding]
+    return output
+
+
+def aes_encrypt(key, iv, data, mode=AES.MODE_CBC):
+    """
+    encrypts the given data with key/iv
+
+    :param key: The encryption key
+    :type key: binary string
+    :param iv: The initialization vector
+    :type iv: binary string
+    :param cipherdata: The cipher text
+    :type cipherdata: binary string
+    :param mode: The AES MODE
+    :return: plain text in binary data
+    """
+    aes = AES.new(key, mode, iv)
+    # pad data
+    num_pad = aes.block_size - (len(data) % aes.block_size)
+    data = data + chr(num_pad) * num_pad
+    output = aes.encrypt(data)
+    return output
+
+
+def aes_encrypt_b64(key, data):
+    """
+    This function encrypts the data using AES-128-CBC. It generates
+    and adds an IV.
+    This is used for PSKC.
+
+    :param key: Encryption key (binary format)
+    :param data: Data to encrypt
+    :return: base64 encrypted output, containing IV
+    """
+    iv = geturandom(16)
+    encdata = aes_encrypt(key, iv, data)
+    return base64.b64encode(iv + encdata)
+
+
+def aes_decrypt_b64(key, data_b64):
+    """
+    This function decrypts base64 encoded data (containing the IV)
+    using AES-128-CBC. Used for PSKC
+
+    :param key: binary key
+    :param data_b64: base64 encoded data (IV + encdata)
+    :return: encrypted data
+    """
+    data_bin = base64.b64decode(data_b64)
+    iv = data_bin[:16]
+    encdata = data_bin[16:]
+    output = aes_decrypt(key, iv, encdata)
     return output
 
 
@@ -469,9 +531,6 @@ class urandom(object):
 
         # scale the integer to an float between 0.0 and 1.0
         randf = randi / intmax
-
-        assert randf >= 0.0
-        assert randf <= 1.0
 
         return randf
 

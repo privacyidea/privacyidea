@@ -22,6 +22,7 @@
 #
 from privacyidea.models import EventHandler, EventHandlerOption, db
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.audit import getAudit
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class event(object):
             for e_handler_def in e_handles:
                 log.debug("Handling event {eventname} with "
                           "{eventDef}".format(eventname=self.eventname,
-                                             eventDef=e_handler_def ))
+                                              eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The "action is determined by the event configuration
@@ -75,8 +76,28 @@ class event(object):
                     log.debug("Handling event {eventname} with options"
                               "{options}".format(eventname=self.eventname,
                                                  options=options))
+                    # create a new audit object
+                    event_audit = getAudit(self.g.audit_object.config)
+                    # copy all values from the originial audit entry
+                    event_audit_data = dict(self.g.audit_object.audit_data)
+                    event_audit_data["action"] = "EVENT {trigger}>>" \
+                                                 "{handler}:{action}".format(
+                            trigger=self.eventname,
+                            handler=e_handler_def.get("handlermodule"),
+                            action=e_handler_def.get("action"))
+                    event_audit_data["action_detail"] = "{0!s}".format(
+                        e_handler_def.get("options"))
+                    event_audit_data["info"] = e_handler_def.get("name")
+                    event_audit.log(event_audit_data)
+
                     event_handler.do(e_handler_def.get("action"),
                                      options=options)
+                    # In case the handler has modified the response
+                    f_result = options.get("response")
+                    # set audit object to success
+                    event_audit.log({"success": True})
+                    event_audit.finalize_log()
+
             return f_result
 
         return event_wrapper
@@ -95,6 +116,9 @@ def get_handler_object(handlername):
         UserNotificationEventHandler
     from privacyidea.lib.eventhandler.tokenhandler import TokenEventHandler
     from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+    from privacyidea.lib.eventhandler.federationhandler import \
+        FederationEventHandler
+    from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
@@ -102,6 +126,10 @@ def get_handler_object(handlername):
         h_obj = TokenEventHandler()
     if handlername == "Script":
         h_obj = ScriptEventHandler()
+    if handlername == "Federation":
+        h_obj = FederationEventHandler()
+    if handlername == "Counter":
+        h_obj = CounterEventHandler()
     return h_obj
 
 
@@ -152,6 +180,8 @@ def set_event(name, event, handlermodule, action, conditions=None,
     :type id: int
     :return: The id of the event.
     """
+    if type(event) == list:
+        event = ",".join(event)
     conditions = conditions or {}
     if id:
         id = int(id)

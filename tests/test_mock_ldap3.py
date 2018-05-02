@@ -6,6 +6,14 @@ This test file tests the test.ldap3mock
 import unittest
 import ldap3
 import ldap3mock
+from privacyidea.lib.resolvers.LDAPIdResolver import trim_objectGUID
+
+objectGUIDs = [
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d77',
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54',
+    '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d88'
+]
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
@@ -16,8 +24,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
                                 "accountExpires": 9223372036854775805,
-                                "objectGUID": '\xfd\x9a\xd9\x9dxvL\x81\x9b3;'
-                                              '\x1c\xd6\x8aq\x01',
+                                "objectGUID": objectGUIDs[0],
                                 'mobile': ["1234", "45678"]}},
                 {"dn": 'cn=mini,ou=example,o=test',
                  "attributes": {'cn': 'mini',
@@ -28,8 +35,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "homeDirectory": "/home/mini",
                                 "email": "mini@test.com",
                                 "accountExpires": 0,
-                                "objectGUID": '\x1a\xe3\xfd\x9e\xbd\xaeCq'
-                                              '\x97\xed!\x87\xeb\xa5i$',
+                                "objectGUID": objectGUIDs[1],
                                 'mobile': ["1234", "45678"]}},
                 {"dn": 'cn=bob,ou=example,o=test',
                  "attributes": {'cn': 'bob',
@@ -41,8 +47,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
                                 "accountExpires": 9223372036854775807,
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMw',
+                                "objectGUID": objectGUIDs[2],
                                 'oid': "3"}},
                 {"dn": 'cn=manager,ou=example,o=test',
                  "attributes": {'cn': 'manager',
@@ -52,9 +57,9 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "mobile": "123354",
                                 "accountExpires": 9223372036854775808,
                                 'userPassword': 'ldaptest',
-                                "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
-                                              '\x9b\xf9\xcajl\rMT',
+                                "objectGUID": objectGUIDs[3],
                                 'oid': "1"}}]
+
 
 class LDAPMockTestCase(unittest.TestCase):
     """
@@ -166,7 +171,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[1].get("dn") == dn1)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(objectGUID=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(&(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -175,7 +180,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(objectGUID~=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(&(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -378,7 +383,7 @@ class LDAPMockTestCase(unittest.TestCase):
         dn = "cn=alice,ou=example,o=test"
         dn1 = "cn=mini,ou=example,o=test"
         dn2 = "cn=manager,ou=example,o=test"
-        s = "(!(objectGUID=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(!(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -391,7 +396,7 @@ class LDAPMockTestCase(unittest.TestCase):
         dn = "cn=alice,ou=example,o=test"
         dn1 = "cn=mini,ou=example,o=test"
         dn2 = "cn=manager,ou=example,o=test"
-        s = "(!(objectGUID~=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(!(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -628,7 +633,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(|(objectGUID=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(|(objectGUID=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -637,7 +642,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(|(objectGUID~=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(|(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)
@@ -891,7 +896,7 @@ class LDAPMockTestCase(unittest.TestCase):
         self.assertTrue(self.c.response[0].get("dn") == dn)
 
         dn = "cn=bob,ou=example,o=test"
-        s = "(&(cn=*)(objectGUID~=\\ef\\36\\9b\\03\\c0\\e7\\f3\\42\\9b\\f9\\ca\\6a\\6c\\0d\\4d\\77))"
+        s = "(&(cn=*)(objectGUID~=%s))" % trim_objectGUID(objectGUIDs[2])
 
         self.c.search(search_base=self.base, search_filter=s, search_scope=ldap3.SUBTREE,
                 attributes = ldap3.ALL_ATTRIBUTES, paged_size = 5)

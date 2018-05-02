@@ -36,8 +36,8 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
     $scope.getRadiusServers = function (identifier) {
         ConfigFactory.getRadius(function(data) {
             $scope.radiusServers = data.result.value;
-            console.log("Fetched all radius servers");
-            console.log($scope.radiusServers);
+            //debug: console.log("Fetched all radius servers");
+            //debug: console.log($scope.radiusServers);
             // return one single RADIUS server
             if (identifier) {
                 $scope.params = $scope.radiusServers[identifier];
@@ -80,4 +80,6 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
+        // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getRadiusServers);
 });

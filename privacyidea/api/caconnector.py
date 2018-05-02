@@ -25,7 +25,7 @@ The CA connectors are written to the database table "caconnector".
 The code is tested in tests/test_api_caconnector.py.
 """
 from flask import (Blueprint, request)
-from lib.utils import (send_result)
+from .lib.utils import (send_result)
 from ..lib.log import log_with
 from flask import g
 import logging
@@ -48,9 +48,9 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 #@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
-    returns a json list of the available applications
+    returns a json list of the available CA connectors
     """
-    g.audit_object.log({"detail": "{0!s}".format(name)})
+    g.audit_object.log({"detail": u"{0!s}".format(name)})
     role = g.logged_in_user.get("role")
     res = get_caconnector_list(filter_caconnector_name=name,
                                return_config=(role == "admin"))
@@ -68,7 +68,7 @@ def save_caconnector_api(name=None):
     """
     param = request.all_data
     param["caconnector"] = name
-    g.audit_object.log({"detail": "{0!s}".format(name)})
+    g.audit_object.log({"detail": u"{0!s}".format(name)})
     res = save_caconnector(param)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -82,7 +82,7 @@ def delete_caconnector_api(name=None):
     """
     returns a json list of the available applications
     """
-    g.audit_object.log({"detail": "{0!s}".format(name)})
+    g.audit_object.log({"detail": u"{0!s}".format(name)})
     res = delete_caconnector(name)
     g.audit_object.log({"success": True})
     return send_result(res)

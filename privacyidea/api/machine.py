@@ -26,8 +26,7 @@ The code is tested in tests/test_api_machines
 """
 from flask import (Blueprint,
                    request, g)
-from lib.utils import (getParam,
-                       send_result)
+from .lib.utils import (getParam, send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policy import ACTION
 
@@ -117,7 +116,7 @@ def list_machines_api():
     # so we need to convert the Machine Object to dict
     machines = [mobject.get_dict() for mobject in machines]
     g.audit_object.log({'success': True,
-                        'info': "hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
+                        'info': u"hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
 
     return send_result(machines)
 
@@ -173,7 +172,7 @@ def attach_token_api():
                              options=options)
 
     g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
+                        'info': u"serial: {0!s}, application: {1!s}".format(serial,
                                                                  application)})
 
     return send_result(mt_object.id)

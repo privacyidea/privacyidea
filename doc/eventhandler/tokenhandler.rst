@@ -61,6 +61,16 @@ set description
 If all conditions are matched the description of the token identified in the
 request will be set.
 
+You can use the tag ``{current_time}`` or ``{now}`` to set the current
+timestamp. In addition you can append an offset to *current_time* or *now*
+like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
+days in the passt or 10 minutes in the future. The plus or minus must follow
+without blank, allowed time identifiers are s (seconds), m (minutes), h
+(hours) and d (days).
+
+Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
+and ``{ua_string}`` for information on the user agent.
+
 set validity
 ............
 
@@ -86,6 +96,11 @@ Date with time:
   * 23.12.2016 9:30
   * 23.12.2016 23:20
 
+Starting with version 2.19 we recommend setting the fixed time in the ISO
+8601 corresponding time format
+
+  * 2016-12-23T15:30+0600
+
 **Time Offset**
 
 You can also specify a time offset. In this case the validity period will be
@@ -100,6 +115,43 @@ event occurred.
 .. note:: This way you could easily define a event definition, which will set
    newly enrolled tokens to be only valid for a certain amount of days.
 
+set countwindow
+...............
+
+Here the count window of a token can be set. This requires an integer value.
+
+set tokeninfo
+.............
+
+Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
+attribute for the token. You need to specify the ``key`` of the
+tokeninfo and the ``value``.
+
+In the value field you can use the tag ``{current_time}`` to set the current
+timestamp. In addition you can append an offset to *current_time* or *now*
+like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
+days in the passt or 10 minutes in the future. The plus or minus must follow
+without blank, allowed time identifiers are s (seconds), m (minutes), h
+(hours) and d (days).
+
+Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
+and ``{ua_string}`` for information on the user agent and ``{username}`` and
+``{realm}`` for information on the user in the parameters.
+
+.. note:: Some tokens have token specific attributes that are stored in the
+   tokeninfo. The TOTP token type has a ``timeWindow``. The TOTP and the HOTP
+   token store the ``hashlib`` in the tokeninfo, the SMS token stores the
+   ``phone`` number.
+
+.. note:: You can use this to set the ``timeWindow`` of a TOTP token for
+   :ref:`faq_initial_synchronization`.
+
+set failcounter
+...............
+
+Using the action ``set failcounter`` you can reset the fail counter by
+setting it to 0 or also "block" the token by setting the fail counter to what
+ ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
 Code
 ~~~~

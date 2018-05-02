@@ -1,0 +1,44 @@
+<!-- Modal -->
+<div class="modal fade lock-dialog" id="dialogLock" tabindex="-1"
+     role="dialog"
+     data-backdrop="static" data-keyboard="false"
+     aria-labelledby="myModalLock"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myModalLock" translate>
+                    privacyIDEA UI is locked</h4>
+            </div>
+            <div class="modal-body" ng-hide="transactionid">
+                    <form name="formSignin" class="form-signin" role="form"
+                          novalidate>
+                        <div class="text-center" translate>
+                            You are logged in as {{ loggedInUser.username }}
+                            @  {{ loggedInUser.realm }}.
+                        </div>
+                        <label for="password" class="sr-only"
+                               translate>Password</label>
+                        <input name="password" type="password"
+                               autocomplete="off"
+                               id="password" class="form-control"
+                               ng-model="login.password" required
+                               placeholder="{{ 'Password'|translate }}"/>
+
+                        <div class="text-center">
+                            <button ng-click="unlock_first();"
+                                    ng-disabled="formSignin.$invalid"
+                                    class="btn btn-primary btn-block" translate>
+                                Log In
+                            </button>
+                        </div>
+
+                    </form>
+            </div>
+            <div class="modal-body" ng-show="transactionid">
+                <div ng-include="instanceUrl+'/static/components/login/views/enter-response.html'"></div>
+            </div>
+        </div>
+    </div>
+</div>
+

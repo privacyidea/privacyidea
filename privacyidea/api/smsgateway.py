@@ -29,7 +29,7 @@ The code of this module is tested in tests/test_api_smsgateway.py
 """
 from flask import (Blueprint,
                    request)
-from lib.utils import getParam, send_result
+from .lib.utils import getParam, send_result
 from ..lib.log import log_with
 from flask import g
 import logging
@@ -138,7 +138,7 @@ def delete_gateway_option(gwid=None, option=None):
 
     res = delete_smsgateway_option(gwid, option)
     g.audit_object.log({"success": res,
-                        "info": "{0!s}/{1!s}".format(gwid, option)})
+                        "info": u"{0!s}/{1!s}".format(gwid, option)})
 
     return send_result(res)
 

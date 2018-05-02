@@ -8,7 +8,13 @@
     <a ui-sref="config.tokens({tokentype:'email'})">Email Token Config</a>!
 </div>
 
+
 <div class="form-group">
+    <input type="checkbox" ng-model="form.dynamic_email"
+           name="dynamic_email" id="dynamic_email">
+    <label for="dynamic_email" translate>Read email address dynamically from user source on each request.</label>
+</div>
+<div class="form-group" ng-hide="form.dynamic_email">
     <label for="phone" translate>Email Address</label>
     <input type="email"
            autofocus

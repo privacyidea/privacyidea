@@ -93,7 +93,7 @@ class RADIUSServerTestCase(MyTestCase):
         # But not POST and not DELETE
         # delete server
         self.setUp_user_realms()
-        self.authenticate_selfserive_user()
+        self.authenticate_selfservice_user()
 
         # User is not allowed to delete a radiusserver
         with self.app.test_request_context('/radiusserver/server1',

@@ -11,7 +11,11 @@
                 <img ng-show="U2FToken.vendor=='Yubico'"
                      src="{{ instanceUrl }}/static/css/FIDO-U2F-Security-Key-444x444.png"
                      width="80">
+                <img ng-show="U2FToken.vendor=='u2fzero.com'"
+                     src="{{ instanceUrl }}/static/css/u2fzero.png"
+                     width="80">
                 <p>
+                <!-- {{ U2FToken.vendor }} -->
                 {{ U2FToken.subject }}
                 </p>
             </div>

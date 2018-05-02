@@ -26,10 +26,10 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
     $scope.instanceUrl = instanceUrl;
 
     $scope.getClientType = function () {
-        console.log("Requesting client application types.");
+        //debug: console.log("Requesting client application types.");
         ComponentFactory.getClientType(function (data) {
             $scope.clientdata = data.result.value;
-            console.log($scope.clientdata);
+            //debug: console.log($scope.clientdata);
         });
     };
 
@@ -41,6 +41,7 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
     if ($location.path() === "/component") {
         $location.path("/component/clienttype");
     }
+
 
     /*
     Functions for subscriptions
@@ -72,13 +73,13 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
      $scope.getSubscriptions = function() {
         SubscriptionFactory.get(function (data) {
             $scope.subscriptions = data.result.value;
-            console.log($scope.subscriptions);
+            //debug: console.log($scope.subscriptions);
         });
      };
 
      $scope.deleteSubscription = function(application) {
          SubscriptionFactory.delete(application, function(data){
-             console.log(data);
+             //debug: console.log(data);
              inform.add("Subscription deleted successfully.",
                  {type: "info", ttl: 3000});
              $scope.getSubscriptions();
@@ -87,4 +88,10 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
      };
 
     $scope.getSubscriptions();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", function () {
+        $scope.getSubscriptions();
+        ComponentFactory.getClientType();
+    });
 });

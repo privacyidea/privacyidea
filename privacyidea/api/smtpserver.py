@@ -30,14 +30,16 @@ The code of this module is tested in tests/test_api_smtpserver.py
 """
 from flask import (Blueprint,
                    request, current_app)
-from lib.utils import (getParam,
-                       required,
-                       send_result)
+from .lib.utils import (getParam,
+                        required,
+                        send_result)
 from ..lib.log import log_with
+from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policy import ACTION
+from ..lib.utils import is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
-from gettext import gettext as _
+from flask_babel import gettext as _
 import logging
 from privacyidea.lib.smtpserver import (add_smtpserver, SMTPServer,
                                         get_smtpservers, delete_smtpserver)
@@ -69,13 +71,13 @@ def create(identifier=None):
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = getParam(param, "tls", default=False)
-    tls = tls in ["True", True, "true", "1"]
+    tls = is_true(getParam(param, "tls", default=False))
     description = getParam(param, "description", default="")
+    timeout = int(getParam(param, "timeout") or 10)
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
-                       sender=sender)
+                       sender=sender, timeout=timeout)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -91,13 +93,19 @@ def list_smtpservers():
     res = {}
     server_list = get_smtpservers()
     for server in server_list:
+        decrypted_password = decryptPassword(server.config.password)
+        # If the database contains garbage, use the empty password as fallback
+        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
+            decrypted_password = ""
         res[server.config.identifier] = {"server": server.config.server,
                                          "tls": server.config.tls,
                                          "username": server.config.username,
+                                         "password": decrypted_password,
                                          "port": server.config.port,
                                          "description":
                                              server.config.description,
-                                         "sender": server.config.sender}
+                                         "sender": server.config.sender,
+                                         "timeout": server.config.timeout}
     g.audit_object.log({'success': True})
     return send_result(res)
 
@@ -133,13 +141,13 @@ def test():
     username = getParam(param, "username", default="")
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
-    tls = getParam(param, "tls", default=False)
-    tls = tls in [True, "True", "true", "1"]
+    tls = is_true(getParam(param, "tls", default=False))
     recipient = getParam(param, "recipient", required)
+    timeout = int(getParam(param, "timeout") or 10)
 
     s = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=password, sender=sender,
-                     tls=tls)
+                     tls=tls, timeout=timeout)
     r = SMTPServer.test_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "

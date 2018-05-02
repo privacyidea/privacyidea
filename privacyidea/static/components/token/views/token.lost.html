@@ -1,6 +1,6 @@
 <h3 name="Token Details">
     <translate>Token {{ selectedToken.serial }} is Lost!</translate>
-    <a class="btn btn-default" ui-sref="audit({serial: selectedToken.serial})">
+    <a class="btn btn-default" ui-sref="audit({serial:selectedToken.serial})">
         <translate>View token in Audit log</translate></a>
 </h3>
 <p class="help-block" translate>
@@ -15,7 +15,11 @@
 </p>
 
 <p class="help-block" translate>
-    The old token is disabled and can be deleted or enabled later.
+    The old token
+    <a ui-sref="token.details({tokenSerial:selectedToken.serial})">
+        {{ selectedToken.serial }}
+    </a>
+    is disabled and can be deleted or enabled later.
 </p>
 
 <div class="text-center"

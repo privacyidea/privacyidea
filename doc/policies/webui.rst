@@ -58,6 +58,10 @@ authentication) should be allowed.
 
 Possible values are "disable" and "allowed".
 
+.. note:: The policy is evaluated before the user is logged in. At this point
+   in time there is no realm known, so a policy to allow remote_user must not
+   select any realm.
+
 .. note:: The policy *login_mode* and *remote_user* work independent of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
    
@@ -80,20 +84,16 @@ in /etc/apache2/sites-available/privacyidea.conf::
                 Krb5KeyTab /etc/apache2/http.keytab
                 KrbServiceName HTTP
                 KrbSaveCredentials On
-                require valid-user
+                <RequireAny>
+                    # Either we need a URL with no authentication or we need a valid user
+                    <RequireAny>
+                        # Any of these URL do NOT need a basic authentication
+                        Require expr %{REQUEST_URI} =~ m#^/validate#
+                        Require expr %{REQUEST_URI} =~ m#^/ttype#
+                    </RequireAny>
+                    Require valid-user
+                </RequireAny>
         </Directory>
-
-        <Location /validate/check>
-                Require all granted
-                Options FollowSymLinks
-                AllowOverride None
-        </Location>
-
-        <Location /ttype>
-                Require all granted
-                Options FollowSymLinks
-                AllowOverride None
-        </Location>
 
 
 logout_time
@@ -234,3 +234,39 @@ the bahaviour that the administrator needs to press *enter* to trigger the
 search.
 
 (Since privacyIDEA 2.17)
+
+custom_baseline
+~~~~~~~~~~~~~~~
+
+.. index:: Customize baseline, customize footer
+
+type: str
+
+The administrator can replace the file ``templates/baseline.html`` with another template.
+This way he can change the links to e.g. internal documentation or ticketing systems.
+The new file could be called ``mytemplates/mybase.html``.
+
+This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+
+.. note:: This policy is evaluated before login. So any realm or user setting will have no
+   effect. But you can specify different baselines for different client IP addresses.
+
+(Since privacyIDEA 2.21)
+
+custom_menu
+~~~~~~~~~~~
+
+.. index:: Customize menu
+
+type: str
+
+The administrator can replace the file ``templates/menu.html`` with another template.
+This way he can change the links to e.g. internal documentation or ticketing systems.
+The new file could be called ``mytemplates/mymenu.html``.
+
+This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+
+.. note:: This policy is evaluated before login. So any realm or user setting will have no
+   effect. But you can specify different menus for different client IP addresses.
+
+(Since privacyIDEA 2.21)

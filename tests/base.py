@@ -143,7 +143,7 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(result.get("status"), res.data)
             self.at = result.get("value").get("token")
 
-    def authenticate_selfserive_user(self):
+    def authenticate_selfservice_user(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username":

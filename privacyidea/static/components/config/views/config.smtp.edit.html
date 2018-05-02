@@ -9,8 +9,7 @@
 <form name="formSmtp" role="form" validate
       class="form-horizontal">
 
-    <div class="form-group"
-        ng-class="{'has-error': !params.identifier}">
+    <div class="form-group">
         <label for="identifier" class="col-sm-3 control-label"
                 translate>Identifier</label>
         <div class="col-sm-9">
@@ -22,8 +21,7 @@
                 of the SMTP server definition.</p>
         </div>
     </div>
-    <div class="form-group"
-        ng-class="{'has-error': !params.server }">
+    <div class="form-group">
         <label for="server" class="col-sm-3 control-label" translate>
             IP or FQDN</label>
 
@@ -43,8 +41,17 @@
                    placeholder="25"/>
         </div>
     </div>
-    <div class="form-group"
-        ng-class="{'has-error': !params.sender}">
+    <div class="form-group">
+        <label for="port" class="col-sm-3 control-label" translate>
+            Timeout</label>
+
+        <div class="col-sm-9">
+            <input name="timeout" class="form-control"
+                   ng-model="params.timeout"
+                   placeholder="10"/>
+        </div>
+    </div>
+    <div class="form-group">
         <label for="sender" class="col-sm-3 control-label"
                translate>Sender Email</label>
 
@@ -61,7 +68,7 @@
 
     <div class="form-group">
         <label for="username" class="col-sm-3 control-label" translate>
-            Usernane</label>
+            Username</label>
 
         <div class="col-sm-9">
             <input name="binddn" class="form-control"
@@ -78,7 +85,7 @@
                translate>Password</label>
         <div class="col-sm-9">
             <input name="password" class="form-control"
-                   type="password"
+                   type="password" autocomplete="off"
                    ng-model="params.password"
                    placeholder="topsecret"/>
         </div>

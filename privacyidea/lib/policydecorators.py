@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 #
+#  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add authcache decorator
+#  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             add resolver dependent policy for lastauth, otppin, passthru,
+#             timelimit, losttoken
 #  2015-10-31 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Added time_limit and last_auth
 #  2015-03-15 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -42,7 +47,9 @@ import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta
+from privacyidea.lib.authcache import verify_in_cache
 import datetime
+from dateutil.tz import tzlocal
 from privacyidea.lib.radiusserver import get_radius
 
 log = logging.getLogger(__name__)
@@ -113,6 +120,7 @@ def challenge_response_allowed(func):
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
                 realm=user_object.realm,
+                resolver=user_object.resolver,
                 user=user_object.login,
                 client=clientip)
             log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes))
@@ -136,6 +144,56 @@ def challenge_response_allowed(func):
         return f_result
 
     return challenge_response_wrapper
+
+
+def auth_cache(wrapped_function, user_object, passw, options=None):
+    """
+    Decorate lib.token:check_user_pass. Verify, if the authentication can 
+    be found in the auth_cache. 
+    
+    :param wrapped_function: usually "check_user_pass"
+    :param user_object: User who tries to authenticate
+    :param passw: The PIN and OTP
+    :param options: Dict containing values for "g" and "clientip".
+    :return: Tuple of True/False and reply-dictionary
+    """
+    options = options or {}
+    g = options.get("g")
+    if g:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        auth_cache = policy_object.get_action_values(
+            action=ACTION.AUTH_CACHE,
+            scope=SCOPE.AUTH,
+            realm=user_object.realm,
+            resolver=user_object.resolver,
+            user=user_object.login,
+            client=clientip,
+            unique=True)
+        if auth_cache:
+            # verify in cache and return an early success
+            auth_times = auth_cache[0].split("/")
+            # determine first_auth from policy!
+            first_offset = parse_timedelta(auth_times[0])
+
+            if len(auth_times) == 2:
+                # Determine last_auth from policy
+                last_offset = parse_timedelta(auth_times[1])
+            else:
+                # If there is no last_auth, it is equal to first_auth
+                last_offset = first_offset
+
+            first_auth = datetime.datetime.utcnow() - first_offset
+            last_auth = datetime.datetime.utcnow() - last_offset
+            result = verify_in_cache(user_object.login, user_object.realm,
+                                     user_object.resolver, passw,
+                                     first_auth=first_auth,
+                                     last_auth=last_auth)
+            if result:
+                return True, {"message": "Authenticated by AuthCache."}
+
+    # If nothing else returned, we return the wrapped function
+    return wrapped_function(user_object, passw, options)
 
 
 def auth_user_has_no_token(wrapped_function, user_object, passw,
@@ -162,6 +220,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
         pass_no_token = policy_object.get_policies(action=ACTION.PASSNOTOKEN,
                                                    scope=SCOPE.AUTH,
                                                    realm=user_object.realm,
+                                                   resolver=user_object.resolver,
                                                    user=user_object.login,
                                                    client=clientip, active=True)
         if pass_no_token:
@@ -199,6 +258,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         pass_no_user = policy_object.get_policies(action=ACTION.PASSNOUSER,
                                                   scope=SCOPE.AUTH,
                                                   realm=user_object.realm,
+                                                  resolver=user_object.resolver,
                                                   user=user_object.login,
                                                   client=clientip,
                                                   active=True)
@@ -228,26 +288,27 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
-
     from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
-    if g:
+    if get_tokens(user=user_object, count=True) == 0 and g:
+        # We only go to passthru, if the user has no tokens!
         clientip = options.get("clientip")
         policy_object = g.policy_object
         pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
                                                scope=SCOPE.AUTH,
                                                realm=user_object.realm,
+                                               resolver=user_object.resolver,
                                                user=user_object.login,
                                                client=clientip, active=True)
         if len(pass_thru) > 1:
+            log.debug(u"Contradicting passthru policies: {0!s}".format(pass_thru))
             raise PolicyError("Contradicting passthru policies.")
-        if pass_thru and get_tokens(user=user_object, count=True) == 0:
-            # If the user has NO Token, authenticate against the user store
-            # Now we need to check the userstore password
+        if pass_thru:
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
             if pass_thru_action in ["userstore", True]:
+                # Now we need to check the userstore password
                 if user_object.check_password(passw):
                     return True, {"message": "The user authenticated against "
                                              "his userstore according to "
@@ -300,12 +361,14 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
                                                       scope=SCOPE.AUTHZ,
                                                       realm=user_object.realm,
+                                                      resolver=user_object.resolver,
                                                       user=user_object.login,
                                                       client=clientip)
         max_fail = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
+            resolver=user_object.resolver,
             user=user_object.login,
             client=clientip)
         # Check for maximum failed authentications
@@ -389,11 +452,13 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
         try:
             # Assume we have a user
             realm = user_or_serial.realm
+            resolver = user_or_serial.resolver
             login = user_or_serial.login
             serial = reply_dict.get("serial")
         except Exception:
             # in case of a serial:
             realm = None
+            resolver = None
             login = None
             serial = user_or_serial
 
@@ -404,42 +469,30 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
             try:
                 token = get_tokens(serial=serial)[0]
             except IndexError:
-                # In the special case of a registration token, the token does not
-                # exist anymore. So we immediately return
+                # In the special case of a registration token,
+                # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
             last_auth = policy_object.get_action_values(
                 action=ACTION.LASTAUTH,
                 scope=SCOPE.AUTHZ,
                 realm=realm,
+                resolver=resolver,
                 user=login,
                 client=clientip, unique=True)
 
             if len(last_auth) == 1:
-                # The tdelta in the policy
-                tdelta = parse_timedelta(last_auth[0])
-
-                # The last successful authentication of the token
-                last_success_auth = token.get_tokeninfo(ACTION.LASTAUTH)
-                if last_success_auth:
-                    log.debug("Compare the last successful authentication of "
-                              "token %s with policy "
-                              "tdelat %s: %s" % (serial, tdelta,
-                                                 last_success_auth))
-                    # convert string of last_success_auth
-                    last_success_auth = datetime.datetime.strptime(
-                        last_success_auth, "%Y-%m-%d %H:%M:%S.%f")
-                    # The last auth is to far in the past
-                    if last_success_auth + tdelta < datetime.datetime.now():
-                        res = False
-                        log.debug("The last successful authentication is too old.")
-                        reply_dict["message"] = "The last successful " \
-                                                "authentication was %s. It is to " \
-                                                "long ago." % last_success_auth
+                res = token.check_last_auth_newer(last_auth[0])
+                if not res:
+                    reply_dict["message"] = "The last successful " \
+                                            "authentication was %s. " \
+                                            "It is to long ago." % \
+                                            token.get_tokeninfo(ACTION.LASTAUTH)
 
             # set the last successful authentication, if res still true
             if res:
-                token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.utcnow())
+                token.add_tokeninfo(ACTION.LASTAUTH,
+                                    datetime.datetime.now(tzlocal()))
 
     return res, reply_dict
 
@@ -471,6 +524,7 @@ def login_mode(wrapped_function, *args, **kwds):
         login_mode_list = policy_object.get_action_values(ACTION.LOGINMODE,
                                                           scope=SCOPE.WEBUI,
                                                           realm=user_object.realm,
+                                                          resolver=user_object.resolver,
                                                           user=user_object.login,
                                                           client=clientip)
 
@@ -534,6 +588,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
         otppin_list = policy_object.get_action_values(ACTION.OTPPIN,
                                                       scope=SCOPE.AUTH,
                                                       realm=user_object.realm,
+                                                      resolver=user_object.resolver,
                                                       user=user_object.login,
                                                       client=clientip)
         if otppin_list:
@@ -585,10 +640,12 @@ def config_lost_token(wrapped_function, *args, **kwds):
         if len(toks) == 1:
             username = None
             realm = None
+            resolver = None
             user_object = toks[0].user
             if user_object:
                 username = user_object.login
                 realm = user_object.realm
+                resolver = user_object.resolver
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
@@ -596,18 +653,21 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
             validity_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
             pw_len_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
                 realm=realm,
+                resolver=resolver,
                 user=username,
                 client=clientip)
 

@@ -1,3 +1,267 @@
+privacyidea-venv (2.22.1-1) jessie; urgency=medium
+
+  Fixes in WebUI:
+  * Allow to display the messages of several C/R tokens (#995, #1004)
+  * Use ng-if instead of ng-show to avoid errors in the javascript console (#963)
+  * Remove reference to not-used system.addons.js to avoid errors in the javascript console
+  * Remove reference to not-used system.addons.html to avoid errors in the javascript console
+  * Use ng-src instead of src to avoid errors in the javascript console
+  * Avoid request to /false is image is not existing - avoid error in the javascript console
+  * Fix handling of U2F token in the WebUI login
+  * Require serial number in the assignment form (#1011)
+  * Fix PIN comparison in token enroll and token assign (#1010)
+  * Fix the empty username in token enroll or assign (#918)
+
+  Fixes in Server:
+  * Add check for serial number present (#1011)
+  * Fix validation of OCRA and TiQR token (#1008)
+  * Add retry to cope with HSM issues (#1003)
+  * Fix unicode in resolverconf database table with Oracle (#999)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 20 Apr 2018 15:00:00 +0200
+
+privacyidea-venv (2.22-1) jessie; urgency=low
+
+  Features:
+  * Add automatic offline refill for Offline OTP tokens (#839)
+  * Return realm and resolver of the user and allow mapping
+    group membership to the RADIUS protocol (#896)
+  * Add new tokenkind (hardware, software, virtual) for all tokens (#828)
+  * Support Vasco tokens via Import and via Web Enrollment (#904, #903, #891)
+  * Add arbitrary tokeninfo field to authorization policy (#873)
+  * New SMPP SMS provider (#878)
+  * New event handler Counter for counting events for statistics and monitoring (#951)
+
+  Enhancements:
+  * Enhance the statistics possibilities in WebUI (#950)
+  * Allow reencryption of the database by importing PSKC to
+    a new database (#940)
+  * Allow token janitor to export "PW" token type to PSKC (#942)
+  * Also export and import the counter values of HOTP/TOTP to PSKC (#943)
+  * SMS token can dynamically read phone number from user source (#932)
+  * Email token can dynamically read email address from user source (#932)
+  * Add policy to ignore the validity of a U2F attestation certificate (#926)
+  * Improve the speed of the LinOTP migration script to cope with tens of
+    thousands of tokens (#914)
+  * pi-manage can create API tokens with a chosen validity time (#931)
+  * Allow user to set token description for HOTP and TOTP tokens 
+    during enrollment (#928) (Thanks to Taylor Chase for this contribution!)
+  * Add timeout to SMTP server configuration (#919)
+  * Allow complex email templates for email tokens (#684)
+  * LDAP resolver now supports arbitrary multivalue attributes (#881)
+  * Allow Event Handler to match failing authentication (#971)
+
+  Fixes:
+  * Several fixes in LDAP resolver to cope with ldap3/pyasn1 version issues and
+    other issues (#911, #980, #982, #887)
+  * Skip misguiding LDAP error "AttributeError NonType" in log file (#948)
+  * Add missing validity time in /validate/check response for email tokens (#946)
+    (Thanks to Kleber Rocha/klinux for this contribution!)
+  * Fix the handling of the SMS expiration date (#937)
+  * Fix serial length in the audit table to match the serial length in the token table (#929)
+    (Thanks to Salvo Rapisarda for this contribution!)
+  * Fix Mail content sent by email token is rendered as attachment (#915)
+  * Fix Editing SMTP Server definition clears the password (#923)
+  * Fix pi-manage backup crash (Thanks to Pavol Ipoth for this contribution!)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 26 Mar 2018 09:30:00 +0200
+
+
+privacyidea-venv (2.21.1-1) jessie; urgency=low
+
+  Features:
+   * Allow export of tokens to PKSC file (#790)
+   * Implement two-step enrollment of HOTP/TOTP tokens (#797, #863, #865, #866)
+   * Allow WebUI customization via policies (#795)
+
+  Enhancements:
+   * Add script to decrypt safeword tokens
+   * Allow using tags in the tokenissuer of smartphone tokens
+   * Try to re-establish lost HSM connections (#787)
+   * Allow to rotate audit log based on multiple conditions (#780, #833)
+   * Add dry-run option to audit log rotation (#801)
+   * Allow dots in realm names (#808)
+   * Mark empty but required fields in WebUI (#810)
+   * Display success information after PIN is set (#822)
+   * Add further tags to the user notification event handler (#824)
+   * Add number of users to the subscription view (#800)
+   * Add HTTP/HTTPS proxy settings to HTTP SMS Provider (#835)
+   * Federation Handler allows to forward the authorization token (#838)
+   * Use token janitor to export a user list (#852)
+   * Use HSM for random key generation if possible (#783)
+   * HTTP SMS Provider now takes TIMEOUT parameter into account
+   * Allow to configure length of generated serial numbers (#583)
+
+  Fixes:
+   * Fix handling of only_realm option in token event handler (#809)
+   * Fix scrollbar issues in WebUI (#806, #823)
+   * Fix OTP counter of offline token (#840)
+   * Fix conflicts between check_tokentype and passthru policies (#846)
+   * Properly reset tab tile after session has been locked (#850)
+   * Fix handling of fixed key size during enrollment (#820)
+   * Make sure that only active policies are honored (#825)
+   * Fix various bugs with non-ASCII data (#754)
+   * Fix failcounter_clear_timeout (#831)
+   * Only remove apache host definitions on first installation (#834)
+   * Allow to use TLS1.1 and TLS1.2 for LDAP Resolver (#876)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 09 Jan 2018 12:30:00 +0200
+
+privacyidea-venv (2.20.1-1) jessie; urgency=low
+
+  Fixes:
+   * /token/init allows to pass otpkey AND genkey=false (#793)
+   * Cast date to string, to fix audit search for postgresql (#786)
+   * Optimize the LDAP Resolver Redundancy to avoid LdapServerPoolExhaustedErrors (#802)
+   * Preset default realm in token enrollment (#804)
+   * Fix PassOnNoUser and PassOnNoToken (#798)
+   * Fix genkey=0 error during token enrollment (#793)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 30 Oct 2017 11:30:00 +0200
+
+
+privacyidea-venv (2.19.1-1) jessie; urgency=low
+
+  Enhancements:
+  * Add "pi-manage policy load" and "pi-manage policy export". (#721)
+  * Allow customization via pi.cfg file.
+  * Add {username} and {realm} as tags for the tokenhandler. (#735)
+
+  Fixes:
+  * Fix pi-manage file permission for backup
+  * Fix search for resolver in audit log
+  * Allow to read old legacy time from validity period
+  * Fix wrong enddate with lost_token
+  * Fix typos
+  * Improve documentation for yubikey
+  * Improve documentation for cache decorator
+  * Improve documentation for webui policy
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Sun, 02 Jul 2017 08:00:00 +0200
+
+privacyidea-venv (2.19-1) wheezy; urgency=low
+
+  Features:
+  * Add generic User Cache to speed up authentication (#670, #683)
+  * Support multiple challenge-response tokens with the same PIN (#654)
+  * Restrict U2F registration based on assertion certificte (#648)
+  * Restrict authentication with U2F devices based on assertion 
+    certificate (#648)
+  * Add privacyidea-token-janitor script, that can clean orpaned or 
+    expired tokens (#692)
+  * Add API for mutual key generation during enrollment for easy 
+    Smartphone App development by introducing a generic 
+    2-step-rollout process (#627)
+  * Add /validate/radiuscheck which works with rlm_rest and only uses 
+    HTTP return codes. (#703)
+
+  Enhancements:
+  * Allow to unset token validity period and other tokeninfo
+    fields (#691)
+  * Add a quick-resolver test for LDAP resolvers (#688)
+  * Add additional tokeninfo tags {client_ip}, {ua_browser}, 
+    {ua_string} in token handler (#687)
+  * Allow to set decription of U2F tokens during enrollment (#685)
+  * Reduce the number of LDAP requests to increase authentication
+    performance (#664, #655, #650)
+  * Realm administrator is only allowed to see actions on this allowed
+    user realms (#663)
+  * Add audit rotation to pi-manage (#657)
+  * Speed up Audit Log calls by adding a second index (#656)
+  * Allow to either lock und logout the UI after timeout (#653)
+  * Allow string format {user}, {realm}, {serial}, {surname} in 
+    tokenlabel policy (#646)
+  * Move to a consistent time format for validity period and all other 
+    user specific times also containing the timezone (#644)
+  * Add TLS certificate check to LDAP machine resolver (#638)
+  * Make TLS certificate the default option in LDAP resolvers (#639)
+  * Allow to use privacyIDEA ownCloud App without subscription
+    file with up to 50 users.
+
+  Fixes:
+  * Fix the datepicker for the token validity period (#644 / #693)
+  * Fix LDAP resolver to respect all boolean configuration 
+    options (#658)
+  * Fix serial number in challenge response validation response (#649)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Fri, 26 May 2017 08:30:00 +0200
+
+privacyidea-venv (2.18-1) wheezy; urgency=low
+
+  Features:
+  * Allow to disable the WebUI (#605)
+  * The WebUI will lock the screen after a timeout instead of  
+    logging out the user. This allows to easily continue
+    configuration work. (#621)
+  * Improve the creation and handling of local CAs (#630, #632, #633)
+    Allow certificate template for certificates with different runtime
+    and x509v3 extensions.
+
+  Enhancements
+  Enhancements in Policies:
+  * Allow regular expressions in usernames in policies. (#581)
+  * Improve Policy creation with pi-manage from JSON formatted file.
+  * WebUI: Add action grouping in policies.
+  * WebUI: Add action filter in policy view.
+  * Allow token specific PIN policies: The SPASS token can now
+    have dedicated PIN policies.
+  * Add PIN policies for administrators during enrollment and
+    during assignment.
+  * Add WebUI policy: only search on enter being pressed (#617)
+
+  Enhancements in Event Handlers:
+  * Add token_validity_period condition to event handlers. (#618)
+  * Add additional options in token handler when creating 
+    SMS, Email or mOTP tokens.
+  * Allow tokenhandler to set tokeninfo field.
+  * Allow tokenhandler to set syncwindow.
+  * Add event handler condition for count_auth_success and
+    cound_auth_fail
+  * Add event handler condition for last_auth.
+  * Improve Audit Log for Event Handler. Each triggered action 
+    will now also create an audit entry. (#609)
+  * Allow the use of {current_time} in tokenevent handler. (#628)
+
+  Enhancements in LDAP Resolver:
+  * Upgrade dependency to ldap3 version >=2.1.1 to improve LDAP 
+    performance in regards to redundancy and security
+  * LDAP Resolver: Use get_info in bind requests to avoid querying 
+    of subschema. (#585)
+  * LDAP Resolver: Support StartTLS over Port 389.
+  * Simplify LDAP Resolver: Remove username from Attribute Mapping.
+  * Simplefy LDAP Resolver: Remove reverse filter.
+
+  Misc Enhancements:
+  * Automatically add user's mobile number if tokentype is SMS.
+  * Add example configuration for GTX messaging SMS gateway.
+  * Add a script "privacyidea-get-unused-tokens" to find
+    unused tokens
+  * WebUI: Add a busy indicator spinner.
+  * Improve the pi-manage script in regards to backup and restore.
+    Let you choose whether to backup encryption key or not.
+    Better handling for individual pathes. (#626, #623)
+
+  Fixes:
+  * LDAP Resolver: Verify SSL Certificate (Security)
+  * LDAP Resolver: Allow special characters in NTLM password
+  * LDAP Resolver: Allow searching for users with German umlaut
+  * Remove the "unsafe" notation in the QR-Code link, so that 
+    a smartphone may import the key during HOTP/TOTP token enrollment
+    by clicking the link. (#620)
+  * Use defusexml to avoid XML bombs on token import (Security)
+  * Replace eval with ast.literal_evel (Security)
+  * Add missing attributes for U2F tokens in 
+    validate/triggerchallenge API
+  * Let /validate/triggerchallenge write to audit log.
+  * Fix mangle policy for users and realms
+  * Avoid logging of password in check_user_pass in debug level 
+    (level=10)
+  * Set encrypted PIN on enrollment for certificate tokens (#625)
+  * Remove unused policy action "motp_webprovision"
+  * Allow emailtext policy in triggerchallenge API (#642)
+
+ -- Cornelius Kölbel <cornelius@privacyidea.org>  Thu, 09 Mar 2017 12:00:00 +0200
+
 privacyidea-venv (2.17-1) wheezy; urgency=low
 
   Features

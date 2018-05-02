@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add U2F policy to /token/init
 # 2016-08-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add number of tokens, searched by get_serial_by_otp
 # 2016-07-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -50,9 +52,9 @@
 
 from flask import (Blueprint, request, g, current_app)
 from ..lib.log import log_with
-from lib.utils import (optional,
-                       send_result, send_error,
-                       send_csv_result, required, get_all_params)
+from .lib.utils import (optional,
+                        send_result, send_error,
+                        send_csv_result, required, get_all_params)
 from ..lib.user import get_user_from_param
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -63,14 +65,15 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
-                         set_validity_period_end, set_validity_period_start)
+                         set_validity_period_end, set_validity_period_start, add_tokeninfo,
+                         delete_tokeninfo, import_token)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from lib.utils import getParam
+from .lib.utils import getParam
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
@@ -80,12 +83,15 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            init_tokenlabel, init_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
-                                           enroll_pin, papertoken_count)
+                                           enroll_pin, papertoken_count,
+                                           u2ftoken_allowed, u2ftoken_verify_cert,
+                                           twostep_enrollment_activation,
+                                           twostep_enrollment_parameters)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
-
+from privacyidea.lib.subscriptions import CheckSubscription
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -109,13 +115,18 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(enroll_pin, request)
+@prepolicy(twostep_enrollment_activation, request)
+@prepolicy(twostep_enrollment_parameters, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
 @prepolicy(papertoken_count, request)
+@prepolicy(u2ftoken_allowed, request)
+@prepolicy(u2ftoken_verify_cert, request)
 @postpolicy(save_pin_change, request)
+@CheckSubscription(request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)
 def init():
@@ -126,7 +137,7 @@ def init():
     :jsonparam genkey: set to =1, if key should be generated. We either
                    need otpkey or genkey
     :jsonparam keysize: the size (byte) of the key. Either 20 or 32. Default is 20
-    :jsonparam serial: required: the serial number/identifier of the token
+    :jsonparam serial: the serial number/identifier of the token
     :jsonparam description: A description for the token
     :jsonparam pin: the pin of the token. "OTP PIN"
     :jsonparam user: the login user name. This user gets the token assigned
@@ -137,8 +148,17 @@ def init():
     :jsonparam hashlib: used hashlib sha1, sha256 or sha512
     :jsonparam validity_period_start: The beginning of the validity period
     :jsonparam validity_period_end: The end of the validity period
+    :jsonparam 2stepinit: set to =1 in conjunction with genkey=1 if you want
+                    a 2 step initialization process. Additional policies have to be set
+                    see :ref:`2step_enrollment`.
+    :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
+                            hex or base32check (see :ref:`2step_enrollment`)
 
     :return: a json result with a boolean "result": true
+
+    Depending on the token type there can be additional parameters.
+    In the tokenclass you can see additional parameters in the method ``update``
+    when looking for ``getParam`` functions.
 
     **Example response**:
 
@@ -174,6 +194,42 @@ def init():
               },
               "version": "privacyIDEA unknown"
             }
+            
+    **2 Step Enrollment**
+    
+    Some tokens might need a 2 step initialization process like a smartphone 
+    app. This way you can create a shared secret from a part generated by 
+    the privacyIDEA server and from a second part generated by the smartphone 
+    app/client.
+    
+    The first API call would be
+    
+       .. sourcecode:: http
+       
+           POST /token/init
+           
+           2stepinit=1
+           
+    The response would contain the otpkey generated by the server and the 
+    serial number of the token. At this point, the token is deactivated and 
+    marked as being in an enrollment state. The client 
+    would also generated a component of the key and send his component to the 
+    privacyIDEA server:
+     
+    The second API call would be
+    
+       .. sourcecode:: http
+           
+           POST /token/init
+           
+           serial=<serial from the previous response>
+           otpkey=<key part generated by the client>
+    
+    Each tokenclass can define its own way to generate the secret key by 
+    overwriting the method ``generate_symmetric_key``. The
+    Base Tokenclass contains an extremely simple way by concatenating the 
+    two parts. See
+    :func:`~privacyidea.lib.tokenclass.TokenClass.generate_symmetric_key`
     """
     response_details = {}
     tokenrealms = None
@@ -343,7 +399,9 @@ def list_api():
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ASSIGN)
 @prepolicy(encrypt_pin, request)
+@prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="assign")
+@CheckSubscription(request)
 @event("token_assign", request, g)
 @log_with(log)
 def assign_api():
@@ -357,7 +415,7 @@ def assign_api():
     :rtype: json object
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "serial", required)
+    serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
     encrypt_pin = getParam(request.all_data, "encryptpin")
     res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin)
@@ -555,7 +613,7 @@ def resync_api(serial=None):
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
-@prepolicy(check_otp_pin, request)
+@prepolicy(check_otp_pin, request, action=ACTION.SETPIN)
 @postpolicy(save_pin_change, request)
 @event("token_setpin", request, g)
 @log_with(log)
@@ -619,9 +677,14 @@ def set_api(serial=None):
         * count_auth_success_max
         * hashlib,
         * max_failcount
+        * validity_period_start
+        * validity_period_end
 
     The token is identified by the unique serial number or by the token owner.
     In the later case all tokens of the owner will be modified.
+    
+    The validity period needs to be provided in the format
+    YYYY-MM-DDThh:mm+oooo
 
     :jsonparam basestring serial: the serial number of the single token to reset
     :jsonparam basestring user: The username of the token owner
@@ -822,25 +885,12 @@ def loadtokens_api(filename=None):
         log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
                                                               tokenrealms))
 
-        init_param = {'serial': serial,
-                      'type': TOKENS[serial]['type'],
-                      'description': TOKENS[serial].get("description",
-                                                        "imported"),
-                      'otpkey': TOKENS[serial]['otpkey'],
-                      'otplen': TOKENS[serial].get('otplen'),
-                      'timeStep': TOKENS[serial].get('timeStep'),
-                      'hashlib': TOKENS[serial].get('hashlib')}
+        import_token(serial,
+                     TOKENS[serial],
+                     tokenrealms=tokenrealms,
+                     default_hashlib=hashlib)
 
-        if hashlib and hashlib != "auto":
-            init_param['hashlib'] = hashlib
-
-        #if tokenrealm:
-        #    self.Policy.checkPolicyPre('admin', 'loadtokens',
-        #                   {'tokenrealm': tokenrealm })
-
-        init_token(init_param, tokenrealms=tokenrealms)
-
-    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
+    g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
                         'serial': ', '.join(TOKENS.keys())})
@@ -920,7 +970,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError("The user {0!s} does not own the token {1!s}".format(
+            raise TokenAdminError("The user {0!r} does not own the token {1!s}".format(
                 userobj, serial))
 
     options = {"g": g,
@@ -978,8 +1028,54 @@ def get_serial_by_otp_api(otp=None):
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": "get {0!s} by OTP. {1!s} tokens".format(
+                        "info": u"get {0!s} by OTP. {1!s} tokens".format(
                             serial, count)})
 
     return send_result({"serial": serial,
                         "count": count})
+
+
+@token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
+@event("token_info", request, g)
+@log_with(log)
+@admin_required
+def set_tokeninfo_api(serial, key):
+    """
+    Add a specific tokeninfo entry to a token. Already existing entries
+    with the same key are overwritten.
+
+    :param serial: the serial number/identifier of the token
+    :param key: token info key that should be set
+    :query value: token info value that should be set
+    :return: returns value=True in case the token info could be set
+    :rtype: bool
+    """
+    value = getParam(request.all_data, "value", required)
+    g.audit_object.log({"serial": serial})
+    count = add_tokeninfo(serial, key, value)
+    success = count > 0
+    g.audit_object.log({"success": success})
+    return send_result(success)
+
+
+@token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
+@prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
+@event("token_info", request, g)
+@log_with(log)
+@admin_required
+def delete_tokeninfo_api(serial, key):
+    """
+    Delete a specific tokeninfo entry of a token.
+
+    :param serial: the serial number/identifier of the token
+    :param key: token info key that should be deleted
+    :return: returns value=True in case a matching token was found, which does not necessarily mean
+    that the matching token had a tokeninfo value set in the first place.
+    :rtype: bool
+    """
+    g.audit_object.log({"serial": serial})
+    count = delete_tokeninfo(serial, key)
+    success = count > 0
+    g.audit_object.log({"success": success})
+    return send_result(success)

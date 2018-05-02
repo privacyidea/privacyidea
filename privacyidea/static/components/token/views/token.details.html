@@ -31,6 +31,7 @@
                   translate>locked</span>
             <span class="label label-danger" ng-show="token.revoked"
                   translate>revoked</span>
+            </td>
             <td>
             <span ng-show="token.active"
                   ng-click="disable()">
@@ -54,6 +55,11 @@
                     Revoke</button>
             </span>
             </td>
+        </tr>
+        <tr ng-if="token.rollout_state">
+            <td translate>Rollout State</td>
+            <td>{{ token.rollout_state }}</td>
+            <td></td>
         </tr>
         <tr token-data-edit text="{{'Maxfail' | translate }}"
             button-text="{{ 'Set max fail'|translate}}"
@@ -176,7 +182,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_start"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
@@ -184,8 +190,8 @@
                                    ng-required="true" close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
-                                    ng-click="startOpened = openDate($event)"><i
-                                    class="glyphicon glyphicon-calendar"></i>
+                                    ng-click="startOpened = openDate($event)">
+                                <i class="glyphicon glyphicon-calendar"></i>
                             </button>
                           </span>
                         </p>
@@ -197,7 +203,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_end"
                                    is-open="endOpened"
                                    min-date="today"
@@ -205,8 +211,8 @@
                                    ng-required="true" close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
-                                    ng-click="endOpened = openDate($event)"><i
-                                    class="glyphicon glyphicon-calendar"></i>
+                                    ng-click="endOpened = openDate($event)">
+                                    <i class="glyphicon glyphicon-calendar"></i>
                             </button>
                           </span>
                         </p>
@@ -308,12 +314,12 @@
         <tr ng-hide="token.locked || !checkRight('setpin')">
             <td>
                 <input type="password" ng-model="pin1"
-                       class="form-control"
+                       class="form-control" autocomplete="off"
                        placeholder="{{ 'Enter PIN for token'|translate }}">
             </td>
             <td>
                 <input type="password" ng-model="pin2"
-                       class="form-control"
+                       class="form-control" autocomplete="off"
                        placeholder="{{ 'Enter PIN again'|translate }}">
             </td>
             <td>
@@ -341,6 +347,7 @@
                        ng-hide="showPassword"
                        name="testPassword"
                        class="form-control"
+                       autocomplete="off"
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
@@ -366,7 +373,7 @@
     <!-- =================== USER ASSIGN ================= -->
 
     <div ng-show="loggedInUser.role == 'admin'">
-        <h4 ng-show="token.user_id" translate>Assgined User</h4>
+        <h4 ng-show="token.user_id" translate>Assigned User</h4>
         <table ng-show="token.user_id"
                class="table table-striped table-bordered">
             <tr>
@@ -424,7 +431,7 @@
     <div assign-user new-user-object="newUser" realms="realms"></div>
 
     <div class="text-center">
-        <button ng-click="assignUser()"
+        <button type="button" ng-click="assignUser()"
                 id="assignButton"
                 ng-disabled="formAssignToken.$invalid"
                 class="btn btn-primary">

@@ -4,7 +4,9 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
-from privacyidea.lib.caconnectors.localca import LocalCAConnector
+from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
+from OpenSSL import crypto
+from privacyidea.lib.utils import int_to_hex
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
@@ -165,14 +167,17 @@ class LocalCATestCase(MyTestCase):
         cacon = LocalCAConnector("localCA", {"cacert": "...",
                                              "cakey": "..."})
         # set the parameters:
-        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
-                          "openssl.cnf": OPENSSLCNF})
-
         cwd = os.getcwd()
+        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
+                          "openssl.cnf": OPENSSLCNF,
+                          "WorkingDir": cwd + "/" + WORKINGDIR})
+
         cert = cacon.sign_request(REQUEST,
                                   {"CSRDir": "",
                                    "CertificateDir": "",
                                    "WorkingDir": cwd + "/" + WORKINGDIR})
+        serial = cert.get_serial_number()
+
         self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
@@ -181,6 +186,41 @@ class LocalCATestCase(MyTestCase):
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
                          ".localdomain'>")
 
+        # Revoke certificate
+        r = cacon.revoke_cert(cert)
+        serial_hex = int_to_hex(serial)
+        self.assertEqual(r, serial_hex)
+
+        # Create the CRL
+        r = cacon.create_crl()
+        self.assertEqual(r, "crl.pem")
+        # Check if the serial number is contained in the CRL!
+        filename = cwd + "/" + WORKINGDIR + "/crl.pem"
+        f = open(filename)
+        buff = f.read()
+        f.close()
+        crl = crypto.load_crl(crypto.FILETYPE_PEM, buff)
+        revoked_certs = crl.get_revoked()
+        found_revoked_cert = False
+        for revoked_cert in revoked_certs:
+            s = revoked_cert.get_serial()
+            if s == serial_hex:
+                found_revoked_cert = True
+                break
+        self.assertTrue(found_revoked_cert)
+
+        # Create the CRL and check the overlap period. But no need to create
+        # a new CRL.
+        r = cacon.create_crl(check_validity=True)
+        self.assertEqual(r, None)
+
+        # Now we overlap at any cost!
+        cacon.set_config({"cakey": CAKEY, "cacert": CACERT,
+                          "openssl.cnf": OPENSSLCNF,
+                          "WorkingDir": cwd + "/" + WORKINGDIR,
+                          ATTR.CRL_OVERLAP_PERIOD: 1000})
+        r = cacon.create_crl(check_validity=True)
+        self.assertEqual(r, "crl.pem")
 
     def test_03_sign_user_cert(self):
         cwd = os.getcwd()
@@ -213,4 +253,27 @@ class LocalCATestCase(MyTestCase):
         self.assertEqual("{0!r}".format(cert.get_subject()),
                          "<X509Name object '/CN=Steve Test"
                          "/emailAddress=steve@openssl.org'>")
+
+    def test_05_templates(self):
+        cwd = os.getcwd()
+        cacon = LocalCAConnector("localCA",
+                                 {"cakey": CAKEY,
+                                  "cacert": CACERT,
+                                  "openssl.cnf": OPENSSLCNF,
+                                  "WorkingDir": cwd + "/" + WORKINGDIR,
+                                  ATTR.TEMPLATE_FILE: "templates.yaml"})
+        templates = cacon.get_templates()
+        self.assertTrue("user" in templates)
+        self.assertTrue("webserver" in templates)
+        self.assertTrue("template3" in templates)
+        cert = cacon.sign_request(SPKAC, options={"spkac": 1,
+                                                  "template": "webserver"})
+        expires = cert.get_notAfter()
+        import datetime
+        dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
+        ddiff = dt - datetime.datetime.now()
+        # The certificate is signed for 750 days
+        self.assertTrue(ddiff.days > 740, ddiff.days)
+        self.assertTrue(ddiff.days < 760, ddiff.days)
+
 

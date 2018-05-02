@@ -1,6 +1,3 @@
-<div ng-include="instanceUrl+'/static/components/config/views/config.system.addons.html'">
-</div>
-
 <div class="row">
     <div class="col-lg-3">
         <div class="pa-sidebar panel">
@@ -30,6 +27,13 @@
                         <a ui-sref="config.radius">
                             <span class="glyphicon glyphicon-off"></span>
                             <span translate>RADIUS servers</span>
+                        </a>
+                    </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.privacyideaserver')}">
+                        <a ui-sref="config.privacyideaserver">
+                            <span class="glyphicon glyphicon-forward"></span>
+                            <span translate>privacyIDEA servers</span>
                         </a>
                     </li>
                     <li role="presentation"
@@ -74,6 +78,17 @@
             <label for="IncFailCountOnFalsePin" translate
                     >Increase the failcounter if the wrong PIN was entered.
             </label>
+        </div>
+        <div class="form-group">
+            <label for="failcounter_clear_timeout"
+                   class="col-sm-9 control-label" translate>Clear failcounter
+                after minutes
+            </label>
+            <div class="col-sm-3">
+                <input name="failcounter_clear_timeout" class="form-control"
+                       ng-model="params.failcounter_clear_timeout"
+                       placeholder="0"/>
+            </div>
         </div>
         <div class="form-group col-sm-12">
             <input name="PrependPin" id="PrependPin"
@@ -130,7 +145,20 @@
         </div>
 
         <div class="form-group">
-            <label for="AutoResyncTimeout"
+            <label for="UserCacheExpiration"
+                   class="col-sm-9 control-label" translate>User Cache
+                expiration in seconds
+            </label>
+
+            <div class="col-sm-3">
+                <input name="UserCacheExpiration" class="form-control"
+                       ng-model="params.UserCacheExpiration"
+                       placeholder="0"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="OverrideAuthorizationClient"
                    class="col-sm-4 control-label" translate>
                 Override Authorization Clients
             </label>

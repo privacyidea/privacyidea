@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 """
+2017-04-26 Friedrich Weber <friedrich.weber@netknights.it>
+           Make it possible to check for correct LDAPS/STARTTLS settings
+2017-01-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+           Remove objectGUID. Since we stick with ldap3 version 2.1,
+           the objectGUID is returned in a human readable format.
 2016-12-05 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
            Fixed issue creating ldap entries with objectClasses defined
            Fix problem when searching for attribute values containing the
@@ -38,9 +43,10 @@ from __future__ import (
 DIRECTORY = "tests/testdata/tmp_directory"
 import six
 from ast import literal_eval
+import uuid
+from ldap3.utils.conv import escape_bytes
 import hashlib
 import ldap3
-from ldap3.utils.conv import check_escape, escape_bytes
 import re
 import pyparsing
 
@@ -60,6 +66,11 @@ def wrapper%(signature)s:
     with ldap3mock:
         return func%(funcargs)s
 """
+
+def _convert_objectGUID(item):
+    item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
+    item = escape_bytes(item)
+    return item
 
 
 def get_wrapped(func, wrapper_template, evaldict):
@@ -124,7 +135,11 @@ class Connection(object):
                                        paged_size=kwargs.get("page_size"),
                                        size_limit=kwargs.get("size_limit"),
                                        paged_cookie=None)
-                return self.connection.response
+                result = self.connection.response
+                if kwargs.get("generator", False):
+                    # If ``generator=True`` is passed, ``paged_search`` should return an iterator.
+                    result = iter(result)
+                return result
 
         def __init__(self, connection):
             self.standard = self.Standard(connection)
@@ -135,6 +150,7 @@ class Connection(object):
         import copy
         self.directory = copy.deepcopy(directory)
         self.bound = False
+        self.start_tls_called = False
         self.extend = self.Extend(self)
 
         self.operation = {
@@ -150,11 +166,14 @@ class Connection(object):
         return next(i for (i, d) in enumerate(self.directory) if d["dn"] == dn)
 
     @staticmethod
-    def open():
+    def open(read_server_info=True):
         return
 
-    def bind(self):
+    def bind(self, read_server_info=True):
         return self.bound
+
+    def start_tls(self, read_server_info=True):
+        self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
 
@@ -170,10 +189,10 @@ class Connection(object):
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-	    # Create a entry object for the new user
-	    entry = {}
-	    entry['dn'] = dn
-	    entry['attributes'] = attributes
+            # Create a entry object for the new user
+            entry = {}
+            entry['dn'] = dn
+            entry['attributes'] = attributes
             if object_class != None:
                 entry['attributes'].update( {'objectClass': object_class} )
         else:
@@ -346,7 +365,7 @@ class Connection(object):
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
                     if attribute == "objectGUID":
-                        item = escape_bytes(item)
+                        item = _convert_objectGUID(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -360,14 +379,22 @@ class Connection(object):
 
             else:
                 if attribute == "objectGUID":
-                    values_from_directory = escape_bytes(values_from_directory)
+                    values_from_directory = _convert_objectGUID(values_from_directory)
+
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if m:
                         entry["type"] = "searchResEntry"
                         matches.append(entry)
                 else:
-                    if str(value) == str(values_from_directory):
+                    # The value, which we compare is unicode, so we convert
+                    # the values_from_directory to unicode rather than str.
+                    if type(values_from_directory) == str:
+                        values_from_directory = values_from_directory.decode(
+                            "utf-8")
+                    elif type(values_from_directory) == int:
+                        values_from_directory = u"{0!s}".format(values_from_directory)
+                    if value == values_from_directory:
                         entry["type"] = "searchResEntry"
                         matches.append(entry)
 
@@ -395,7 +422,7 @@ class Connection(object):
             if isinstance(values_from_directory, list):
                 for item in values_from_directory:
                     if attribute == "objectGUID":
-                        item = escape_bytes(item)
+                        item = _convert_objectGUID(item)
 
                     if match_using_regex:
                         m = re.match(regex, str(item), re.I)
@@ -404,12 +431,13 @@ class Connection(object):
                     else:
                         if item == value:
                             found = True
-                if found == False:
+                if found is False:
                     entry["type"] = "searchResEntry"
                     matches.append(entry)
             else:
                 if attribute == "objectGUID":
-                    values_from_directory = escape_bytes(values_from_directory)
+                    values_from_directory = _convert_objectGUID(values_from_directory)
+
                 if match_using_regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if not m:
@@ -432,9 +460,9 @@ class Connection(object):
         # NOTE: We may need to expand on this list, but as this is not a real
         # LDAP server we should be OK.
         # Value to contain:
-        #   numbers, upper/lower case letters, astrisk, at symbol, full stop
-        #   backslash or a space
-        v = pyparsing.Word(pyparsing.alphanums + "*@.\\ ")
+        #   numbers, upper/lower case letters, astrisk, at symbol, minus, full
+        #   stop, backslash or a space
+        v = pyparsing.Word(pyparsing.alphanums + "-*@.\\ äöü")
         rel = pyparsing.oneOf("= ~= >= <=")
 
         expr = pyparsing.Forward()
@@ -521,8 +549,8 @@ class Connection(object):
         return candidates
 
     def _search_and(self, base, search_filter, candidates=None):
-        # Load the data from the directory, if we arn't passed any
-        if candidates == [] or candidates == None:
+        # Load the data from the directory, if we aren't passed any
+        if candidates == [] or candidates is None:
             candidates = self.directory
         this_filter = list()
 
@@ -631,10 +659,15 @@ class Connection(object):
         self.result = dict()
 
         try:
+            if type(search_filter) == str:
+                # We need to convert to unicode otherwise pyparsing will not
+                # find the u"ö"
+                search_filter = search_filter.decode("utf-8")
             expr = Connection._parse_filter()
             s_filter = expr.parseString(search_filter).asList()[0]
-        except pyparsing.ParseBaseException:
-            pass
+        except pyparsing.ParseBaseException as exx:
+            # Just for debugging purposes
+            s = "{!s}".format(exx)
 
         for item in s_filter:
             if item[0] in self.operation:
@@ -652,6 +685,7 @@ class Ldap3Mock(object):
 
     def __init__(self):
         self._calls = CallList()
+        self._server_mock = None
         self.directory = []
         self.reset()
 
@@ -692,9 +726,8 @@ class Ldap3Mock(object):
         evaldict = {'ldap3mock': self, 'func': func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
-    def _on_Server(self, host, port,
-                              use_ssl,
-                              connect_timeout):
+    def _on_Server(self, host, port, use_ssl, connect_timeout, get_info=None,
+                   tls=None):
         # mangle request packet
 
         return "FakeServerObject"
@@ -734,7 +767,7 @@ class Ldap3Mock(object):
         # check the password
         correct_password = False
         # Anonymous bind
-        # Reload the directory just incase a change has been made to 
+        # Reload the directory just in case a change has been made to
         # user credentials
         self.directory = self._load_data(DIRECTORY)
         if authentication == ldap3.ANONYMOUS and user == "":
@@ -742,6 +775,12 @@ class Ldap3Mock(object):
         for entry in self.directory:
             if entry.get("dn") == user:
                 pw = entry.get("attributes").get("userPassword")
+                # password can be unicode
+                try:
+                    password = password.encode("utf-8")
+                except UnicodeDecodeError:
+                    # already encoded.
+                    pass
                 if pw == password:
                     correct_password = True
                 elif pw.startswith('{SSHA}'):
@@ -761,8 +800,10 @@ class Ldap3Mock(object):
             return self._on_Server(host, port,
                               use_ssl,
                               connect_timeout, *a, **kwargs)
+        self._server_mock = mock.MagicMock()
+        self._server_mock.side_effect = unbound_on_Server
         self._patcher = mock.patch('ldap3.Server',
-                                   unbound_on_Server)
+                                   self._server_mock)
         self._patcher.start()
 
         def unbound_on_Connection(server, user,
@@ -788,6 +829,10 @@ class Ldap3Mock(object):
     def stop(self):
         self._patcher.stop()
         self._patcher2.stop()
+        self._server_mock = None
+
+    def get_server_mock(self):
+        return self._server_mock
 
 # expose default mock namespace
 mock = _default_mock = Ldap3Mock()

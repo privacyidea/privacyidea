@@ -24,7 +24,7 @@
         </ng-include>
 
         <!-- User Assignment -->
-        <div ng-show="loggedInUser.role == 'admin'">
+        <div ng-if="loggedInUser.role == 'admin'">
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms"
@@ -37,7 +37,7 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-show="loggedInUser.role == 'user' && !hidePin &&
+             ng-if="loggedInUser.role == 'user' && !hidePin &&
                     !$state.includes('token.wizard') &&
                     checkRight('enrollpin')">
             <label for="otppin" translate>PIN</label>
@@ -59,10 +59,10 @@
                     <label for="validity_start"
                            translate>Validity Start
                     </label>
-                    <p class="input-group col-sm-6">
+                    <p class="input-group col-sm-12">
                             <input type="text" class="form-control"
                                    name="validity_start"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="form.validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
@@ -80,10 +80,10 @@
                     <label for="validity_end"
                            translate>Validity End
                     </label>
-                    <p class="input-group col-sm-6">
+                    <p class="input-group col-sm-12">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="dd/MM/yy"
+                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="form.validity_period_end"
                                    is-open="endOpened"
                                    show-button-bar="false"
@@ -97,11 +97,16 @@
                           </span>
                     </p>
                 </div>
+                <p class="help" translate>
+                    The start time and the end time of the validity period
+                    should be entered in the format
+                    <em>YYYY-MM-DDThh:mm+oooo</em>.
+                </p>
             </accordion-group>
         </accordion>
 
         <div class="text-center">
-            <button ng-click="enrollToken()"
+            <button type="button" ng-click="enrollToken()"
                     ng-disabled="formEnrollToken.$invalid"
                     class="btn btn-primary" translate>Enroll Token
             </button>
@@ -115,9 +120,9 @@
 
 </div>
 
-<!-- Show this information after the token was enrolled -->
+<!-- Show this information after the token was enrolled completely -->
 <div ng-show="enrolledToken">
-    <p>
+    <p ng-hide="enrolledToken.rollout_state === 'clientwait'">
         <span ng-show="newUser.user && loggedInUser.role == 'admin'" translate>
             The token was successfully enrolled with serial number
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
@@ -148,8 +153,8 @@
          ng-include="instanceUrl+'/'+piCustomization+
          '/views/includes/token.enroll.post.bottom.html'"></div>
 
-    <div class="text-center" ng-hide="click_wait">
-        <button ng-click="enrolledToken = null;"
+    <div class="text-center" ng-hide="click_wait || enrolledToken.rollout_state === 'clientwait'">
+        <button ng-click="enrolledToken = null"
                 ng-hide="$state.includes('token.wizard')"
                 class="btn btn-primary" translate>Enroll a new token
         </button>

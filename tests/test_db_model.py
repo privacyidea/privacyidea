@@ -11,8 +11,9 @@ from privacyidea.models import (Token,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
                                 EventHandler, SMSGatewayOption, SMSGateway,
-                                EventHandlerCondition,
-                                ClientApplication, Subscription)
+                                EventHandlerCondition, PrivacyIDEAServer,
+                                ClientApplication, Subscription, UserCache,
+                                EventCounter)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -639,3 +640,71 @@ class TokenModelTestCase(MyTestCase):
         s = Subscription.query.filter(
             Subscription.application == "otrs").first()
         self.assertEqual(s, None)
+
+    def test_23_usercache(self):
+        username = "cornelius"
+        resolver = "resolver1"
+        user_id = 1
+        timestamp = datetime.now()
+
+        # create a user in the cache
+        cached_user = UserCache(username, resolver, user_id, timestamp)
+        self.assertTrue(cached_user)
+        cached_user.save()
+
+        # search a user in the cache
+        find_user = UserCache.query.filter(UserCache.username ==
+                                           username).first()
+        self.assertTrue(find_user)
+        self.assertEqual(find_user.user_id, str(user_id))
+        self.assertEqual(find_user.resolver, resolver)
+        self.assertEqual(find_user.timestamp, timestamp)  # TODO: Sensible, or might we have a small loss of precision?
+
+        # delete the user from the cache
+        r = find_user.delete()
+        self.assertTrue(r)
+        find_user = UserCache.query.filter(UserCache.username ==
+                                           username).first()
+        self.assertFalse(find_user)
+
+    def test_24_add_and_delete_privacyideaserver(self):
+        pi1 = PrivacyIDEAServer(identifier="myserver",
+                                url="https://pi.example.com")
+        pi1.save()
+        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
+        self.assertEqual(pi2.url, "https://pi.example.com")
+        self.assertFalse(pi2.tls)
+
+        # Update the server
+        r = PrivacyIDEAServer(identifier="myserver",
+                              url="https://pi2.example.com", tls=True,
+                              description="test").save()
+        modified_server = PrivacyIDEAServer.query.filter_by(
+            identifier="myserver").first()
+
+        self.assertTrue(modified_server.tls, "100.2.3.4")
+        self.assertEqual(modified_server.description, "test")
+        self.assertEqual(modified_server.url, "https://pi2.example.com")
+
+        # Delete the server
+        pi2.delete()
+        # Try to find the server
+        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
+        # The server does not exist anymore
+        self.assertEqual(pi2, None)
+
+    def test_25_eventcounter(self):
+        counter = EventCounter("test_counter", 10)
+        counter.save()
+        counter2 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter2.counter_value, 10)
+
+        counter2.increase()
+        counter2.increase()
+
+        counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter3.counter_value, 12)
+
+        counter3.delete()
+        counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter3, None)

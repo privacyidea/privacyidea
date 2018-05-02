@@ -23,6 +23,13 @@ The TOTP token is a time based token. You can paste a secret key or
         </p>
     </div>
 </div>
+<div class="form-group"
+     ng-show="checkRight('totp_2step=allow') || (!$state.includes('token.wizard') && checkRight('totp_2step=force'))">
+    <input type="checkbox" ng-model="form['2stepinit']"
+           ng-disabled="checkRight('totp_2step=force')"
+           name="twostep_enrollment" id="twostep_enrollment">
+    <label for="twostep_enrollment" translate>Use two-step enrollment with the privacyIDEA Authenticator App</label>
+</div>
 <div class="form-group" ng-hide="form.genkey">
     <label for="otpkey" translate>OTP Key</label>
     <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
@@ -58,10 +65,16 @@ The TOTP token is a time based token. You can paste a secret key or
     <label for="hashlib" translate>Hash algorithm</label>
     <select class="form-control"
             id="hashlib"
-            ng-model="form['totp.hashlib']"
+            ng-model="form.hashlib"
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>
         The Google Authenticator only supports the SHA1 algorithm.
     </p>
+</div>
+<div class="form-group">
+    <label for="description" translate>Description</label>
+    <input type="text" class="form-control"
+            placeholder="{{ 'Some nice words...'|translate }}"
+            ng-model="form.description" />
 </div>

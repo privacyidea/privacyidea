@@ -25,10 +25,10 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from lib.utils import (send_error, get_all_params)
+from .lib.utils import (send_error, get_all_params)
 from ..lib.user import get_user_from_param
 import logging
-from lib.utils import getParam
+from .lib.utils import getParam
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
@@ -36,6 +36,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.lib.token import get_token_type
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -50,6 +51,7 @@ from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
 from .radiusserver import radiusserver_blueprint
+from .privacyideaserver import privacyideaserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
 from .event import eventhandling_blueprint
@@ -58,9 +60,10 @@ from .clienttype import client_blueprint
 from .subscriptions import subscriptions_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
-                         AuthError,
+                         AuthError, UserError,
                          PolicyError)
 from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +74,7 @@ log = logging.getLogger(__name__)
 @caconnector_blueprint.before_request
 @system_blueprint.before_request
 @radiusserver_blueprint.before_request
+@privacyideaserver_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -111,6 +115,10 @@ def before_request():
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
         # takes a list as the userobject
         request.User = None
+    except UserError:
+        # In cases like the policy API, the parameter "user" is part of the
+        # policy and will not resolve to a user object
+        request.User = User()
 
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
@@ -122,6 +130,10 @@ def before_request():
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
+    if serial and "**" not in serial:
+        tokentype = get_token_type(serial)
+    else:
+        tokentype = None
     realm = getParam(request.all_data, "realm")
     user_loginname = ""
     resolver = ""
@@ -139,6 +151,7 @@ def before_request():
                         "user": user_loginname,
                         "realm": realm,
                         "resolver": resolver,
+                        "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
@@ -185,6 +198,7 @@ def before_request():
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
 @radiusserver_blueprint.after_request
+@privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
 @postrequest(sign_response, request=request)

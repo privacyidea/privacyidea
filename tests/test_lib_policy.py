@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.policy.py
 
@@ -613,6 +614,14 @@ class PolicyTestCase(MyTestCase):
         found, excluded = P._search_value(["v1", "-v2"], "v2")
         self.assertTrue(excluded)
 
+        found, excluded = P._search_value(["v1", "v.*"], "v3")
+        self.assertTrue(found)
+        self.assertFalse(excluded)
+
+        found, excluded = P._search_value(["v1", "r.*"], "v13")
+        self.assertFalse(found)
+        self.assertFalse(excluded)
+
     def test_21_check_all_resolver(self):
         # check_all_resolver allows to find a policy for a secondary user
         # resolver.
@@ -690,3 +699,15 @@ class PolicyTestCase(MyTestCase):
             rid = delete_resolver(reso)
             self.assertTrue(rid > 0, rid)
 
+    def test_22_non_ascii_user(self):
+        set_policy(name="polnonascii",
+                   action="enroll, otppin=1",
+                   user=u'nönäscii',
+                   scope='s')
+
+        P = PolicyClass()
+        p = P.get_policies(action="enroll", user='somebodyelse')
+        self.assertEqual(len(p), 0)
+
+        p = P.get_policies(action="enroll", user=u'nönäscii')
+        self.assertEqual(len(p), 1)
