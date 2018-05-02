@@ -13,7 +13,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_time_offset_from_now,
                                    parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int)
+                                   check_sha, otrs_sha256, parse_int, check_crypt)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -396,6 +396,16 @@ class UtilsTestCase(MyTestCase):
         p_hash = hash_password("passw0rd", "ssha512")
         self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
         self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
+        
+        # MD5Crypt
+        p_hash = hash_password("passw0rd", "md5crypt")
+        self.assertTrue(check_crypt(p_hash, "passw0rd"))
+        self.assertFalse(check_crypt(p_hash, "password"))
+        
+        # SHA512Crypt
+        p_hash = hash_password("passw0rd", "sha512crypt")
+        self.assertTrue(check_crypt(p_hash, "passw0rd"))
+        self.assertFalse(check_crypt(p_hash, "password"))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
