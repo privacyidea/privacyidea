@@ -300,6 +300,12 @@ class SQLResolverTestCase(MyTestCase):
                                                               "== test"}.items()))
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
+        
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "chandler"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 0, userlist)
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()

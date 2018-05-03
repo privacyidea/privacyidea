@@ -126,7 +126,7 @@ class IdResolver (UserIdResolver):
         :return: list of filter conditions
         """
         if where:
-            parts = where.split("and")
+            parts = where.split(" and ")
             for part in parts:
                 # this might result in errors if the
                 # administrator enters nonsense
