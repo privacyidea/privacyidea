@@ -13,7 +13,8 @@ from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
                                    parse_time_offset_from_now,
                                    parse_time_delta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int)
+                                   check_sha, otrs_sha256, parse_int,
+                                   convert_column_to_unicode)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -410,3 +411,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(r, 18)
         r = parse_int("123")
         self.assertEqual(r, 123)
+
+    def test_17_convert_column_to_unicode(self):
+        self.assertEqual(convert_column_to_unicode(None), None)
+        self.assertEqual(convert_column_to_unicode(True), "True")
+        self.assertEqual(convert_column_to_unicode(False), "False")
+        self.assertEqual(convert_column_to_unicode(b"yes"), u"yes")
+        self.assertEqual(convert_column_to_unicode(u"yes"), u"yes")
