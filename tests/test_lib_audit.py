@@ -201,6 +201,12 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(len(self.Audit.audit_data.get("token_type")),
                          column_length.get("token_type"))
 
+        # check treatment of None and boolean values
+        self.Audit.log({"token_type": None, "info": True})
+        self.Audit._truncate_data()
+        self.assertEqual(self.Audit.audit_data.get("token_type"), None)
+        self.assertEqual(self.Audit.audit_data.get("info"), True)
+
     def test_07_sign_non_ascii_entry(self):
         # Log a username as unicode with a non-ascii character
         self.Audit.log({"serial": "1234",
