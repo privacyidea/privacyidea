@@ -116,7 +116,10 @@ class Audit(AuditBase):
         """
         for column, l in column_length.iteritems():
             if column in self.audit_data:
-                self.audit_data[column] = self.audit_data[column][:l]
+                data = self.audit_data[column]
+                if isinstance(data, basestring):
+                    data = data[:l]
+                self.audit_data[column] = data
 
     @staticmethod
     def _create_filter(param, timelimit=None):
