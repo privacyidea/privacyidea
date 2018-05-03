@@ -47,7 +47,8 @@ from .lib.crypto import (encrypt,
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
-from .lib.utils import is_true
+from .lib.utils import is_true, convert_column_to_unicode
+
 log = logging.getLogger(__name__)
 
 #
@@ -636,9 +637,7 @@ class TokenInfo(MethodsMixin, db.Model):
         """
         self.token_id = token_id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
 
@@ -729,9 +728,7 @@ class Config(TimestampMethodsMixin, db.Model):
     @log_with(log)
     def __init__(self, Key, Value, Type=u'', Description=u''):
         self.Key = unicode(Key)
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = unicode(Type)
         self.Description = unicode(Description)
 
@@ -857,9 +854,7 @@ class CAConnectorConfig(db.Model):
                                        .first()\
                                        .id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
 
@@ -954,9 +949,7 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                        .first()\
                                        .id
         self.Key = unicode(Key)
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = unicode(Type)
         self.Description = unicode(Description)
 
@@ -1679,9 +1672,7 @@ class EventHandlerCondition(db.Model):
     def __init__(self, eventhandler_id, Key, Value, comparator="equal"):
         self.eventhandler_id = eventhandler_id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.comparator = comparator
         self.save()
 
@@ -1728,9 +1719,7 @@ class EventHandlerOption(db.Model):
     def __init__(self, eventhandler_id, Key, Value, Type="", Description=""):
         self.eventhandler_id = eventhandler_id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
         self.save()
@@ -1821,9 +1810,7 @@ class MachineResolverConfig(db.Model):
                                 .first()\
                                 .id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
 
@@ -2027,9 +2014,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         """
         self.gateway_id = gateway_id
         self.Key = Key
-        if Value is not None:
-            Value = unicode(Value)
-        self.Value = Value
+        self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.save()
 
