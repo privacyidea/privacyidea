@@ -207,6 +207,37 @@ def add_radius(identifier, server, secret, port=1812, description="",
 
 
 @log_with(log)
+def test_radius(identifier, server, secret, user, password, port=1812, description="",
+               dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5):
+    """
+    This tests a RADIUS server configuration by sending an access request.
+
+    :param identifier: The identifier or the name of the RADIUSServer definition
+    :type identifier: basestring
+    :param server: The FQDN or IP address of the RADIUS server
+    :type server: basestring
+    :param secret: The RADIUS secret
+    :param user: the username to send
+    :param password: the password to send
+    :param port: the radius port
+    :type port: int
+    :param description: Human readable description of the RADIUS server
+        definition
+    :param dictionary: The RADIUS dictionary
+    :return: The result of the access request
+    """
+    cryptedSecret = encryptPassword(secret)
+    if len(cryptedSecret) > 255:
+        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
+                               id=2234)
+    s = RADIUSServerDB(identifier=identifier, server=server, port=port,
+                       secret=cryptedSecret, dictionary=dictionary,
+                       retries=retries, timeout=timeout,
+                       description=description)
+    return RADIUSServer.request(s, user, password)
+
+
+@log_with(log)
 def delete_radius(identifier):
     """
     Delete the given server from the database

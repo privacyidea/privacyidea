@@ -2,14 +2,17 @@
 This test file tests the lib/radiusserver.py
 """
 from .base import MyTestCase
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 from privacyidea.lib.radiusserver import (add_radius, delete_radius,
                                           get_radiusservers, get_radius,
-                                          RADIUSServer)
+                                          RADIUSServer, test_radius)
 from privacyidea.lib.config import set_privacyidea_config
 import radiusmock
 DICT_FILE = "tests/testdata/dictionary"
 
+
+# prevent nosetests to run test_radius as a unittest
+test_radius.__test__ = False
 
 class RADIUSServerTestCase(MyTestCase):
 
@@ -75,3 +78,24 @@ class RADIUSServerTestCase(MyTestCase):
         # A timeout will return false
         r = RADIUSServer.request(radius.config, "user", "password")
         self.assertEqual(r, False)
+
+    @radiusmock.activate
+    def test_06_test_radius(self):
+        radiusmock.setdata(success=False)
+        r = test_radius(identifier="myserver", server="1.2.3.4",
+                        user="user", password="password",
+                        secret="testing123", dictionary=DICT_FILE)
+        self.assertFalse(r)
+
+        radiusmock.setdata(success=True)
+        r = test_radius(identifier="myserver", server="1.2.3.4",
+                        user="user", password="password",
+                        secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r)
+
+        # raises error on long secrets
+        self.assertRaises(privacyIDEAError,
+                          test_radius,
+                          identifier="myserver", server="1.2.3.4",
+                          user="user", password="password",
+                          secret="x" * 96, dictionary=DICT_FILE)
