@@ -987,7 +987,7 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.hashtypes = Array("PHPASS", "SHA", "SSHA","SSHA256", "SSHA512", "OTRS");
+    $scope.hashtypes = Array("PHPASS", "SHA", "SSHA","SSHA256", "SSHA512", "OTRS", "SHA512CRYPT", "MD5CRYPT");
 
     $('html,body').scrollTop(0);
 
