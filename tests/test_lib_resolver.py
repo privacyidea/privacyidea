@@ -296,6 +296,13 @@ class SQLResolverTestCase(MyTestCase):
         
         y = SQLResolver()
         y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "hans AND name "
+                                                              "== dampf"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 1, userlist)
+        
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
                                                               "hans and name "
                                                               "== test"}.items()))
         userlist = y.getUserList()
