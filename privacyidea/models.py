@@ -2392,20 +2392,20 @@ class Audit(MethodsMixin, db.Model):
                  ):
         self.signature = ""
         self.date = datetime.now()
-        self.action = action
+        self.action = convert_column_to_unicode(action)
         self.success = success
-        self.serial = serial
-        self.token_type = token_type
-        self.user = user
-        self.realm = realm
-        self.resolver = resolver
-        self.administrator = administrator
-        self.action_detail = action_detail
-        self.info = info
-        self.privacyidea_server = privacyidea_server
-        self.client = client
-        self.loglevel = loglevel
-        self.clearance_level = clearance_level
+        self.serial = convert_column_to_unicode(serial)
+        self.token_type = convert_column_to_unicode(token_type)
+        self.user = convert_column_to_unicode(user)
+        self.realm = convert_column_to_unicode(realm)
+        self.resolver = convert_column_to_unicode(resolver)
+        self.administrator = convert_column_to_unicode(administrator)
+        self.action_detail = convert_column_to_unicode(action_detail)
+        self.info = convert_column_to_unicode(info)
+        self.privacyidea_server = convert_column_to_unicode(privacyidea_server)
+        self.client = convert_column_to_unicode(client)
+        self.loglevel = convert_column_to_unicode(loglevel)
+        self.clearance_level = convert_column_to_unicode(clearance_level)
 
 ### User Cache
 
