@@ -227,9 +227,10 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
+                policy_name = pass_no_token[0].get("name")
                 return True, {"message": "The user has no token, but is "
-                                         "accepted due to policy '%s'." %
-                                         pass_no_token[0].get("name")}
+                                         "accepted due to policy '%s'." % policy_name,
+                              "info": u"user has no token, accepted by '{!s}'".format(policy_name)}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -265,9 +266,11 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
+                policy_name = pass_no_user[0].get("name")
                 return True, {"message": "The user does not exist, but is "
                                          "accepted due to policy '%s'." %
-                                         pass_no_user[0].get("name")}
+                                         policy_name,
+                              "info": u"user does not exist, accepted due to '{!s}'".format(policy_name)}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -312,7 +315,9 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 if user_object.check_password(passw):
                     return True, {"message": "The user authenticated against "
                                              "his userstore according to "
-                                             "policy '%s'." % policy_name}
+                                             "policy '%s'." % policy_name,
+                                  "info": u"against userstore according to '{!s}'".format(
+                                      policy_name)}
             else:
                 # We are doing RADIUS passthru
                 log.info("Forwarding the authentication request to the radius "
@@ -323,7 +328,9 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                     return True, {'message': "The user authenticated against "
                                              "the RADIUS server %s according "
                                              "to policy '%s'." %
-                                             (pass_thru_action, policy_name)}
+                                             (pass_thru_action, policy_name),
+                                  'info': u"against RADIUS server {!s} according to '{!s}'".format(
+                                      pass_thru_action, policy_name)}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

@@ -347,7 +347,11 @@ def check():
     else:
         result, details = check_user_pass(user, password, options=options)
 
-    g.audit_object.log({"info": details.get("message"),
+    if "info" in details:
+        info = details.pop("info")
+    else:
+        info = details.get("message")
+    g.audit_object.log({"info": info,
                         "success": result,
                         "serial": serial or details.get("serial"),
                         "tokentype": details.get("type")})
@@ -445,7 +449,11 @@ def samlcheck():
             for k, v in ui.iteritems():
                 result_obj["attributes"][k] = v
 
-    g.audit_object.log({"info": details.get("message"),
+    if "info" in details:
+        info = details.pop("info")
+    else:
+        info = details.get("message")
+    g.audit_object.log({"info": info,
                         "success": auth,
                         "serial": details.get("serial"),
                         "tokentype": details.get("type"),
