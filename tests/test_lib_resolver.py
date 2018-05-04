@@ -217,7 +217,6 @@ class SQLResolverTestCase(MyTestCase):
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 4, userlist)
 
-
     def test_02_check_passwords(self):
         y = SQLResolver()
         y.loadConfig(self.parameters)
@@ -303,6 +302,15 @@ class SQLResolverTestCase(MyTestCase):
         y = SQLResolver()
         y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
                                                               "hans AND name "
+                                                              "== dampf"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 1, userlist)
+
+        # Also allow more than one blank surrounding the "and"
+        # SQLAlchemy strips the blanks in the condition
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "hans   AND name "
                                                               "== dampf"}.items()))
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
