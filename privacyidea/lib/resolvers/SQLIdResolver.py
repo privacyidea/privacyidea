@@ -30,6 +30,7 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import re
 
 from UserIdResolver import UserIdResolver
 
@@ -126,7 +127,7 @@ class IdResolver (UserIdResolver):
         :return: list of filter conditions
         """
         if where:
-            parts = where.split(" and ")
+            parts = re.split(' and ', where, flags=re.IGNORECASE)
             for part in parts:
                 # this might result in errors if the
                 # administrator enters nonsense
