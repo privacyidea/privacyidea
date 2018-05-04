@@ -710,7 +710,7 @@ def autoassign(request, response):
 
                                 g.audit_object.log(
                                     {"success": True,
-                                     "action_info":
+                                     "info":
                                          "Token assigned via auto assignment",
                                      "serial": token_obj.token.serial})
                                 break
