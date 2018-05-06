@@ -36,7 +36,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 import logging
 from privacyidea.lib.radiusserver import (add_radius, RADIUSServer,
-                                          delete_radius, get_radiusservers)
+                                          delete_radius, get_radiusservers, test_radius)
 from privacyidea.models import RADIUSServer as RADIUSServerDB
 from privacyidea.api.auth import admin_required
 
@@ -149,11 +149,8 @@ def test():
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
 
-    s = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=secret, dictionary=dictionary,
-                       retries=retries, timeout=timeout)
-    r = RADIUSServer.request(s, user, password)
-
+    r = test_radius(identifier, server, secret, user, password, port=port,
+                    dictionary=dictionary, retries=retries, timeout=timeout)
     g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)

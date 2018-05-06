@@ -291,6 +291,34 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(uid)
         uid = y.getUserId("achmed")
         self.assertFalse(uid)
+        
+    def test_06_append_where_filter(self):
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "hans and name "
+                                                              "== dampf"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 1, userlist)
+        
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "hans AND name "
+                                                              "== dampf"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 1, userlist)
+        
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "hans and name "
+                                                              "== test"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 0, userlist)
+        
+        y = SQLResolver()
+        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
+                                                              "chandler"}.items()))
+        userlist = y.getUserList()
+        self.assertTrue(len(userlist) == 0, userlist)
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()

@@ -30,6 +30,7 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import re
 
 from UserIdResolver import UserIdResolver
 
@@ -126,17 +127,19 @@ class IdResolver (UserIdResolver):
         :return: list of filter conditions
         """
         if where:
-            # this might result in errors if the
-            # administrator enters nonsense
-            (w_column, w_cond, w_value) = where.split()
-            if w_cond.lower() == "like":
-                conditions.append(getattr(table, w_column).like(w_value))
-            elif w_cond == "==":
-                conditions.append(getattr(table, w_column) == w_value)
-            elif w_cond == ">":
-                conditions.append(getattr(table, w_column) > w_value)
-            elif w_cond == "<":
-                conditions.append(getattr(table, w_column) < w_value)
+            parts = re.split(' and ', where, flags=re.IGNORECASE)
+            for part in parts:
+                # this might result in errors if the
+                # administrator enters nonsense
+                (w_column, w_cond, w_value) = part.split()
+                if w_cond.lower() == "like":
+                    conditions.append(getattr(table, w_column).like(w_value))
+                elif w_cond == "==":
+                    conditions.append(getattr(table, w_column) == w_value)
+                elif w_cond == ">":
+                    conditions.append(getattr(table, w_column) > w_value)
+                elif w_cond == "<":
+                    conditions.append(getattr(table, w_column) < w_value)
 
         return conditions
 

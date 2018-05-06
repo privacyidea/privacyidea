@@ -66,6 +66,9 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
                inform.add(gettextCatalog.getString("RADIUS request" +
                    " successful."),
                    {type: "info"});
+           } else {
+               inform.add(gettextCatalog.getString("RADIUS request failed!"),
+                   {type: "danger"});
            }
         });
     };

@@ -1081,3 +1081,15 @@ def parse_int(s, default=0):
         pass
 
     return i
+
+
+def convert_column_to_unicode(value):
+    """
+    Helper function for models. If ``value`` is None or a unicode object, do nothing.
+    Otherwise, convert it to a unicode object.
+    :return: a unicode object or None
+    """
+    if value is None or isinstance(value, unicode):
+        return value
+    else:
+        return unicode(value)
