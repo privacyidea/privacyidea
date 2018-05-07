@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use tags in email subject.
 #  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add additional tags for notification: date, time, client_ip,
 #             ua_string, ua_browser
@@ -269,6 +271,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         if recipient:
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
+            subject = handler_options.get("subject") or \
+                      "An action was performed on your token."
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
@@ -311,6 +315,28 @@ class UserNotificationEventHandler(BaseEventHandler):
                 ua_browser=request.user_agent.browser,
                 ua_string=request.user_agent.string
             )
+            subject = subject.format(
+                admin=logged_in_user.get("username"),
+                realm=logged_in_user.get("realm"),
+                action=request.path,
+                serial=serial,
+                url=request.url_root,
+                user=tokenowner.info.get("givenname"),
+                surname=tokenowner.info.get("surname"),
+                givenname=recipient.get("givenname"),
+                username=tokenowner.login,
+                userrealm=tokenowner.realm,
+                tokentype=tokentype,
+                registrationcode=registrationcode,
+                recipient_givenname=recipient.get("givenname"),
+                recipient_surname=recipient.get("surname"),
+                googleurl_value=googleurl_value,
+                time=time,
+                date=date,
+                client_ip=g.client_ip,
+                ua_browser=request.user_agent.browser,
+                ua_string=request.user_agent.string
+            )
 
             # Send notification
             if action.lower() == "sendmail":
@@ -318,8 +344,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
-                subject = handler_options.get("subject") or \
-                          "An action was performed on your token."
+
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,
