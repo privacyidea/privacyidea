@@ -292,52 +292,29 @@ class UserNotificationEventHandler(BaseEventHandler):
 
             time = datetime.datetime.now().strftime("%H:%M:%S")
             date = datetime.datetime.now().strftime("%Y-%m-%d")
-            body = body.format(
-                admin=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                action=request.path,
-                serial=serial,
-                url=request.url_root,
-                user=tokenowner.info.get("givenname"),
-                surname=tokenowner.info.get("surname"),
-                givenname=recipient.get("givenname"),
-                username=tokenowner.login,
-                userrealm=tokenowner.realm,
-                tokentype=tokentype,
-                registrationcode=registrationcode,
-                recipient_givenname=recipient.get("givenname"),
-                recipient_surname=recipient.get("surname"),
-                googleurl_img=googleurl_img,
-                googleurl_value=googleurl_value,
-                time=time,
-                date=date,
-                client_ip=g.client_ip,
-                ua_browser=request.user_agent.browser,
-                ua_string=request.user_agent.string
-            )
-            subject = subject.format(
-                admin=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                action=request.path,
-                serial=serial,
-                url=request.url_root,
-                user=tokenowner.info.get("givenname"),
-                surname=tokenowner.info.get("surname"),
-                givenname=recipient.get("givenname"),
-                username=tokenowner.login,
-                userrealm=tokenowner.realm,
-                tokentype=tokentype,
-                registrationcode=registrationcode,
-                recipient_givenname=recipient.get("givenname"),
-                recipient_surname=recipient.get("surname"),
-                googleurl_value=googleurl_value,
-                time=time,
-                date=date,
-                client_ip=g.client_ip,
-                ua_browser=request.user_agent.browser,
-                ua_string=request.user_agent.string
-            )
-
+            tags = dict(admin=logged_in_user.get("username"),
+                        realm=logged_in_user.get("realm"),
+                        action=request.path,
+                        serial=serial,
+                        url=request.url_root,
+                        user=tokenowner.info.get("givenname"),
+                        surname=tokenowner.info.get("surname"),
+                        givenname=recipient.get("givenname"),
+                        username=tokenowner.login,
+                        userrealm=tokenowner.realm,
+                        tokentype=tokentype,
+                        registrationcode=registrationcode,
+                        recipient_givenname=recipient.get("givenname"),
+                        recipient_surname=recipient.get("surname"),
+                        googleurl_value=googleurl_value,
+                        time=time,
+                        date=date,
+                        client_ip=g.client_ip,
+                        ua_browser=request.user_agent.browser,
+                        ua_string=request.user_agent.string)
+            body = body.format(googleurl_img=googleurl_img,
+                               **tags)
+            subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
