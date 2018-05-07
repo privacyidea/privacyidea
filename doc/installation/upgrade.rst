@@ -52,8 +52,7 @@ Usually you will need to upgrade/migrate the database:
 
 .. code-block:: bash
 
-   pi-manage db stamp 4f32a4e1bf33 -d /opt/privacyidea/lib/privacyidea/migrations
-   pi-manage db upgrade -d /opt/privacyidea/lib/privacyidea/migrations
+   privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations
 
 Now you need to restart your webserver for the new code to take effect.
 

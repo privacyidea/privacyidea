@@ -25,10 +25,8 @@ def update():
 
 def update_db_schema(environment):
     mig_path = environment + "/lib/privacyidea/migrations"
-    # stamp the database
-    call("pi-manage db stamp 4f32a4e1bf33 -d {0}".format(mig_path), shell=True)
     # update the database schema
-    call("pi-manage db upgrade -d {0}".format(mig_path), shell=True)
+    call("privacyidea-schema-upgrade {0}".format(mig_path), shell=True)
 
 
 def main():
