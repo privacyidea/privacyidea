@@ -1527,8 +1527,8 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("message"),
-                             u"The user does not exist, but is accepted "
-                             u"due to policy 'pass_no'.")
+                             u"user does not exist, accepted "
+                             u"due to 'pass_no'")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
@@ -1544,8 +1544,8 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("message"),
-                             u"The user has no token, but is "
-                             u"accepted due to policy 'pass_no'.")
+                             u"user has no token, "
+                             u"accepted due to policy 'pass_no'")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
@@ -1600,7 +1600,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("message"),
-                             u'The user does not exist, but is accepted due to policy \'pol1\'.')
+                             u'user does not exist, accepted due to \'pol1\'')
         delete_policy("pol1")
 
     @responses.activate
