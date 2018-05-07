@@ -227,7 +227,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
-                return True, {"message": u"user has no token, accepted by '{!s}'".format(
+                return True, {"message": u"user has no token, accepted due to '{!s}'".format(
                     pass_no_token[0].get("name"))}
 
     # If nothing else returned, we return the wrapped function
@@ -308,7 +308,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
-                    return True, {"message": u"against userstore according to '{!s}'".format(
+                    return True, {"message": u"against userstore due to '{!s}'".format(
                                       policy_name)}
             else:
                 # We are doing RADIUS passthru
@@ -317,7 +317,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 radius = get_radius(pass_thru_action)
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
-                    return True, {'message': u"against RADIUS server {!s} according to '{!s}'".format(
+                    return True, {'message': u"against RADIUS server {!s} due to '{!s}'".format(
                                       pass_thru_action, policy_name)}
 
     # If nothing else returned, we return the wrapped function
