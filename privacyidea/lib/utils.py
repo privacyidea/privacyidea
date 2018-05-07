@@ -849,11 +849,19 @@ def hash_password(password, hashtype):
         return "{SSHA512}" + pw
     elif hashtype == "OTRS":
         password = hashlib.sha256(password).hexdigest()
+    elif hashtype == "MD5CRYPT":
+        salt = geturandom(8, True)
+        password = crypt.crypt(password, "$1$" + salt + "$")
+    elif hashtype == "SHA512CRYPT":
+        salt = geturandom(8, True)
+        password = crypt.crypt(password, "$6$" + salt + "$")
     else:
         raise Exception("Unsupported password hashtype. Use PHPASS, SHA, "
                         "SSHA, SSHA256, SSHA512, OTRS.")
     return password
 
+def check_crypt(pw_hash, password):
+    return crypt.crypt(password, pw_hash) == pw_hash
 
 def check_ssha(pw_hash, password, hashfunc, length):
     pw_hash_bin = b64decode(pw_hash.split("}")[1])

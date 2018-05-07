@@ -44,7 +44,7 @@ from base64 import (b64decode,
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256)
+                                   check_sha, check_ssha, otrs_sha256, check_crypt)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -176,6 +176,8 @@ class IdResolver (UserIdResolver):
         elif len(userinfo.get("password")) == 64:
             # OTRS sha256 password
             res = otrs_sha256(database_pw, password)
+        elif database_pw[:3] in ["$1$", "$6$"]:
+            res = check_crypt(database_pw, password)
 
         return res
 

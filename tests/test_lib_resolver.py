@@ -165,7 +165,7 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(self.parameters)
 
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 7, len(userlist))
+        self.assertTrue(len(userlist) == 9, len(userlist))
 
         user = "cornelius"
         user_id = y.getUserId(user)
@@ -209,7 +209,7 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(
             dict(self.parameters.items() + {"Where": "id > 2"}.items()))
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 5, userlist)
+        self.assertTrue(len(userlist) == 7, userlist)
 
         y = SQLResolver()
         y.loadConfig(dict(self.parameters.items() + {"Where": "id < "
@@ -251,12 +251,18 @@ class SQLResolverTestCase(MyTestCase):
         '''
         result = y.checkPass(6, "testpassword")
         self.assertTrue(result)
+        
+        result = y.checkPass(8, "dunno")
+        self.assertTrue(result)
+        
+        result = y.checkPass(9, "dunno")
+        self.assertTrue(result)
 
     def test_03_testconnection(self):
         y = SQLResolver()
         result = y.testconnection(self.parameters)
-        self.assertEqual(result[0], 7)
-        self.assertTrue('Found 7 users.' in result[1])
+        self.assertEqual(result[0], 9)
+        self.assertTrue('Found 9 users.' in result[1])
 
     def test_05_add_user_update_delete(self):
         y = SQLResolver()
@@ -265,12 +271,12 @@ class SQLResolverTestCase(MyTestCase):
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
-        self.assertTrue(uid > 6)
+        self.assertTrue(uid > 8)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
 
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > 6)
+        self.assertTrue(uid > 8)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
