@@ -734,7 +734,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.list.html:8
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:53
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:8
-#: privacyidea/static/components/config/views/config.radius.edit.html:85
+#: privacyidea/static/components/config/views/config.radius.edit.html:86
 #: privacyidea/static/components/config/views/config.radius.list.html:8
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:38
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:6
@@ -765,7 +765,7 @@ msgstr ""
 msgid "Details for user {{ username }} in realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:76
+#: privacyidea/static/components/config/views/config.radius.edit.html:77
 #: privacyidea/static/components/config/views/config.radius.list.html:7
 msgid "Dictionary"
 msgstr ""
@@ -1735,7 +1735,7 @@ msgid "Parameters"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:70
-#: privacyidea/static/components/config/views/config.radius.edit.html:102
+#: privacyidea/static/components/config/views/config.radius.edit.html:103
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:77
 #: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
@@ -1902,7 +1902,7 @@ msgstr ""
 msgid "Quick links"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/radiusServerController.js:76
+#: privacyidea/static/components/config/controllers/radiusServerController.js:79
 msgid "RADIUS Config saved."
 msgstr ""
 
@@ -1912,6 +1912,10 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:45
 msgid "RADIUS User"
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/radiusServerController.js:70
+msgid "RADIUS request failed!"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:66
@@ -2183,7 +2187,7 @@ msgstr ""
 msgid "Save Options"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:116
+#: privacyidea/static/components/config/views/config.radius.edit.html:117
 msgid "Save RADIUS server"
 msgstr ""
 
@@ -2294,7 +2298,7 @@ msgstr ""
 msgid "Send Test Email"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:108
+#: privacyidea/static/components/config/views/config.radius.edit.html:109
 msgid "Send test RADIUS request"
 msgstr ""
 
@@ -3399,7 +3403,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:288
 #: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
-#: privacyidea/static/components/config/views/config.radius.edit.html:96
+#: privacyidea/static/components/config/views/config.radius.edit.html:97
 #: privacyidea/static/templates/menu.html:52
 msgid "User"
 msgstr ""
