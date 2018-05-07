@@ -1545,7 +1545,7 @@ class ValidateAPITestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("message"),
                              u"user has no token, "
-                             u"accepted due to policy 'pass_no'")
+                             u"accepted due to 'pass_no'")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
