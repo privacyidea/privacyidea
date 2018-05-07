@@ -70,10 +70,8 @@ create_database() {
 
 
 update_db() {
-	# Set the version to the first PI 2.0 version
-	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations > /dev/null
 	# Upgrade the database
-	pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
+	privacyidea-schema-upgrade /usr/lib/privacyidea/migrations > /dev/null
 }
 
 case "$1" in
