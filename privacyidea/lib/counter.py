@@ -21,13 +21,13 @@
 """
 This module is used to modify counters in the database
 """
-from privacyidea.models import EventCounter
+from privacyidea.models import EventCounter, EventHandlerOption
 
 
 def increase(counter_name):
     """
     Increase the counter value in the database.
-    If the counter does not exist, yet, create the counter.
+    If the counter does not exist yet, create the counter.
 
     :param counter_name: The name/identifier of the counter
     :return: the new integer value of the counter
@@ -38,3 +38,35 @@ def increase(counter_name):
         counter.save()
     counter.increase()
     return counter.counter_value
+
+
+def decrease(counter_name, allow_negative=False):
+    """
+    Decrease the counter value in the database.
+    If the counter does not exist yet, create the counter.
+    Also checks whether the counter is allowed to become negative.
+
+    :param counter_name: The name/identifier of the counter
+    :param allow_negative: Whether the counter can become negative
+    :return: the new integer value of the counter
+    """
+    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
+    if not counter:
+        counter = EventCounter(counter_name, 0)
+        counter.save()
+    counter.decrease(allow_negative)
+    return counter.counter_value
+
+
+def reset(counter_name):
+    """
+    Reset the counter value in the database to 0.
+    If the counter does not exist yet, create the counter.
+    :param counter_name: The name/identifier of the counter
+    :return:
+    """
+    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
+    if not counter:
+        counter = EventCounter(counter_name, 0)
+        counter.save()
+    counter.reset()
