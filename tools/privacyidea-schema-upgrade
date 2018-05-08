@@ -9,11 +9,11 @@ if [ -z "$MIGRATION_PATH" ]; then
 fi
 
 # check if we do not have DB versioning, yet.
-if [ -z "$(pi-manage db current -d /usr/lib/privacyidea/migrations | grep "(head)$")" ]; then
+if [ -z "$(pi-manage db current -d $MIGRATION_PATH | grep "(head)$")" ]; then
     # Set the version to the first PI 2.0 version
     echo "++ Stamping DB to $FIRST_VERSION"
-    pi-manage db stamp $FIRST_VERSION -d /usr/lib/privacyidea/migrations > /dev/null
+    pi-manage db stamp $FIRST_VERSION -d $MIGRATION_PATH > /dev/null
 fi
 # Upgrade the database
 echo "++ Upgrading DB schema."
-pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
+pi-manage db upgrade -d $MIGRATION_PATH > /dev/null
