@@ -2297,7 +2297,7 @@ class Subscription(MethodsMixin, db.Model):
 
 class EventCounter(db.Model):
     """
-    This table stores counters of the event hanlder "Counter".
+    This table stores counters of the event handler "Counter".
     """
     __tablename__ = 'eventcounter'
     counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
@@ -2325,6 +2325,27 @@ class EventCounter(db.Model):
         :return:
         """
         self.counter_value = self.counter_value + 1
+        self.save()
+
+    def decrease(self, allow_negative=False):
+        """
+        Decrease the value of a counter, stop at zero if allow_negative not given
+        :param allow_negative:
+        :return:
+        """
+        if self.counter_value == 0 and not allow_negative:
+            # leave counter at zero, nothing to save
+            # TODO: what should be done if the counter is already negative?
+            return
+        self.counter_value = self.counter_value - 1
+        self.save()
+
+    def reset(self):
+        """
+        Reset the value of a counter
+        :return:
+        """
+        self.counter_value = 0
         self.save()
 
 

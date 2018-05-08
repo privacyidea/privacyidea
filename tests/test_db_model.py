@@ -705,6 +705,27 @@ class TokenModelTestCase(MyTestCase):
         counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter3.counter_value, 12)
 
-        counter3.delete()
-        counter3 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter3, None)
+        counter3.decrease()
+
+        counter4 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter4.counter_value, 11)
+
+        counter4.decrease(allow_negative=True)
+
+        counter5 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter5.counter_value, 10)
+
+        counter5.reset()
+
+        counter6 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter6.counter_value, 0)
+
+        counter6.decrease(allow_negative=True)
+        counter6.decrease(allow_negative=True)
+
+        counter7 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter7.counter_value, -2)
+
+        counter7.delete()
+        counter8 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter8, None)
