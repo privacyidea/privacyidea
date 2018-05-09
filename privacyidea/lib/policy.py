@@ -155,6 +155,7 @@ from configobj import ConfigObj
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+from operator import itemgetter
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
@@ -446,7 +447,8 @@ class PolicyClass(object):
                      resolver=None, user=None, client=None, action=None,
                      adminrealm=None, time=None, all_times=False):
         """
-        Return the policies of the given filter values
+        Return the policies of the given filter values.
+        The resulting policies will *not* be sorted by priority.
 
         :param name: The name of the policy
         :param scope: The scope of the policy
@@ -588,6 +590,35 @@ class PolicyClass(object):
 
         return reduced_policies
 
+    @staticmethod
+    def choose_prioritized_policy(policies):
+        """
+        Given a list of policy dictionaries, find the policy with the highest priority,
+        i.e. the policy with the smallest 'priority' value.
+
+        In case the list is empty, this returns the empty list.
+        Otherwise, this returns a list with one element, the prioritized policy.
+
+        In case there are multiple policies with the same priority, this raises
+        a PolicyError.
+
+        :param policies: list of dictionaries
+        :return: a list
+        """
+        if policies:
+            priorities = [p['priority'] for p in policies]
+            total_priorities = len(priorities)
+            distinct_priorities = len(set(priorities))
+            if total_priorities != distinct_priorities:
+                raise PolicyError(u"There are {!s} policies with the same priority".format(
+                    total_priorities - distinct_priorities
+                ))
+            return [min(policies, key=itemgetter('priority'))]
+        else:
+            return []
+
+
+
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
@@ -602,8 +633,10 @@ class PolicyClass(object):
             action: serial
         would return a list of allowed serials
 
-        :param unique: if set, the function will raise an exception if more
-            than one value is returned
+        The returned list is *not* sorted by the policy priorities.
+
+        :param unique: if set, the function will only consider the policy with the
+            highest priority
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
             must not be used to separate action values!
@@ -616,6 +649,9 @@ class PolicyClass(object):
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
                                      client=client)
+        # If unique = True, only consider the action value of the policy with the highest priority
+        if unique:
+            policies = self.choose_prioritized_policy(policies)
         for pol in policies:
             action_dict = pol.get("action", {})
             action_value = action_dict.get(action, "")
@@ -633,12 +669,6 @@ class PolicyClass(object):
             else:
                 action_values.extend(action_dict.get(action, "").split())
 
-        # reduce the entries to unique entries
-        action_values = list(set(action_values))
-        if unique:
-            if len(action_values) > 1:
-                raise PolicyError("There are conflicting %s"
-                                  " definitions!" % action)
         return action_values
 
     @log_with(log)
