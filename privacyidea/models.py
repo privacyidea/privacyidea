@@ -1284,10 +1284,13 @@ class Policy(TimestampMethodsMixin, db.Model):
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
     condition = db.Column(db.Integer, default=0, nullable=False)
+    # If there are multiple matching policies, choose the one
+    # with the lowest priority number. We choose 0 to be the default priotity.
+    priority = db.Column(db.Integer, default=0, nullable=False)
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0,
+                 resolver="", user="", client="", time="", condition=0, priority=0,
                  check_all_resolvers=False):
         if type(active) in [str, unicode]:
             active = is_true(active.lower())
@@ -1302,6 +1305,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.client = client
         self.time = time
         self.condition = condition
+        self.priority = priority
         self.check_all_resolvers = check_all_resolvers
 
     @staticmethod
@@ -1338,7 +1342,8 @@ class Policy(TimestampMethodsMixin, db.Model):
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
-             "condition": self.condition}
+             "condition": self.condition,
+             "priority": self.priority}
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
         action_dict = {}
