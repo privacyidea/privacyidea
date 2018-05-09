@@ -22,3 +22,26 @@
     border-collapse: collapse;
 }
 
+.tantoken table {
+    border-collapse: collapse;
+    border-spacing: 0px 0px !important;
+}
+
+.tantoken th {
+    border:1px dotted darkgray;
+    background-color: lightgrey;
+    padding: 10px;
+}
+
+.tantoken tr {
+    background-color: whitesmoke;
+}
+
+
+.tantoken td {
+    border-bottom:1px dotted orange;
+    border-left: 1px solid lightgrey;
+    border-right: 1px solid lightgrey;
+    padding: 10px;
+    border-collapse: collapse;
+}
