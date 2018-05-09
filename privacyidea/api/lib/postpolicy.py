@@ -661,10 +661,9 @@ def autoassign(request, response):
                                   user=user_obj.login,
                                   resolver=user_obj.resolver,
                                   realm=user_obj.realm,
-                                  client=g.client_ip)
+                                  client=g.client_ip,
+                                  unique=True)
 
-            if len(autoassign_values) > 1:
-                raise PolicyError("Contradicting Autoassign policies.")
             # check if the user has no token
             if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
                 # Check is the token would match
