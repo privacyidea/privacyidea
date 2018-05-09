@@ -300,8 +300,8 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                user=user_object.login,
                                                client=clientip, active=True)
         if len(pass_thru) > 1:
-            log.debug(u"Contradicting passthru policies: {0!s}".format(pass_thru))
-            raise PolicyError("Contradicting passthru policies.")
+            pass_thru = policy_object.choose_prioritized_policy(pass_thru)
+            log.debug(u"Multiple passthru policies, choosing {0!s}".format(pass_thru[0]))
         if pass_thru:
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
@@ -358,19 +358,18 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                       realm=user_object.realm,
                                                       resolver=user_object.resolver,
                                                       user=user_object.login,
-                                                      client=clientip)
+                                                      client=clientip,
+                                                      unique=True)
         max_fail = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
             resolver=user_object.resolver,
             user=user_object.login,
-            client=clientip)
+            client=clientip,
+            unique=True)
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
-        if len(max_fail) > 1:
-            raise PolicyError("Contradicting policies for {0!s}".format(
-                              ACTION.AUTHMAXFAIL))
         if len(max_fail) == 1:
             policy_count, tdelta = parse_timelimit(max_fail[0])
             fail_c = g.audit_object.get_count({"user": user_object.login,
@@ -390,10 +389,6 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         if res:
             # Check for maximum successful authentications
             # Only in case of a successful authentication
-            if len(max_success) > 1:
-                raise PolicyError("Contradicting policies for {0!s}".format(
-                                  ACTION.AUTHMAXSUCCESS))
-
             if len(max_success) == 1:
                 policy_count, tdelta = parse_timelimit(max_success[0])
                 # check the successful authentications for this user
@@ -504,8 +499,6 @@ def login_mode(wrapped_function, *args, **kwds):
     kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """
-    ERROR = "There are contradicting policies for the action {0!s}!".format( \
-            ACTION.LOGINMODE)
     # if tokenclass.check_pin is called in any other way, options may be None
     #  or it might have no element "g".
     options = kwds.get("options") or {}
@@ -521,15 +514,11 @@ def login_mode(wrapped_function, *args, **kwds):
                                                           realm=user_object.realm,
                                                           resolver=user_object.resolver,
                                                           user=user_object.login,
-                                                          client=clientip)
+                                                          client=clientip,
+                                                          unique=True)
 
         if login_mode_list:
             # There is a login mode policy
-            if len(login_mode_list) > 1:  # pragma: no cover
-                # We can not decide how to handle the request, so we raise an
-                # exception
-                raise PolicyError(ERROR)
-
             if login_mode_list[0] == LOGINMODE.PRIVACYIDEA:
                 # The original function should check against privacyidea!
                 kwds["check_otp"] = True
@@ -555,8 +544,6 @@ def auth_otppin(wrapped_function, *args, **kwds):
     :param **kwds: kwds["options"] contains the flask g
     :return: True or False
     """
-    ERROR = "There are contradicting policies for the action {0!s}!".format( \
-            ACTION.OTPPIN)
     # if tokenclass.check_pin is called in any other way, options may be None
     #  or it might have no element "g".
     options = kwds.get("options") or {}
@@ -585,14 +572,10 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                                       realm=user_object.realm,
                                                       resolver=user_object.resolver,
                                                       user=user_object.login,
-                                                      client=clientip)
+                                                      client=clientip,
+                                                      unique=True)
         if otppin_list:
             # There is an otppin policy
-            if len(otppin_list) > 1:
-                # We can not decide how to handle the request, so we raise an
-                # exception
-                raise PolicyError(ERROR)
-
             if otppin_list[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
@@ -650,44 +633,32 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 realm=realm,
                 resolver=resolver,
                 user=username,
-                client=clientip)
+                client=clientip,
+                unique=True)
             validity_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
                 realm=realm,
                 resolver=resolver,
                 user=username,
-                client=clientip)
+                client=clientip,
+                unique=True)
             pw_len_list = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
                 realm=realm,
                 resolver=resolver,
                 user=username,
-                client=clientip)
+                client=clientip,
+                unique=True)
 
             if contents_list:
-                if len(contents_list) > 1:  # pragma: no cover
-                    # We can not decide how to handle the request, so we raise an
-                    # exception
-                    raise PolicyError("There are contradicting policies for the "
-                                      "action %s" % ACTION.LOSTTOKENPWCONTENTS)
                 kwds["contents"] = contents_list[0]
 
             if validity_list:
-                if len(validity_list) > 1:  # pragma: no cover
-                    # We can not decide how to handle the request, so we raise an
-                    # exception
-                    raise PolicyError("There are contradicting policies for the "
-                                      "action %s" % ACTION.LOSTTOKENVALID)
                 kwds["validity"] = int(validity_list[0])
 
             if pw_len_list:
-                if len(pw_len_list) > 1:  # pragma: no cover
-                    # We can not decide how to handle the request, so we raise an
-                    # exception
-                    raise PolicyError("There are contradicting policies for the "
-                                      "action %s" % ACTION.LOSTTOKENPWLEN)
                 kwds["pw_len"] = int(pw_len_list[0])
 
     return wrapped_function(*args, **kwds)
