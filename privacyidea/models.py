@@ -1285,12 +1285,12 @@ class Policy(TimestampMethodsMixin, db.Model):
     time = db.Column(db.Unicode(64), default=u"")
     condition = db.Column(db.Integer, default=0, nullable=False)
     # If there are multiple matching policies, choose the one
-    # with the lowest priority number. We choose 0 to be the default priotity.
-    priority = db.Column(db.Integer, default=0, nullable=False)
+    # with the lowest priority number. We choose 1 to be the default priotity.
+    priority = db.Column(db.Integer, default=1, nullable=False)
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0, priority=0,
+                 resolver="", user="", client="", time="", condition=0, priority=1,
                  check_all_resolvers=False):
         if type(active) in [str, unicode]:
             active = is_true(active.lower())
