@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-25-09 Paul Lettich <paul.lettich@netknights.it>
+#             Add decrease/reset methods to EventCounter
 #  2017-10-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add timeout and retries to radiuserver
 #  2017-08-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -2333,11 +2335,11 @@ class EventCounter(db.Model):
         :param allow_negative:
         :return:
         """
-        if self.counter_value == 0 and not allow_negative:
-            # leave counter at zero, nothing to save
-            # TODO: what should be done if the counter is already negative?
-            return
-        self.counter_value = self.counter_value - 1
+        if self.counter_value <= 0 and not allow_negative:
+            # set counter to zero
+            self.counter_value = 0
+        else:
+            self.counter_value = self.counter_value - 1
         self.save()
 
     def reset(self):

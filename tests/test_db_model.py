@@ -726,6 +726,11 @@ class TokenModelTestCase(MyTestCase):
         counter7 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter7.counter_value, -2)
 
-        counter7.delete()
+        counter7.decrease(allow_negative=False)
+
         counter8 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter8, None)
+        self.assertEqual(counter8.counter_value, 0)
+
+        counter8.delete()
+        counter9 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter9, None)

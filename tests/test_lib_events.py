@@ -427,7 +427,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
 class CounterEventTestCase(MyTestCase):
 
-    def test_01_increase_counter(self):
+    def test_01_event_counter(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin",
@@ -464,6 +464,20 @@ class CounterEventTestCase(MyTestCase):
 
         counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
         self.assertEqual(counter.counter_value, 2)
+
+        if 'decrease_counter' in t_handler.actions:
+            t_handler.do("decrease_counter", options=options)
+            t_handler.do("decrease_counter", options=options)
+            t_handler.do("decrease_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, 0)
+            options['handler_def']['options']['allow_negative_values'] = True
+            t_handler.do("decrease_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, -1)
+            t_handler.do("reset_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, 0)
 
 
 class ScriptEventTestCase(MyTestCase):
