@@ -69,3 +69,9 @@ class CounterTestCase(MyTestCase):
 
         counter = EventCounter.query.filter_by(counter_name="hallo_counter3").first()
         self.assertEqual(counter.counter_value, 0)
+
+    def test_04_reset_non_existing_counter(self):
+        reset("hallo_counter4")
+
+        counter = EventCounter.query.filter_by(counter_name="hallo_counter4").first()
+        self.assertEqual(counter.counter_value, 0)

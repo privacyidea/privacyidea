@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-23-09 Paul Lettich <paul.lettich@netknights.it>
+#             Add decrease and reset counter actions
 #  2018-02-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial writeup
 #
@@ -26,6 +28,7 @@ These counters can be used by rrdtool to monitor values and print time series of
 certain parameters.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib import _
 from privacyidea.lib.counter import increase, decrease, reset
 import logging
 import traceback
@@ -51,12 +54,12 @@ class CounterEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        actions = {'increase_counter': {
+        actions = {"increase_counter": {
             "counter_name": {
                 "type": "str",
                 "description": _("The identifier/key of the counter.")}
             },
-            'decrease_counter': {
+            "decrease_counter": {
                 "counter_name": {
                     "type": "str",
                     "description": _("The identifier/key of the counter.")},
@@ -64,7 +67,7 @@ class CounterEventHandler(BaseEventHandler):
                     "type": "bool",
                     "description": _("Don't stop counter if it reaches zero.")}
             },
-            'reset_counter': {
+            "reset_counter": {
                 "counter_name": {
                     "type": "str",
                     "description": _("The identifier/key of the counter.")}
@@ -82,7 +85,7 @@ class CounterEventHandler(BaseEventHandler):
         :return:
         """
         ret = True
-        # g = options.get("g")
+        #g = options.get("g")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         counter_name = handler_options.get("counter_name")
@@ -101,4 +104,3 @@ class CounterEventHandler(BaseEventHandler):
             log.debug(u"Reset the counter {0!s} to 0.".format(counter_name))
 
         return ret
-

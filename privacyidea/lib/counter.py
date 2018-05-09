@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-26-09 Paul Lettich <paul.lettich@netknights.it>
+#             Add decrease/reset functions
 #  2018-03-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #
 #  Copyright (C) 2018 Cornelius Kölbel
@@ -21,7 +23,7 @@
 """
 This module is used to modify counters in the database
 """
-from privacyidea.models import EventCounter, EventHandlerOption
+from privacyidea.models import EventCounter
 
 
 def increase(counter_name):
