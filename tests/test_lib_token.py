@@ -1327,6 +1327,18 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(tok.get_otp_count(), 121212)
         remove_token("IMP001")
 
+    def test_53_import_token(self):
+        # Import token from a file with a user object
+        tok = import_token("IMP002",
+                           {"type": "totp",
+                            "otpkey": self.otpkey,
+                            "user": {"username": "cornelius",
+                                     "resolver": self.resolvername1,
+                                     "realm": self.realm1}})
+        self.assertEqual(tok.get_user_id(), "1000")
+        self.assertEqual(tok.get_user_displayname(), (u'cornelius_realm1', u'Cornelius '))
+        remove_token("IMP002")
+
 
 class TokenFailCounterTestCase(MyTestCase):
     """

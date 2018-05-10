@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Generate the encryption key for PSKC export
 #             in the HSM
@@ -124,16 +126,29 @@ def parseOATHcsv(csv):
         }
     '''
     TOKENS = {}
+    version = 0
 
     csv_array = csv.split('\n')
 
-    log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
+    m = re.match("^#\s*version:\s*(\d+)", csv_array[0])
+    if m:
+        version = m.group(1)
+        log.debug("the file is version {0}.".format(version))
+
+    log.debug("the file contains {0:d} lines.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
-        serial = l[0].strip()
+	user = {}
 
         # check for empty line
-        if len(serial) > 0 and not serial.startswith('#'):
+        if not l[0].startswith('#') and len(l[0]) > 0:
+            if version == "2":
+                # extract the user from the first three columns
+                user["username"] = l.pop(0).strip()
+                user["resolver"] = l.pop(0).strip()
+                user["realm"] = l.pop(0).strip()
+
+            serial = l[0].strip()
 
             if len(l) < 2:
                 log.error("the line {0!s} did not contain a hotp key".format(line))
@@ -150,6 +165,7 @@ def parseOATHcsv(csv):
             params = tok_class.get_import_csv(l)
             log.debug("read the line {0!s}".format(params))
 
+	    params["user"] = user
             TOKENS[serial] = params
     return TOKENS
 
