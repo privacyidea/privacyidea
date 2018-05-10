@@ -138,7 +138,7 @@ def parseOATHcsv(csv):
     log.debug("the file contains {0:d} lines.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
-	user = {}
+        user = {}
 
         # check for empty line
         if not l[0].startswith('#') and len(l[0]) > 0:
@@ -155,15 +155,14 @@ def parseOATHcsv(csv):
                 continue
 
             # ttype
-            if len(l) == 2:
-                # No tokentype, take the default "hotp"
-                l.append("hotp")
+            if len(l) >= 3:
+                ttype = l[2].strip().lower()
 
             ttype = l[2].strip().lower()
 
-            tok_class = get_token_class(ttype)
-            params = tok_class.get_import_csv(l)
-            log.debug("read the line {0!s}".format(params))
+            # timeStep
+            if len(l) >= 5:
+                seconds = int(l[4].strip())
 
 	    params["user"] = user
             TOKENS[serial] = params
