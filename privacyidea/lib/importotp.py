@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Generate the encryption key for PSKC export
 #             in the HSM
@@ -123,10 +125,16 @@ def parseOATHcsv(csv):
         }
     '''
     TOKENS = {}
+    version = 0
 
     csv_array = csv.split('\n')
 
-    log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
+    m = re.match("^#\s*version:\s*(\d+)", csv_array[0])
+    if m:
+        version = m.group(1)
+        log.debug("the file is version {0}.".format(version))
+
+    log.debug("the file contains {0:d} lines.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
         serial = ""
@@ -136,43 +144,54 @@ def parseOATHcsv(csv):
         otplen = 6
         hashlib = "sha1"
         ocrasuite = ""
-        serial = l[0].strip()
+        user = {}
 
         # check for empty line
-        if len(serial) > 0 and not serial.startswith('#'):
-            if len(l) >= 2:
-                key = l[1].strip()
+        if not l[0].startswith('#') and len(l[0]) > 0:
+            if version == "2":
+                # extract the user from the first three columns
+                user["username"] = l.pop(0).strip()
+                user["resolver"] = l.pop(0).strip()
+                user["realm"] = l.pop(0).strip()
 
-                if len(key) == 32:
-                    hashlib = "sha256"
-            else:
-                log.error("the line {0!s} did not contain a hotp key".format(line))
-                continue
+            serial = l[0].strip()
 
-            # ttype
-            if len(l) >= 3:
-                ttype = l[2].strip().lower()
+            # ignore empty serials
+            if len(serial) > 0:
+                if len(l) >= 2:
+                    key = l[1].strip()
 
-            # otplen or ocrasuite
-            if len(l) >= 4:
-                if ttype != "ocra":
-                    otplen = int(l[3].strip())
-                elif ttype == "ocra":
-                    ocrasuite = l[3].strip()
+                    if len(key) == 32:
+                        hashlib = "sha256"
+                else:
+                    log.error("the line {0!s} did not contain a hotp key".format(line))
+                    continue
 
-            # timeStep
-            if len(l) >= 5:
-                seconds = int(l[4].strip())
+                # ttype
+                if len(l) >= 3:
+                    ttype = l[2].strip().lower()
 
-            log.debug("read the line |{0!s}|{1!s}|{2!s}|{3:d} {4!s}|{5:d}|".format(serial, key, ttype, otplen, ocrasuite, seconds))
+                # otplen or ocrasuite
+                if len(l) >= 4:
+                    if ttype != "ocra":
+                        otplen = int(l[3].strip())
+                    elif ttype == "ocra":
+                        ocrasuite = l[3].strip()
 
-            TOKENS[serial] = {'type': ttype,
-                              'otpkey': key,
-                              'timeStep': seconds,
-                              'otplen': otplen,
-                              'hashlib': hashlib,
-                              'ocrasuite': ocrasuite
-                              }
+                # timeStep
+                if len(l) >= 5:
+                    seconds = int(l[4].strip())
+
+                log.debug("read the line |{0!s}|{1!s}|{2!s}|{3:d} {4!s}|{5:d}|".format(serial, key, ttype, otplen, ocrasuite, seconds))
+
+                TOKENS[serial] = {'type': ttype,
+                                  'otpkey': key,
+                                  'timeStep': seconds,
+                                  'otplen': otplen,
+                                  'hashlib': hashlib,
+                                  'ocrasuite': ocrasuite,
+                                  'user': user
+                                  }
     return TOKENS
 
 
