@@ -30,9 +30,12 @@ from privacyidea.lib.tokens.papertoken import PaperTokenClass
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib import _
 from privacyidea.lib.policydecorators import libpolicy
+from privacyidea.lib.crypto import geturandom, hash
+import binascii
 
 log = logging.getLogger(__name__)
 DEFAULT_COUNT = 100
+SALT_LENGTH = 4
 
 
 class TANACTION(object):
@@ -121,10 +124,14 @@ class TanTokenClass(PaperTokenClass):
         param["papertoken_count"] = param.get("tantoken_count") or DEFAULT_COUNT
         PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
         # After this creation, the init_details contain the complete list of the TANs
-        # TODO: create a salt, save it to otpkey and hash the tans.
         for tankey, tanvalue in self.init_details.get("otps", {}).iteritems():
+            # Get a 4 byte salt from the crypto module
+            salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
-            self.add_tokeninfo("tan.tan{0!s}".format(tankey), tanvalue)
+            hashed_tan = binascii.hexlify(hash(tanvalue, salt))
+            self.add_tokeninfo("tan.tan{0!s}".format(tankey),
+                               "{0}:{1}".format(binascii.hexlify(salt),
+                                               hashed_tan))
 
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -144,8 +151,11 @@ class TanTokenClass(PaperTokenClass):
         res = -1
         tans = self.get_tokeninfo()
         for tankey, tanvalue in tans.iteritems():
-            if tankey.startswith("tan.tan") and tanvalue == anOtpVal:
-                self.del_tokeninfo(tankey)
-                return 1
+            if tankey.startswith("tan.tan"):
+                salt, tan = tanvalue.split(":")
+                if tan == binascii.hexlify(hash(anOtpVal,
+                                                binascii.unhexlify(salt))):
+                    self.del_tokeninfo(tankey)
+                    return 1
 
         return res
