@@ -699,7 +699,7 @@ msgstr "Zählerfenster für neu ausgerollte Token"
 msgid "Create Event Handler Definition"
 msgstr "Erstelle eine Ereignisdefinition"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:333
+#: privacyidea/static/components/config/views/config.policies.details.html:347
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr "Richtlinie erzeugen"
@@ -1455,6 +1455,14 @@ msgstr "Token importieren"
 msgid "Import tokens from a file"
 msgstr "Tokendatei importieren"
 
+#: privacyidea/static/components/config/views/config.policies.details.html:333
+msgid ""
+"In case of conflicting policies, the policy with the lowest priority number "
+"will take precedence."
+msgstr ""
+"Im Fall eines Richtlinienkonflikts wird die Richtlinie mit dem niedrigsten "
+"\"Priorität\"-Wert berücksichtigt."
+
 #: privacyidea/static/components/config/views/config.system.html:121
 msgid "Include SAML attributes even if the user failed to authenticate."
 msgstr ""
@@ -2041,6 +2049,10 @@ msgstr "Zurück"
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:55
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
+
+#: privacyidea/static/components/config/views/config.policies.details.html:326
+msgid "Priority"
+msgstr "Priorität"
 
 #: privacyidea/static/components/token/views/token.import.html:117
 msgid "Progress: {{ progressPercentage }}%"
@@ -2666,12 +2678,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:435
-#: privacyidea/static/components/config/controllers/configControllers.js:662
+#: privacyidea/static/components/config/controllers/configControllers.js:437
+#: privacyidea/static/components/config/controllers/configControllers.js:664
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:444
+#: privacyidea/static/components/config/controllers/configControllers.js:446
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
