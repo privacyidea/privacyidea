@@ -41,7 +41,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
-from flask.ext.script.commands import InvalidCommand
+from flask_script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
@@ -102,7 +102,7 @@ Actions:
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token, import_token)
 from privacyidea.app import create_app
-from flask.ext.script import Manager
+from flask_script import Manager
 import re
 import sys
 

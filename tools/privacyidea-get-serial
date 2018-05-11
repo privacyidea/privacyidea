@@ -48,7 +48,7 @@ __version__ = "0.1"
 
 from privacyidea.lib.token import get_tokens, get_serial_by_otp
 from privacyidea.app import create_app
-from flask.ext.script import Manager
+from flask_script import Manager
 
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
