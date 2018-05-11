@@ -184,13 +184,15 @@ def set_policy_api(name=None):
     active = getParam(param, "active", optional)
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
+    priority = int(getParam(param, "priority", optional, default=1))
 
     g.audit_object.log({'action_detail': name,
                         'info': u"{0!s}".format(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
-                     check_all_resolvers=check_all_resolvers or False)
+                     check_all_resolvers=check_all_resolvers or False,
+                     priority=priority)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret
