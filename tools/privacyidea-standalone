@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import json
+
+import sqlalchemy
+import sys
+import warnings
+import webbrowser
+
+from flask_script import Manager, Server
+from privacyidea.app import create_app
+
+
+warnings.simplefilter("ignore", category=sqlalchemy.exc.SAWarning)
+
+
+class Configure(Server):
+    help = description = "Run a local webserver to configure privacyIDEA"
+
+    def __call__(self, *args, **kwargs):
+        webbrowser.open('http://{}:{}'.format(self.host, self.port))
+        Server.__call__(self, *args, **kwargs)
+
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app, with_default_commands=False)
+manager.add_command("configure", Configure())
+
+def read_credentials(file):
+    """
+    read username and password from a file. This could be sys.stdin.
+
+    The first line specifies the username, the second line specifies the password.
+
+    :param file: a Python file object
+    :return: a tuple (user, password)
+    """
+    username = sys.stdin.readline().strip()
+    password = sys.stdin.readline().strip()
+    return username, password
+
+
+@manager.option('-r', '--response', dest='show_response', action='store_true',
+                help='Print the JSON response of privacyIDEA to standard output')
+def check(show_response=False):
+    """ Check the given username and password against privacyIDEA """
+    user, password = read_credentials(sys.stdin)
+    exitcode = 255
+    try:
+        with app.test_request_context('/validate/check', method='POST',
+                                      data={'user': user, 'pass': password}):
+            response = app.full_dispatch_request()
+            data = json.loads(response.data)
+            result = data.get('result', {})
+            if result['value'] is True:
+                exitcode = 0
+            else:
+                exitcode = 1
+            if show_response:
+                print response.data
+    except Exception, e:
+        print e
+    sys.exit(exitcode)
+
+
+if __name__ == '__main__':
+    manager.run()
