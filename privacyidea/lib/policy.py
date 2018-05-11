@@ -827,7 +827,7 @@ class PolicyClass(object):
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
-               adminrealm=None, check_all_resolvers=False):
+               adminrealm=None, priority=None, check_all_resolvers=False):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -844,6 +844,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param client: A client IP with optionally a subnet like 172.16.0.0/16
     :param active: If the policy is active or not
     :type active: bool
+    :param priority: the priority of the policy (smaller values having higher priority)
+    :type priority: int
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
@@ -852,6 +854,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     """
     if type(active) in [str, unicode]:
         active = active.lower() == "true"
+    if type(priority) in [str, unicode]:
+        priority = int(priority)
     if type(check_all_resolvers) in [str, unicode]:
         check_all_resolvers = check_all_resolvers.lower() == "true"
     if type(action) == dict:
@@ -895,6 +899,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.client = client
         if time is not None:
             p1.time = time
+        if priority is not None:
+            p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
         save_config_timestamp()
@@ -905,6 +911,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         ret = Policy(name, action=action, scope=scope, realm=realm,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
+                     priority=priority,
                      check_all_resolvers=check_all_resolvers).save()
     return ret
 
@@ -992,7 +999,8 @@ def import_policies(file_contents):
                          user=ast.literal_eval(policy.get("user", "[]")),
                          resolver=ast.literal_eval(policy.get("resolver", "[]")),
                          client=ast.literal_eval(policy.get("client", "[]")),
-                         time=policy.get("time", "")
+                         time=policy.get("time", ""),
+                         priority=policy.get("priority", "1")
                          )
         if ret > 0:
             log.debug("import policy {0!s}: {1!s}".format(policy_name, ret))
