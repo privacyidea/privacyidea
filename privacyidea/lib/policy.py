@@ -667,6 +667,8 @@ class PolicyClass(object):
             else:
                 action_values.extend(action_dict.get(action, "").split())
 
+        # reduce the entries to unique entries
+        action_values = list(set(action_values))
         return action_values
 
     @log_with(log)
