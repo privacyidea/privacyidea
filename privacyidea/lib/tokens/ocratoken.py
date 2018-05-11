@@ -265,3 +265,25 @@ class OcraTokenClass(TokenClass):
         :return: >=0 if the challenge matches, -1 otherwise
         """
         return self.verify_response(otpval, options['challenge'])
+
+    @classmethod
+    def get_import_csv(cls, l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+
+        # Delete the otplen, if it exists. The fourth column is the ocrasuite!
+        if "otplen" in params:
+            del params["otplen"]
+
+        # ocrasuite
+        if len(l) >= 4:
+            params["ocrasuite"] = l[3].strip()
+
+        return params
