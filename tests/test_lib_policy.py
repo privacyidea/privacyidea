@@ -788,9 +788,10 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
         set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
 
+        # this reduces the action values to unique values
         P = PolicyClass()
         self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext"),
-                         ["text 1", "text 1"])
+                         ["text 1"])
         # in the old behavior, this was allowed!
         # TODO: should we keep the old behavior in that case?
         with self.assertRaises(PolicyError):
