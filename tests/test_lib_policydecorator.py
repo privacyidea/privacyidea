@@ -603,3 +603,136 @@ class LibPolicyTestCase(MyTestCase):
         delete_policy("pol1")
         delete_realm("myrealm")
         delete_resolver("reso001")
+
+    @radiusmock.activate
+    def test_13_passthru_priorities(self):
+        user = User("cornelius", realm="r1")
+        passw = "test"
+        options = {}
+        # remove all tokens of cornelius
+        remove_token(user=user)
+
+        # A user with no tokens will fail to authenticate
+        self.assertEqual(get_tokens(user=user, count=True), 0)
+        rv = auth_user_passthru(check_user_pass, user, passw, options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "The user has no tokens assigned")
+
+        # Now set a PASSTHRU policy to the userstore
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=userstore".format(ACTION.PASSTHRU))
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"against userstore due to 'pol1'")
+
+        # Now add a PASSTHRU policy to a RADIUS config
+        radiusmock.setdata(success=True)
+        set_policy(name="pol2",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
+        r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
+                       dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+
+        # They will conflict, because they use the same priority
+        with self.assertRaises(PolicyError):
+            auth_user_passthru(check_user_pass, user, passw, options=options)
+
+        # Lower pol1 priority
+        set_policy(name="pol1", priority=2)
+        g.policy_object.reload_from_db()
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"against RADIUS server radiusconfig1 due to 'pol2'")
+
+        # Lower pol2 priority
+        set_policy(name="pol2", priority=3)
+        g.policy_object.reload_from_db()
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"against userstore due to 'pol1'")
+
+        # Now assign a token to the user. If the user has a token and the
+        # passthru policy is set, the user must not be able to authenticate
+        # with his userstore password.
+        init_token({"serial": "PTHRU",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
+        rv = auth_user_passthru(check_user_pass, user, passw,
+                                options=options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"), "wrong otp pin")
+
+        remove_token("PTHRU")
+        delete_policy("pol1")
+        delete_policy("pol2")
+
+    def test_14_otppin_priority(self):
+        my_user = User("cornelius", realm="r1")
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.NONE),
+                   priority=2)
+        set_policy(name="pol2",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.TOKENPIN),
+                   priority=2)
+        g = FakeFlaskG()
+        P = PolicyClass()
+        g.policy_object = P
+        options = {"g": g}
+
+        # error because of conflicting policies
+        with self.assertRaises(PolicyError):
+            auth_otppin(self.fake_check_otp, None,
+                        "", options=options, user=my_user)
+
+        # lower pol2 priority
+        set_policy(name="pol2",
+                   priority=3)
+        g.policy_object.reload_from_db()
+
+        # NONE with empty PIN -> success
+        r = auth_otppin(self.fake_check_otp, None,
+                        "", options=options, user=my_user)
+        self.assertTrue(r)
+        # NONE with empty PIN -> success, even if the authentication is done
+        # for a serial and not a user, since the policy holds for all realms
+        token = init_token({"type": "HOTP", "otpkey": "1234"})
+        r = auth_otppin(self.fake_check_otp, token,
+                        "", options=options, user=None)
+        self.assertTrue(r)
+
+        # NONE with some pin -> fail
+        r = auth_otppin(self.fake_check_otp, None,
+                        "some pin", options=options, user=my_user)
+        self.assertFalse(r)
+
+        # increase pol2 priority
+        set_policy(name="pol2", priority=1)
+        g.policy_object.reload_from_db()
+
+        r = auth_otppin(self.fake_check_otp, None,
+                        "FAKE", options=options,
+                        user=my_user)
+        self.assertTrue(r)
+        r = auth_otppin(self.fake_check_otp, None,
+                        "Wrong Pin", options=options,
+                        user=my_user)
+        self.assertFalse(r)
+        delete_policy("pol1")
+        delete_policy("pol2")

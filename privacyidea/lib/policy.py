@@ -610,9 +610,7 @@ class PolicyClass(object):
             total_priorities = len(priorities)
             distinct_priorities = len(set(priorities))
             if total_priorities != distinct_priorities:
-                raise PolicyError(u"There are {!s} policies with the same priority".format(
-                    total_priorities - distinct_priorities
-                ))
+                raise PolicyError(u"There are policies with conflicting priorities")
             return [min(policies, key=itemgetter('priority'))]
         else:
             return []
