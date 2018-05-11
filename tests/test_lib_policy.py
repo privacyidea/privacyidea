@@ -711,3 +711,87 @@ class PolicyTestCase(MyTestCase):
 
         p = P.get_policies(action="enroll", user=u'nönäscii')
         self.assertEqual(len(p), 1)
+
+        delete_policy(name="polnonascii")
+
+    def test_23_priorities(self):
+        # create three policies with three different texts and different priorities
+        set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext=text 1", priority=4)
+        set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext=text 2", priority=1)
+        set_policy(name="email3", scope=SCOPE.AUTH, action="emailtext=text 3", priority=77)
+
+        # this chooses email2, because it has the highest priority
+        P = PolicyClass()
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True),
+                         ["text 2"])
+
+        delete_policy("email2")
+        P.reload_from_db()
+
+        # with email1 gone, this chooses email1
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True),
+                         ["text 1"])
+
+        # if we now add another policy with priority 77, we get a conflict
+        set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=77)
+        P.reload_from_db()
+
+        with self.assertRaises(PolicyError) as cm:
+            P.get_action_values(
+                action="emailtext", scope=SCOPE.AUTH,
+                unique=True, allow_white_space_in_action=True)
+        self.assertIn("policies with conflicting priorities", str(cm.exception))
+
+        pols = P.get_policies(action="emailtext", scope=SCOPE.AUTH)
+        self.assertEqual(len(pols), 3)
+        self.assertRaises(PolicyError,
+                          P.choose_prioritized_policy, pols)
+
+        # we can also change the priority
+        set_policy(name="email4", priority=3)
+        P.reload_from_db()
+
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True),
+                         ["text 4"])
+
+        # now we have
+        # email1, priority=4
+        # email3, priority=77
+        # email4, priority=3
+
+        # export, delete all, re-import
+        exported = export_policies(P.get_policies())
+        self.assertIn("priority = 4", exported)
+        self.assertIn("priority = 77", exported)
+        delete_all_policies()
+        import_policies(exported)
+
+        pols = P.get_policies(action="emailtext", scope=SCOPE.AUTH)
+        self.assertEqual(len(pols), 3)
+
+        # this does not sort by priority
+        highest = P.choose_prioritized_policy(pols)
+        self.assertEqual(len(highest), 1)
+        self.assertEqual(highest[0]["name"], "email4")
+
+        self.assertEqual(P.choose_prioritized_policy([]), [])
+
+        delete_policy("email1")
+        delete_policy("email3")
+        delete_policy("email4")
+
+    def test_23_priorities_equal_actions(self):
+        # create two policies with the same action values
+        set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
+        set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
+
+        P = PolicyClass()
+        self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext"),
+                         ["text 1", "text 1"])
+        # in the old behavior, this was allowed!
+        # TODO: should we keep the old behavior in that case?
+        with self.assertRaises(PolicyError):
+            P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True)
