@@ -13,6 +13,7 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
+from privacyidea.lib.crypto import geturandom
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
@@ -860,3 +861,22 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(token_obj.get_failcount(), 0)
 
         token_obj.delete_token()
+
+    def test_41_import_csv(self):
+        # sha1
+        r = TokenClass.get_import_csv(["ser1", geturandom(20, True), "hotp", "6"])
+        self.assertEqual(r["hashlib"], "sha1")
+        # sha224
+        r = TokenClass.get_import_csv(["ser1", geturandom(28, True), "hotp", "6"])
+        self.assertEqual(r["hashlib"], "sha224")
+        # sha256
+        r = TokenClass.get_import_csv(["ser1", geturandom(32, True), "hotp", "8"])
+        self.assertEqual(r["hashlib"], "sha256")
+        # sha384
+        r = TokenClass.get_import_csv(["ser1", geturandom(48, True), "totp", " 8 "])
+        self.assertEqual(r["hashlib"], "sha384")
+        self.assertEqual(r["type"], "totp")
+        self.assertEqual(r["otplen"], "8")
+        # sha512
+        r = TokenClass.get_import_csv(["ser1", geturandom(64, True), "totp", "8"])
+        self.assertEqual(r["hashlib"], "sha512")
