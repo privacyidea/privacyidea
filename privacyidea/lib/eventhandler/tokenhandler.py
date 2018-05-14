@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-34-14 Paul Lettich <paul.lettich@netknights.it>
+#             Add "delete tokeninfo" action
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow setting time with timedelta
 #  2017-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -41,7 +43,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo,
-                                   set_failcounter)
+                                   set_failcounter, delete_tokeninfo)
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
@@ -70,13 +72,14 @@ class ACTION_TYPE(object):
     SET_COUNTWINDOW = "set countwindow"
     SET_TOKENINFO = "set tokeninfo"
     SET_FAILCOUNTER = "set failcounter"
+    DELETE_TOKENINFO = "delete tokeninfo"
 
 
 class VALIDITY(object):
     """
     Allowed validity options
     """
-    START= "valid from"
+    START = "valid from"
     END = "valid till"
 
 
@@ -211,6 +214,14 @@ class TokenEventHandler(BaseEventHandler):
                                 "description": _("Set the above key the this "
                                                  "value.")
                             }
+                       },
+                   ACTION_TYPE.DELETE_TOKENINFO:
+                       {"key":
+                            {
+                                "type": "str",
+                                "required": True,
+                                "description": _("Delete this tokeninfo key.")
+                            }
                        }
                    }
         return actions
@@ -244,7 +255,8 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_VALIDITY,
                               ACTION_TYPE.SET_COUNTWINDOW,
                               ACTION_TYPE.SET_TOKENINFO,
-                              ACTION_TYPE.SET_FAILCOUNTER]:
+                              ACTION_TYPE.SET_FAILCOUNTER,
+                              ACTION_TYPE.DELETE_TOKENINFO]:
             if serial:
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
@@ -299,6 +311,8 @@ class TokenEventHandler(BaseEventHandler):
                                       realm=realm,
                                       ua_browser=request.user_agent.browser,
                                       ua_string=request.user_agent.string))
+                elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
+                    delete_tokeninfo(serial, handler_options.get("key"))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                     start_date = handler_options.get(VALIDITY.START)
                     end_date = handler_options.get(VALIDITY.END)
@@ -354,4 +368,3 @@ class TokenEventHandler(BaseEventHandler):
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret
-

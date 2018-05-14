@@ -936,7 +936,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
+        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1181,7 +1181,7 @@ class TokenEventTestCase(MyTestCase):
                    "response": resp,
                    "handler_def": {"options": {VALIDITY.START: "+10m",
                                                VALIDITY.END: "+10d"}
-                   }
+                                   }
                    }
 
         t_handler = TokenEventHandler()
@@ -1249,7 +1249,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_09_set_tokeninfo(self):
+    def test_09_set_delete_tokeninfo(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -1316,6 +1316,37 @@ class TokenEventTestCase(MyTestCase):
         tw = t[0].get_tokeninfo("pastText")
         self.assertTrue(tw.startswith("it was 20"))
         self.assertTrue(tw.endswith("0..."))
+        ti0 = t[0].get_tokeninfo()
+
+        # Delete non existing token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": "SomeNonExistingKey"}
+                                   }
+                   }
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        # Check if the token info was deleted
+        t = get_tokens(serial="SPASS01")
+        ti1 = t[0].get_tokeninfo()
+        self.assertEqual(ti0, ti1)
+
+        # Delete token info "pastText"
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": "pastText"}
+                                   }
+                   }
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        # Check if the token info was deleted
+        t = get_tokens(serial="SPASS01")
+        tw = t[0].get_tokeninfo("pastText", "key not found")
+        self.assertEqual(tw, "key not found")
 
         remove_token("SPASS01")
 
