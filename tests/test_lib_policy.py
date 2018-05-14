@@ -755,6 +755,11 @@ class PolicyTestCase(MyTestCase):
 
         pols = P.get_policies(action="emailtext", scope=SCOPE.AUTH)
         self.assertEqual(len(pols), 3)
+        with self.assertRaises(PolicyError) as cm:
+            P.check_for_conflicts(pols, "emailtext")
+
+        P.check_for_conflicts([], "emailtext")
+        P.check_for_conflicts([pols[0]], "emailtext")
 
         # we can also change the priority
         set_policy(name="email4", priority=3)
