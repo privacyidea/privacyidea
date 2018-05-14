@@ -53,6 +53,13 @@ myApp.controller("policyListController", function($scope, $stateParams,
         });
     };
 
+    $scope.priorityChanged = function (policy) {
+        ConfigFactory.setPolicy(policy.name, policy, function () {
+            $scope.getPolicies();
+        });
+    };
+
+
 
     $scope.getPolicies();
 });
