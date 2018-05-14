@@ -666,6 +666,26 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(rv[1].get("message"),
                          u"against userstore due to 'pol1'")
 
+        # Add old style priority
+        set_policy(name="pol3",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.PASSTHRU)
+        g.policy_object.reload_from_db()
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         u"against userstore due to 'pol3'")
+        set_policy(name="pol3", priority=2)
+        g.policy_object.reload_from_db()
+
+        # They will conflict, because they use the same priority
+        with self.assertRaises(PolicyError):
+            auth_user_passthru(check_user_pass, user, passw, options=options)
+
+        delete_policy("pol3")
+        g.policy_object.reload_from_db()
+
         # Now assign a token to the user. If the user has a token and the
         # passthru policy is set, the user must not be able to authenticate
         # with his userstore password.
