@@ -596,6 +596,30 @@ class PolicyClass(object):
 
         return reduced_policies
 
+    @staticmethod
+    def check_for_conflicts(policies, action):
+        """
+        Given a (not necessarily sorted) list of policy dictionaries and an action name,
+        check that there are no action value conflicts.
+
+        This raises a PolicyError if there are multiple policies with the highest
+        priority which define different values for **action**.
+
+        Otherwise, the function just returns nothing.
+
+        :param policies: list of dictionaries
+        :param action: string
+        """
+        if policies:
+            prioritized_policy = min(policies, key=itemgetter("priority"))
+            prioritized_action = prioritized_policy["action"][action]
+            if len(policies) > 1:
+                highest_priority = prioritized_policy["priority"]
+                for other_policy in policies:
+                    if (other_policy["priority"] == highest_priority
+                            and other_policy["action"][action] != prioritized_action):
+                        raise PolicyError("Contradicting {!s} policies.".format(action))
+
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,

@@ -301,15 +301,10 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                client=clientip,
                                                active=True,
                                                sort_by_priority=True)
+        policy_object.check_for_conflicts(pass_thru, "passthru")
         if pass_thru:
             # Ensure that there are no conflicting action values within the same priority
             pass_thru_action = pass_thru[0].get("action").get("passthru")
-            if len(pass_thru) > 1:
-                highest_priority = pass_thru[0]["priority"]
-                for other_policy in pass_thru[1:]:
-                    if (other_policy["priority"] == highest_priority
-                            and other_policy["action"]["passthru"] != pass_thru_action):
-                        raise PolicyError("Contradicting passthru policies.")
             policy_name = pass_thru[0].get("name")
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
