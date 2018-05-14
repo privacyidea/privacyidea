@@ -121,10 +121,18 @@ class TanTokenClass(PaperTokenClass):
         return ret
 
     def update(self, param, reset_failcount=True):
-        param["papertoken_count"] = param.get("tantoken_count") or DEFAULT_COUNT
-        PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
-        # After this creation, the init_details contain the complete list of the TANs
-        for tankey, tanvalue in self.init_details.get("otps", {}).iteritems():
+        tan_dict = {}
+        if "tans" in param:
+            # init tokens with tans
+            tans = param.get("tans").split()
+            tan_dict = {k: v for k, v in enumerate(tans)}
+        else:
+            # Init token without tans, so we create tans
+            param["papertoken_count"] = param.get("tantoken_count") or DEFAULT_COUNT
+            PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
+            # After this creation, the init_details contain the complete list of the TANs
+            tan_dict = self.init_details.get("otps", {})
+        for tankey, tanvalue in tan_dict.iteritems():
             # Get a 4 byte salt from the crypto module
             salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
@@ -159,3 +167,24 @@ class TanTokenClass(PaperTokenClass):
                     return 1
 
         return res
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # Delete the otplen, if it exists. The fourth column is the TANs!
+        if "otplen" in params:
+            del params["otplen"]
+
+        # tans
+        if len(l) >= 4:
+            params["tans"] = l[3]
+
+        return params

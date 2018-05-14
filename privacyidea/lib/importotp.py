@@ -108,6 +108,7 @@ def parseOATHcsv(csv):
 
         serial, key, [hotp,totp], [6,8], [30|60],
         serial, key, ocra, [ocra-suite]
+        serial, key, tan, tan1 tan2 tan3 tan4
 
     It imports sha1 hotp or totp token.
     I can also import ocra token.
@@ -137,35 +138,44 @@ def parseOATHcsv(csv):
 
     log.debug("the file contains {0:d} lines.".format(len(csv_array)))
     for line in csv_array:
+        # Do not parse comment lines
+        if line.startswith("#"):
+            continue
+
         l = line.split(',')
+        # Do not parse emtpy lines, it could be [] or ['']
+        if len(l) <= 1:
+            continue
+
+        # Import the user
         user = {}
+        if version == "2":
+            # extract the user from the first three columns
+            user["username"] = l.pop(0).strip()
+            user["resolver"] = l.pop(0).strip()
+            user["realm"] = l.pop(0).strip()
 
-        # check for empty line
-        if not l[0].startswith('#') and len(l[0]) > 0:
-            if version == "2":
-                # extract the user from the first three columns
-                user["username"] = l.pop(0).strip()
-                user["resolver"] = l.pop(0).strip()
-                user["realm"] = l.pop(0).strip()
-
-            serial = l[0].strip()
-
+        # check for empty serial
+        serial = l[0].strip()
+        if len(serial) > 0:
             if len(l) < 2:
                 log.error("the line {0!s} did not contain a hotp key".format(line))
                 continue
 
             # ttype
-            if len(l) >= 3:
-                ttype = l[2].strip().lower()
+            if len(l) == 2:
+                # No tokentype, take the default "hotp"
+                l.append("hotp")
 
             ttype = l[2].strip().lower()
 
-            # timeStep
-            if len(l) >= 5:
-                seconds = int(l[4].strip())
+            tok_class = get_token_class(ttype)
+            params = tok_class.get_import_csv(l)
+            log.debug("read the line {0!s}".format(params))
 
-	    params["user"] = user
+            params["user"] = user
             TOKENS[serial] = params
+
     return TOKENS
 
 

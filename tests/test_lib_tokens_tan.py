@@ -68,4 +68,27 @@ class TanTokenTestCase(MyTestCase):
         r = token.check_otp("755224")
         self.assertEqual(r, -1)
 
+    def test_05_import(self):
+        params = TanTokenClass.get_import_csv(["se1", "121212", "tan",
+                                               "tan1 tan2  tan3    tan4    tan5"])
+        self.assertEqual(params.get("serial"), "se1")
+        self.assertEqual(params.get("type"), "tan")
+        self.assertEqual(params.get("tans").split(), ["tan1", "tan2", "tan3", "tan4", "tan5"])
 
+        # test init token
+        tok = init_token(params)
+        self.assertEqual(tok.token.tokentype, "tan")
+
+        # check all tans
+        r = tok.check_otp("tan2")
+        self.assertEqual(r, 1)
+        r = tok.check_otp("tan2")
+        self.assertEqual(r, -1)
+        r = tok.check_otp("tan5")
+        self.assertEqual(r, 1)
+        r = tok.check_otp("tan4")
+        self.assertEqual(r, 1)
+        r = tok.check_otp("tan3")
+        self.assertEqual(r, 1)
+        r = tok.check_otp("tan1")
+        self.assertEqual(r, 1)
