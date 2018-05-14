@@ -150,4 +150,5 @@ Each policy can contain the following attributes:
   has a priority of 3 and ``pol2`` has a priority of 2, privacyIDEA
   will honor only the ``pol2`` policy and authenticate the user against the RADIUS server ``radius1``.
 
-  In case of policy conflicts, multiple matching policies with the same priority will raise an error.
+  Policy conflicts can still occur if multiple policies with the same priority
+  specify different values for the same action.
