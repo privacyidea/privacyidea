@@ -1643,8 +1643,8 @@ class TokenClass(object):
         key = server_component[:-len(client_component)] + client_component
         return key
 
-    @classmethod
-    def get_import_csv(cls, l):
+    @staticmethod
+    def get_import_csv(l):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.

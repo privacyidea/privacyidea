@@ -266,8 +266,8 @@ class OcraTokenClass(TokenClass):
         """
         return self.verify_response(otpval, options['challenge'])
 
-    @classmethod
-    def get_import_csv(cls, l):
+    @staticmethod
+    def get_import_csv(l):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.
