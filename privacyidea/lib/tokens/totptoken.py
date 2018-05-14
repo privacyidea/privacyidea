@@ -679,3 +679,22 @@ class TotpTokenClass(HotpTokenClass):
                 ret["otplen"] = otplen_pol[0]
 
         return ret
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # timeStep
+        if len(l) >= 5:
+            params["timeStep"] = int(l[4].strip())
+        else:
+            params["timeStep"] = 30
+
+        return params

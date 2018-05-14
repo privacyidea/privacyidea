@@ -51,6 +51,7 @@ import base64
 import cgi
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from Crypto.Cipher import AES
@@ -129,50 +130,27 @@ def parseOATHcsv(csv):
     log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
     for line in csv_array:
         l = line.split(',')
-        serial = ""
-        key = ""
-        ttype = "hotp"
-        seconds = 30
-        otplen = 6
-        hashlib = "sha1"
-        ocrasuite = ""
         serial = l[0].strip()
 
         # check for empty line
         if len(serial) > 0 and not serial.startswith('#'):
-            if len(l) >= 2:
-                key = l[1].strip()
 
-                if len(key) == 32:
-                    hashlib = "sha256"
-            else:
+            if len(l) < 2:
                 log.error("the line {0!s} did not contain a hotp key".format(line))
                 continue
 
             # ttype
-            if len(l) >= 3:
-                ttype = l[2].strip().lower()
+            if len(l) == 2:
+                # No tokentype, take the default "hotp"
+                l.append("hotp")
 
-            # otplen or ocrasuite
-            if len(l) >= 4:
-                if ttype != "ocra":
-                    otplen = int(l[3].strip())
-                elif ttype == "ocra":
-                    ocrasuite = l[3].strip()
+            ttype = l[2].strip().lower()
 
-            # timeStep
-            if len(l) >= 5:
-                seconds = int(l[4].strip())
+            tok_class = get_token_class(ttype)
+            params = tok_class.get_import_csv(l)
+            log.debug("read the line {0!s}".format(params))
 
-            log.debug("read the line |{0!s}|{1!s}|{2!s}|{3:d} {4!s}|{5:d}|".format(serial, key, ttype, otplen, ocrasuite, seconds))
-
-            TOKENS[serial] = {'type': ttype,
-                              'otpkey': key,
-                              'timeStep': seconds,
-                              'otplen': otplen,
-                              'hashlib': hashlib,
-                              'ocrasuite': ocrasuite
-                              }
+            TOKENS[serial] = params
     return TOKENS
 
 
