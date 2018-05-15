@@ -863,6 +863,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         active = active.lower() == "true"
     if type(priority) in [str, unicode]:
         priority = int(priority)
+    if priority is not None and priority <= 0:
+        raise ParameterError("Priority must be at least 1")
     if type(check_all_resolvers) in [str, unicode]:
         check_all_resolvers = check_all_resolvers.lower() == "true"
     if type(action) == dict:
