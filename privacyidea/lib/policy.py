@@ -610,15 +610,14 @@ class PolicyClass(object):
         :param policies: list of dictionaries
         :param action: string
         """
-        if policies:
+        if len(policies) > 1:
             prioritized_policy = min(policies, key=itemgetter("priority"))
             prioritized_action = prioritized_policy["action"][action]
-            if len(policies) > 1:
-                highest_priority = prioritized_policy["priority"]
-                for other_policy in policies:
-                    if (other_policy["priority"] == highest_priority
-                            and other_policy["action"][action] != prioritized_action):
-                        raise PolicyError("Contradicting {!s} policies.".format(action))
+            highest_priority = prioritized_policy["priority"]
+            for other_policy in policies:
+                if (other_policy["priority"] == highest_priority
+                        and other_policy["action"][action] != prioritized_action):
+                    raise PolicyError("Contradicting {!s} policies.".format(action))
 
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
