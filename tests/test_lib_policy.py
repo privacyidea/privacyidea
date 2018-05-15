@@ -15,6 +15,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 import datetime
 PWFILE = "tests/testdata/passwords"
@@ -786,6 +787,12 @@ class PolicyTestCase(MyTestCase):
         # this sorts by priority
         self.assertEqual([p['name'] for p in pols],
                          ['email4', 'email1', 'email3'])
+
+        # priority must be at least 1
+        with self.assertRaises(ParameterError):
+            set_policy(name="email4", scope=SCOPE.AUTH, priority=0)
+        with self.assertRaises(ParameterError):
+            set_policy(name="email4", scope=SCOPE.AUTH, priority=-5)
 
         delete_policy("email1")
         delete_policy("email3")
