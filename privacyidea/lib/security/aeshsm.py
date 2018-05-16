@@ -103,6 +103,26 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.pkcs11.load(self.module)
         self.initialize_hsm()
 
+    def check_ready(wrapped_func):
+        """
+        This decorator checks if the HSM is ready.
+        It could have gone into a non-ready state due to network failures...
+        Then a new encryption/decrpytion request would fail.
+        This decorator reinitializes the HSM.
+
+        """
+        def _wrapper(self, *args, **kwargs):
+            if not self.is_ready:
+                log.info("The HSM was not ready. We try to reinitialize it.")
+                # TODO: Should we add a timeout?
+                self.initialize_hsm()
+
+            # TODO: We only need to call the wrapped_func if the HSM is ready now.
+            # if it is still not ready, there is no need to call the function.
+            # But what should we return instead?
+            return wrapped_func(self, *args, **kwargs)
+        return _wrapper
+
     def initialize_hsm(self):
         """
         Initialize the HSM:
@@ -169,6 +189,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         return self.is_ready
 
+    @check_ready
     def random(self, length):
         """
         Return a random bytestring
@@ -190,6 +211,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
 
+    @check_ready
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
         if len(data) == 0:
             return bytes("")
@@ -210,6 +232,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         return int_list_to_bytestring(r)
 
+    @check_ready
     def decrypt(self, data, iv, key_id=TOKEN_KEY):
         if len(data) == 0:
             return bytes("")
