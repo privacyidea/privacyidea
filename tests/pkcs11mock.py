@@ -109,6 +109,19 @@ class PKCS11Mock(object):
         finally:
             mock_function.side_effect = old_side_effect
 
+    @contextmanager
+    def simulate_disconnect(self, count):
+        """
+        Context manager to simulate that the HSM has vanished.
+        This is just a shortcut for calling ``simulate_failure`` on ``generateRandom``, ``encrypt``,
+        ``decrypt`` and ``openSession``.
+        """
+        with self.simulate_failure(self.session_mock.generateRandom, count), \
+            self.simulate_failure(self.session_mock.encrypt, count), \
+            self.simulate_failure(self.session_mock.decrypt, count), \
+            self.simulate_failure(self.mock.openSession, count):
+            yield
+
     def _mock_openSession(self, slot):
         if slot not in SLOT_IDS:
             raise PyKCS11Error(PyKCS11.CKR_SLOT_ID_INVALID)
