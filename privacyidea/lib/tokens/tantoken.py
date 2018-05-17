@@ -138,8 +138,7 @@ class TanTokenClass(PaperTokenClass):
             # Now we add all TANs to the tokeninfo of this token.
             hashed_tan = binascii.hexlify(hash(tanvalue, salt))
             self.add_tokeninfo("tan.tan{0!s}".format(tankey),
-                               "{0}:{1}".format(binascii.hexlify(salt),
-                                               hashed_tan))
+                               "{0}:{1}".format(salt, hashed_tan))
 
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -161,8 +160,7 @@ class TanTokenClass(PaperTokenClass):
         for tankey, tanvalue in tans.iteritems():
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
-                if tan == binascii.hexlify(hash(anOtpVal,
-                                                binascii.unhexlify(salt))):
+                if tan == binascii.hexlify(hash(anOtpVal,salt)):
                     self.del_tokeninfo(tankey)
                     return 1
 
