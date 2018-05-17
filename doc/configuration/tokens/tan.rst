@@ -7,7 +7,7 @@ TAN Token
 
 (added in version 2.23)
 
-The token type *tan* is related the the :ref:`paper_token`.
+The token type *tan* is related to the :ref:`paper_token`.
 
 In contrast to the *paper* token, a user can use the OTP values of a *tan* token in
 any arbitrary order.

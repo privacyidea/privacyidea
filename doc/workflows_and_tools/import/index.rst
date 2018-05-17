@@ -81,7 +81,7 @@ This is usually 6 or 8.
 
 For TAN tokens it looks like this::
 
-   <serial, <n/a>, TAN, <list of tans>
+   <serial>, <n/a>, TAN, <list of tans>
 
 The list of tans is a whitespace separated list.
 

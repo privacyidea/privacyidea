@@ -19,7 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This file contains the definition of the paper token class
+This file contains the definition of the tan token class
 It depends on the DB model, and the lib.tokenclass.
 """
 
