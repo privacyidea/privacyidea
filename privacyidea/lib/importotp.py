@@ -176,6 +176,13 @@ def parseOATHcsv(csv):
             params["user"] = user
             TOKENS[serial] = params
 
+            TOKENS[serial] = {'type': ttype,
+                              'otpkey': key,
+                              'timeStep': seconds,
+                              'otplen': otplen,
+                              'hashlib': hashlib,
+                              'ocrasuite': ocrasuite
+                              }
     return TOKENS
 
 
