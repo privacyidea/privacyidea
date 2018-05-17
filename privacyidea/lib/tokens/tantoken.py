@@ -39,7 +39,7 @@ SALT_LENGTH = 4
 
 
 class TANACTION(object):
-    TANTOKEN_COUNT = "papertoken_count"
+    TANTOKEN_COUNT = "tantoken_count"
 
 
 class TanTokenClass(PaperTokenClass):

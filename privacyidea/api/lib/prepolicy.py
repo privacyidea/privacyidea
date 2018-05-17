@@ -342,6 +342,37 @@ def papertoken_count(request=None, action=None):
     return True
 
 
+def tantoken_count(request=None, action=None):
+    """
+    This is a token specific wrapper for tan token for the endpoint
+    /token/init.
+    According to the policy scope=SCOPE.ENROLL,
+    action=TANACTION.TANTOKEN_COUNT it sets the parameter tantoken_count to
+    enroll a tan token with such many OTP values.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    from privacyidea.lib.tokens.tantoken import TANACTION
+    user_object = request.User
+    policy_object = g.policy_object
+    pols = policy_object.get_action_values(
+        action=TANACTION.TANTOKEN_COUNT,
+        scope=SCOPE.ENROLL,
+        user=user_object.login,
+        resolver=user_object.resolver,
+        realm=user_object.realm,
+        client=g.client_ip,
+        unique=True)
+
+    if pols:
+        tantoken_count = pols[0]
+        request.all_data["tantoken_count"] = tantoken_count
+
+    return True
+
+
 def encrypt_pin(request=None, action=None):
     """
     This policy function is to be used as a decorator for several API functions.

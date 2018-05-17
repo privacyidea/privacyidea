@@ -240,6 +240,14 @@ type: int
 This is a specific action of the paper token. Here the administrator can
 define how many OTP values should be printed on the paper token.
 
+tantoken_count
+~~~~~~~~~~~~~~
+
+type: int
+
+This is a specific action for the TAN token. The administrator can define
+how many TANs will be generated and printed.
+
 
 u2f_req
 ~~~~~~~
