@@ -240,16 +240,20 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             self.assertIsNotNone(hsm)
             self.assertTrue(hsm.is_ready)
             self.assertIs(hsm.session, pkcs11.session_mock)
+            self.assertEqual(pkcs11.mock.openSession.call_count, 1)
 
     def test_02_basic(self):
         with PKCS11Mock() as pkcs11:
             hsm = AESHardwareSecurityModule({
                 "module": "testmodule",
             })
+            self.assertFalse(hsm.is_ready)
+            self.assertEqual(pkcs11.mock.openSession.call_count, 0)
             hsm.setup_module({
                 "password": "test123!"
             })
             self.assertTrue(hsm.is_ready)
+            self.assertEqual(pkcs11.mock.openSession.call_count, 1)
             self.assertIs(hsm.session, pkcs11.session_mock)
 
             # mock just returns \x00\x01... for random values
@@ -265,6 +269,9 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             self.assertEqual(text, password)
             self.assertEqual(pkcs11.session_mock.encrypt.call_count, 1)
             self.assertEqual(pkcs11.session_mock.encrypt.call_count, 1)
+
+            # during the whole usage, we have only used one session
+            self.assertEqual(pkcs11.mock.openSession.call_count, 1)
 
     def test_03_retry(self):
         with PKCS11Mock() as pkcs11:
@@ -323,8 +330,6 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
                     hsm.encrypt_password(password)
                 # the session has been opened initially, and six times after that
                 self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 7)
-            # but we are still ready, because ``openSession`` succeeded
-            self.assertTrue(hsm.is_ready)
 
     def test_05_hsm_recovery(self):
         with PKCS11Mock() as pkcs11:
@@ -356,13 +361,11 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
                 self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 2)
 
             # the Security Module is in a defunct state now
-            self.assertFalse(hsm.is_ready)
             # but we can recover from it!
             # simulate one failure, because this will make the security module
             # acquire a new session
             with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 1):
                 crypted = hsm.encrypt_password(password)
-            self.assertTrue(hsm.is_ready)
             text = hsm.decrypt_password(crypted)
             self.assertEqual(text, password)
             self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 3)
@@ -400,15 +403,21 @@ class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
             self.assertTrue(hsm.is_ready)
 
             # the HSM disappears
+            generate_random_call_count = self.pkcs11.session_mock.generateRandom.call_count
+            open_session_call_count = self.pkcs11.mock.openSession.call_count
             with self.pkcs11.simulate_disconnect(100):
                 with self.assertRaises(PyKCS11Error):
                     encryptPin("test")
+                # we have tried to generate a random number once
+                self.assertEqual(self.pkcs11.session_mock.generateRandom.call_count,
+                                 generate_random_call_count + 1)
+                # we have tried to open a new session once
+                self.assertEqual(self.pkcs11.mock.openSession.call_count,
+                                 open_session_call_count + 1)
 
             # HSM is now defunct
-            self.assertFalse(hsm.is_ready)
 
             # try to recover now
             r = encryptPin("test")
             pin = decryptPin(r)
             self.assertEqual(pin, "test")
-            self.assertTrue(hsm.is_ready)
