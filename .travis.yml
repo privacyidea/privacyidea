@@ -6,12 +6,17 @@ python:
   - 3.5
   - 3.6
 # command to install dependencies
+before_install:
+  - "sudo apt-get -qq update"
+  # swig for PyKCS11, in order to run the HSM unit tests
+  - "sudo apt-get install -y swig"
 install:
   - "pip install ."
   - "pip install mock"
   - "pip install coveralls"
   - "pip install codecov"
   - "pip install -r requirements.txt"
+  - "pip install PyKCS11"
   - "pip install smpplib"
 # split the test run according to
 # http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/
