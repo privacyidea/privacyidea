@@ -90,5 +90,11 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(r, 1)
         r = tok.check_otp("tan3")
         self.assertEqual(r, 1)
-        r = tok.check_otp("tan1")
-        self.assertEqual(r, 1)
+
+        # Check the authentication of a TAN token with a PIN
+        tok.set_pin("test")
+        r = tok.authenticate("testtan1")
+        self.assertEqual(r, (True, 1, None))
+
+        # check if the otplen of the TAN token is 4, the length of the first TAN
+        self.assertEqual(tok.token.otplen, 4)

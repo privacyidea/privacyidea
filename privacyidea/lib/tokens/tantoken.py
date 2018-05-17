@@ -126,9 +126,15 @@ class TanTokenClass(PaperTokenClass):
             # init tokens with tans
             tans = param.get("tans").split()
             tan_dict = {k: v for k, v in enumerate(tans)}
+            # Avoid to generate TANs, since we get the from params
+            param["tantoken_count"] = 0
+            # Determine the otplen from the TANs
+            if len(tans) > 0:
+                param["otplen"] = len(tans[0])
+            PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
         else:
             # Init token without tans, so we create tans
-            param["papertoken_count"] = param.get("tantoken_count") or DEFAULT_COUNT
+            param["tantoken_count"] = param.get("tantoken_count") or DEFAULT_COUNT
             PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
             # After this creation, the init_details contain the complete list of the TANs
             tan_dict = self.init_details.get("otps", {})
