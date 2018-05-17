@@ -22,9 +22,33 @@
 """
 Mock module for testing the handling of hardware security modules
 """
-import PyKCS11
-
+import sys
 import mock
+
+try:
+    import PyKCS11
+except ImportError:
+    # PyKCS11 not installed, let's use our simple mock module
+    class MockPyKCS11Error(Exception):
+        def __init__(self, code):
+            self.code = code
+
+
+    MOCK_CONSTANTS = ['CKA_CLASS', 'CKO_SECRET_KEY', 'CKA_LABEL', 'CKR_SLOT_ID_INVALID', 'CKR_DEVICE_ERROR']
+
+
+    def _setup_module_mock():
+        module = mock.MagicMock()
+        module.PyKCS11Error = MockPyKCS11Error
+        module.CK_SLOT_INFO.side_effect = lambda: mock.MagicMock()
+        for name in MOCK_CONSTANTS:
+            setattr(module, name, object())
+        return module
+
+
+    PyKCS11 = _setup_module_mock()
+    sys.modules['PyKCS11'] = PyKCS11
+
 from PyKCS11 import PyKCS11Error
 from contextlib import contextmanager
 
