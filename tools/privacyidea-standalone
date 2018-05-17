@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import json
+import os
+import subprocess
+from functools import wraps
 
 import sqlalchemy
 import sys
@@ -9,22 +12,71 @@ import webbrowser
 
 from flask_script import Manager, Server
 from privacyidea.app import create_app
-
+from privacyidea.lib.security.default import DefaultSecurityModule
 
 warnings.simplefilter("ignore", category=sqlalchemy.exc.SAWarning)
+
+PI_CFG_TEMPLATE = """import os, logging
+
+INSTANCE_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+PI_ENCFILE = os.path.join(INSTANCE_DIRECTORY, 'encKey')
+PI_AUDIT_KEY_PRIVATE = os.path.join(INSTANCE_DIRECTORY, 'private.pem')
+PI_AUDIT_KEY_PUBLIC = os.path.join(INSTANCE_DIRECTORY, 'public.pem')
+PI_LOGFILE = os.path.join(INSTANCE_DIRECTORY, 'privacyidea.log')
+PI_LOGLEVEL = logging.INFO
+SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(INSTANCE_DIRECTORY, 'privacyidea.sqlite')
+
+SECRET_KEY = b'{secret_key}'
+PI_PEPPER = b'{pi_pepper}'
+
+"""
+
+RSA_KEYSIZE = 2048
+
+
+def invoke_pi_manage(commandline, pi_cfg):
+    environment = os.environ.copy()
+    environment['PRIVACYIDEA_CONFIGFILE'] = pi_cfg
+    subprocess.check_call(['pi-manage'] + commandline, env=environment)
+
+
+def _app_factory(instance):
+    """
+    Create a Flask app object with the given privacyIDEA standalone instance.
+    """
+    config_file = os.path.join(instance, 'pi.cfg')
+    app = create_app(config_name='production', config_file=config_file, silent=True)
+    app.instance_directory = instance
+    return app
+
+
+def require_instance(f):
+    @wraps(f)
+    def deco(*args, **kwargs):
+        config_file = os.path.join(manager.app.instance_directory, 'pi.cfg')
+        if not os.path.exists(config_file):
+            raise RuntimeError(
+                "{!r} does not exist! Create a new instance using ``privacyidea-standalone create``.".format(
+                    config_file
+                ))
+        return f(*args, **kwargs)
+    return deco
 
 
 class Configure(Server):
     help = description = "Run a local webserver to configure privacyIDEA"
 
+    @require_instance
     def __call__(self, *args, **kwargs):
         webbrowser.open('http://{}:{}'.format(self.host, self.port))
         Server.__call__(self, *args, **kwargs)
 
 
-app = create_app(config_name='production', silent=True)
-manager = Manager(app, with_default_commands=False)
+manager = Manager(_app_factory, with_default_commands=False)
 manager.add_command("configure", Configure())
+manager.add_option('-i', '--instance', dest='instance', required=False, default=os.path.expanduser('~/.privacyidea'),
+                   help='Location of the privacyIDEA instance (defaults to ~/.privacyidea)')
+
 
 def read_credentials(file):
     """
@@ -35,23 +87,52 @@ def read_credentials(file):
     :param file: a Python file object
     :return: a tuple (user, password)
     """
-    username = sys.stdin.readline().strip()
-    password = sys.stdin.readline().strip()
+    username = file.readline().strip()
+    password = file.readline().strip()
     return username, password
+
+
+@manager.command
+def create():
+    """ Create a new privacyIDEA instance """
+    instance_dir = os.path.abspath(manager.app.instance_directory)
+    if os.path.exists(manager.app.instance_directory):
+        raise RuntimeError("Instance at {!r} exists already!".format(manager.app.instance_directory))
+    os.makedirs(instance_dir)
+
+    # create SECRET_KEY and PI_PEPPER
+    secret_key = DefaultSecurityModule.random(24)
+    pi_pepper = DefaultSecurityModule.random(24)
+
+    # create a pi.cfg
+    pi_cfg = os.path.join(instance_dir, 'pi.cfg')
+    with open(pi_cfg, 'w') as f:
+        f.write(PI_CFG_TEMPLATE.format(
+            secret_key=secret_key.encode('string-escape'),
+            pi_pepper=pi_pepper.encode('string-escape')
+        ))
+
+    # create an enckey
+    invoke_pi_manage(['create_enckey'], pi_cfg)
+    invoke_pi_manage(['create_audit_keys'], pi_cfg)
+    invoke_pi_manage(['createdb'], pi_cfg)
+
+    invoke_pi_manage(['admin', 'add', 'admin', '-p', 'test'], pi_cfg)
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',
                 help='Print the JSON response of privacyIDEA to standard output')
+@require_instance
 def check(show_response=False):
     """ Check the given username and password against privacyIDEA """
     user, password = read_credentials(sys.stdin)
     exitcode = 255
     try:
-        with app.test_request_context('/validate/check', method='POST',
+        with manager.app.test_request_context('/validate/check', method='POST',
                                       data={'user': user, 'pass': password}):
-            response = app.full_dispatch_request()
+            response = manager.app.full_dispatch_request()
             data = json.loads(response.data)
-            result = data.get('result', {})
+            result = data['result']
             if result['value'] is True:
                 exitcode = 0
             else:
