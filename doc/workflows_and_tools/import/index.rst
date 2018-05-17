@@ -79,6 +79,12 @@ This is usually 6 or 8.
 
 **ocra suite** is the ocra suite of the OCRA token according to [#ocra]_.
 
+For TAN tokens it looks like this::
+
+   <serial, <n/a>, TAN, <list of tans>
+
+The list of tans is a whitespace separated list.
+
 Import format version 2
 ~~~~~~~~~~~~~~~~~~~~~~~
 
