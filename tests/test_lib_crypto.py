@@ -6,6 +6,7 @@ from mock import call
 
 from privacyidea.lib.error import HSMException
 from .base import MyTestCase
+# need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
