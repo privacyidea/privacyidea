@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+import string
 import subprocess
 from functools import wraps
 
@@ -44,7 +45,7 @@ def _app_factory(instance):
     """
     Create a Flask app object with the given privacyIDEA standalone instance.
     """
-    config_file = os.path.join(instance, 'pi.cfg')
+    config_file = os.path.abspath(os.path.join(instance, 'pi.cfg'))
     app = create_app(config_name='production', config_file=config_file, silent=True)
     app.instance_directory = instance
     return app
@@ -92,6 +93,19 @@ def read_credentials(file):
     return username, password
 
 
+PEPPER_CHARSET = string.ascii_letters + string.digits + '_'
+
+
+def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
+    pepper = b''
+    while len(pepper) < length:
+        random_bytes = DefaultSecurityModule.random(chunk_size)
+        printable_bytes = ''.join(b for b in random_bytes if b in charset)
+        pepper += printable_bytes
+    return pepper[:length]
+
+
+
 @manager.command
 def create():
     """ Create a new privacyIDEA instance """
@@ -102,7 +116,7 @@ def create():
 
     # create SECRET_KEY and PI_PEPPER
     secret_key = DefaultSecurityModule.random(24)
-    pi_pepper = DefaultSecurityModule.random(24)
+    pi_pepper = create_pepper()
 
     # create a pi.cfg
     pi_cfg = os.path.join(instance_dir, 'pi.cfg')
@@ -117,7 +131,8 @@ def create():
     invoke_pi_manage(['create_audit_keys'], pi_cfg)
     invoke_pi_manage(['createdb'], pi_cfg)
 
-    invoke_pi_manage(['admin', 'add', 'admin', '-p', 'test'], pi_cfg)
+    print 'Please enter a password for the new admin `super`.'
+    invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',
