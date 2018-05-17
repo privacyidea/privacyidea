@@ -11,7 +11,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
                                     get_alphanum_str,
-                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64)
+                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, _get_hsm)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -349,7 +349,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
 
             # simulate that the HSM disappears after that, so we cannot
             # even open a session
-            with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 1), \
+            with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 1), \
                 pkcs11.simulate_failure(pkcs11.mock.openSession, 1):
                 with self.assertRaises(PyKCS11Error):
                     hsm.encrypt_password(password)
@@ -366,3 +366,49 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             text = hsm.decrypt_password(crypted)
             self.assertEqual(text, password)
             self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 3)
+
+class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
+    pkcs11 = PKCS11Mock()
+
+    def setUp(self):
+        """ set up config to load the AES HSM module """
+        current_app.config["PI_HSM_MODULE"] = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
+        current_app.config["PI_HSM_MODULE_MODULE"] = "testmodule"
+        current_app.config["PI_HSM_MODULE_PASSWORD"] = "test123!"
+        with self.pkcs11:
+            MyTestCase.setUp(self)
+
+    def test_01_simple(self):
+        with self.pkcs11:
+            self.assertIsInstance(_get_hsm(), AESHardwareSecurityModule)
+            r = encryptPin("test")
+            pin = decryptPin(r)
+            self.assertEqual(pin, "test")
+
+            self.assertTrue(_get_hsm().is_ready)
+            self.assertEqual(self.pkcs11.session_mock.encrypt.call_count, 1)
+
+    def test_02_fault_recovery(self):
+        with self.pkcs11:
+            hsm = _get_hsm()
+            self.assertIsInstance(hsm, AESHardwareSecurityModule)
+
+            # encryption initially works
+            r = encryptPin("test")
+            pin = decryptPin(r)
+            self.assertEqual(pin, "test")
+            self.assertTrue(hsm.is_ready)
+
+            # the HSM disappears
+            with self.pkcs11.simulate_disconnect(100):
+                with self.assertRaises(PyKCS11Error):
+                    encryptPin("test")
+
+            # HSM is now defunct
+            self.assertFalse(hsm.is_ready)
+
+            # try to recover now
+            r = encryptPin("test")
+            pin = decryptPin(r)
+            self.assertEqual(pin, "test")
+            self.assertTrue(hsm.is_ready)
