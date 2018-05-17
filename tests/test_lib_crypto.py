@@ -2,8 +2,11 @@
 """
 This test file tests the lib.crypto and lib.security.default
 """
+from mock import call
 
+from privacyidea.lib.error import HSMException
 from .base import MyTestCase
+from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
@@ -11,8 +14,10 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
+from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 
 from flask import current_app
+from PyKCS11 import PyKCS11Error
 
 
 class SecurityModuleTestCase(MyTestCase):
@@ -219,3 +224,145 @@ class RandomTestCase(MyTestCase):
 
         r = verify_with_pepper(h, "super Password")
         self.assertEqual(r, False)
+
+
+class AESHardwareSecurityModuleTestCase(MyTestCase):
+    """
+    Test the AES HSM class for security modules.
+    """
+
+    def test_01_instantiate(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+                "password": "test123!"
+            })
+            self.assertIsNotNone(hsm)
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+    def test_02_basic(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+            })
+            hsm.setup_module({
+                "password": "test123!"
+            })
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+            # mock just returns \x00\x01... for random values
+            self.assertEqual(hsm.random(4), "\x00\x01\x02\x03")
+            pkcs11.session_mock.generateRandom.assert_called_once_with(4)
+
+            password = "topSekr3t" * 16
+            crypted = hsm.encrypt_password(password)
+            # to generate the IV
+            pkcs11.session_mock.generateRandom.assert_called_with(16)
+
+            text = hsm.decrypt_password(crypted)
+            self.assertEqual(text, password)
+            self.assertEqual(pkcs11.session_mock.encrypt.call_count, 1)
+            self.assertEqual(pkcs11.session_mock.encrypt.call_count, 1)
+
+    def test_03_retry(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+            })
+            hsm.setup_module({
+                "password": "test123!"
+            })
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+            # session is opened once
+            self.assertEqual(pkcs11.mock.openSession.mock_calls, [
+                call(slot=1)
+            ])
+
+            # simulate that encryption succeeds after five tries
+            password = "topSekr3t" * 16
+            with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 5):
+                encrypted = hsm.encrypt_password(password)
+                # the session has been opened initially, and five times after that
+                self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 6)
+
+            # simulate that decryption succeeds after five tries
+            with pkcs11.simulate_failure(pkcs11.session_mock.decrypt, 5):
+                self.assertEqual(hsm.decrypt_password(encrypted), password)
+                # the session has been opened initially, five times during encryption, and five times now
+                self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 11)
+
+            # simulate that random generation succeeds after five tries
+            with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 5):
+                self.assertEqual(hsm.random(4), "\x00\x01\x02\x03")
+                self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 16)
+
+    def test_04_fail_encrypt(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+            })
+            hsm.setup_module({
+                "password": "test123!"
+            })
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+            # session is opened once
+            self.assertEqual(pkcs11.mock.openSession.mock_calls, [
+                call(slot=1)
+            ])
+
+            # simulate that encryption still fails after five tries
+            password = "topSekr3t" * 16
+            with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 6):
+                with self.assertRaises(HSMException):
+                    hsm.encrypt_password(password)
+                # the session has been opened initially, and six times after that
+                self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 7)
+            # but we are still ready, because ``openSession`` succeeded
+            self.assertTrue(hsm.is_ready)
+
+    def test_05_hsm_recovery(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+            })
+            hsm.setup_module({
+                "password": "test123!"
+            })
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+            self.assertEqual(pkcs11.mock.openSession.mock_calls, [
+                call(slot=1)
+            ])
+
+            # encryption+decryption succeeds once
+            password = "topSekr3t" * 16
+            crypted = hsm.encrypt_password(password)
+            text = hsm.decrypt_password(crypted)
+            self.assertEqual(text, password)
+
+            # simulate that the HSM disappears after that, so we cannot
+            # even open a session
+            with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 1), \
+                pkcs11.simulate_failure(pkcs11.mock.openSession, 1):
+                with self.assertRaises(PyKCS11Error):
+                    hsm.encrypt_password(password)
+                self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 2)
+
+            # the Security Module is in a defunct state now
+            self.assertFalse(hsm.is_ready)
+            # but we can recover from it!
+            # simulate one failure, because this will make the security module
+            # acquire a new session
+            with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 1):
+                crypted = hsm.encrypt_password(password)
+            self.assertTrue(hsm.is_ready)
+            text = hsm.decrypt_password(crypted)
+            self.assertEqual(text, password)
+            self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 3)
