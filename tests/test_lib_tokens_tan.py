@@ -5,7 +5,7 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.tantoken import TanTokenClass
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_tokens_paginate
 from privacyidea.models import Token
 
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -79,6 +79,10 @@ class TanTokenTestCase(MyTestCase):
         tok = init_token(params)
         self.assertEqual(tok.token.tokentype, "tan")
 
+        d = tok.get_as_dict()
+        self.assertTrue("tan.tan0" not in d.get("info"), d.get("info"))
+        self.assertEqual(d.get("info", {}).get("tan.count"), 5)
+
         # check all tans
         r = tok.check_otp("tan2")
         self.assertEqual(r, 1)
@@ -90,6 +94,9 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(r, 1)
         r = tok.check_otp("tan3")
         self.assertEqual(r, 1)
+
+        d = tok.get_as_dict()
+        self.assertEqual(d.get("info", {}).get("tan.count"), 1)
 
         # Check the authentication of a TAN token with a PIN
         tok.set_pin("test")

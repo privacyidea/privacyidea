@@ -192,3 +192,27 @@ class TanTokenClass(PaperTokenClass):
             params["tans"] = l[3]
 
         return params
+
+    def get_as_dict(self):
+        """
+        This returns the token data as a dictionary.
+        It is used to display the token list at /token/list.
+
+        The TAN token class removes the tan.tanXX information and
+        only returns the number of remaining tans.
+
+        :return: The token data as dict
+        :rtype: dict
+        """
+        # first get the database values as dict
+        token_dict = self.token.get()
+
+        tan_count = 0
+        info = token_dict.get("info", {})
+        for infokey in info.keys():
+            if infokey.startswith("tan.tan"):
+                tan_count += 1
+                del info[infokey]
+        info["tan.count"] = tan_count
+
+        return token_dict
