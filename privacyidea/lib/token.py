@@ -862,13 +862,11 @@ def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
     :return: the token object
     """
     init_param = {'serial': serial,
-                  'type': token_dict['type'],
                   'description': token_dict.get("description",
-                                                "imported"),
-                  'otpkey': token_dict['otpkey'],
-                  'otplen': token_dict.get('otplen'),
-                  'timeStep': token_dict.get('timeStep'),
-                  'hashlib': token_dict.get('hashlib')}
+                                                "imported")}
+    for p in ['type', 'otpkey', 'otplen', 'timeStep', 'hashlib', 'tans']:
+        if p in token_dict:
+            init_param[p] = token_dict[p]
 
     user_obj = None
     if token_dict.get("user"):

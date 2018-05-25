@@ -5,7 +5,7 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.tantoken import TanTokenClass
-from privacyidea.lib.token import init_token, get_tokens_paginate
+from privacyidea.lib.token import init_token, get_tokens_paginate, import_token
 from privacyidea.models import Token
 
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -105,3 +105,27 @@ class TanTokenTestCase(MyTestCase):
 
         # check if the otplen of the TAN token is 4, the length of the first TAN
         self.assertEqual(tok.token.otplen, 4)
+
+    def test_10_import_tan(self):
+        # This are example values that are imported from a file and end up at
+        # lib/token.import_token
+        serial = "ABC123"
+        params = {'hashlib': 'sha1',
+                  'type': 'tan',
+                  'user': {},
+                  'serial': 'ABC123',
+                  'tans': '123465 798111',
+                  'otpkey': ''}
+
+        tok = import_token(serial, params)
+        self.assertEqual("tan", tok.type)
+
+        d = tok.get_as_dict()
+        self.assertEqual(d.get("info", {}).get("tan.count"), 2)
+        # check tans:
+        r = tok.check_otp("798111")
+        self.assertEqual(r, 1)
+        r = tok.check_otp("798111")
+        self.assertEqual(r, -1)
+        r = tok.check_otp("123465")
+        self.assertEqual(r, 1)
