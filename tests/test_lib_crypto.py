@@ -371,6 +371,24 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             self.assertEqual(text, password)
             self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 3)
 
+    def test_06_wrong_password(self):
+        with PKCS11Mock() as pkcs11:
+            hsm = AESHardwareSecurityModule({
+                "module": "testmodule",
+            })
+            with pkcs11.simulate_failure(pkcs11.mock.openSession, 1):
+                with self.assertRaises(PyKCS11Error):
+                    hsm.setup_module({
+                        "password": "test123!"
+                    })
+            self.assertFalse(hsm.is_ready)
+            hsm.setup_module({
+                "password": "test123!"
+            })
+            self.assertTrue(hsm.is_ready)
+            self.assertIs(hsm.session, pkcs11.session_mock)
+
+
 class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
     pkcs11 = PKCS11Mock()
 
