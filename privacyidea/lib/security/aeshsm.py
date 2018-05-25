@@ -75,8 +75,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         config = config or {}
         self.name = "HSM"
         self.config = config
-        # Initially, we might be missing a password. If it is supplied via the initial
-        # configuration, the flag is set to True below on.
+        # Initially, we might be missing a password
         self.is_ready = False
 
         if "module" not in config:
@@ -95,9 +94,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.slot = int(config.get("slot", 1))
         log.debug("Setting slot: {0!s}".format(self.slot))
         self.password = config.get("password")
-        # If we have a password, configuration is complete
-        if self.password:
-            self.is_ready = True
         log.debug("Setting a password: {0!s}".format(bool(self.password)))
         self.module = config.get("module")
         log.debug("Setting the modules: {0!s}".format(self.module))
@@ -117,7 +113,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return:
         """
         self.pkcs11.lib.C_Initialize()
-        if self.is_ready:
+        if self.password:
             self._login()
 
     def setup_module(self, params):
@@ -138,7 +134,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             self.password = str(params.get("password"))
         else:
             raise HSMException("missing password")
-        self.is_ready = True
         self._login()
         return self.is_ready
 
@@ -167,6 +162,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         # self.session.logout()
         log.debug("Successfully setup the security module.")
+        self.is_ready = True
 
     def random(self, length):
         """
