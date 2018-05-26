@@ -388,7 +388,7 @@ angular.module("privacyideaApp")
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
         if ($scope.welcomeStep === 4) {
-            $('#dialogWelcome').modal().hide();
+            $('#dialogWelcome').modal("hide");
             // Hack, since we can not close the modal and thus the body
             // keeps the modal-open and thus has no scroll-bars
             $("body").removeClass("modal-open");
