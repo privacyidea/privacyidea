@@ -239,10 +239,11 @@ class Audit(AuditBase):
                 le.signature = sign
                 self.session.merge(le)
                 self.session.commit()
+            log.debug(u"AUDIT_DATA: {0!s}".format(self.audit_data))
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
-            log.error("DATA: {0!s}".format(self.audit_data))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(u"exception {0!r}".format(exx))
+            log.error(u"DATA: {0!s}".format(self.audit_data))
+            log.debug(u"{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:
