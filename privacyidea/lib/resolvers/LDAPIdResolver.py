@@ -529,8 +529,20 @@ class IdResolver (UserIdResolver):
         if len(self.loginname_attribute) > 1:
             loginname_filter = u""
             for l_attribute in self.loginname_attribute:
-                loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
-                                                          login_name)
+                # Special case if we have a guid
+                try:
+                    if l_attribute.lower() == "objectguid":
+                        search_login_name = trim_objectGUID(login_name)
+                    else:
+                        search_login_name = login_name
+                    loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
+                                                              search_login_name)
+                except ValueError:
+                    # This happens if we have a self.loginname_attribute like ["sAMAccountName","objectGUID"],
+                    # the user logs in with his sAMAccountName, which can
+                    # not be transformed to a UUID
+                    log.debug("Can not transform {0!s} to a objectGUID.".format(login_name))
+
             loginname_filter = u"|" + loginname_filter
         else:
             loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
