@@ -10,6 +10,10 @@ database. This is helpful after database migrations. Counters in the old
 instance may have been updated, since users still authenticate against this
 old instance. You would simply fetch these updated counters and use this
 script to update them in the new privacyIDEA database.
+
+You can update counters like
+
+privacyidea-export-linotp-counter.py -c MIGRATION/linotp.ini  | ./tools/privacyidea-update-counter.py -c /etc/privacyidea/pi.cfg -i -
 """
 
 from privacyidea.models import Token
@@ -67,18 +71,28 @@ privacyidea_session = sessionmaker(bind=privacyidea_engine)()
 
 print("Starting updating {0!s} counters:".format(len(counters)))
 updated = 0
+not_found = 0
+processed = 0
 for count in counters:
+    processed += 1
     if args.increase_only:
         r = privacyidea_session.query(Token).filter_by(serial=count[0]).first()
-        if r.count >= count[1]:
+        if r and r.count >= count[1]:
             # The counter in the database is bigger
             continue
-    sys.stdout.write("{0!s}, ".format(count[0]))
-    privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
-    updated += 1
+    sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
+    r = privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
+    if r > 0:
+        # r==0, if the token was not found!
+        updated += 1
+    else:
+        not_found += 1
     # Depending on the time of running, we might do the session.commit after each update to avoid
     # blocking the Token table.
 
 privacyidea_session.commit()
 
-print("\nDone: {0!s} counters updated.".format(updated))
+print
+print("{0!s:6} tokens processed.".format(processed))
+print("{0!s:6} counters updated.".format(updated))
+print("{0!s:6} tokens not found.".format(not_found))
