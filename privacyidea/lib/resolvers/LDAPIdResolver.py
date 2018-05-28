@@ -489,7 +489,11 @@ class IdResolver (UserIdResolver):
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
-                        ret[map_k] = ldap_v[0]
+                        # An objectGUID should be no list, since it is unique
+                        if type(ldap_v) == basestring:
+                            ret[map_k] = ldap_v
+                        else:
+                            raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
                     elif type(ldap_v) == list and map_k not in self.multivalueattributes:
                         # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
@@ -686,7 +690,7 @@ class IdResolver (UserIdResolver):
         self.timeout = float(config.get("TIMEOUT", 5))
         self.cache_timeout = int(config.get("CACHE_TIMEOUT", 120))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
-        self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE","").split(",")
+        self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE","").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
