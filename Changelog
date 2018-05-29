@@ -1,3 +1,12 @@
+Version 2.22.2, 2018-05-29
+
+  Fixes in WebUI:
+  * Fix the missing scrollbar in all remaining cases.
+
+  Fixes in Server:
+  * Avoid cast problems with Oracle token DB when saving
+    integer values to string columns.
+
 Version 2.22.1, 2018-04-20
 
   Fixes in WebUI:
