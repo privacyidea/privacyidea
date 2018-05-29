@@ -1,5 +1,8 @@
 language: python
 sudo: false
+env:
+  - REQUIREMENTS_TXT=requirements.txt
+  - REQUIREMENTS_TXT=requirements-ubuntu-16.04.txt
 python:
   - 2.7
 # command to install dependencies
@@ -9,6 +12,7 @@ install:
   - "pip install coveralls"
   - "pip install codecov"
   - "pip install -r requirements.txt"
+  - "pip install -r $REQUIREMENTS_TXT"
   - "pip install smpplib"
 # split the test run according to
 # http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/
