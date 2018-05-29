@@ -1607,9 +1607,8 @@ class TokenClass(object):
             last_success_auth = parse_date_string(date_s)
             if not last_success_auth.tzinfo:
                 # the date string has no timezone, default timezone is UTC
-                # We need to reparse
-                last_success_auth = parse_date_string(date_s,
-                                                      tzinfos=tzutc)
+                # We need to set the timezone manually
+                last_success_auth = last_success_auth.replace(tzinfo=tzutc())
             # The last auth is to far in the past
             if last_success_auth + tdelta < datetime.datetime.now(tzlocal()):
                 res = False
