@@ -24,7 +24,7 @@ imagesize==1.0.0
 ipaddress==1.0.22
 itsdangerous==0.24
 Jinja2==2.10
-ldap3==2.1.1
+ldap3==2.5
 lxml==4.2.1
 Mako==1.0.7
 MarkupSafe==1.0
