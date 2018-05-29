@@ -2,9 +2,6 @@ language: python
 sudo: false
 python:
   - 2.7
-  - 3.4
-  - 3.5
-  - 3.6
 # command to install dependencies
 install:
   - "pip install ."
@@ -36,11 +33,6 @@ install:
 #  - TESTSCRIPT=tests/test_lib_tokens_yubikey.py
 #  - TESTSCRIPT=tests/test_lib_user.py
 #  - TESTSCRIPT=tests/test_resolver_realm.py
-matrix:
-    allow_failures:
-       - python: 3.4
-       - python: 3.5
-       - python: 3.6
 # command to run tests
 #script: "nosetests -v --with-coverage --cover-package=privacyidea $TESTSCRIPT"
 script: "nosetests -v --with-coverage --cover-package=privacyidea tests"
