@@ -490,8 +490,8 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if type(ldap_v) == basestring:
-                            ret[map_k] = ldap_v
+                        if isinstance(ldap_v, basestring):
+                            ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
                     elif type(ldap_v) == list and map_k not in self.multivalueattributes:
@@ -545,12 +545,16 @@ class IdResolver (UserIdResolver):
                     # This happens if we have a self.loginname_attribute like ["sAMAccountName","objectGUID"],
                     # the user logs in with his sAMAccountName, which can
                     # not be transformed to a UUID
-                    log.debug("Can not transform {0!s} to a objectGUID.".format(login_name))
+                    log.debug(u"Can not transform {0!s} to a objectGUID.".format(login_name))
 
             loginname_filter = u"|" + loginname_filter
         else:
+            if self.loginname_attribute[0].lower() == "objectguid":
+                search_login_name = trim_objectGUID(login_name)
+            else:
+                search_login_name = login_name
             loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
-                                                   login_name)
+                                                   search_login_name)
 
         log.debug("login name filter: {!r}".format(loginname_filter))
         filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
