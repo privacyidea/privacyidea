@@ -1681,6 +1681,39 @@ class LDAPResolverTestCase(MyTestCase):
         uid = y.getUserId("alice@test.com")
         self.assertEqual(uid, objectGUIDs[0])
 
+    @ldap3mock.activate
+    def test_31_login_with_objectGUID_only(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        classes = 'top, inetOrgPerson'
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'objectGUID',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"userid" : "objectGUID",'
+                                  '"password" : "userPassword",'
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName", '
+                                  '"accountExpires": "accountExpires" }',
+                      'UIDTYPE': 'objectGUID',
+                      'DN_TEMPLATE': 'cn=<username>,ou=example,o=test',
+                      'OBJECT_CLASSES': classes,
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
+                      })
+
+        # We can now authenticate using the objectGUID
+        uid = y.getUserId(objectGUIDs[0])
+        self.assertEqual(uid, objectGUIDs[0])
+
+        info = y.getUserInfo(uid)
+        self.assertEqual(info['username'], objectGUIDs[0])
 
 class BaseResolverTestCase(MyTestCase):
 
