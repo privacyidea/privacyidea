@@ -1,3 +1,9 @@
+python-privacyidea (2.23~dev1-trusty) trusty; urgency=medium
+
+  Development Release
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 30 May 2018 12:15:00 +0200
+  
 python-privacyidea (2.22.1-1trusty) trusty; urgency=medium
 
   Fixes in WebUI:
