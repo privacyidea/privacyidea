@@ -145,7 +145,7 @@ ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
-	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.chages || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.changes || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
