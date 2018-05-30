@@ -33,6 +33,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class ERROR:
+    SUBSCRIPTION = 101
+    POLICY = 403
+    CA = 503
+    HSM = 707
+    SELFSERVICE = 807
+
+
 class privacyIDEAError(Exception):
 
     def __init__(self, description=u"privacyIDEAError!", id=10):
@@ -70,13 +78,12 @@ class privacyIDEAError(Exception):
         return ret
 
 
-class SubscriptionError(Exception):
-    def __init__(self, description=None, application=None,
-                 id=101):
+class SubscriptionError(privacyIDEAError):
+    def __init__(self, description=None, application=None, id=ERROR.SUBSCRIPTION):
         self.id = id
         self.message = description
         self.application = application
-        Exception.__init__(self, description)
+        privacyIDEAError.__init__(self, description, id=self.id)
 
     def __str__(self):
         return self.__repr__()
@@ -116,7 +123,7 @@ class AuthError(BaseError):
         
 
 class PolicyError(privacyIDEAError):
-    def __init__(self, description, id=403):
+    def __init__(self, description, id=ERROR.POLICY):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
@@ -140,7 +147,7 @@ class ConfigAdminError(privacyIDEAError):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 class CAError(privacyIDEAError):
-    def __init__(self, description="CA error!", id=503):
+    def __init__(self, description="CA error!", id=ERROR.CA):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
@@ -155,12 +162,12 @@ class ServerError(privacyIDEAError):
 
 
 class HSMException(privacyIDEAError):
-    def __init__(self, description="hsm error!", id=707):
+    def __init__(self, description="hsm error!", id=ERROR.HSM):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class SelfserviceException(privacyIDEAError):
-    def __init__(self, description="selfservice error!", id=807):
+    def __init__(self, description="selfservice error!", id=ERROR.SELFSERVICE):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
