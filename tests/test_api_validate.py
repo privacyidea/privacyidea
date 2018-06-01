@@ -12,7 +12,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
-from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.realm import set_realm, set_default_realm
 
@@ -462,7 +462,7 @@ class AAValidateOfflineTestCase(MyTestCase):
             data = json.loads(res.data)
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
-                             u"ERR10: You provided a wrong OTP value.")
+                             u"ERR401: You provided a wrong OTP value.")
         # The failed refill should not modify the token counter!
         self.assertEqual(old_counter, token_obj.token.count)
 
@@ -2030,7 +2030,7 @@ class ValidateAPITestCase(MyTestCase):
                                            data={"user": "cornelius",
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 403, res)
+            self.assertEqual(res.status_code, ERROR.POLICY)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("status"), False)
             detail = json.loads(res.data).get("detail")
@@ -2046,7 +2046,7 @@ class ValidateAPITestCase(MyTestCase):
                                            data={"user": "passthru",
                                                  "pass": "pthru"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 200)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
 

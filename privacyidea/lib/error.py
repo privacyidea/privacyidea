@@ -35,10 +35,17 @@ log = logging.getLogger(__name__)
 
 class ERROR:
     SUBSCRIPTION = 101
-    POLICY = 403
+    TOKENADMIN = 301
+    CONFIGADMIN = 302
+    POLICY = 303
+    VALIDATE = 401
+    REGISTRATION = 402
     CA = 503
     HSM = 707
     SELFSERVICE = 807
+    SERVER = 903
+    USER = 904
+    PARAMETER = 905
 
 
 class privacyIDEAError(Exception):
@@ -128,23 +135,24 @@ class PolicyError(privacyIDEAError):
 
 
 class ValidateError(privacyIDEAError):
-    def __init__(self, description="validation error!", id=10):
+    def __init__(self, description="validation error!", id=ERROR.VALIDATE):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class RegistrationError(privacyIDEAError):
-    def __init__(self, description="registraion error!", id=10):
+    def __init__(self, description="registraion error!", id=ERROR.REGISTRATION):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class TokenAdminError(privacyIDEAError):
-    def __init__(self, description="token admin error!", id=10):
+    def __init__(self, description="token admin error!", id=ERROR.TOKENADMIN):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ConfigAdminError(privacyIDEAError):
-    def __init__(self, description="config admin error!", id=10):
+    def __init__(self, description="config admin error!", id=ERROR.CONFIGADMIN):
         privacyIDEAError.__init__(self, description=description, id=id)
+
 
 class CAError(privacyIDEAError):
     def __init__(self, description="CA error!", id=ERROR.CA):
@@ -152,12 +160,12 @@ class CAError(privacyIDEAError):
 
 
 class UserError(privacyIDEAError):
-    def __init__(self, description="user error!", id=905):
+    def __init__(self, description="user error!", id=ERROR.USER):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ServerError(privacyIDEAError):
-    def __init__(self, description="server error!", id=905):
+    def __init__(self, description="server error!", id=ERROR.SERVER):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
@@ -174,5 +182,5 @@ class SelfserviceException(privacyIDEAError):
 class ParameterError(privacyIDEAError):
     USER_OR_SERIAL = _('You either need to provide user or serial')
 
-    def __init__(self, description="unspecified parameter error!", id=905):
+    def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
         privacyIDEAError.__init__(self, description=description, id=id)
