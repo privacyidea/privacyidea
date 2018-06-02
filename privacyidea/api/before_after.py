@@ -256,7 +256,7 @@ def policy_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
         g.audit_object.finalize_log()
-    return send_error(error.message), error.id
+    return send_error(error.message, error_code=error.id), 403
 
 
 @system_blueprint.app_errorhandler(privacyIDEAError)
