@@ -2030,9 +2030,10 @@ class ValidateAPITestCase(MyTestCase):
                                            data={"user": "cornelius",
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, ERROR.POLICY)
+            self.assertEqual(res.status_code, 403)
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("status"), False)
+            self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail, None)
 
