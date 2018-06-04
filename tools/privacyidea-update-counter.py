@@ -31,7 +31,7 @@ def get_privacyidea_uri(config_file):
     sql_uri = ""
     for line in lines:
         if line.startswith("SQLALCHEMY_DATABASE_URI"):
-            sql_uri = line.split("=")[1].strip().strip("'").strip('"')
+            sql_uri = line.split("=", 1)[1].strip().strip("'").strip('"')
     return sql_uri
 
 
@@ -43,7 +43,7 @@ def read_counter_file(import_file):
             update_list.append((u"{0!s}".format(serial), int(counter)))
         except ValueError as ve:
             # If there is a line, that does not comply
-            sys.stderr.write("Failed to parse line: {0!s}".format(line))
+            sys.stderr.write("Failed to parse line: {0!s}\n".format(line))
 
     return update_list
 
@@ -54,7 +54,7 @@ parser.add_argument("-c", "--config", help="privacyIDEA config file. We only nee
 parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
                                  'counter per line split by a comma. You can specify "-" to read from stdin.',
                     type=argparse.FileType())
-parser.add_argument("-i", "--increase_only", help="Only update the token counter, if the new counter value"
+parser.add_argument("-i", "--increase-only", help="Only update the token counter, if the new counter value"
                                                   "is bigger than the existing in the database.",
                     action='store_const', const=True)
 args = parser.parse_args()
