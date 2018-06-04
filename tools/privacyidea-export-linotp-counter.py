@@ -82,7 +82,7 @@ def get_linotp_uri(config_file):
     sql_uri = ""
     for line in lines:
         if line.startswith("SQLALCHEMY_DATABASE_URI"):
-            sql_uri = line.split("=")[1].strip().strip("'").strip('"')
+            sql_uri = line.split("=", 1)[1].strip().strip("'").strip('"')
     return sql_uri
 
 
