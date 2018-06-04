@@ -966,7 +966,7 @@ def delete_all_policies():
 def export_policies(policies):
     """
     This function takes a policy list and creates an export file from it
-    
+
     :param policies: a policy definition
     :type policies: list of policy dictionaries
     :return: the contents of the file

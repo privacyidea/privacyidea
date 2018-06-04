@@ -250,4 +250,3 @@ class EventConfiguration(object):
         q = EventHandler.query.order_by(EventHandler.ordering)
         for e in q:
             self.eventlist.append(e.get())
-

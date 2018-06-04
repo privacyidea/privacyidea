@@ -23,7 +23,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#    
+#
 """
 contains Errors and Exceptions
 """
@@ -94,12 +94,12 @@ class BaseError(Exception):
         self.description = description
         self.status_code = status
         self.headers = headers
-        
+
     def to_dict(self):
         return {"status_code": self.status_code,
                 "error": self.error,
                 "description": self.description}
-        
+
     def __repr__(self):
         ret = '{0!s}(error={1!r}, description={2!r}, id={3:d})'.format(type(self).__name__,
                                                        self.error,
@@ -108,12 +108,18 @@ class BaseError(Exception):
         return ret
 
 
+class NonExistentResourceError(BaseError):
+    def __init__(self, error, description, status=404, headers=None,
+                 details=None):
+        self.details = details
+        BaseError.__init__(self, error, description, status, headers)
+
 class AuthError(BaseError):
     def __init__(self, error, description, status=401, headers=None,
                  details=None):
         self.details = details
         BaseError.__init__(self, error, description, status, headers)
-        
+
 
 class PolicyError(privacyIDEAError):
     def __init__(self, description, id=403):

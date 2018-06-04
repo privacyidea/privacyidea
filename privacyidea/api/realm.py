@@ -60,6 +60,7 @@ from flask import g
 from privacyidea.lib.auth import ROLE
 from flask_babel import gettext as _
 import logging
+from ..lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 
@@ -339,11 +340,12 @@ def get_default_realm_api():
     return send_result(res)
 
 
-@realm_blueprint.route('/<realm>', methods=['DELETE'])
+@realm_blueprint.route('/<identity>', methods=['DELETE'])
+@check_resource_exists('Realm', 'name')
 @log_with(log)
 #@system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
-def delete_realm_api(realm=None):
+def delete_realm_api(identity=None):
     """
     This call deletes the given realm.
 
@@ -377,9 +379,8 @@ def delete_realm_api(realm=None):
         }
 
     """
-    ret = delete_realm(realm)
+    ret = delete_realm(identity)
     g.audit_object.log({"success": ret,
-                        "info": realm})
+                        "info": identity})
 
     return send_result(ret)
-

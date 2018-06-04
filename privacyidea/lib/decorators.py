@@ -22,9 +22,42 @@ import logging
 import functools
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import NonExistentResourceError
 from privacyidea.lib import _
+import importlib
+from flask import request
+import privacyidea.models
+
 log = logging.getLogger(__name__)
 
+def check_resource_exists(model, identifier):
+    """
+    Decorator to check if resource exists
+
+    If the resource doesn't exists, NonExistentResourceError is raised.
+    """
+
+    def resource_exists(func):
+
+        @functools.wraps(func)
+        def resource_exists_wrapper(*args, **kwds):
+            my_class = getattr(privacyidea.models, model)
+
+            params = {}
+            params[identifier] = kwds['identity']
+            models = my_class.query.filter_by(**params).first()
+
+            if not models:
+                raise NonExistentResourceError('Non-existent resource!',
+                                'You are trying to delete object which does not exists.',
+                                 status=404)
+
+            f_result = func(*args, **kwds)
+            return f_result
+
+        return resource_exists_wrapper
+
+    return resource_exists
 
 def check_token_locked(func):
     """
@@ -117,4 +150,3 @@ def check_copy_serials(func):
         return f_result
 
     return check_serial_wrapper
-

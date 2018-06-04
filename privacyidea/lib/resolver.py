@@ -129,7 +129,7 @@ def save_resolver(params):
                     log.warn("the passed key %r is not a "
                              "parameter for the resolver %r" % (k,
                                                                 resolvertype))
-                        
+
     # Check that there is no type or desc without the data itself.
     # i.e. if there is a type.BindPW=password, then there must be a
     # BindPW=....
@@ -300,7 +300,7 @@ def get_resolver_class(resolver_type):
     :return: resolver object class
     '''
     ret = None
-    
+
     (resolver_clazzes, resolver_types) = get_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -315,7 +315,7 @@ def get_resolver_class(resolver_type):
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername
-    
+
     :param resolvername: THe name of the resolver
     :return: The type of the resolver
     :rtype: string

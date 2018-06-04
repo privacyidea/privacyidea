@@ -38,7 +38,7 @@ from ..lib.policy import ACTION
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
 from privacyidea.lib.utils import is_true
 import json
-
+from ..lib.decorators import check_resource_exists
 
 log = logging.getLogger(__name__)
 
@@ -179,19 +179,19 @@ def disable_event_api(eventid):
     return send_result(p)
 
 
-@eventhandling_blueprint.route('/<eid>', methods=['DELETE'])
+@eventhandling_blueprint.route('/<identity>', methods=['DELETE'])
+@check_resource_exists('EventHandler', 'id')
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.EVENTHANDLINGWRITE)
-def delete_eventid(eid=None):
+def delete_eventid(identity=None):
     """
     this function deletes an existing event handling configuration
 
     :param eid: The id of the event handling configuration
     :return: json with success or fail
     """
-    res = delete_event(eid)
+    res = delete_event(identity)
     g.audit_object.log({"success": res,
-                        "info": eid})
+                        "info": identity})
 
     return send_result(res)
-

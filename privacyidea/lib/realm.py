@@ -52,7 +52,7 @@ log = logging.getLogger(__name__)
 def get_realms(realmname=""):
     '''
     either return all defined realms or a specific realm
-    
+
     :param realmname: the realm, that is of interestet, if ==""
                       all realms are returned
     :type realmname: string
@@ -86,10 +86,10 @@ def get_realm(realmname):
 def realm_is_defined(realm):
     """
     check, if a realm already exists or not
-    
+
     :param realm: the realm, that should be verified
     :type  realm: string
-    
+
     :return: found or not found
     :rtype: boolean
     """
@@ -105,10 +105,10 @@ def set_default_realm(default_realm=None):
     """
     set the default realm attribute.
     If the realm name is empty, the default realm is cleared.
-        
+
     :param defaultRealm: the default realm name
     :type  defualtRealm: string
-    
+
     :return: success or not
     :rtype: boolean
     """
@@ -132,7 +132,7 @@ def get_default_realm():
     """
     return the default realm
     - lookup in the config for the DefaultRealm key
-    
+
     @return: the realm name
     @rtype : string
     """
@@ -146,7 +146,7 @@ def delete_realm(realmname):
     delete the realm from the Database Table with the given name
     If, after deleting this realm, there is only one realm left,
     the remaining realm is set the default realm.
-    
+
     :param realmname: the to be deleted realm
     :type  realmname: string
     """
@@ -184,13 +184,13 @@ def set_realm(realm, resolvers=None, priority=None):
     If the realm does not exist, it is created.
     If the realm exists, the old resolvers are removed and the new ones
     are added.
-    
+
     :param realm: an existing or a new realm
     :param resolvers: names of resolvers
     :type resolvers: list
     :param priority: The priority of the resolvers in the realm
     :type priority: dict, with resolver names as keys
-    
+
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     """
@@ -211,13 +211,13 @@ def set_realm(realm, resolvers=None, priority=None):
         R = Realm(realm)
         R.save()
         realm_created = True
-        
+
     if not realm_created:
         # delete old resolvers
         oldResos = ResolverRealm.query.filter_by(realm_id=R.id)
         for oldReso in oldResos:
             oldReso.delete()
-        
+
     # assign the resolvers
     for reso_name in resolvers:
         reso_name = reso_name.strip()
