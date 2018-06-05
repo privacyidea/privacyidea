@@ -231,11 +231,10 @@ def after_request(response):
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
-        g.audit_object.log({"info": error.description})
+        g.audit_object.log({"info": error.message})
         g.audit_object.finalize_log()
-    return send_error(error.description,
-                      error_code=-401,
-                      details=error.details), error.status_code
+    return send_error(error.message,
+                      error_code=error.id), 401
 
 
 @system_blueprint.errorhandler(PolicyError)

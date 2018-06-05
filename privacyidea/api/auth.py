@@ -47,7 +47,7 @@ from flask import (Blueprint,
 from .lib.utils import (send_result, get_all_params,
                         verify_auth_token)
 from ..lib.crypto import geturandom, init_hsm
-from ..lib.error import AuthError
+from ..lib.error import AuthError, ERROR
 from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
 from functools import wraps
@@ -190,9 +190,8 @@ def get_auth_token():
     # "remote_user" = authenticated by webserver
     authtype = "password"
     if username is None:
-        raise AuthError("Authentication failure",
-                        "missing Username",
-                        status=401)
+        raise AuthError("Authentication failure. missing Username",
+                        id=ERROR.AUTHENTICATE_MISSING_USERNAME)
     # Verify the password
     admin_auth = False
     user_auth = False
@@ -253,9 +252,8 @@ def get_auth_token():
                                 "administrator": username})
 
     if not admin_auth and not user_auth:
-        raise AuthError("Authentication failure",
-                        "Wrong credentials", status=401,
-                        details=details or {})
+        raise AuthError("Authentication failure. Wrong credentials",
+                        id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
     else:
         g.audit_object.log({"success": True})
 
