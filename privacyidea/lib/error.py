@@ -40,6 +40,13 @@ class ERROR:
     POLICY = 303
     VALIDATE = 401
     REGISTRATION = 402
+    AUTHENTICATE = 403
+    AUTHENTICATE_WRONG_CREDENTIALS = 4031
+    AUTHENTICATE_MISSING_USERNAME = 4032
+    AUTHENTICATE_AUTH_HEADER = 4033
+    AUTHENTICATE_DECODING_ERROR = 4304
+    AUTHENTICATE_TOKEN_EXPIRED = 4305
+    AUTHENTICATE_MISSING_RIGHT = 4306
     CA = 503
     HSM = 707
     SELFSERVICE = 807
@@ -101,32 +108,9 @@ class SubscriptionError(privacyIDEAError):
         return ret
 
 
-class BaseError(Exception):
-    def __init__(self, error, description, status=400, headers=None):
-        Exception.__init__(self)
-        self.error = error
-        self.description = description
-        self.status_code = status
-        self.headers = headers
-        
-    def to_dict(self):
-        return {"status_code": self.status_code,
-                "error": self.error,
-                "description": self.description}
-        
-    def __repr__(self):
-        ret = '{0!s}(error={1!r}, description={2!r}, id={3:d})'.format(type(self).__name__,
-                                                       self.error,
-                                                       self.description,
-                                                       self.status_code)
-        return ret
-
-
-class AuthError(BaseError):
-    def __init__(self, error, description, status=401, headers=None,
-                 details=None):
-        self.details = details
-        BaseError.__init__(self, error, description, status, headers)
+class AuthError(privacyIDEAError):
+    def __init__(self, description, id=ERROR.AUTHENTICATE):
+        privacyIDEAError.__init__(self, description=description, id=id)
         
 
 class PolicyError(privacyIDEAError):
