@@ -5,10 +5,9 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
-#  2018-06-05 Michael Becker <michael.becker@hs-niederrhein.de>
-#             Fix parameter hash_algo in call to cr_google to get the
-#             hash alogrithm correctly included in otpauth uri/qr code 
-#
+#  2018-06-06 Michael Becker <michael.becker@hs-niederrhein.de>
+#             Add get_setting_type to make hotp.hashlib public and
+#             therefore recognised in token enrollment with role user.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Set Yubikeys to be hardware tokenkind
 #  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -228,7 +227,7 @@ class HotpTokenClass(TokenClass):
                                         tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
                                         tokenlabel=tokenlabel,
-                                        hash_algo=self.get_tokeninfo("hashlib", "sha1"),
+                                        hash_algo=params.get("hashlib","sha1"),
                                         digits=params.get("otplen", 6),
                                         period=params.get("timeStep", 30),
                                         issuer=tokenissuer,
@@ -648,6 +647,11 @@ class HotpTokenClass(TokenClass):
             ret = True
 
         return ret, error, otp_dict
+
+    @staticmethod
+    def get_setting_type(key):
+        settings = {"hotp.hashlib": "public"}
+        return settings.get(key, "")
 
     @classmethod
     def get_default_settings(cls, params, logged_in_user=None,
