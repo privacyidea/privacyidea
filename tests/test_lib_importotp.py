@@ -474,7 +474,12 @@ OATHCSV = '''
         # a serial without an OTP key will not create a token
         serialX
         '''
-
+OATHCSV_USER = """# version:2
+user1, resolver1, realm1, tok1, 1212, hotp
+# the following line will be ignored, since it has an empty serial
+user2, resolver2, realm2, , 3434, hotp
+user3, resolver3, realm3, tok3, 1212, totp
+"""
 
 # Encrypted Hallo
 HALLO_PAYLOAD = """-----BEGIN PGP MESSAGE-----
@@ -523,6 +528,15 @@ class ImportOTPTestCase(MyTestCase):
         self.assertTrue("tok2" in tokens, tokens)
         self.assertTrue("tok3" in tokens, tokens)
         self.assertTrue("tok4" in tokens, tokens)
+
+    def test_00_import_oath_user(self):
+        tokens = parseOATHcsv(OATHCSV_USER)
+        self.assertEqual(len(tokens), 2)
+        self.assertTrue("tok1" in tokens)
+        self.assertTrue("tok3" in tokens)
+        self.assertEqual(tokens.get("tok1").get("user").get("username"), "user1")
+        self.assertEqual(tokens.get("tok1").get("user").get("resolver"), "resolver1")
+        self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
     def test_01_import_aladdin_xml(self):
         tokens = parseSafeNetXML(ALADDINXML)

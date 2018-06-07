@@ -1,0 +1,56 @@
+<div class="row">
+    <div class="col-sm-12">
+        <accordion close-others="oneAtATime">
+            <accordion-group heading="{{ 'The OTP values'|translate }}">
+                <div id="paperOtpTable">
+                    <div ng-include="instanceUrl+'/'+piCustomization+
+                    '/views/includes/token.enrolled.tan.top.html'"></div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped
+                                  tantoken">
+                            <thead>
+                            <tr>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                                <th translate>#</th>
+                                <th>OTP</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr ng-repeat="key in otp_rows">
+                                <td>{{ $index }}</td>
+                                <td>{{ enrolledToken.otps[$index] }}</td>
+                                <td>{{ $index+(1*otp_row_count) }}</td>
+                                <td>{{ enrolledToken.otps[$index+
+                                        (1*otp_row_count)] }}</td>
+                                <td>{{ $index+(2*otp_row_count) }}</td>
+                                <td>{{ enrolledToken.otps[$index+
+                                        (2*otp_row_count)] }}</td>
+                                <td>{{ $index+(3*otp_row_count) }}</td>
+                                <td>{{ enrolledToken.otps[$index+
+                                        (3*otp_row_count)] }}</td>
+                                <td>{{ $index+(4*otp_row_count) }}</td>
+                                <td>{{ enrolledToken.otps[$index+
+                                        (4*otp_row_count)] }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div ng-include="instanceUrl+'/'+piCustomization+
+                    '/views/includes/token.enrolled.tan.bottom.html'"></div>
+                </div>
+            </accordion-group>
+        </accordion>
+    </div>
+</div>
+<button class="btn-default btn"
+    ng-click="printOtp()">
+    <span class="glyphicon glyphicon-print"></span>
+    <span translate>Print the OTP list</span>
+</button>

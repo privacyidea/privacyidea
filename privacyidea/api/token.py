@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-06-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add tantoken wrapper
 # 2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add U2F policy to /token/init
 # 2016-08-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -84,6 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
+                                           tantoken_count,
                                            u2ftoken_allowed, u2ftoken_verify_cert,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters)
@@ -123,6 +126,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
 @prepolicy(papertoken_count, request)
+@prepolicy(tantoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
 @prepolicy(u2ftoken_verify_cert, request)
 @postpolicy(save_pin_change, request)

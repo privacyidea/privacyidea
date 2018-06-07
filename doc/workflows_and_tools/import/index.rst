@@ -79,6 +79,28 @@ This is usually 6 or 8.
 
 **ocra suite** is the ocra suite of the OCRA token according to [#ocra]_.
 
+For TAN tokens it looks like this::
+
+   <serial>, <n/a>, TAN, <list of tans>
+
+The list of tans is a whitespace separated list.
+
+Import format version 2
+~~~~~~~~~~~~~~~~~~~~~~~
+
+A new import format allows to prepend a user, to whom the imported token should be assigned.
+
+The file format needs to start with the first line
+
+   # version: 2
+
+and the first three colums will be the user:
+
+   <username>, <resolver>, <realm>, <serial>, <seed>, <type>, ...
+
+.. note:: The import will bail out, if a specified user does not exist.
+
+
 Yubikey CSV
 -----------
 

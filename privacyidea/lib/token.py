@@ -80,7 +80,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types,
                                     get_inc_fail_count_on_false_pin)
-from privacyidea.lib.user import get_user_info
+from privacyidea.lib.user import get_user_info, User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
@@ -862,19 +862,24 @@ def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
     :return: the token object
     """
     init_param = {'serial': serial,
-                  'type': token_dict['type'],
-                      'description': token_dict.get("description",
-                                                        "imported"),
-                      'otpkey': token_dict['otpkey'],
-                      'otplen': token_dict.get('otplen'),
-                      'timeStep': token_dict.get('timeStep'),
-                      'hashlib': token_dict.get('hashlib')}
+                  'description': token_dict.get("description",
+                                                "imported")}
+    for p in ['type', 'otpkey', 'otplen', 'timeStep', 'hashlib', 'tans']:
+        if p in token_dict:
+            init_param[p] = token_dict[p]
+
+    user_obj = None
+    if token_dict.get("user"):
+        user_obj = User(token_dict.get("user").get("username"),
+                        token_dict.get("user").get("realm"),
+                        token_dict.get("user").get("resolver"))
 
     if default_hashlib and default_hashlib != "auto":
         init_param['hashlib'] = default_hashlib
 
     # Imported tokens are usually hardware tokens
-    token = init_token(init_param, tokenrealms=tokenrealms,
+    token = init_token(init_param, user=user_obj,
+                       tokenrealms=tokenrealms,
                        tokenkind=TOKENKIND.HARDWARE)
     if token_dict.get("counter"):
         token.set_otp_count(token_dict.get("counter"))

@@ -1665,7 +1665,8 @@ class TokenClass(object):
         else:
             hashlib = "sha1"
 
-        params = {"hashlib": hashlib,
+        params = {"serial": l[0].strip(),
+                  "hashlib": hashlib,
                   "otpkey": key,
                   "type": l[2].strip()}
 
