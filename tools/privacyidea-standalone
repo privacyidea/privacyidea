@@ -12,6 +12,8 @@ import warnings
 import webbrowser
 
 from flask_script import Manager, Server
+from tempfile import NamedTemporaryFile
+
 from privacyidea.app import create_app
 from privacyidea.lib.security.default import DefaultSecurityModule
 
@@ -33,9 +35,15 @@ PI_PEPPER = b'{pi_pepper}'
 """
 
 RSA_KEYSIZE = 2048
+PEPPER_CHARSET = string.ascii_letters + string.digits + '_'
 
 
 def invoke_pi_manage(commandline, pi_cfg):
+    """
+    Invoke ``pi-manage`` with arguments, setting PRIVACYIDEA_CONFIGFILE TO ``pi_cfg``.
+    :param commandline: arguments to pass as a list
+    :param pi_cfg: location of the privacyIDEA config file
+    """
     environment = os.environ.copy()
     environment['PRIVACYIDEA_CONFIGFILE'] = pi_cfg
     subprocess.check_call(['pi-manage'] + commandline, env=environment)
@@ -52,6 +60,9 @@ def _app_factory(instance):
 
 
 def require_instance(f):
+    """
+    Decorator that marks commands that require an already set-up instance directory
+    """
     @wraps(f)
     def deco(*args, **kwargs):
         config_file = os.path.join(manager.app.instance_directory, 'pi.cfg')
@@ -93,10 +104,15 @@ def read_credentials(file):
     return username, password
 
 
-PEPPER_CHARSET = string.ascii_letters + string.digits + '_'
-
-
 def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
+    """
+    create a valid PI_PEPPER value of a given length from urandom,
+    choosing characters from a given charset
+    :param length: pepper length to generate
+    :param chunk_size: number of bytes to read from urandom per iteration
+    :param charset: list of valid characters
+    :return: a bytestring of the specified length
+    """
     pepper = b''
     while len(pepper) < length:
         random_bytes = DefaultSecurityModule.random(chunk_size)
@@ -104,6 +120,37 @@ def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
         pepper += printable_bytes
     return pepper[:length]
 
+
+def choice(question, choices, case_insensitive=True):
+    """
+    Ask a question interactively until one of the given choices is selected.
+    Return the choice then.
+    :param question: Question to ask the user as a string
+    :param choices: Dictionary mapping user answers to return values
+    :param case_insensitive: Set to true if the answer should be handled case-insensitively.
+                             Then, ``choices`` should contain only lowercase keys.
+    :return: a value of ``choices``
+    """
+    while True:
+        answer = raw_input(question)
+        if case_insensitive:
+            answer = answer.lower()
+        if answer in choices:
+            return choices[answer]
+        else:
+            print '{!r} is not a valid answer.'.format(answer)
+
+
+def yesno(question, default):
+    """
+    Ask a y/n question with a default value.
+    :param question: Question to ask the user as a string
+    :param default: Default return value (boolean)
+    :return: boolean
+    """
+    return choice(question, {'y': True,
+                             'n': False,
+                             '': default})
 
 
 @manager.command
@@ -131,8 +178,34 @@ def create():
     invoke_pi_manage(['create_audit_keys'], pi_cfg)
     invoke_pi_manage(['createdb'], pi_cfg)
 
+    print
     print 'Please enter a password for the new admin `super`.'
     invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
+
+    # create users
+    if yesno('Would you like to create a default resolver and realm (Y/n)? ', True):
+        print 'There are two possibilities to create a resolver:'
+        print ' 1) We can create a table in the privacyIDEA SQLite database to store the users.'
+        print '    You can add users via the privacyIDEA Web UI.'
+        print ' 2) We can create a resolver that contains the users from /etc/passwd'
+        print
+        create_sql_resolver = choice('Please choose (default=1): ', {
+            '1': True,
+            '2': False,
+            '': True
+        })
+        if create_sql_resolver:
+            invoke_pi_manage(['resolver', 'create_internal', 'defresolver'], pi_cfg)
+        else:
+            with NamedTemporaryFile(delete=False) as f:
+                f.write('{"fileName": "/etc/passwd"}')
+            invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver', f.name], pi_cfg)
+            os.unlink(f.name)
+        invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
+
+    print
+    print 'Configuration is complete. You can now configure privacyIDEA in the web browser by running'
+    print "  privacyidea-standalone -i '{}' configure".format(instance_dir.encode('string-escape'))
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',
