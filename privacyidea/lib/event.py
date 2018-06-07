@@ -20,6 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.models import EventHandler, EventHandlerOption, db
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.audit import getAudit
@@ -199,7 +200,7 @@ def delete_event(event_id):
     :return:
     """
     event_id = int(event_id)
-    ev = EventHandler.query.filter_by(id=event_id).first()
+    ev = fetch_one_resource(EventHandler, id=event_id)
     r = ev.delete()
     return r
 

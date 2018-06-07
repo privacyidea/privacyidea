@@ -61,7 +61,7 @@ from .subscriptions import subscriptions_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
-                         PolicyError)
+                         PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
 
@@ -256,6 +256,31 @@ def policy_error(error):
         g.audit_object.log({"info": error.message})
         g.audit_object.finalize_log()
     return send_error(error.message, error_code=error.id), 403
+
+
+@system_blueprint.app_errorhandler(ResourceNotFoundError)
+@realm_blueprint.app_errorhandler(ResourceNotFoundError)
+@defaultrealm_blueprint.app_errorhandler(ResourceNotFoundError)
+@resolver_blueprint.app_errorhandler(ResourceNotFoundError)
+@policy_blueprint.app_errorhandler(ResourceNotFoundError)
+@user_blueprint.app_errorhandler(ResourceNotFoundError)
+@token_blueprint.app_errorhandler(ResourceNotFoundError)
+@audit_blueprint.app_errorhandler(ResourceNotFoundError)
+@application_blueprint.app_errorhandler(ResourceNotFoundError)
+@smtpserver_blueprint.app_errorhandler(ResourceNotFoundError)
+@register_blueprint.app_errorhandler(ResourceNotFoundError)
+@recover_blueprint.app_errorhandler(ResourceNotFoundError)
+@subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
+@postrequest(sign_response, request=request)
+def resource_not_found_error(error):
+    """
+    This function is called when an ResourceNotFoundError occurs.
+    It sends a 404.
+    """
+    if "audit_object" in g:
+        g.audit_object.log({"info": error.message})
+        g.audit_object.finalize_log()
+    return send_error(error.message, error_code=error.id), 404
 
 
 @system_blueprint.app_errorhandler(privacyIDEAError)
