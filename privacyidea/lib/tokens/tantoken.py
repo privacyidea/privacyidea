@@ -121,7 +121,6 @@ class TanTokenClass(PaperTokenClass):
         return ret
 
     def update(self, param, reset_failcount=True):
-        tan_dict = {}
         if "tans" in param:
             # init tokens with tans
             tans = param.get("tans").split()
