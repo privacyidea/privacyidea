@@ -839,7 +839,7 @@ def delete(eid):
 @event_manager.command
 def e_export(filename=None):
     """
-    Export all events to a JSON format file
+    Export all events to a file
     """
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
@@ -929,7 +929,7 @@ def delete(name):
 @policy_manager.command
 def p_export(filename=None):
     """
-    Export all policies to a file as a JSON format, list of dictionaries.
+    Export all policies to a file.
     If the filename is omitted, the policies are written to stdout.    
     """
     import pprint
