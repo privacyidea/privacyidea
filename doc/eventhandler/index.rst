@@ -252,8 +252,8 @@ You can also export the complete event definitions to a file or import the event
 During import you can specify if you want to remove all existing events or if you want to add the events from the file
 to the existing events in the database.
 
-.. note:: Events are identified by an *id*! So importing an event with the same name will create a new event with
-   another id.
+.. note:: Events are identified by an *id*! Due to database restrictions the id is ignored during import.
+   So importing an event with the same name will create a second event with the same name but another id.
 
 
 Available Handler Modules
