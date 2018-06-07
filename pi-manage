@@ -64,6 +64,8 @@ from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
+from privacyidea.lib.event import (delete_event, enable_event,
+                                   set_event, EventConfiguration)
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -93,6 +95,7 @@ backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
+event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
 manager.add_command('db', MigrateCommand)
@@ -101,6 +104,7 @@ manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
+manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
 
@@ -792,6 +796,95 @@ def create(name, resolver):
     """
     from privacyidea.lib.realm import set_realm
     set_realm(name, [resolver])
+
+# Event interface
+
+@event_manager.command
+def list():
+    """
+    List events
+    """
+    E = EventConfiguration()
+    events = E.events
+    print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
+    print(90*"=")
+    for event in events:
+        print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
+                                                 event.get("name")[0:30],
+                                         event.get("handlermodule"),
+                                         event.get("action"),event.get("id"),))
+
+@event_manager.command
+def enable(eid):
+    """
+    enable en event by ID
+    """
+    r = enable_event(eid)
+    print(r)
+
+@event_manager.command
+def disable(eid):
+    """
+    disable an event by ID
+    """
+    r = enable_event(eid, enable=False)
+    print(r)
+
+
+@event_manager.command
+def delete(eid):
+    """
+    delete an event by ID
+    """
+    r = delete_event(eid)
+    print(r)
+
+@event_manager.command
+def e_export(filename=None):
+    """
+    Export all events to a JSON format file
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    E = EventConfiguration()
+    events = E.events
+    event_str = pp.pformat(events)
+    if filename:
+        f = open(filename, 'w')
+        f.write(event_str)
+        f.close()
+    else:
+        print(event_str)
+
+@event_manager.command
+def e_import(filename, cleanup=False):
+    """
+    Import the events from a file.
+    If 'cleanup' is specified the existing events are deleted before the
+    events from the file are imported.
+    """
+    if cleanup:
+        print("Cleanup old events.")
+        E = EventConfiguration()
+        events = E.events
+        for event in events:
+            name = event.get("name")
+            r = delete_event(event.get("id"))
+            print("Deleted event '{0!s}' with result {1!s}".format(name, r))
+
+    f = open(filename, 'r')
+    contents = f.read()
+    f.close()
+    events = ast.literal_eval(contents)
+    for event in events:
+        name = event.get("name")
+        r = set_event(name, event.get("event"), event.get("handlermodule"),
+                      event.get("action"),
+                      conditions=event.get("conditions"),
+                      ordering=event.get("ordering"),
+                      options=event.get("options"),
+                      active=event.get("active"))
+        print("Added event '{0!s}' with result {1!s}".format(name, r))
 
 
 # Policy interface
