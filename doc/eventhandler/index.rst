@@ -244,6 +244,18 @@ Those messages can be manyfold like:
    like an authentication request that was handled successfully but failed.
 
 
+Managing Events
+---------------
+
+Using the command ``pi-manage events`` you can list, delete, enable and disable events.
+You can also export the complete event definitions to a file or import the event definitions from a file again.
+During import you can specify if you want to remove all existing events or if you want to add the events from the file
+to the existing events in the database.
+
+.. note:: Events are identified by an *id*! Due to database restrictions the id is ignored during import.
+   So importing an event with the same name will create a second event with the same name but another id.
+
+
 Available Handler Modules
 -------------------------
 

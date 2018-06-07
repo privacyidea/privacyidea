@@ -64,6 +64,8 @@ from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
+from privacyidea.lib.event import (delete_event, enable_event,
+                                   set_event, EventConfiguration)
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -93,6 +95,7 @@ backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
+event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
 manager.add_command('db', MigrateCommand)
@@ -101,6 +104,7 @@ manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
+manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
 
@@ -268,11 +272,11 @@ def _write_mysql_defaults(filename, username, password):
     :param password: The password to connect to the database
     :return:
     """
-    f = open(filename, "w")
-    f.write("""[client]
+    with open(filename, "w") as f:
+        f.write("""[client]
 user={0!s}
 password={1!s}""".format(username, password))
-    f.close()
+
     os.chmod(filename, 0600)
     # set correct owner, if possible
     if os.geteuid() == 0:
@@ -315,14 +319,13 @@ def restore(backup_file):
 
     call(["tar", "-zxf", backup_file, "-C", "/"])
     print(60*"=")
-    f = open(config_file, "r")
-    # Determine the SQLAlchemy URI
-    for line in f:
-        if re.search("^SQLALCHEMY_DATABASE_URI", line):
-            key, value = line.split("=", 1)
-            # Strip whitespaces, and ' "
-            sqluri = value.strip().strip("'").strip('"')
-    f.close()
+    with open(config_file, "r") as f:
+        # Determine the SQLAlchemy URI
+        for line in f:
+            if re.search("^SQLALCHEMY_DATABASE_URI", line):
+                key, value = line.split("=", 1)
+                # Strip whitespaces, and ' "
+                sqluri = value.strip().strip("'").strip('"')
 
     if sqluri is None:
         print("No SQLALCHEMY_DATABASE_URI found in {0!s}".format(config_file))
@@ -381,9 +384,8 @@ def encrypt_enckey(encfile):
     if password != password2:
         import sys
         sys.exit('Error: passwords do not match.')
-    f = open(encfile)
-    enckey = f.read()
-    f.close()
+    with open(encfile, "r") as f:
+        enckey = f.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     print(res)
 
@@ -399,9 +401,9 @@ def create_enckey():
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    f = open(filename, "w")
-    f.write(DefaultSecurityModule.random(96))
-    f.close()
+    with open(filename, "w") as f:
+        f.write(DefaultSecurityModule.random(96))
+
     print("Encryption key written to %s" % filename)
     os.chmod(filename, 0400)
     print("The file permission of %s was set to 400!" % filename)
@@ -442,13 +444,12 @@ def create_audit_keys(keysize=2048):
     new_key = RSA.generate(keysize, e=65537)
     public_key = new_key.publickey().exportKey("PEM")
     private_key = new_key.exportKey("PEM")
-    f = open(filename, "w")
-    f.write(private_key)
-    f.close()
+    with open(filename, "w") as f:
+        f.write(private_key)
 
-    f = open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w")
-    f.write(public_key)
-    f.close()
+    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w") as f:
+        f.write(public_key)
+
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
     os.chmod(filename, 0400)
@@ -676,9 +677,9 @@ def create(name, rtype, filename):
     """
     from privacyidea.lib.resolver import save_resolver
 
-    f = open(filename, 'r')
-    contents = f.read()
-    f.close()
+    with open(filename, 'r') as f:
+        contents = f.read()
+
     params = ast.literal_eval(contents)
     params["resolver"] = name
     params["type"] = rtype
@@ -793,6 +794,94 @@ def create(name, resolver):
     from privacyidea.lib.realm import set_realm
     set_realm(name, [resolver])
 
+# Event interface
+
+@event_manager.command
+def list():
+    """
+    List events
+    """
+    E = EventConfiguration()
+    events = E.events
+    print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
+    print(90*"=")
+    for event in events:
+        print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
+                                                 event.get("name")[0:30],
+                                         event.get("handlermodule"),
+                                         event.get("action"),event.get("id"),))
+
+@event_manager.command
+def enable(eid):
+    """
+    enable en event by ID
+    """
+    r = enable_event(eid)
+    print(r)
+
+@event_manager.command
+def disable(eid):
+    """
+    disable an event by ID
+    """
+    r = enable_event(eid, enable=False)
+    print(r)
+
+
+@event_manager.command
+def delete(eid):
+    """
+    delete an event by ID
+    """
+    r = delete_event(eid)
+    print(r)
+
+@event_manager.command
+def e_export(filename=None):
+    """
+    Export all events to a file
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    E = EventConfiguration()
+    events = E.events
+    event_str = pp.pformat(events)
+    if filename:
+        with open(filename, "w") as f:
+            f.write(event_str)
+    else:
+        print(event_str)
+
+@event_manager.command
+def e_import(filename, cleanup=False):
+    """
+    Import the events from a file.
+    If 'cleanup' is specified the existing events are deleted before the
+    events from the file are imported.
+    """
+    if cleanup:
+        print("Cleanup old events.")
+        E = EventConfiguration()
+        events = E.events
+        for event in events:
+            name = event.get("name")
+            r = delete_event(event.get("id"))
+            print("Deleted event '{0!s}' with result {1!s}".format(name, r))
+
+    with open(filename, 'r') as f:
+        contents = f.read()
+
+    events = ast.literal_eval(contents)
+    for event in events:
+        name = event.get("name")
+        r = set_event(name, event.get("event"), event.get("handlermodule"),
+                      event.get("action"),
+                      conditions=event.get("conditions"),
+                      ordering=event.get("ordering"),
+                      options=event.get("options"),
+                      active=event.get("active"))
+        print("Added event '{0!s}' with result {1!s}".format(name, r))
+
 
 # Policy interface
 
@@ -840,7 +929,7 @@ def delete(name):
 @policy_manager.command
 def p_export(filename=None):
     """
-    Export all policies to a file as a JSON format, list of dictionaries.
+    Export all policies to a file.
     If the filename is omitted, the policies are written to stdout.    
     """
     import pprint
@@ -849,9 +938,8 @@ def p_export(filename=None):
     policies = P.get_policies()
     pol_str = pp.pformat(policies)
     if filename:
-        f = open(filename, 'w')
-        f.write(pol_str)
-        f.close()
+        with open(filename, 'w') as f:
+            f.write(pol_str)
     else:
         print(pol_str)
 
@@ -872,9 +960,8 @@ def p_import(filename, cleanup=False):
             r = delete_policy(name)
             print("Deleted policy {0!s} with result {1!s}".format(name, r))
 
-    f = open(filename, 'r')
-    contents = f.read()
-    f.close()
+    with open(filename, 'r') as f:
+        contents = f.read()
     policies = ast.literal_eval(contents)
     for policy in policies:
         name = policy.get("name")
@@ -906,9 +993,8 @@ def create(name, scope, action, filename=None):
     """
     if filename:
         try:
-            f = open(filename, 'r')
-            contents = f.read()
-            f.close()
+            with open(filename, 'r') as f:
+                contents = f.read()
 
             params = ast.literal_eval(contents)
 
