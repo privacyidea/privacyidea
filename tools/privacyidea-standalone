@@ -228,7 +228,7 @@ def check(show_response=False):
             if show_response:
                 print response.data
     except Exception, e:
-        print e
+        print repr(e)
     sys.exit(exitcode)
 
 
