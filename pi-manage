@@ -51,6 +51,7 @@ import sys
 import datetime
 from datetime import timedelta
 import re
+import string
 from subprocess import call, Popen, PIPE
 from getpass import getpass
 import gnupg
@@ -95,6 +96,7 @@ resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
+bootstrap_manager = Manager(description="Initially bootstrap your privacyIDEA installation")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -103,6 +105,7 @@ manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
+manager.add_command('bootstrap', bootstrap_manager)
 
 
 @ca_manager.command
@@ -989,6 +992,111 @@ def createtoken(role, days, realm, username):
     print("Role:       {0!s}".format(role))
     print("Validity:   {0!s} days".format(days))
     print("Auth-Token: {0!s}".format(token))
+
+
+PI_CFG_TEMPLATE = """import logging
+PI_ENCFILE = {enckey!r}
+PI_AUDIT_KEY_PRIVATE = {audit_key_private!r}
+PI_AUDIT_KEY_PUBLIC = {audit_key_public!r}
+PI_LOGFILE = {logfile!r}
+PI_LOGLEVEL = logging.{loglevel}
+SQLALCHEMY_DATABASE_URI = {connect_string!r}
+SECRET_KEY = {secret_key!r}
+PI_PEPPER = {pepper!r}
+"""
+PEPPER_CHARSET = string.ascii_letters + string.digits + '_'
+
+
+def _create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
+    """
+    create a valid PI_PEPPER value of a given length from urandom,
+    choosing characters from a given charset
+    :param length: pepper length to generate
+    :param chunk_size: number of bytes to read from urandom per iteration
+    :param charset: list of valid characters
+    :return: a bytestring of the specified length
+    """
+    pepper = b''
+    while len(pepper) < length:
+        random_bytes = DefaultSecurityModule.random(chunk_size)
+        printable_bytes = ''.join(b for b in random_bytes if b in charset)
+        pepper += printable_bytes
+    return pepper[:length]
+
+
+@bootstrap_manager.option('--loglevel',
+                          help='Logging level (one of CRITICAL, ERROR, WARNING, INFO, DEBUG)',
+                          default='INFO')
+@bootstrap_manager.option('--enckey',
+                          help='Location of encryption key file '
+                               '(defaults to {directory}/encKey)',
+                          default='encKey')
+@bootstrap_manager.option('--audit-key-private',
+                          help='Location of private key for signing audit entries '
+                               '(defaults to {directory}/private.pem)',
+                          default='private.pem')
+@bootstrap_manager.option('--audit-key-public',
+                          help='Location of public key for signing audit entries '
+                               '(defaults to {directory}/public.pem)',
+                          default='public.pem')
+@bootstrap_manager.option('-p', '--print',
+                          action='store_true',
+                          help='Do not actually write the config file, but just print the generated contents',
+                          default=False,
+                          dest='print_only')
+@bootstrap_manager.option('-f', '--filename',
+                          help='Location of the privacyIDEA configuration file',
+                          default='/etc/privacyidea/pi.cfg')
+@bootstrap_manager.option('-l', '--logfile',
+                          help='Location of log file (defaults to /var/log/privacyidea.log)',
+                          default='/var/log/privacyidea.log')
+@bootstrap_manager.option('-b', '--database',
+                          help='SQLAlchemy database connect string',
+                          required=True)
+def generate_config(database, filename, logfile, loglevel, enckey,
+                    audit_key_public, audit_key_private, print_only):
+    """
+    Generate a pi.cfg based on the given configuration parameters
+    and write it to a file (defaults to /etc/privacyidea/pi.cfg)
+    """
+    directory = os.path.dirname(filename)
+    secret_key = DefaultSecurityModule.random(24)
+    pepper = _create_pepper()
+    if loglevel not in ('CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'):
+        raise RuntimeError("Log level needs to be one of CRITICAL, ERROR, WARNING, INFO, DEBUG!")
+    enckey_path = os.path.join(directory, enckey)
+    logfile_path = os.path.join(directory, logfile)
+    audit_key_private_path = os.path.join(directory, audit_key_private)
+    audit_key_public_path = os.path.join(directory, audit_key_public)
+    pi_cfg = PI_CFG_TEMPLATE.format(
+        directory=directory,
+        connect_string=database,
+        logfile=logfile_path,
+        loglevel=loglevel,
+        secret_key=secret_key,
+        pepper=pepper,
+        enckey=enckey_path,
+        audit_key_private=audit_key_private_path,
+        audit_key_public=audit_key_public_path,
+    )
+    if print_only:
+        print(pi_cfg)
+    else:
+        if os.path.exists(directory):
+            raise RuntimeError("{!r} already exists. Exiting!".format(directory))
+        os.makedirs(directory)
+        with open(filename, 'w') as f:
+            f.write(pi_cfg)
+            print 'Configuration successfully written to {!r}.'.format(filename)
+
+
+@bootstrap_manager.command
+def setup():
+    """ Generate encryption key and audit keys and initially set up the database """
+    create_enckey()
+    create_audit_keys()
+    createdb()
+    print 'Setup complete.'
 
 
 if __name__ == '__main__':
