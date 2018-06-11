@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2018-34-14 Paul Lettich <paul.lettich@netknights.it>
+#  2018-06-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add dynamic email
+#  2018-04-14 Paul Lettich <paul.lettich@netknights.it>
 #             Add "delete tokeninfo" action
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow setting time with timedelta
@@ -145,6 +147,13 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleIf": "tokentype",
                             "visibleValue": "sms",
                             "description": _("Dynamically read the mobile number "
+                                             "from the user store.")
+                        },
+                        "dynamic_email": {
+                            "type": "bool",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "email",
+                            "description": _("Dynamically reag the email address "
                                              "from the user store.")
                         },
                         "motppin": {
@@ -357,10 +366,13 @@ class TokenEventHandler(BaseEventHandler):
                             log.warning("Enrolling SMS token. But the user "
                                         "{0!r} has no mobile number!".format(user))
                 elif tokentype == "email":
-                    init_param['email'] = user.info.get("email", "")
-                    if not init_param['email']:
-                        log.warning("Enrolling EMail token. But the user {0!s}"
-                                    "has no email address!".format(user))
+                    if handler_options.get("dynamic_email"):
+                        init_param["dynamic_email"] = 1
+                    else:
+                        init_param['email'] = user.info.get("email", "")
+                        if not init_param['email']:
+                            log.warning("Enrolling EMail token. But the user {0!s}"
+                                        "has no email address!".format(user))
                 elif tokentype == "motp":
                     init_param['motppin'] = handler_options.get("motppin")
 
