@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-11 08:36+0200\n"
-"PO-Revision-Date: 2018-06-11 08:37+0200\n"
+"POT-Creation-Date: 2018-06-11 08:38+0200\n"
+"PO-Revision-Date: 2018-06-11 08:39+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -575,7 +575,7 @@ msgstr "Das result.value in der Server-Antwort ist 'True' oder 'False'."
 
 #: lib/eventhandler/base.py:142
 msgid "The result.status within the response is True or False."
-msgstr ""
+msgstr "Der Wert von result.status der Antwort ist entweder \"True\" oder \"False\"."
 
 #: lib/eventhandler/base.py:148
 msgid "Check if the max failcounter of the token is reached."
@@ -640,7 +640,7 @@ msgstr "Die ID des Zählers"
 
 #: lib/eventhandler/counterhandler.py:68
 msgid "Don't stop counter if it reaches zero."
-msgstr ""
+msgstr "Der Counter darf auch negative Werte erreichen."
 
 #: lib/eventhandler/federationhandler.py:73
 msgid "The remote/child privacyIDEA Server."
@@ -744,7 +744,7 @@ msgstr "Setze der oben genannten Schlüssel auf diesen Wert."
 
 #: lib/eventhandler/tokenhandler.py:232
 msgid "Delete this tokeninfo key."
-msgstr ""
+msgstr "Diesen Tokeninfo-Eintrag löschen."
 
 #: lib/eventhandler/usernotification.py:107
 msgid "Send notification email via this email server."
