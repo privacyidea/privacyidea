@@ -53,6 +53,7 @@ from privacyidea.lib import _
 import json
 import logging
 import datetime
+import yaml
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 
@@ -155,6 +156,10 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleValue": "email",
                             "description": _("Dynamically reag the email address "
                                              "from the user store.")
+                        },
+                        "additional_params": {
+                            "type": "str",
+                            "description": _("A dictionary of additional init parameters.")
                         },
                         "motppin": {
                             "type": "str",
@@ -353,9 +358,12 @@ class TokenEventHandler(BaseEventHandler):
             if is_true(handler_options.get("user")):
                 user = self._get_tokenowner(request)
                 tokentype = handler_options.get("tokentype")
-                # Some tokentypes need additional parameters or otherwise
-                # will fail to enroll.
-                # TODO: Other tokentypes will require additional parameters
+                # Some tokentypes need additional parameters
+                if handler_options.get("additional_params"):
+                    add_params = yaml.safe_load(handler_options.get("additional_params"))
+                    if type(add_params) == dict:
+                        init_param.update(add_params)
+
                 if tokentype == "sms":
                     if handler_options.get("dynamic_phone"):
                         init_param["dynamic_phone"] = 1

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-11 08:38+0200\n"
+"POT-Creation-Date: 2018-06-11 12:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -808,76 +808,80 @@ msgid ""
 "parameter like '--logged_in_role <role>'."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:113
+#: lib/eventhandler/tokenhandler.py:114
 msgid "set a new realm of the token"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:117
+#: lib/eventhandler/tokenhandler.py:118
 msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms "
 "will be removed from this token. Otherwise the realm will be added to the"
 " token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:132
+#: lib/eventhandler/tokenhandler.py:133
 msgid "Token type to create"
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:137
+#: lib/eventhandler/tokenhandler.py:138
 msgid "Assign token to user in request or to tokenowner."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:142
+#: lib/eventhandler/tokenhandler.py:143
 msgid "Set the realm of the newly created token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:149
+#: lib/eventhandler/tokenhandler.py:150
 msgid "Dynamically read the mobile number from the user store."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:156
+#: lib/eventhandler/tokenhandler.py:157
 msgid "Dynamically reag the email address from the user store."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:163
+#: lib/eventhandler/tokenhandler.py:162
+msgid "A dictionary of additional init parameters."
+msgstr ""
+
+#: lib/eventhandler/tokenhandler.py:168
 msgid ""
 "Set the MOTP PIN of the MOTP token during enrollment. This is a required "
 "value for enrolling MOTP tokens."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:172
+#: lib/eventhandler/tokenhandler.py:177
 msgid "The new description of the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:179
+#: lib/eventhandler/tokenhandler.py:184
 msgid ""
 "The token will be valid starting at the given date. Can be a fixed date "
 "or an offset like +10m, +24h, +7d."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:186
+#: lib/eventhandler/tokenhandler.py:191
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:199
+#: lib/eventhandler/tokenhandler.py:204
 msgid "Set the new count window of the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:209
+#: lib/eventhandler/tokenhandler.py:214
 msgid "Set the failcounter of the token."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:218
+#: lib/eventhandler/tokenhandler.py:223
 msgid "Set this tokeninfo key."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:223
+#: lib/eventhandler/tokenhandler.py:228
 msgid "Set the above key the this value."
 msgstr ""
 
-#: lib/eventhandler/tokenhandler.py:232
+#: lib/eventhandler/tokenhandler.py:237
 msgid "Delete this tokeninfo key."
 msgstr ""
 
