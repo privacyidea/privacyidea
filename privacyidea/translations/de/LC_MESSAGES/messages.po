@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-11 12:44+0200\n"
-"PO-Revision-Date: 2018-06-11 12:45+0200\n"
+"POT-Creation-Date: 2018-06-12 08:04+0200\n"
+"PO-Revision-Date: 2018-06-12 08:05+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -707,8 +707,8 @@ msgid "Dynamically read the mobile number from the user store."
 msgstr "Die Mobilnummer des Benutzers wird dynamisch aus dem Benutzerverzeichnis gelesen."
 
 #: lib/eventhandler/tokenhandler.py:157
-msgid "Dynamically reag the email address from the user store."
-msgstr "Die Email-Adresse des Benutzers wird dynamisch aus dem Benutzerverzeichnis gelesen."
+msgid "Dynamically read the email address from the user store."
+msgstr "Die Email-Adresse wird dynamisch aus dem Benutzerverzeichnis gelesen."
 
 #: lib/eventhandler/tokenhandler.py:162
 msgid "A dictionary of additional init parameters."
@@ -1087,3 +1087,8 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
 #~ msgid "Dynamically read the mobile number from the user store."
 #~ msgstr "Die Mobilnummer wird dynamisch aus der Benutzerquelle gelesen."
+
+#~ msgid "Dynamically reag the email address from the user store."
+#~ msgstr ""
+#~ "Die Email-Adresse des Benutzers wird "
+#~ "dynamisch aus dem Benutzerverzeichnis gelesen."

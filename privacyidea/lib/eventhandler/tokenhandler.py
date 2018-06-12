@@ -154,7 +154,7 @@ class TokenEventHandler(BaseEventHandler):
                             "type": "bool",
                             "visibleIf": "tokentype",
                             "visibleValue": "email",
-                            "description": _("Dynamically reag the email address "
+                            "description": _("Dynamically read the email address "
                                              "from the user store.")
                         },
                         "additional_params": {
