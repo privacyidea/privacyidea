@@ -205,6 +205,10 @@ def create_app(config_name="development",
 
     @babel.localeselector
     def get_locale():
+        # if we are not in the request context, return None to use the default
+        # locale
+        if not request:
+            return None
         # otherwise try to guess the language from the user accept
         # header the browser transmits.  We support de/fr/en in this
         # example.  The best match wins.
