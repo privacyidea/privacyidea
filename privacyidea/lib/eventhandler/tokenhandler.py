@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-#  2018-34-14 Paul Lettich <paul.lettich@netknights.it>
+#  2018-06-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add dynamic email
+#  2018-04-14 Paul Lettich <paul.lettich@netknights.it>
 #             Add "delete tokeninfo" action
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow setting time with timedelta
@@ -51,6 +53,7 @@ from privacyidea.lib import _
 import json
 import logging
 import datetime
+import yaml
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 
@@ -146,6 +149,17 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleValue": "sms",
                             "description": _("Dynamically read the mobile number "
                                              "from the user store.")
+                        },
+                        "dynamic_email": {
+                            "type": "bool",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "email",
+                            "description": _("Dynamically read the email address "
+                                             "from the user store.")
+                        },
+                        "additional_params": {
+                            "type": "str",
+                            "description": _("A dictionary of additional init parameters.")
                         },
                         "motppin": {
                             "type": "str",
@@ -344,9 +358,12 @@ class TokenEventHandler(BaseEventHandler):
             if is_true(handler_options.get("user")):
                 user = self._get_tokenowner(request)
                 tokentype = handler_options.get("tokentype")
-                # Some tokentypes need additional parameters or otherwise
-                # will fail to enroll.
-                # TODO: Other tokentypes will require additional parameters
+                # Some tokentypes need additional parameters
+                if handler_options.get("additional_params"):
+                    add_params = yaml.safe_load(handler_options.get("additional_params"))
+                    if type(add_params) == dict:
+                        init_param.update(add_params)
+
                 if tokentype == "sms":
                     if handler_options.get("dynamic_phone"):
                         init_param["dynamic_phone"] = 1
@@ -357,10 +374,13 @@ class TokenEventHandler(BaseEventHandler):
                             log.warning("Enrolling SMS token. But the user "
                                         "{0!r} has no mobile number!".format(user))
                 elif tokentype == "email":
-                    init_param['email'] = user.info.get("email", "")
-                    if not init_param['email']:
-                        log.warning("Enrolling EMail token. But the user {0!s}"
-                                    "has no email address!".format(user))
+                    if handler_options.get("dynamic_email"):
+                        init_param["dynamic_email"] = 1
+                    else:
+                        init_param['email'] = user.info.get("email", "")
+                        if not init_param['email']:
+                            log.warning("Enrolling EMail token. But the user {0!s}"
+                                        "has no email address!".format(user))
                 elif tokentype == "motp":
                     init_param['motppin'] = handler_options.get("motppin")
 

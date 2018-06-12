@@ -1076,6 +1076,68 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(is_true(t.get_tokeninfo("dynamic_phone")))
         remove_token(t.token.serial)
 
+        # Enroll a dynamic email token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1",
+                                        "dynamic_email": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertTrue(is_true(t.get_tokeninfo("dynamic_email")))
+        remove_token(t.token.serial)
+
+        # Enroll an email token to a user, who has no email address
+        user_obj_no_email = User("shadow", self.realm1)
+        req.User = user_obj_no_email
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj_no_email)
+        self.assertEqual(t.get_tokeninfo("email"), "")
+        remove_token(t.token.serial)
+
+        # Enroll a totp token with genkey
+        req.User = user_obj
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "totp",
+                                        "user": "1",
+                                        "additional_params": "{'totp.hashlib': 'sha256'}"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="totp")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
+        remove_token(t.token.serial)
+
     def test_06_set_description(self):
         # setup realms
         self.setUp_user_realms()
