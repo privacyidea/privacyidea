@@ -1096,7 +1096,7 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(is_true(t.get_tokeninfo("dynamic_email")))
         remove_token(t.token.serial)
 
-        # Enroll an email token to a user, who has not email address
+        # Enroll an email token to a user, who has no email address
         user_obj_no_email = User("shadow", self.realm1)
         req.User = user_obj_no_email
         options = {"g": g,
