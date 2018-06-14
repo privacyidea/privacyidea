@@ -41,7 +41,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError
-from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.utils import is_true
 import base64
 import binascii
@@ -246,7 +246,12 @@ class U2fTokenClass(TokenClass):
                        U2FACTION.FACETS: {
                            'type': 'str',
                            'desc': _("This is a list of FQDN hostnames "
-                                     "trusting the registered U2F tokens.")}
+                                     "trusting the registered U2F tokens.")},
+                       ACTION.CHALLENGETEXT: {
+                           'type': 'str',
+                           'desc': _('Use an alternate challenge text for telling the '
+                                     'user to confirm with his U2F device.')
+                       }
                    },
                    SCOPE.AUTHZ: {
                        U2FACTION.REQ: {

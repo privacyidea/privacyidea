@@ -974,7 +974,7 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "please enter otp: ")
+            self.assertEqual(detail.get("message"), _("please enter otp: "))
             transaction_id = detail.get("transaction_id")
         self.assertEqual(token.get_failcount(), 5)
 

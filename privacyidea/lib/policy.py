@@ -209,6 +209,7 @@ class ACTION(object):
     CACONNECTORWRITE = "caconnectorwrite"
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
+    CHALLENGETEXT = "challenge_text"
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
@@ -1541,6 +1542,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('This is a whitespace separated list of tokentypes, '
                           'that can be used with challenge response.')
+            },
+            ACTION.CHALLENGETEXT: {
+                'type': 'str',
+                'desc': _('Use an alternate challenge text for telling the '
+                          'user to enter an OTP value.')
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
