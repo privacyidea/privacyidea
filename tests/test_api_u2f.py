@@ -10,6 +10,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
 from privacyidea.models import Challenge
 from privacyidea.lib.error import ERROR
+from privacyidea.lib import _
 
 
 PWFILE = "tests/testdata/passwords"
@@ -105,8 +106,8 @@ class APIU2fTestCase(MyTestCase):
             self.assertEqual(result.get("value"), False)
             transaction_id = detail.get("transaction_id")
             self.assertEqual(len(transaction_id), len('01350277175811850842'))
-            self.assertTrue("Please confirm with your U2F token" in
-                            detail.get("message"), detail.get("message"))
+            self.assertEqual(detail.get("message"), detail.get("message"),
+                            _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861"))
             attributes = detail.get("attributes")
             u2f_sign_request = attributes.get("u2fSignRequest")
             self.assertTrue("appId" in u2f_sign_request)

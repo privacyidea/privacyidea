@@ -15,6 +15,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib import _
 
 import smtpmock, ldap3mock, responses
 
@@ -1089,8 +1090,7 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "Enter the OTP from the "
-                                                    "Email:")
+            self.assertEqual(detail.get("message"), _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value
@@ -1650,7 +1650,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the SMS:")
+                             _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
 
         # Check authentication
@@ -1679,7 +1679,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the SMS:")
+                             _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
 
         # Check authentication
@@ -1729,7 +1729,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the Email:")
+                             _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_ids")[0]
             # check the sent message
             sent_message = smtpmock.get_sent_message()

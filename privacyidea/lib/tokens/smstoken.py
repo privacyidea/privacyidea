@@ -271,7 +271,7 @@ class SmsTokenClass(HotpTokenClass):
         success = False
         sms = ""
         options = options or {}
-        return_message = "Enter the OTP from the SMS:"
+        return_message = _("Enter the OTP from the SMS:")
         attributes = {'state': transactionid}
         validity = self._get_sms_timeout()
 

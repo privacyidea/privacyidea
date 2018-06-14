@@ -239,7 +239,7 @@ class EmailTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = "Enter the OTP from the Email:"
+        return_message = _("Enter the OTP from the Email:")
         attributes = {'state': transactionid}
         validity = int(get_from_config("email.validtime", 120))
 

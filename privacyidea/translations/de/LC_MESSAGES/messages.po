@@ -7,16 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-12 08:04+0200\n"
-"PO-Revision-Date: 2018-06-12 08:05+0200\n"
+"POT-Creation-Date: 2018-06-14 09:17+0200\n"
+"PO-Revision-Date: 2018-06-14 09:19+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
-"Language: de\n"
 "Language-Team: de <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.3.4\n"
+"Generated-By: Babel 1.3\n"
+"Language: de\n"
 "X-Generator: Poedit 1.8.7.1\n"
 
 #: api/policy.py:171
@@ -910,6 +910,10 @@ msgstr "Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> verw
 msgid "If set, a new EMail OTP will be sent after successful authentication with one EMail OTP."
 msgstr "Ein neues Einmalpasswort wird per Email versendet, direkt nachdem sich der Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
 
+#: lib/tokens/emailtoken.py:242
+msgid "Enter the OTP from the Email:"
+msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein:"
+
 #: lib/tokens/foureyestoken.py:125
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
 msgstr "Vier-Augen-Token: Zwei oder mehr Personen müssen zusammenkommen, damit sich ein Account anmelden kann."
@@ -1015,6 +1019,10 @@ msgstr "Der Text der SMS. <otp> und <serial> können als Tags verwendet werden."
 msgid "If set, a new SMS OTP will be sent after successful authentication with one SMS OTP."
 msgstr "Ein neues Einmalpasswort wird direkt gesendet, nachdem sich der Benutzer erfolgreich mit dem bisherigen Einmalpasswort aus der letzten SMS authentisiert hat."
 
+#: lib/tokens/smstoken.py:274
+msgid "Enter the OTP from the SMS:"
+msgstr "Bitte geben Sie das Einmalpasswort aus der SMS ein:"
+
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
 msgstr "SPass: Simple Pass Token. Der zweite Faktor entfällt. Authentisierung nur mit OTP PIN."
@@ -1030,6 +1038,10 @@ msgstr "TiQR: Einen TiQR-Token ausrollen."
 #: lib/tokens/tiqrtoken.py:221
 msgid "URL for TiQR enrollment"
 msgstr "URL zum Ausrollen des TiQR Token"
+
+#: lib/tokens/tiqrtoken.py:370
+msgid "Please scan the QR Code"
+msgstr "Bitte scannen Sie den QR-Code"
 
 #: lib/tokens/totptoken.py:114
 msgid "TOTP: Time based One Time Passwords."
@@ -1054,6 +1066,10 @@ msgstr "Das U2F Attestation Zertifikat NICHT überprüfen."
 #: lib/tokens/u2ftoken.py:343
 msgid "You need to define the appId in the token config!"
 msgstr "Sie müssen in der Token-Konfiguration die AppId definieren!"
+
+#: lib/tokens/u2ftoken.py:407
+msgid "Please confirm with your U2F token ({0!s})"
+msgstr "Bitte bestätigen Sie mit Ihrem U2F token ({0!s})"
 
 #: lib/tokens/vascotoken.py:100
 msgid "VASCO Token: Authentication using VASCO tokens"
@@ -1090,5 +1106,3 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
 #~ msgid "Dynamically reag the email address from the user store."
 #~ msgstr ""
-#~ "Die Email-Adresse des Benutzers wird "
-#~ "dynamisch aus dem Benutzerverzeichnis gelesen."

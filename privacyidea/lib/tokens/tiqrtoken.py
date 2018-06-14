@@ -367,7 +367,7 @@ class TiqrTokenClass(OcraTokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'Please scan the QR Code'
+        message = _('Please scan the QR Code')
 
         # Get ValidityTime=120s. Maybe there is a TIQRChallengeValidityTime...
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))

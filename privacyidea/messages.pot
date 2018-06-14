@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-12 08:04+0200\n"
+"POT-Creation-Date: 2018-06-14 09:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.3.4\n"
+"Generated-By: Babel 1.3\n"
 
 #: api/policy.py:171
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
@@ -1059,6 +1059,10 @@ msgid ""
 " one EMail OTP."
 msgstr ""
 
+#: lib/tokens/emailtoken.py:242
+msgid "Enter the OTP from the Email:"
+msgstr ""
+
 #: lib/tokens/foureyestoken.py:125
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
 msgstr ""
@@ -1174,6 +1178,10 @@ msgid ""
 "one SMS OTP."
 msgstr ""
 
+#: lib/tokens/smstoken.py:274
+msgid "Enter the OTP from the SMS:"
+msgstr ""
+
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
 msgstr ""
@@ -1188,6 +1196,10 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:221
 msgid "URL for TiQR enrollment"
+msgstr ""
+
+#: lib/tokens/tiqrtoken.py:370
+msgid "Please scan the QR Code"
 msgstr ""
 
 #: lib/tokens/totptoken.py:114
@@ -1212,6 +1224,10 @@ msgstr ""
 
 #: lib/tokens/u2ftoken.py:343
 msgid "You need to define the appId in the token config!"
+msgstr ""
+
+#: lib/tokens/u2ftoken.py:407
+msgid "Please confirm with your U2F token ({0!s})"
 msgstr ""
 
 #: lib/tokens/vascotoken.py:100

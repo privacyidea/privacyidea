@@ -404,7 +404,7 @@ class U2fTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = u'Please confirm with your U2F token ({0!s})'.format( \
+        message = _(u'Please confirm with your U2F token ({0!s})').format( \
                   self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
