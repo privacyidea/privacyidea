@@ -2128,8 +2128,29 @@ class ValidateAPITestCase(MyTestCase):
             resp = json.loads(res.data)
             self.assertEqual(resp.get("detail").get("message"), "check your sms")
 
+        # Two different token types that are triggered by the same PIN:
+        init_token({"serial": "CHAL3",
+                    "type": "sms",
+                    "phone": "123456",
+                    "pin": "PIN"}, user)
+        init_token({"serial": "CHAL4",
+                    "type": "email",
+                    "email": "hallo@example.com",
+                    "pin": "PIN"}, user)
+
+        # Challenge Response with SMS and Email. The challenge message contains both hints
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "PIN"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your sms, check your email")
 
         delete_policy("chalsms")
         delete_policy("chalemail")
         remove_token("CHAL1")
         remove_token("CHAL2")
+        remove_token("CHAL3")
+        remove_token("CHAL4")
