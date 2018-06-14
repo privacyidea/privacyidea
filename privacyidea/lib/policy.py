@@ -1781,5 +1781,10 @@ def get_action_values_from_options(scope, action, options):
                               client=clientip,
                               unique=True,
                               allow_white_space_in_action=True)
+        if type(value) == list:
+            if len(value) >= 1:
+                return value[0]
+            else:
+                return None
 
     return value

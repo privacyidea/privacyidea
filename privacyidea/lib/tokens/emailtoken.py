@@ -69,7 +69,7 @@ from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.policy import (SCOPE, ACTION)
+from privacyidea.lib.policy import (SCOPE, ACTION, get_action_values_from_options)
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -244,7 +244,10 @@ class EmailTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = _("Enter the OTP from the Email:")
+        return_message = get_action_values_from_options(SCOPE.AUTH,
+                                                        "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                             ACTION.CHALLENGETEXT),
+                                                        options) or _("Enter the OTP from the Email:")
         attributes = {'state': transactionid}
         validity = int(get_from_config("email.validtime", 120))
 

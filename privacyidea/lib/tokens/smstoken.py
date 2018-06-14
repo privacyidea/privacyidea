@@ -51,7 +51,7 @@ from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance)
@@ -275,7 +275,10 @@ class SmsTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = _("Enter the OTP from the SMS:")
+        return_message = get_action_values_from_options(SCOPE.AUTH,
+                                                        "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                             ACTION.CHALLENGETEXT),
+                                                        options) or _("Enter the OTP from the SMS:")
         attributes = {'state': transactionid}
         validity = self._get_sms_timeout()
 

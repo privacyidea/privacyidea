@@ -2052,7 +2052,84 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_policy("onlyHOTP")
+        delete_policy("onlyHOTP")
         delete_policy("passthru")
         remove_token("SPASS1")
         remove_token("SPASS2")
         remove_token("HOTP1")
+
+    @responses.activate
+    @smtpmock.activate
+    def test_30_challenge_text(self):
+        """
+        Set a policy for a different challengetext and run a C/R for sms and email.
+        :return:
+        """
+        smtpmock.setdata(response={"hallo@example.com": (200, 'OK')})
+
+        # Configure the SMS Gateway
+        from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+        from privacyidea.lib.config import set_privacyidea_config
+        post_url = "http://smsgateway.com/sms_send_api.cgi"
+        success_body = "ID 12345"
+
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": post_url,
+                                     "RETURN_SUCCESS": "ID",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"})
+        self.assertTrue(id > 0)
+        # set config sms.identifier = myGW
+        r = set_privacyidea_config("sms.identifier", identifier)
+        self.assertTrue(r in ["insert", "update"])
+        responses.add(responses.POST,
+                      post_url,
+                      body=success_body)
+
+
+
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+
+        # two different token types
+        init_token({"serial": "CHAL1",
+                    "type": "sms",
+                    "phone": "123456",
+                    "pin": "sms"}, user)
+        init_token({"serial": "CHAL2",
+                    "type": "email",
+                    "email": "hallo@example.com",
+                    "pin": "email"}, user)
+
+        set_policy("chalsms", SCOPE.AUTH, "sms_{0!s}=check your sms".format(ACTION.CHALLENGETEXT))
+        set_policy("chalemail", SCOPE.AUTH, "email_{0!s}=check your email".format(ACTION.CHALLENGETEXT))
+
+        # Challenge Response with email
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "email"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your email")
+
+        # Challenge Response with SMS
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "sms"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your sms")
+
+
+        delete_policy("chalsms")
+        delete_policy("chalemail")
+        remove_token("CHAL1")
+        remove_token("CHAL2")

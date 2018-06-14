@@ -41,7 +41,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError
-from privacyidea.lib.policy import SCOPE, GROUP, ACTION
+from privacyidea.lib.policy import (SCOPE, GROUP, ACTION, get_action_values_from_options)
 from privacyidea.lib.utils import is_true
 import base64
 import binascii
@@ -409,8 +409,11 @@ class U2fTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = _(u'Please confirm with your U2F token ({0!s})').format( \
-                  self.token.description)
+        message = get_action_values_from_options(SCOPE.AUTH,
+                                                 "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                      ACTION.CHALLENGETEXT),
+                                                 options)or _(u'Please confirm with your U2F token ({0!s})').format(
+            self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
