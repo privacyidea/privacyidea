@@ -830,6 +830,6 @@ class PolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         val = get_action_values_from_options(SCOPE.AUTH, ACTION.CHALLENGETEXT, options)
-        self.assertEqual(val, [u"Wo du wolle?"])
+        self.assertEqual(val, u"Wo du wolle?")
 
         delete_policy("chaltext")

@@ -9,6 +9,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE,
                                     ACTION)
 from privacyidea.lib.token import init_token
+from privacyidea.lib import _
 
 
 class ChallengeTestCase(MyTestCase):
@@ -25,7 +26,7 @@ class ChallengeTestCase(MyTestCase):
         r = check_serial_pass(token.token.serial, "pin")
         # The OTP PIN is correct
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get("message"), "please enter otp: ")
+        self.assertEqual(r[1].get("message"), _("please enter otp: "))
         transaction_id = r[1].get("transaction_id")
         chals = get_challenges()
         self.assertEqual(len(chals), 1)
