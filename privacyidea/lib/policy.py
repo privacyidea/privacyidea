@@ -1752,3 +1752,34 @@ def get_static_policy_definitions(scope=None):
     else:
         ret = pol
     return ret
+
+
+def get_action_values_from_options(scope, action, options):
+    """
+    This function is used in the library level to fetch policy action values
+    from a given option dictionary.
+
+    :return:
+    """
+    value = None
+    g = options.get("g")
+    if g:
+        user_object = options.get("user")
+        username = None
+        realm = None
+        if user_object:
+            username = user_object.login
+            realm = user_object.realm
+
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        value = policy_object. \
+            get_action_values(action=action,
+                              scope=scope,
+                              realm=realm,
+                              user=username,
+                              client=clientip,
+                              unique=True,
+                              allow_white_space_in_action=True)
+
+    return value

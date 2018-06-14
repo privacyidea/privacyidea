@@ -4,14 +4,15 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, ACTION, MAIN_MENU,
-                                    delete_all_policies)
+                                    delete_all_policies,
+                                    get_action_values_from_options)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -818,3 +819,17 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("email1")
         delete_policy("email2")
+
+    def test_24_challenge_text(self):
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        options = {"g": g,
+                   "user": User("cornelius", self.realm1)}
+
+        set_policy("chaltext", scope=SCOPE.AUTH, action="{0!s}=Wo du wolle?".format(ACTION.CHALLENGETEXT))
+        g.policy_object = PolicyClass()
+
+        val = get_action_values_from_options(SCOPE.AUTH, ACTION.CHALLENGETEXT, options)
+        self.assertEqual(val, [u"Wo du wolle?"])
+
+        delete_policy("chaltext")

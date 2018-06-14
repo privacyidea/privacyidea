@@ -102,6 +102,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import is_true
 from privacyidea.lib import _
+from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -1475,7 +1476,9 @@ class TokenClass(object):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = _('please enter otp: ')
+        message = get_action_values_from_options(SCOPE.AUTH,
+                                                 ACTION.CHALLENGETEXT,
+                                                 options) or _('please enter otp: ')
         data = None
         attributes = None
 
