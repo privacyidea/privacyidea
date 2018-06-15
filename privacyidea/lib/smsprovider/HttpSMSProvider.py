@@ -50,6 +50,7 @@ from urlparse import urlparse
 import logging
 log = logging.getLogger(__name__)
 
+import re
 
 class HttpSMSProvider(ISMSProvider):
 
@@ -64,6 +65,9 @@ class HttpSMSProvider(ISMSProvider):
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         if self.smsgateway:
+            regexp = self.smsgateway.option_dict.get("REGEXP", "")
+            if regexp != "":
+                phone = re.sub(regexp, "", phone)
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
             username = self.smsgateway.option_dict.get("USERNAME")
@@ -80,6 +84,9 @@ class HttpSMSProvider(ISMSProvider):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)
         else:
+            regexp = self.config.get("REGEXP", "")
+            if regexp != "":
+                phone = re.sub(regexp, "", phone)
             url = self.config.get('URL')
             method = self.config.get('HTTP_Method', 'GET')
             username = self.config.get('USERNAME')
@@ -152,7 +159,11 @@ class HttpSMSProvider(ISMSProvider):
         urldata = {}
         # transfer the phone key
         phoneKey = self.config.get('SMS_PHONENUMBER_KEY', "phone")
-        urldata[phoneKey] = phone
+        regexp = self.config.get('REGEXP', "")
+        if regexp != "":
+            urldata[phoneKey] =  re.sub(regexp, "", phone) # transfer the sms key
+        else:
+            urldata[phoneKey] = phone
         # transfer the sms key
         messageKey = self.config.get('SMS_TEXT_KEY', "sms")
         urldata[messageKey] = message
@@ -243,6 +254,10 @@ class HttpSMSProvider(ISMSProvider):
                           "description": _("Should the SSL certificate be "
                                            "verified."),
                           "values": ["yes", "no"]
+                      },
+                      "REGEXP": {
+                          "description": _("Regexp to apply to phone number "                 
+                                           "to make it compatible with provider.")                             
                       },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
                                                  "this anymore. Rather use HTTP_PROXY for http connections and"
