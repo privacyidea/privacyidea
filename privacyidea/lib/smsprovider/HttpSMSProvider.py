@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2018-06-15 Pascal Fuks <pascal@foxit.pro>
+#               Added REGEXP parameter on phone number
 #    2018-01-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Fix type cast for timeout
 #    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -64,10 +66,10 @@ class HttpSMSProvider(ISMSProvider):
         """
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
+        regexp = self.smsgateway.option_dict.get("REGEXP", "")
+        if regexp != "":
+            phone = re.sub(regexp, "", phone)
         if self.smsgateway:
-            regexp = self.smsgateway.option_dict.get("REGEXP", "")
-            if regexp != "":
-                phone = re.sub(regexp, "", phone)
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
             username = self.smsgateway.option_dict.get("USERNAME")
@@ -84,9 +86,6 @@ class HttpSMSProvider(ISMSProvider):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)
         else:
-            regexp = self.config.get("REGEXP", "")
-            if regexp != "":
-                phone = re.sub(regexp, "", phone)
             url = self.config.get('URL')
             method = self.config.get('HTTP_Method', 'GET')
             username = self.config.get('USERNAME')
@@ -159,11 +158,7 @@ class HttpSMSProvider(ISMSProvider):
         urldata = {}
         # transfer the phone key
         phoneKey = self.config.get('SMS_PHONENUMBER_KEY', "phone")
-        regexp = self.config.get('REGEXP', "")
-        if regexp != "":
-            urldata[phoneKey] =  re.sub(regexp, "", phone) # transfer the sms key
-        else:
-            urldata[phoneKey] = phone
+        urldata[phoneKey] = phone
         # transfer the sms key
         messageKey = self.config.get('SMS_TEXT_KEY', "sms")
         urldata[messageKey] = message
@@ -269,3 +264,4 @@ class HttpSMSProvider(ISMSProvider):
                   }
                   }
         return params
+        
