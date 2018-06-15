@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+# 2018-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add translation for authentication failure - since
+#            this is a message that is displayed in the UI.
 # 2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Avoid "None" as redundant 2nd argument
 # 2015-11-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -63,6 +66,7 @@ from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.lib import _
 import logging
 
 log = logging.getLogger(__name__)
@@ -190,7 +194,7 @@ def get_auth_token():
     # "remote_user" = authenticated by webserver
     authtype = "password"
     if username is None:
-        raise AuthError("Authentication failure. missing Username",
+        raise AuthError(_("Authentication failure. Missing Username"),
                         id=ERROR.AUTHENTICATE_MISSING_USERNAME)
     # Verify the password
     admin_auth = False
@@ -252,7 +256,7 @@ def get_auth_token():
                                 "administrator": username})
 
     if not admin_auth and not user_auth:
-        raise AuthError("Authentication failure. Wrong credentials",
+        raise AuthError(_("Authentication failure. Wrong credentials"),
                         id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
     else:
         g.audit_object.log({"success": True})

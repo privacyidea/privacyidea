@@ -283,8 +283,8 @@ angular.module("privacyideaApp")
                         // But this can also be due to a problem like
                         // "HSM not ready".
                         $scope.transactionid = "";
-                        inform.add(gettextCatalog.getString("Authentication failed. ")
-                            + error.result.error.message,
+                        var errmsg = gettextCatalog.getString("Authentication failed.");
+                        inform.add(errmsg + " " + error.result.error.message,
                             {type: "danger", ttl: 10000});
                 }
             }
