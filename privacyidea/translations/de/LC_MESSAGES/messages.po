@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-12 08:04+0200\n"
-"PO-Revision-Date: 2018-06-12 08:05+0200\n"
+"POT-Creation-Date: 2018-06-15 09:51+0200\n"
+"PO-Revision-Date: 2018-06-15 09:52+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -19,6 +19,14 @@ msgstr ""
 "Generated-By: Babel 2.3.4\n"
 "X-Generator: Poedit 1.8.7.1\n"
 
+#: api/auth.py:197
+msgid "Authentication failure. Missing Username"
+msgstr "Authentifizierungsfehler. Fehlender Benutzername"
+
+#: api/auth.py:259
+msgid "Authentication failure. Wrong credentials"
+msgstr "Authentifizierungsfehler. Falsche Logindaten."
+
 #: api/policy.py:171
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
 msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
@@ -26,6 +34,22 @@ msgstr "Der Name der Richtlinie darf nur die Zeichen a-zA-Z0-9_ enthalten."
 #: api/policy.py:175
 msgid "T'check' is an invalid policy name."
 msgstr "'check' ist ein ungültiger Name für eine Richtlinie."
+
+#: api/lib/utils.py:280
+msgid "Authentication failure. Missing Authorization header."
+msgstr "Authentifizierungsfehler. Fehlender Authentifizierungsheader"
+
+#: api/lib/utils.py:285
+msgid "Authentication failure. Error during decoding your token: {0!s}"
+msgstr "Authentifizierungsfehler. Fehler beim Dekodieren des Tokens: {0!s}"
+
+#: api/lib/utils.py:288
+msgid "Authentication failure. Your token has expired: {0!s}"
+msgstr "Authentifizierungsfehler. Der Token ist abgelaufen: {0!s}"
+
+#: api/lib/utils.py:293
+msgid "Authentication failure. You do not have the necessary role ({0!s}) to access this resource!"
+msgstr "Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({0!s}), um auf die Resource zuzugreifen!"
 
 #: lib/decorators.py:42 lib/token.py:2000
 msgid "This action is not possible, since the token is locked"
@@ -1090,5 +1114,6 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
 #~ msgid "Dynamically reag the email address from the user store."
 #~ msgstr ""
-#~ "Die Email-Adresse des Benutzers wird "
-#~ "dynamisch aus dem Benutzerverzeichnis gelesen."
+
+#~ msgid "Authentication failure. missing Username"
+#~ msgstr "Authentifizierungsfehler. Fehlender Benutzername."

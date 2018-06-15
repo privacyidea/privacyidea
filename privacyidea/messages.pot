@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-06-12 08:04+0200\n"
+"POT-Creation-Date: 2018-06-15 09:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,38 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
 
+#: api/auth.py:197
+msgid "Authentication failure. Missing Username"
+msgstr ""
+
+#: api/auth.py:259
+msgid "Authentication failure. Wrong credentials"
+msgstr ""
+
 #: api/policy.py:171
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_."
 msgstr ""
 
 #: api/policy.py:175
 msgid "T'check' is an invalid policy name."
+msgstr ""
+
+#: api/lib/utils.py:280
+msgid "Authentication failure. Missing Authorization header."
+msgstr ""
+
+#: api/lib/utils.py:285
+msgid "Authentication failure. Error during decoding your token: {0!s}"
+msgstr ""
+
+#: api/lib/utils.py:288
+msgid "Authentication failure. Your token has expired: {0!s}"
+msgstr ""
+
+#: api/lib/utils.py:293
+msgid ""
+"Authentication failure. You do not have the necessary role ({0!s}) to "
+"access this resource!"
 msgstr ""
 
 #: lib/decorators.py:42 lib/token.py:2000
