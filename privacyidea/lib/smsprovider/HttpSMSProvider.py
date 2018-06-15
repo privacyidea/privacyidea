@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2018-06-15 Pascal Fuks <pascal@foxit.pro>
+#               Added REGEXP parameter on phone number
 #    2018-01-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Fix type cast for timeout
 #    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -50,6 +52,7 @@ from urlparse import urlparse
 import logging
 log = logging.getLogger(__name__)
 
+import re
 
 class HttpSMSProvider(ISMSProvider):
 
@@ -63,6 +66,9 @@ class HttpSMSProvider(ISMSProvider):
         """
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
+        regexp = self.smsgateway.option_dict.get("REGEXP", "")
+        if regexp != "":
+            phone = re.sub(regexp, "", phone)
         if self.smsgateway:
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
@@ -244,6 +250,10 @@ class HttpSMSProvider(ISMSProvider):
                                            "verified."),
                           "values": ["yes", "no"]
                       },
+                      "REGEXP": {
+                          "description": _("Regexp to apply to phone number "                 
+                                           "to make it compatible with provider.")                             
+                      },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
                                                  "this anymore. Rather use HTTP_PROXY for http connections and"
                                                  "HTTPS_PROXY for https connection. The PROXY option will be"
@@ -254,3 +264,4 @@ class HttpSMSProvider(ISMSProvider):
                   }
                   }
         return params
+        
