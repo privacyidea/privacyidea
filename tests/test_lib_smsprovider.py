@@ -376,18 +376,18 @@ class HttpSMSTestCase(MyTestCase):
         r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
         self.assertTrue(r)
 
-        p = self.regexp_provider._mangle_phone("+49 123/456-78", self.config_regexp)
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", self.config_regexp)
         self.assertEqual("4912345678", p)
 
         # Replace + with 00
-        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": "/\+/00/"})
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/\+/00/"})
         self.assertEqual("0049 123/456-78", p)
         p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": "/[\+/]//"})
         self.assertEqual("49 123456-78", p)
 
         # An invalid regexp is caught and a log error is written. The same
         # phone number is returned
-        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": "/+/00/"})
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/+/00/"})
         self.assertEqual("+49 123/456-78", p)
 
     @responses.activate
