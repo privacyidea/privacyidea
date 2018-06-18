@@ -3,6 +3,8 @@
 #    E-mail: info@privacyidea.org
 #    Contact: www.privacyidea.org
 #
+#    2018-06-15 Pascal Fuks <pascal@foxit.pro>
+#               Added REGEXP parameter on phone number
 #    2018-01-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Fix type cast for timeout
 #    2016-06-14 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -46,12 +48,26 @@ from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
 from urlparse import urlparse
-
+import re
 import logging
 log = logging.getLogger(__name__)
 
 
 class HttpSMSProvider(ISMSProvider):
+
+    @staticmethod
+    def _mangle_phone(phone, config):
+        regexp = config.get("REGEXP")
+        if regexp:
+            try:
+                m = re.match("^/(.*)/(.*)/$", regexp)
+                if m:
+                    phone = re.sub(m.group(1), m.group(2), phone)
+            except re.error:
+                log.warning(u"Can not mangle phone number. "
+                            u"Please check your REGEXP: {0!s}".format(regexp))
+
+        return phone
 
     def submit_message(self, phone, message):
         """
@@ -64,6 +80,7 @@ class HttpSMSProvider(ISMSProvider):
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         if self.smsgateway:
+            phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
             username = self.smsgateway.option_dict.get("USERNAME")
@@ -80,6 +97,7 @@ class HttpSMSProvider(ISMSProvider):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)
         else:
+            phone = self._mangle_phone(phone, self.config)
             url = self.config.get('URL')
             method = self.config.get('HTTP_Method', 'GET')
             username = self.config.get('USERNAME')
@@ -244,6 +262,12 @@ class HttpSMSProvider(ISMSProvider):
                                            "verified."),
                           "values": ["yes", "no"]
                       },
+                      "REGEXP": {
+                          "description": _("Regular expression to modify the phone number "                 
+                                           "to make it compatible with provider. "
+                                           "Enter something like '/[\+/]//' to remove "
+                                           "pluses and slashes.")
+                      },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
                                                  "this anymore. Rather use HTTP_PROXY for http connections and"
                                                  "HTTPS_PROXY for https connection. The PROXY option will be"
@@ -254,3 +278,4 @@ class HttpSMSProvider(ISMSProvider):
                   }
                   }
         return params
+        
