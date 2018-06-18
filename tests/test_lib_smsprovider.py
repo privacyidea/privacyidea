@@ -390,6 +390,14 @@ class HttpSMSTestCase(MyTestCase):
         p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/+/00/"})
         self.assertEqual("+49 123/456-78", p)
 
+        # Only use leading numbers and not the rest
+        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  "/^([0-9]+).*/\\1/"})
+        self.assertEqual("12345", p)
+
+        # Known limitation: The slash in the replace statement does not work!
+        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": "/\./\//"})
+        self.assertEqual("12.34.56.78", p)
+
     @responses.activate
     def test_02_send_sms_post_fail(self):
         responses.add(responses.POST,
