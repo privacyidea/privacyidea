@@ -1,3 +1,10 @@
+python-privacyidea (2.23~dev2-trusty) trusty; urgency=medium
+
+  Development Release to test with bionic beaver
+ 
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 20 Jun 2018 08:00:00 +0200
+
+
 python-privacyidea (2.23~dev1-trusty) trusty; urgency=medium
 
   Development Release
