@@ -1759,7 +1759,7 @@ def get_action_values_from_options(scope, action, options):
     This function is used in the library level to fetch policy action values
     from a given option dictionary.
 
-    :return:
+    :return: A scalar, string or None
     """
     value = None
     g = options.get("g")
@@ -1781,10 +1781,9 @@ def get_action_values_from_options(scope, action, options):
                               client=clientip,
                               unique=True,
                               allow_white_space_in_action=True)
-        if type(value) == list:
-            if len(value) >= 1:
-                return value[0]
-            else:
-                return None
+        if len(value) >= 1:
+            return value[0]
+        else:
+            return None
 
     return value
