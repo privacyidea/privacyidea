@@ -18,11 +18,11 @@ def upgrade():
     try:
         op.create_table('periodictask',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.Unicode(), nullable=False),
+        sa.Column('name', sa.Unicode(length=64), nullable=False),
         sa.Column('active', sa.Boolean(), nullable=False),
-        sa.Column('interval', sa.Interval(), nullable=False),
+        sa.Column('interval', sa.Unicode(length=256), nullable=False),
         sa.Column('nodes', sa.Unicode(length=256), nullable=False),
-        sa.Column('taskmodule', sa.Unicode(length=255), nullable=False),
+        sa.Column('taskmodule', sa.Unicode(length=256), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name')
         )
@@ -38,7 +38,7 @@ def upgrade():
         op.create_table('periodictaskoption',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('periodictask_id', sa.Integer(), nullable=True),
-        sa.Column('key', sa.Unicode(length=255), nullable=False),
+        sa.Column('key', sa.Unicode(length=256), nullable=False),
         sa.Column('value', sa.Unicode(length=2000), nullable=True),
         sa.ForeignKeyConstraint(['periodictask_id'], ['periodictask.id'], ),
         sa.PrimaryKeyConstraint('id'),

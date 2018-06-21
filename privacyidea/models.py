@@ -2485,11 +2485,11 @@ class PeriodicTask(MethodsMixin, db.Model):
     """
     __tablename__ = 'periodictask'
     id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
-    name = db.Column(db.Unicode(), unique=True, nullable=False)
+    name = db.Column(db.Unicode(64), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
-    interval = db.Column(db.Interval, nullable=False)
+    interval = db.Column(db.Unicode(256), nullable=False)
     nodes = db.Column(db.Unicode(256), nullable=False)
-    taskmodule = db.Column(db.Unicode(255), nullable=False)
+    taskmodule = db.Column(db.Unicode(256), nullable=False)
     options = db.relationship('PeriodicTaskOption',
                               lazy='dynamic',
                               backref='periodictask')
@@ -2501,7 +2501,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         """
         :param name: Unique name of the node as unicode
         :param active: a boolean
-        :param interval: a timedelta
+        :param interval: a unicode specifying the periodicity of the task
         :param node_list: a list of unicodes, denoting the node names that should execute that task.
                           If we update an existing PeriodicTask entry, PeriodicTaskLastRun entries
                           referring to nodes that are not present in ``node_list`` any more will be deleted.
@@ -2596,7 +2596,7 @@ class PeriodicTaskOption(db.Model):
     id = db.Column(db.Integer, Sequence("periodictaskopt_seq"),
                    primary_key=True)
     periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    key = db.Column(db.Unicode(255), nullable=False)
+    key = db.Column(db.Unicode(256), nullable=False)
     value = db.Column(db.Unicode(2000), default=u'')
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
