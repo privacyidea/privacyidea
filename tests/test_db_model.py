@@ -770,7 +770,7 @@ class TokenModelTestCase(MyTestCase):
 
         # assert we can update the task
         PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", {
-            "key2": "value number 2",
+            "KEY2": "value number 2",
             "key 4": 1234
         }, id=task1.id)
         # the first run for otherhost
@@ -784,7 +784,7 @@ class TokenModelTestCase(MyTestCase):
                              "interval": "0 8 * * *",
                              "nodes": ["localhost", "otherhost"],
                              "taskmodule": "some.module",
-                             "options": {"key2": "value number 2",
+                             "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 7),
@@ -792,7 +792,7 @@ class TokenModelTestCase(MyTestCase):
                              }
                          })
         # assert all old options are removed
-        self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").count(), 0)
+        self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="key3").count(), 0)
         # the second run for localhost
         task1.set_last_run("localhost", datetime(2018, 3, 4, 5, 6, 8))
         result = PeriodicTask.query.filter_by(name="task one").one().get()
@@ -804,7 +804,7 @@ class TokenModelTestCase(MyTestCase):
                              "interval": "0 8 * * *",
                              "nodes": ["localhost", "otherhost"],
                              "taskmodule": "some.module",
-                             "options": {"key2": "value number 2",
+                             "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 8),
