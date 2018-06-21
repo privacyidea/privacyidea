@@ -2499,7 +2499,7 @@ class PeriodicTask(MethodsMixin, db.Model):
 
     def __init__(self, name, active, interval, node_list, taskmodule, options=None, id=None):
         """
-        :param name: Unique name of the node as unicode
+        :param name: Unique name of the periodic task as unicode
         :param active: a boolean
         :param interval: a unicode specifying the periodicity of the task
         :param node_list: a list of unicodes, denoting the node names that should execute that task.
@@ -2518,7 +2518,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.nodes = u", ".join(node_list)
         self.taskmodule = taskmodule
         self.save()
-        # add the options to the event handler
+        # add the options to the periodic task
         options = options or {}
         for k, v in options.iteritems():
             PeriodicTaskOption(periodictask_id=self.id, key=k, value=v)
