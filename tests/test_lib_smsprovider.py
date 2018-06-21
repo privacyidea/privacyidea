@@ -284,6 +284,19 @@ class HttpSMSTestCase(MyTestCase):
                    "RETURN_SUCCESS": "ID"
     }
 
+    config_regexp = {"URL": post_url,
+                     "PARAMETER": {"from": "0170111111",
+                                   "password": "yoursecret",
+                                   "sender": "name",
+                                   "account": "company_ltd"},
+                     "SMS_TEXT_KEY": "text",
+                     "SMS_PHONENUMBER_KEY": "destination",
+                     "HTTP_Method": "POST",
+                     "PROXY": "http://username:password@your-proxy:8080",
+                     "RETURN_SUCCESS": "ID",
+                     "REGEXP": "/[+-/. ]//"
+                     }
+
     get_url = "http://api.clickatell.com/http/sendmsg"
     config_get = {"URL": get_url,
                   "PARAMETER": {"user": "username",
@@ -329,6 +342,9 @@ class HttpSMSTestCase(MyTestCase):
         self.post_provider = HttpSMSProvider()
         self.post_provider.load_config(self.config_post)
 
+        self.regexp_provider = HttpSMSProvider()
+        self.regexp_provider.load_config(self.config_regexp)
+
         self.get_provider = HttpSMSProvider()
         self.get_provider.load_config(self.config_get)
 
@@ -350,6 +366,37 @@ class HttpSMSTestCase(MyTestCase):
         # Here we need to send the SMS
         r = self.post_provider.submit_message("123456", "Hello")
         self.assertTrue(r)
+
+    @responses.activate
+    def test_01_send_sms_regexp_success(self):
+        responses.add(responses.POST,
+                      self.post_url,
+                      body=self.success_body)
+        # Here we need to send the SMS
+        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        self.assertTrue(r)
+
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", self.config_regexp)
+        self.assertEqual("4912345678", p)
+
+        # Replace + with 00
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/\+/00/"})
+        self.assertEqual("0049 123/456-78", p)
+        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": "/[\+/]//"})
+        self.assertEqual("49 123456-78", p)
+
+        # An invalid regexp is caught and a log error is written. The same
+        # phone number is returned
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/+/00/"})
+        self.assertEqual("+49 123/456-78", p)
+
+        # Only use leading numbers and not the rest
+        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  "/^([0-9]+).*/\\1/"})
+        self.assertEqual("12345", p)
+
+        # Known limitation: The slash in the replace statement does not work!
+        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": "/\./\//"})
+        self.assertEqual("12.34.56.78", p)
 
     @responses.activate
     def test_02_send_sms_post_fail(self):

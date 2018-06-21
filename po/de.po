@@ -16,6 +16,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:19
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:21
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:13
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:15
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:17
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:19
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:21
 msgid "#"
 msgstr "#"
 
@@ -251,12 +256,12 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:87
 #: privacyidea/static/components/config/views/config.events.list.html:12
 #: privacyidea/static/components/config/views/config.policies.details.html:126
-#: privacyidea/static/components/config/views/config.policies.list.html:8
+#: privacyidea/static/components/config/views/config.policies.list.html:9
 msgid "Action"
 msgstr "Aktion "
 
 #: privacyidea/static/components/config/views/config.events.list.html:6
-#: privacyidea/static/components/config/views/config.policies.list.html:5
+#: privacyidea/static/components/config/views/config.policies.list.html:6
 #: privacyidea/static/components/token/views/token.details.html:22
 #: privacyidea/static/components/user/views/user.details.html:83
 msgid "Active"
@@ -616,7 +621,7 @@ msgstr ""
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
 #: privacyidea/static/components/config/views/config.policies.details.html:302
-#: privacyidea/static/components/config/views/config.policies.list.html:12
+#: privacyidea/static/components/config/views/config.policies.list.html:13
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
 msgstr "Client"
@@ -826,7 +831,7 @@ msgstr "Standard Zeitfenster"
 #: privacyidea/static/components/config/views/config.events.list.html:63
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
 #: privacyidea/static/components/config/views/config.policies.details.html:18
-#: privacyidea/static/components/config/views/config.policies.list.html:54
+#: privacyidea/static/components/config/views/config.policies.list.html:60
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:30
 #: privacyidea/static/components/config/views/config.radius.list.html:30
 #: privacyidea/static/components/config/views/config.realms.list.html:65
@@ -1994,7 +1999,7 @@ msgid "Policies"
 msgstr "Richtlinien"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:30
-#: privacyidea/static/components/config/views/config.policies.list.html:6
+#: privacyidea/static/components/config/views/config.policies.list.html:7
 msgid "Policy Name"
 msgstr "Richtlinienname"
 
@@ -2047,10 +2052,12 @@ msgid "Previous"
 msgstr "Zurück"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:55
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:55
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:326
+#: privacyidea/static/components/config/views/config.policies.list.html:5
 msgid "Priority"
 msgstr "Priorität"
 
@@ -2150,7 +2157,7 @@ msgstr ""
 "Die Mobilnummer wird bei jeder Authentifizierung dynamisch aus der "
 "Benutzerquelle gelesen."
 
-#: privacyidea/static/components/config/views/config.policies.list.html:9
+#: privacyidea/static/components/config/views/config.policies.list.html:10
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
 #: privacyidea/static/components/login/views/login.html:55
 #: privacyidea/static/components/token/views/token.details.html:398
@@ -2268,7 +2275,7 @@ msgstr "Fehlerzähler zurücksetzen"
 msgid "Reset your Password"
 msgstr "Ihr Passwort zurücksetzen"
 
-#: privacyidea/static/components/config/views/config.policies.list.html:11
+#: privacyidea/static/components/config/views/config.policies.list.html:12
 #: privacyidea/static/components/token/views/token.details.html:403
 #: privacyidea/static/components/token/views/token.details.html:467
 #: privacyidea/static/components/user/views/user.add.html:9
@@ -2436,7 +2443,7 @@ msgstr "Resolver speichern"
 msgid "Save user"
 msgstr "Benutzer speichern"
 
-#: privacyidea/static/components/config/views/config.policies.list.html:7
+#: privacyidea/static/components/config/views/config.policies.list.html:8
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:97
 msgid "Scope"
 msgstr "Geltungsbereich"
@@ -2678,12 +2685,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:437
-#: privacyidea/static/components/config/controllers/configControllers.js:664
+#: privacyidea/static/components/config/controllers/configControllers.js:444
+#: privacyidea/static/components/config/controllers/configControllers.js:671
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:446
+#: privacyidea/static/components/config/controllers/configControllers.js:453
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
@@ -2848,6 +2855,7 @@ msgid "The OTP key"
 msgstr "Der OTP-Schlüssel"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:4
+#: privacyidea/static/components/token/views/token.enrolled.tan.html:4
 msgid "The OTP values"
 msgstr "OTP-Werte"
 
@@ -2973,6 +2981,17 @@ msgid ""
 msgstr ""
 "Der Simple-Pass-Token benötigt keine zusätzlichen Argumente. Sie müssen "
 "lediglich eine OTP-PIN angeben."
+
+#: privacyidea/static/components/token/views/token.enroll.tan.html:1
+msgid ""
+"The TAN token will let you print a list of OTP values.\n"
+"    These OTP values can be used to authenticate. The values can be used in "
+"an\n"
+"    arbitrary order."
+msgstr ""
+"Der TAN-Token ist eine Liste von ausgedruckten OTP-Werten. Mit diesen OTP-"
+"Werten kann sich der Benutzer authentisieren. Er streicht dann die Werte aus "
+"der Liste, nachdem er sie benutzt hat."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:2
 msgid ""
@@ -3871,7 +3890,7 @@ msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 
 #: privacyidea/static/components/audit/views/audit.stats.html:134
 #: privacyidea/static/components/config/views/config.policies.details.html:288
-#: privacyidea/static/components/config/views/config.policies.list.html:10
+#: privacyidea/static/components/config/views/config.policies.list.html:11
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
 #: privacyidea/static/components/config/views/config.radius.edit.html:97
 #: privacyidea/static/templates/menu.html:52

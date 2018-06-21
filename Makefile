@@ -15,7 +15,7 @@ info:
 	@echo "make ppa          - upload to launchpad stable repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.23~dev1
+SHORT_VERSION=2.23~dev2
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
@@ -147,8 +147,10 @@ ppa-dev:
 	# xenial
 	sed -e s/"trusty) trusty; urgency"/"xenial) xenial; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
 	(cd DEBUILD/privacyidea.org; debuild -sa -S)
+	# bionic
+	sed -e s/"trusty) trusty; urgency"/"bionic) bionic; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
+	(cd DEBUILD/privacyidea.org; debuild -sa -S)
 	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
-
 
 ppa:
 	make debianize
