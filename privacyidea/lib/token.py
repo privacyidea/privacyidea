@@ -1144,7 +1144,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
         raise TokenAdminError("Token assign failed for {0!r}/{1!s} : {2!r}".format(user, serial, e), id=1105)
 
     log.debug("successfully assigned token with serial "
-              "%r to user %r" % (serial, user))
+              "{0!r} to user {1!r}".format(serial, user))
     return True
 
 
@@ -2246,8 +2246,7 @@ def get_dynamic_policy_definitions(scope=None):
     for ttype in get_token_types():
         pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
             = {'type': 'bool',
-               'desc': _('Admin is allowed to initalize %s tokens.') %
-                       ttype.upper(),
+               'desc': _(u"Admin is allowed to initalize {0!s} tokens.").format(ttype.upper()),
                'mainmenu': [MAIN_MENU.TOKENS],
                'group': GROUP.ENROLLMENT}
 
@@ -2255,7 +2254,7 @@ def get_dynamic_policy_definitions(scope=None):
         if 'enroll' in conf:
             pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
-                'desc': _("The user is allowed to enroll a %s token.") % ttype,
+                'desc': _(u"The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.ENROLLMENT}
 
