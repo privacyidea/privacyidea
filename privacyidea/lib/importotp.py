@@ -496,7 +496,10 @@ def parsePSKCdata(xml_data,
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
                 secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
-                token["otpkey"] = binascii.hexlify(secret)
+                if token["type"].lower() in ["hotp", "totp"]:
+                    token["otpkey"] = binascii.hexlify(secret)
+                else:
+                    token["otpkey"] = secret
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
@@ -623,7 +626,10 @@ def export_pskc(tokenobj_list, psk=None):
             timedrift = 0
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
-            encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+            if tokenobj.type.lower() in ["totp", "hotp"]:
+                encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+            else:
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
         except TypeError:
             # Some keys might be odd string length
             continue
