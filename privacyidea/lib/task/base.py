@@ -47,11 +47,11 @@ class BaseTask(object):
         """
         return {}
 
-    def do(self, options=None):
+    def do(self, params=None):
         """
-        This method executes the task with the given options.
+        This method executes the task with the given parameters.
 
-        :param options: a dictionary mapping unicodes to unicodes
+        :param params: a dictionary
         :return: a boolean denoting success
         """
         return True
