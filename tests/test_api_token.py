@@ -12,6 +12,7 @@ from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
+from privacyidea.lib import _
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -1059,7 +1060,7 @@ class APITokenTestCase(MyTestCase):
         r = check_serial_pass(serial, "pin")
         # The OTP PIN is correct
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get("message"), "please enter otp: ")
+        self.assertEqual(r[1].get("message"), _("please enter otp: "))
         transaction_id = r[1].get("transaction_id")
 
         with self.app.test_request_context('/token/challenges/',

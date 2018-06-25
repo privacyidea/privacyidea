@@ -15,6 +15,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib import _
 
 import smtpmock, ldap3mock, responses
 
@@ -973,7 +974,7 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "please enter otp: ")
+            self.assertEqual(detail.get("message"), _("please enter otp: "))
             transaction_id = detail.get("transaction_id")
         self.assertEqual(token.get_failcount(), 5)
 
@@ -1089,8 +1090,7 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "Enter the OTP from the "
-                                                    "Email:")
+            self.assertEqual(detail.get("message"), _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_id")
 
         # send the OTP value
@@ -1650,7 +1650,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the SMS:")
+                             _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
 
         # Check authentication
@@ -1679,7 +1679,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the SMS:")
+                             _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
 
         # Check authentication
@@ -1729,7 +1729,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), 1)
             detail = json.loads(res.data).get("detail")
             self.assertEqual(detail.get("messages")[0],
-                             "Enter the OTP from the Email:")
+                             _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_ids")[0]
             # check the sent message
             sent_message = smtpmock.get_sent_message()
@@ -2052,7 +2052,105 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_policy("onlyHOTP")
+        delete_policy("onlyHOTP")
         delete_policy("passthru")
         remove_token("SPASS1")
         remove_token("SPASS2")
         remove_token("HOTP1")
+
+    @responses.activate
+    @smtpmock.activate
+    def test_30_challenge_text(self):
+        """
+        Set a policy for a different challengetext and run a C/R for sms and email.
+        :return:
+        """
+        smtpmock.setdata(response={"hallo@example.com": (200, 'OK')})
+
+        # Configure the SMS Gateway
+        from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+        from privacyidea.lib.config import set_privacyidea_config
+        post_url = "http://smsgateway.com/sms_send_api.cgi"
+        success_body = "ID 12345"
+
+        identifier = "myGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": post_url,
+                                     "RETURN_SUCCESS": "ID",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"})
+        self.assertTrue(id > 0)
+        # set config sms.identifier = myGW
+        r = set_privacyidea_config("sms.identifier", identifier)
+        self.assertTrue(r in ["insert", "update"])
+        responses.add(responses.POST,
+                      post_url,
+                      body=success_body)
+
+
+
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+
+        # two different token types
+        init_token({"serial": "CHAL1",
+                    "type": "sms",
+                    "phone": "123456",
+                    "pin": "sms"}, user)
+        init_token({"serial": "CHAL2",
+                    "type": "email",
+                    "email": "hallo@example.com",
+                    "pin": "email"}, user)
+
+        set_policy("chalsms", SCOPE.AUTH, "sms_{0!s}=check your sms".format(ACTION.CHALLENGETEXT))
+        set_policy("chalemail", SCOPE.AUTH, "email_{0!s}=check your email".format(ACTION.CHALLENGETEXT))
+
+        # Challenge Response with email
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "email"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your email")
+
+        # Challenge Response with SMS
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "sms"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your sms")
+
+        # Two different token types that are triggered by the same PIN:
+        init_token({"serial": "CHAL3",
+                    "type": "sms",
+                    "phone": "123456",
+                    "pin": "PIN"}, user)
+        init_token({"serial": "CHAL4",
+                    "type": "email",
+                    "email": "hallo@example.com",
+                    "pin": "PIN"}, user)
+
+        # Challenge Response with SMS and Email. The challenge message contains both hints
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "PIN"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            resp = json.loads(res.data)
+            self.assertEqual(resp.get("detail").get("message"), "check your sms, check your email")
+
+        delete_policy("chalsms")
+        delete_policy("chalemail")
+        remove_token("CHAL1")
+        remove_token("CHAL2")
+        remove_token("CHAL3")
+        remove_token("CHAL4")

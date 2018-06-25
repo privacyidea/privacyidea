@@ -10,6 +10,7 @@ from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib import _
 import re
 import binascii
 import hashlib
@@ -427,7 +428,7 @@ class TiQRTokenTestCase(MyTestCase):
         # Check create_challenge
         r = token.create_challenge()
         self.assertEqual(r[0], True)
-        self.assertEqual(r[1], "Please scan the QR Code")
+        self.assertEqual(r[1], _("Please scan the QR Code"))
         self.assertTrue("img" in r[3], r[3])
         self.assertTrue("value" in r[3], r[3])
 

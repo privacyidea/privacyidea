@@ -13,6 +13,7 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
 from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
+from privacyidea.lib import _
 import datetime
 import mock
 import responses
@@ -447,7 +448,7 @@ class SMSTokenTestCase(MyTestCase):
         c = token.create_challenge(options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertEqual(display_message, "Enter the OTP from the SMS:")
+        self.assertEqual(display_message, _("Enter the OTP from the SMS:"))
         self.assertEqual(c[3].get("state"), None)
 
         # check for the challenges response

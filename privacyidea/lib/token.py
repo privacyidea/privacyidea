@@ -2159,8 +2159,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         else:
             reply_dict["multi_challenge"] = []
             transaction_id = None
+            message_list = []
             for token_obj in active_challenge_token:
-                message_list = []
                 # Check if the max auth is succeeded
                 if token_obj.check_all(message_list):
                     r_chal, message, transaction_id, attributes = \

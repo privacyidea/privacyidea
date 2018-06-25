@@ -209,6 +209,7 @@ class ACTION(object):
     CACONNECTORWRITE = "caconnectorwrite"
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
+    CHALLENGETEXT = "challenge_text"
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
@@ -1542,6 +1543,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('This is a whitespace separated list of tokentypes, '
                           'that can be used with challenge response.')
             },
+            ACTION.CHALLENGETEXT: {
+                'type': 'str',
+                'desc': _('Use an alternate challenge text for telling the '
+                          'user to enter an OTP value.')
+            },
             ACTION.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -1746,3 +1752,38 @@ def get_static_policy_definitions(scope=None):
     else:
         ret = pol
     return ret
+
+
+def get_action_values_from_options(scope, action, options):
+    """
+    This function is used in the library level to fetch policy action values
+    from a given option dictionary.
+
+    :return: A scalar, string or None
+    """
+    value = None
+    g = options.get("g")
+    if g:
+        user_object = options.get("user")
+        username = None
+        realm = None
+        if user_object:
+            username = user_object.login
+            realm = user_object.realm
+
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        value = policy_object. \
+            get_action_values(action=action,
+                              scope=scope,
+                              realm=realm,
+                              user=username,
+                              client=clientip,
+                              unique=True,
+                              allow_white_space_in_action=True)
+        if len(value) >= 1:
+            return value[0]
+        else:
+            return None
+
+    return value
