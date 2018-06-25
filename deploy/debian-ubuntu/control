@@ -9,7 +9,7 @@ Package: python-privacyidea
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-flask-migrate, python-qrcode, python-netaddr,
  python-pyrad, python-yaml, python-configobj, python-bs4, python-pandas, python-matplotlib, python-ecdsa, python-gnupg, python-openssl,
- python-dateutil
+ python-dateutil, python-croniter
 Replaces: privacyidea (<< 2.0)
 Breaks: privacyidea (<< 2.0)
 X-Python-Version: >= 2.7
