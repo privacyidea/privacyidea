@@ -1,3 +1,8 @@
+Version 2.22.3, 2018-06-25
+
+  Fixes in Server:
+  * Fix the pskc export and import of pw token types (#1011)
+
 Version 2.22.2, 2018-05-29
 
   Fixes in WebUI:
