@@ -600,20 +600,24 @@ class ImportOTPTestCase(MyTestCase):
         t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456",
                          "description": "something <with> xml!"})
         t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
-        tlist = [t1, t2, t3]
+        t4 = init_token({"serial": "t4", "type": "pw", "otpkey": "lässig",
+                         "description": "password token"})
+        tlist = [t1, t2, t3, t4]
         # export the tokens
         psk, token_num, soup = export_pskc(tlist)
         # Only 2 tokens exported, the spass token does not get exported!
-        self.assertEqual(token_num, 2)
+        self.assertEqual(token_num, 3)
         self.assertEqual(len(psk), 32)
         export = "{0!s}".format(soup)
         # remote the tokens
         remove_token("t1")
         remove_token("t2")
         remove_token("t3")
+        remove_token("t4")
+        remove_token("t5")
         # import the tokens again
         tokens = parsePSKCdata(export, preshared_key_hex=psk)
-        self.assertEqual(len(tokens), 2)
+        self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
         # unicode does not get exported
@@ -621,6 +625,8 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("t2").get("type"), "totp")
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
+        # password token
+        self.assertEqual(tokens.get("t4").get("otpkey"), "lässig")
 
 
 class GPGTestCase(MyTestCase):
