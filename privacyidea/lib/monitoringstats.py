@@ -30,7 +30,7 @@ import logging
 import traceback
 from privacyidea.lib.log import log_with
 from privacyidea.models import MonitoringStats
-from sqlalchemy import and_
+from sqlalchemy import and_, distinct
 import datetime
 log = logging.getLogger(__name__)
 
@@ -74,3 +74,15 @@ def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
         conditions.append(MonitoringStats.timestamp <= end_timestamp)
     r = MonitoringStats.query.filter(and_(*conditions)).delete()
     return r
+
+
+def get_stats_keys():
+    """
+    Return a list of all available statistics keys
+
+    :return: list of keys
+    """
+    keys = []
+    for monStat in MonitoringStats.query.with_entities(MonitoringStats.stats_key).distinct():
+        keys.append(monStat.stats_key)
+    return keys
