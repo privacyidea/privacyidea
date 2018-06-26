@@ -86,3 +86,42 @@ def get_stats_keys():
     for monStat in MonitoringStats.query.with_entities(MonitoringStats.stats_key).distinct():
         keys.append(monStat.stats_key)
     return keys
+
+
+def get_values(stats_key, start_timestamp=None, end_timestamp=None):
+    """
+    Return a list of sets of (timestamp, value)
+
+    :param stats_key: The stats key to query
+    :param start_timestamp: the start of the timespan
+    :type start_timestamp: datetime
+    :param end_timestamp: the end of the timespan
+    :type end_timestamp: datetime
+    :return: list of sets
+    """
+    values = []
+    conditions = [MonitoringStats.stats_key == stats_key]
+    if start_timestamp:
+        conditions.append(MonitoringStats.timestamp >= start_timestamp)
+    if end_timestamp:
+        conditions.append(MonitoringStats.timestamp <= end_timestamp)
+    for ms in MonitoringStats.query.filter(and_(*conditions)).\
+            order_by(MonitoringStats.timestamp.asc()):
+        values.append((ms.timestamp, ms.stats_value))
+
+    return values
+
+
+def get_last_value(stats_key):
+    """
+    Return the last value of the given key
+
+    :param stats_key:
+    :return: The value as a scalar or None
+    """
+    val = None
+    s = MonitoringStats.query.filter(MonitoringStats.stats_key == stats_key).\
+        order_by(MonitoringStats.timestamp.desc()).first()
+    if s:
+        val = s.stats_value
+    return val
