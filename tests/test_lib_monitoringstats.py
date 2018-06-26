@@ -1,7 +1,8 @@
 # coding: utf-8
 from privacyidea.models import MonitoringStats
 from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
-                                             get_stats_keys)
+                                             get_stats_keys, get_values,
+                                             get_last_value)
 
 from .base import MyTestCase
 import datetime
@@ -63,3 +64,38 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue("key1" in keys)
         self.assertTrue("key2" in keys)
         self.assertTrue("key3" in keys)
+
+    def test_04_get_values(self):
+        # delete old entries
+        keys = get_stats_keys()
+        for k in keys:
+            delete_stats(k)
+
+        ts = datetime.datetime.now()
+        write_stats("key1", 1, timestamp=ts - timedelta(minutes=10))
+        write_stats("key1", 2, timestamp=ts - timedelta(minutes=9))
+        write_stats("key1", 3, timestamp=ts - timedelta(minutes=8))
+        write_stats("key1", 4, timestamp=ts - timedelta(minutes=7))
+        write_stats("key1", 5, timestamp=ts - timedelta(minutes=6))
+        write_stats("key1", 6, timestamp=ts - timedelta(minutes=5))
+        write_stats("key1", 7, timestamp=ts - timedelta(minutes=4))
+        write_stats("key1", 8, timestamp=ts - timedelta(minutes=3))
+        write_stats("key1", 9, timestamp=ts - timedelta(minutes=2))
+        write_stats("key1", 10, timestamp=ts - timedelta(minutes=1))
+
+        r = get_values("key1")
+        self.assertEqual(len(r), 10)
+        # The third entry is a 3
+        self.assertEqual(r[2][1], 3)
+        # The last value is a 10
+        self.assertEqual(r[9][1], 10)
+
+        r = get_values("key1",
+                       start_timestamp=ts - timedelta(minutes=8),
+                       end_timestamp=ts - timedelta(minutes=4))
+        # We get 8,7,6,5,4
+        self.assertEqual(len(r), 5)
+
+        # Get the last value of key1
+        r = get_last_value("key1")
+        self.assertEqual(r, 10)
