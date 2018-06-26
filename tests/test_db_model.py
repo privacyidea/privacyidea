@@ -15,7 +15,7 @@ from privacyidea.models import (Token,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption)
+                                PeriodicTaskOption, MonitoringStats)
 from .base import MyTestCase
 from datetime import datetime
 from datetime import timedelta
@@ -824,4 +824,18 @@ class TokenModelTestCase(MyTestCase):
         task2.delete()
         self.assertEqual(PeriodicTaskOption.query.count(), 0)
 
+    def test_27_monitoring_stats(self):
+        # Simple test to write data to the monitoring stats table
+        key1 = "user_count"
+        key2 = "successful_auth"
+        MonitoringStats(datetime.now(), key1, 15)
+        MonitoringStats(datetime.now(), key1, 21)
+        MonitoringStats(datetime.now(), key2, 123)
 
+        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 2)
+        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 1)
+
+        # Delete all entries
+        MonitoringStats.query.delete()
+        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 0)
+        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 0)
