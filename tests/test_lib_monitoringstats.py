@@ -1,6 +1,7 @@
 # coding: utf-8
 from privacyidea.models import MonitoringStats
-from privacyidea.lib.monitoringstats import (write_stats, delete_stats)
+from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
+                                             get_stats_keys)
 
 from .base import MyTestCase
 import datetime
@@ -43,3 +44,22 @@ class TokenModelTestCase(MyTestCase):
         r = delete_stats(key1, end_timestamp=datetime.datetime.now() + timedelta(minutes=60))
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
         self.assertEqual(r, 2)
+
+    def test_03_get_keys(self):
+        # delete old entries
+        keys = get_stats_keys()
+        for k in keys:
+            delete_stats(k)
+
+        # write new stats entries
+        write_stats("key1", 13)
+        write_stats("key1", 13)
+        write_stats("key1", 13)
+        write_stats("key2", 12)
+        write_stats("key3", 12)
+
+        keys = get_stats_keys()
+        self.assertEqual(len(keys), 3)
+        self.assertTrue("key1" in keys)
+        self.assertTrue("key2" in keys)
+        self.assertTrue("key3" in keys)
