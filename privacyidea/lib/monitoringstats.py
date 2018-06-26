@@ -54,3 +54,23 @@ def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
         MonitoringStats.query.filter(and_(MonitoringStats.stats_key == stats_key,
                                           MonitoringStats.timestamp < timestamp)).delete()
 
+
+def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
+    """
+    Delete statistics from a given key.
+    Either delete all occurrences or only in a given time span.
+
+    :param stats_key: The name of the key to delete
+    :param start_timestamp: The start timestamp.
+    :type start_timestamp: datetime
+    :param end_timestamp: The end timestamp.
+    :type end_timestamp: datetime
+    :return: The number of deleted entries
+    """
+    conditions = [MonitoringStats.stats_key == stats_key]
+    if start_timestamp:
+        conditions.append(MonitoringStats.timestamp >= start_timestamp)
+    if end_timestamp:
+        conditions.append(MonitoringStats.timestamp <= end_timestamp)
+    r = MonitoringStats.query.filter(and_(*conditions)).delete()
+    return r
