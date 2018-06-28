@@ -26,6 +26,12 @@ LINOTP_URI = "mysql://linotp2:linotp2@localhost/linotp2"
 PRIVACYIDEA_URI = "mysql://pitest:pitest@localhost/pitest"
 
 """
+The migration run is used to mark the tokens, that were imported/migrated in
+a certain run. This is set in the tokeninfo.
+"""
+MIGRATION_RUN = "1st run"
+
+"""
 Define, what should be migrated:
 
 "tokens" should always be True.
@@ -284,6 +290,8 @@ def migrate():
             ti = {}
             if r["LinOtpTokenInfo"]:
                 ti = json.loads(r["LinOtpTokenInfo"])
+            if MIGRATION_RUN:
+                ti["migration_run"] = MIGRATION_RUN
 
             if MIGRATE.get("assignments"):
                 user_pin = r['LinOtpTokenPinUser']
