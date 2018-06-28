@@ -38,6 +38,8 @@
 import binascii
 import logging
 from datetime import datetime, timedelta
+
+from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
 from .lib.crypto import (encrypt,
@@ -2536,7 +2538,8 @@ class PeriodicTask(MethodsMixin, db.Model):
 
     def get(self):
         """
-        Return the serialized periodic task object including the options and last runs
+        Return the serialized periodic task object including the options and last runs.
+        The last runs are returned as timezone-aware UTC datetimes.
 
         :return: complete dict
         """
@@ -2547,7 +2550,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "nodes": [node.strip() for node in self.nodes.split(",")],
                 "taskmodule": self.taskmodule,
                 "options": dict((option.key, option.value) for option in self.options),
-                "last_runs": dict((last_run.node, last_run.timestamp) for last_run in self.last_runs)}
+                "last_runs": dict((last_run.node, last_run.aware_timestamp) for last_run in self.last_runs)}
 
     def save(self):
         """
@@ -2656,6 +2659,13 @@ class PeriodicTaskLastRun(db.Model):
         self.node = node
         self.timestamp = timestamp
         self.save()
+
+    @property
+    def aware_timestamp(self):
+        """
+        Return self.timezone with attached UTC tzinfo
+        """
+        return self.timestamp.replace(tzinfo=tzutc())
 
     def save(self):
         """
