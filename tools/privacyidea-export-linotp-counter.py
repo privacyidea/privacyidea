@@ -100,8 +100,12 @@ SQL_URI = get_linotp_uri(args.config)
 linotp_engine = create_engine(SQL_URI)
 conn_linotp = linotp_engine.connect()
 
-s = select([linotp_token_table.c.LinOtpTokenSerialnumber, linotp_token_table.c.LinOtpCount])
+s = select([linotp_token_table.c.LinOtpTokenSerialnumber,
+            linotp_token_table.c.LinOtpCount,
+            linotp_token_table.c.LinOtpIsactive,
+            linotp_token_table.c.LinOtpPinHash])
 result = conn_linotp.execute(s)
 
 for r in result:
-    print(u"{0!s}, {1!s}".format(r.LinOtpTokenSerialnumber, r.LinOtpCount))
+    print(u"{0!s}, {1!s}, {2!s}, {3!s}".format(r.LinOtpTokenSerialnumber, r.LinOtpCount,
+                                        r.LinOtpIsactive, r.LinOtpPinHash))

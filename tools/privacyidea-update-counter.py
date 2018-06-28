@@ -17,6 +17,7 @@ privacyidea-export-linotp-counter.py -c MIGRATION/linotp.ini  | ./tools/privacyi
 """
 
 from privacyidea.models import Token
+from privacyidea.lib.utils import is_true
 import argparse
 import sys
 from sqlalchemy import create_engine
@@ -39,8 +40,16 @@ def read_counter_file(import_file):
     update_list = []
     for line in import_file.readlines():
         try:
-            serial, counter = [v.strip() for v in line.split(",")]
-            update_list.append((u"{0!s}".format(serial), int(counter)))
+            values = [v.strip() for v in line.split(",")]
+            serial = values[0]
+            counter = values[1]
+            active = None
+            pin = None
+            if len(values) > 2:
+                active = is_true(values[2])
+            if len(values) > 3 and values[3]:
+                pin = values[3]
+            update_list.append((u"{0!s}".format(serial), int(counter), active, pin))
         except ValueError as ve:
             # If there is a line, that does not comply
             sys.stderr.write("Failed to parse line: {0!s}\n".format(line))
@@ -63,6 +72,7 @@ args = parser.parse_args()
 
 SQL_URI = get_privacyidea_uri(args.config)
 counters = read_counter_file(args.file)
+print counters
 
 # Start DB stuff
 
@@ -81,7 +91,12 @@ for count in counters:
             # The counter in the database is bigger
             continue
     sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
-    r = privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
+    upd = {"count": count[1]}
+    if len(count) > 2:
+        upd["active"] = is_true(count[2])
+    if len(count) > 3 and count[3]:
+        upd["pin_hash"] = count[3]
+    r = privacyidea_session.query(Token).filter_by(serial=count[0]).update(upd)
     if r > 0:
         # r==0, if the token was not found!
         updated += 1
@@ -94,5 +109,5 @@ privacyidea_session.commit()
 
 print
 print("{0!s:6} tokens processed.".format(processed))
-print("{0!s:6} counters updated.".format(updated))
+print("{0!s:6} tokens updated.".format(updated))
 print("{0!s:6} tokens not found.".format(not_found))
