@@ -68,7 +68,7 @@ install_requires = ["Flask>=0.10.1",
                     "python-gnupg>=0.3.8",
                     "defusedxml>=0.4.1",
                     "flask-babel>=0.9",
-                    "croniter>=0.3.4"
+                    "croniter>=0.3.8"
                     ]
 
 # For python 2.6 we need additional dependency importlib
