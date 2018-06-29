@@ -168,11 +168,14 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
     if current_timestamp is None:
         current_timestamp = datetime.now(tzutc())
     scheduled_ptasks = []
+    log.debug(u"Collecting periodic tasks to run at {!s}".format(current_timestamp.isoformat()))
     for ptask in active_ptasks:
         try:
             next_timestamp = calculate_next_timestamp(ptask, node, interval_tzinfo)
+            log.debug(u"Next scheduled run of {!r}: {!s}".format(ptask["name"], next_timestamp.isoformat()))
             if next_timestamp <= current_timestamp:
+                log.debug(u"Scheduling periodic task {!r}".format(ptask["name"]))
                 scheduled_ptasks.append(ptask)
         except Exception as e:
-            log.warning(u"Ignoring periodic task {!s}: {!r}".format(ptask["name"], e))
+            log.warning(u"Ignoring periodic task {!r}: {!r}".format(ptask["name"], e))
     return scheduled_ptasks
