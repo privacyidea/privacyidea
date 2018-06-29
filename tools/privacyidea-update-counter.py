@@ -72,7 +72,6 @@ args = parser.parse_args()
 
 SQL_URI = get_privacyidea_uri(args.config)
 counters = read_counter_file(args.file)
-print counters
 
 # Start DB stuff
 
