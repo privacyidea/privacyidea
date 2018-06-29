@@ -27,8 +27,10 @@ database table "monitoringstats". This can be arbitrary data for time series of
 This module is tested in tests/test_lib_monitoringstats.py
 """
 import logging
+from dateutil.tz import tzlocal, tzutc
 import traceback
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_timestamp_to_utc
 from privacyidea.models import MonitoringStats
 from sqlalchemy import and_, distinct
 import datetime
@@ -44,15 +46,18 @@ def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
     :param stats_value: The value to be measured
     :type stats_value: int
     :param timestamp: The time, when the value was measured
+    :type timestamp: timezone-aware datetime object
     :param reset_values: Whether old entries should be deleted
     :return: id of the database entry
     """
-    timestamp = timestamp or datetime.datetime.now()
-    MonitoringStats(timestamp, stats_key, stats_value)
+    timestamp = timestamp or datetime.datetime.now(tzlocal())
+    # Convert timestamp to UTC for database
+    utc_timestamp = convert_timestamp_to_utc(timestamp)
+    MonitoringStats(utc_timestamp, stats_key, stats_value)
     if reset_values:
         # Successfully saved the new stats entry, so remove old entries
         MonitoringStats.query.filter(and_(MonitoringStats.stats_key == stats_key,
-                                          MonitoringStats.timestamp < timestamp)).delete()
+                                          MonitoringStats.timestamp < utc_timestamp)).delete()
 
 
 def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
@@ -62,16 +67,18 @@ def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
 
     :param stats_key: The name of the key to delete
     :param start_timestamp: The start timestamp.
-    :type start_timestamp: datetime
+    :type start_timestamp: timezone-aware datetime object
     :param end_timestamp: The end timestamp.
-    :type end_timestamp: datetime
+    :type end_timestamp: timezone-aware datetime object
     :return: The number of deleted entries
     """
     conditions = [MonitoringStats.stats_key == stats_key]
     if start_timestamp:
-        conditions.append(MonitoringStats.timestamp >= start_timestamp)
+        utc_start_timestamp = convert_timestamp_to_utc(start_timestamp)
+        conditions.append(MonitoringStats.timestamp >= utc_start_timestamp)
     if end_timestamp:
-        conditions.append(MonitoringStats.timestamp <= end_timestamp)
+        utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
+        conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
     r = MonitoringStats.query.filter(and_(*conditions)).delete()
     return r
 
@@ -90,24 +97,27 @@ def get_stats_keys():
 
 def get_values(stats_key, start_timestamp=None, end_timestamp=None):
     """
-    Return a list of sets of (timestamp, value)
+    Return a list of sets of (timestamp, value), ordered by timestamps in ascending order
 
     :param stats_key: The stats key to query
-    :param start_timestamp: the start of the timespan
-    :type start_timestamp: datetime
-    :param end_timestamp: the end of the timespan
-    :type end_timestamp: datetime
-    :return: list of sets
+    :param start_timestamp: the start of the timespan, inclusive
+    :type start_timestamp: timezone-aware datetime object
+    :param end_timestamp: the end of the timespan, inclusive
+    :type end_timestamp: timezone-aware datetime object
+    :return: list of sets, with timestamps being timezone-aware UTC datetime objects
     """
     values = []
     conditions = [MonitoringStats.stats_key == stats_key]
     if start_timestamp:
-        conditions.append(MonitoringStats.timestamp >= start_timestamp)
+        utc_start_timestamp = convert_timestamp_to_utc(start_timestamp)
+        conditions.append(MonitoringStats.timestamp >= utc_start_timestamp)
     if end_timestamp:
-        conditions.append(MonitoringStats.timestamp <= end_timestamp)
+        utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
+        conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
     for ms in MonitoringStats.query.filter(and_(*conditions)).\
             order_by(MonitoringStats.timestamp.asc()):
-        values.append((ms.timestamp, ms.stats_value))
+        aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
+        values.append((aware_timestamp, ms.stats_value))
 
     return values
 

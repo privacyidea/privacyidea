@@ -6,6 +6,7 @@ from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
 
 from .base import MyTestCase
 import datetime
+from dateutil.tz import tzlocal, tzutc
 from datetime import timedelta
 
 
@@ -17,6 +18,8 @@ class TokenModelTestCase(MyTestCase):
         write_stats(key1, 13)
 
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 2)
+        # Assert naive datetime
+        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).first().timestamp.tzinfo, None)
 
         # Now we write a new value, but with the paramter to delete old values
         write_stats(key1, 14, reset_values=True)
@@ -24,25 +27,26 @@ class TokenModelTestCase(MyTestCase):
 
     def test_02_delete_stats(self):
         key1 = "otherkey"
-        write_stats(key1, 12, timestamp=datetime.datetime.now() - timedelta(days=1))
-        write_stats(key1, 13, timestamp=datetime.datetime.now())
-        write_stats(key1, 14, timestamp=datetime.datetime.now() + timedelta(days=1))
+        now = datetime.datetime.now(tzlocal())
+        write_stats(key1, 12, timestamp=now- timedelta(days=1))
+        write_stats(key1, 13, timestamp=now)
+        write_stats(key1, 14, timestamp=now + timedelta(days=1))
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 3)
 
         # delete the last two entries
-        r = delete_stats(key1, start_timestamp=datetime.datetime.now() - timedelta(minutes=60))
+        r = delete_stats(key1, start_timestamp=now - timedelta(minutes=60))
 
         # check there is only one entry
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
         self.assertEqual(r, 2)
 
         # Again write three entries
-        write_stats(key1, 13, timestamp=datetime.datetime.now())
-        write_stats(key1, 14, timestamp=datetime.datetime.now() + timedelta(days=1))
+        write_stats(key1, 13, timestamp=now)
+        write_stats(key1, 14, timestamp=now + timedelta(days=1))
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 3)
 
         # Delete the first two entries
-        r = delete_stats(key1, end_timestamp=datetime.datetime.now() + timedelta(minutes=60))
+        r = delete_stats(key1, end_timestamp=now + timedelta(minutes=60))
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
         self.assertEqual(r, 2)
 
@@ -71,7 +75,7 @@ class TokenModelTestCase(MyTestCase):
         for k in keys:
             delete_stats(k)
 
-        ts = datetime.datetime.now()
+        ts = datetime.datetime.now(tzlocal())
         write_stats("key1", 1, timestamp=ts - timedelta(minutes=10))
         write_stats("key1", 2, timestamp=ts - timedelta(minutes=9))
         write_stats("key1", 3, timestamp=ts - timedelta(minutes=8))
@@ -93,8 +97,20 @@ class TokenModelTestCase(MyTestCase):
         r = get_values("key1",
                        start_timestamp=ts - timedelta(minutes=8),
                        end_timestamp=ts - timedelta(minutes=4))
-        # We get 8,7,6,5,4
-        self.assertEqual(len(r), 5)
+        # We get 3,4,5,6,7
+        self.assertEqual([entry[1] for entry in r], [3, 4, 5, 6, 7])
+        # Assert it is the correct time, and timezone-aware UTC
+        self.assertEqual(r[0][0], ts - timedelta(minutes=8))
+        self.assertEqual(r[0][0].tzinfo, tzutc())
+        self.assertEqual(r[-1][0], ts - timedelta(minutes=4))
+
+        r = get_values("key1",
+                       start_timestamp=ts - timedelta(minutes=8))
+        self.assertEqual([entry[1] for entry in r], [3, 4, 5, 6, 7, 8, 9, 10])
+
+        r = get_values("key1",
+                       end_timestamp=ts - timedelta(minutes=8))
+        self.assertEqual([entry[1] for entry in r], [1, 2, 3])
 
         # Get the last value of key1
         r = get_last_value("key1")

@@ -40,7 +40,7 @@ import re
 from datetime import timedelta, datetime
 from datetime import time as dt_time
 from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import crypt
@@ -1093,3 +1093,13 @@ def convert_column_to_unicode(value):
         return value
     else:
         return unicode(value)
+
+
+def convert_timestamp_to_utc(timestamp):
+    """
+    Convert a timezone-aware datetime object to a naive UTC datetime.
+    :param timestamp: datetime object that should be converted
+    :type timestamp: timezone-aware datetime object
+    :return: timezone-naive datetime object
+    """
+    return timestamp.astimezone(tzutc()).replace(tzinfo=None)
