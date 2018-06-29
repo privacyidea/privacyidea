@@ -2728,6 +2728,7 @@ class MonitoringStats(MethodsMixin, db.Model):
     __tablename__ = 'monitoringstats'
     id = db.Column(db.Integer, Sequence("monitoringstats_seq"),
                    primary_key=True)
+    # We store this as a naive datetime in UTC
     timestamp = db.Column(db.DateTime(False), nullable=False)
     stats_key = db.Column(db.Unicode(128), nullable=False)
     stats_value = db.Column(db.Integer, nullable=False, default=0)
@@ -2740,7 +2741,7 @@ class MonitoringStats(MethodsMixin, db.Model):
         """
         Create a new database entry in the monitoring stats table
         :param timestamp: The time of the measurement point
-        :type timestamp: datetime
+        :type timestamp: timezone-naive datetime
         :param key: The key of the measurement
         :type key: basestring
         :param value: The value of the measurement

@@ -828,9 +828,10 @@ class TokenModelTestCase(MyTestCase):
         # Simple test to write data to the monitoring stats table
         key1 = "user_count"
         key2 = "successful_auth"
-        MonitoringStats(datetime.now(), key1, 15)
-        MonitoringStats(datetime.now(), key1, 21)
-        MonitoringStats(datetime.now(), key2, 123)
+        utcnow = datetime.utcnow()
+        MonitoringStats(utcnow - timedelta(seconds=1), key1, 15)
+        MonitoringStats(utcnow, key1, 21)
+        MonitoringStats(utcnow, key2, 123)
 
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 2)
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 1)
