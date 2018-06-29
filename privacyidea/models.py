@@ -125,6 +125,7 @@ class Token(MethodsMixin, db.Model):
     to the tokentype.
     """
     __tablename__ = 'token'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("token_seq"),
                    primary_key=True,
                    nullable=False)
@@ -631,7 +632,8 @@ class TokenInfo(MethodsMixin, db.Model):
                             backref='info_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'Key',
-                                          name='tiix_2'), {})
+                                          name='tiix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, token_id, Key, Value,
                  Type= None,
@@ -683,6 +685,7 @@ class Admin(db.Model):
     :type email: basestring
     """
     __tablename__ = "admin"
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     username = db.Column(db.Unicode(120),
                          primary_key=True,
                          nullable=False)
@@ -722,6 +725,7 @@ class Config(TimestampMethodsMixin, db.Model):
     stored in specific tables.
     """
     __tablename__ = "config"
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     Key = db.Column(db.Unicode(255),
                     primary_key=True,
                     nullable=False)
@@ -760,6 +764,7 @@ class Realm(TimestampMethodsMixin, db.Model):
     the realms. The linking to resolvers is stored in the table "resolverrealm".
     """
     __tablename__ = 'realm'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("realm_seq"), primary_key=True,
                    nullable=False)
     name = db.Column(db.Unicode(255), default=u'',
@@ -795,6 +800,7 @@ class CAConnector(MethodsMixin, db.Model):
     stored in the table "caconnectorconfig".
     """
     __tablename__ = 'caconnector'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("caconnector_seq"), primary_key=True,
                    nullable=False)
     name = db.Column(db.Unicode(255), default=u"",
@@ -844,7 +850,8 @@ class CAConnectorConfig(db.Model):
                             backref='config_list')
     __table_args__ = (db.UniqueConstraint('caconnector_id',
                                           'Key',
-                                          name='ccix_2'), {})
+                                          name='ccix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, caconnector_id=None,
                  Key=None, Value=None,
@@ -890,6 +897,7 @@ class Resolver(TimestampMethodsMixin, db.Model):
     configuration of the resolvers is stored in the table "resolverconfig".
     """
     __tablename__ = 'resolver'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("resolver_seq"), primary_key=True,
                    nullable=False)
     name = db.Column(db.Unicode(255), default=u"",
@@ -939,8 +947,9 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                            backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
-                                          name='rcix_2'), {})
-    
+                                          name='rcix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
     def __init__(self, resolver_id=None,
                  Key=None, Value=None,
                  resolver=None,
@@ -1003,8 +1012,9 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                             backref="resolver_list")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
-                                          name='rrix_2'), {})
-    
+                                          name='rrix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
     def __init__(self, resolver_id=None, realm_id=None,
                  resolver_name=None,
                  realm_name=None,
@@ -1048,8 +1058,9 @@ class TokenRealm(MethodsMixin, db.Model):
                             backref='token_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'realm_id',
-                                          name='trix_2'), {})
-                                      
+                                          name='trix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
     def __init__(self, realm_id=0, token_id=0, realmname=None):
         """
         Create a new TokenRealm entry.
@@ -1095,6 +1106,7 @@ class PasswordReset(MethodsMixin, db.Model):
     Optional: The email to which the recoverycode was sent, can be stored.
     """
     __tablename__ = "passwordreset"
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer(), Sequence("pwreset_seq"), primary_key=True,
                    nullable=False)
     recoverycode = db.Column(db.Unicode(255), nullable=False)
@@ -1124,6 +1136,7 @@ class Challenge(MethodsMixin, db.Model):
     Table for handling of the generic challenges.
     """
     __tablename__ = "challenge"
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer(), Sequence("challenge_seq"), primary_key=True,
                    nullable=False)
     transaction_id = db.Column(db.Unicode(64), nullable=False, index=True)
@@ -1275,6 +1288,7 @@ class Policy(TimestampMethodsMixin, db.Model):
      * user actions
     """
     __tablename__ = "policy"
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("policy_seq"), primary_key=True)
     active = db.Column(db.Boolean, default=True)
     check_all_resolvers = db.Column(db.Boolean, default=False)
@@ -1379,6 +1393,7 @@ class MachineToken(MethodsMixin, db.Model):
     This can be an n:m mapping.
     """
     __tablename__ = 'machinetoken'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer(), Sequence("machinetoken_seq"),
                    primary_key=True, nullable=False)
     token_id = db.Column(db.Integer(),
@@ -1479,6 +1494,7 @@ class MachineTokenOptions(db.Model):
     options.
     """
     __tablename__ = 'machinetokenoptions'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer(), Sequence("machtokenopt_seq"),
                    primary_key=True, nullable=False)
     machinetoken_id = db.Column(db.Integer(),
@@ -1549,6 +1565,7 @@ class EventHandler(MethodsMixin, db.Model):
     condition and action.
     """
     __tablename__ = 'eventhandler'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("eventhandler_seq"), primary_key=True,
                    nullable=False)
     # in fact the name is a description
@@ -1676,7 +1693,8 @@ class EventHandlerCondition(db.Model):
                             backref='condition_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
-                                          name='ehcix_1'), {})
+                                          name='ehcix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, eventhandler_id, Key, Value, comparator="equal"):
         self.eventhandler_id = eventhandler_id
@@ -1723,7 +1741,8 @@ class EventHandlerOption(db.Model):
                             backref='option_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
-                                          name='ehoix_1'), {})
+                                          name='ehoix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, eventhandler_id, Key, Value, Type="", Description=""):
         self.eventhandler_id = eventhandler_id
@@ -1763,6 +1782,7 @@ class MachineResolver(MethodsMixin, db.Model):
     its config
     """
     __tablename__ = 'machineresolver'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("machineresolver_seq"),
                    primary_key=True, nullable=False)
     name = db.Column(db.Unicode(255), default=u"",
@@ -1807,7 +1827,8 @@ class MachineResolverConfig(db.Model):
                            backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
-                                          name='mrcix_2'), {})
+                                          name='mrcix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, resolver_id=None, Key=None, Value=None, resolver=None,
                  Type="", Description=""):
@@ -1910,6 +1931,7 @@ class SMSGateway(MethodsMixin, db.Model):
     All options and parameters are saved in other tables.
     """
     __tablename__ = 'smsgateway'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("smsgateway_seq"), primary_key=True)
     identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
     description = db.Column(db.Unicode(1024), default=u"")
@@ -2014,7 +2036,8 @@ class SMSGatewayOption(MethodsMixin, db.Model):
                             backref='ref_option_list')
     __table_args__ = (db.UniqueConstraint('gateway_id',
                                           'Key',
-                                          name='sgix_1'), {})
+                                          name='sgix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, gateway_id, Key, Value, Type=None):
 
@@ -2052,6 +2075,7 @@ class PrivacyIDEAServer(MethodsMixin, db.Model):
     This table can store remote privacyIDEA server definitions
     """
     __tablename__ = 'privacyideaserver'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("privacyideaserver_seq"),
                    primary_key=True)
     # This is a name to refer to
@@ -2101,6 +2125,7 @@ class RADIUSServer(MethodsMixin, db.Model):
     radius passthru policy.
     """
     __tablename__ = 'radiusserver'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("radiusserver_seq"), primary_key=True)
     # This is a name to refer to
     identifier = db.Column(db.Unicode(255), nullable=False, unique=True)
@@ -2158,6 +2183,7 @@ class SMTPServer(MethodsMixin, db.Model):
     The config entries are referenced by the id of the machine resolver
     """
     __tablename__ = 'smtpserver'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("smtpserver_seq"),primary_key=True)
     # This is a name to refer to
     identifier = db.Column(db.Unicode(255), nullable=False)
@@ -2217,7 +2243,8 @@ class ClientApplication(MethodsMixin, db.Model):
     lastseen = db.Column(db.DateTime)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
-                                          name='caix'), {})
+                                          name='caix'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def save(self):
         clientapp = ClientApplication.query.filter(
@@ -2250,6 +2277,7 @@ class Subscription(MethodsMixin, db.Model):
     This table stores the imported subscription files.
     """
     __tablename__ = 'subscription'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("subscription_seq"), primary_key=True)
     application = db.Column(db.Unicode(80), index=True)
     for_name = db.Column(db.Unicode(80), nullable=False)
@@ -2309,6 +2337,7 @@ class EventCounter(db.Model):
     This table stores counters of the event handler "Counter".
     """
     __tablename__ = 'eventcounter'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
     counter_value = db.Column(db.Integer, default=0)
 
@@ -2382,6 +2411,7 @@ class Audit(MethodsMixin, db.Model):
     This class stores the Audit entries
     """
     __tablename__ = AUDIT_TABLE_NAME
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
     signature = db.Column(db.String(audit_column_length.get("signature")))
@@ -2437,10 +2467,12 @@ class Audit(MethodsMixin, db.Model):
         self.loglevel = convert_column_to_unicode(loglevel)
         self.clearance_level = convert_column_to_unicode(clearance_level)
 
+
 ### User Cache
 
 class UserCache(MethodsMixin, db.Model):
     __tablename__ = 'usercache'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'')
@@ -2456,6 +2488,7 @@ class UserCache(MethodsMixin, db.Model):
 
 class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
     first_auth = db.Column(db.DateTime)
     last_auth = db.Column(db.DateTime)
@@ -2477,6 +2510,7 @@ class AuthCache(MethodsMixin, db.Model):
         self.first_auth = first_auth
         self.last_auth = last_auth
 
+
 ### Periodic Tasks
 
 class PeriodicTask(MethodsMixin, db.Model):
@@ -2484,6 +2518,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     This class stores tasks that should be run periodically.
     """
     __tablename__ = 'periodictask'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
@@ -2587,6 +2622,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         """
         PeriodicTaskLastRun(self.id, node, timestamp)
 
+
 class PeriodicTaskOption(db.Model):
     """
     Each PeriodicTask entry can have additional options according to the
@@ -2601,7 +2637,8 @@ class PeriodicTaskOption(db.Model):
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'key',
-                                          name='ptoix_1'), {})
+                                          name='ptoix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, periodictask_id, key, value):
         self.periodictask_id = periodictask_id
@@ -2630,6 +2667,7 @@ class PeriodicTaskOption(db.Model):
         db.session.commit()
         return ret
 
+
 class PeriodicTaskLastRun(db.Model):
     """
     Each PeriodicTask entry stores, for each node, the timestamp of the last successful run.
@@ -2643,7 +2681,8 @@ class PeriodicTaskLastRun(db.Model):
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'node',
-                                          name='ptlrix_1'), {})
+                                          name='ptlrix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, periodictask_id, node, timestamp):
         """
