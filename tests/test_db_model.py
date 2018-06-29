@@ -17,6 +17,7 @@ from privacyidea.models import (Token,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
                                 PeriodicTaskOption, MonitoringStats)
 from .base import MyTestCase
+from dateutil.tz import tzutc
 from datetime import datetime
 from datetime import timedelta
 
@@ -787,8 +788,8 @@ class TokenModelTestCase(MyTestCase):
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
-                                 "localhost": datetime(2018, 3, 4, 5, 6, 7),
-                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12),
+                                 "localhost": datetime(2018, 3, 4, 5, 6, 7, tzinfo=tzutc()),
+                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
                              }
                          })
         # assert all old options are removed
@@ -807,8 +808,8 @@ class TokenModelTestCase(MyTestCase):
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
-                                 "localhost": datetime(2018, 3, 4, 5, 6, 8),
-                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12),
+                                 "localhost": datetime(2018, 3, 4, 5, 6, 8, tzinfo=tzutc()),
+                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
                              }
                          })
 
@@ -816,6 +817,11 @@ class TokenModelTestCase(MyTestCase):
         PeriodicTask("task one", True, "0 8 * * *", ["otherhost"], "some.module", {"foo": "bar"}, id=task1.id)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id).count(), 1)
         self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().node, "otherhost")
+        # naive timestamp in the database
+        self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().timestamp,
+                         datetime(2018, 8, 9, 10, 11, 12, tzinfo=None))
+        self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().aware_timestamp,
+                         datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()))
 
         # remove the tasks, everything is removed
         task1.delete()
