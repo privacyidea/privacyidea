@@ -32,6 +32,12 @@ a certain run. This is set in the tokeninfo.
 MIGRATION_RUN = "1st run"
 
 """
+Only migrate tokens with a LinOtpTokenId equal or higher
+than the TOKEN_ID_MIN. If set to None, we migrate all tokens
+"""
+TOKEN_ID_MIN = None
+
+"""
 Define, what should be migrated:
 
 "tokens" should always be True.
@@ -271,6 +277,8 @@ def migrate():
 
         i = 0
         for r in result:
+            if TOKEN_ID_MIN and r["LinOtpTokenId"] < TOKEN_ID_MIN:
+                continue
             i = i + 1
             print("processing token #{1!s}: {0!s}".format(r["LinOtpTokenSerialnumber"], i))
             # Adapt type
