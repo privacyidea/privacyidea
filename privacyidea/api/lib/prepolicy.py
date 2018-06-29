@@ -614,6 +614,7 @@ def twostep_enrollment_parameters(request=None, action=None):
             if action_values:
                 request.all_data[parameter] = action_values[0]
 
+
 def check_max_token_user(request=None, action=None):
     """
     Pre Policy
@@ -642,7 +643,7 @@ def check_max_token_user(request=None, action=None):
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object)
             already_assigned_tokens = len(tokenobject_list)
-            if already_assigned_tokens >= int(max(limit_list)):
+            if already_assigned_tokens >= max([int(x) for x in limit_list]):
                 raise PolicyError(ERROR)
     return True
 
@@ -679,10 +680,10 @@ def check_max_token_realm(request=None, action=None):
                                                      realm=realm,
                                                      client=g.client_ip)
         if limit_list:
-            # we need to check how many tokens the user already has assigned!
+            # we need to check how many tokens the realm already has assigned!
             tokenobject_list = get_tokens(realm=realm)
             already_assigned_tokens = len(tokenobject_list)
-            if already_assigned_tokens >= int(max(limit_list)):
+            if already_assigned_tokens >= max([int(x) for x in limit_list]):
                 raise PolicyError(ERROR)
     return True
 

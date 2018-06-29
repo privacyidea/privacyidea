@@ -296,6 +296,17 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
+        # Now we set another policy for the user max_token = 12.
+        # This way, the user should be allowed to enroll tokens again, since there
+        # are two policies matching for the user and the maximum is 12.
+        set_policy(name="pol_max_12",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 12))
+        g.policy_object = PolicyClass()
+        # new check_max_token_user should not raise an error!
+        self.assertTrue(check_max_token_user(req))
+        delete_policy("pol_max_12")
+        g.policy_object = PolicyClass()
 
         # The check for a token, that has no username in it, must not
         # succeed. I.e. in the realm new tokens must be enrollable.
