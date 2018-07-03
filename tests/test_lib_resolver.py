@@ -138,7 +138,6 @@ class SQLResolverTestCase(MyTestCase):
                   'Database': "testuser.sqlite",
                   'Table': 'users',
                   'Encoding': 'utf8',
-                  'Passwort_Hash_Type': "SSHA",
                   'Map': '{ "username": "username", \
                     "userid" : "id", \
                     "email" : "email", \
@@ -265,6 +264,7 @@ class SQLResolverTestCase(MyTestCase):
 
     def test_05_add_user_update_delete(self):
         y = SQLResolver()
+        # This has no password hash type set at all
         y.loadConfig(self.parameters)
         uid = y.add_user({"username":"achmed",
                           "email": "achmed@world.net",
