@@ -348,7 +348,7 @@ class IdResolver (UserIdResolver):
         self.password = config.get('Password', "")
         self.table = config.get('Table', "")
         self._editable = config.get("Editable", False)
-        self.password_hash_type = config.get("Password_Hash_Type")
+        self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
         usermap = config.get('Map', {})
         self.map = yaml.safe_load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
@@ -505,37 +505,31 @@ class IdResolver (UserIdResolver):
         determine the way how to create the UID.
         """
         attributes = attributes or {}
-        if "password" in attributes and self.password_hash_type:
-            attributes["password"] = hash_password(attributes["password"],
-                                                   self.password_hash_type)
-
-        kwargs = self._attributes_to_db_columns(attributes)
+        kwargs = self.prepare_attributes_for_db(attributes)
         log.debug("Insert new user with attributes {0!s}".format(kwargs))
         r = self.TABLE.insert(**kwargs)
         self.db.commit()
         # Return the UID of the new object
         return getattr(r, self.map.get("userid"))
 
-    def _attributes_to_db_columns(self, attributes):
+    def prepare_attributes_for_db(self, attributes):
         """
-        takes the attributes and maps them to the DB columns
-        :param attributes:
-        :return: dict with column name as keys and values
+        Given a dictionary of attributes, return a dictionary
+        mapping columns to values.
+        If the attributes contain a password, hash the password according to the
+        configured password hash type.
+
+        :param attributes: attributes dictionary
+        :return: dictionary with column name as keys
         """
+        attributes = attributes.copy()
+        if "password" in attributes:
+            attributes["password"] = hash_password(attributes["password"],
+                                                   self.password_hash_type)
         columns = {}
-        for fieldname in attributes.keys():
-            if self.map.get(fieldname):
-                if fieldname == "password":
-                    password = attributes.get(fieldname)
-                    # Create a {SSHA256} password
-                    salt = geturandom(16)
-                    hr = hashlib.sha256(password)
-                    hr.update(salt)
-                    hash_bin = hr.digest()
-                    hash_b64 = b64encode(hash_bin + salt)
-                    columns[self.map.get(fieldname)] = "{SSHA256}" + hash_b64
-                else:
-                    columns[self.map.get(fieldname)] = attributes.get(fieldname)
+        for fieldname in attributes:
+            if fieldname in self.map:
+                columns[self.map[fieldname]] = attributes[fieldname]
         return columns
 
     def delete_user(self, uid):
@@ -582,7 +576,7 @@ class IdResolver (UserIdResolver):
         :return: True in case of success
         """
         attributes = attributes or {}
-        params = self._attributes_to_db_columns(attributes)
+        params = self.prepare_attributes_for_db(attributes)
         kwargs = {self.map.get("userid"): uid}
         r = self.TABLE.filter_by(**kwargs).update(params)
         self.db.commit()
