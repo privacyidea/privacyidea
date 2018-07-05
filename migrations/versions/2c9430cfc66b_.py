@@ -24,7 +24,8 @@ def upgrade():
         sa.Column('nodes', sa.Unicode(length=256), nullable=False),
         sa.Column('taskmodule', sa.Unicode(length=256), nullable=False),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('name')
+        sa.UniqueConstraint('name'),
+        mysql_row_format='DYNAMIC'
         )
         op.create_table('periodictasklastrun',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -33,7 +34,8 @@ def upgrade():
         sa.Column('timestamp', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['periodictask_id'], ['periodictask.id'], ),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('periodictask_id', 'node', name='ptlrix_1')
+        sa.UniqueConstraint('periodictask_id', 'node', name='ptlrix_1'),
+        mysql_row_format='DYNAMIC'
         )
         op.create_table('periodictaskoption',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -42,7 +44,8 @@ def upgrade():
         sa.Column('value', sa.Unicode(length=2000), nullable=True),
         sa.ForeignKeyConstraint(['periodictask_id'], ['periodictask.id'], ),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('periodictask_id', 'key', name='ptoix_1')
+        sa.UniqueConstraint('periodictask_id', 'key', name='ptoix_1'),
+        mysql_row_format='DYNAMIC'
         )
     except Exception, exx:
         print "Could not add tables for periodic tasks!"
