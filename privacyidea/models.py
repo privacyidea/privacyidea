@@ -2486,6 +2486,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     This class stores tasks that should be run periodically.
     """
     __tablename__ = 'periodictask'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
@@ -2604,7 +2605,8 @@ class PeriodicTaskOption(db.Model):
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'key',
-                                          name='ptoix_1'), {})
+                                          name='ptoix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, periodictask_id, key, value):
         self.periodictask_id = periodictask_id
@@ -2646,7 +2648,8 @@ class PeriodicTaskLastRun(db.Model):
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'node',
-                                          name='ptlrix_1'), {})
+                                          name='ptlrix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, periodictask_id, node, timestamp):
         """
