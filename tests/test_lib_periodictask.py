@@ -299,6 +299,10 @@ class BasePeriodicTaskTestCase(MyTestCase):
 
         set_periodic_task_last_run(task4, "pinode2", parse_timestamp("2017-08-01 00:00:43+03:00"))
 
+        # Invalid timestamp
+        with self.assertRaises(ParameterError):
+            get_scheduled_periodic_tasks("pinode1", parse_timestamp("2017-08-01 00:00:00"), tzinfo)
+
         # On pinode1:
         # task1 at midnight on each 1st
         # task3 every 30 minutes on tuesdays

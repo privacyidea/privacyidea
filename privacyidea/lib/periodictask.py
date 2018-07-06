@@ -167,6 +167,8 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
     active_ptasks = get_periodic_tasks(node=node, active=True)
     if current_timestamp is None:
         current_timestamp = datetime.now(tzutc())
+    if current_timestamp.tzinfo is None:
+        raise ParameterError(u"expected timezone-aware datetime, got {!r}".format(current_timestamp))
     scheduled_ptasks = []
     log.debug(u"Collecting periodic tasks to run at {!s}".format(current_timestamp.isoformat()))
     for ptask in active_ptasks:
