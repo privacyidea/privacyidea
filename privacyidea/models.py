@@ -2735,7 +2735,8 @@ class MonitoringStats(MethodsMixin, db.Model):
 
     __table_args__ = (db.UniqueConstraint('timestamp',
                                           'stats_key',
-                                          name='msix_1'), {})
+                                          name='msix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, timestamp, key, value):
         """

@@ -22,7 +22,8 @@ def upgrade():
         sa.Column('stats_key', sa.Unicode(length=128), nullable=False),
         sa.Column('stats_value', sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('timestamp', 'stats_key', name='msix_1')
+        sa.UniqueConstraint('timestamp', 'stats_key', name='msix_1'),
+        mysql_row_format='DYNAMIC'
         )
     except Exception, exx:
         print "Could not add table for monitoring stats!"
