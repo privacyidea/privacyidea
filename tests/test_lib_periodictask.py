@@ -250,13 +250,16 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "key2": False
         })
         self.assertEqual(len(PeriodicTask.query.all()), 1)
+        task1_entry = PeriodicTask.query.filter_by(id=task1_id).one()
+
+        # We already have the initial last runs
+        self.assertEqual(len(list(task1_entry.last_runs)), 2)
+
         set_periodic_task_last_run(task1_id, "pinode1", parse_timestamp("2018-06-26 08:00+02:00"))
         set_periodic_task_last_run(task1_id, "pinode1", parse_timestamp("2018-06-26 08:05+02:00"))
 
-        task1_entry = PeriodicTask.query.filter_by(id=task1_id).one()
-
         task1 = get_periodic_tasks("task one")[0]
-        self.assertEqual(len(list(task1_entry.last_runs)), 1)
+        self.assertEqual(len(list(task1_entry.last_runs)), 2)
         self.assertEqual(task1_entry.last_runs[0].timestamp,
                          parse_timestamp("2018-06-26 06:05"))
         self.assertEqual(task1["last_runs"]["pinode1"],
@@ -295,11 +298,6 @@ class BasePeriodicTaskTestCase(MyTestCase):
         })
         # on each 1st of august at midnight
         task4 = set_periodic_task("task four", "0 0 1 8 *", ["pinode2"], "some.task.module")
-        # with invalid interval
-        task5 = set_periodic_task("task five", "obviously invalid", ["pinode1", "pinode2"], "some.task.module", {
-            "key1": 1234,
-            "key2": 5678,
-        })
 
         # we need some last runs
         set_periodic_task_last_run(task1, "pinode1", parse_timestamp("2018-06-01 00:00:05+03:00"))
@@ -383,7 +381,6 @@ class BasePeriodicTaskTestCase(MyTestCase):
         delete_periodic_task(task2)
         delete_periodic_task(task3)
         delete_periodic_task(task4)
-        delete_periodic_task(task5)
 
     def test_06_execute_task(self):
         assertEqual = self.assertEqual

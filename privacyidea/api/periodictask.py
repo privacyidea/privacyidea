@@ -16,8 +16,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
-from privacyidea.lib.policy import ACTION
 
 __doc__ = """These endpoints are used to create, modify and delete
 periodic tasks.
@@ -29,8 +27,10 @@ import logging
 
 from flask import Blueprint, g, request
 
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.policy import ACTION
 from privacyidea.lib.log import log_with
 from privacyidea.lib.periodictask import get_periodic_tasks, set_periodic_task, delete_periodic_task, \
     enable_periodic_task
