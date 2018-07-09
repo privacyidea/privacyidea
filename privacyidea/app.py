@@ -47,6 +47,7 @@ from privacyidea.api.machine import machine_blueprint
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.smtpserver import smtpserver_blueprint
 from privacyidea.api.radiusserver import radiusserver_blueprint
+from privacyidea.api.periodictask import periodictask_blueprint
 from privacyidea.api.privacyideaserver import privacyideaserver_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.event import eventhandling_blueprint
@@ -158,6 +159,7 @@ def create_app(config_name="development",
     app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
     app.register_blueprint(recover_blueprint, url_prefix='/recover')
     app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
+    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
     app.register_blueprint(privacyideaserver_blueprint,
                            url_prefix='/privacyideaserver')
     app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
