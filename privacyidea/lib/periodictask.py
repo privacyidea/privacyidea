@@ -67,9 +67,12 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
 def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=True, id=None):
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
+    In that case, an initial "last run" is also added.
     Otherwise, an existing entry is overwritten.
+
     This also checks if ``interval`` is a valid cron expression, and throws
     a ``ParameterError`` if it is not.
+
     :param name: Unique name of the periodic task
     :type name: unicode
     :param interval: Periodicity as a string in crontab format
@@ -91,6 +94,12 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
     except ValueError as e:
         raise ParameterError("Invalid interval: {!s}".format(e))
     periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, options, id)
+    # If this is a new task, we actually need to add a "last" run already
+    # to "kick off" the scheduling.
+    if id is None:
+        timestamp = datetime.now(tzutc())
+        for node in nodes:
+            set_periodic_task_last_run(periodic_task.id, node, timestamp)
     return periodic_task.id
 
 
