@@ -51,6 +51,7 @@ from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
 from .radiusserver import radiusserver_blueprint
+from .periodictask import periodictask_blueprint
 from .privacyideaserver import privacyideaserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
@@ -89,6 +90,7 @@ def before_user_request():
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
 @eventhandling_blueprint.before_request
+@periodictask_blueprint.before_request
 @smsgateway_blueprint.before_request
 @client_blueprint.before_request
 @subscriptions_blueprint.before_request
@@ -198,6 +200,7 @@ def before_request():
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
 @radiusserver_blueprint.after_request
+@periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request

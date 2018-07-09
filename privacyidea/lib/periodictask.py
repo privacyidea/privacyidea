@@ -16,6 +16,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+
 __doc__ = """This module provides functions to manage periodic tasks in the database,
 to determine their next scheduled running time and to run them."""
 
@@ -26,9 +27,14 @@ from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
 from privacyidea.lib.error import ServerError, ParameterError
+from privacyidea.lib.task.hello import HelloTask
 from privacyidea.models import PeriodicTask
 
 log = logging.getLogger(__name__)
+
+TASK_CLASSES = [HelloTask]
+#: TASK_MODULES maps task module identifiers to subclasses of BaseTask
+TASK_MODULES = dict((cls.identifier, cls) for cls in TASK_CLASSES)
 
 
 def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
@@ -62,6 +68,8 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
     Otherwise, an existing entry is overwritten.
+    This also checks if ``interval`` is a valid cron expression, and throws
+    a ``ParameterError`` if it is not.
     :param name: Unique name of the periodic task
     :type name: unicode
     :param interval: Periodicity as a string in crontab format
@@ -78,6 +86,10 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
     :type id: int or None
     :return: ID of the entry
     """
+    try:
+        croniter(interval)
+    except ValueError as e:
+        raise ParameterError("Invalid interval: {!s}".format(e))
     periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, options, id)
     return periodic_task.id
 
@@ -134,6 +146,18 @@ def get_periodic_tasks(name=None, node=None, active=None):
     return result
 
 
+def get_periodic_task(name):
+    """
+    Get a periodic task by name. Raise ParameterError if the task could not be found.
+    :param name: task name, unicode
+    :return: dictionary
+    """
+    periodic_tasks = get_periodic_tasks(name)
+    if len(periodic_tasks) != 1:
+        raise ParameterError("The periodic task with unique name {!r} does not exist".format(name))
+    return periodic_tasks[0]
+
+
 def set_periodic_task_last_run(ptask_id, node, last_run_timestamp):
     """
     Write to the database the information that the specified
@@ -184,3 +208,17 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
         except Exception as e:
             log.warning(u"Ignoring periodic task {!r}: {!r}".format(ptask["name"], e))
     return scheduled_ptasks
+
+
+def execute_task(taskmodule, params):
+    """
+    Given a task module name, run the task with the given parameters.
+    :param taskmodule: unicode determining the task module
+    :param params: dictionary mapping task option keys (unicodes) to unicodes (or None)
+    :return: boolean returned by the task
+    """
+    if taskmodule not in TASK_MODULES:
+        raise ParameterError("Unknown task module: {!r}".format(taskmodule))
+    cls = TASK_MODULES[taskmodule]
+    module = cls()
+    return module.do(params)

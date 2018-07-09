@@ -293,6 +293,7 @@ class ACTION(object):
     PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
+    PERIODICTASKWRITE = "periodictask_write"
     SMSGATEWAYWRITE = "smsgateway_write"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
@@ -1326,6 +1327,11 @@ def get_static_policy_definitions(scope=None):
                                                       "write remote "
                                                       "privacyIDEA server "
                                                       "definitions."),
+                                            'mainmenu': [MAIN_MENU.CONFIG],
+                                            'group': GROUP.SYSTEM},
+            ACTION.PERIODICTASKWRITE: {'type': 'bool',
+                                       'desc': _("Admin is allowed to write "
+                                                 "periodic task definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
