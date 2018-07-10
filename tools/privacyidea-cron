@@ -31,7 +31,7 @@ import dateutil
 from flask_script import Manager
 
 from privacyidea.app import create_app
-from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, get_periodic_task, \
+from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, get_periodic_task_by_name, \
     execute_task
 from privacyidea.lib.error import ParameterError
 
@@ -91,7 +91,7 @@ def run_manually(node_string, task_name):
     run on the given node at all.
     """
     node = get_node_name(node_string)
-    ptask = get_periodic_task(task_name)
+    ptask = get_periodic_task_by_name(task_name)
     run_task_on_node(ptask, node)
 
 

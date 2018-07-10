@@ -13,7 +13,7 @@ from mock import mock
 from privacyidea.lib.error import ServerError, ParameterError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
-    get_periodic_task, TASK_MODULES, execute_task
+    get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id
 from privacyidea.lib.task.base import BaseTask
 from privacyidea.models import PeriodicTask
 from .base import MyTestCase
@@ -182,9 +182,13 @@ class BasePeriodicTaskTestCase(MyTestCase):
                 "key1": 1234,
                 "key2": 5678,
             })
-        self.assertEqual(get_periodic_task("task three")["id"], task3)
+        self.assertEqual(get_periodic_task_by_name("task three")["id"], task3)
         with self.assertRaises(ParameterError):
-            get_periodic_task("task does not exist")
+            get_periodic_task_by_name("task does not exist")
+
+        self.assertEqual(get_periodic_task_by_id(task3)["name"], "task three")
+        with self.assertRaises(ParameterError):
+            get_periodic_task_by_id(1337)
 
         self.assertEqual(len(PeriodicTask.query.all()), 3)
 

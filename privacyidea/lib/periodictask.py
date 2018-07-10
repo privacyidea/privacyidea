@@ -37,6 +37,26 @@ TASK_CLASSES = [HelloTask]
 TASK_MODULES = dict((cls.identifier, cls) for cls in TASK_CLASSES)
 
 
+def get_available_taskmodules():
+    """
+    Return a list of all available task module identifiers.
+    :return: a list of strings
+    """
+    return list(TASK_MODULES.keys())
+
+
+def get_taskmodule(identifier):
+    """
+    Return an instance of the given task module. Raise ParameterError if it does not exist.
+    :param identifier: identifier of the task module
+    :return: instance of a BaseTask subclass
+    """
+    if identifier not in TASK_MODULES:
+        raise ParameterError(u"Unknown task module: {!r}".format(identifier))
+    else:
+        return TASK_MODULES[identifier]()
+
+
 def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     """
     Calculate the timestamp of the next scheduled run of task ``ptask`` on node ``node``.
@@ -109,9 +129,7 @@ def delete_periodic_task(ptask_id):
     :param ptask_id: ID of the database entry
     :return: ID of the deleted entry
     """
-    periodic_task = PeriodicTask.query.filter_by(id=ptask_id).first()
-    if periodic_task is None:
-        raise ParameterError("The periodic task with id {!r} does not exist".format(ptask_id))
+    periodic_task = _get_periodic_task_entry(ptask_id)
     return periodic_task.delete()
 
 
@@ -123,9 +141,7 @@ def enable_periodic_task(ptask_id, enable=True):
     :param enable: New value of the ``active`` flag
     :return: ID of the database entry
     """
-    periodic_task = PeriodicTask.query.filter_by(id=ptask_id).first()
-    if periodic_task is None:
-        raise ParameterError("The periodic task with id {!r} does not exist".format(ptask_id))
+    periodic_task = _get_periodic_task_entry(ptask_id)
     periodic_task.active = enable
     return periodic_task.save()
 
@@ -155,7 +171,7 @@ def get_periodic_tasks(name=None, node=None, active=None):
     return result
 
 
-def get_periodic_task(name):
+def get_periodic_task_by_name(name):
     """
     Get a periodic task by name. Raise ParameterError if the task could not be found.
     :param name: task name, unicode
@@ -165,6 +181,29 @@ def get_periodic_task(name):
     if len(periodic_tasks) != 1:
         raise ParameterError("The periodic task with unique name {!r} does not exist".format(name))
     return periodic_tasks[0]
+
+
+def get_periodic_task_by_id(ptask_id):
+    """
+    Get a periodic task entry by ID and return it as a dictionary.
+    Raise ParameterError if the task could not be found.
+    :param ptask_id: task ID as integer
+    :return: dictionary
+    """
+    return _get_periodic_task_entry(ptask_id).get()
+
+
+def _get_periodic_task_entry(ptask_id):
+    """
+    Get a periodic task entry by ID. Raise ParameterError if the task could not be found.
+    This is only for internal use.
+    :param id: task ID as integer
+    :return: PeriodicTask object
+    """
+    periodic_task = PeriodicTask.query.filter_by(id=ptask_id).first()
+    if periodic_task is None:
+        raise ParameterError("The periodic task with id {!r} does not exist".format(ptask_id))
+    return periodic_task
 
 
 def set_periodic_task_last_run(ptask_id, node, last_run_timestamp):
@@ -178,9 +217,7 @@ def set_periodic_task_last_run(ptask_id, node, last_run_timestamp):
     :param last_run_timestamp: Timestamp of the last run
     :type last_run_timestamp: timezone-aware datetime object
     """
-    periodic_task = PeriodicTask.query.filter_by(id=ptask_id).first()
-    if periodic_task is None:
-        raise ParameterError("The periodic task with id {!r} does not exist".format(ptask_id))
+    periodic_task = _get_periodic_task_entry(ptask_id)
     utc_last_run = last_run_timestamp.astimezone(tzutc()).replace(tzinfo=None)
     periodic_task.set_last_run(node, utc_last_run)
 
