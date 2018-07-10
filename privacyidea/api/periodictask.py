@@ -33,7 +33,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.log import log_with
 from privacyidea.lib.periodictask import get_periodic_tasks, set_periodic_task, delete_periodic_task, \
-    enable_periodic_task
+    enable_periodic_task, get_periodic_task_by_id, get_taskmodule, get_available_taskmodules
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -41,16 +41,63 @@ log = logging.getLogger(__name__)
 periodictask_blueprint = Blueprint('periodictask_blueprint', __name__)
 
 
+def convert_datetimes_to_string(ptask):
+    """
+    Convert the ``last_runs`` timestamps to ISO 8601 strings and return a copy of ``ptask``.
+    :param ptask: periodic task dictionary
+    :return: a new periodic task dictionary
+    """
+    ptask = ptask.copy()
+    ptask['last_runs'] = dict((node, timestamp.isoformat()) for node, timestamp in ptask['last_runs'].items())
+    return ptask
+
+
+@periodictask_blueprint.route('/taskmodules', methods=['GET'])
+@log_with(log)
+def list_taskmodules():
+    """
+    Return a list of task module identifiers.
+    """
+    taskmodules = get_available_taskmodules()
+    g.audit_object.log({"success": True})
+    return send_result(taskmodules)
+
+
+@periodictask_blueprint.route('/options/<taskmodule>', methods=['GET'])
+@log_with(log)
+def get_taskmodule_options(taskmodule):
+    """
+    Return the available options for the given taskmodule.
+    :param taskmodule: Identifier of the task module
+    :return: a dictionary mapping option keys to description dictionaries
+    """
+    options = get_taskmodule(taskmodule).options
+    g.audit_object.log({"success": True})
+    return send_result(options)
+
+
 @periodictask_blueprint.route('/', methods=['GET'])
 @log_with(log)
-def list_tasks():
+def list_periodic_tasks():
     """
     Return a list of objects of defined periodic tasks.
     """
-    tasks = get_periodic_tasks()
-    result = dict((task["name"], task) for task in tasks)
+    ptasks = get_periodic_tasks()
+    result = [convert_datetimes_to_string(ptask) for ptask in ptasks]
     g.audit_object.log({"success": True})
     return send_result(result)
+
+
+@periodictask_blueprint.route('/<ptaskid>', methods=['GET'])
+@log_with(log)
+def get_periodic_task_api(ptaskid):
+    """
+    Return the dictionary describing a periodic task.
+    :param ptaskid: ID of the periodic task
+    """
+    ptask = get_periodic_task_by_id(int(ptaskid))
+    g.audit_object.log({"success": True})
+    return send_result(convert_datetimes_to_string(ptask))
 
 
 @periodictask_blueprint.route('/', methods=['POST'])
@@ -66,7 +113,7 @@ def set_periodic_task_api():
     :param interval: Interval at which the periodic task should run (in cron syntax)
     :param nodes: Comma-separated list of nodes on which the periodic task should run
     :param taskmodule: Task module name of the task
-    :param options: A dictionary (possibly JSON) of periodic task options
+    :param options: A dictionary (possibly JSON) of periodic task options, mapping unicodes to unicodes
     :return: ID of the periodic task
     """
     param = request.all_data
@@ -79,6 +126,8 @@ def set_periodic_task_api():
     node_string = getParam(param, "nodes", optional=False)
     node_list = [node.strip() for node in node_string.split(",")]
     taskmodule = getParam(param, "taskmodule", optional=False)
+    if taskmodule not in get_available_taskmodules():
+        raise ParameterError("Unknown task module: {!r}".format(taskmodule))
     options = getParam(param, "options", optional=True)
     if options is None:
         options = {}
