@@ -272,7 +272,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None):
+               maxfail=None, limit=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -316,6 +316,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
+    :param limit: If set, this set an upper limit on the tokens returned
 
     :return: A list of tokenclasses (lib.tokenclass)
     :rtype: list
@@ -328,6 +329,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
                                     tokeninfo=tokeninfo, maxfail=maxfail)
+    if limit is not None:
+        sql_query = sql_query.limit(limit)
 
     # Decide, what we are supposed to return
     if count is True:
@@ -446,20 +449,23 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
 @log_with(log)
 def get_token_type(serial):
     """
-    Returns the tokentype of a given serial number
+    Returns the tokentype of a given serial number if a token can
+    be determined uniquely.
 
-    :param serial: the serial number of the to be searched token
+    :param serial: the serial number of the to be searched token (may contain a wildcard)
     :type serial: string
     :return: tokentype
     :rtype: string
     """
-    tokenobject_list = get_tokens(serial=serial)
+    # get at most two tokens. If we only get one token back, we
+    # have an exact match
+    tokenobject_list = get_tokens(serial=serial, limit=2)
 
-    tokentype = ""
-    for tokenobject in tokenobject_list:
-        tokentype = tokenobject.type
+    if len(tokenobject_list) == 1:
+        return tokenobject_list[0].type
+    else:
+        return ""
 
-    return tokentype
 
 @log_with(log)
 def check_serial(serial):

@@ -131,6 +131,12 @@ class TokenTestCase(MyTestCase):
         # get tokens of type TOTP
         tokenobject_list = get_tokens(tokentype="totp")
         self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        # get tokens of type TOTP with a limit
+        tokenobject_list = get_tokens(tokentype="totp", limit=1)
+        self.assertEqual(len(tokenobject_list), 1)
+        # get tokens of type TOTP with a limit
+        tokenobject_list = get_tokens(tokentype="totp", limit=2)
+        self.assertEqual(len(tokenobject_list), 2)
 
         # Search for tokens in realm
         db_token = Token("hotptoken",
@@ -176,6 +182,12 @@ class TokenTestCase(MyTestCase):
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
         self.assertTrue(ttype == "hotp", ttype)
+
+        # test correct behavior with wildcards
+        self.assertEqual(get_token_type("SE1"), "totp")
+        self.assertEqual(get_token_type("SE*"), "")
+        self.assertEqual(get_token_type("*1"), "totp")
+        self.assertEqual(get_token_type("hotptoke*"), "hotp")
 
     def test_04_check_serial(self):
         r, nserial = check_serial("hotptoken")
@@ -299,6 +311,9 @@ class TokenTestCase(MyTestCase):
     def test_15_init_token(self):
         count = get_tokens(count=True)
         self.assertTrue(count == 4, count)
+        # Tets with limit
+        count = get_tokens(count=True, limit=2)
+        self.assertEqual(count, 2)
         tokenobject = init_token({"serial": "NEW001", "type": "hotp",
                                   "otpkey": "1234567890123456"},
                                  user=User(login="cornelius",
