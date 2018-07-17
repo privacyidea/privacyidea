@@ -156,6 +156,9 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
     """
     Collect all periodic tasks that should be run on a specific node.
 
+    This function is usually called by the local cron runner which is aware of the
+    current local node name.
+
     :param node: Node name
     :type node: unicode
     :param current_timestamp: The current timestamp, defaults to the current time
