@@ -192,6 +192,10 @@ class BasePeriodicTaskTestCase(MyTestCase):
 
         self.assertEqual(len(PeriodicTask.query.all()), 3)
 
+        # Updating an nonexistent task fails
+        with self.assertRaises(ParameterError):
+            set_periodic_task("some task", "0 0 1 * *", ["pinode1"], "some.task.module", {}, id=123456)
+
         task1_modified = set_periodic_task("every month", "0 0 1 * *", ["pinode1"], "some.task.module", {
             "key1": 123,
             "key3": True,
