@@ -21,7 +21,7 @@ import sys
 
 __doc__ = """
 This script is meant to be invoked periodically by the system cron daemon.
-It runs periodic tasks specified in the 
+It runs periodic tasks that are specified in the database.
 """
 __version__ = "0.1"
 
@@ -63,17 +63,18 @@ def run_task_on_node(ptask, node):
     :param node: Node name
     """
     try:
+        print u"Running {!r} ...".format(ptask["name"]),
         result = execute_task(ptask["taskmodule"], ptask["options"])
     except Exception as e:
-        print 'Caught exception: {!r}'.format(e)
+        print u'Caught exception: {!r}'.format(e)
         result = False
     if result:
         current_time = datetime.now(dateutil.tz.tzlocal())
-        print 'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(ptask["name"], node)
+        print u'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(ptask["name"], node)
         set_periodic_task_last_run(ptask["id"], node, current_time)
     else:
-        print 'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node)
-        print 'This unsuccessful run is not recorded in the database.'
+        print u'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node)
+        print u'This unsuccessful run is not recorded in the database.'
     return result
 
 
@@ -117,7 +118,6 @@ def run_scheduled(node_string=None, dryrun=False):
         if not dryrun:
             results = []
             for ptask in scheduled_tasks:
-                print u"Running {!r} ...".format(ptask["name"])
                 result = run_task_on_node(ptask, node)
                 results.append(result)
             if all(results):
@@ -130,4 +130,5 @@ def run_scheduled(node_string=None, dryrun=False):
     else:
         print u"There are no tasks scheduled on node {!s}.".format(node)
 
-manager.run()
+if __name__ == '__main__':
+    manager.run()
