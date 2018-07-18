@@ -97,6 +97,7 @@ def run_manually(node_string, task_name):
 
 
 @manager.option("-d", "--dryrun",
+                action="store_true",
                 help="Do not run any tasks, only show what would be done")
 @manager.option("-n", "--node",
                 help="Override the node name (read from privacyIDEA config by default)",
