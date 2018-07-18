@@ -88,7 +88,8 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
     In that case, an initial "last run" is also added.
-    Otherwise, an existing entry is overwritten.
+    Otherwise, an existing entry is overwritten. We actually ensure that such
+    an entry exists and throw a ``ParameterError`` otherwise.
 
     This also checks if ``interval`` is a valid cron expression, and throws
     a ``ParameterError`` if it is not.
@@ -113,6 +114,9 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
         croniter(interval)
     except ValueError as e:
         raise ParameterError("Invalid interval: {!s}".format(e))
+    if id is not None:
+        # This will throw a ParameterError if there is no such entry
+        get_periodic_task_by_id(id)
     periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, options, id)
     # If this is a new task, we actually need to add a "last" run already
     # to "kick off" the scheduling.
