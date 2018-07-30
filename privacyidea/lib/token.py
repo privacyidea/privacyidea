@@ -453,7 +453,7 @@ def get_token_type(serial):
     :return: tokentype
     :rtype: string
     """
-    if "*" in serial:
+    if serial and "*" in serial:
         return None
 
     tokenobject_list = get_tokens(serial=serial)
