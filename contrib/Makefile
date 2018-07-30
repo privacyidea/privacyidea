@@ -31,6 +31,10 @@ CONTRIB8=pyasn1
 VERSION8=0.4.2
 URL8=https://files.pythonhosted.org/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz
 
+CONTRIB9=python-croniter
+VERSION9=0.3.24
+URL9=https://files.pythonhosted.org/packages/27/69/2426b76c3647d8cc959e88aadecfb7ad96cf2c40c0ea784b6bf43a844c73/croniter-0.3.24.tar.gz
+
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
 #series=trusty
@@ -50,6 +54,7 @@ ubuntu:
 	make flask-sqlalchemy
 	make pymysql
 	make pyasn1
+	make croniter
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -70,6 +75,16 @@ pyasn1:
 	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -sa -S)
 	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -b)
 	(cp $(CONTRIB8)/deb_dist/* DEBUILD || true)
+
+croniter:
+	mkdir -p $(CONTRIB9)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB9); curl $(URL9) -o croniter-$(VERSION9).tar.gz)
+	(cd $(CONTRIB9); py2dsc -m '$(ME)' croniter-$(VERSION9).tar.gz)
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); dch -v $(VERSION9)-1$(series)1 --distribution $(series) -M "build for privacyidea")
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); debuild -sa -S)
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); debuild -b)
+	(cp $(CONTRIB9)/deb_dist/* DEBUILD || true)
 
 pyjwt:
 	mkdir -p $(CONTRIB2)
@@ -146,6 +161,7 @@ ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev croniter_${VERSION9}-1${series}1_source.changes || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
@@ -154,6 +170,7 @@ ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pymysql_${VERSION5}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyasn1_${VERSION8}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea croniter_${VERSION9}-1${series}1_source.changes || true)
 
 	
 
@@ -166,5 +183,6 @@ clean:
 	rm -fr $(CONTRIB6)
 	rm -fr $(CONTRIB7)
 	rm -fr $(CONTRIB8)
+	rm -fr $(CONTRIB9)
 	rm -fr pymysql_sa
 	rm -fr DEBUILD
