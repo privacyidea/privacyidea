@@ -446,7 +446,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
 @log_with(log)
 def get_token_type(serial):
     """
-    Returns the tokentype of a given serial number
+    Returns the tokentype of a given serial number. If the token does
+    not exist or can not be deterimined, an empty string is returned.
 
     :param serial: the serial number of the to be searched token
     :type serial: string
@@ -454,7 +455,7 @@ def get_token_type(serial):
     :rtype: string
     """
     if serial and "*" in serial:
-        return None
+        return ""
 
     tokenobject_list = get_tokens(serial=serial)
 
