@@ -453,6 +453,9 @@ def get_token_type(serial):
     :return: tokentype
     :rtype: string
     """
+    if "*" in serial:
+        return None
+
     tokenobject_list = get_tokens(serial=serial)
 
     tokentype = ""
@@ -460,6 +463,7 @@ def get_token_type(serial):
         tokentype = tokenobject.type
 
     return tokentype
+
 
 @log_with(log)
 def check_serial(serial):
