@@ -55,6 +55,7 @@ from subprocess import call, Popen, PIPE
 from getpass import getpass
 import gnupg
 import yaml
+import contextlib
 
 import flask
 
@@ -80,6 +81,7 @@ from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
+from privacyidea.lib.audit import getAudit
 from Crypto.PublicKey import RSA
 import jwt
 import ast
@@ -98,6 +100,7 @@ policy_manager = Manager(usage='Manage policies')
 event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
+audit_manager = Manager(usage="Manage Audit log")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -107,6 +110,7 @@ manager.add_command('policy', policy_manager)
 manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
+manager.add_command('audit', audit_manager)
 
 
 @ca_manager.command
@@ -540,6 +544,7 @@ except TypeError:
 @manager.option('--config', help="Read config from the specified yaml file.")
 @manager.option('--dryrun', help="Do not actually delete, only show "
                                  "what would be done.", action="store_true")
+@audit_manager.command
 def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
                  dryrun=False):
     """
@@ -570,7 +575,6 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
     audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
     audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
-    actions = []
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
@@ -661,6 +665,37 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
                 r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
                 session.commit()
             print("{0!s} entries deleted.".format(r))
+
+
+@contextlib.contextmanager
+def smartopen(filename):
+    if filename and filename != '-':
+        fh = open(filename, 'w')
+    else:
+        fh = sys.stdout
+
+    try:
+        yield fh
+    finally:
+        if fh is not sys.stdout:
+            fh.close()
+
+
+@audit_manager.command
+def dump(filename):
+    """Dump the audit log into a csv file."""
+    default_module = "privacyidea.lib.auditmodules.sqlaudit"
+    token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
+    audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
+    if audit_module != default_module:
+        raise Exception("Currently only the SQL audit module is supported. You are using %s" %
+                        audit_module)
+
+    audit = getAudit(app.config)
+    with smartopen(filename) as fh:
+        for line in audit.csv_generator():
+            fh.write(line)
 
 
 @resolver_manager.command
