@@ -1,3 +1,9 @@
+Version 2.22.4, 2018-07-31
+
+  Fixes in Server:
+  * Fix the get_token_type to no issue an SQL request for token searches
+  * Optimize HSM aeshsm.py module
+
 Version 2.22.3, 2018-06-25
 
   Fixes in Server:
