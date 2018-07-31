@@ -225,7 +225,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
     def test_02_taskmodules(self):
         with self.mock_task_module() as taskmodule:
-            status_code, data = self.simulate_request('/periodictask/taskmodules', method='GET')
+            status_code, data = self.simulate_request('/periodictask/taskmodules/', method='GET')
             self.assertEqual(status_code, 200)
             self.assertTrue(data['result']['status'])
             self.assertEqual(data['result']['value'], ['UnitTest'])
