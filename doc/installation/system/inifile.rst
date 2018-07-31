@@ -111,3 +111,6 @@ can give these different nodes, dedicated names.
 
 ``PI_NODE`` is a string with the name of this very node. ``PI_NODES`` is a list of
 all available nodes in the cluster.
+
+If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
+If this is also not set, the node name is returned as "localnode".
