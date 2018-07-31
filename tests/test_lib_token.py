@@ -177,6 +177,12 @@ class TokenTestCase(MyTestCase):
         ttype = get_token_type("hotptoken")
         self.assertTrue(ttype == "hotp", ttype)
 
+        # test correct behavior with wildcards
+        self.assertEqual(get_token_type("SE1"), "totp")
+        self.assertEqual(get_token_type("SE*"), "")
+        self.assertEqual(get_token_type("*1"), "")
+        self.assertEqual(get_token_type("hotptoke*"), "")
+
     def test_04_check_serial(self):
         r, nserial = check_serial("hotptoken")
         self.assertFalse(r, (r, nserial))
