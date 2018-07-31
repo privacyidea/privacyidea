@@ -16,7 +16,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-
 __doc__ = """These endpoints are used to create, modify and delete
 periodic tasks.
 
@@ -27,6 +26,7 @@ import logging
 
 from flask import Blueprint, g, request
 
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
 from privacyidea.lib.error import ParameterError
@@ -48,7 +48,8 @@ def convert_datetimes_to_string(ptask):
     :return: a new periodic task dictionary
     """
     ptask = ptask.copy()
-    ptask['last_runs'] = dict((node, timestamp.isoformat()) for node, timestamp in ptask['last_runs'].items())
+    ptask['last_runs'] = dict((node, timestamp.strftime(AUTH_DATE_FORMAT))
+                              for node, timestamp in ptask['last_runs'].items())
     return ptask
 
 
