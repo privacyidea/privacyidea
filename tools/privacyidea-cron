@@ -26,14 +26,16 @@ It runs periodic tasks that are specified in the database.
 __version__ = "0.1"
 
 import sys
+import json
 from datetime import datetime
 
 import dateutil
 from flask_script import Manager
 
 from privacyidea.app import create_app
-from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, get_periodic_task_by_name, \
-    execute_task
+from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, \
+    get_periodic_task_by_name, \
+    execute_task, get_periodic_tasks
 from privacyidea.lib.error import ParameterError
 
 app = create_app(config_name='production', silent=True)
@@ -98,6 +100,27 @@ def run_manually(node_string, task_name):
     run_task_on_node(ptask, node)
 
 
+@manager.command
+def list():
+    """
+    Show a list of available tasks that could be run.
+    """
+    line_format = u'{active!s:7.7} {id:3} {name:30.30}\t{taskmodule:16}\t{node_list:20}\t{options_json}'
+    print(line_format.format(
+        active=u"Active",
+        id=u"ID",
+        name=u"Name",
+        taskmodule=u"Task Module",
+        node_list=u"Nodes",
+        options_json=u"Options",
+    ))
+    print(u"=" * 100)
+    for ptask in get_periodic_tasks():
+        print(line_format.format(node_list=u', '.join(ptask["nodes"]),
+                                 options_json=json.dumps(ptask["options"]),
+                                 **ptask))
+
+
 @manager.option("-d", "--dryrun",
                 action="store_true",
                 help="Do not run any tasks, only show what would be done")
@@ -132,6 +155,7 @@ def run_scheduled(node_string=None, dryrun=False):
             print(u"Not running any tasks because --dryrun was passed.")
     else:
         print(u"There are no tasks scheduled on node {!s}.".format(node))
+
 
 if __name__ == '__main__':
     manager.run()
