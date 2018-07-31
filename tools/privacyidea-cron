@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import sys
+from __future__ import print_function
 
 __doc__ = """
 This script is meant to be invoked periodically by the system cron daemon.
@@ -25,6 +25,7 @@ It runs periodic tasks that are specified in the database.
 """
 __version__ = "0.1"
 
+import sys
 from datetime import datetime
 
 import dateutil
@@ -63,18 +64,19 @@ def run_task_on_node(ptask, node):
     :param node: Node name
     """
     try:
-        print u"Running {!r} ...".format(ptask["name"]),
+        print(u"Running {!r} ...".format(ptask["name"]), end="")
         result = execute_task(ptask["taskmodule"], ptask["options"])
     except Exception as e:
-        print u'Caught exception: {!r}'.format(e)
+        print(u'Caught exception: {!r}'.format(e))
         result = False
     if result:
         current_time = datetime.now(dateutil.tz.tzlocal())
-        print u'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(ptask["name"], node)
+        print(u'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(
+            ptask["name"], node))
         set_periodic_task_last_run(ptask["id"], node, current_time)
     else:
-        print u'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node)
-        print u'This unsuccessful run is not recorded in the database.'
+        print(u'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node))
+        print(u'This unsuccessful run is not recorded in the database.')
     return result
 
 
@@ -110,26 +112,26 @@ def run_scheduled(node_string=None, dryrun=False):
     current_time = datetime.now(dateutil.tz.tzlocal())
     scheduled_tasks = get_scheduled_periodic_tasks(node, current_time)
     if scheduled_tasks:
-        print u"The following tasks are scheduled to run on node {!s}:".format(node)
-        print
+        print(u"The following tasks are scheduled to run on node {!s}:".format(node))
+        print()
         for ptask in scheduled_tasks:
             print(u"  {name} ({interval!r}, {taskmodule})".format(**ptask))
 
-        print
+        print()
         if not dryrun:
             results = []
             for ptask in scheduled_tasks:
                 result = run_task_on_node(ptask, node)
                 results.append(result)
             if all(results):
-                print u"All scheduled tasks executed successfully."
+                print(u"All scheduled tasks executed successfully.")
             else:
-                print u"Some tasks exited with errors."
+                print(u"Some tasks exited with errors.")
                 sys.exit(1)
         else:
-            print u"Not running any tasks because --dryrun was passed."
+            print(u"Not running any tasks because --dryrun was passed.")
     else:
-        print u"There are no tasks scheduled on node {!s}.".format(node)
+        print(u"There are no tasks scheduled on node {!s}.".format(node))
 
 if __name__ == '__main__':
     manager.run()
