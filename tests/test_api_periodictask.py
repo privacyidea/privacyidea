@@ -90,6 +90,15 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 'interval': 'every day',
                 'taskmodule': 'UnitTest',
                 'options': '{"something": "123"}',
+            },
+            # invalid options
+            {
+                'name': 'some task',
+                'nodes': 'pinode1, pinode2',
+                'active': False,
+                'interval': '0 8 * * *',
+                'taskmodule': 'UnitTest',
+                'options': '[1, 2]',
             }
         ]
         # all result in ERR905
@@ -109,7 +118,6 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 'active': False,
                 'interval': '0 8 * * 0',
                 'taskmodule': 'UnitTest',
-                'options': '{"something": 123, "else": true}',
             }
             status_code, data = self.simulate_request('/periodictask/', method='POST',
                                                       data=task_dict2)

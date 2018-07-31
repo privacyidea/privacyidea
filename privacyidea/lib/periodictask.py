@@ -267,8 +267,5 @@ def execute_task(taskmodule, params):
     :param params: dictionary mapping task option keys (unicodes) to unicodes (or None)
     :return: boolean returned by the task
     """
-    if taskmodule not in TASK_MODULES:
-        raise ParameterError("Unknown task module: {!r}".format(taskmodule))
-    cls = TASK_MODULES[taskmodule]
-    module = cls()
+    module = get_taskmodule(taskmodule)
     return module.do(params)
