@@ -33,10 +33,10 @@ import dateutil
 from flask_script import Manager
 
 from privacyidea.app import create_app
+from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, \
     get_periodic_task_by_name, \
     execute_task, get_periodic_tasks
-from privacyidea.lib.error import ParameterError
 
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
@@ -45,17 +45,13 @@ manager = Manager(app)
 def get_node_name(node):
     """
     Determine the node name. If no node name is given, read it from the app config.
-    Raise a ParameterError if no node name could be determined.
     :param node: node name given by the user (can be None)
     :return:
     """
-    if node is None:
-        if "PI_AUDIT_SERVERNAME" in app.config:
-            return app.config["PI_AUDIT_SERVERNAME"]
-        else:
-            raise ParameterError("No PI_AUDIT_SERVERNAME specified in pi.cfg, use --node to pass a node name")
-    else:
+    if node is not None:
         return node
+    else:
+        return get_privacyidea_node()
 
 
 def run_task_on_node(ptask, node):
