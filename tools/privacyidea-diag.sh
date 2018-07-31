@@ -90,10 +90,37 @@ pi_versions() {
 	pip freeze >> $tempfile
 }
 
+pi_config() {
+	log
+	log "privacyIDEA Configuration"
+	log "========================="
+	log "Resolvers"
+	log "---------"
+	pi-manage resolver list >> $tempfile
+	log "Realms"
+	log "------"
+	pi-manage realm list >> $tempfile
+	log "Events"
+	log "------"
+	pi-manage event e_export >> $tempfile
+	log "Policies"
+	log "--------"
+	pi-manage policy p_export >> $tempfile
+}
+
+
+pi_logfile() {
+	log
+	log "privacyIDEA Logfile"
+	log "==================="
+	R=`grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | sed -e s/\"//g | sed -e s/\'//g`
+	cat $R >> $tempfile
+}
+
 get_os
 get_pi_cfg
 pi_versions
-#pi_config
-#pi_logfile
+pi_config
+pi_logfile
 #pi_auditlog
 upload_info
