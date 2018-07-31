@@ -48,6 +48,8 @@ class TestingConfig(Config):
     PI_GNUPG_HOME = "tests/testdata/gpg"
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
+    PI_NODE = "Node1"
+    PI_NODES = ["Node2"]
 
 
 class ProductionConfig(Config):

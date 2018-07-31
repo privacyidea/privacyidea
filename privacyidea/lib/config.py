@@ -861,3 +861,27 @@ def return_saml_attributes_on_fail():
     r = get_from_config(key="ReturnSamlAttributesOnFail", default=False,
                         return_bool=True)
     return r
+
+
+def get_privacyidea_node():
+    """
+    This returns the node name of the privacyIDEA node as found in the pi.cfg
+    file in PI_NODE.
+    If it does not exist, the PI_AUDIT_SERVERNAME is used.
+    :return:
+    """
+    node_name = current_app.config.get("PI_NODE",
+                                       current_app.config.get("PI_AUDIT_SERVERNAME", ""))
+    return node_name
+
+
+def get_privacyidea_nodes():
+    """
+    This returns the list of the nodes.
+    :return:
+    """
+    own_node_name = get_privacyidea_node()
+    nodes = current_app.config.get("PI_NODES") or []
+    if own_node_name not in nodes:
+        nodes.append(own_node_name)
+    return nodes

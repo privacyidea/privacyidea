@@ -102,3 +102,12 @@ In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``.
 
 
+
+privacyIDEA Nodes
+-----------------
+
+privacyIDEA can run in a redundant setup. For statistics and monitoring purposes you
+can give these different nodes, dedicated names.
+
+``PI_NODE`` is a string with the name of this very node. ``PI_NODES`` is a list of
+all available nodes in the cluster.
