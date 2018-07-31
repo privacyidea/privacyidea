@@ -52,7 +52,7 @@ def convert_datetimes_to_string(ptask):
     return ptask
 
 
-@periodictask_blueprint.route('/taskmodules', methods=['GET'])
+@periodictask_blueprint.route('/taskmodules/', methods=['GET'])
 @log_with(log)
 def list_taskmodules():
     """
