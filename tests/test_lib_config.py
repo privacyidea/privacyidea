@@ -18,7 +18,8 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_class_dict,
                                     get_token_types,
                                     get_token_classes, get_token_prefix,
-                                    get_machine_resolver_class_dict
+                                    get_machine_resolver_class_dict,
+                                    get_privacyidea_node, get_privacyidea_nodes
                                     )
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -228,3 +229,10 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("secretInfo1" not in a)
         a = get_from_config("secretInfo1", role="public")
         self.assertEqual(a, None)
+
+    def test_07_node_names(self):
+        node = get_privacyidea_node()
+        self.assertEqual(node, "Node1")
+        nodes = get_privacyidea_nodes()
+        self.assertTrue("Node1" in nodes)
+        self.assertTrue("Node2" in nodes)
