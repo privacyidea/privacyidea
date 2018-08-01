@@ -72,3 +72,17 @@ def reset(counter_name):
         counter = EventCounter(counter_name, 0)
         counter.save()
     counter.reset()
+
+
+def read(counter_name):
+    """
+    Read the counter value from the database
+
+    :param counter_name:
+    :return:
+    """
+    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
+    if not counter:
+        return None
+    else:
+        return counter.counter_value
