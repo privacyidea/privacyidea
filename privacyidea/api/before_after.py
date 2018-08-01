@@ -59,6 +59,7 @@ from .event import eventhandling_blueprint
 from .smsgateway import smsgateway_blueprint
 from .clienttype import client_blueprint
 from .subscriptions import subscriptions_blueprint
+from .monitoring import monitoring_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
@@ -94,6 +95,7 @@ def before_user_request():
 @smsgateway_blueprint.before_request
 @client_blueprint.before_request
 @subscriptions_blueprint.before_request
+@monitoring_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -204,6 +206,7 @@ def before_request():
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
+@monitoring_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -231,6 +234,7 @@ def after_request(response):
 @application_blueprint.app_errorhandler(AuthError)
 @smtpserver_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
+@monitoring_blueprint.app_errorhandler(AuthError)
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
@@ -253,6 +257,7 @@ def auth_error(error):
 @register_blueprint.app_errorhandler(PolicyError)
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
+@monitoring_blueprint.app_errorhandler(PolicyError)
 @postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
@@ -274,6 +279,7 @@ def policy_error(error):
 @register_blueprint.app_errorhandler(privacyIDEAError)
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
+@monitoring_blueprint.app_errorhandler(privacyIDEAError)
 @postrequest(sign_response, request=request)
 def privacyidea_error(error):
     """
@@ -300,6 +306,7 @@ def privacyidea_error(error):
 @register_blueprint.app_errorhandler(500)
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
+@monitoring_blueprint.app_errorhandler(500)
 @postrequest(sign_response, request=request)
 def internal_error(error):
     """

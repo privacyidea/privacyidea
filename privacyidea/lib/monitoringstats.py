@@ -41,7 +41,7 @@ def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
     """
     Write a new statistics value to the database
 
-    :param stats_key: The key, that identifies the measurment point
+    :param stats_key: The key, that identifies the measurement point
     :type stats_key: basestring
     :param stats_value: The value to be measured
     :type stats_value: int

@@ -308,6 +308,8 @@ class ACTION(object):
     HIDE_WELCOME = "hide_welcome_info"
     CUSTOM_MENU = "custom_menu"
     CUSTOM_BASELINE = "custom_baseline"
+    STATISTICSREAD = "statistics_read"
+    STATISTICSDELETE = "statistics_delete"
 
 
 class GROUP(object):
@@ -1334,6 +1336,12 @@ def get_static_policy_definitions(scope=None):
                                                  "periodic task definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.STATISTICSREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read statistics data."),
+                                    'group': GROUP.SYSTEM},
+            ACTION.STATISTICSDELETE: {'type': 'bool',
+                                    'desc': _("Admin is allowed to delete statistics data."),
+                                    'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGWRITE: {'type': 'bool',
                                         'desc': _("Admin is allowed to write "
                                                   "and modify the event "
