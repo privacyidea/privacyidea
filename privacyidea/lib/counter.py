@@ -76,10 +76,11 @@ def reset(counter_name):
 
 def read(counter_name):
     """
-    Read the counter value from the database
+    Read the counter value from the database.
+    If the counter_name does not exist, 'None' is returned.
 
-    :param counter_name:
-    :return:
+    :param counter_name: The name of the counter
+    :return: The value of the counter
     """
     counter = EventCounter.query.filter_by(counter_name=counter_name).first()
     if not counter:
