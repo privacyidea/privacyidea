@@ -33,7 +33,9 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_timestamp_to_utc
 from privacyidea.models import MonitoringStats
 from sqlalchemy import and_, distinct
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
+
 log = logging.getLogger(__name__)
 
 
@@ -95,7 +97,7 @@ def get_stats_keys():
     return keys
 
 
-def get_values(stats_key, start_timestamp=None, end_timestamp=None):
+def get_values(stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
     """
     Return a list of sets of (timestamp, value), ordered by timestamps in ascending order
 
@@ -104,6 +106,7 @@ def get_values(stats_key, start_timestamp=None, end_timestamp=None):
     :type start_timestamp: timezone-aware datetime object
     :param end_timestamp: the end of the timespan, inclusive
     :type end_timestamp: timezone-aware datetime object
+    :param date_strings: Return dates as strings formatted as AUTH_DATE_FORMAT
     :return: list of sets, with timestamps being timezone-aware UTC datetime objects
     """
     values = []
@@ -117,6 +120,8 @@ def get_values(stats_key, start_timestamp=None, end_timestamp=None):
     for ms in MonitoringStats.query.filter(and_(*conditions)).\
             order_by(MonitoringStats.timestamp.asc()):
         aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
+        if date_strings:
+            aware_timestamp = aware_timestamp.strftime(AUTH_DATE_FORMAT)
         values.append((aware_timestamp, ms.stats_value))
 
     return values
