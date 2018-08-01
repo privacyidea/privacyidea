@@ -4,7 +4,7 @@ This tests the files
 """
 
 from .base import MyTestCase
-from privacyidea.lib.counter import increase, decrease, reset
+from privacyidea.lib.counter import increase, decrease, reset, read
 from privacyidea.models import EventCounter
 
 
@@ -50,6 +50,12 @@ class CounterTestCase(MyTestCase):
 
         counter = EventCounter.query.filter_by(counter_name="hallo_counter1").first()
         self.assertEqual(counter.counter_value, 0)
+
+        # Test reading counter
+        r = read("hallo_counter1")
+        self.assertEqual(r, 0)
+        r = read("unknown counter")
+        self.assertEqual(r, None)
 
     def test_02_decrease_beyond_zero(self):
         r = increase("hallo_counter2")
