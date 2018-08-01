@@ -49,15 +49,15 @@ log() {
 
 get_os() {
 	log
-	log "Linux Distribution"
-	log "=================="
+	log "SECTION: Linux Distribution"
+	log "==========================="
 	cat /etc/*-release >> $tempfile
 }
 
 get_pi_cfg() {
 	log
-	log "pi.cfg file"
-	log "==========="
+	log "SECTION: pi.cfg file"
+	log "===================="
 	grep -v SECRET_KEY $PICFG | grep -v PI_PEPPER | grep -v SQLALCHEMY_DATABASE_URI >> $tempfile
 }
 
@@ -70,8 +70,8 @@ upload_info() {
 
 pi_versions() {
 	log
-	log "privacyIDEA Versions"
-	log "===================="
+	log "SECTION: privacyIDEA Versions"
+	log "============================="
 	log "Is this Ubuntu?"
 	log "---------------"
 	dpkg -l | grep privacyidea >> $tempfile
@@ -92,8 +92,8 @@ pi_versions() {
 
 pi_config() {
 	log
-	log "privacyIDEA Configuration"
-	log "========================="
+	log "SECTION: privacyIDEA Configuration"
+	log "=================================="
 	log "Resolvers"
 	log "---------"
 	pi-manage resolver list >> $tempfile
@@ -111,10 +111,17 @@ pi_config() {
 
 pi_logfile() {
 	log
-	log "privacyIDEA Logfile"
-	log "==================="
+	log "SECTION: privacyIDEA Logfile"
+	log "============================"
 	R=`grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | sed -e s/\"//g | sed -e s/\'//g`
 	cat $R >> $tempfile
+}
+
+pi_auditlog() {
+    log
+    log "SECTION: privacyIDEA Auditlog"
+    log "============================="
+    pi-manage audit dump -f - -t 2d >> $tempfile
 }
 
 get_os
@@ -122,5 +129,5 @@ get_pi_cfg
 pi_versions
 pi_config
 pi_logfile
-#pi_auditlog
+pi_auditlog
 upload_info
