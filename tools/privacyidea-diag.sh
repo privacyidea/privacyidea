@@ -58,7 +58,7 @@ get_pi_cfg() {
 	log
 	log "SECTION: pi.cfg file"
 	log "===================="
-	grep -v SECRET_KEY $PICFG | grep -v PI_PEPPER | grep -v SQLALCHEMY_DATABASE_URI >> $tempfile
+	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' $PICFG >> $tempfile
 }
 
 
@@ -113,7 +113,7 @@ pi_logfile() {
 	log
 	log "SECTION: privacyIDEA Logfile"
 	log "============================"
-	R=`grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | sed -e s/\"//g | sed -e s/\'//g`
+	R=$( grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | tr -d "\'\"" )
 	cat $R >> $tempfile
 }
 
