@@ -45,6 +45,10 @@
                    ng-model="form.interval"
                    placeholder="Interval"
                    required/>
+            <p class="help help-block" translate>
+                Please use crontab notation to specify the times at which the periodic task
+                should be run. Example: "5 10 * * *" runs the task every day at 10:05.
+            </p>
         </div>
     </div>
     <div class="form-group">
@@ -63,6 +67,22 @@
             </div>
         </div>
     </div>
+
+    <div class="form-group">
+        <label for="nodes" class="col-sm-3 control-label"
+        translate>Recorded Last Runs</label>
+
+        <div class="col-sm-6">
+            <table class="table table-hover">
+                <tr ng-repeat="(timestamp, node) in form.last_runs">
+                    <td>{{ timestamp }}</td>
+                    <td>{{ node }}</td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+
 
     <div class="form-group">
         <label for="taskmodule" class="col-sm-3 control-label" translate>

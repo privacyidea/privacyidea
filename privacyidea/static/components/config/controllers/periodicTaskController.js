@@ -113,14 +113,21 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
                 nodes.push(node.name);
             };
         });
+        // filter options to only contain the current task module's options
+        var options = {};
+        angular.forEach($scope.form.options, function(value, key) {
+            if ($scope.taskmoduleOptions.hasOwnProperty(key)) {
+                options[key] = value;
+            }
+        });
         var params = {
             "interval": $scope.form.interval,
             "name": $scope.form.name,
             "taskmodule": $scope.form.taskmodule,
             "nodes": nodes.join(", "),
-            "options": $scope.form.options,
+            "options": options,
         };
-        if($scope.ptaskid) {
+        if ($scope.ptaskid) {
             params["id"] = $scope.ptaskid;
         }
         ConfigFactory.setPeriodicTask(params, function() {
