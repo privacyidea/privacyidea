@@ -82,6 +82,7 @@ from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.utils import parse_timedelta
 from Crypto.PublicKey import RSA
 import jwt
 import ast
@@ -681,20 +682,18 @@ def smartopen(filename):
             fh.close()
 
 
-@audit_manager.command
-def dump(filename):
-    """Dump the audit log into a csv file."""
-    default_module = "privacyidea.lib.auditmodules.sqlaudit"
-    token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
-    audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
-    audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
-    if audit_module != default_module:
-        raise Exception("Currently only the SQL audit module is supported. You are using %s" %
-                        audit_module)
-
+@audit_manager.option('--timelimit', '-t', help="Limit the dumped audit entries to a certain "
+                                                "period (i.e. '5d' or '3h' for the entries from "
+                                                "the last five days or three hours. By default "
+                                                "all audit entries will be dumped.")
+@audit_manager.option('--filename', '-f', help="Name of the 'csv' file to dump the audit entries "
+                                               "into. By default write to stdout.", default='-')
+def dump(filename, timelimit=None):
+    """Dump the audit log in csv format."""
     audit = getAudit(app.config)
+    tl = parse_timedelta(timelimit) if timelimit else None
     with smartopen(filename) as fh:
-        for line in audit.csv_generator():
+        for line in audit.csv_generator(timelimit=tl):
             fh.write(line)
 
 

@@ -353,8 +353,8 @@ class Audit(AuditBase):
     def csv_generator(self, param=None, user=None, timelimit=None):
         """
         Returns the audit log as csv file.
-        :param config: The current flask app configuration
-        :type config: dict
+        :param timelimit: Limit the number of dumped entries by time
+        :type timelimit: datetime.timedelta
         :param param: The request parameters
         :type param: dict
         :param user: The user, who issued the request
