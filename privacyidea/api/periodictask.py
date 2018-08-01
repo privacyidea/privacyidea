@@ -26,6 +26,7 @@ import logging
 
 from flask import Blueprint, g, request
 
+from privacyidea.lib.config import get_privacyidea_nodes
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
@@ -62,6 +63,17 @@ def list_taskmodules():
     taskmodules = get_available_taskmodules()
     g.audit_object.log({"success": True})
     return send_result(taskmodules)
+
+
+@periodictask_blueprint.route('/nodes/', methods=['GET'])
+@log_with(log)
+def list_nodes():
+    """
+    Return a list of available nodes
+    """
+    nodes = get_privacyidea_nodes()
+    g.audit_object.log({"success": True})
+    return send_result(nodes)
 
 
 @periodictask_blueprint.route('/options/<taskmodule>', methods=['GET'])
@@ -125,7 +137,10 @@ def set_periodic_task_api():
     active = is_true(getParam(param, "active", default=True))
     interval = getParam(param, "interval", optional=False)
     node_string = getParam(param, "nodes", optional=False)
-    node_list = [node.strip() for node in node_string.split(",")]
+    if node_string.strip():
+        node_list = [node.strip() for node in node_string.split(",")]
+    else:
+        raise ParameterError(u"nodes: expected at least one node, got {!r}".format(node_string))
     taskmodule = getParam(param, "taskmodule", optional=False)
     if taskmodule not in get_available_taskmodules():
         raise ParameterError("Unknown task module: {!r}".format(taskmodule))
