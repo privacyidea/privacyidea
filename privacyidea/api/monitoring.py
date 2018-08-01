@@ -77,7 +77,15 @@ def get_statistics(stats_key=None):
 @prepolicy(check_base_action, request, ACTION.STATISTICSDELETE)
 def delete_statistics(stats_key, start, end):
     """
-    Delete the statistics data of a certain stats_key
+    Delete the statistics data of a certain stats_key.
+
+    You can specify the start date and the end date when to delete the
+    monitoring data.
+    You should specify the dates including the timezone. Otherwise your client
+    could send its local time and the server would interpret it as its own local
+    time which would result in deleting unexpected entries.
+
+    You can specify the dates like 2010-12-31 22:00+0200
     """
     start = parse_legacy_time(start, return_date=True)
     end = parse_legacy_time(end, return_date=True)
