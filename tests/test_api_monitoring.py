@@ -47,7 +47,7 @@ class APIMonitoringTestCase(MyTestCase):
 
         # check values of key1, with a start value in the past
         with self.app.test_request_context('/monitoring/key1',
-                                           data={"start": "2010-01-01"},
+                                           data={"start": "2010-01-01 10:00+0200"},
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
