@@ -96,6 +96,7 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
             angular.forEach($scope.availableNodes, function (row) {
                 row["ticked"] = ptask.nodes.indexOf(row.name) >= 0;
             });
+            $scope.noLastRuns = angular.equals($scope.form.last_runs, {});
             $scope.getTaskmoduleOptions();
         });
     };

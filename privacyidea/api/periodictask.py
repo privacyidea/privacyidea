@@ -141,7 +141,7 @@ def set_periodic_task_api():
     if node_string.strip():
         node_list = [node.strip() for node in node_string.split(",")]
     else:
-        raise ParameterError(u"nodes: expected at least one node, got {!r}".format(node_string))
+        raise ParameterError(u"nodes: expected at least one node")
     taskmodule = getParam(param, "taskmodule", optional=False)
     if taskmodule not in get_available_taskmodules():
         raise ParameterError("Unknown task module: {!r}".format(taskmodule))
