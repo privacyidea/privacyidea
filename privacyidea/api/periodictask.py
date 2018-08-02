@@ -44,11 +44,12 @@ periodictask_blueprint = Blueprint('periodictask_blueprint', __name__)
 
 def convert_datetimes_to_string(ptask):
     """
-    Convert the ``last_runs`` timestamps to ISO 8601 strings and return a copy of ``ptask``.
+    Convert the ``last_update`` and ``last_runs`` timestamps to ISO 8601 strings and return a copy of ``ptask``.
     :param ptask: periodic task dictionary
     :return: a new periodic task dictionary
     """
     ptask = ptask.copy()
+    ptask['last_update'] = ptask['last_update'].strftime(AUTH_DATE_FORMAT)
     ptask['last_runs'] = dict((node, timestamp.strftime(AUTH_DATE_FORMAT))
                               for node, timestamp in ptask['last_runs'].items())
     return ptask

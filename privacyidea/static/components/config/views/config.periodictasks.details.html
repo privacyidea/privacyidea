@@ -69,11 +69,11 @@
     </div>
 
     <div class="form-group">
-        <label for="nodes" class="col-sm-3 control-label"
+        <label for="last_runs" class="col-sm-3 control-label"
         translate>Recorded Last Runs</label>
 
         <div class="col-sm-6">
-            <table class="table table-hover">
+            <table id="last_runs" class="table table-hover">
                 <tr ng-repeat="(timestamp, node) in form.last_runs">
                     <td>{{ timestamp }}</td>
                     <td>{{ node }}</td>
@@ -83,6 +83,13 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <label for="last_update" class="col-sm-3 control-label"
+        translate>Last Definition Update</label>
+        <div class="col-sm-6" id="last_update">
+            {{ form.last_update }}
+        </div>
+    </div>
 
     <div class="form-group">
         <label for="taskmodule" class="col-sm-3 control-label" translate>

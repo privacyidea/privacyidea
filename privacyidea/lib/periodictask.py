@@ -62,9 +62,11 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     """
     Calculate the timestamp of the next scheduled run of task ``ptask`` on node ``node``.
     We do not check if the task is even scheduled to run on the specified node.
-    If the periodic task has no prior run recorded on the specified node, a
-    ``ServerError`` is thrown. Malformed cron expressions may throw a
-    ``ValueError``.
+    Malformed cron expressions may throw a ``ValueError``.
+
+    The next timestamp is calculated based on the last time the task was run on the given node.
+    If the task has never run on the node, the last update timestamp of the periodic tasks
+    is used as a reference timestamp.
 
     :param ptask: Dictionary describing the periodic task, as from ``PeriodicTask.get()``
     :param node: Node on which the periodic task is scheduled
@@ -75,9 +77,7 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     """
     if interval_tzinfo is None:
         interval_tzinfo = tzlocal()
-    if node not in ptask["last_runs"]:
-        raise ServerError("No last run on node {!r} recorded for task {!r}".format(node, ptask["name"]))
-    timestamp = ptask["last_runs"][node]
+    timestamp = ptask["last_runs"].get(node, ptask["last_update"])
     local_timestamp = timestamp.astimezone(interval_tzinfo)
     iterator = croniter(ptask["interval"], local_timestamp)
     next_timestamp = iterator.get_next(datetime)
@@ -88,7 +88,6 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
 def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=True, id=None):
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
-    In that case, an initial "last run" is also added.
     Otherwise, an existing entry is overwritten. We actually ensure that such
     an entry exists and throw a ``ParameterError`` otherwise.
 
@@ -119,12 +118,6 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
         # This will throw a ParameterError if there is no such entry
         get_periodic_task_by_id(id)
     periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, options, id)
-    # If this is a new task, we actually need to add a "last" run already
-    # to "kick off" the scheduling.
-    if id is None:
-        timestamp = datetime.now(tzutc())
-        for node in nodes:
-            set_periodic_task_last_run(periodic_task.id, node, timestamp)
     return periodic_task.id
 
 

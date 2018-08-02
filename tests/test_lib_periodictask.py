@@ -30,7 +30,8 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "active": True,
             "name": "task one",
             "interval": "0 8 * * *",
-            "nodes": ["foo", "bar"],
+            "last_update": parse_timestamp("2018-06-23 07:55:00 UTC"),
+            "nodes": ["foo", "bar", "baz"],
             "taskmodule": "some.module",
             "options": {"KEY2": "value number 2",
                         "key 4": "1234"},
@@ -44,8 +45,36 @@ class BasePeriodicTaskTestCase(MyTestCase):
                          parse_timestamp("2018-06-26 08:00 UTC"))
         self.assertEqual(calculate_next_timestamp(task1, "bar", tzinfo),
                          parse_timestamp("2018-06-24 08:00 UTC"))
-        with self.assertRaises(ServerError):
-            calculate_next_timestamp(task1, "baz")
+        # the next run of baz is calculated based on last_update
+        self.assertEqual(calculate_next_timestamp(task1, "baz", tzinfo),
+                         parse_timestamp("2018-06-23 08:00 UTC"))
+
+        # no last run recorded
+        task1b = {
+            "id": 1,
+            "active": True,
+            "name": "task one",
+            "interval": "0 8 * * *",
+            "last_update": parse_timestamp("2018-06-24 07:55:00 UTC"),
+            "nodes": ["foo", "bar"],
+            "taskmodule": "some.module",
+            "options": {"KEY2": "value number 2",
+                        "key 4": "1234"},
+            "last_runs": {}
+        }
+
+        self.assertEqual(calculate_next_timestamp(task1b, "foo", tzinfo),
+                         parse_timestamp("2018-06-24 08:00 UTC"))
+        self.assertEqual(calculate_next_timestamp(task1b, "bar", tzinfo),
+                         parse_timestamp("2018-06-24 08:00 UTC"))
+
+        # now, "foo" has a last run!
+        task1b["last_runs"]["foo"] = parse_timestamp("2018-06-24 08:00 UTC")
+        self.assertEqual(calculate_next_timestamp(task1b, "foo", tzinfo),
+                         parse_timestamp("2018-06-25 08:00 UTC"))
+        # ... bar has still not run
+        self.assertEqual(calculate_next_timestamp(task1b, "bar", tzinfo),
+                         parse_timestamp("2018-06-24 08:00 UTC"))
 
         # every weekday
         task2 = {
@@ -53,6 +82,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "active": True,
             "name": "task two",
             "interval": "0 0 * * 1-5",
+            "last_update": parse_timestamp("2018-06-24 08:00:00 UTC"),
             "nodes": ["foo", "bar"],
             "taskmodule": "some.module",
             "options": {"KEY2": "value number 2",
@@ -70,6 +100,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "active": True,
             "name": "task two",
             "interval": "5 0 * 8 *",
+            "last_update": parse_timestamp("2018-06-24 08:00:00 UTC"),
             "nodes": ["foo", "bar"],
             "taskmodule": "some.module",
             "options": {"KEY2": "value number 2",
@@ -87,6 +118,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "active": True,
             "name": "task two",
             "interval": "every two days",
+            "last_update": parse_timestamp("2018-06-24 08:00:00 UTC"),
             "nodes": ["foo", "bar"],
             "taskmodule": "some.module",
             "options": {"KEY2": "value number 2",
@@ -106,16 +138,22 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # every day at 08:00
         task = {
             "interval": "0 8 * * *",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-06-25 05:04:30 UTC"),
             }
         }
         self.assertEqual(calculate_next_timestamp(task, "foo", tzinfo),
                          parse_timestamp("2018-06-26 05:00 UTC"))
+        self.assertEqual(calculate_next_timestamp(task, "bar", tzinfo),
+                         parse_timestamp("2018-06-24 05:00 UTC"))
+        self.assertEqual(calculate_next_timestamp(task, "this_node_does_not_exist", tzinfo),
+                         parse_timestamp("2018-06-24 05:00 UTC"))
 
         # every day at 08:00
         task = {
             "interval": "0 8 * * *",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-06-25 04:04:30 UTC"),
             }
@@ -126,6 +164,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # every day at midnight
         task = {
             "interval": "0 0 * * *",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-06-25 21:01 UTC"),
             }
@@ -136,6 +175,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # every wednesday at midnight
         task = {
             "interval": "0 0 * * 3",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-06-24 21:00 UTC"),  # this is actually monday 00:00 in russia
             }
@@ -146,6 +186,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # every 15th at 01:00
         task = {
             "interval": "0 1 15 * *",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-05-15 00:00 UTC"),
             }
@@ -156,6 +197,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # every 15th at 01:00
         task = {
             "interval": "0 1 15 * *",
+            "last_update": parse_timestamp("2018-06-24 02:30 UTC"),
             "last_runs": {
                 "foo": parse_timestamp("2018-05-14 21:59 UTC"),
             }
@@ -182,6 +224,9 @@ class BasePeriodicTaskTestCase(MyTestCase):
                 "key1": 1234,
                 "key2": 5678,
             })
+
+        task1_last_update = get_periodic_task_by_id(task1)["last_update"]
+
         self.assertEqual(get_periodic_task_by_name("task three")["id"], task3)
         with self.assertRaises(ParameterError):
             get_periodic_task_by_name("task does not exist")
@@ -203,6 +248,8 @@ class BasePeriodicTaskTestCase(MyTestCase):
 
         self.assertEqual(len(PeriodicTask.query.all()), 3)
         self.assertEqual(task1, task1_modified)
+        # we have updated the task definition
+        self.assertGreater(get_periodic_task_by_id(task1)["last_update"], task1_last_update)
         self.assertEqual(get_periodic_tasks(name="every month")[0]["options"],
                          {"key1": "123", "key3": "True"})
 
@@ -260,14 +307,14 @@ class BasePeriodicTaskTestCase(MyTestCase):
         self.assertEqual(len(PeriodicTask.query.all()), 1)
         task1_entry = PeriodicTask.query.filter_by(id=task1_id).one()
 
-        # We already have the initial last runs
-        self.assertEqual(len(list(task1_entry.last_runs)), 2)
+        # We have no initial last runs
+        self.assertEqual(len(list(task1_entry.last_runs)), 0)
 
         set_periodic_task_last_run(task1_id, "pinode1", parse_timestamp("2018-06-26 08:00+02:00"))
         set_periodic_task_last_run(task1_id, "pinode1", parse_timestamp("2018-06-26 08:05+02:00"))
 
         task1 = get_periodic_tasks("task one")[0]
-        self.assertEqual(len(list(task1_entry.last_runs)), 2)
+        self.assertEqual(len(list(task1_entry.last_runs)), 1)
         self.assertEqual(task1_entry.last_runs[0].timestamp,
                          parse_timestamp("2018-06-26 06:05"))
         self.assertEqual(task1["last_runs"]["pinode1"],
@@ -295,10 +342,17 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "key2": False
         })
         # at 08:00 on wednesdays
-        task2 = set_periodic_task("task two", "0 8 * * WED", ["pinode2"], "some.task.module", {
-            "key1": "value",
-            "key2": "foo"
-        }, active=False)
+        current_utc_time = parse_timestamp("2018-05-31 05:08:00")
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            task2 = set_periodic_task("task two", "0 8 * * WED", ["pinode2", "pinode3"], "some.task.module", {
+                "key1": "value",
+                "key2": "foo"
+            }, active=False)
+        self.assertEqual(get_periodic_task_by_id(task2)["last_update"],
+                         parse_timestamp("2018-05-31 08:08:00+03:00"))
+        self.assertEqual(get_periodic_task_by_id(task2)["last_runs"], {})
+
         # every 30 minutes, on Tuesdays
         task3 = set_periodic_task("task three", "*/30 * * * 2", ["pinode1", "pinode2"], "some.task.module", {
             "key1": 1234,
@@ -310,6 +364,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         # we need some last runs
         set_periodic_task_last_run(task1, "pinode1", parse_timestamp("2018-06-01 00:00:05+03:00"))
 
+        # no last run for pinode3 here!
         set_periodic_task_last_run(task2, "pinode2", parse_timestamp("2018-06-20 08:00:05+03:00"))
 
         set_periodic_task_last_run(task3, "pinode1", parse_timestamp("2018-06-26 11:36:37+03:00"))
@@ -365,8 +420,10 @@ class BasePeriodicTaskTestCase(MyTestCase):
         scheduled = get_scheduled_periodic_tasks("pinode2", current_timestamp, tzinfo)
         self.assertEqual([task["name"] for task in scheduled], ["task four"])
 
-        # Enable task2, now we also have to run it on pinode2
-        enable_periodic_task(task2)
+        # Enable task2, now we also have to run it on pinode2 and pinode3
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            enable_periodic_task(task2)
 
         scheduled = get_scheduled_periodic_tasks("pinode1", current_timestamp, tzinfo)
         self.assertEqual([task["name"] for task in scheduled], ["task one"])
@@ -374,9 +431,13 @@ class BasePeriodicTaskTestCase(MyTestCase):
         scheduled = get_scheduled_periodic_tasks("pinode2", current_timestamp, tzinfo)
         self.assertEqual([task["name"] for task in scheduled], ["task two", "task four"])
 
+        scheduled = get_scheduled_periodic_tasks("pinode3", current_timestamp, tzinfo)
+        self.assertEqual([task["name"] for task in scheduled], ["task two"])
+
         # Simulate runs
         set_periodic_task_last_run(task1, "pinode1", current_timestamp)
         set_periodic_task_last_run(task2, "pinode2", current_timestamp)
+        set_periodic_task_last_run(task2, "pinode3", current_timestamp)
         set_periodic_task_last_run(task4, "pinode2", current_timestamp)
 
         # Now, we don't have to run anything

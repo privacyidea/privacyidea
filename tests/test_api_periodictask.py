@@ -139,8 +139,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 self.assertEqual(result_dict['active'], False)
                 self.assertEqual(result_dict['interval'], '0 8 * * *')
                 self.assertEqual(result_dict['nodes'], ['pinode1', 'pinode2'])
-                self.assertEqual(set(result_dict['last_runs'].keys()), {'pinode1', 'pinode2'})
-                self.assertIsNotNone(parse_timestamp(result_dict['last_runs']['pinode1']))
+                self.assertEqual(result_dict['last_runs'], {})
+                last_update = parse_timestamp(result_dict['last_update'])
+                self.assertIsNotNone(last_update)
                 self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
                 break
         else:
@@ -173,6 +174,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(data['result']['value']['id'], ptask_id1)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['options'], {'key': 'value'})
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
+        last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # enable
         status_code, data = self.simulate_request('/periodictask/enable/{}'.format(ptask_id1), method='POST')
@@ -183,6 +187,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], True)
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
+        last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # disable
         status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
@@ -193,6 +200,8 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], False)
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
 
         # disable again without effect
         status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
