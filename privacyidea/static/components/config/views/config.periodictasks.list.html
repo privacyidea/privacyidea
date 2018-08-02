@@ -2,6 +2,7 @@
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
+            <th translate>Order</th>
             <th translate>Active</th>
             <!--<th translate>Id</th>-->
             <th translate>Description</th>
@@ -13,6 +14,11 @@
         </thead>
         <tbody>
         <tr ng-repeat="ptask in periodictasks">
+            <td>
+                <input type="number" ng-model="ptask.ordering"
+                       class="form-control" min="0"
+                       ng-change="orderChanged(ptask)" />
+            </td>
             <td>
                 <span ng-show="ptask.active"
                       class="glyphicon glyphicon-ok"
