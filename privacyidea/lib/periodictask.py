@@ -85,7 +85,7 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     return next_timestamp.astimezone(tzutc())
 
 
-def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=True, id=None):
+def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=None, active=True, id=None):
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
     Otherwise, an existing entry is overwritten. We actually ensure that such
@@ -102,6 +102,8 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
     :type nodes: list of unicode
     :param taskmodule: Name of the task module
     :type taskmodule: unicode
+    :param ordering: Ordering of the periodic task (>= 0). Lower numbers are executed first.
+    :type ordering: int
     :param options: Additional options for the task module
     :type options: Dictionary mapping unicodes to values that can be converted to unicode or None
     :param active: Flag determining whether the periodic task is active
@@ -114,10 +116,12 @@ def set_periodic_task(name, interval, nodes, taskmodule, options=None, active=Tr
         croniter(interval)
     except ValueError as e:
         raise ParameterError("Invalid interval: {!s}".format(e))
+    if ordering < 0:
+        raise ParameterError("Invalid ordering: {!s}".format(ordering))
     if id is not None:
         # This will throw a ParameterError if there is no such entry
         get_periodic_task_by_id(id)
-    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, options, id)
+    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, ordering, options, id)
     return periodic_task.id
 
 
@@ -146,7 +150,9 @@ def enable_periodic_task(ptask_id, enable=True):
 
 def get_periodic_tasks(name=None, node=None, active=None):
     """
-    Get a list of all periodic tasks, or of all tasks satisfying a filter criterion.
+    Get a list of all periodic tasks, or of all tasks satisfying a filter criterion,
+    ordered by their ordering value (ascending).
+
     :param name: Name of the periodic task
     :type name: unicode
     :param node: Node for which periodic tasks should be collected. This only includes
@@ -160,7 +166,7 @@ def get_periodic_tasks(name=None, node=None, active=None):
         query = query.filter_by(name=name)
     if active is not None:
         query = query.filter_by(active=active)
-    entries = query.all()
+    entries = query.order_by(PeriodicTask.ordering).all()
     result = []
     for entry in entries:
         ptask = entry.get()
@@ -222,7 +228,8 @@ def set_periodic_task_last_run(ptask_id, node, last_run_timestamp):
 
 def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=None):
     """
-    Collect all periodic tasks that should be run on a specific node.
+    Collect all periodic tasks that should be run on a specific node, ordered by
+    their ordering.
 
     This function is usually called by the local cron runner which is aware of the
     current local node name.
