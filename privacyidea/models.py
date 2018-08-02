@@ -2527,6 +2527,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     interval = db.Column(db.Unicode(256), nullable=False)
     nodes = db.Column(db.Unicode(256), nullable=False)
     taskmodule = db.Column(db.Unicode(256), nullable=False)
+    last_update = db.Column(db.DateTime(False), nullable=False)
     options = db.relationship('PeriodicTaskOption',
                               lazy='dynamic',
                               backref='periodictask')
@@ -2571,6 +2572,13 @@ class PeriodicTask(MethodsMixin, db.Model):
                 PeriodicTaskLastRun.query.filter_by(id=last_run.id).delete()
         db.session.commit()
 
+    @property
+    def aware_last_update(self):
+        """
+        Return self.last_update with attached UTC tzinfo
+        """
+        return self.last_update.replace(tzinfo=tzutc())
+
     def get(self):
         """
         Return the serialized periodic task object including the options and last runs.
@@ -2584,14 +2592,17 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "interval": self.interval,
                 "nodes": [node.strip() for node in self.nodes.split(",")],
                 "taskmodule": self.taskmodule,
+                "last_update": self.aware_last_update,
                 "options": dict((option.key, option.value) for option in self.options),
                 "last_runs": dict((last_run.node, last_run.aware_timestamp) for last_run in self.last_runs)}
 
     def save(self):
         """
         If the entry has an ID set, update the entry. If not, create one.
+        Set ``last_update`` to the current time.
         :return: the entry ID
         """
+        self.last_update = datetime.utcnow()
         if self.id is None:
             # create a new one
             db.session.add(self)
@@ -2603,6 +2614,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "interval": self.interval,
                 "nodes": self.nodes,
                 "taskmodule": self.taskmodule,
+                "last_update": self.last_update,
             })
         db.session.commit()
         return self.id
@@ -2702,7 +2714,7 @@ class PeriodicTaskLastRun(db.Model):
     @property
     def aware_timestamp(self):
         """
-        Return self.timezone with attached UTC tzinfo
+        Return self.timestamp with attached UTC tzinfo
         """
         return self.timestamp.replace(tzinfo=tzutc())
 
