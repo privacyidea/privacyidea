@@ -73,6 +73,15 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 'taskmodule': 'UnitTest',
                 'options': '{"something": "123", "else": true}',
             },
+            # empty nodes
+            {
+                'name': 'some other task',
+                'active': False,
+                'interval': '0 8 * * *',
+                'nodes': '    ',
+                'taskmodule': 'UnitTest',
+                'options': '{"something": "123", "else": true}',
+            },
             # unknown taskmodule
             {
                 'name': 'some other task',
@@ -255,3 +264,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
             self.assertEqual(status_code, 200)
             self.assertTrue(data['result']['status'])
             self.assertEqual(data['result']['value'], options)
+
+    def test_03_nodes(self):
+        status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
+        self.assertEqual(status_code, 200)
+        self.assertTrue(data['result']['status'])
+        self.assertEqual(data['result']['value'], ['Node2', 'Node1'])

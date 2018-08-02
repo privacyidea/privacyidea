@@ -68,22 +68,22 @@
         </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" ng-show="ptaskid">
         <label for="last_runs" class="col-sm-3 control-label"
         translate>Recorded Last Runs</label>
 
         <div class="col-sm-6">
-            <table id="last_runs" class="table table-hover">
+            <table id="last_runs" class="table table-hover" ng-show="!noLastRuns">
                 <tr ng-repeat="(timestamp, node) in form.last_runs">
                     <td>{{ timestamp }}</td>
                     <td>{{ node }}</td>
                 </tr>
             </table>
-
+            <span ng-show="noLastRuns" translate>(none)</span>
         </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" ng-show="ptaskid">
         <label for="last_update" class="col-sm-3 control-label"
         translate>Last Definition Update</label>
         <div class="col-sm-6" id="last_update">
