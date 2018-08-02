@@ -72,16 +72,18 @@ pi_versions() {
 	log
 	log "SECTION: privacyIDEA Versions"
 	log "============================="
-	log "Is this Ubuntu?"
-	log "---------------"
-	dpkg -l | grep privacyidea >> $tempfile
-	dpkg -l | grep apache >> $tempfile
-	dpkg -l | grep nginx >> $tempfile
-	log "Is this CentOS/RHEL?"
-	log "--------------------"
-	rpm -qa | grep privacyidea >> $tempfile
-	rpm -qa | grep httpd >> $tempfile
-	rpm -qa | grep nginx >> $tempfile
+	log "Installed packages"
+	log "------------------"
+	FileName=$(mktemp)
+	# In case it is Ubuntu
+	dpkg -l >> $FileName
+	# In case it is CentOS/RHEL
+	rpm -qa >> $FileName
+	grep privacyidea $FileName >> $tempfile
+	grep apache $FileName >> $tempfile
+	grep httpd $FileName >> $tempfile
+	grep nginx $FileName >> $tempfile
+	rm -f $FileName
 	log "Is this a pip installation?"
 	log "---------------------------"
 	log "The contents of /opt/:"
