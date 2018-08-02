@@ -2527,6 +2527,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     interval = db.Column(db.Unicode(256), nullable=False)
     nodes = db.Column(db.Unicode(256), nullable=False)
     taskmodule = db.Column(db.Unicode(256), nullable=False)
+    ordering = db.Column(db.Integer, nullable=False, default=0)
     last_update = db.Column(db.DateTime(False), nullable=False)
     options = db.relationship('PeriodicTaskOption',
                               lazy='dynamic',
@@ -2535,7 +2536,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                                 lazy='dynamic',
                                 backref='periodictask')
 
-    def __init__(self, name, active, interval, node_list, taskmodule, options=None, id=None):
+    def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None):
         """
         :param name: Unique name of the periodic task as unicode
         :param active: a boolean
@@ -2544,6 +2545,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                           If we update an existing PeriodicTask entry, PeriodicTaskLastRun entries
                           referring to nodes that are not present in ``node_list`` any more will be deleted.
         :param taskmodule: a unicode
+        :param ordering: an integer. Lower tasks are executed first.
         :param options: a dictionary of options, mapping unicode keys to values. Values will be converted to unicode.
                         If we update an existing PeriodicTask entry, all options that have been set previously
                         but are not present in ``options`` will be deleted.
@@ -2555,6 +2557,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.interval = interval
         self.nodes = u", ".join(node_list)
         self.taskmodule = taskmodule
+        self.ordering = ordering
         self.save()
         # add the options to the periodic task
         options = options or {}
@@ -2593,6 +2596,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "nodes": [node.strip() for node in self.nodes.split(",")],
                 "taskmodule": self.taskmodule,
                 "last_update": self.aware_last_update,
+                "ordering": self.ordering,
                 "options": dict((option.key, option.value) for option in self.options),
                 "last_runs": dict((last_run.node, last_run.aware_timestamp) for last_run in self.last_runs)}
 
@@ -2614,6 +2618,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "interval": self.interval,
                 "nodes": self.nodes,
                 "taskmodule": self.taskmodule,
+                "ordering": self.ordering,
                 "last_update": self.last_update,
             })
         db.session.commit()

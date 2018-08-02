@@ -127,6 +127,7 @@ def set_periodic_task_api():
     :param interval: Interval at which the periodic task should run (in cron syntax)
     :param nodes: Comma-separated list of nodes on which the periodic task should run
     :param taskmodule: Task module name of the task
+    :param ordering: Ordering of the task, must be a number >= 0.
     :param options: A dictionary (possibly JSON) of periodic task options, mapping unicodes to unicodes
     :return: ID of the periodic task
     """
@@ -145,6 +146,7 @@ def set_periodic_task_api():
     taskmodule = getParam(param, "taskmodule", optional=False)
     if taskmodule not in get_available_taskmodules():
         raise ParameterError("Unknown task module: {!r}".format(taskmodule))
+    ordering = int(getParam(param, "ordering", optional=False))
     options = getParam(param, "options", optional=True)
     if options is None:
         options = {}
@@ -152,7 +154,7 @@ def set_periodic_task_api():
         options = json.loads(options)
         if not isinstance(options, dict):
             raise ParameterError(u"options: expected dictionary, got {!r}".format(options))
-    result = set_periodic_task(name, interval, node_list, taskmodule, options, active, ptask_id)
+    result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id)
     g.audit_object.log({"success": True, "info": result})
     return send_result(result)
 
