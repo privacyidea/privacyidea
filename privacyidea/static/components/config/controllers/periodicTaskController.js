@@ -49,6 +49,21 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
             $scope.getPeriodicTasks();
         });
     };
+    $scope.orderChanged = function (ptask) {
+        // we cannot directly pass ``ptask`` because we need to join the nodes list
+        var params = {
+            "id": ptask.id,
+            "interval": ptask.interval,
+            "name": ptask.name,
+            "taskmodule": ptask.taskmodule,
+            "nodes": ptask.nodes.join(", "),
+            "ordering": ptask.ordering,
+            "options": ptask.options,
+        };
+        ConfigFactory.setPeriodicTask(params, function() {
+            $scope.getPeriodicTasks();
+        });
+    };
 
     // Get all tasks
     $scope.getPeriodicTasks();
@@ -59,12 +74,14 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
 
 myApp.controller("periodicTaskDetailController", function($scope, $stateParams, ConfigFactory, $state) {
     // init
-    $scope.form = {};
+    $scope.form = {
+        "ordering": 0
+    };
     $scope.ptaskid = $stateParams.ptaskid;
     $scope.opts = {};
     $('html,body').scrollTop(0);
 
-    $scope.getAvailableNodes = function () {
+    $scope.getAvailableNodes = function (cb) {
         ConfigFactory.getNodes(function(response) {
             // prepare the input model for the multi-select box
             $scope.availableNodes = [];
@@ -74,6 +91,7 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
                     "ticked": false,
                 });
             });
+            cb();
         });
     }
 
@@ -126,6 +144,7 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
             "name": $scope.form.name,
             "taskmodule": $scope.form.taskmodule,
             "nodes": nodes.join(", "),
+            "ordering": $scope.form.ordering,
             "options": options,
         };
         if ($scope.ptaskid) {
@@ -150,9 +169,10 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
     };
 
     $scope.getTaskModules();
-    $scope.getAvailableNodes();
-    if ($scope.ptaskid) {
-        $scope.getPeriodicTask();
-    }
-
+    // ensure that the nodes are available before we fetch the task
+    $scope.getAvailableNodes(function () {
+        if ($scope.ptaskid) {
+            $scope.getPeriodicTask();
+        }
+    });
 });
