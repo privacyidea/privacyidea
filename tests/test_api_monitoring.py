@@ -1,6 +1,7 @@
 import json
 from .base import MyTestCase
 from privacyidea.lib.monitoringstats import write_stats
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
 
 
@@ -93,9 +94,14 @@ class APIMonitoringTestCase(MyTestCase):
 
     def test_02_delete_stats(self):
 
-        # Now we delete some keys
-        with self.app.test_request_context('/monitoring/key2/2010-01-01/2100-01-01',
+        ts = datetime.datetime.now()
+        write_stats("key2", "B")
+
+        # Now we delete some keys (the three old ones)
+        with self.app.test_request_context('/monitoring/key2',
                                            method='DELETE',
+                                           data={"start": "2010-01-01",
+                                                 "end": ts.strftime(AUTH_DATE_FORMAT)},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -103,7 +109,7 @@ class APIMonitoringTestCase(MyTestCase):
             # Number of deleted values
             self.assertEqual(result.get("value"), 3)
 
-        # ..and check if there are still keys
+        # ..and check if there is only one key left!
         with self.app.test_request_context('/monitoring/key2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -111,4 +117,4 @@ class APIMonitoringTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             # Number of remaining values
-            self.assertEqual(len(result.get("value")), 0)
+            self.assertEqual(len(result.get("value")), 1)

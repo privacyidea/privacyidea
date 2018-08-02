@@ -73,10 +73,10 @@ def get_statistics(stats_key=None):
         return send_result(values)
 
 
-@monitoring_blueprint.route('/<stats_key>/<start>/<end>', methods=['DELETE'])
+@monitoring_blueprint.route('/<stats_key>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.STATISTICSDELETE)
-def delete_statistics(stats_key, start, end):
+def delete_statistics(stats_key):
     """
     Delete the statistics data of a certain stats_key.
 
@@ -88,8 +88,13 @@ def delete_statistics(stats_key, start, end):
 
     You can specify the dates like 2010-12-31 22:00+0200
     """
-    start = parse_legacy_time(start, return_date=True)
-    end = parse_legacy_time(end, return_date=True)
+    param = request.all_data
+    start = getParam(param, "start")
+    if start:
+        start = parse_legacy_time(start, return_date=True)
+    end = getParam(param, "end")
+    if end:
+        end = parse_legacy_time(end, return_date=True)
     r = delete_stats(stats_key, start, end)
     g.audit_object.log({"success": True})
     return send_result(r)
