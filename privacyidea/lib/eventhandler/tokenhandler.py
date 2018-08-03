@@ -99,6 +99,14 @@ class TokenEventHandler(BaseEventHandler):
     description = "This event handler can trigger new actions on tokens."
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible

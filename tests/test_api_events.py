@@ -315,3 +315,89 @@ class APIEventsTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), [])
+
+    def test_07_positions(self):
+        # test the available Positions
+
+        with self.app.test_request_context('/event/positions/Token',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue("post" in result.get("value"), result.get("value"))
+            self.assertTrue("pre" in result.get("value"), result.get("value"))
+
+        # create an event configuration
+        param = {
+            "name": "Delete the token that was created :-)",
+            "event": "token_init",
+            "action": "delete",
+            "handlermodule": "Token",
+            "conditions": '{"blabla": "yes"}',
+            "position": "post"
+        }
+        with self.app.test_request_context('/event',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        # check the event
+        with self.app.test_request_context('/event/1',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value")[0].get("position"), "post")
+
+        # Update event with the position=pre
+        param["id"] = 1
+        param["position"] = "pre"
+        with self.app.test_request_context('/event',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        # check the event
+        with self.app.test_request_context('/event/1',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value")[0].get("position"), "pre")
+
+        # delete event
+        with self.app.test_request_context('/event/1',
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        # list empty events
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), [])
+

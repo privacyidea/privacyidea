@@ -88,6 +88,15 @@ class BaseEventHandler(object):
         pass
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        This can be "post" or "pre" or both.
+        :return: list of allowed positions
+        """
+        return ["post"]
+
+    @property
     def actions(cls):
         """
         This method returns a list of available actions, that are provided

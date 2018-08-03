@@ -151,7 +151,7 @@ def enable_event(event_id, enable=True):
 
 
 def set_event(name, event, handlermodule, action, conditions=None,
-              ordering=0, options=None, id=None, active=True):
+              ordering=0, options=None, id=None, active=True, position="post"):
 
     """
     Set an event handling configuration. This writes an entry to the
@@ -178,6 +178,8 @@ def set_event(name, event, handlermodule, action, conditions=None,
     :param id: The DB id of the event. If the id is given, the event is
         updated. Otherwise a new entry is generated.
     :type id: int
+    :param position: The position of the event handler being "post" or "pre"
+    :type position: basestring
     :return: The id of the event.
     """
     if type(event) == list:
@@ -187,7 +189,8 @@ def set_event(name, event, handlermodule, action, conditions=None,
         id = int(id)
     event = EventHandler(name, event, handlermodule, action,
                          conditions=conditions, ordering=ordering,
-                         options=options, id=id, active=active)
+                         options=options, id=id, active=active,
+                         position=position)
     return event.id
 
 

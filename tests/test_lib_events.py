@@ -97,6 +97,7 @@ class EventHandlerLibTestCase(MyTestCase):
         # return a destinct eventid
         r = event_config.get_event(events[0].get("id"))
         self.assertEqual(r[0].get("id"), events[0].get("id"))
+        self.assertEqual(r[0].get("position"), "post")
 
         # We can not enable an event, that does not exist.
         self.assertRaises(ParameterError, enable_event, 1234567, True)
@@ -2325,7 +2326,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # create notification handler
         eid = set_event("This definition sends emails", "token_unassign",
-                        "UserNotification", "sendmail")
+                        "UserNotification", "sendmail", position="post")
         self.assertTrue(eid)
 
         # delete the user
