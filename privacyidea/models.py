@@ -1574,7 +1574,7 @@ class EventHandler(MethodsMixin, db.Model):
     name = db.Column(db.Unicode(64), unique=False, nullable=True)
     active = db.Column(db.Boolean, default=True)
     ordering = db.Column(db.Integer, nullable=False, default=0)
-    position = db.Column(db.Unicode(10), nullable=False, default="post")
+    position = db.Column(db.Unicode(10), default=u"post")
     # This is the name of the event in the code
     event = db.Column(db.Unicode(255), nullable=False)
     # This is the identifier of an event handler module

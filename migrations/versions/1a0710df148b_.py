@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 def upgrade():
     try:
-        op.add_column('eventhandler', sa.Column('position', sa.Unicode(length=10), nullable=False))
+        op.add_column('eventhandler', sa.Column('position', sa.Unicode(length=10), default=u"post"))
     except Exception as exx:
         print("position column in eventhandler table obviously already exists.")
         print(exx)
