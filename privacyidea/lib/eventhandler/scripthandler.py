@@ -128,11 +128,7 @@ class ScriptEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        if response:
-            content = json.loads(response.data)
-        else:
-            # In Pre-Handling we have no response and no content
-            content = {}
+        content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 

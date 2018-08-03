@@ -274,6 +274,15 @@ class BaseEventHandler(object):
                 raise exx
         return user
 
+    @staticmethod
+    def _get_response_content(response):
+        if response:
+            content = json.loads(response.data)
+        else:
+            # In Pre-Handling we have no response and no content
+            content = {}
+        return content
+
     def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.

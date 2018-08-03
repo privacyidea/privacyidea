@@ -401,3 +401,70 @@ class APIEventsTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), [])
 
+    def test_08_create_token_for_user(self):
+        # We create a token for a user, who has currently no token!
+        # create an event configuration
+        param = {
+            "name": "Create Email Token for untokened user",
+            "event": "validate_check",
+            "action": "enroll",
+            "handlermodule": "Token",
+            "position": "pre",
+            "conditions": '{"user_token_number": "0"}',
+            "option.user": "true",
+            "option.tokentype": "email",
+            "option.dynamic_email": "1",
+            "option.additional_params": "{'otppin':'1234'}"
+        }
+        with self.app.test_request_context('/event',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), 1)
+
+        self.setUp_user_realm2()
+        # usernotoken, self.realm2
+        # check that the user has no tokens
+        with self.app.test_request_context('/token/',
+                                           data={"user": "usernotoken",
+                                                 "realm": self.realm2},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value").get("tokens"), [])
+
+        # user tries to authenticate. with the pin 1234.
+        # He gets an email token enrolled and gets the transaction code in the response
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "usernotoken",
+                                                 "realm": self.realm2,
+                                                 "pass": "1234"},
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value"), False)
+            self.assertTrue(detail.get("type"), u"email")
+            # TODO FIXME The test currently does not create a Challenge! :-/
+
+        # check user has a token
+        with self.app.test_request_context('/token/',
+                                           data={"user": "usernotoken",
+                                                 "realm": self.realm2},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(result.get("value").get("count"), 1)
+            self.assertEqual(result.get("value").get("tokens")[0].get("tokentype"), u"email")
