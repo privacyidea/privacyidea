@@ -47,6 +47,14 @@ class CounterEventHandler(BaseEventHandler):
     description = "This event handler increases arbitrary counters in the database."
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible

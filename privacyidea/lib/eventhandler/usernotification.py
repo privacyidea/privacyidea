@@ -90,6 +90,14 @@ class UserNotificationEventHandler(BaseEventHandler):
                   "tokens"
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible
@@ -193,7 +201,11 @@ class UserNotificationEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        content = json.loads(response.data)
+        if response:
+            content = json.loads(response.data)
+        else:
+            # In Pre-Handling we have no response and no content
+            content = {}
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         notify_type = handler_options.get("To", NOTIFY_TYPE.TOKENOWNER)

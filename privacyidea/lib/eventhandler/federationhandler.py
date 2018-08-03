@@ -56,6 +56,8 @@ class FederationEventHandler(BaseEventHandler):
     description = "This event handler can forward the request to other " \
                   "privacyIDEA servers"
 
+    # TODO: Do we need to change the federation handler this way, that it does only pre-handling?
+
     @property
     def actions(cls):
         """

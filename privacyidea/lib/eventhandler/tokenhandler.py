@@ -262,7 +262,11 @@ class TokenEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        content = json.loads(response.data)
+        if response:
+            content = json.loads(response.data)
+        else:
+            # In Pre-Handling we have no response and no content
+            content = {}
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
