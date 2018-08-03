@@ -7,7 +7,8 @@
             <!--<th translate>Id</th>-->
             <th translate>Description</th>
             <th translate>Events</th>
-            <th translate>Handlermodule</th>
+            <th><span translate>Handlermodule</span><br>
+                <span translate>Position</span> </th>
             <th translate>Conditions</th>
             <th translate>Action</th>
             <th translate>Options</th>
@@ -44,7 +45,8 @@
                 {{ event.event | json}}
             </td>
             <td>
-                {{ event.handlermodule }}
+                {{ event.handlermodule }}<br>
+                <em>{{ event.position }}</em>
             </td>
             <td>
                 {{ event.conditions }}

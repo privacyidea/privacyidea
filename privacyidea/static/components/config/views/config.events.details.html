@@ -70,6 +70,19 @@
     </div>
 
     <div class="form-group">
+        <label for="position" class="col-sm-3 control-label" translate>
+            Positions</label>
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="position"
+                    ng-model="form.position" required
+                    ng-options="position as position for position in handlerPositions"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label for="ordering" class="col-sm-3 control-label" translate>
             Order</label>
         <div class="col-sm-6">
