@@ -1,5 +1,7 @@
 import json
 from .base import MyTestCase
+import smtpmock
+from privacyidea.lib.config import set_privacyidea_config
 
 
 class APIEventsTestCase(MyTestCase):
@@ -401,7 +403,15 @@ class APIEventsTestCase(MyTestCase):
             detail = json.loads(res.data).get("detail")
             self.assertEqual(result.get("value"), [])
 
+    @smtpmock.activate
     def test_08_create_token_for_user(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098712"
+        # send the email with the old configuration
+        set_privacyidea_config("email.mailserver", "localhost")
+        set_privacyidea_config("email.username", "user")
+        set_privacyidea_config("email.username", "password")
+        set_privacyidea_config("email.tls", True)
         # We create a token for a user, who has currently no token!
         # create an event configuration
         param = {
@@ -414,7 +424,7 @@ class APIEventsTestCase(MyTestCase):
             "option.user": "true",
             "option.tokentype": "email",
             "option.dynamic_email": "1",
-            "option.additional_params": "{'otppin':'1234'}"
+            "option.additional_params": "{'pin':'1234'}"
         }
         with self.app.test_request_context('/event',
                                            data=param,
@@ -452,9 +462,12 @@ class APIEventsTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data).get("result")
             detail = json.loads(res.data).get("detail")
-            self.assertEqual(result.get("value"), False)
-            self.assertTrue(detail.get("type"), u"email")
-            # TODO FIXME The test currently does not create a Challenge! :-/
+            self.assertFalse(result.get("value"))
+            self.assertTrue(detail.get("serial").startswith("PIEM"))
+            # This is a challenge response!
+            self.assertTrue("transaction_id" in detail, detail)
+            self.assertTrue("multi_challenge" in detail, detail)
+            self.assertEqual(detail.get("message"), u"Enter the OTP from the Email:")
 
         # check user has a token
         with self.app.test_request_context('/token/',
