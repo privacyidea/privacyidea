@@ -632,6 +632,7 @@ def check_max_token_user(request=None, action=None):
     ERROR = "The number of tokens for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
+    serial = getParam(params, "serial")
     if user_object.login:
         policy_object = g.policy_object
         limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
@@ -642,6 +643,10 @@ def check_max_token_user(request=None, action=None):
         if limit_list:
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object)
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                return True
             already_assigned_tokens = len(tokenobject_list)
             if already_assigned_tokens >= max([int(x) for x in limit_list]):
                 raise PolicyError(ERROR)
