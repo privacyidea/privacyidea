@@ -14,7 +14,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
                                    check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode)
+                                   convert_column_to_unicode, censor_connect_string)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -430,3 +430,11 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(convert_column_to_unicode(False), "False")
         self.assertEqual(convert_column_to_unicode(b"yes"), u"yes")
         self.assertEqual(convert_column_to_unicode(u"yes"), u"yes")
+
+    def test_18_censor_connect_string(self):
+        self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
+                         "mysql://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
+                         "mysql://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
+                         u"mysql://knöbel:xxxx@localhost/pi")
