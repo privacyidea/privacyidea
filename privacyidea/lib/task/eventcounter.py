@@ -21,6 +21,7 @@ from privacyidea.lib.task.base import BaseTask
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.counter import reset, read
 from privacyidea.lib.utils import is_true
+from privacyidea.lib import _
 
 
 __doc__ = """This task module reads event counters and writes them to the 
@@ -38,18 +39,19 @@ class EventCounterTask(BaseTask):
         return {
             "event_counter": {
                 "type": "str",
-                "description": "The name of the event counter to read.",
+                "description": _("The name of the event counter to read."),
                 "required": True
             },
             "stats_key": {
                 "type": "str",
-                "description": "The name of the stats key to write to the MonitoringStats table.",
+                "description": _("The name of the stats key to write to the MonitoringStats "
+                                 "table."),
                 "required": True
             },
             "reset_event_counter": {
                 "type": "bool",
-                "description": "Whether to reset the event_counter, if it is read and written to the "
-                               "MonitoringStats table."
+                "description": _("Whether to reset the event_counter, if it is read and written "
+                                 "to the MonitoringStats table.")
             }
 
         }

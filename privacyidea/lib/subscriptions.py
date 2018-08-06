@@ -80,8 +80,10 @@ def get_users_with_active_tokens():
     :rtype: int
     """
     from privacyidea.models import Token
-    sql_query = Token.query.with_entities(Token.resolver, Token.user_id).filter(Token.active == True).distinct().count()
-    return sql_query
+    sql_query = Token.query.with_entities(Token.resolver,
+                                          Token.user_id).filter(Token.active == True,
+                                                                Token.user_id != "").distinct()
+    return sql_query.count()
 
 
 def subscription_status():
