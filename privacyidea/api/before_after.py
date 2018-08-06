@@ -70,6 +70,19 @@ from privacyidea.lib.user import User
 log = logging.getLogger(__name__)
 
 
+# ``before_app_request`` and ``teardown_app_request`` register the functions
+# at the application, so it's sufficient to call them only for one blueprint.
+# The decorated functions are called before and after *every* request.
+@token_blueprint.before_app_request
+def log_begin_request():
+    log.debug(u"Begin handling of request {!r}".format(request.full_path))
+
+
+@token_blueprint.teardown_app_request
+def log_end_request(exc):
+    log.debug(u"End handling of request {!r}".format(request.full_path))
+
+
 @token_blueprint.before_request
 @audit_blueprint.before_request
 @user_blueprint.before_request
@@ -109,7 +122,6 @@ def before_request():
 
     The checks for ONLY admin are preformed in api/system.py
     """
-    log.debug(u"Beginning handling of request {!r}".format(request.full_path))
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     g.config_object = ConfigClass()
