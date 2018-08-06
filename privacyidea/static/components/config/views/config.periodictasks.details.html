@@ -47,9 +47,17 @@
                    required/>
             <p class="help help-block" translate>
                 Please use crontab notation to specify the times at which the periodic task
-                should be run. Examples: "5 10 * * *" runs the task every day at 10:05,
-                and "*/10 * * * *" runs the task every ten minutes.
+                should be run.
             </p>
+            <accordion>
+                <accordion-group heading="{{ 'Examples'|translate}}">
+                    <ul translate>
+                        <li><b>"5 10 * * *"</b> runs the task every day at 10:05 am.</li>
+                        <li><b>"*/10 * * * *"</b> runs the task every ten minutes.</li>
+                        <li><b>"1 23 * * 7"</b> runs the task at 11:01pm on Sundays.</li>
+                    </ul>
+                </accordion-group>
+            </accordion>
         </div>
     </div>
     <div class="form-group">
