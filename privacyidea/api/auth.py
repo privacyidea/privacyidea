@@ -80,7 +80,6 @@ def before_request():
     """
     This is executed before the request
     """
-    log.debug(u"Beginning handling of request {!r}".format(request.full_path))
     g.config_object = ConfigClass()
     request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \

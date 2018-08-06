@@ -174,8 +174,6 @@ def sign_response(request, response):
         # We do no signing in this case.
         log.info("We only sign JSON response data.")
 
-    log.debug(u"Successfully signed the request {!r}".format(request.full_path))
-
     if response_is_tuple:
         resp = (response_object, response_value)
     else:
