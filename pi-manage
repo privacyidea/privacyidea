@@ -102,6 +102,7 @@ event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
 audit_manager = Manager(usage="Manage Audit log")
+hsm_manager = Manager(usage="Manage HSM")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -112,6 +113,35 @@ manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
 manager.add_command('audit', audit_manager)
+manager.add_command('hsm', hsm_manager)
+
+
+@hsm_manager.command
+def create_keys():
+    """
+    Create new encryption keys on the HSM. Be sure to first setup the HSM module, the PKCS11
+    module and the slot/password for the given HSM in your pi.cfg.
+    Set the variables PI_HSM_MODULE, PI_HSM_MODULE_MODULE, PI_HSM_MODULE_SLOT, PI_HSM_MODULE_PASSWORD.
+    """
+
+    hsm_module_name = app.config.get("PI_HSM_MODULE",
+                                     "privacyidea.lib.security.default.DefaultSecurityModule")
+    module_parts = hsm_module_name.split(".")
+    package_name = ".".join(module_parts[:-1])
+    class_name = module_parts[-1]
+    mod = __import__(package_name, globals(), locals(), [class_name])
+    hsm_class = getattr(mod, class_name)
+    hsm_parameters = {}
+    for key in app.config.keys():
+        if key.startswith("PI_HSM_MODULE_"):
+            param = key[len("PI_HSM_MODULE_"):].lower()
+            hsm_parameters[param] = app.config.get(key)
+    hsm_object = hsm_class(hsm_parameters)
+    r = hsm_object.create_keys()
+    print("Please add the following to your pi.cfg:")
+    print("PI_HSM_MODULE_KEY_LABEL_TOKEN = '{0}'".format(r.get("token")))
+    print("PI_HSM_MODULE_KEY_LABEL_CONFIG = '{0}'".format(r.get("token")))
+    print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("token")))
 
 
 @ca_manager.command
