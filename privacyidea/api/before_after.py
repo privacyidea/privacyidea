@@ -109,6 +109,7 @@ def before_request():
 
     The checks for ONLY admin are preformed in api/system.py
     """
+    log.debug(u"Beginning handling of request {!r}".format(request.full_path))
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     g.config_object = ConfigClass()
