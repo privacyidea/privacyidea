@@ -137,7 +137,7 @@ def set_eventhandling():
     :param handlermodule: A handlermodule
     :param action: The action to perform
     :param ordering: An integer number
-    :param position: "pre" or "past"
+    :param position: "pre" or "post"
     :param conditions: Conditions, when the event will trigger
     :param options.: A list of possible options.
     """

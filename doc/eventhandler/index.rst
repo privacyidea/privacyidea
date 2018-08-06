@@ -45,7 +45,7 @@ Added in Version 2.23.
 
 With most event handlers you can decide if you want the action to be taken before the actual event or
 after the actual event. I.e. if all conditions would trigger certain actions the action is either triggered
-before (*pre*) the HTTP request is processe or after (*post*) the request is processed.
+before (*pre*) the HTTP request is processed or after (*post*) the request is processed.
 
 Up to version 2.22 all actions where triggered after the request.
 In this case additional information from the response is available. E.g. if a user successfully authenticated the
@@ -58,7 +58,7 @@ However, triggering the action *before* the HTTP request is processed can have s
 Example for Pre Handling
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The administrator can define an event definition that would trigger in on the event ``validate/check`` in case the
+The administrator can define an event definition that would trigger on the event ``validate/check`` in case the
 the authenticating user does not have any token assigned.
 
 The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with

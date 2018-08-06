@@ -293,13 +293,12 @@ class BaseEventHandler(object):
         request = options.get("request")
         response = options.get("response")
         e_handler_def = options.get("handler_def")
-        if not response or not e_handler_def:
-            # options is missing a response and the handler definition
-            # We are probably in test mode.
+        if not e_handler_def:
+            # options is the handler definition
             return True
-        # conditions can be correspnding to the property conditions
+        # conditions can be corresponding to the property conditions
         conditions = e_handler_def.get("conditions")
-        content = json.loads(response.data)
+        content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or \
