@@ -80,7 +80,7 @@ def getAuditClass(packageName, className):
     return klass
 
 
-@log_with(log)
+@log_with(log, log_entry=False)
 def getAudit(config):
     """
     This wrapper function creates a new audit object based on the config
