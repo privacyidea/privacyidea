@@ -47,7 +47,8 @@
                    required/>
             <p class="help help-block" translate>
                 Please use crontab notation to specify the times at which the periodic task
-                should be run. Example: "5 10 * * *" runs the task every day at 10:05.
+                should be run. Examples: "5 10 * * *" runs the task every day at 10:05,
+                and "*/10 * * * *" runs the task every ten minutes.
             </p>
         </div>
     </div>
@@ -96,7 +97,7 @@
             Order</label>
         <div class="col-sm-6">
             <input id="ordering" type="number" ng-model="form.ordering"
-                   class="form-control" min="0" />
+                   class="form-control" min="0" max="999" />
         </div>
     </div>
 
