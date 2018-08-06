@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
+import urlparse
 import StringIO
 import urllib
 from privacyidea.lib.crypto import urandom, geturandom
@@ -1103,3 +1104,26 @@ def convert_timestamp_to_utc(timestamp):
     :return: timezone-naive datetime object
     """
     return timestamp.astimezone(tzutc()).replace(tzinfo=None)
+
+
+def censor_connect_string(connect_string):
+    """
+    Take a SQLAlchemy connect string and return a sanitized version
+    that can be written to the log without disclosing the password.
+    The password is replaced with "xxxx".
+    In case any error occurs, return "<error when censoring connect string>"
+    """
+    try:
+        parsed = urlparse.urlparse(connect_string)
+        if parsed.password is not None:
+            # We need to censor the ``netloc`` attribute: user:pass@host
+            _, host = parsed.netloc.rsplit("@", 1)
+            new_netloc = u'{}:{}@{}'.format(parsed.username, 'xxxx', host)
+            # Convert the URL to six components. netloc is component #1.
+            splitted = list(parsed)
+            splitted[1] = new_netloc
+            return urlparse.urlunparse(splitted)
+        return connect_string
+    except Exception:
+        return "<error when censoring connect string>"
+

@@ -44,7 +44,7 @@ from base64 import (b64decode,
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256, check_crypt)
+                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -367,7 +367,7 @@ class IdResolver (UserIdResolver):
                   'Server': self.server,
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
-        log.info("using the connect string {0!s}".format(self.connect_string))
+        log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s} and pool_timeout={1!s}".format(
                       self.pool_size, self.pool_timeout))
@@ -449,7 +449,6 @@ class IdResolver (UserIdResolver):
         # SQLAlchemy does not like a unicode connect string!
         if param.get("Driver").lower() == "sqlite":
             connect_string = str(connect_string)
-        log.debug("SQL connectstring: {0!r}".format(connect_string))
         return connect_string
 
     @classmethod
@@ -473,7 +472,7 @@ class IdResolver (UserIdResolver):
         desc = None
 
         connect_string = cls._create_connect_string(param)
-        log.info("using the connect string {0!s}".format(connect_string))
+        log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
         session = sessionmaker(bind=engine)()

@@ -41,6 +41,7 @@ token database.
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib.utils import censor_connect_string
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -89,7 +90,7 @@ class Audit(AuditBase):
         # resources
         connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
             "SQLALCHEMY_DATABASE_URI"))
-        log.debug("using the connect string {0!s}".format(connect_string))
+        log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         try:
             pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
             self.engine = create_engine(
