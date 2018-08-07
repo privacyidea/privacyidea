@@ -1,4 +1,6 @@
 # coding: utf-8
+from mock import mock
+
 from privacyidea.models import (Token,
                                 Resolver,
                                 ResolverRealm,
@@ -739,14 +741,19 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(counter9, None)
 
     def test_26_periodictask(self):
-        task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", {
-            "key1": "value2",
-            "KEY2": True,
-            "key3": u"öfføff",
-        })
-        task2 = PeriodicTask("some other task", True, "0 6 * * *", ["localhost"], "some.other.module", {
-            "foo": "bar"
-        })
+        current_utc_time = datetime(2018, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+
+            task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", 2, {
+                "key1": "value2",
+                "KEY2": True,
+                "key3": u"öfføff",
+            })
+            task2 = PeriodicTask("some other task", True, "0 6 * * *", ["localhost"], "some.other.module", 1, {
+                "foo": "bar"
+            })
+
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,
@@ -757,8 +764,11 @@ class TokenModelTestCase(MyTestCase):
             "name": "task1",
             "active": False,
             "interval": "0 5 * * *",
+            # we get a timezone-aware datetime here
+            "last_update": current_utc_time.replace(tzinfo=tzutc()),
             "nodes": ["localhost"],
             "taskmodule": "some.module",
+            "ordering": 2,
             "options": {
                 "key1": "value2",
                 "KEY2": "True",
@@ -770,10 +780,13 @@ class TokenModelTestCase(MyTestCase):
         task1.set_last_run("localhost", datetime(2018, 3, 4, 5, 6, 7))
 
         # assert we can update the task
-        PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", {
-            "KEY2": "value number 2",
-            "key 4": 1234
-        }, id=task1.id)
+        later_utc_time = current_utc_time + timedelta(seconds=1)
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = later_utc_time
+            PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
+                "KEY2": "value number 2",
+                "key 4": 1234
+            }, id=task1.id)
         # the first run for otherhost
         task1.set_last_run("otherhost", datetime(2018, 8, 9, 10, 11, 12))
         result = PeriodicTask.query.filter_by(name="task one").one().get()
@@ -783,8 +796,10 @@ class TokenModelTestCase(MyTestCase):
                              "active": True,
                              "name": "task one",
                              "interval": "0 8 * * *",
+                             "last_update": later_utc_time.replace(tzinfo=tzutc()),
                              "nodes": ["localhost", "otherhost"],
                              "taskmodule": "some.module",
+                             "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
@@ -803,8 +818,10 @@ class TokenModelTestCase(MyTestCase):
                              "active": True,
                              "name": "task one",
                              "interval": "0 8 * * *",
+                             "last_update": later_utc_time.replace(tzinfo=tzutc()),
                              "nodes": ["localhost", "otherhost"],
                              "taskmodule": "some.module",
+                             "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
                              "last_runs": {
@@ -814,7 +831,7 @@ class TokenModelTestCase(MyTestCase):
                          })
 
         # remove "localhost", assert the last run is removed
-        PeriodicTask("task one", True, "0 8 * * *", ["otherhost"], "some.module", {"foo": "bar"}, id=task1.id)
+        PeriodicTask("task one", True, "0 8 * * *", ["otherhost"], "some.module", 4, {"foo": "bar"}, id=task1.id)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id).count(), 1)
         self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().node, "otherhost")
         # naive timestamp in the database

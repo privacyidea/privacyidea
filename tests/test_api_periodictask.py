@@ -56,6 +56,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 'active': False,
                 'interval': '0 8 * * *',
                 'taskmodule': 'UnitTest',
+                'ordering': 5,
                 'options': '{"something": 123, "else": true}',
             }
             status_code, data = self.simulate_request('/periodictask/', method='POST', data=task_dict1)
@@ -65,11 +66,30 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
         # some invalid tasks
         invalid_task_dicts = [
+            # invalid ordering
+            {
+                'name': 'some other task',
+                'active': False,
+                'nodes': 'a, b',
+                'interval': '0 8 * * *',
+                'taskmodule': 'UnitTest',
+                'ordering': '-3',
+                'options': '{"something": "123", "else": true}',
+            },
             # no nodes
             {
                 'name': 'some other task',
                 'active': False,
                 'interval': '0 8 * * *',
+                'taskmodule': 'UnitTest',
+                'options': '{"something": "123", "else": true}',
+            },
+            # empty nodes
+            {
+                'name': 'some other task',
+                'active': False,
+                'interval': '0 8 * * *',
+                'nodes': '    ',
                 'taskmodule': 'UnitTest',
                 'options': '{"something": "123", "else": true}',
             },
@@ -118,6 +138,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
                 'active': False,
                 'interval': '0 8 * * 0',
                 'taskmodule': 'UnitTest',
+                'ordering': 2,
             }
             status_code, data = self.simulate_request('/periodictask/', method='POST',
                                                       data=task_dict2)
@@ -131,20 +152,22 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
         self.assertEqual(len(data['result']['value']), 2)
+        self.assertEqual([task['name'] for task in data['result']['value']],
+                         ['some other task', 'some task'])
 
         # find first task
-        for result_dict in data['result']['value']:
-            if result_dict['id'] == ptask_id1:
-                self.assertEqual(result_dict['name'], 'some task')
-                self.assertEqual(result_dict['active'], False)
-                self.assertEqual(result_dict['interval'], '0 8 * * *')
-                self.assertEqual(result_dict['nodes'], ['pinode1', 'pinode2'])
-                self.assertEqual(set(result_dict['last_runs'].keys()), {'pinode1', 'pinode2'})
-                self.assertIsNotNone(parse_timestamp(result_dict['last_runs']['pinode1']))
-                self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
-                break
-        else:
-            self.fail("Could not find 'some task' in results")
+        result_dict = data['result']['value'][1]
+        self.assertEqual(result_dict['id'], ptask_id1)
+        self.assertEqual(result_dict['ordering'], 5)
+        self.assertEqual(result_dict['name'], 'some task')
+        self.assertEqual(result_dict['active'], False)
+        self.assertEqual(result_dict['interval'], '0 8 * * *')
+        self.assertEqual(result_dict['nodes'], ['pinode1', 'pinode2'])
+        self.assertEqual(result_dict['last_runs'], {})
+        last_update = parse_timestamp(result_dict['last_update'])
+        self.assertIsNotNone(last_update)
+        self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
+
 
         # get one
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
@@ -160,6 +183,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
         task_dict1['name'] = 'new name'
         task_dict1['options'] = '{"key": "value"}'
         task_dict1['id'] = ptask_id1
+        task_dict1['ordering'] = '2'
         with self.mock_task_module():
             status_code, data = self.simulate_request('/periodictask/', method='POST',
                                                       data=task_dict1)
@@ -167,12 +191,24 @@ class APIPeriodicTasksTestCase(MyTestCase):
             self.assertTrue(data['result']['status'])
             self.assertEqual(data['result']['value'], ptask_id1)
 
+        # can list the periodic tasks in new order
+        status_code, data = self.simulate_request('/periodictask/', method='GET')
+        self.assertEqual(status_code, 200)
+        self.assertTrue(data['result']['status'])
+        self.assertEqual(len(data['result']['value']), 2)
+        self.assertEqual([task['name'] for task in data['result']['value']],
+                         ['new name', 'some other task'])
+
         # get updated task
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['id'], ptask_id1)
+        self.assertEqual(data['result']['value']['ordering'], 2)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['options'], {'key': 'value'})
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
+        last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # enable
         status_code, data = self.simulate_request('/periodictask/enable/{}'.format(ptask_id1), method='POST')
@@ -183,6 +219,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], True)
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
+        last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # disable
         status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
@@ -193,6 +232,8 @@ class APIPeriodicTasksTestCase(MyTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], False)
+        self.assertGreater(parse_timestamp(data['result']['value']['last_update']),
+                           last_update)
 
         # disable again without effect
         status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
@@ -246,3 +287,9 @@ class APIPeriodicTasksTestCase(MyTestCase):
             self.assertEqual(status_code, 200)
             self.assertTrue(data['result']['status'])
             self.assertEqual(data['result']['value'], options)
+
+    def test_03_nodes(self):
+        status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
+        self.assertEqual(status_code, 200)
+        self.assertTrue(data['result']['status'])
+        self.assertEqual(data['result']['value'], ['Node2', 'Node1'])

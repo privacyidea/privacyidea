@@ -54,6 +54,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                                          policyUrl, eventUrl, smtpServerUrl,
                                          radiusServerUrl, smsgatewayUrl,
                                          defaultRealmUrl, systemUrl,
+                                         periodicTaskUrl,
                                          privacyideaServerUrl,
                                          CAConnectorUrl, inform) {
     /**
@@ -151,6 +152,61 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
         },
         getHandlerPositions: function(handlername, callback) {
             $http.get(eventUrl + "/positions/" + handlername, {
+              headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        delPeriodicTask: function (ptaskid, callback) {
+            $http.delete(periodicTaskUrl + "/" + ptaskid, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
+            ).success(callback
+            ).error(error_func);
+        },
+        getPeriodicTasks: function(callback) {
+            $http.get(periodicTaskUrl + "/", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPeriodicTaskmodules: function(callback) {
+            $http.get(periodicTaskUrl + "/taskmodules/", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPeriodicTaskmoduleOptions: function(taskmodule, callback) {
+            $http.get(periodicTaskUrl + "/options/" + taskmodule, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        getPeriodicTask: function(ptaskid, callback) {
+            $http.get(periodicTaskUrl + "/" + ptaskid, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
+        setPeriodicTask: function(params, callback) {
+            $http.post(periodicTaskUrl + "/", params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).success(callback
+            ).error(error_func);
+        },
+        enablePeriodicTask: function(ptaskid, callback) {
+            $http.post(periodicTaskUrl + "/enable/" + ptaskid, {},
+                { headers: {'PI-Authorization': AuthFactory.getAuthToken()} }
+            ).success(callback
+            ).error(error_func);
+        },
+        disablePeriodicTask: function(ptaskid, callback) {
+            $http.post(periodicTaskUrl + "/disable/" + ptaskid, {},
+                { headers: {'PI-Authorization': AuthFactory.getAuthToken()} }
+            ).success(callback
+            ).error(error_func);
+        },
+        getNodes: function(callback) {
+            $http.get(periodicTaskUrl + "/nodes/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(error_func);

@@ -28,6 +28,11 @@
                     <span class="glyphicon glyphicon-flag"
                           aria-hidden="true"></span>
                     <span translate>Events</span></a></li>
+                <li ng-class="{active: $state.includes('config.periodictasks')}">
+                    <a ui-sref="config.periodictasks">
+                        <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                        <span translate>Periodic Tasks</span></a></li>
                 <li ng-class="{active: $state.includes('config.tokens')}">
                     <a ui-sref="config.tokens">
                     <span class="glyphicon glyphicon-phone"

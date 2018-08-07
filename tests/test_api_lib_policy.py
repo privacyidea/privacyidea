@@ -296,6 +296,12 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
+        # Now, the token that already exists and is reenrolled must not trigger an exception
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW002"}
+        self.assertTrue(check_max_token_user(req))
+
         # Now we set another policy for the user max_token = 12.
         # This way, the user should be allowed to enroll tokens again, since there
         # are two policies matching for the user and the maximum is 12.

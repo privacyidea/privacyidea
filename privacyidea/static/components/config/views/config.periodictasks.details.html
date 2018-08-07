@@ -1,0 +1,174 @@
+<h2 class="form-signin-heading"
+    ng-show="ptaskid">
+    <translate>Edit Periodic Task {{ ptaskid }}</translate>
+
+    <span ng-show="checkRight('periodictask_write')">
+    <button class="btn btn-danger"
+            ng-click="disablePeriodicTask(ptaskid)"
+            ng-show="form.active" translate>
+        Disable
+    </button>
+    <button class="btn btn-success"
+            ng-click="enablePeriodicTask(ptaskid)"
+            ng-show="!form.active" translate>
+        Enable
+    </button>
+    <button class="btn btn-danger"
+        ng-click="delPeriodicTask(ptaskid)">
+        <span class="glyphicon glyphicon-trash"></span>
+        <span translate>Delete</span>
+    </button>
+    </span>
+</h2>
+
+<h2 class="form-signin-heading"
+        ng-hide="ptaskid" translate>Create a new Periodic Task</h2>
+
+<form name="formPeriodicTaskAdd" role="form" validate
+      class="form-horizontal">
+
+    <div class="form-group">
+        <label for="name" class="col-sm-3 control-label" translate>
+            Description</label>
+        <div class="col-sm-6">
+            <input id="name" class="form-control"
+                   ng-model="form.name"
+                   placeholder="Name"
+                   required/>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="interval" class="col-sm-3 control-label" translate>
+            Interval</label>
+        <div class="col-sm-6">
+            <input id="interval" class="form-control"
+                   ng-model="form.interval"
+                   placeholder="Interval"
+                   required/>
+            <p class="help help-block" translate>
+                Please use crontab notation to specify the times at which the periodic task
+                should be run.
+            </p>
+            <accordion>
+                <accordion-group heading="{{ 'Examples'|translate}}">
+                    <ul translate>
+                        <li><b>"5 10 * * *"</b> runs the task every day at 10:05 am.</li>
+                        <li><b>"*/10 * * * *"</b> runs the task every ten minutes.</li>
+                        <li><b>"1 23 * * 7"</b> runs the task at 11:01pm on Sundays.</li>
+                    </ul>
+                </accordion-group>
+            </accordion>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="nodes" class="col-sm-3 control-label"
+        translate>Nodes</label>
+
+        <div class="col-sm-9">
+            <div isteven-multi-select
+                 required
+                 input-model="availableNodes"
+                 output-model="selectedNodes"
+                 button-label="icon name"
+                 item-label="icon name maker"
+                 tick-property="ticked"
+                 id="nodes">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group" ng-show="ptaskid">
+        <label for="last_runs" class="col-sm-3 control-label"
+        translate>Recorded Last Runs</label>
+
+        <div class="col-sm-6">
+            <table id="last_runs" class="table table-hover" ng-show="!noLastRuns">
+                <tr ng-repeat="(timestamp, node) in form.last_runs">
+                    <td>{{ timestamp }}</td>
+                    <td>{{ node }}</td>
+                </tr>
+            </table>
+            <span ng-show="noLastRuns" translate>(none)</span>
+        </div>
+    </div>
+
+    <div class="form-group" ng-show="ptaskid">
+        <label for="last_update" class="col-sm-3 control-label"
+        translate>Last Definition Update</label>
+        <div class="col-sm-6" id="last_update">
+            {{ form.last_update }}
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="ordering" class="col-sm-3 control-label" translate>
+            Order</label>
+        <div class="col-sm-6">
+            <input id="ordering" type="number" ng-model="form.ordering"
+                   class="form-control" min="0" max="999" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="taskmodule" class="col-sm-3 control-label" translate>
+            Taskmodule</label>
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="taskmodule"
+                    ng-model="form.taskmodule" required
+                    ng-options="module for module in taskmodules"
+                    ng-change="taskmoduleChanged()"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <!-- options -->
+    <h4 translate>Options</h4>
+    <table class="table table-hover">
+        <tr ng-repeat="(optionname, option) in taskmoduleOptions">
+            <td>
+                <b>{{ optionname }}</b>
+            </td>
+            <td>
+                <select class="form-control"
+                        ng-if="option.value"
+                        ng-required="option.required && option.value"
+                        ng-model="form.options[optionname]"
+                        ng-options="value for value in option.value">
+                </select>
+                <textarea type="text" rows="6"
+                          ng-required="option.required && !option.value"
+                          ng-if="option.type==='text' && !option.value"
+                          class="form-control"
+                          ng-model="form.options[optionname]">
+                </textarea>
+                <input class="form-control"
+                       ng-required="option.required && !option.value"
+                       ng-model="form.options[optionname]"
+                       ng-if="option.type==='str' && !option.value">
+
+                <input type="checkbox"
+                       ng-model="form.options[optionname]"
+                       ng-if="option.type==='bool' && !option.value">
+                <p class="help help-block">
+                    {{ option.description }}
+                </p>
+            </td>
+        </tr>
+    </table>
+
+
+    <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('periodictask_write')">
+        <button ng-click="createPeriodicTask()"
+                id="createPeriodicTaskButton"
+                ng-disabled="formPeriodicTaskAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Create Periodic Task Definition</span>
+        </button>
+    </div>
+
+</form>

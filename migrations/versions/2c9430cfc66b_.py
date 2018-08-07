@@ -23,6 +23,8 @@ def upgrade():
         sa.Column('interval', sa.Unicode(length=256), nullable=False),
         sa.Column('nodes', sa.Unicode(length=256), nullable=False),
         sa.Column('taskmodule', sa.Unicode(length=256), nullable=False),
+        sa.Column('ordering', sa.Integer(), nullable=False),
+        sa.Column('last_update', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
         mysql_row_format='DYNAMIC'
