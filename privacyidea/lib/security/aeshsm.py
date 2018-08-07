@@ -24,6 +24,7 @@ import binascii
 import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.crypto import get_alphanum_str
 
 __doc__ = """
 This is a PKCS11 Security module that encrypts and decrypts the data on a
@@ -313,6 +314,40 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(':')]
 
         return self.decrypt(data, iv, key_id)
+
+    def create_keys(self):
+        """
+        Connect to the HSM and create the encryption keys.
+        The HSM connection should already be configured in pi.cfg.
+
+        We will create new keys with new key labels
+        :return: a dictionary of the created key labels
+        """
+        # We need a new read/write session
+        session = self.pkcs11.openSession(self.slot, PyKCS11.CKF_SERIAL_SESSION | PyKCS11.CKF_RW_SESSION)
+        session.login(self.password)
+
+        key_labels = {"token": "",
+                      "config": "",
+                      "value": ""}
+
+        for kl in key_labels.keys():
+            label = "{0!s}_{1!s}".format(kl, get_alphanum_str())
+            aesTemplate = [
+                (PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
+                (PyKCS11.CKA_TOKEN, PyKCS11.CK_TRUE),
+                (PyKCS11.CKA_SENSITIVE, PyKCS11.CK_TRUE),
+                (PyKCS11.CKA_VALUE_LEN, 32),
+                (PyKCS11.CKA_KEY_TYPE, PyKCS11.CKK_AES),
+                (PyKCS11.CKA_LABEL, label)
+            ]
+            aesKey = session.generateKey(aesTemplate)
+            key_labels[kl] = label
+
+        session.logout()
+        session.closeSession()
+
+        return key_labels
 
 
 if __name__ == "__main__":

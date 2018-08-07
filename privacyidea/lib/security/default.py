@@ -130,6 +130,14 @@ class SecurityModule(object):
                   "the method : %s " % (fname,))
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
+    def create_keys(self):
+        """
+        This can be used to create the encryption keys
+        :return: Module dependent
+        """
+        fname = "create_keys"
+        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
+
 
 class DefaultSecurityModule(SecurityModule):
 
