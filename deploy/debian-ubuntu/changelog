@@ -1,3 +1,10 @@
+python-privacyidea (2.23~dev3-trusty) trusty; urgency=medium
+
+  Development Release to test periodic tasks and pre-handling
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 07 Aug 2018 17:00:00 +0200
+
+
 python-privacyidea (2.23~dev2-trusty) trusty; urgency=medium
 
   Development Release to test with bionic beaver
