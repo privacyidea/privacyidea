@@ -64,7 +64,7 @@ the authenticating user does not have any token assigned.
 The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with
 *dynamic_email* for this very user.
 
-When the HTTP request ``validate/check`` is now processed, the user will have an email token and the can authenticate
+When the HTTP request ``validate/check`` is now processed, the user actually now has an email token and can authenticate
 via challenge response with this very email token without an administrator ever enrolling or assigning a token for this
 user.
 
