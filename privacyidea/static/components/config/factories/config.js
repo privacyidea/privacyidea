@@ -150,6 +150,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(error_func);
         },
+        getHandlerPositions: function(handlername, callback) {
+            $http.get(eventUrl + "/positions/" + handlername, {
+              headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(error_func);
+        },
         delPeriodicTask: function (ptaskid, callback) {
             $http.delete(periodicTaskUrl + "/" + ptaskid, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}}

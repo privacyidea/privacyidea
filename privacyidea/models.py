@@ -1574,6 +1574,7 @@ class EventHandler(MethodsMixin, db.Model):
     name = db.Column(db.Unicode(64), unique=False, nullable=True)
     active = db.Column(db.Boolean, default=True)
     ordering = db.Column(db.Integer, nullable=False, default=0)
+    position = db.Column(db.Unicode(10), default=u"post")
     # This is the name of the event in the code
     event = db.Column(db.Unicode(255), nullable=False)
     # This is the identifier of an event handler module
@@ -1589,7 +1590,7 @@ class EventHandler(MethodsMixin, db.Model):
 
     def __init__(self, name, event, handlermodule, action, condition="",
                  ordering=0, options=None, id=None, conditions=None,
-                 active=True):
+                 active=True, position="post"):
         self.name = name
         self.ordering = ordering
         self.event = event
@@ -1597,6 +1598,7 @@ class EventHandler(MethodsMixin, db.Model):
         self.condition = condition
         self.action = action
         self.active = active
+        self.position = position
         if id == "":
             id = None
         self.id = id
@@ -1626,6 +1628,7 @@ class EventHandler(MethodsMixin, db.Model):
             # update
             EventHandler.query.filter_by(id=self.id).update({
                 "ordering": self.ordering or 0,
+                "position": self.position or "post",
                 "event": self.event,
                 "active": self.active,
                 "name": self.name,
@@ -1662,6 +1665,7 @@ class EventHandler(MethodsMixin, db.Model):
              "handlermodule": self.handlermodule,
              "id": self.id,
              "ordering": self.ordering,
+             "position": self.position or "post",
              "action": self.action,
              "condition": self.condition}
         event_list = [x.strip() for x in self.event.split(",")]

@@ -61,6 +61,14 @@ class ScriptEventHandler(BaseEventHandler):
         script_directory = "tests/testdata/scripts"
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible
@@ -120,7 +128,7 @@ class ScriptEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        content = json.loads(response.data)
+        content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
