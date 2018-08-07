@@ -432,8 +432,16 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(convert_column_to_unicode(u"yes"), u"yes")
 
     def test_18_censor_connect_string(self):
+        self.assertEqual(censor_connect_string("sqlite:////home/foo/privacyidea/privacyidea/data.sqlite"),
+                         "sqlite:////home/foo/privacyidea/privacyidea/data.sqlite")
+        self.assertEqual(censor_connect_string("mysql://pi@localhost/pi"),
+                         "mysql://pi@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
                          "mysql://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string("psql+odbc://pi@localhost/pi"),
+                         "psql+odbc://pi@localhost/pi")
+        self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
+                         "psql+odbc://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
                          "mysql://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
