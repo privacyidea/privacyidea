@@ -46,7 +46,7 @@ from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
-
+from .pools import POOLS
 
 log = logging.getLogger(__name__)
 try:
@@ -92,12 +92,18 @@ class Audit(AuditBase):
             "SQLALCHEMY_DATABASE_URI"))
         log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         try:
-            pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
-            self.engine = create_engine(
-                connect_string,
-                pool_size=pool_size,
-                pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
-            log.debug("Using SQL pool_size of {0!s}".format(pool_size))
+            if self.name in POOLS:
+                self.engine = POOLS.get(self.name)
+                log.debug("Using the engine {0!s} from the pool.".format(self.engine))
+            else:
+                pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
+                self.engine = create_engine(
+                    connect_string,
+                    pool_size=pool_size,
+                    pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
+                log.debug("Using SQL pool_size of {0!s} and pushing to engine {1!s} to the pool.".format(pool_size,
+                                                                                                         self.engine))
+                POOLS[self.name] = self.engine
         except TypeError:
             # SQLite does not support pool_size
             self.engine = create_engine(connect_string)
