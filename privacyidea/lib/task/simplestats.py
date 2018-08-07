@@ -19,15 +19,19 @@
 #
 import logging
 
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import TOKENKIND
-from privacyidea.lib.token import get_all_token_users, get_tokens
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.subscriptions import get_users_with_active_tokens
 from privacyidea.lib.task.base import BaseTask
 # from privacyidea.lib.user import get_user_list
 from privacyidea.lib import _
 
-__doc__ = """This is a statistics task which collects simple statistics from the database."""
+__doc__ = """This is a statistics task which collects simple statistics from the database.
+If You want to add more statistic points, simply add them to the options method and add a
+corresponding property function (beginning with a '_').
+The entry in the monitoringstats table will have the same key as the property name."""
 
 log = logging.getLogger(__name__)
 
@@ -60,33 +64,33 @@ class SimpleStatsTask(BaseTask):
             }
 
     @property
-    def user_with_token(self):
+    def _user_with_token(self):
         return get_users_with_active_tokens()
 
     @property
-    def total_tokens(self):
+    def _total_tokens(self):
         return get_tokens(count=True)
 
     @property
-    def hardware_tokens(self):
+    def _hardware_tokens(self):
         return get_tokens(count=True, tokeninfo={'tokenkind': TOKENKIND.HARDWARE})
 
     @property
-    def software_tokens(self):
+    def _software_tokens(self):
         return get_tokens(count=True, tokeninfo={'tokenkind': TOKENKIND.SOFTWARE})
 
     @property
-    def unassigned_hardware_tokens(self):
+    def _unassigned_hardware_tokens(self):
         return get_tokens(count=True, tokeninfo={'tokenkind': 'hardware'}, assigned=False)
 
     @property
-    def assigned_tokens(self):
-        return len(get_all_token_users())
+    def _assigned_tokens(self):
+        return get_tokens(count=True, assigned=True)
 
     def do(self, params):
         for opt in self.options.keys():
-            if params.get(opt, False):
+            if is_true(params.get(opt)):
                 log.debug("Got param {0}".format(opt))
-                write_stats(opt, getattr(self, opt))
+                write_stats(opt, getattr(self, '_' + opt))
 
         return True
