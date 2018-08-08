@@ -58,7 +58,7 @@ class NullEngineRegistry(BaseEngineRegistry):
     Consequently, engines are not shared among threads and
     no pooling is implemented.
 
-    It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "Null".
+    It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "null".
     """
     def get_engine(self, key, creator):
         return creator()
@@ -66,8 +66,9 @@ class NullEngineRegistry(BaseEngineRegistry):
 
 class SharedEngineRegistry(BaseEngineRegistry):
     """
-    A registry which holds a dictionary mapping a (cls, name) pair to
-    an SQLAlchemy engine.
+    A registry which holds a dictionary mapping a key to an SQLAlchemy engine.
+
+    It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "shared".
     """
     def __init__(self):
         BaseEngineRegistry.__init__(self)
