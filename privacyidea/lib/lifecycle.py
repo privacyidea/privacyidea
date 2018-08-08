@@ -41,10 +41,11 @@ def call_finalizers():
     Call all finalizers that have been registered with the current request.
     Exceptions will be caught and written to the log.
     """
-    for func in getattr(g, 'call_on_teardown', ()):
-        try:
-            func()
-        except Exception as exx:
-            log.warning(u"Caught exception in finalizer: {!r}".format(exx))
-            log.debug(u"Exception in finalizer:", exc_info=True)
-    g.call_on_teardown = ()
+    if hasattr(g, 'call_on_teardown'):
+        for func in g.call_on_teardown:
+            try:
+                func()
+            except Exception as exx:
+                log.warning(u"Caught exception in finalizer: {!r}".format(exx))
+                log.debug(u"Exception in finalizer:", exc_info=True)
+        g.call_on_teardown = []
