@@ -43,6 +43,7 @@ from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
+from privacyidea.lib.lifecycle import register_finalizer
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -97,6 +98,9 @@ class Audit(AuditBase):
         # We use it anyway as a safety measure.
         Session = scoped_session(sessionmaker(bind=self.engine))
         self.session = Session()
+        # Ensure that the connection gets returned to the pool when the request has
+        # been handled. This may close an already-closed session, but this is not a problem.
+        register_finalizer(self.session.close)
         self.session._model_changes = {}
 
     def _create_engine(self):
