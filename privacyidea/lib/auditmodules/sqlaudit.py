@@ -93,10 +93,9 @@ class Audit(AuditBase):
         self.engine = get_engine(self.__class__, self.name, self._create_engine)
         # create a configured "Session" class. ``scoped_session`` is not
         # necessary because we do not share session objects among threads.
-        # We use it anyway as a safety mesaure.
+        # We use it anyway as a safety measure.
         Session = scoped_session(sessionmaker(bind=self.engine))
         self.session = Session()
-        log.debug("Using session {!r}".format(self.session))
         self.session._model_changes = {}
 
     def _create_engine(self):
@@ -114,7 +113,7 @@ class Audit(AuditBase):
                 connect_string,
                 pool_size=pool_size,
                 pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
-            log.info(u"Using SQL pool size of {}".format(pool_size))
+            log.debug("Using SQL pool size of {}".format(pool_size))
         except TypeError:
             # SQLite does not support pool_size
             engine = create_engine(connect_string)

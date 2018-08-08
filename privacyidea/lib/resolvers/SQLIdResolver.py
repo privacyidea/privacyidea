@@ -23,8 +23,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.pooling import get_engine
-
 __doc__ = """This is the resolver to find users in SQL databases.
 
 The file is tested in tests/test_lib_resolver.py
@@ -45,6 +43,7 @@ from base64 import (b64decode,
                     b64encode)
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
                                    check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
 
