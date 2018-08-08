@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 
 from privacyidea.app import create_app
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.pooling import get_engine, get_registry, SharedEngineRegistry
+from privacyidea.lib.pooling import get_engine, get_registry, SharedEngineRegistry, NullEngineRegistry
 from privacyidea.models import db, save_config_timestamp
 from .base import MyTestCase
 
@@ -55,7 +55,7 @@ class NullPoolingTestCase(MyTestCase):
         registry1 = get_registry()
         registry2 = get_registry()
         self.assertIs(registry1, registry2)
-        self.assertIsInstance(registry1, NullPoolingTestCase)
+        self.assertIsInstance(registry1, NullEngineRegistry)
 
     def _create_engine(self):
         return create_engine('sqlite://')
