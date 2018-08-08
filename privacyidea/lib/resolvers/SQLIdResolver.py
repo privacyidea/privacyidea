@@ -493,8 +493,9 @@ class IdResolver (UserIdResolver):
         log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
-        session = sessionmaker(bind=engine)()
-        db = SQLSoup(engine)
+        Session = scoped_session(sessionmaker(bind=engine))
+        session = Session()
+        db = SQLSoup(engine, session=Session)
         try:
             TABLE = db.entity(param.get("Table"))
             conditions = cls._append_where_filter([], TABLE,
@@ -506,6 +507,13 @@ class IdResolver (UserIdResolver):
             desc = "Found {0:d} users.".format(num)
         except Exception as exx:
             desc = "failed to retrieve users: {0!s}".format(exx)
+        finally:
+            # We do not want any leftover DB connection, so we first need to close
+            # the session such that the DB connection gets returned to the pool (it
+            # is still open at that point!) and then dispose the engine such that the
+            # checked-in connection gets closed.
+            session.close()
+            engine.dispose()
 
         return num, desc
 
