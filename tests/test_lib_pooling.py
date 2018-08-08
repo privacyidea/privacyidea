@@ -41,10 +41,10 @@ class SharedPoolingTestCase(MyTestCase):
 
     def test_02_engine(self):
         # test that we get the same engine
-        engine1 = get_engine(self.__class__, 'my engine', self._create_engine)
-        engine2 = get_engine(self.__class__, 'my engine', self._create_engine, 'another display name')
+        engine1 = get_engine((self.__class__, 'my engine'), self._create_engine)
+        engine2 = get_engine((self.__class__, 'my engine'), self._create_engine, 'another display name')
         self.assertIs(engine1, engine2)
-        engine3 = get_engine(self.__class__, 'my other engine', self._create_engine)
+        engine3 = get_engine('my other engine', self._create_engine)
         self.assertIsNot(engine1, engine3)
 
 
@@ -62,9 +62,9 @@ class NullPoolingTestCase(MyTestCase):
 
     def test_02_engine(self):
         # test that we get different engines every time
-        engine1 = get_engine(self.__class__, 'my engine', self._create_engine)
-        engine2 = get_engine(self.__class__, 'my engine', self._create_engine)
-        engine3 = get_engine(self.__class__, 'my other engine', self._create_engine)
+        engine1 = get_engine((self.__class__, 'my engine'), self._create_engine)
+        engine2 = get_engine((self.__class__, 'my engine'), self._create_engine)
+        engine3 = get_engine('my other engine', self._create_engine)
         self.assertIsNot(engine1, engine2)
         self.assertIsNot(engine1, engine3)
         self.assertIsNot(engine2, engine3)

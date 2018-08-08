@@ -370,13 +370,13 @@ class IdResolver (UserIdResolver):
         self.connect_string = self._create_connect_string(params)
 
         # get an engine from the engine registry.
-        # We use the connect string as the key here. This is because it might happen
+        # We include the connect string in the key here. This is because it might happen
         # that we update the connection details of a resolver for which the registry
-        # already holds an engine. If we only use the resolver name as the key,
+        # already holds an engine. If we only use the resolver ID as the key,
         # we wouldn't use the new connection details until the web server is restarted!
-        self.engine = get_engine(self.__class__, self.connect_string,
-                                 self._create_engine,
-                                 censor_connect_string(self.connect_string))
+        engine_key = (self.__class__, self.getResolverId(), self.connect_string)
+        display_key = (self.__class__, self.getResolverId(), censor_connect_string(self.connect_string))
+        self.engine = get_engine(engine_key, self._create_engine, display_key)
         # We use ``scoped_session`` to be sure that the SQLSoup object
         # also uses ``self.session``.
         Session = scoped_session(sessionmaker(bind=self.engine))

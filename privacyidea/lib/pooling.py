@@ -41,16 +41,14 @@ class BaseEngineRegistry(object):
     """
     Abstract base class for engine registries.
     """
-    def get_engine(self, cls, name, creator, display_name=None):
+    def get_engine(self, key, creator, display_key=None):
         """
-        Return the engine that should be used by objects of the class ``cls`` identified by the name ``name``.
-        :param cls: A Python class. Used to distinguish between SQLAudit and SQLIdResolver engines
-        :param name: A name which uniquely identifies the engine among the
-                     objects of ``cls``, e.g. the SQLIdResolver name
+        Return the engine associated with the key ``key``.
+        :param key: An arbitrary hashable Python object
         :param creator: A function with no arguments which returns a new SQLAlchemy engine.
                         Called to initially create an engine.
-        :param display_name: A name that should be written to the log instead of ``name``.
-                             Useful if ``name`` contains sensitive information.
+        :param display_key: A string that should be written to the log instead of ``key``.
+                            Useful if the key contains sensitive information.
         :return: an SQLAlchemy engine
         """
         raise NotImplementedError()
@@ -64,7 +62,7 @@ class NullEngineRegistry(BaseEngineRegistry):
 
     It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "Null".
     """
-    def get_engine(self, cls, name, creator, display_name=None):
+    def get_engine(self, key, creator, display_key=None):
         return creator()
 
 
@@ -78,16 +76,15 @@ class SharedEngineRegistry(BaseEngineRegistry):
         self._engine_lock = Lock()
         self._engines = {}
 
-    def get_engine(self, cls, name, creator, display_name=None):
+    def get_engine(self, key, creator, display_key=None):
         # This method will be called concurrently by multiple threads.
         # Thus, to be sure that we do not create an engine when there
         # is already one associated with the given key, we use a lock.
-        key = (cls, name)
-        if display_name is None:
-            display_name = name
+        if display_key is None:
+            display_key = str(key)
         with self._engine_lock:
             if key not in self._engines:
-                log.info(u"Creating a new engine and connection pool for {}/{}".format(cls.__name__, display_name))
+                log.info(u"Creating a new engine and connection pool for key {}".format(display_key))
                 self._engines[key] = creator()
             return self._engines[key]
 
@@ -125,9 +122,9 @@ def get_registry():
         return current_app.config.setdefault("engine_registry", registry)
 
 
-def get_engine(cls, name, creator, display_name=None):
+def get_engine(key, creator, display_key=None):
     """
     Shortcut to get an engine from the application-global engine registry.
     :return: an SQLAlchemy engine
     """
-    return get_registry().get_engine(cls, name, creator, display_name)
+    return get_registry().get_engine(key, creator, display_key)

@@ -90,7 +90,8 @@ class Audit(AuditBase):
         # We can use "sqlaudit" as the key because the SQLAudit connection
         # string is fixed for a running privacyIDEA instance.
         # In other words, we will not run into any problems with changing connect strings.
-        self.engine = get_engine(self.__class__, self.name, self._create_engine)
+        engine_key = (self.__class__, self.name)
+        self.engine = get_engine(engine_key, self._create_engine)
         # create a configured "Session" class. ``scoped_session`` is not
         # necessary because we do not share session objects among threads.
         # We use it anyway as a safety measure.
