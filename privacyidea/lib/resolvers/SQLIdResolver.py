@@ -23,6 +23,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.pooling import get_engine
+
 __doc__ = """This is the resolver to find users in SQL databases.
 
 The file is tested in tests/test_lib_resolver.py
@@ -36,7 +38,7 @@ from UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
 from base64 import (b64decode,
@@ -367,11 +369,32 @@ class IdResolver (UserIdResolver):
                   'Server': self.server,
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
+
+        # get an engine from the engine registry.
+        # We use the connect string as the key here. This is because it might happen
+        # that we update the connection details of a resolver for which the registry
+        # already holds an engine. If we only use the resolver name as the key,
+        # we wouldn't use the new connection details until the web server is restarted!
+        self.engine = get_engine(self.__class__, self.connect_string,
+                                 self._create_engine,
+                                 censor_connect_string(self.connect_string))
+        # We use ``scoped_session`` to be sure that the SQLSoup object
+        # also uses ``self.session``.
+        Session = scoped_session(sessionmaker(bind=self.engine))
+        self.session = Session()
+        self.session._model_changes = {}
+        self.db = SQLSoup(self.engine, session=Session)
+        self.db.session._model_changes = {}
+        self.TABLE = self.db.entity(self.table)
+
+        return self
+
+    def _create_engine(self):
         log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s} and pool_timeout={1!s}".format(
-                      self.pool_size, self.pool_timeout))
-            self.engine = create_engine(self.connect_string,
+                self.pool_size, self.pool_timeout))
+            engine = create_engine(self.connect_string,
                                         encoding=self.encoding,
                                         convert_unicode=False,
                                         pool_size=self.pool_size,
@@ -379,20 +402,10 @@ class IdResolver (UserIdResolver):
         except TypeError:
             # The DB Engine/Poolclass might not support the pool_size.
             log.debug("connecting without pool_size.")
-            self.engine = create_engine(self.connect_string,
+            engine = create_engine(self.connect_string,
                                         encoding=self.encoding,
                                         convert_unicode=False)
-        # create a configured "Session" class
-        Session = sessionmaker(bind=self.engine)
-
-        # create a Session
-        self.session = Session()
-        self.session._model_changes = {}
-        self.db = SQLSoup(self.engine)
-        self.db.session._model_changes = {}
-        self.TABLE = self.db.entity(self.table)
-
-        return self
+        return engine
 
     @classmethod
     def getResolverClassDescriptor(cls):

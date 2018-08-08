@@ -41,6 +41,7 @@ token database.
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
@@ -67,7 +68,7 @@ from privacyidea.models import audit_column_length as column_length
 from privacyidea.models import AUDIT_TABLE_NAME as TABLE_NAME
 from privacyidea.models import Audit as LogEntry
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 class Audit(AuditBase):
@@ -85,7 +86,23 @@ class Audit(AuditBase):
         self.sign_object = None
         self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                        self.config.get("PI_AUDIT_KEY_PRIVATE"))
-        
+
+        # We can use "sqlaudit" as the key because the SQLAudit connection
+        # string is fixed for a running privacyIDEA instance.
+        # In other words, we will not run into any problems with changing connect strings.
+        self.engine = get_engine(self.__class__, self.name, self._create_engine)
+        # create a configured "Session" class. ``scoped_session`` is not
+        # necessary because we do not share session objects among threads.
+        # We use it anyway as a safety mesaure.
+        Session = scoped_session(sessionmaker(bind=self.engine))
+        self.session = Session()
+        log.debug("Using session {!r}".format(self.session))
+        self.session._model_changes = {}
+
+    def _create_engine(self):
+        """
+        :return: a new SQLAlchemy engine connecting to the database specified in PI_AUDIT_SQL_URI.
+        """
         # an Engine, which the Session will use for connection
         # resources
         connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
@@ -93,22 +110,16 @@ class Audit(AuditBase):
         log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         try:
             pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
-            self.engine = create_engine(
+            engine = create_engine(
                 connect_string,
                 pool_size=pool_size,
                 pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
-            log.debug("Using SQL pool_size of {0!s}".format(pool_size))
+            log.info(u"Using SQL pool size of {}".format(pool_size))
         except TypeError:
             # SQLite does not support pool_size
-            self.engine = create_engine(connect_string)
+            engine = create_engine(connect_string)
             log.debug("Using no SQL pool_size.")
-
-        # create a configured "Session" class
-        Session = sessionmaker(bind=self.engine)
-
-        # create a Session
-        self.session = Session()
-        self.session._model_changes = {}
+        return engine
 
     def _truncate_data(self):
         """
