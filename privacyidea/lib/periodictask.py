@@ -270,5 +270,5 @@ def execute_task(taskmodule, params):
     :return: boolean returned by the task
     """
     module = get_taskmodule(taskmodule)
+    log.info(u"Running taskmodule {!r} with parameters {!r}".format(module, params))
     return module.do(params)
-
