@@ -30,6 +30,7 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import binascii
 import re
 
 from UserIdResolver import UserIdResolver
@@ -46,7 +47,7 @@ from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
+                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string, to_utf8)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -323,7 +324,13 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        return "sql." + self.resolverId
+        # Take the following parts, join them with the NULL byte and return
+        # the hexlified SHA-1 digest
+        id_parts = (to_utf8(self.connect_string),
+                    str(self.pool_size),
+                    str(self.pool_timeout))
+        resolver_id = binascii.hexlify(hashlib.sha1("\x00".join(id_parts)).digest())
+        return "sql." + resolver_id
 
     @staticmethod
     def getResolverClassType():
@@ -375,9 +382,8 @@ class IdResolver (UserIdResolver):
         # that we update the connection details of a resolver for which the registry
         # already holds an engine. If we only use the resolver ID as the key,
         # we wouldn't use the new connection details until the web server is restarted!
-        engine_key = (self.__class__, self.getResolverId(), self.connect_string)
-        display_key = (self.__class__, self.getResolverId(), censor_connect_string(self.connect_string))
-        self.engine = get_engine(engine_key, self._create_engine, display_key)
+        engine_key = (self.__class__, self.getResolverId())
+        self.engine = get_engine(engine_key, self._create_engine)
         # We use ``scoped_session`` to be sure that the SQLSoup object
         # also uses ``self.session``.
         Session = scoped_session(sessionmaker(bind=self.engine))
