@@ -44,6 +44,7 @@ from base64 import (b64decode,
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
                                    check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
 
@@ -380,7 +381,9 @@ class IdResolver (UserIdResolver):
         # We use ``scoped_session`` to be sure that the SQLSoup object
         # also uses ``self.session``.
         Session = scoped_session(sessionmaker(bind=self.engine))
+        # Session should be closed on teardown
         self.session = Session()
+        register_finalizer(self.session.close)
         self.session._model_changes = {}
         self.db = SQLSoup(self.engine, session=Session)
         self.db.session._model_changes = {}

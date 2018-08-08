@@ -34,6 +34,7 @@ from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required)
 from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
 from privacyidea.lib.token import get_token_type
@@ -79,7 +80,8 @@ def log_begin_request():
 
 
 @token_blueprint.teardown_app_request
-def log_end_request(exc):
+def teardown_request(exc):
+    call_finalizers()
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
 
