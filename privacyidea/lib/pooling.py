@@ -93,10 +93,10 @@ class SharedEngineRegistry(BaseEngineRegistry):
 
 
 ENGINE_REGISTRY_CLASSES = {
-    "Null": NullEngineRegistry,
-    "Shared": SharedEngineRegistry,
+    "null": NullEngineRegistry,
+    "shared": SharedEngineRegistry,
 }
-DEFAULT_REGISTRY_CLASS_NAME = "Shared"
+DEFAULT_REGISTRY_CLASS_NAME = "shared"
 
 
 def get_registry():

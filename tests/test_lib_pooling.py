@@ -18,7 +18,7 @@ class SharedPoolingTestCase(MyTestCase):
     def setUpClass(cls):
         # Modified setup method to use SharedEngineRegistry
         cls.app = create_app('testing', "")
-        cls.app.config['PI_ENGINE_REGISTRY_CLASS'] = 'Shared'
+        cls.app.config['PI_ENGINE_REGISTRY_CLASS'] = 'shared'
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
