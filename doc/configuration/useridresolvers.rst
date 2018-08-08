@@ -298,7 +298,7 @@ waits to get a connection from the pool.
    config option is set to ``"shared"`` (see :ref:`engine-registry`).
    If you then have several SQL resolvers with the same connection and pooling settings,
    they will use the same shared connection pool.
-   If you change the connection settings of an existing, the connection pool
+   If you change the connection settings of an existing connection, the connection pool
    for the old connection settings will persist until the respective connections
    are closed by the SQL server or the web server is restarted.
 
