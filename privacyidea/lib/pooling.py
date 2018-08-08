@@ -41,14 +41,12 @@ class BaseEngineRegistry(object):
     """
     Abstract base class for engine registries.
     """
-    def get_engine(self, key, creator, display_key=None):
+    def get_engine(self, key, creator):
         """
         Return the engine associated with the key ``key``.
         :param key: An arbitrary hashable Python object
         :param creator: A function with no arguments which returns a new SQLAlchemy engine.
                         Called to initially create an engine.
-        :param display_key: A string that should be written to the log instead of ``key``.
-                            Useful if the key contains sensitive information.
         :return: an SQLAlchemy engine
         """
         raise NotImplementedError()
@@ -62,7 +60,7 @@ class NullEngineRegistry(BaseEngineRegistry):
 
     It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "Null".
     """
-    def get_engine(self, key, creator, display_key=None):
+    def get_engine(self, key, creator):
         return creator()
 
 
@@ -76,15 +74,13 @@ class SharedEngineRegistry(BaseEngineRegistry):
         self._engine_lock = Lock()
         self._engines = {}
 
-    def get_engine(self, key, creator, display_key=None):
+    def get_engine(self, key, creator):
         # This method will be called concurrently by multiple threads.
         # Thus, to be sure that we do not create an engine when there
         # is already one associated with the given key, we use a lock.
-        if display_key is None:
-            display_key = str(key)
         with self._engine_lock:
             if key not in self._engines:
-                log.info(u"Creating a new engine and connection pool for key {}".format(display_key))
+                log.info(u"Creating a new engine and connection pool for key {!s}".format(key))
                 self._engines[key] = creator()
             return self._engines[key]
 
@@ -93,7 +89,7 @@ ENGINE_REGISTRY_CLASSES = {
     "null": NullEngineRegistry,
     "shared": SharedEngineRegistry,
 }
-DEFAULT_REGISTRY_CLASS_NAME = "shared"
+DEFAULT_REGISTRY_CLASS_NAME = "null"
 
 
 def get_registry():
@@ -122,9 +118,9 @@ def get_registry():
         return current_app.config.setdefault("engine_registry", registry)
 
 
-def get_engine(key, creator, display_key=None):
+def get_engine(key, creator):
     """
     Shortcut to get an engine from the application-global engine registry.
     :return: an SQLAlchemy engine
     """
-    return get_registry().get_engine(key, creator, display_key)
+    return get_registry().get_engine(key, creator)

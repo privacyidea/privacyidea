@@ -42,7 +42,7 @@ class SharedPoolingTestCase(MyTestCase):
     def test_02_engine(self):
         # test that we get the same engine
         engine1 = get_engine((self.__class__, 'my engine'), self._create_engine)
-        engine2 = get_engine((self.__class__, 'my engine'), self._create_engine, 'another display name')
+        engine2 = get_engine((self.__class__, 'my engine'), self._create_engine)
         self.assertIs(engine1, engine2)
         engine3 = get_engine('my other engine', self._create_engine)
         self.assertIsNot(engine1, engine3)
