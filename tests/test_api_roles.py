@@ -31,6 +31,13 @@ class APIAuthTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
+    def test_00_missing_password(self):
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "admin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
     def test_01_get_rights(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
