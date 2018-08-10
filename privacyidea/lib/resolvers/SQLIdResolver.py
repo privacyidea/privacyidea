@@ -45,6 +45,7 @@ import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
                                    check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
+from passlib.hash import bcrypt
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -151,6 +152,7 @@ class IdResolver (UserIdResolver):
         -         false if password does not match
 
         """
+
         res = False
         userinfo = self.getUserInfo(uid)
         if isinstance(password, unicode):
@@ -178,6 +180,12 @@ class IdResolver (UserIdResolver):
             res = otrs_sha256(database_pw, password)
         elif database_pw[:3] in ["$1$", "$6$"]:
             res = check_crypt(database_pw, password)
+        elif database_pw[:4] in ["$2a$", "$2b$", "$2y$"]:
+            # Do bcrypt hashing
+            res = bcrypt.verify(password, database_pw)
+        elif database_pw[:6] in ["1|$2a$", "1|$2b$", "1|$2y$"]:
+            # Do bcrypt hashing with some owncloud format
+            res = bcrypt.verify(password, database_pw[2:])
 
         return res
 
