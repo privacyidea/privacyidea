@@ -336,6 +336,7 @@ class IdResolver (UserIdResolver):
         # the hexlified SHA-1 digest
         id_parts = (to_utf8(self.connect_string),
                     str(self.pool_size),
+                    str(self.pool_recycle),
                     str(self.pool_timeout))
         resolver_id = binascii.hexlify(hashlib.sha1("\x00".join(id_parts)).digest())
         return "sql." + resolver_id
@@ -374,6 +375,9 @@ class IdResolver (UserIdResolver):
         self.conParams = config.get('conParams', "")
         self.pool_size = int(config.get('poolSize') or 5)
         self.pool_timeout = int(config.get('poolTimeout') or 10)
+        # recycle SQL connections after 2 hours by default
+        # (necessary for MySQL servers, which terminate idle connections after some hours)
+        self.pool_recycle = int(config.get('poolRecycle') or 7200)
 
         # create the connectstring like
         params = {'Port': self.port,
@@ -404,12 +408,13 @@ class IdResolver (UserIdResolver):
     def _create_engine(self):
         log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
         try:
-            log.debug("using pool_size={0!s} and pool_timeout={1!s}".format(
-                self.pool_size, self.pool_timeout))
+            log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
+                self.pool_size, self.pool_timeout, self.pool_recycle))
             engine = create_engine(self.connect_string,
                                         encoding=self.encoding,
                                         convert_unicode=False,
                                         pool_size=self.pool_size,
+                                        pool_recycle=self.pool_recycle,
                                         pool_timeout=self.pool_timeout)
         except TypeError:
             # The DB Engine/Poolclass might not support the pool_size.
@@ -436,6 +441,9 @@ class IdResolver (UserIdResolver):
                                 'Map': 'string',
                                 'Where': 'string',
                                 'Editable': 'int',
+                                'poolTimeout': 'int',
+                                'poolSize': 'int',
+                                'poolRecycle': 'int',
                                 'Encoding': 'string',
                                 'conParams': 'string'}
         return {typ: descriptor}
