@@ -50,6 +50,7 @@ class TestingConfig(Config):
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NODE = "Node1"
     PI_NODES = ["Node2"]
+    PI_ENGINE_REGISTRY_CLASS = "null"
 
 
 class ProductionConfig(Config):

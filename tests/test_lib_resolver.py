@@ -173,7 +173,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(user_id == 3, user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "sql.testuser.sqlite", rid)
+        self.assertTrue(rid.startswith("sql."))
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "sqlresolver", rtype)
@@ -400,6 +400,38 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(stored_password.startswith("{SSHA512}"), stored_password)
 
         y.delete_user(uid)
+
+    def test_08_resolver_id(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        rid1 = y.getResolverId()
+
+        y = SQLResolver()
+        param2 = self.parameters.copy()
+        param2["Where"] = "1 = 1"
+        y.loadConfig(param2)
+        rid2 = y.getResolverId()
+
+        # rid1 == rid2, because only the WHERE clause has changed, which does not have any effect on the resolver id!
+        self.assertEqual(rid1, rid2)
+
+        y = SQLResolver()
+        param3 = self.parameters.copy()
+        param3["Server"] = '/tests/../tests/testdata/'
+        y.loadConfig(param3)
+        rid3 = y.getResolverId()
+
+        # rid1 != rid3, because the connect string has changed
+        self.assertNotEqual(rid1, rid3)
+
+        y = SQLResolver()
+        param4 = self.parameters.copy()
+        param4["poolSize"] = "42"
+        y.loadConfig(param4)
+        rid4 = y.getResolverId()
+
+        # rid1 != rid4, because the pool size has changed
+        self.assertNotEqual(rid1, rid4)
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()

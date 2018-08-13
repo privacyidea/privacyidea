@@ -30,21 +30,24 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import binascii
 import re
 
 from UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
 from base64 import (b64decode,
                     b64encode)
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string)
+                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string, to_utf8)
 from passlib.hash import bcrypt
 
 log = logging.getLogger(__name__)
@@ -329,7 +332,14 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        return "sql." + self.resolverId
+        # Take the following parts, join them with the NULL byte and return
+        # the hexlified SHA-1 digest
+        id_parts = (to_utf8(self.connect_string),
+                    str(self.pool_size),
+                    str(self.pool_recycle),
+                    str(self.pool_timeout))
+        resolver_id = binascii.hexlify(hashlib.sha1("\x00".join(id_parts)).digest())
+        return "sql." + resolver_id
 
     @staticmethod
     def getResolverClassType():
@@ -365,6 +375,9 @@ class IdResolver (UserIdResolver):
         self.conParams = config.get('conParams', "")
         self.pool_size = int(config.get('poolSize') or 5)
         self.pool_timeout = int(config.get('poolTimeout') or 10)
+        # recycle SQL connections after 2 hours by default
+        # (necessary for MySQL servers, which terminate idle connections after some hours)
+        self.pool_recycle = int(config.get('poolRecycle') or 7200)
 
         # create the connectstring like
         params = {'Port': self.port,
@@ -375,32 +388,41 @@ class IdResolver (UserIdResolver):
                   'Server': self.server,
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
-        log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
-        try:
-            log.debug("using pool_size={0!s} and pool_timeout={1!s}".format(
-                      self.pool_size, self.pool_timeout))
-            self.engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False,
-                                        pool_size=self.pool_size,
-                                        pool_timeout=self.pool_timeout)
-        except TypeError:
-            # The DB Engine/Poolclass might not support the pool_size.
-            log.debug("connecting without pool_size.")
-            self.engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False)
-        # create a configured "Session" class
-        Session = sessionmaker(bind=self.engine)
 
-        # create a Session
+        # get an engine from the engine registry, using self.getResolverId() as the key,
+        # which involves the connect string and the pool settings.
+        self.engine = get_engine(self.getResolverId(), self._create_engine)
+        # We use ``scoped_session`` to be sure that the SQLSoup object
+        # also uses ``self.session``.
+        Session = scoped_session(sessionmaker(bind=self.engine))
+        # Session should be closed on teardown
         self.session = Session()
+        register_finalizer(self.session.close)
         self.session._model_changes = {}
-        self.db = SQLSoup(self.engine)
+        self.db = SQLSoup(self.engine, session=Session)
         self.db.session._model_changes = {}
         self.TABLE = self.db.entity(self.table)
 
         return self
+
+    def _create_engine(self):
+        log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
+        try:
+            log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
+                self.pool_size, self.pool_timeout, self.pool_recycle))
+            engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False,
+                                        pool_size=self.pool_size,
+                                        pool_recycle=self.pool_recycle,
+                                        pool_timeout=self.pool_timeout)
+        except TypeError:
+            # The DB Engine/Poolclass might not support the pool_size.
+            log.debug("connecting without pool_size.")
+            engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False)
+        return engine
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -419,6 +441,9 @@ class IdResolver (UserIdResolver):
                                 'Map': 'string',
                                 'Where': 'string',
                                 'Editable': 'int',
+                                'poolTimeout': 'int',
+                                'poolSize': 'int',
+                                'poolRecycle': 'int',
                                 'Encoding': 'string',
                                 'conParams': 'string'}
         return {typ: descriptor}
@@ -483,8 +508,9 @@ class IdResolver (UserIdResolver):
         log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
-        session = sessionmaker(bind=engine)()
-        db = SQLSoup(engine)
+        Session = scoped_session(sessionmaker(bind=engine))
+        session = Session()
+        db = SQLSoup(engine, session=Session)
         try:
             TABLE = db.entity(param.get("Table"))
             conditions = cls._append_where_filter([], TABLE,
@@ -496,6 +522,13 @@ class IdResolver (UserIdResolver):
             desc = "Found {0:d} users.".format(num)
         except Exception as exx:
             desc = "failed to retrieve users: {0!s}".format(exx)
+        finally:
+            # We do not want any leftover DB connection, so we first need to close
+            # the session such that the DB connection gets returned to the pool (it
+            # is still open at that point!) and then dispose the engine such that the
+            # checked-in connection gets closed.
+            session.close()
+            engine.dispose()
 
         return num, desc
 
