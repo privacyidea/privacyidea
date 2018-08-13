@@ -24,6 +24,10 @@ msgstr ""
 msgid "#"
 msgstr "#"
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:91
+msgid "(none)"
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
 msgstr "45% abgeschlossen"
@@ -41,6 +45,20 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:109
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr "<b>KEINE GEWÄHRLEISTUNG ODER HAFTUNG DURCH DIE ENTWICKLER!</b>"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:54
+msgid ""
+"<li><b>\"5 10 * * *\"</b> runs the task every day at 10:05 am.</li>\n"
+"                        <li><b>\"*/10 * * * *\"</b> runs the task every ten "
+"minutes.</li>\n"
+"                        <li><b>\"1 23 * * 7\"</b> runs the task at 11:01pm "
+"on Sundays.</li>"
+msgstr ""
+"<li><b>\"5 10 * * *\"</b> führt die Aufrage jeden Tag um 10:05 aus.</li>\n"
+"                        <li><b>\"*/10 * * * *\"</b> führt die Aufgabe alle "
+"10 Minuten aus.</li>\n"
+"                        <li><b>\"1 23 * * 7\"</b> führt die Aufgabe um 23:01 "
+"an Sonntagen aus.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:116
 msgid ""
@@ -251,16 +269,17 @@ msgstr ""
 "privacyidea/blob/master/LICENSE\">AGPLv3</a>\n"
 " gibt es für diese Software (privacyIDEA)"
 
-#: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.events.details.html:148
-#: privacyidea/static/components/config/views/config.events.details.html:87
-#: privacyidea/static/components/config/views/config.events.list.html:12
+#: privacyidea/static/components/config/views/config.events.details.html:100
+#: privacyidea/static/components/config/views/config.events.details.html:159
+#: privacyidea/static/components/config/views/config.events.details.html:161
+#: privacyidea/static/components/config/views/config.events.list.html:13
 #: privacyidea/static/components/config/views/config.policies.details.html:126
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 msgid "Action"
 msgstr "Aktion "
 
 #: privacyidea/static/components/config/views/config.events.list.html:6
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:6
 #: privacyidea/static/components/config/views/config.policies.list.html:6
 #: privacyidea/static/components/token/views/token.details.html:22
 #: privacyidea/static/components/user/views/user.details.html:83
@@ -306,6 +325,10 @@ msgstr "Alle Maschinen-Resolver"
 #: privacyidea/static/components/machine/views/machine.html:8
 msgid "All Machines"
 msgstr "Alle Maschinen"
+
+#: privacyidea/static/components/config/views/config.periodictasks.html:7
+msgid "All Periodic Tasks"
+msgstr "Alle regelmäßigen Aufgaben"
 
 #: privacyidea/static/components/config/views/config.policies.html:7
 msgid "All Policies"
@@ -486,7 +509,7 @@ msgstr "CA-Konnektor-Name"
 msgid "CA Key"
 msgstr "Schlüssel der Zertifizierungsstelle"
 
-#: privacyidea/static/components/config/views/config.html:61
+#: privacyidea/static/components/config/views/config.html:66
 msgid "CAs"
 msgstr "Zertifizierungsstellen"
 
@@ -660,12 +683,12 @@ msgstr "Community"
 msgid "Components"
 msgstr "Komponenten"
 
-#: privacyidea/static/components/config/views/config.events.details.html:83
-#: privacyidea/static/components/config/views/config.events.details.html:95
+#: privacyidea/static/components/config/views/config.events.details.html:108
+#: privacyidea/static/components/config/views/config.events.details.html:96
 msgid "Condition"
 msgstr "Bedingung"
 
-#: privacyidea/static/components/config/views/config.events.list.html:11
+#: privacyidea/static/components/config/views/config.events.list.html:12
 msgid "Conditions"
 msgstr "Bedingungen"
 
@@ -700,9 +723,13 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr "Zählerfenster für neu ausgerollte Token"
 
-#: privacyidea/static/components/config/views/config.events.details.html:208
+#: privacyidea/static/components/config/views/config.events.details.html:221
 msgid "Create Event Handler Definition"
 msgstr "Erstelle eine Ereignisdefinition"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:170
+msgid "Create Periodic Task Definition"
+msgstr "Erstelle eine Definition einer regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:347
 #: privacyidea/static/components/config/views/config.policies.details.html:85
@@ -724,6 +751,10 @@ msgstr "Erzeuge einen neuen Lokalen CA-Konnektor"
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
 msgstr "Erzeuge einen neuen Passwd-Resolver"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:24
+msgid "Create a new Periodic Task"
+msgstr "Erstelle eine regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:23
 msgid "Create a new Policy"
@@ -774,6 +805,10 @@ msgstr "Erzeuge einen neuen API-Schlüssel"
 #: privacyidea/static/components/config/views/config.events.html:12
 msgid "Create new Event Handler"
 msgstr "Erstelle ein neues Ereignis"
+
+#: privacyidea/static/components/config/views/config.periodictasks.html:12
+msgid "Create new Periodic Task"
+msgstr "Erstelle regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.html:12
 msgid "Create new Policy"
@@ -828,8 +863,10 @@ msgstr "Standard Zeitfenster"
 #: privacyidea/static/components/components/views/component.subscriptions.html:75
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
 #: privacyidea/static/components/config/views/config.events.details.html:19
-#: privacyidea/static/components/config/views/config.events.list.html:63
+#: privacyidea/static/components/config/views/config.events.list.html:65
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:26
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:19
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:54
 #: privacyidea/static/components/config/views/config.policies.details.html:18
 #: privacyidea/static/components/config/views/config.policies.list.html:60
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:30
@@ -855,6 +892,8 @@ msgstr "Benutzer löschen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:31
 #: privacyidea/static/components/config/views/config.events.list.html:8
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:31
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:8
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:53
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:8
 #: privacyidea/static/components/config/views/config.radius.edit.html:86
@@ -896,6 +935,7 @@ msgid "Dictionary"
 msgstr "Dictionary"
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:6
 #: privacyidea/static/components/config/views/config.policies.details.html:5
 #: privacyidea/static/components/token/views/token.details.html:38
 msgid "Disable"
@@ -990,6 +1030,10 @@ msgstr "Optionen bearbeiten"
 msgid "Edit Passwd Resolver {{ resolvername }}"
 msgstr "Bearbeite Passwd-Resolver {{ resolvername }}"
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:3
+msgid "Edit Periodic Task {{ ptaskid }}"
+msgstr "Regelmäßige Aufgabe {{ ptaskid }} bearbeiten"
+
 #: privacyidea/static/components/config/views/config.policies.details.html:3
 msgid "Edit Policy {{ existingPolicyname }}"
 msgstr "Richtlinie {{ existingPolicyname }} bearbeiten"
@@ -1055,6 +1099,7 @@ msgid "Email Address"
 msgstr "EMail-Adresse"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:10
 #: privacyidea/static/components/token/views/token.details.html:45
 msgid "Enable"
@@ -1136,6 +1181,10 @@ msgstr "Fehler in der U2F-Antwort."
 #: privacyidea/static/components/config/views/config.html:30
 msgid "Events"
 msgstr "Ereignisse"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:53
+msgid "Examples"
+msgstr "Beispiele"
 
 #: privacyidea/static/components/token/views/token.challenges.html:43
 msgid "Expiration"
@@ -1488,6 +1537,11 @@ msgstr "Den Fehlerzähler erhöhen, wenn eine falsche PIN eingegeben wurde."
 msgid "Info"
 msgstr "Info"
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:41
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:9
+msgid "Interval"
+msgstr "Intervall"
+
 #: privacyidea/static/components/components/views/component.subscriptions.html:61
 msgid "Issuer"
 msgstr "Aussteller"
@@ -1500,6 +1554,10 @@ msgstr "Aussteller"
 #: privacyidea/static/components/token/views/token.list.html:5
 msgid "Last"
 msgstr "Ende"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:96
+msgid "Last Definition Update"
+msgstr "Letzte Aktualisierung der Definition"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:19
 msgid "Last seen:"
@@ -1629,7 +1687,7 @@ msgstr "Attribut für Maschinen-ID"
 msgid "Machine Resolver"
 msgstr "Maschinen-Resolver"
 
-#: privacyidea/static/components/config/views/config.html:40
+#: privacyidea/static/components/config/views/config.html:45
 #: privacyidea/static/templates/menu.html:61
 msgid "Machines"
 msgstr "Maschinen"
@@ -1751,6 +1809,11 @@ msgstr "Referrals werden nicht (anonym) verfolgt."
 msgid "No retrieval of schema information"
 msgstr "Schema-Informationen werden nicht abgerufen."
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:64
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:11
+msgid "Nodes"
+msgstr "Knoten"
+
 #: privacyidea/static/components/config/views/config.token.question.html:11
 msgid "Number of answers"
 msgstr "Anzahl der Antworten"
@@ -1858,16 +1921,20 @@ msgstr "Ein neues Tab öffnen, um die Zertifikatsanforderung zu erstellen."
 msgid "OpenSSL config file"
 msgstr "Konfigurationsdatei für OpenSSL"
 
-#: privacyidea/static/components/config/views/config.events.details.html:161
-#: privacyidea/static/components/config/views/config.events.list.html:13
+#: privacyidea/static/components/config/views/config.events.details.html:174
+#: privacyidea/static/components/config/views/config.events.list.html:14
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:127
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:12
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:81
 #: privacyidea/static/components/machine/views/machine.details.html:52
 #: privacyidea/static/components/token/views/token.details.html:469
 msgid "Options"
 msgstr "Optionen"
 
-#: privacyidea/static/components/config/views/config.events.details.html:73
+#: privacyidea/static/components/config/views/config.events.details.html:86
 #: privacyidea/static/components/config/views/config.events.list.html:5
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:104
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:5
 msgid "Order"
 msgstr "Reihenfolge"
 
@@ -1950,6 +2017,10 @@ msgstr "Passwort erfolgreich gesetzt."
 msgid "Paste the ssh PUBLIC key"
 msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein."
 
+#: privacyidea/static/components/config/views/config.html:35
+msgid "Periodic Tasks"
+msgstr "Regelmäßige Aufgaben"
+
 #: privacyidea/static/components/register/views/register.html:65
 #: privacyidea/static/components/register/views/register.html:68
 #: privacyidea/static/components/user/views/user.password.html:35
@@ -1994,6 +2065,14 @@ msgstr ""
 msgid "Please sign in"
 msgstr "Anmelden"
 
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:48
+msgid ""
+"Please use crontab notation to specify the times at which the periodic task\n"
+"                should be run."
+msgstr ""
+"Bitte benutzen Sie die \"crontab\" Notation, um die Zeiten, an denen die "
+"regelmäßigen Aufgaben ausgeführt werden sollen, anzugeben."
+
 #: privacyidea/static/components/config/views/config.html:25
 msgid "Policies"
 msgstr "Richtlinien"
@@ -2020,6 +2099,11 @@ msgstr "Pool-Timeout"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:35
 msgid "Port"
 msgstr "Port"
+
+#: privacyidea/static/components/config/views/config.events.details.html:73
+#: privacyidea/static/components/config/views/config.events.list.html:11
+msgid "Position"
+msgstr "Position"
 
 #: privacyidea/static/components/token/views/token.import.html:71
 msgid "Pre Shared Key"
@@ -2172,7 +2256,7 @@ msgstr "Der Realm defrealm wurde erzeugt."
 msgid "Realm name"
 msgstr "Realmname"
 
-#: privacyidea/static/components/config/views/config.html:54
+#: privacyidea/static/components/config/views/config.html:59
 msgid "Realms"
 msgstr "Realms"
 
@@ -2183,6 +2267,10 @@ msgstr "Empfangen"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:115
 msgid "Recipient for testing"
 msgstr "Empfänger für Test-Emails"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:81
+msgid "Recorded Last Runs"
+msgstr "Letzte Ausführung"
 
 #: privacyidea/static/components/audit/views/audit.stats.html:64
 #: privacyidea/static/templates/menu.html:99
@@ -2717,6 +2805,11 @@ msgstr "Tabelle"
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
 msgid "Take action on your token"
 msgstr "Bestätigen Sie mit Ihrem Token"
+
+#: privacyidea/static/components/config/views/config.periodictasks.details.html:113
+#: privacyidea/static/components/config/views/config.periodictasks.list.html:10
+msgid "Taskmodule"
+msgstr "Aufgabenmodul"
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:65
 msgid "Test Email sent successfully."
@@ -3279,7 +3372,7 @@ msgstr ""
 "bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
-#: privacyidea/static/app.js:127
+#: privacyidea/static/app.js:128
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Das privacyIDEA-System scheint offline zu sein. Die API ist nicht erreichbar."
@@ -3781,7 +3874,7 @@ msgid "Token {{ selectedToken.serial }} is Lost!"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren!"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
-#: privacyidea/static/components/config/views/config.html:35
+#: privacyidea/static/components/config/views/config.html:40
 #: privacyidea/static/templates/menu.html:35
 msgid "Tokens"
 msgstr "Token"
@@ -3953,7 +4046,7 @@ msgid "Username"
 msgstr "Benutzer"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
-#: privacyidea/static/components/config/views/config.html:47
+#: privacyidea/static/components/config/views/config.html:52
 #: privacyidea/static/templates/menu.html:43
 msgid "Users"
 msgstr "Benutzer"

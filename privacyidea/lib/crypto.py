@@ -278,6 +278,7 @@ def hash_with_pepper(password, rounds=10023, salt_size=10):
 
 def verify_with_pepper(passwordhash, password):
     # get the password pepper
+    password = password or ""
     key = current_app.config.get("PI_PEPPER", "missing")
     success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
     return success

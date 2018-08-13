@@ -36,3 +36,12 @@ class AuthTestCase(MyTestCase):
         r, role, detail = check_webui_user(User("cornelius"), "test")
         self.assertFalse(r)
         self.assertEqual(role, "user")
+
+    def test_03_empty_passsword(self):
+        create_db_admin(current_app, "mytestadmin", email="admin@localhost",
+                        password="PSTwort")
+        r = verify_db_admin("mytestadmin", None)
+        self.assertFalse(r)
+
+        # Delete the admin
+        delete_db_admin("mytestadmin")

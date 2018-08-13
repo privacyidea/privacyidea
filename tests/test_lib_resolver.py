@@ -129,10 +129,12 @@ LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
                                 'oid': "1"}}
                        ]
 
+
 class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
     """
+    num_users = 11
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -164,7 +166,7 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(self.parameters)
 
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 9, len(userlist))
+        self.assertTrue(len(userlist) == self.num_users, len(userlist))
 
         user = "cornelius"
         user_id = y.getUserId(user)
@@ -202,19 +204,19 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(dict(self.parameters.items() + {"Where": "givenname like "
                                                               "hans"}.items()))
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 1, userlist)
+        self.assertEqual(len(userlist), 1)
 
         y = SQLResolver()
         y.loadConfig(
             dict(self.parameters.items() + {"Where": "id > 2"}.items()))
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 7, userlist)
+        self.assertEqual(len(userlist), self.num_users - 2)
 
         y = SQLResolver()
         y.loadConfig(dict(self.parameters.items() + {"Where": "id < "
                                                               "5"}.items()))
         userlist = y.getUserList()
-        self.assertTrue(len(userlist) == 4, userlist)
+        self.assertEqual(len(userlist), 4)
 
     def test_02_check_passwords(self):
         y = SQLResolver()
@@ -256,11 +258,17 @@ class SQLResolverTestCase(MyTestCase):
         result = y.checkPass(9, "dunno")
         self.assertTrue(result)
 
+        # bcrypt hashes
+        self.assertTrue(y.checkPass(10, "test"))
+        self.assertFalse(y.checkPass(10, "testw"))
+        self.assertTrue(y.checkPass(11, "test"))
+        self.assertFalse(y.checkPass(11, "testw"))
+
     def test_03_testconnection(self):
         y = SQLResolver()
         result = y.testconnection(self.parameters)
-        self.assertEqual(result[0], 9)
-        self.assertTrue('Found 9 users.' in result[1])
+        self.assertEqual(result[0], self.num_users)
+        self.assertTrue('Found {0!s} users.'.format(self.num_users) in result[1])
 
     def test_05_add_user_update_delete(self):
         y = SQLResolver()

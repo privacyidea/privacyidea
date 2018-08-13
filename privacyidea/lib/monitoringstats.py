@@ -107,7 +107,7 @@ def get_values(stats_key, start_timestamp=None, end_timestamp=None, date_strings
     :param end_timestamp: the end of the timespan, inclusive
     :type end_timestamp: timezone-aware datetime object
     :param date_strings: Return dates as strings formatted as AUTH_DATE_FORMAT
-    :return: list of sets, with timestamps being timezone-aware UTC datetime objects
+    :return: list of tuples, with timestamps being timezone-aware UTC datetime objects
     """
     values = []
     conditions = [MonitoringStats.stats_key == stats_key]
@@ -140,3 +140,4 @@ def get_last_value(stats_key):
     if s:
         val = s.stats_value
     return val
+
