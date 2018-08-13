@@ -328,7 +328,7 @@ msgstr "Alle Maschinen"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:7
 msgid "All Periodic Tasks"
-msgstr "Alle wiederkehrenden Aufgaben"
+msgstr "Alle regelmäßigen Aufgaben"
 
 #: privacyidea/static/components/config/views/config.policies.html:7
 msgid "All Policies"
@@ -729,7 +729,7 @@ msgstr "Erstelle eine Ereignisdefinition"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:170
 msgid "Create Periodic Task Definition"
-msgstr "Erstelle eine Definition einer wiederkehrenden Aufgabe"
+msgstr "Erstelle eine Definition einer regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:347
 #: privacyidea/static/components/config/views/config.policies.details.html:85
@@ -754,7 +754,7 @@ msgstr "Erzeuge einen neuen Passwd-Resolver"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:24
 msgid "Create a new Periodic Task"
-msgstr "Erstelle eine wiederkehrende Aufgabe"
+msgstr "Erstelle eine regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:23
 msgid "Create a new Policy"
@@ -808,7 +808,7 @@ msgstr "Erstelle ein neues Ereignis"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:12
 msgid "Create new Periodic Task"
-msgstr "Erstelle wiederkehrende Aufgabe"
+msgstr "Erstelle regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.html:12
 msgid "Create new Policy"
@@ -1032,7 +1032,7 @@ msgstr "Bearbeite Passwd-Resolver {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:3
 msgid "Edit Periodic Task {{ ptaskid }}"
-msgstr "Wiederkehrende Aufgabe bearbeiten {{ ptaskid }}"
+msgstr "Regelmäßige Aufgabe {{ ptaskid }} bearbeiten"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:3
 msgid "Edit Policy {{ existingPolicyname }}"
@@ -2019,7 +2019,7 @@ msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein."
 
 #: privacyidea/static/components/config/views/config.html:35
 msgid "Periodic Tasks"
-msgstr "Wiederkehrende Aufgaben"
+msgstr "Regelmäßige Aufgaben"
 
 #: privacyidea/static/components/register/views/register.html:65
 #: privacyidea/static/components/register/views/register.html:68
@@ -2071,7 +2071,7 @@ msgid ""
 "                should be run."
 msgstr ""
 "Bitte benutzen Sie die \"crontab\" Notation, um die Zeiten, an denen die "
-"wiederkehrenden Aufgaben ausgeführt werden sollen, anzugeben."
+"regelmäßigen Aufgaben ausgeführt werden sollen, anzugeben."
 
 #: privacyidea/static/components/config/views/config.html:25
 msgid "Policies"
