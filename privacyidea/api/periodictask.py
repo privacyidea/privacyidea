@@ -45,6 +45,7 @@ periodictask_blueprint = Blueprint('periodictask_blueprint', __name__)
 def convert_datetimes_to_string(ptask):
     """
     Convert the ``last_update`` and ``last_runs`` timestamps to ISO 8601 strings and return a copy of ``ptask``.
+
     :param ptask: periodic task dictionary
     :return: a new periodic task dictionary
     """
@@ -82,6 +83,7 @@ def list_nodes():
 def get_taskmodule_options(taskmodule):
     """
     Return the available options for the given taskmodule.
+
     :param taskmodule: Identifier of the task module
     :return: a dictionary mapping option keys to description dictionaries
     """
@@ -107,6 +109,7 @@ def list_periodic_tasks():
 def get_periodic_task_api(ptaskid):
     """
     Return the dictionary describing a periodic task.
+
     :param ptaskid: ID of the periodic task
     """
     ptask = get_periodic_task_by_id(int(ptaskid))
@@ -165,6 +168,7 @@ def set_periodic_task_api():
 def enable_periodic_task_api(ptaskid):
     """
     Enable a certain periodic task.
+
     :param ptaskid: ID of the periodic task
     :return: ID of the periodic task
     """
@@ -179,6 +183,7 @@ def enable_periodic_task_api(ptaskid):
 def disable_periodic_task_api(ptaskid):
     """
     Disable a certain periodic task.
+
     :param ptaskid: ID of the periodic task
     :return: ID of the periodic task
     """
@@ -193,6 +198,7 @@ def disable_periodic_task_api(ptaskid):
 def delete_periodic_task_api(ptaskid):
     """
     Delete a certain periodic task.
+
     :param ptaskid: ID of the periodic task
     :return: ID of the periodic task
     """

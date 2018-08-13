@@ -45,6 +45,7 @@ Table of Contents
    tokenview/index
    userview/index
    policies/index
+   periodictask/index
    eventhandler/index
    audit/index
    machines/index
