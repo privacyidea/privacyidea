@@ -377,10 +377,9 @@ class IdResolver (UserIdResolver):
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
 
-        # get an engine from the engine registry, using self.getResolverId() in the key,
+        # get an engine from the engine registry, using self.getResolverId() as the key,
         # which involves the connect string and the pool settings.
-        engine_key = (self.__class__, self.getResolverId())
-        self.engine = get_engine(engine_key, self._create_engine)
+        self.engine = get_engine(self.getResolverId(), self._create_engine)
         # We use ``scoped_session`` to be sure that the SQLSoup object
         # also uses ``self.session``.
         Session = scoped_session(sessionmaker(bind=self.engine))
