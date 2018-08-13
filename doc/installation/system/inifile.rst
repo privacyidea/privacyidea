@@ -88,12 +88,13 @@ Engine Registry Class
 ---------------------
 
 The ``PI_ENGINE_REGISTRY_CLASS`` option controls the pooling of database connections
-opened by SQL resolvers and the audit module. If it is set to ``"null"``,
+opened by SQL resolvers and the SQL audit module. If it is set to ``"null"``,
 SQL connections are not pooled at all and new connections are opened for every request.
 If it is set to ``"shared"``, connections are pooled on a per-process basis, i.e.
-every wsgi process manages one connection pool for each SQL resolver and the audit module.
+every wsgi process manages one connection pool for each SQL resolver and the SQL audit module.
 Every request then checks out connections from this shared pool, which reduces
-the overall number of open SQL connections.
+the overall number of open SQL connections. If the option is left unspecified,
+its value defaults to ``"null"``.
 
 Audit parameters
 ----------------
