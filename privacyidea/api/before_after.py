@@ -85,6 +85,19 @@ def teardown_request(exc):
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
 
+# NOTE: This can be commented in to debug SQL pooling issues
+#@token_blueprint.before_app_request
+#def log_pools():
+#    from privacyidea.lib.pooling import get_registry
+#    from privacyidea.models import db
+#    engines = {"flask-sqlalchemy": db.engine}
+#    if hasattr(get_registry(), '_engines'):
+#        engines.update(get_registry()._engines)
+#    log.info("We have {} engines".format(len(engines)))
+#    for name, engine in engines.iteritems():
+#        log.info("engine {}: {}".format(name, engine.pool.status()))
+
+
 @token_blueprint.before_request
 @audit_blueprint.before_request
 @user_blueprint.before_request
