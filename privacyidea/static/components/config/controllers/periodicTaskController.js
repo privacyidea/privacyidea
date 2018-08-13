@@ -53,6 +53,7 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
         // we cannot directly pass ``ptask`` because we need to join the nodes list
         var params = {
             "id": ptask.id,
+            "active": ptask.active,
             "interval": ptask.interval,
             "name": ptask.name,
             "taskmodule": ptask.taskmodule,
@@ -141,6 +142,7 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
         });
         var params = {
             "interval": $scope.form.interval,
+            "active": $scope.form.active,
             "name": $scope.form.name,
             "taskmodule": $scope.form.taskmodule,
             "nodes": nodes.join(", "),

@@ -27,14 +27,13 @@ from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
 from privacyidea.lib.error import ServerError, ParameterError
-from privacyidea.lib.task.hello import HelloTask
 from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.models import PeriodicTask
 
 log = logging.getLogger(__name__)
 
-TASK_CLASSES = [EventCounterTask, SimpleStatsTask, HelloTask]
+TASK_CLASSES = [EventCounterTask, SimpleStatsTask]
 #: TASK_MODULES maps task module identifiers to subclasses of BaseTask
 TASK_MODULES = dict((cls.identifier, cls) for cls in TASK_CLASSES)
 
@@ -270,5 +269,5 @@ def execute_task(taskmodule, params):
     :return: boolean returned by the task
     """
     module = get_taskmodule(taskmodule)
+    log.info(u"Running taskmodule {!r} with parameters {!r}".format(module, params))
     return module.do(params)
-
