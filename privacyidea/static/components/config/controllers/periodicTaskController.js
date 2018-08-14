@@ -115,8 +115,23 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
             angular.forEach($scope.availableNodes, function (row) {
                 row["ticked"] = ptask.nodes.indexOf(row.name) >= 0;
             });
+
+            // We need to get the task module options already here, so we know, if the option is of type "bool"!
+            ConfigFactory.getPeriodicTaskmoduleOptions($scope.form.taskmodule, function(response) {
+                var taskmoduleOptions = response.result.value;
+                $scope.taskmoduleOptions = taskmoduleOptions;
+
+                angular.forEach($scope.form.options, function(value, opt){
+                    // We need to check if $scope.form.action[opt]
+                    // exist. Since if the handler was changed, there
+                    // could be an option of another handler type, which
+                    // is not available anymore.
+                    if ($scope.taskmoduleOptions[opt].type === "bool" && isTrue(value)) {
+                        $scope.form.options[opt] = true;
+                    }
+                });
+            });
             $scope.noLastRuns = angular.equals($scope.form.last_runs, {});
-            $scope.getTaskmoduleOptions();
         });
     };
     $scope.getTaskModules = function () {
