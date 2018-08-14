@@ -144,12 +144,21 @@ class CryptoTestCase(MyTestCase):
         self.assertTrue(pin == "test", (r, pin))
 
     def test_01_encrypt_decrypt_pass(self):
-        r = encryptPassword(u"passwörd")
+        r = encryptPassword("passwörd")
         pin = decryptPassword(r)
-        self.assertTrue(pin == u"passwörd", (r, pin))
+        self.assertTrue(pin == "passwörd", (r, pin))
 
+        r = encryptPassword(u"passwörd")
+        pin = decryptPassword(r, convert_unicode=True)
+        self.assertEqual(pin, u"passwörd")
+
+        r = encryptPassword(u"passwörd")
+        pin = decryptPassword(r, convert_unicode=False)
+        self.assertEqual(pin, "passwörd")
+
+        # error path returns the bytestring
         r = encryptPassword(b"\x01\x02\x03\x04")
-        self.assertEqual(decryptPassword(r), b"\x01\x02\x03\x04")
+        self.assertEqual(decryptPassword(r, convert_unicode=True), b"\x01\x02\x03\x04")
 
     def test_02_encrypt_decrypt_eas_base64(self):
         import os
