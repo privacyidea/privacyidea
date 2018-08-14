@@ -406,7 +406,7 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
                 self.pool_size, self.pool_timeout, self.pool_recycle))
@@ -505,7 +505,7 @@ class IdResolver (UserIdResolver):
         desc = None
 
         connect_string = cls._create_connect_string(param)
-        log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
         Session = scoped_session(sessionmaker(bind=engine))
