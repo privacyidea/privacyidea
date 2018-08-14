@@ -86,7 +86,7 @@ The ``privacyidea-cron`` script is used to execute periodic tasks defined in the
 ``run_scheduled`` command collects all active jobs that are scheduled to run on the current node
 and executes them. The order is determined by their ``ordering`` values (tasks with low values
 are executed first). The ``-c`` option causes the script to is useful if the script is executed via the system
-crontab, as it causes the script to only
+crontab, as it causes the script to only print to stderr in case of errors.
 
 The ``list`` command can be used to get an overview of defined jobs, and the ``run_manually``
 command can be used to manually invoke tasks even though they are not scheduled to be run.
