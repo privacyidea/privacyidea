@@ -464,12 +464,12 @@ class IdResolver (UserIdResolver):
         password = ""
         conParams = ""
         if param.get("Port"):
-            port = ":{0!s}".format(param.get("Port"))
+            port = u":{0!s}".format(param.get("Port"))
         if param.get("Password"):
-            password = ":{0!s}".format(param.get("Password"))
+            password = u":{0!s}".format(param.get("Password"))
         if param.get("conParams"):
-            conParams = "?{0!s}".format(param.get("conParams"))
-        connect_string = "{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
+            conParams = u"?{0!s}".format(param.get("conParams"))
+        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
                                                    param.get("User", ""),
                                                    password,
                                                    "@" if (param.get("User")
