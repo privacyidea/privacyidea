@@ -332,12 +332,18 @@ def encryptPin(cryptPin):
 
 @log_with(log, log_exit=False)
 def decryptPassword(cryptPass):
+    from privacyidea.lib.utils import to_unicode
     hsm = _get_hsm()
     try:
         ret = hsm.decrypt_password(cryptPass)
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = FAILED_TO_DECRYPT_PASSWORD
+    try:
+        ret = to_unicode(ret)
+    except Exception as exx:  # pragma: no cover
+        log.warning(exx)
+        # just keep ``ret`` as a bytestring in that case
     return ret
 
 
