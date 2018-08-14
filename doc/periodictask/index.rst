@@ -53,27 +53,40 @@ Every periodic task has the following attributes:
 	The names of the privacyIDEA nodes on which the periodic task should be executed.
 	This is useful in a redundant master-master setup, because database-related task should then
 	only be run on *one* of the nodes (because the replication will take care of
-	propagating the database changes to the other node).
+	propagating the database changes to the other node). The name of the local node
+	as well as the names of remote nodes are configured in :ref:`inifile`.
 
 **taskmodule**
 	The taskmodule determines the actual activity of the task. privacyIDEA comes
 	with several taskmodules, see :ref:`periodic_task_modules`.
 
 **options**
-	The options are a set of key-value pairs that configures the behavior of the taskmodule.
-
+	The options are a set of key-value pairs that configure the behavior of the taskmodule.
 
 .. _periodic_task_modules:
 
 Taskmodules
 ~~~~~~~~~~~
 
-TODO
+privacyIDEA comes with the following taskmodules:
+
+.. toctree::
+   :maxdepth: 1
+
+   simplestats
+   eventcounter
 
 
 .. _privacyidea_cron:
 
-The privacyidea-cron script
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``privacyidea-cron`` script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO
+The ``privacyidea-cron`` script is used to execute periodic tasks defined in the Web UI. The
+``run_scheduled`` command collects all active jobs that are scheduled to run on the current node
+and executes them. The order is determined by their ``ordering`` values (tasks with low values
+are executed first). The ``-c`` option causes the script to is useful if the script is executed via the system
+crontab, as it causes the script to only
+
+The ``list`` command can be used to get an overview of defined jobs, and the ``run_manually``
+command can be used to manually invoke tasks even though they are not scheduled to be run.
