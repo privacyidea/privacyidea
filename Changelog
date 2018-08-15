@@ -3,7 +3,7 @@ Version 2.23, 2018-08-XX
   Features:
   * Add periodic tasks including a privacyidea-cron script. (#992) 
   * Add task module "Simple Stats" to generate time series of certain 
-    important performance values in privacyIDEA (#1105)
+    important statistics values in privacyIDEA (#1105)
   * Add task module "Event Counter" that allows to create time series of 
     any arbitrary event. (#1029)
   * New token type: TAN list, that can also import a prefefined
@@ -23,13 +23,13 @@ Version 2.23, 2018-08-XX
   * Improve recovery mechanism from a lost HSM connection (#1069)
   * Improve Debug Logging to hide passwords in SQL connect strings (#1162)
   * Add script for easy privacyIDEA standalone setup (#1093)
-  * ldap3, pyasn1, croniter updated in Ubuntu Launchpad reop (#1085)
+  * ldap3, pyasn1, croniter updated in Ubuntu Launchpad repo (#1085)
   * Add a script that easily gathers support and diagnostic information (#829)
   * Add event handler management to pi-manage (#1119)
   * Allow to customize the challenge text for challenge response tokens (#1096)
   * Add user information to OATH CSV token import file (#998)
   * Improve migration scripts from LinOTP to also update counter values (#1075)
-  * Add a priority to policy to avoid contradicting policies (#1031)
+  * Add priority to policies to avoid contradicting policies (#1031)
   * The token event handler now can delete tokeninfo (#988)
   * Make the import of OATH CSV token specific, so that each 
     tokentype can define its own import strategy (#1066)
