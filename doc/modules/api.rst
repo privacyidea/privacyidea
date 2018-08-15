@@ -25,6 +25,8 @@ Now you can take a look at the several REST endpoints.
    api/policy
    api/machineresolver
    api/machines
+   api/monitoring
+   api/periodictask
    api/application
    api/ttype
    api/smtpserver
