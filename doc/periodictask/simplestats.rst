@@ -49,9 +49,9 @@ The ``SimpleStats`` task module provides the following boolean options:
 .. note:: The statistics key, with which the time series is identified in the
     ``MonitoringStats`` table, is the same as the option name.
 
-    Adding a statistic with the same key to the ``MonitoringStats`` table will
-    corrupt the data.
+    Using a statistic with the same key in a different module, which writes to the
+    ``MonitoringStats`` table, will corrupt the data.
 
 .. note:: For each of these basic statistic values the token database will be
-    queried. To avoid excessive database load, consider running the
-    ``SimpleStats`` task infrequently.
+    queried. To avoid excessive load on the database, the ``SimpleStats`` task
+    should not be executed too often.

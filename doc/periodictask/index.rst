@@ -20,7 +20,7 @@ contents (this is done automatically by the Ubuntu package)::
 This tells the system cron daemon to invoke the ``privacyidea-cron`` script every five minutes. At
 each invocation, the ``privacyidea-cron`` script determines which tasks should be executed and
 execute the scheduled tasks. The ``-c`` option tells the script to be quiet and only print to stderr
-in case of an error (see :ref:`periodictask_cron`).
+in case of an error (see :ref:`privacyidea_cron`).
 
 Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Tasks*:
 
@@ -55,7 +55,7 @@ Every periodic task has the following attributes:
 	This is useful in a redundant master-master setup, because database-related tasks should then
 	only be run on *one* of the nodes (because the replication will take care of
 	propagating the database changes to the other node). The name of the local node
-	as well as the names of remote nodes are configured in :ref:`inifile`.
+	as well as the names of remote nodes are configured in :ref:`cfgfile`.
 
 **taskmodule**
 	The task module determines the actual activity of the task. privacyIDEA comes
@@ -63,7 +63,7 @@ Every periodic task has the following attributes:
 
 **options**
 	The options are a set of key-value pairs that configure the behavior of the task module.
-    Each task module can have it's own allowed options.
+	Each task module can have it's own allowed options.
 
 
 .. _periodic_task_modules:
@@ -83,7 +83,7 @@ privacyIDEA comes with the following task modules:
 .. _privacyidea_cron:
 
 The ``privacyidea-cron`` script
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``privacyidea-cron`` script is used to execute periodic tasks defined in the Web UI. The
 ``run_scheduled`` command collects all active jobs that are scheduled to run on the current node
