@@ -6,22 +6,23 @@ Periodic Tasks
 .. index:: periodic task, recurring task
 
 Starting with version 2.23, privacyIDEA comes with the ability to define periodically recurring tasks
-in the Web UI. Currently, the primary purpose of such tasks is to periodically collect statistical information,
-but in the future they might be useful to automatically perform cleanups on the database level.
+in the Web UI. The purpose of such tasks is to periodically execute certain processes automatically.
+The administrator defines which tasks should be executed using task modules. Currently there are task modules
+for simple statistics and for handling recorded events. Further task modules can be added easily.
 
-As privacyIDEA is a web application, it does not actually execute the defined periodic tasks. For that,
+As privacyIDEA is a web application, it can not actually execute the defined periodic tasks itself. For that,
 privacyIDEA comes with a script ``privacyidea-cron`` which must be invoked by the system cron daemon.
 This can, for example, be achieved by creating a file ``/etc/cron.d/privacyidea`` with the following
 contents (this is done automatically by the Ubuntu package)::
 
 	 */5 * * * *	privacyidea	privacyidea-cron run_scheduled -c
 
-This would tell the system cron daemon to invoke the ``privacyidea-cron`` script every five minutes. At
-each invocation, the ``privacyidea-cron`` script would determine which tasks should be executed and
+This tells the system cron daemon to invoke the ``privacyidea-cron`` script every five minutes. At
+each invocation, the ``privacyidea-cron`` script determines which tasks should be executed and
 execute the scheduled tasks. The ``-c`` option tells the script to be quiet and only print to stderr
 in case of an error (see :ref:`periodictask_cron`).
 
-Periodic tasks can be managed in the WebUI by navigating to *Config* and *Periodic Tasks*:
+Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Tasks*:
 
 .. figure:: periodictasks.png
 
@@ -36,7 +37,7 @@ Every periodic task has the following attributes:
 	A boolean flag determining whether the periodic task should be run or not.
 
 **order**
-	A number (at least zero) that can be used to fix the order of periodic tasks. This is
+	A number (at least zero) that can be used to rearrange the order of periodic tasks. This is
 	used by ``privacyidea-cron`` to determine the running order of tasks if multiple
 	periodic tasks are scheduled to be run. Tasks with a lower number are run first.
 
@@ -51,24 +52,26 @@ Every periodic task has the following attributes:
 
 **nodes**
 	The names of the privacyIDEA nodes on which the periodic task should be executed.
-	This is useful in a redundant master-master setup, because database-related task should then
+	This is useful in a redundant master-master setup, because database-related tasks should then
 	only be run on *one* of the nodes (because the replication will take care of
 	propagating the database changes to the other node). The name of the local node
 	as well as the names of remote nodes are configured in :ref:`inifile`.
 
 **taskmodule**
-	The taskmodule determines the actual activity of the task. privacyIDEA comes
-	with several taskmodules, see :ref:`periodic_task_modules`.
+	The task module determines the actual activity of the task. privacyIDEA comes
+	with several task modules, see :ref:`periodic_task_modules`.
 
 **options**
-	The options are a set of key-value pairs that configure the behavior of the taskmodule.
+	The options are a set of key-value pairs that configure the behavior of the task module.
+    Each task module can have it's own allowed options.
+
 
 .. _periodic_task_modules:
 
-Taskmodules
-~~~~~~~~~~~
+Task Modules
+~~~~~~~~~~~~
 
-privacyIDEA comes with the following taskmodules:
+privacyIDEA comes with the following task modules:
 
 .. toctree::
    :maxdepth: 1
