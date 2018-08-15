@@ -4,11 +4,11 @@ EventCounter
 ------------
 
 The Event Counter task module can be used with the :ref:`periodic_tasks` to create time series of certain events.
-An event could be a failed authentication request. Using the Event Counter privacyIDEA can create graphs that display
+An event could be a failed authentication request. Using the Event Counter, privacyIDEA can create graphs that display
 the development of failed authentication requests over time.
 
-To do this, the Event Counter task module reads a counter value from the database table ``EventCounter`` and writes this
-current value in the time series in the database table ``MonitoringStats``.
+To do this, the Event Counter task module reads a counter value from the database table ``EventCounter`` and adds this
+current value in a time series in the database table ``MonitoringStats``.
 As the administrator can use the event handler :ref:`counterhandler` to record any arbitrary event under any condition,
 this task module can be used to graph any metrics in privacyIDEA, be it failed authentication requests per time unit,
 the number of token delete requests or the number of PIN resets per month.
@@ -26,7 +26,7 @@ The Event Counter task module provides the following options:
 **stats_key**
 
     This is the name of the statistics key that is written to the ``MonitoringStats`` database table.
-    The event counter key store the current number of counted events, the ``stats_key`` takes the current number
+    The event counter key stores the current number of counted events, the ``stats_key`` takes the current number
     and stores it with the timestamp as a time series.
 
 **reset_event_counter**
@@ -37,5 +37,5 @@ The Event Counter task module provides the following options:
     Resetting the the event counter results in a time series of "events per time interval". The time intervall is
     specified by the time intervall in which the Event Counter task module is called.
     If ``reset_event_counter`` is not checked, then the event handler will continue to increase the counter value.
-    Use this, if you want to create a time series, that display the absolute number of events.
+    Use this, if you want to create a time series, that displays the absolute number of events.
 
