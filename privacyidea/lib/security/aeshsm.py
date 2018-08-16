@@ -159,7 +159,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             objs = self.session.findObjects([(PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
                                              (PyKCS11.CKA_LABEL, label)])
             log.debug("Loading '{}' key with label '{}'".format(k, label))
-            self.key_handles[mapping[k]] = objs[0]
+            if len(objs):
+                self.key_handles[mapping[k]] = objs[0]
 
         # self.session.logout()
         log.debug("Successfully setup the security module.")
@@ -325,6 +326,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         """
         # We need a new read/write session
         session = self.pkcs11.openSession(self.slot, PyKCS11.CKF_SERIAL_SESSION | PyKCS11.CKF_RW_SESSION)
+        # We need to logout, otherwise we get CKR_USER_ALREADY_LOGGED_IN
+        session.logout()
         session.login(self.password)
 
         key_labels = {"token": "",
@@ -335,11 +338,19 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             label = "{0!s}_{1!s}".format(kl, get_alphanum_str())
             aesTemplate = [
                 (PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
-                (PyKCS11.CKA_TOKEN, PyKCS11.CK_TRUE),
-                (PyKCS11.CKA_SENSITIVE, PyKCS11.CK_TRUE),
-                (PyKCS11.CKA_VALUE_LEN, 32),
                 (PyKCS11.CKA_KEY_TYPE, PyKCS11.CKK_AES),
-                (PyKCS11.CKA_LABEL, label)
+                (PyKCS11.CKA_VALUE_LEN, 32),
+                (PyKCS11.CKA_LABEL, label),
+                (PyKCS11.CKA_ID, label),
+                (PyKCS11.CKA_TOKEN, PyKCS11.CK_TRUE),
+                (PyKCS11.CKA_PRIVATE, True),
+                (PyKCS11.CKA_SENSITIVE, True),
+                (PyKCS11.CKA_ENCRYPT, True),
+                (PyKCS11.CKA_DECRYPT, True),
+                (PyKCS11.CKA_TOKEN, True),
+                (PyKCS11.CKA_WRAP, True),
+                (PyKCS11.CKA_UNWRAP, True),
+                (PyKCS11.CKA_EXTRACTABLE, False)
             ]
             aesKey = session.generateKey(aesTemplate)
             key_labels[kl] = label

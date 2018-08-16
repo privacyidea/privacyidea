@@ -130,8 +130,8 @@ def create_keys():
     r = hsm_object.create_keys()
     print("Please add the following to your pi.cfg:")
     print("PI_HSM_MODULE_KEY_LABEL_TOKEN = '{0}'".format(r.get("token")))
-    print("PI_HSM_MODULE_KEY_LABEL_CONFIG = '{0}'".format(r.get("token")))
-    print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("token")))
+    print("PI_HSM_MODULE_KEY_LABEL_CONFIG = '{0}'".format(r.get("config")))
+    print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("value")))
 
 
 @ca_manager.command
