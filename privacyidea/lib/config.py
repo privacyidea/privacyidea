@@ -123,7 +123,7 @@ class ConfigClass(object):
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
-                            value = decryptPassword(rconf.Value)
+                            value = decryptPassword(rconf.Value, convert_unicode=True)
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
@@ -175,7 +175,7 @@ class ConfigClass(object):
         for ckey, cvalue in reduced_config.iteritems():
             if cvalue.get("Type") == "password":
                 # decrypt the password
-                r_config[ckey] = decryptPassword(cvalue.get("Value"))
+                r_config[ckey] = decryptPassword(cvalue.get("Value"), convert_unicode=True)
             else:
                 r_config[ckey] = cvalue.get("Value")
 

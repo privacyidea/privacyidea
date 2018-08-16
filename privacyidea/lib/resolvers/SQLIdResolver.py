@@ -406,7 +406,7 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info("using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
                 self.pool_size, self.pool_timeout, self.pool_recycle))
@@ -464,12 +464,12 @@ class IdResolver (UserIdResolver):
         password = ""
         conParams = ""
         if param.get("Port"):
-            port = ":{0!s}".format(param.get("Port"))
+            port = u":{0!s}".format(param.get("Port"))
         if param.get("Password"):
-            password = ":{0!s}".format(param.get("Password"))
+            password = u":{0!s}".format(param.get("Password"))
         if param.get("conParams"):
-            conParams = "?{0!s}".format(param.get("conParams"))
-        connect_string = "{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
+            conParams = u"?{0!s}".format(param.get("conParams"))
+        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
                                                    param.get("User", ""),
                                                    password,
                                                    "@" if (param.get("User")
@@ -505,7 +505,7 @@ class IdResolver (UserIdResolver):
         desc = None
 
         connect_string = cls._create_connect_string(param)
-        log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
         Session = scoped_session(sessionmaker(bind=engine))

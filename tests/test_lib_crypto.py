@@ -148,6 +148,18 @@ class CryptoTestCase(MyTestCase):
         pin = decryptPassword(r)
         self.assertTrue(pin == "passwörd", (r, pin))
 
+        r = encryptPassword(u"passwörd")
+        pin = decryptPassword(r, convert_unicode=True)
+        self.assertEqual(pin, u"passwörd")
+
+        r = encryptPassword(u"passwörd")
+        pin = decryptPassword(r, convert_unicode=False)
+        self.assertEqual(pin, "passwörd")
+
+        # error path returns the bytestring
+        r = encryptPassword(b"\x01\x02\x03\x04")
+        self.assertEqual(decryptPassword(r, convert_unicode=True), b"\x01\x02\x03\x04")
+
     def test_02_encrypt_decrypt_eas_base64(self):
         import os
         key = os.urandom(16)
