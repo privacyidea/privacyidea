@@ -159,7 +159,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             objs = self.session.findObjects([(PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
                                              (PyKCS11.CKA_LABEL, label)])
             log.debug("Loading '{}' key with label '{}'".format(k, label))
-            if len(objs):
+            if objs != []:
                 self.key_handles[mapping[k]] = objs[0]
 
         # self.session.logout()
