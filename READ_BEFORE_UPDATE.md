@@ -1,5 +1,21 @@
 # Update Notes
 
+## Update from 2.22 to 2.23
+
+* An additional dependency python-croniter was added.
+  Thus you need to run "apt dist-upgrade" on Ubuntu systems,
+  to also install this new dependency.
+
+* When upgrading on Ubuntu using apt, you will be notified, that pi.cfg was changed by the maintainer.
+  This is fine. You must keep your pi.cfg, so press "N"!
+  This is due to the PI_ENGINE_REGISTRY_CLASS which is set to "shared" on new installations.
+  If you want to, you can set PI_ENGINE_REGISTRY_CLASS = True 
+  in your pi.cfg manually.
+
+* The database schema was changed. The meta packages on Ubuntu
+  privacyidea-apache2 and privacyidea-nginx should take care of this.
+  The last version of the DB schema will be 1a0710df148b
+
 ## Update from 2.21 to 2.22
 
 * There are currently version conflicts with the packages of ldap3 and pyasn1 that
