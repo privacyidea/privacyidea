@@ -141,8 +141,13 @@ Run tests
 Contributing
 ============
 
-You are very welcome to contribute to privacyIDEA:
+There are a lot of different way to contribute to privacyIDEA, even
+if you are not a developer.
 
+If you found a security vulnerability please report it to
+security@privacyidea.org.
+
+You can find detailed information about contributing here:
 https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.rst
 
 Code structure
