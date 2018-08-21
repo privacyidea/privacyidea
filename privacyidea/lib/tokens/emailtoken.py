@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#  2018-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Let the client choose to get a HTTP 500 Error code if
+#             SMS fails.
 #  2018-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add dynamic email address. Dynamically read from user source.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -284,6 +287,8 @@ class EmailTokenClass(HotpTokenClass):
                 log.warning(info)
                 log.debug(u"{0!s}".format(traceback.format_exc(e)))
                 return_message = info
+                if is_true(options.get("exception")):
+                    raise Exception(info)
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
