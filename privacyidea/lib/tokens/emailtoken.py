@@ -238,6 +238,8 @@ class EmailTokenClass(HotpTokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
+                You can pass exception=1 to raise an exception, if
+                the SMS could not be sent. Otherwise the message is contained in the response.
         :return: tuple of (bool, message and data)
                  bool, if submit was successful
                  message is submitted to the user

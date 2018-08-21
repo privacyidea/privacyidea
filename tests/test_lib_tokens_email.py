@@ -459,6 +459,8 @@ class EmailTokenTestCase(MyTestCase):
         self.assertFalse(c[0])
         self.assertTrue("The PIN was correct, but the EMail could not "
                         "be sent" in c[1])
+        # test with the parameter exception=1
+        self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
 
     @smtpmock.activate
     def test_21_test_email_config(self):
