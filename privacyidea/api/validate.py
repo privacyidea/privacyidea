@@ -230,6 +230,10 @@ def check():
     The PIN and OTP value is sent in the parameter ``pass``.
     In case of successful authentication it returns ``result->value: true``.
 
+    In case of a challenge response authentication a parameter ``exception=1``
+    can be passed. This would result in a HTTP 500 Server Error response if
+    an error occurred during sending of SMS or Email.
+
     In case ``/validate/radiuscheck`` is requested, the responses are
     modified as follows: A successful authentication returns an empty HTTP
     204 response. An unsuccessful authentication returns an empty HTTP
