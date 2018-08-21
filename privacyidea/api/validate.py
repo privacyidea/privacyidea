@@ -231,8 +231,8 @@ def check():
     In case of successful authentication it returns ``result->value: true``.
 
     In case of a challenge response authentication a parameter ``exception=1``
-    can be passed. This would result in a HHTP 500 Server Error response if
-    an error during SMS or Email sending occurred.
+    can be passed. This would result in a HTTP 500 Server Error response if
+    an error occurred during sending of SMS or Email.
 
     In case ``/validate/radiuscheck`` is requested, the responses are
     modified as follows: A successful authentication returns an empty HTTP
