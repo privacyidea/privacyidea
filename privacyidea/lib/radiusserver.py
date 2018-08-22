@@ -117,9 +117,8 @@ class RADIUSServer(object):
                          "access to user %s." % (config.server, user))
                 success = True
             else:
-                log.warning("Radiusserver %s"
-                            "rejected access to user %s." %
-                            (config.server, user))
+                log.warning("Radiusserver %s rejected "
+                            "access to user %s." % (config.server, user))
         except Timeout:
             log.warning("Receiving timeout from remote radius server {0!s}".format(config.server))
 
