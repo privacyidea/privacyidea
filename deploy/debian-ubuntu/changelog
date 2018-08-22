@@ -1,3 +1,9 @@
+python-privacyidea (2.23~dev8-trusty) trusty; urgency=medium
+
+  Development release
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 22 Aug 2018 09:15:00 +0200
+
 python-privacyidea (2.23~dev7-trusty) trusty; urgency=medium
 
   Development release
