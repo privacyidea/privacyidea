@@ -274,9 +274,8 @@ class RadiusTokenClass(RemoteTokenClass):
                          "access to user %s." % (r_server, radius_user))
                 otp_count = 0
             else:
-                log.warning("Radiusserver %s"
-                            "rejected access to user %s." %
-                            (r_server, radius_user))
+                log.warning("Radiusserver %s rejected "
+                            "access to user %s." % (r_server, radius_user))
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: {0!r}".format((ex)))
