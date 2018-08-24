@@ -99,7 +99,6 @@ create_database() {
 
 enable_apache() {
     if [ ! -h /etc/apache2/sites-enabled/privacyidea.conf ]; then
-        rm -f /etc/apache2/sites-enabled/*
         a2enmod wsgi
         a2enmod headers
         a2enmod ssl
