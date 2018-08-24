@@ -3,7 +3,7 @@
         <img width="{{ qrCodeWidth }}"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div class="col-sm-6" ng-hide="$state.includes('token.wizard') || form['2stepinit']">
+    <div class="col-sm-6" ng-hide="($state.includes('token.wizard') and !$scope.show_seed) || form['2stepinit']">
         <accordion close-others="oneAtATime">
             <accordion-group heading="{{ 'The OTP key'|translate }}">
                 {{ enrolledToken.otpkey.value }}
