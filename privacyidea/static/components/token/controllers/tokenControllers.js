@@ -171,6 +171,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     if ($state.includes('token.wizard')) {
         $scope.qrCodeWidth = 500;
     }
+    if ($state.includes('token.wizard') and $scope.show_seed) {
+        $scope.qrCodeWidth = 250;
+    }
     $scope.checkRight = AuthFactory.checkRight;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
