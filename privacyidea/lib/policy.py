@@ -970,7 +970,7 @@ def delete_all_policies():
 def export_policies(policies):
     """
     This function takes a policy list and creates an export file from it
-    
+
     :param policies: a policy definition
     :type policies: list of policy dictionaries
     :return: the contents of the file
@@ -1756,6 +1756,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this checked, the administrator will not see "
                           "the welcome dialog anymore.")
+            },
+            ACTION.SHOW_SEED: {
+                'type': 'bool',
+                'desc': _("If this checked, seed will be always displayed "
+                          "when enrolling TOTP/HOTP token.")
             }
         }
 

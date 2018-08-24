@@ -587,6 +587,14 @@ def get_webui_settings(request, response):
             client=client,
             unique=True
         )
+        show_seed = policy_object.get_policies(
+            action=ACTION.SHOW_SEED,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True
+        )
+        show_seed = bool(show_seed)
 
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
@@ -627,6 +635,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
         content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)
     return response

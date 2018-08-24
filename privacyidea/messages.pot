@@ -666,6 +666,11 @@ msgid ""
 "anymore."
 msgstr ""
 
+#: lib/policy.py:1762
+msgid ""
+"If this checked, seed will be always displayed when enrolling TOTP/HOTP token."
+msgstr ""
+
 #: lib/radiusserver.py:199 lib/radiusserver.py:230
 msgid "The RADIUS secret is too long"
 msgstr ""
@@ -1347,4 +1352,3 @@ msgstr ""
 #: lib/tokens/yubikeytoken.py:160
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
 msgstr ""
-

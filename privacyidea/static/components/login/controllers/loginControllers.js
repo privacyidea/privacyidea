@@ -343,6 +343,7 @@ angular.module("privacyideaApp")
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
             $scope.hide_welcome = data.result.value.hide_welcome;
+            $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;

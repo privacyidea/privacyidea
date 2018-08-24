@@ -133,7 +133,7 @@
             {{ newUser.realm }}.
         </span>
         <span ng-show="!newUser.user || loggedInUser.role != 'admin'" translate
-              ng-hide="$state.includes('token.wizard')">
+              ng-hide="$state.includes('token.wizard') and !$scope.show_seed">
             The token was successfully enrolled with serial number
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
                 {{ enrolledToken.serial }}</a>.
