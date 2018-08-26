@@ -1894,6 +1894,10 @@ msgstr ""
 msgid "Policy Templates"
 msgstr ""
 
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:226
+msgid "Pool recycle timeout"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:204
 msgid "Pool size"
 msgstr ""
@@ -2285,7 +2289,7 @@ msgstr ""
 msgid "Save RADIUS server"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:240
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:251
 msgid "Save Resolver"
 msgstr ""
 
@@ -2609,7 +2613,7 @@ msgstr ""
 msgid "Test SCIM Resolver"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:236
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:247
 msgid "Test SQL Resolver"
 msgstr ""
 

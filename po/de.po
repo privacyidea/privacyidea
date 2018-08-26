@@ -2086,6 +2086,11 @@ msgstr "Richtlinienname"
 msgid "Policy Templates"
 msgstr "Vorlagen für Richtlinien"
 
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:226
+#, fuzzy
+msgid "Pool recycle timeout"
+msgstr "Pool-Timeout"
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:204
 msgid "Pool size"
 msgstr "Pool-Größe"
@@ -2490,7 +2495,7 @@ msgstr "Optionen speichern"
 msgid "Save RADIUS server"
 msgstr "RADIUS-Server speichern"
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:240
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:251
 msgid "Save Resolver"
 msgstr "Resolver speichern"
 
@@ -2828,7 +2833,7 @@ msgstr "OTP-Wert prüfen"
 msgid "Test SCIM Resolver"
 msgstr "SCIM-Resolver testen"
 
-#: privacyidea/static/components/config/views/config.resolvers.sql.html:236
+#: privacyidea/static/components/config/views/config.resolvers.sql.html:247
 msgid "Test SQL Resolver"
 msgstr "SQL-Resolver testen"
 

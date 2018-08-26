@@ -926,17 +926,18 @@ class IdResolver (UserIdResolver):
                     log.debug("{0!s}".format(traceback.format_exc()))
 
             if uidtype_count < count:  # pragma: no cover
-                desc = _("Your LDAP config found %i user objects, but only %i "
-                         "with the specified uidtype" % (count, uidtype_count))
+                desc = _("Your LDAP config found {0!s} user objects, but only {1!s} "
+                         "with the specified uidtype".format(count, uidtype_count))
             else:
-                desc = _("Your LDAP config seems to be OK, %i user objects "
-                         "found.") % count
+                desc = _("Your LDAP config seems to be OK, {0!s} user objects "
+                         "found.".format(count))
 
             l.unbind()
             success = True
 
         except Exception as e:
             desc = "{0!r}".format(e)
+            log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, desc
 

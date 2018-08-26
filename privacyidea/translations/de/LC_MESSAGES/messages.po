@@ -7,16 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-08-13 11:06+0200\n"
-"PO-Revision-Date: 2018-08-13 11:06+0200\n"
+"POT-Creation-Date: 2018-08-27 00:29+0200\n"
+"PO-Revision-Date: 2018-08-27 00:31+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Language: de\n"
 "Language-Team: de <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 1.3\n"
-"Language: de\n"
+"Generated-By: Babel 2.6.0\n"
 "X-Generator: Poedit 1.8.7.1\n"
 
 #: api/auth.py:198
@@ -567,7 +567,7 @@ msgstr "Eine Liste an Realmnamen, die im WebUI-Login in einer Dropdown-Box angez
 msgid "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr "Dem Administrator wird der Willkommen-Dialog nicht mehr angezeigt."
 
-#: lib/radiusserver.py:200 lib/radiusserver.py:231
+#: lib/radiusserver.py:199 lib/radiusserver.py:230
 msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
@@ -835,14 +835,12 @@ msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-Objekte gefunden."
 
 #: lib/resolvers/LDAPIdResolver.py:930
-#, python-format
-msgid "Your LDAP config found %i user objects, but only %i with the specified uidtype"
-msgstr "Es wurden %i Benutzerobjekte gefunden. Aber nur %i mit dem spezifizierten UID-Typ."
+msgid "Your LDAP config found {0!s} user objects, but only {1!s} with the specified uidtype"
+msgstr "Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte gefunden, aber lediglich {1!s} mit dem angegebenen UID Typ."
 
-#: lib/resolvers/LDAPIdResolver.py:932
-#, python-format
-msgid "Your LDAP config seems to be OK, %i user objects found."
-msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Benutzer-Objekte gefunden."
+#: lib/resolvers/LDAPIdResolver.py:933
+msgid "Your LDAP config seems to be OK, {0!s} user objects found."
+msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} Benutzerobjekte gefunden."
 
 #: lib/smsprovider/HttpSMSProvider.py:237
 msgid "The base URL of the HTTP Gateway"
@@ -972,31 +970,31 @@ msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
 msgid "event based OTP token using the HOTP algorithm"
 msgstr "Ereignisbasiertes Einmalpasswort auf Basis des HOTP Algorithmus."
 
-#: lib/tokens/emailtoken.py:148
+#: lib/tokens/emailtoken.py:151
 msgid "EMail Token"
 msgstr "EMail Token"
 
-#: lib/tokens/emailtoken.py:150
+#: lib/tokens/emailtoken.py:153
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr "EMail: Ein Einmalpasswort über Email an die Mail-Adresse des Benutzers versenden."
 
-#: lib/tokens/emailtoken.py:158
+#: lib/tokens/emailtoken.py:161
 msgid "The text that will be sent via EMail for an EMail token. Use <otp> and <serial> as parameters. You may also specify a filename as email template starting with \"file:\"."
 msgstr "Dieser Text wird beim Email-Token via Email versendet. Sie können <otp> und <serial> als Tags verwenden. Alternativ können Sie einen Dateinamen einer Email-Template-Datei angeben. Dies muss dann mit \"file:\" beginnen."
 
-#: lib/tokens/emailtoken.py:164
+#: lib/tokens/emailtoken.py:167
 msgid "The subject of the EMail for an EMail token. Use <otp> and <serial> as parameters."
 msgstr "Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> verwendet werden."
 
-#: lib/tokens/emailtoken.py:169
+#: lib/tokens/emailtoken.py:172
 msgid "If set, a new EMail OTP will be sent after successful authentication with one EMail OTP."
 msgstr "Ein neues Einmalpasswort wird per Email versendet, direkt nachdem sich der Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
 
-#: lib/tokens/emailtoken.py:174
+#: lib/tokens/emailtoken.py:177
 msgid "Use an alternate challenge text for telling the user to enter the code from the eMail."
 msgstr "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus der Email einzugeben."
 
-#: lib/tokens/emailtoken.py:250
+#: lib/tokens/emailtoken.py:255
 msgid "Enter the OTP from the Email:"
 msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein:"
 
@@ -1089,27 +1087,27 @@ msgstr "Registrierung: Ein Token, der einen Registrierungs-Code erzeugt, den der
 msgid "Remote Token: Forward authentication request to another server."
 msgstr "Remote Token: Die Authentifizierungsanfrage an einen anderen privacyIDEA Server weiterleiten."
 
-#: lib/tokens/smstoken.py:188
+#: lib/tokens/smstoken.py:192
 msgid "SMS Token"
 msgstr "SMS Token"
 
-#: lib/tokens/smstoken.py:190
+#: lib/tokens/smstoken.py:194
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS: Ein Einmalpasswort per SMS an das Mobiltelefon des Benutzers senden."
 
-#: lib/tokens/smstoken.py:199
+#: lib/tokens/smstoken.py:203
 msgid "The text that will be send via SMS for an SMS token. Use <otp> and <serial> as parameters."
 msgstr "Der Text der SMS. <otp> und <serial> können als Tags verwendet werden."
 
-#: lib/tokens/smstoken.py:204
+#: lib/tokens/smstoken.py:208
 msgid "If set, a new SMS OTP will be sent after successful authentication with one SMS OTP."
 msgstr "Ein neues Einmalpasswort wird direkt gesendet, nachdem sich der Benutzer erfolgreich mit dem bisherigen Einmalpasswort aus der letzten SMS authentisiert hat."
 
-#: lib/tokens/smstoken.py:209
+#: lib/tokens/smstoken.py:213
 msgid "Use an alternate challenge text for telling the user to enter the code from the SMS."
 msgstr "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, der Code aus der SMS einzugeben."
 
-#: lib/tokens/smstoken.py:281
+#: lib/tokens/smstoken.py:287
 msgid "Enter the OTP from the SMS:"
 msgstr "Bitte geben Sie das Einmalpasswort aus der SMS ein:"
 
@@ -1203,3 +1201,18 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 
 #~ msgid "Authentication failure. missing Username"
 #~ msgstr "Authentifizierungsfehler. Fehlender Benutzername."
+
+#~ msgid ""
+#~ "Your LDAP config found %i user "
+#~ "objects, but only %i with the "
+#~ "specified uidtype"
+#~ msgstr ""
+#~ "Es wurden %i Benutzerobjekte gefunden. "
+#~ "Aber nur %i mit dem spezifizierten "
+#~ "UID-Typ."
+
+#~ msgid "Your LDAP config seems to be OK, %i user objects found."
+#~ msgstr ""
+#~ "Die LDAP-Konfiguration scheint in "
+#~ "Ordnung zu sein. Es wurden %i "
+#~ "Benutzer-Objekte gefunden."
