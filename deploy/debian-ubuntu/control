@@ -74,7 +74,7 @@ Description: Auth Module for Apache Server to authenticate with OTP
 
 Package: privacyidea-all
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, privacyidea-radius, privacyidea-otrs, privacyideaadm
+Depends: ${misc:Depends}, python-privacyidea (=${binary:Version}), privacyidea-radius, privacyidea-otrs, privacyideaadm
 Description: two-factor authenticaion system. This is a metapackage to install everything
  privacyIDEA: identity, multifactor authentication, authorization.
  privacyIDEA is an open solution for strong two-factor authentication.
@@ -86,7 +86,7 @@ Description: two-factor authenticaion system. This is a metapackage to install e
 
 Package: privacyidea-nginx
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, nginx-full, uwsgi, 
+Depends: ${misc:Depends}, python-privacyidea (=${binary:Version}), python-mysqldb, nginx-full, uwsgi, 
  uwsgi-plugin-python, mysql-server|mariadb-server, mysql-client|mariadb-client
 Conflicts: apache2, privacyidea-apache2
 Description: 2FA system. This is a meta package to install privacyidea with nginx
@@ -97,7 +97,7 @@ Description: 2FA system. This is a meta package to install privacyidea with ngin
 
 Package: privacyidea-apache2
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, apache2,
+Depends: ${misc:Depends}, python-privacyidea (=${binary:Version}), python-mysqldb, apache2,
  mysql-server|mariadb-server, mysql-client|mariadb-client, libapache2-mod-wsgi, rng-tools
 Conflicts: nginx, nginx-full, privacyidea-nginx
 Description: 2FA system. This is a meta package to install privacyidea with apache2
@@ -108,7 +108,7 @@ Description: 2FA system. This is a meta package to install privacyidea with apac
 
 Package: privacyidea-mysql
 Architecture: all
-Depends: ${misc:Depends}, python-privacyidea, python-mysqldb, mysql-server|mariadb-server, mysql-client|mariadb-client
+Depends: ${misc:Depends}, python-privacyidea (=${binary:Version}), python-mysqldb, mysql-server|mariadb-server, mysql-client|mariadb-client
 Conflicts: nginx, nginx-full, privacyidea-nginx, privacyidea-apache2
 Description: 2FA system. privacyIDEA application and MySQL configuration
  privacyIDEA: identity, multifactor authentication, authorization.
