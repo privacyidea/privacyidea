@@ -927,10 +927,10 @@ class IdResolver (UserIdResolver):
 
             if uidtype_count < count:  # pragma: no cover
                 desc = _("Your LDAP config found {0!s} user objects, but only {1!s} "
-                         "with the specified uidtype".format(count, uidtype_count))
+                         "with the specified uidtype").format(count, uidtype_count)
             else:
                 desc = _("Your LDAP config seems to be OK, {0!s} user objects "
-                         "found.".format(count))
+                         "found.").format(count)
 
             l.unbind()
             success = True
