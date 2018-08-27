@@ -9,7 +9,7 @@
 * When upgrading on Ubuntu using apt, you will be notified, that pi.cfg was changed by the maintainer.
   This is fine. You must keep your pi.cfg, so press "N"!
   This is due to the PI_ENGINE_REGISTRY_CLASS which is set to "shared" on new installations.
-  If you want to, you can set PI_ENGINE_REGISTRY_CLASS = True 
+  If you want to, you can set PI_ENGINE_REGISTRY_CLASS = "shared"
   in your pi.cfg manually.
 
 * The database schema was changed. The meta packages on Ubuntu
