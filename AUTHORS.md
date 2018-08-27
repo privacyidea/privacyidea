@@ -6,6 +6,7 @@ Paul Lettich <paul.lettich@netknights.it>
 Andreas Böhler <dev@aboehler.at>
 Pascal   F u k s <pascal@foxit.pro>
 Ivan Stojmirov <stojmir@gmail.com>
+Rene Arends <renini@gmail.com>
 mjbecker
 
 # Overall authors
@@ -48,9 +49,10 @@ Richard Franks <git@rf152.co.uk>
 Taylor Chase <Taylor.Chase@tempustechnologies.com>
 frennkie <mail@rhab.de>
 m7four <manfred.schmid@it-schmid.com>
+Rene Arends <renini@gmail.com>
 mjbecker
 quynh-axiadids <quynh@axiadids.com>
 root <root@Svr040.livingston.nhsscotland.com>
 
 Created using
-git shortlog -sne 9403cd299bed9de846631da56e80362553667bad..7bf8b438817ad858f5bd1d57461ce346d8c8b202 | cut -f 2,3 
+git shortlog -sne 9403cd299bed9de846631da56e80362553667bad.. | cut -f 2,3 
