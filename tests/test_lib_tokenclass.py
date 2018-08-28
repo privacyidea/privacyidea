@@ -19,7 +19,7 @@ from privacyidea.models import (Token,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
-
+import binascii
 
 class TokenBaseTestCase(MyTestCase):
     '''
@@ -32,30 +32,30 @@ class TokenBaseTestCase(MyTestCase):
     realm2 = "realm2"
     serial1 = "SE123456"
     serial2 = "SE222222"
-    
+
     # set_user, get_user, reset, set_user_identifiers
-    
+
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
                                "type": "passwdresolver",
                                "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
-               
+
         (added, failed) = set_realm(self.realm1,
                                     [self.resolvername1])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
-        
+
         user = User(login="root",
                     realm=self.realm1,
                     resolver=self.resolvername1)
-        
+
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        
+
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
-        
+
         user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
@@ -67,26 +67,26 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "unknown", token.token)
         self.assertTrue(token.type == "unknown", token)
-        
+
         token.set_type("newtype")
         self.assertTrue(token.token.tokentype == "newtype", token.token)
         self.assertTrue(token.type == "newtype", token)
         self.assertTrue(token.get_type() == "newtype", token)
-        
+
         self.assertTrue(token.get_class_prefix() == "UNK", token)
         self.assertTrue(token.get_class_type() is None, token)
         token.save()
 
         info = token.get_class_info()
         self.assertTrue(info == {}, "{0!s}".format(info))
-        
+
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         self.assertTrue(token.token.tokentype == "newtype",
                         token.token.tokentype)
         self.assertTrue(token.type == "newtype", token.type)
-        
+
         token.set_user(User(login="cornelius",
                             realm=self.realm1))
         self.assertTrue(token.token.resolver_type == "passwdresolver",
@@ -95,13 +95,13 @@ class TokenBaseTestCase(MyTestCase):
                         token.token.resolver)
         self.assertTrue(token.token.user_id == "1000",
                         token.token.user_id)
-        
+
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
         self.assertTrue(user_object.resolver == self.resolvername1,
                         user_object)
-        
+
         token.set_user_identifiers(2000, self.resolvername1, "passwdresolver")
         self.assertTrue(int(token.token.user_id) == 2000, token.token.user_id)
 
@@ -112,7 +112,7 @@ class TokenBaseTestCase(MyTestCase):
         token.reset()
         self.assertTrue(token.token.failcount == 0,
                         token.token.failcount)
-        
+
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
@@ -120,7 +120,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.get_otp() == (-2, 0, 0, 0))
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
-        
+
         c = token.create_challenge("transactionid")
         self.assertTrue(c[0], c)
         self.assertTrue("transactionid" in c[2], c)
@@ -147,37 +147,37 @@ class TokenBaseTestCase(MyTestCase):
         token.set_description("something new")
         self.assertTrue(token.token.description == "something new",
                         token.token)
-        
+
         # set defaults
         token.set_defaults()
         self.assertTrue(token.token.otplen == 6)
         self.assertTrue(token.token.sync_window == 1000)
-        
+
         token.resync("1234", "3456")
-        
+
         token.token.count_window = 17
         self.assertTrue(token.get_otp_count_window() == 17)
-        
+
         token.token.count = 18
         self.assertTrue(token.get_otp_count() == 18)
-        
+
         token.token.active = False
         self.assertTrue(token.is_active() is False)
-        
+
         token.token.failcount = 7
         self.assertTrue(token.get_failcount() == 7)
         token.set_failcount(8)
         self.assertTrue(token.token.failcount == 8)
-        
+
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
-        
+
         self.assertTrue(token.get_user_id() == token.token.user_id)
-        
+
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "newtype",
                         token.token.tokentype)
-        
+
         token.set_so_pin("sopin")
         token.set_user_pin("userpin")
         token.set_otpkey("123456")
@@ -192,13 +192,13 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.get_otplen() == 8)
         self.assertTrue(token.token.count == 1000,
                         token.token.count)
-        
+
         token.set_maxfail(1000)
         self.assertTrue(token.token.maxfail == 1000)
-        
+
         token.set_count_window(52)
         self.assertTrue(token.get_count_window() == 52)
-        
+
         token.set_sync_window(53)
         self.assertTrue(token.get_sync_window() == 53)
 
@@ -212,15 +212,15 @@ class TokenBaseTestCase(MyTestCase):
         ph2 = token.token.pin_hash
         self.assertTrue(ph1 != ph2)
         token.set_pin_hash_seed(ph1, pseed)
-        
+
     def test_07_enable(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.enable(False)
         self.assertTrue(token.token.active is False)
         token.enable()
-        self.assertTrue(token.token.active)        
-        
+        self.assertTrue(token.token.active)
+
     def test_05_get_set_realms(self):
         set_realm(self.realm2)
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -230,12 +230,12 @@ class TokenBaseTestCase(MyTestCase):
         token.set_realms([self.realm1, self.realm2])
         realms = token.get_realms()
         self.assertTrue(len(realms) == 2, realms)
-        
+
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.delete_token()
-        
+
         db_token = Token.query.filter_by(serial=self.serial1).first()
         self.assertTrue(db_token is None, db_token)
 
@@ -245,14 +245,14 @@ class TokenBaseTestCase(MyTestCase):
         token.set_hashlib("sha1")
         tinfo = token.token.get_info()
         self.assertTrue("hashlib" in tinfo, tinfo)
-        
+
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         start = token.token.failcount
         end = token.inc_failcount()
         self.assertTrue(end == start + 1, (end, start))
-        
+
     def test_10_get_hashlib(self):
         # check if functions are returned
         for hl in ["sha1", "md5", "sha256", "sha512",
@@ -260,7 +260,7 @@ class TokenBaseTestCase(MyTestCase):
             self.assertTrue(hasattr(TokenClass.get_hashlib(hl),
                                     '__call__'),
                             TokenClass.get_hashlib(hl))
-    
+
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
@@ -275,7 +275,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue("key2" not in info2, info2)
         self.assertTrue(token.get_tokeninfo("key1") == "value2",
                         info2)
-        
+
         # auth counter
         token.set_count_auth_success_max(200)
         token.set_count_auth_max(1000)
@@ -287,7 +287,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.get_count_auth_success() == 101)
         self.assertTrue(token.get_count_auth_max() == 1000)
         self.assertTrue(token.get_count_auth() == 201)
-        
+
         self.assertTrue(token.check_auth_counter())
         token.set_count_auth_max(10)
         self.assertFalse(token.check_auth_counter())
@@ -313,7 +313,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(start == "2014-12-30T16:00+0400", start)
         self.assertRaises(Exception,
                           token.set_validity_period_start, "wrong date")
-        
+
         self.assertFalse(token.check_validity_period())
         # THe token is valid till 2021, this should be enough!
         token.set_validity_period_end("2021-12-30T16:00+0200")
@@ -337,7 +337,7 @@ class TokenBaseTestCase(MyTestCase):
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertTrue(token.check_validity_period())
-        
+
         # check before start date
         # +5 days
         end_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
@@ -348,7 +348,7 @@ class TokenBaseTestCase(MyTestCase):
         start = start_date.strftime(DATE_FORMAT)
         token.set_validity_period_start(start)
         self.assertFalse(token.check_validity_period())
-        
+
         # check after enddate
         # -1 day
         end_date = datetime.datetime.now(tzlocal()) - datetime.timedelta(1)
@@ -431,7 +431,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        
+
         token.set_otp_count(10)
         self.assertTrue(token.token.count == 10, token.token.count)
         # increase counter by 1
@@ -446,11 +446,11 @@ class TokenBaseTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         self.assertTrue(token.check_otp_exist("123456") == -1)
-        
+
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        
+
         token.token.otplen = 6
         # postpend pin
         from privacyidea.lib.config import set_prepend_pin
@@ -463,14 +463,14 @@ class TokenBaseTestCase(MyTestCase):
         res, pin, value = token.split_pin_pass("test123456")
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == "123456", value)
-        
+
     def test_15_check_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
         token.set_pin("test")
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
-        
+
     def test_15_status_validation(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
@@ -484,7 +484,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        token.add_init_details("otpkey", "secretkey")
+        token.add_init_details("otpkey", binascii.hexlify("secretkey"))
         detail = token.get_init_detail()
         self.assertTrue("otpkey" in detail, detail)
 
@@ -517,13 +517,13 @@ class TokenBaseTestCase(MyTestCase):
                           token.update,
                           {"otpkey": "123456",
                            "genkey": "1"})
-        
+
         token.update({"otpkey": "123456",
                       "pin": "654321",
                       "otplen": 6})
         self.assertTrue(token.check_pin("654321"))
         self.assertTrue(token.token.otplen == 6)
-        
+
         # save pin encrypted
         token.update({"genkey": 1,
                       "pin": "secret",
@@ -531,7 +531,7 @@ class TokenBaseTestCase(MyTestCase):
         # check if the PIN is encrypted
         self.assertTrue(token.token.pin_hash.startswith("@@"),
                         token.token.pin_hash)
-        
+
         # update token without otpkey
         token.update({"description": "test"})
 
@@ -599,7 +599,7 @@ class TokenBaseTestCase(MyTestCase):
                                            options={"state": "mytransaction"})
         # The challenge matches, but the OTP does not match!
         self.assertTrue(r == -1, r)
-        
+
         # test the challenge janitor
         c1 = Challenge(self.serial1, transaction_id="t1", validitytime=0)
         c1.save()
