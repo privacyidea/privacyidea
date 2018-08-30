@@ -266,12 +266,16 @@ def after_request(response):
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
-        message = error.description
+        message = ''
+        description = ''
+        
+        if hasattr(error, 'description'):
+            description = error.description
 
         if hasattr(error, 'details'):
             if error.details:
                 if 'message' in error.details:
-                    message = "{}|{}".format(error.description, error.details['message'])
+                    message = "{}|{}".format(description, error.details['message'])
 
         g.audit_object.log({"info": message})
         g.audit_object.finalize_log()
