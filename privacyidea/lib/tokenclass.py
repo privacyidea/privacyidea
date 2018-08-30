@@ -1269,11 +1269,10 @@ class TokenClass(object):
         to complete the token initialization, the response of the initialisation
         should be build by this token specific method.
         This method is called from api/token after the token is enrolled
-
         get_init_detail returns additional information after an admin/init
         like the QR code of an HOTP/TOTP token.
         Can be anything else.
-
+        
         :param params: The request params during token creation token/init
         :type params: dict
         :param user: the user, token owner
@@ -1287,8 +1286,17 @@ class TokenClass(object):
         response_detail.update(init_details)
         response_detail['serial'] = self.get_serial()
 
-        return response_detail
+        otpkey = None
+        if 'otpkey' in init_details:
+            otpkey = init_details.get('otpkey')
 
+        if otpkey is not None:
+            response_detail["otpkey"] = {"description": "OTP seed",
+                                         "value": "seed://{0!s}".format(otpkey),
+                                         "img": create_img(otpkey, width=200)}
+
+        return response_detail
+        
     def get_QRimage_data(self, response_detail):
         """
         FIXME: Do we really use this?
