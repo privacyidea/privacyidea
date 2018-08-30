@@ -46,6 +46,7 @@ This code is tested in tests/test_lib_tokens_hotp
 
 import time
 import binascii
+import base64
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
@@ -255,10 +256,18 @@ class HotpTokenClass(TokenClass):
                                                   "img": create_img(oath_url,
                                                                     width=250)
                                                   }
+                                                 
+                    key_bin = binascii.unhexlify(otpkey)
+                    # also strip the padding =, as it will get problems with the google app.
+                    otpkey_human = base64.b32encode(key_bin).strip('=')
+                    response_detail["otpkey"] = {"description": "OTP seed",
+                                                 "value": "seed://{0!s}".format(otpkey),
+                                                 "human_value": "key://{0!s}".format(otpkey_human),
+                                                 "img": create_img(otpkey, width=200)}
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
-                    
+
         return response_detail
 
     def _get_twostep_parameters(self):
