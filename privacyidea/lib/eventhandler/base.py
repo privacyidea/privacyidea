@@ -268,7 +268,9 @@ class BaseEventHandler(object):
         try:
             ui = user.info
         except UserError as exx:
-            if exx.id == 905:
+            if exx.id in [904, 905]:
+                # 904: User can not be found - maybe we got here due to PassOnNoUser
+                # 905: This would be a parameter error - why is this here?
                 user = User()
             else:
                 raise exx

@@ -12,6 +12,8 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
+from privacyidea.lib.event import set_event
+from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.realm import set_realm, set_default_realm
@@ -1529,6 +1531,27 @@ class ValidateAPITestCase(MyTestCase):
             self.assertEqual(detail.get("message"),
                              u"user does not exist, accepted "
                              u"due to 'pass_no'")
+
+        # Creating a notification event. The non-existing user must
+        # still be able to pass!
+        eid = set_event("notify", event=["validate_check"], action="sendmail",
+                  handlermodule="UserNotification", conditions={"token_locked": True})
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "doesNotExist",
+                                                 "realm": self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = json.loads(res.data).get("detail")
+            self.assertEqual(detail.get("message"),
+                             u"user does not exist, accepted "
+                             u"due to 'pass_no'")
+
+        delete_event(eid)
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
