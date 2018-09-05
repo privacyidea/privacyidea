@@ -821,15 +821,28 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-@resolver_manager.command
-def list():
+@resolver_manager.option('-v', help="Verbose output - also print the configuration of the resolvers.",
+                         dest="verbose", action="store_true")
+def list(verbose):
     """
-    list the available resolvers and the type
+    list the available resolvers and the type.
     """
     from privacyidea.lib.resolver import get_resolver_list
     resolver_list = get_resolver_list()
-    for name, resolver in resolver_list.iteritems():
-        print("%16s - (%s)" % (name, resolver.get("type")))
+
+    if not verbose:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+    else:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+            print("."*32)
+            data = resolver.get("data", {})
+            for k, v in data.iteritems():
+                if k.lower() in ["bindpw", "password"]:
+                    v = "xxxxx"
+                print("{0!s:>24}: {1!r}".format(k, v))
+            print("")
 
 
 @realm_manager.command
