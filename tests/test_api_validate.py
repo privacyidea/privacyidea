@@ -1348,6 +1348,20 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
 
+        # Test if the policies "reset_all_tokens" and "passthru" work out fine at the same time
+        set_policy(name="reset_all_tokens", scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS)
+        # Passthru with POST Request
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "passthru",
+                                                 "realm": self.realm2,
+                                                 "pass": "pthru"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_policy("reset_all_tokens")
         delete_policy("pthru")
 
     def test_20_questionnaire(self):
