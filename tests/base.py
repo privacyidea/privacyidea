@@ -31,6 +31,17 @@ class MyTestCase(unittest.TestCase):
     realm3 = "realm3"
     serials = ["SE1", "SE2", "SE3"]
     otpkey = "3132333435363738393031323334353637383930"
+    valid_otp_values = ["755224",
+                        "287082",
+                        "359152",
+                        "969429",
+                        "338314",
+                        "254676",
+                        "287922",
+                        "162583",
+                        "399871",
+                        "520489"]
+
 
     @classmethod
     def setUpClass(cls):
