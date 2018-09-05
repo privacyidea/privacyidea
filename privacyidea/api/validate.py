@@ -540,7 +540,7 @@ def trigger_challenge():
                "clientip": g.client_ip,
                "user": user}
 
-    token_objs = get_tokens(serial=serial, user=user)
+    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False)
     for token_obj in token_objs:
         if "challenge" in token_obj.mode:
             # If this is a challenge response token, we create a challenge
