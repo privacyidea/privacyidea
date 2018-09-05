@@ -10,7 +10,8 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token, revoke_token)
+                                   reset_token, enable_token, revoke_token,
+                                   set_pin)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
@@ -317,7 +318,7 @@ class DisplayTANTestCase(MyTestCase):
         remove_token("ocra1234")
 
 
-class AAValidateOfflineTestCase(MyTestCase):
+class AValidateOfflineTestCase(MyTestCase):
     """
     Test api.validate endpoints that are responsible for offline auth.
     """
@@ -2177,3 +2178,138 @@ class ValidateAPITestCase(MyTestCase):
         remove_token("CHAL2")
         remove_token("CHAL3")
         remove_token("CHAL4")
+
+
+class AChallengeResponse(MyTestCase):
+
+    serial = "hotp1"
+    serial_email = "email1"
+
+    def setUp(self):
+        MyTestCase.setUp(self)
+        self.setUp_user_realms()
+
+    def test_01_challenge_response_token_deactivate(self):
+        # New token for the user "selfservice"
+        Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
+              realm=self.realm1).save()
+        # Define HOTP token to be challenge response
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        set_pin(self.serial, "pin")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
+            transaction_id = detail.get("transaction_id")
+
+        # Now we try to provide the OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": self.valid_otp_values[0],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("value"))
+
+        # Now we send the challenge and then we disable the token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
+            transaction_id = detail.get("transaction_id")
+
+        # disable the token
+        enable_token(self.serial, False)
+
+        # Now we try to provide the OTP value, but authentication must fail, since the token is disabled
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(detail.get("message"), "Challenge matches, but token is inactive.")
+
+        # The token is still disabled. We are checking, if we can do a challenge response
+        # for a disabled token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertTrue("No active challenge response" in detail.get("message"), detail.get("message"))
+
+    @smtpmock.activate
+    def test_02_two_challenge_response_tokens(self):
+        smtpmock.setdata(response={"bla@example.com": (200, 'OK')})
+        # We test two challenge response tokens. One is active, one is disabled.
+        # Enroll an Email-Token to the user
+        db_token = Token(self.serial_email, "email", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
+                         realm=self.realm1)
+        init_token(user=User("selfservice", self.realm1),
+                   param={"serial": self.serial_email,
+                          "type": "email",
+                          "email": "bla@example.com",
+                          "otpkey": self.otpkey})
+        set_pin(self.serial_email, "pin")
+
+        toks = get_tokens(user=User("selfservice", self.realm1))
+        self.assertEqual(len(toks), 2)
+        self.assertFalse(toks[0].token.active)
+        self.assertTrue(toks[1].token.active)
+
+        # Now we create a challenge with two tokens
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            # Only the email token is active and creates a challenge!
+            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+
+        # Now test with triggerchallenge
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "selfservice"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            # Triggerchallenge returns the numbers of tokens in the "value
+            self.assertEqual(data.get("result").get("value"), 1)
+            detail = data.get("detail")
+            # Only the email token is active and creates a challenge!
+            self.assertEqual(u"Enter the OTP from the Email:", detail.get("messages")[0])
