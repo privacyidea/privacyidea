@@ -2195,6 +2195,7 @@ class AChallengeResponse(MyTestCase):
               realm=self.realm1).save()
         # Define HOTP token to be challenge response
         set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
         set_pin(self.serial, "pin")
 
         with self.app.test_request_context('/validate/check',
@@ -2270,6 +2271,8 @@ class AChallengeResponse(MyTestCase):
         smtpmock.setdata(response={"bla@example.com": (200, 'OK')})
         # We test two challenge response tokens. One is active, one is disabled.
         # Enroll an Email-Token to the user
+        db_token = Token(self.serial_email, "email", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
+                         realm=self.realm1)
         init_token(user=User("selfservice", self.realm1),
                    param={"serial": self.serial_email,
                           "type": "email",

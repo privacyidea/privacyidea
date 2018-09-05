@@ -42,6 +42,7 @@ class MyTestCase(unittest.TestCase):
                         "399871",
                         "520489"]
 
+    
     @classmethod
     def setUpClass(cls):
         cls.app = create_app('testing', "")
