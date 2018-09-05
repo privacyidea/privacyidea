@@ -668,8 +668,8 @@ msgstr ""
 
 #: lib/policy.py:1763
 msgid ""
-"If this checked and token_wizard is enabled, seed "
-"will be displayed in wizard when enrolling TOTP/HOTP token."
+"If this is checked, the seed "
+"will be displayed as text during enrollment."
 msgstr ""
 
 #: lib/radiusserver.py:199 lib/radiusserver.py:230

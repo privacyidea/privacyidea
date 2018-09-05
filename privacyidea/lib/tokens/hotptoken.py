@@ -259,11 +259,9 @@ class HotpTokenClass(TokenClass):
                                                  
                     key_bin = binascii.unhexlify(otpkey)
                     # also strip the padding =, as it will get problems with the google app.
-                    otpkey_human = base64.b32encode(key_bin).strip('=')
-                    response_detail["otpkey"] = {"description": "OTP seed",
-                                                 "value": "seed://{0!s}".format(otpkey),
-                                                 "human_value": "key://{0!s}".format(otpkey_human),
-                                                 "img": create_img(otpkey, width=200)}
+                    value_b32 = base64.b32encode(key_bin).strip('=')
+                    value_b32_str = "{0!s}".format(value_b32)
+                    response_detail["otpkey"]["value_b32"] = value_b32_str
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))

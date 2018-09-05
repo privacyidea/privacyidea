@@ -1760,9 +1760,8 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.SHOW_SEED: {
                 'type': 'bool',
-                'desc': _("If this checked and token_wizard is enabled, seed "
-                          "will be displayed in wizard when enrolling "
-                          "TOTP/HOTP token.")
+                'desc': _("If this is checked, the seed "
+                          "will be displayed as text during enrollment.")
             }
         }
 

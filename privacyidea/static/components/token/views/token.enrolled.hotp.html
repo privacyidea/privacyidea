@@ -3,11 +3,11 @@
         <img width="{{ qrCodeWidth }}"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div class="col-sm-6" ng-hide="hide_wizard_seed || form['2stepinit']">
+    <div class="col-sm-6" ng-hide="!show_seed || form['2stepinit']">
         <accordion close-others="oneAtATime">
             <accordion-group heading="{{ 'The OTP key'|translate }}">
-                {{ enrolledToken.otpkey.value }}
-                {{ enrolledToken.otpkey.human_value }}
+                Hex: {{ enrolledToken.otpkey.value }}
+                Base32: {{ enrolledToken.otpkey.value_b32 }}
             </accordion-group>
         </accordion>
 

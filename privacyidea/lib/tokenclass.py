@@ -1269,6 +1269,7 @@ class TokenClass(object):
         to complete the token initialization, the response of the initialisation
         should be build by this token specific method.
         This method is called from api/token after the token is enrolled
+
         get_init_detail returns additional information after an admin/init
         like the QR code of an HOTP/TOTP token.
         Can be anything else.
@@ -1296,7 +1297,7 @@ class TokenClass(object):
                                          "img": create_img(otpkey, width=200)}
 
         return response_detail
-        
+
     def get_QRimage_data(self, response_detail):
         """
         FIXME: Do we really use this?
