@@ -76,13 +76,11 @@ pi_versions() {
 	log "------------------"
 	FileName=$(mktemp)
 	# In case it is Ubuntu
-	dpkg -l >> $FileName
+	dpkg -l | sort >> $FileName
 	# In case it is CentOS/RHEL
-	rpm -qa >> $FileName
-	grep privacyidea $FileName >> $tempfile
-	grep apache $FileName >> $tempfile
-	grep httpd $FileName >> $tempfile
-	grep nginx $FileName >> $tempfile
+	rpm -qa | sort >> $FileName
+	# save all installed packages
+	cat $FileName >> $tempfile	
 	rm -f $FileName
 	log "Is this a pip installation?"
 	log "---------------------------"
