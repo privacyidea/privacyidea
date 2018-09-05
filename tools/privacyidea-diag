@@ -96,7 +96,7 @@ pi_config() {
 	log "=================================="
 	log "Resolvers"
 	log "---------"
-	pi-manage resolver list >> $tempfile
+	pi-manage resolver list -v >> $tempfile
 	log "Realms"
 	log "------"
 	pi-manage realm list >> $tempfile
