@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2018-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Optimize for search _one_ token
 # 2018-02-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Allow to import PSKC file
 # 2017-11-21 Cornelius Kölbel <corenlius.koelbel@netknights.it>
@@ -253,9 +255,16 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     if active is not None:
         filter_active = active.lower() == "true"
 
+    # First we check to get one token with a specific serial:
     tokenobj_list = get_tokens(tokentype=tokentype,
                                active=filter_active,
-                               assigned=filter_assigned)
+                               assigned=filter_assigned,
+                               serial=serial)
+    if len(tokenobj_list) == 0:
+        # The serial number was not a destinct token serial, but obviously a reg exp:
+        tokenobj_list = get_tokens(tokentype=tokentype,
+                                   active=filter_active,
+                                   assigned=filter_assigned)
     for token_obj in tokenobj_list:
         if last_auth and token_obj.check_last_auth_newer(last_auth):
             continue
