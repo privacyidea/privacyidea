@@ -2137,23 +2137,28 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
-                # OTP matches
-                res = True
-                tokenobject.inc_count_auth_success()
-                reply_dict["message"] = "Found matching challenge"
                 reply_dict["serial"] = tokenobject.token.serial
-                tokenobject.challenge_janitor()
-                # clean up all other challenges from other tokens. I.e.
-                # all challenges with this very transaction_id!
-                transaction_id = options.get("transaction_id") or \
-                                 options.get("state")
-                Challenge.query.filter(Challenge.transaction_id == u'' +
-                                       transaction_id).delete()
+                if tokenobject.is_active():
+                    # OTP matches
+                    res = True
+                    tokenobject.inc_count_auth_success()
+                    reply_dict["message"] = "Found matching challenge"
+                    tokenobject.challenge_janitor()
+                    # clean up all other challenges from other tokens. I.e.
+                    # all challenges with this very transaction_id!
+                    transaction_id = options.get("transaction_id") or \
+                                     options.get("state")
+                    Challenge.query.filter(Challenge.transaction_id == u'' +
+                                           transaction_id).delete()
 
-                # Reset the fail counter of the challenge response token
-                tokenobject.reset()
-                # We have one successful authentication, so we bail out
-                break
+                    # Reset the fail counter of the challenge response token
+                    tokenobject.reset()
+                    # We have one successful authentication, so we bail out
+                    break
+                else:
+                    reply_dict["message"] = "Challenge matches, but token is inactive."
+                    log.info("Received a valid response to a "
+                             "challenge for inactive token {0!s}".format(tokenobject.token.serial))
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token

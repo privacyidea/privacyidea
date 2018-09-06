@@ -154,6 +154,9 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
             //debug: console.log("getting handlermodules");
             $scope.handlermodules = data.result.value;
             //debug: console.log($scope.handlermodules );
+            if ($scope.eventid) {
+               $scope.getEvent();
+            }
         });
     };
 
@@ -255,8 +258,5 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
 
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
-    if ($scope.eventid) {
-        $scope.getEvent();
-    }
 
 });

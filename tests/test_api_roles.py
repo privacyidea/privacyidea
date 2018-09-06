@@ -145,6 +145,42 @@ class APIAuthTestCase(MyTestCase):
         delete_policy("realmadmin")
 
 
+class APIAuthChallengeResponse(MyTestCase):
+
+    def setUp(self):
+        self.setUp_user_realms()
+        # New token for the user "selfservice"
+        Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
+              realm=self.realm1).save()
+        # Define HOTP token to be challenge response
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        from privacyidea.lib.token import set_pin
+        set_pin("hotp1", "pin")
+
+    def test_01_challenge_response_at_webui(self):
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            data = json.loads(res.data)
+            self.assertFalse(data.get("result").get("status"))
+            detail = data.get("detail")
+            self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
+            transaction_id = detail.get("transaction_id")
+
+        # Now we try to login with the OTP value
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": self.valid_otp_values[0],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertEqual(data.get("result").get("value").get("username"), "selfservice")
 
 
 class APISelfserviceTestCase(MyTestCase):
@@ -573,7 +609,6 @@ class APISelfserviceTestCase(MyTestCase):
             response = json.loads(res.data)
             self.assertTrue(response.get("result").get("value"),
                             response.get("result"))
-
 
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()

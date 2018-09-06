@@ -258,7 +258,8 @@ def get_auth_token():
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"),
-                        id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+                        id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details=details or {})
     else:
         g.audit_object.log({"success": True})
 

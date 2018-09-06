@@ -1,3 +1,13 @@
+Version 2.23.1, 2018-09-06
+
+  Fixes:
+  * Fix PassOnNoUser in combination with event handler (#1206)
+  * Fix loading of Event handler detail view (#1210)
+  * Fix Challenge-Response login at Web UI (#1216)
+  * Fix triggerchallenge to only use active tokens (#1217)
+  * Write all installed package to diagnostics file and
+    also write the resolver config in privacyidea-diag
+
 Version 2.23, 2018-08-29
 
   Features:

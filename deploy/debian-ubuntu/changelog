@@ -1,3 +1,15 @@
+python-privacyidea (2.23.1-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Fix PassOnNoUser in combination with event handler (#1206)
+  * Fix loading of Event handler detail view (#1210)
+  * Fix Challenge-Response login at Web UI (#1216)
+  * Fix triggerchallenge to only use active tokens (#1217)
+  * Write all installed package to diagnostics file and
+    also write the resolver config in privacyidea-diag
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 06 Sep 2018 10:00:00 +0200
+
 python-privacyidea (2.23-1trusty) trusty; urgency=medium
 
   Features:

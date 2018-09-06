@@ -109,7 +109,8 @@ class SubscriptionError(privacyIDEAError):
 
 
 class AuthError(privacyIDEAError):
-    def __init__(self, description, id=ERROR.AUTHENTICATE):
+    def __init__(self, description, id=ERROR.AUTHENTICATE, details=None):
+        self.details = details
         privacyIDEAError.__init__(self, description=description, id=id)
         
 
