@@ -164,6 +164,7 @@ def after_request(response):
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
+@check_user_or_serial_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
     """
