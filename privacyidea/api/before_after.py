@@ -249,17 +249,17 @@ def auth_error(error):
     if "audit_object" in g:
         message = ''
         description = ''
-        
+
         if hasattr(error, 'message'):
             message = error.message
-            
+
         if hasattr(error, 'description'):
-            message = "{}|{}".format(message, error.description)
+            message = u'{}|{}'.format(message, error.description)
 
         if hasattr(error, 'details'):
             if error.details:
                 if 'message' in error.details:
-                    message = "{}|{}".format(message, error.details['message'])
+                    message = u'{}|{}'.format(message, error.details['message'])
 
         g.audit_object.log({"info": message})
         g.audit_object.finalize_log()
