@@ -107,8 +107,8 @@ def check_copy_serials(func):
     from privacyidea.lib.token import get_tokens
     @functools.wraps(func)
     def check_serial_wrapper(*args, **kwds):
-        tokenobject_list_from = get_tokens(serial=args[0])
-        tokenobject_list_to = get_tokens(serial=args[1])
+        tokenobject_list_from = get_tokens(serial_wildcard=args[0])
+        tokenobject_list_to = get_tokens(serial_wildcard=args[1])
         if len(tokenobject_list_from) != 1:
             log.error("not a unique token to copy from found")
             raise(TokenAdminError("No unique token to copy from found",
