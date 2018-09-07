@@ -1,3 +1,10 @@
+privacyidea-venv (2.23.2-1) jessie; urgency=medium
+
+  Fixes:
+  * Fix problem with empty username (#1227)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 07 Sep 2018 12:00:00 +0200
+
 privacyidea-venv (2.23.1-1) jessie; urgency=medium
 
   Fixes:
