@@ -217,6 +217,9 @@ class HotpTokenClass(TokenClass):
             twostep_parameters = self._get_twostep_parameters()
             extra_data.update(twostep_parameters)
             response_detail.update(twostep_parameters)
+        imageurl = params.get("appimageurl")
+        if imageurl:
+            extra_data.update({"image": imageurl})
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
