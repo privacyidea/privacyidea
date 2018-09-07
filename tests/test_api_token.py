@@ -1453,3 +1453,26 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), 905)
+
+    def test_28_enroll_app_with_image_url(self):
+        set_policy("imgurl", scope=SCOPE.ENROLL,
+                   action="{0!s}=https://example.com/img.png".format(ACTION.APPIMAGEURL))
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "genkey": "1",
+                                                 "realm": self.realm1,
+                                                 "serial": "goog1",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertTrue(u'image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+
+        remove_token("goog1")
+        delete_policy("imgurl")
