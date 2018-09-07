@@ -12,4 +12,7 @@ override_dh_virtualenv:
 override_dh_shlibdeps:
 	dh_shlibdeps --exclude=numpy --exclude=psycopg2 --exclude=libz --exclude=png16
 
+override_dh_strip:
+	dh_strip --exclude=cffi --exclude=PIL --exclude=Pillow
+
 

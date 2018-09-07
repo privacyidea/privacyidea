@@ -1,3 +1,8 @@
+Version 2.23.2, 2018-09-07
+
+  Fixes:
+  * Fix problem with empty username (#1227)
+
 Version 2.23.1, 2018-09-06
 
   Fixes:
