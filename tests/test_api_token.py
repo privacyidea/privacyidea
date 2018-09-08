@@ -294,6 +294,33 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            error = result.get("error")
+            self.assertEqual(error.get("message"), "ERR1103: Token already assigned to user User(login=u'cornelius', "
+                                                   "realm=u'realm1', resolver=u'resolver1')")
+
+        # Now the user tries to assign a foreign token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_user = result.get("value").get("token")
+
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"serial": "S1"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            error = result.get("error")
+            self.assertEqual(error.get("message"), "ERR1103: Token already assigned to another user.")
 
         # Now unassign the token
         with self.app.test_request_context('/token/unassign',
