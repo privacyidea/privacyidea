@@ -102,13 +102,13 @@ class check_user_or_serial_in_request(object):
 def check_copy_serials(func):
     """
     Decorator to check if the serial_from and serial_to exist.
-    If the serials are not unique, we raise an error
+    If the serials are not unique or do not exist, we raise an error
     """
     from privacyidea.lib.token import get_tokens
     @functools.wraps(func)
     def check_serial_wrapper(*args, **kwds):
-        tokenobject_list_from = get_tokens(serial_wildcard=args[0])
-        tokenobject_list_to = get_tokens(serial_wildcard=args[1])
+        tokenobject_list_from = get_tokens(serial=args[0])
+        tokenobject_list_to = get_tokens(serial=args[1])
         if len(tokenobject_list_from) != 1:
             log.error("not a unique token to copy from found")
             raise(TokenAdminError("No unique token to copy from found",
