@@ -523,7 +523,7 @@ def get_realms_of_token(serial, only_first_realm=False):
     """
     This function returns a list of the realms of a token
 
-    :param serial: the serial number of the token
+    :param serial: the exact serial number of the token
     :type serial: basestring
 
     :param only_first_realm: Wheather we should only return the first realm
@@ -532,6 +532,9 @@ def get_realms_of_token(serial, only_first_realm=False):
     :return: list of the realm names
     :rtype: list
     """
+    if "*" in serial:
+        return []
+
     tokenobject_list = get_tokens(serial=serial)
 
     realms = []
