@@ -221,6 +221,12 @@ class HotpTokenClass(TokenClass):
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
+                key_bin = binascii.unhexlify(otpkey)
+                # also strip the padding =, as it will get problems with the google app.
+                value_b32 = base64.b32encode(key_bin).strip('=')
+                value_b32_str = "{0!s}".format(value_b32)
+                response_detail["otpkey"]["value_b32"] = value_b32_str
+                
                 try:
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
@@ -256,12 +262,6 @@ class HotpTokenClass(TokenClass):
                                                   "img": create_img(oath_url,
                                                                     width=250)
                                                   }
-                                                 
-                    key_bin = binascii.unhexlify(otpkey)
-                    # also strip the padding =, as it will get problems with the google app.
-                    value_b32 = base64.b32encode(key_bin).strip('=')
-                    value_b32_str = "{0!s}".format(value_b32)
-                    response_detail["otpkey"]["value_b32"] = value_b32_str
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
