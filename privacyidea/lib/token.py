@@ -331,6 +331,13 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                                     revoked=revoked, locked=locked,
                                     tokeninfo=tokeninfo, maxfail=maxfail)
 
+    # Warning for unintentional exact serial matches
+    if serial is not None and "*" in serial:
+        log.info(u"Exact match on a serial containing a wildcard: {!r}".format(serial))
+    # Warning for unintentional wildcard serial matches
+    if serial_wildcard is not None and "*" not in serial_wildcard:
+        log.info(u"Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
+
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
