@@ -498,6 +498,16 @@ def init_tokenlabel(request=None, action=None):
     if len(issuer_pols) == 1:
         request.all_data["tokenissuer"] = issuer_pols[0]
 
+    imageurl_pols = policy_object.get_action_values(action=ACTION.APPIMAGEURL,
+                                                    scope=SCOPE.ENROLL,
+                                                    user=user_object.login,
+                                                    realm=user_object.realm,
+                                                    client=g.client_ip,
+                                                    unique=True,
+                                                    allow_white_space_in_action=True)
+    if len(imageurl_pols) == 1:
+        request.all_data["appimageurl"] = imageurl_pols[0]
+
     return True
 
 

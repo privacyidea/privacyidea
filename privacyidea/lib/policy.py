@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add App Image URL
 #  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokeninfo field policy
 #             Add add_resolver_in_result
@@ -198,6 +200,7 @@ class SCOPE(object):
 class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
+    APPIMAGEURL = "appimageurl"
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
@@ -1521,6 +1524,12 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("This is the issuer label for new enrolled Google "
                           "Authenticators."),
+                'group': GROUP.TOKEN
+            },
+            ACTION.APPIMAGEURL: {
+                'type': 'str',
+                'desc': _("This is the URL to the token image for smartphone apps "
+                          "like FreeOTP."),
                 'group': GROUP.TOKEN
             },
             ACTION.AUTOASSIGN: {
