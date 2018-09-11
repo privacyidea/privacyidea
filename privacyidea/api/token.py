@@ -422,7 +422,12 @@ def assign_api():
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
     encrypt_pin = getParam(request.all_data, "encryptpin")
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin)
+    if g.logged_in_user.get("role") == "user":
+        err_message = "Token already assigned to another user."
+    else:
+        err_message = None
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin,
+                       err_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 

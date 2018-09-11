@@ -1102,7 +1102,7 @@ def set_defaults(serial):
 
 
 @log_with(log)
-def assign_token(serial, user, pin=None, encrypt_pin=False):
+def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     """
     Assign token to a user.
     If the PIN is given, the PIN is reset.
@@ -1115,6 +1115,8 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     :type pin: basestring
     :param encrypt_pin: Whether the PIN should be stored in an encrypted way
     :type encrypt_pin: bool
+    :param err_message: The error message, that is displayed in case the token is already assigned
+    :type err_message: basestring
 
     :return: True if the token was assigned, in case of an error an exception
     is thrown
@@ -1132,8 +1134,8 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     old_user = tokenobject.user
     if old_user:
         log.warning("token already assigned to user: {0!r}".format(old_user))
-        raise TokenAdminError("Token already assigned to user {0!r}".format(
-                              old_user), id=1103)
+        err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
+        raise TokenAdminError(err_message, id=1103)
 
     tokenobject.set_user(user)
     if pin is not None:
