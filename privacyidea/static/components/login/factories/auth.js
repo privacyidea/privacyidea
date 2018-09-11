@@ -57,6 +57,20 @@ angular.module("privacyideaAuth", [])
                 ////debug: console.log("checking right: " + action + ": " + res);
                 return res;
             },
+            getRightsValue: function (action) {
+                // return the value of an action like otp_pin_minlength
+                var res = false;
+                user.rights.forEach(function(entry){
+                    if (entry.indexOf("=") >= 0) {
+                        // this is a value action
+                        var components = entry.split("=");
+                        if (components[0] === action) {
+                            res = components[1];
+                        }
+                    }
+                });
+                return res;
+            },
             checkMainMenu: function (menu) {
                 var res = (user.menus.indexOf(menu) >= 0);
                 return res;

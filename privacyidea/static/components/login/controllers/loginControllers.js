@@ -39,6 +39,7 @@ angular.module("privacyideaApp")
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
+    $scope.getRightsValue = AuthFactory.getRightsValue;
     $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
