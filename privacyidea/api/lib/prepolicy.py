@@ -1301,6 +1301,7 @@ def allowed_audit_realm(request=None, action=None):
         action=ACTION.AUDIT,
         scope=SCOPE.ADMIN,
         user=admin_user.get("username"),
+        adminrealm=admin_user.get("realm"),
         client=g.client_ip,
         active=True)
 
