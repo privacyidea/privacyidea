@@ -666,6 +666,12 @@ msgid ""
 "anymore."
 msgstr ""
 
+#: lib/policy.py:1763
+msgid ""
+"If this is checked, the seed "
+"will be displayed as text during enrollment."
+msgstr ""
+
 #: lib/radiusserver.py:199 lib/radiusserver.py:230
 msgid "The RADIUS secret is too long"
 msgstr ""
@@ -1347,4 +1353,3 @@ msgstr ""
 #: lib/tokens/yubikeytoken.py:160
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
 msgstr ""
-
