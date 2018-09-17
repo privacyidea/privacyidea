@@ -220,14 +220,13 @@ class HotpTokenClass(TokenClass):
             response_detail.update(twostep_parameters)
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:
-                key_bin = binascii.unhexlify(otpkey)
-                # also strip the padding =, as it will get problems with the google app.
-                value_b32 = base64.b32encode(key_bin).strip('=')
-                value_b32_str = "{0!s}".format(value_b32)
-                response_detail["otpkey"]["value_b32"] = value_b32_str
-                
+            if user is not None:                               
                 try:
+                    key_bin = binascii.unhexlify(otpkey)
+                    # also strip the padding =, as it will get problems with the google app.
+                    value_b32 = base64.b32encode(key_bin).strip('=')
+                    value_b32_str = "{0!s}".format(value_b32)
+                    response_detail["otpkey"]["value_b32"] = value_b32_str
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
