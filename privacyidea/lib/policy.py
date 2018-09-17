@@ -1757,9 +1757,9 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REALMDROPDOWN: {
                 'type': 'str',
-                'desc': _("A comma separated list of realm names, which are "
+                'desc': _("A list of realm names, which are "
                           "displayed in a drop down menu in the WebUI login "
-                          "screen.")
+                          "screen. Realms are separated by white spaces.")
             },
             ACTION.HIDE_WELCOME: {
                 'type': 'bool',
