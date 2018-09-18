@@ -1503,3 +1503,267 @@ class APITokenTestCase(MyTestCase):
 
         remove_token("goog1")
         delete_policy("imgurl")
+
+        
+class API00TokenPerformance(MyTestCase):
+
+    token_count = 21
+
+    def test_00_create_some_tokens(self):
+        for i in range(0,self.token_count):
+            init_token({"genkey": 1, "serial": "perf{0!s:0>3}".format(i)})
+        toks = get_tokens(serial_wildcard="perf*")
+        self.assertEqual(len(toks), self.token_count)
+
+        for i in range(0,10):
+            init_token({"genkey": 1, "serial": "TOK{0!s:0>3}".format(i)})
+        toks = get_tokens(serial_wildcard="TOK*")
+        self.assertEqual(len(toks), 10)
+
+        self.setUp_user_realms()
+
+    def test_01_number_of_tokens(self):
+        # The GET /token returns a wildcard 100 tokens
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"serial": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value").get("count"), self.token_count)
+
+    def test_02_several_requests(self):
+        # Run GET challenges
+        with self.app.test_request_context('/token/challenges/*',
+                                           method='GET',
+                                           data={"serial": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertEqual(result.get("value").get("count"), 0)
+
+        # Run POST assign with a wildcard. This shall not assign.
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": "perf*",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*"
+            self.assertEqual(result.get("error").get("message"), "ERR1102: no token found!")
+
+        # run POST unassign with a wildcard. This shall not unassign
+        from privacyidea.lib.token import assign_token, unassign_token
+        assign_token("perf001", User("cornelius", self.realm1))
+        with self.app.test_request_context('/token/unassign',
+                                           method='POST',
+                                           data={"serial": "perf*",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("message"), "ERR1102: no token found!")
+
+        # Now we unassign the token anyways
+        unassign_token("perf001")
+
+        # run POST revoke with a wildcard
+        with self.app.test_request_context('/token/revoke',
+                                           method='POST',
+                                           data={"serial": "perf*",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+
+            # Of course there is no exact token "perf*", it does not match perf001
+            # The number of revoked tokens is 0
+            self.assertEqual(result.get("value"), 0)
+
+        # run POST enable and disable with a wildcard
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        with self.app.test_request_context('/token/enable',
+                                           method='POST',
+                                           data={"serial": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # run DELETE /token with a wildcard
+        with self.app.test_request_context('/token/perf*',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # run reset failcounter
+        with self.app.test_request_context('/token/reset/perf*',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # run reset failcounter
+        with self.app.test_request_context('/token/resync/perf*',
+                                           method='POST', data={"otp1": "123454",
+                                                                "otp2": "123454"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # Try to set pin
+        with self.app.test_request_context('/token/setpin/perf*',
+                                           method='POST', data={"otpppin": "123454"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # Try to set description
+        with self.app.test_request_context('/token/set/perf*',
+                                           method='POST', data={"description": "general token"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # Try to set realm
+        with self.app.test_request_context('/token/realm/perf*',
+                                           method='POST', data={"realms": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("value"), 0)
+
+        # Try to copy the pin
+        with self.app.test_request_context('/token/copypin',
+                                           method='POST',
+                                           data={"from": "perf*",
+                                                 "to": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("code"), 1016)
+            self.assertEqual(result.get("error").get("message"), "ERR1016: No unique token to copy from found")
+
+        with self.app.test_request_context('/token/copypin',
+                                           method='POST',
+                                           data={"from": "perf001",
+                                                 "to": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("code"), 1017)
+            self.assertEqual(result.get("error").get("message"), "ERR1017: No unique token to copy to found")
+
+        # Try to copy the user
+        with self.app.test_request_context('/token/copyuser',
+                                           method='POST',
+                                           data={"from": "perf*",
+                                                 "to": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("code"), 1016)
+            self.assertEqual(result.get("error").get("message"), "ERR1016: No unique token to copy from found")
+
+        # Try to copy the user
+        with self.app.test_request_context('/token/copyuser',
+                                           method='POST',
+                                           data={"from": "perf001",
+                                                 "to": "perf*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("code"), 1017)
+            self.assertEqual(result.get("error").get("message"), "ERR1017: No unique token to copy to found")
+
+        # Try to mark wildcard token as lost
+        # Just to be clear, all tokens are assigned to the user cornelius
+        for i in range(0,self.token_count):
+            assign_token("perf{0!s:0>3}".format(i), User("cornelius", self.realm1))
+
+        with self.app.test_request_context('/token/lost/perf*',
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertEqual(result.get("error").get("code"), 2012)
+            self.assertEqual(result.get("error").get("message"), "ERR2012: You can only define a lost token for an assigned token.")
+
+        # unassign tokens again
+        for i in range(0,self.token_count):
+            unassign_token("perf{0!s:0>3}".format(i))
+
+        # Try to set tokeninfo
+        with self.app.test_request_context('/token/info/perf*/newkey',
+                                           method='POST',
+                                           data={"value": "newvalue"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertFalse(result.get("value"))
+
+            toks = get_tokens(tokeninfo={"newkey": "newvalue"})
+            # No token reveived this value!
+            self.assertEqual(len(toks), 0)
+
+        # Try to delete tokeninfo
+        with self.app.test_request_context('/token/info/perf*/newkey',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            # Of course there is no exact token "perf*", it does not match perf001
+            self.assertFalse(result.get("value"))
+            
