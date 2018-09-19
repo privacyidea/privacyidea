@@ -338,6 +338,7 @@ def get_token_class(tokentype):
     for tclass in tokenclasses:
         if tclass.get_class_type().lower() == tokentype.lower():
             tokenclass = tclass
+            break
 
     return tokenclass
 
@@ -491,7 +492,6 @@ def get_resolver_class_dict():
     resolverprefix_dict = {}
 
     modules = get_resolver_module_list()
-    base_class_repr = "privacyidea.lib.resolvers.UserIdResolver.UserIdResolver"
     for module in modules:
         log.debug("module: {0!s}".format(module))
         for name in dir(module):
