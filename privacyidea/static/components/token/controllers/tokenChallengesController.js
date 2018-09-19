@@ -34,8 +34,6 @@ myApp.controller("tokenChallengesController", function ($scope,
         $scope.get();
     };
 
-    $scope.get();
-
     $scope.return_to = function () {
         // After deleting the token, we return here.
         // history.back();
