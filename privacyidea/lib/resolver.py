@@ -44,8 +44,7 @@ webservice!
 
 import logging
 from log import log_with
-from config import (get_resolver_types,
-                     get_resolver_class_dict)
+from config import (get_resolver_types, get_resolver_classes)
 from privacyidea.lib.usercache import delete_user_cache
 from ..models import (Resolver,
                       ResolverConfig)
@@ -293,21 +292,18 @@ def get_resolver_config_description(resolver_type):
 
 #@cache.memoize(10)
 def get_resolver_class(resolver_type):
-    '''
+    """
     return the class object for a resolver type
     :param resolver_type: string specifying the resolver
                           fully qualified or abreviated
     :return: resolver object class
-    '''
+    """
     ret = None
-    
-    (resolver_clazzes, resolver_types) = get_resolver_class_dict()
-
-    if resolver_type in resolver_types.values():
-        for k, v in resolver_types.items():
-            if v == resolver_type:
-                ret = resolver_clazzes.get(k)
-                break
+    resolver_clazzes = get_resolver_classes()
+    for k in resolver_clazzes:
+        if k.getResolverClassType() == resolver_type:
+            ret = k
+            break
     return ret
 
 

@@ -33,6 +33,7 @@ It provides functions to retrieve (get) and and set configuration.
 The code is tested in tests/test_lib_config
 """
 
+import sys
 import logging
 import inspect
 from flask import current_app, g
@@ -53,6 +54,11 @@ import datetime
 log = logging.getLogger(__name__)
 
 ENCODING = 'utf-8'
+
+# this is a pointer to the module object instance itself.
+this = sys.modules[__name__]
+
+this.config = {}
 
 
 class Singleton(type):
@@ -241,15 +247,12 @@ def get_resolver_types():
     :return: array of resolvertypes like 'passwdresolver'
     :rtype: array
     """
-    resolver_types = []
-    if "pi_resolver_types" in current_app.config:
-        resolver_types = current_app.config["pi_resolver_types"]
-    else:
-        (_r_classes, r_types) = get_resolver_class_dict()
-        resolver_types = r_types.values()
-        current_app.config["pi_resolver_types"] = resolver_types
-    
-    return resolver_types
+    if "pi_resolver_types" not in this.config:
+        (r_classes, r_types) = get_resolver_class_dict()
+        this.config["pi_resolver_classes"] = r_classes
+        this.config["pi_resolver_types"] = r_types
+
+    return this.config["pi_resolver_types"].values()
 
 
 def get_caconnector_types():
@@ -270,15 +273,13 @@ def get_resolver_classes():
     :return: array of resolver classes
     :rtype: array
     """
-    resolver_classes = []
-    if "pi_resolver_classes" in current_app.config:
-        resolver_classes = current_app.config["pi_resolver_classes"]
-    else:
-        (r_classes, _r_types) = get_resolver_class_dict()
-        resolver_classes = r_classes.values()
-        current_app.config["pi_resolver_classes"] = resolver_classes
-    
-    return resolver_classes
+    resolver_classes = {}
+    if "pi_resolver_classes" not in this.config:
+        (r_classes, r_types) = get_resolver_class_dict()
+        this.config["pi_resolver_types"] = r_types
+        this.config["pi_resolver_classes"] = r_classes
+
+    return this.config["pi_resolver_classes"].values()
 
 
 #@cache.cached(key_prefix="classes")
@@ -331,15 +332,12 @@ def get_token_class(tokentype):
     """
     if tokentype.lower() == "hmac":
         tokentype = "hotp"
-    class_dict, type_dict = get_token_class_dict()
-    tokenmodule = ""
+
     tokenclass = None
-    for module, ttype in type_dict.items():
-        if ttype.lower() == tokentype.lower():
-            tokenmodule = module
-            break
-    if tokenmodule:
-        tokenclass = class_dict.get(tokenmodule)
+    tokenclasses = get_token_classes()
+    for tclass in tokenclasses:
+        if tclass.get_class_type().lower() == tokentype.lower():
+            tokenclass = tclass
 
     return tokenclass
 
@@ -351,15 +349,12 @@ def get_token_types():
     :return: array of tokentypes like 'hotp', 'totp'...
     :rtype: array
     """
-    tokentypes = []
-    if "pi_token_types" in current_app.config:
-        tokentypes = current_app.config["pi_token_types"]
-    else:
-        (_t_classes, t_types) = get_token_class_dict()
-        tokentypes = t_types.values()
-        current_app.config["pi_token_types"] = tokentypes
+    if "pi_token_types" not in this.config:
+        (t_classes, t_types) = get_token_class_dict()
+        this.config["pi_token_types"] = t_types
+        this.config["pi_token_classes"] = t_classes
 
-    return tokentypes
+    return this.config["pi_token_types"].values()
 
 
 #@cache.cached(key_prefix="prefix")
@@ -396,15 +391,13 @@ def get_token_classes():
     :return: array of token classes
     :rtype: array
     """
-    token_classes = []
-    if "pi_token_classes" in current_app.config:
-        token_classes = current_app.config["pi_token_classes"]
-    else:
-        (t_classes, _t_types) = get_token_class_dict()
-        token_classes = t_classes.values()
-        current_app.config["pi_token_classes"] = token_classes
+    if "pi_token_classes" not in this.config:
+        (t_classes, t_types) = get_token_class_dict()
+        this.config["pi_token_classes"] = t_classes
+        this.config["pi_token_types"] = t_types
 
-    return token_classes
+    return this.config["pi_token_classes"].values()
+
 
 def get_machine_resolver_class_dict():
     """
@@ -560,6 +553,7 @@ def get_resolver_list():
 
     return module_list
 
+
 @log_with(log)
 #@cache.memoize(1)
 def get_machine_resolver_class_list():
@@ -615,7 +609,7 @@ def get_token_list():
 
     #module_list.add(".tokens.tagespassworttoken")
     #module_list.add(".tokens.vascotoken")
-    
+
     # Dynamic Resolver modules
     # TODO: Migration
     # config_modules = config.get("privacyideaResolverModules", '')
@@ -664,7 +658,7 @@ def get_token_module_list():
             modules.append(module)
         except Exception as exx:  # pragma: no cover
             module = None
-            log.warning('unable to load resolver module : {0!r} ({1!r})'.format(mod_name, exx))
+            log.warning('unable to load token module : {0!r} ({1!r})'.format(mod_name, exx))
 
     return modules
 
@@ -673,7 +667,7 @@ def get_token_module_list():
 def get_resolver_module_list():
     """
     return the list of modules of the available resolver classes
-    like passw, sql, ldap
+    like passwd, sql, ldap
 
     :return: list of resolver modules
     """
