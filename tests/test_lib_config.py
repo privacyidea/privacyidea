@@ -19,8 +19,8 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_types,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
-                                    get_privacyidea_node, get_privacyidea_nodes
-                                    )
+                                    get_privacyidea_node, get_privacyidea_nodes,
+                                    this)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -79,16 +79,12 @@ class ConfigTestCase(MyTestCase):
 
         self.assertTrue(module in mlist, mlist)
 
-        # At the beginning the resolver classes are not cached.
-        self.assertFalse("pi_resolver_classes" in current_app.config,
-                                current_app.config)
+        # resolver classes are not cached at this point
+        self.assertFalse("pi_resolver_classes" in this.config, this.config)
         r = get_resolver_classes()
         self.assertTrue(PWResolver in r, r)
-        # Now the resolver classes are cached
-        self.assertTrue("pi_resolver_classes" in current_app.config,
-                                current_app.config)
-        r = get_resolver_classes()
-        self.assertTrue(PWResolver in r, r)
+        # resolver classes should be available here
+        self.assertTrue("pi_resolver_classes" in this.config, this.config)
 
         # Class dict
         (classes, types) = get_resolver_class_dict()
@@ -102,15 +98,9 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(types.get('privacyidea.lib.resolvers.PasswdIdResolver'
                         '.IdResolver') == "passwdresolver", types)
 
-        # At the start the resolvers are not stored in the current_app.config
-        self.assertFalse("pi_resolver_types" in current_app.config,
-                         current_app.config)
+        # With calling 'get_resolver_classes()' the resolver types will also be cached
+        self.assertTrue("pi_resolver_types" in this.config, this.config)
         # When the resolvers are determined, they are stored
-        types = get_resolver_types()
-        self.assertTrue("passwdresolver" in types, types)
-        # Now the resolver types are contained.
-        self.assertTrue("pi_resolver_types" in current_app.config,
-                         current_app.config)
         types = get_resolver_types()
         self.assertTrue("passwdresolver" in types, types)
 
@@ -151,25 +141,14 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(types.get('privacyidea.lib.tokens.totptoken'
                                   '.TotpTokenClass') == "totp", types)
 
-        types = get_token_types()
-        self.assertTrue("totp" in types, types)
-        self.assertTrue("hotp" in types, types)
-        # Now the resolver types are contained.
-        self.assertTrue("pi_token_types" in current_app.config,
-                        current_app.config)
+        # token types should be cached here because of calling 'get_token_module_list()'
+        self.assertTrue("pi_token_types" in this.config, this.config)
         types = get_token_types()
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
 
-        # At the beginning the token classes are not cached.
-        self.assertFalse("pi_token_classes" in current_app.config,
-                         current_app.config)
-        r = get_token_classes()
-        self.assertTrue(TotpTokenClass in r, r)
-        self.assertTrue(HotpTokenClass in r, r)
-        # Now the token classes are cached
-        self.assertTrue("pi_token_classes" in current_app.config,
-                        current_app.config)
+        # token classes are cached with calling 'get_token_types()'
+        self.assertTrue("pi_token_classes" in this.config, this.config)
         r = get_token_classes()
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
