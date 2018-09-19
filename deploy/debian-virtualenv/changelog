@@ -1,3 +1,11 @@
+privacyidea-venv (2.23.3~dev3-1) jessie; urgency=medium
+
+  Fixes:
+  * Remove double "get" of Token challenges in UI
+  * Avoid reload of static configuration (#1523)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 19 Sep 2018 19:30:00 +0200
+
 privacyidea-venv (2.23.3~dev2-1) jessie; urgency=medium
 
   Fixes:
