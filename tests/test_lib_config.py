@@ -79,12 +79,11 @@ class ConfigTestCase(MyTestCase):
 
         self.assertTrue(module in mlist, mlist)
 
-        # resolver classes are not cached at this point
-        self.assertFalse("pi_resolver_classes" in this.config, this.config)
         r = get_resolver_classes()
         self.assertTrue(PWResolver in r, r)
-        # resolver classes should be available here
+        # resolver classes must be available here
         self.assertTrue("pi_resolver_classes" in this.config, this.config)
+        self.assertTrue("pi_resolver_types" in this.config, this.config)
 
         # Class dict
         (classes, types) = get_resolver_class_dict()
@@ -141,14 +140,13 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(types.get('privacyidea.lib.tokens.totptoken'
                                   '.TotpTokenClass') == "totp", types)
 
-        # token types should be cached here because of calling 'get_token_module_list()'
-        self.assertTrue("pi_token_types" in this.config, this.config)
         types = get_token_types()
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
 
         # token classes are cached with calling 'get_token_types()'
         self.assertTrue("pi_token_classes" in this.config, this.config)
+        self.assertTrue("pi_token_types" in this.config, this.config)
         r = get_token_classes()
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
