@@ -1028,11 +1028,11 @@ def get_serial_by_otp_api(otp=None):
     if assigned_param:
         assigned = True
 
-    count = get_tokens(tokentype=ttype, serial="*{0!s}*".format(
+    count = get_tokens(tokentype=ttype, serial_wildcard="*{0!s}*".format(
             serial_substr), assigned=assigned, count=True)
     if not count_only:
         tokenobj_list = get_tokens(tokentype=ttype,
-                                   serial="*{0!s}*".format(serial_substr),
+                                   serial_wildcard="*{0!s}*".format(serial_substr),
                                    assigned=assigned)
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 

@@ -173,6 +173,16 @@ class TokenTestCase(MyTestCase):
                           tokeninfo={"key1": "value1",
                                      "key2": "value2"})
 
+        # wildcard matches do not work for the ``serial`` parameter
+        tokenobject_list = get_tokens(serial="hotptoke*")
+        self.assertEqual(len(tokenobject_list), 0)
+        # get tokens with a wildcard serial
+        tokenobject_list = get_tokens(serial_wildcard="SE*")
+        self.assertEqual(len(tokenobject_list), 3)
+        # get all tokens
+        tokenobject_list = get_tokens(serial_wildcard="*")
+        self.assertEqual(len(tokenobject_list), 4)
+
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
         self.assertTrue(ttype == "hotp", ttype)

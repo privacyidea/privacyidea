@@ -102,7 +102,7 @@ class check_user_or_serial_in_request(object):
 def check_copy_serials(func):
     """
     Decorator to check if the serial_from and serial_to exist.
-    If the serials are not unique, we raise an error
+    If the serials are not unique or do not exist, we raise an error
     """
     from privacyidea.lib.token import get_tokens
     @functools.wraps(func)
