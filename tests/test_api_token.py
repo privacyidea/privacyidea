@@ -1481,7 +1481,7 @@ class APITokenTestCase(MyTestCase):
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), 905)
             
-  def test_28_enroll_app_with_image_url(self):
+    def test_28_enroll_app_with_image_url(self):
         set_policy("imgurl", scope=SCOPE.ENROLL,
                    action="{0!s}=https://example.com/img.png".format(ACTION.APPIMAGEURL))
         with self.app.test_request_context('/token/init',
