@@ -1,3 +1,20 @@
+privacyidea-venv (2.23.3~dev3-1) jessie; urgency=medium
+
+  Fixes:
+  * Remove double "get" of Token challenges in UI
+  * Avoid reload of static configuration (#1523)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 19 Sep 2018 19:30:00 +0200
+
+privacyidea-venv (2.23.3~dev2-1) jessie; urgency=medium
+
+  Fixes:
+  * Fix performance issue with wildcard serials #1225
+  * Make auditlog honor the admin realms #1244
+  * Fix description of realm dropdown #1245
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 18 Sep 2018 17:00:00 +0200
+
 privacyidea-venv (2.23.2-1) jessie; urgency=medium
 
   Fixes:

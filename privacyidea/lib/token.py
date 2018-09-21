@@ -135,7 +135,7 @@ def create_tokenclass_object(db_token):
 
 
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
-                        serial=None, active=None, resolver=None,
+                        serial_exact=None, serial_wildcard=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
                         locked=None, userid=None, tokeninfo=None, maxfail=None):
     """
@@ -205,15 +205,15 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             sql_query = sql_query.filter(Token.user_id == userid)
 
-    if serial is not None and serial.strip("*"):
+    if serial_wildcard is not None and serial_wildcard.strip("*"):
         # filter for serial
-        if "*" in serial:
-            # match with "like"
-            sql_query = sql_query.filter(Token.serial.like(serial.replace(
-                "*", "%")))
-        else:
-            # exact match
-            sql_query = sql_query.filter(Token.serial == serial)
+        # match with "like"
+        sql_query = sql_query.filter(Token.serial.like(serial_wildcard.replace(
+            "*", "%")))
+
+    if serial_exact is not None:
+        # exact match for serial
+        sql_query = sql_query.filter(Token.serial == serial_exact)
 
     if user is not None and not user.is_empty():
         # filter for the rest of the user.
@@ -270,7 +270,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 @log_with(log)
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
-               serial=None, active=None, resolver=None, rollout_state=None,
+               serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
                maxfail=None):
     """
@@ -293,8 +293,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type assigned: bool
     :param user: Filter for the Owner of the token
     :type user: User Object
-    :param serial: The serial number of the token
+    :param serial: The exact serial number of a token
     :type serial: basestring
+    :param serial_wildcard: A wildcard to match token serials
+    :type serial_wildcard: basestring
     :param active: Whether only active (True) or inactive (False) tokens
         should be returned
     :type active: bool
@@ -323,11 +325,18 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     token_list = []
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                     assigned=assigned, user=user,
-                                    serial=serial, active=active,
-                                    resolver=resolver,
+                                    serial_exact=serial, serial_wildcard=serial_wildcard,
+                                    active=active, resolver=resolver,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
                                     tokeninfo=tokeninfo, maxfail=maxfail)
+
+    # Warning for unintentional exact serial matches
+    if serial is not None and "*" in serial:
+        log.info(u"Exact match on a serial containing a wildcard: {!r}".format(serial))
+    # Warning for unintentional wildcard serial matches
+    if serial_wildcard is not None and "*" not in serial_wildcard:
+        log.info(u"Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
 
     # Decide, what we are supposed to return
     if count is True:
@@ -365,7 +374,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type assigned: bool
     :param user: The user, whose token should be displayed
     :type user: User object
-    :param serial:
+    :param serial: a pattern for matching the serial
     :param active:
     :param resolver: A resolver name, which may contain "*" for filtering.
     :type resolver: basestring
@@ -387,7 +396,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     """
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                 assigned=assigned, user=user,
-                                serial=serial, active=active,
+                                serial_wildcard=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
                                 description=description, userid=userid)
@@ -514,7 +523,7 @@ def get_realms_of_token(serial, only_first_realm=False):
     """
     This function returns a list of the realms of a token
 
-    :param serial: the serial number of the token
+    :param serial: the exact serial number of the token
     :type serial: basestring
 
     :param only_first_realm: Wheather we should only return the first realm
@@ -523,6 +532,9 @@ def get_realms_of_token(serial, only_first_realm=False):
     :return: list of the realm names
     :rtype: list
     """
+    if "*" in serial:
+        return []
+
     tokenobject_list = get_tokens(serial=serial)
 
     realms = []
@@ -545,7 +557,7 @@ def get_realms_of_token(serial, only_first_realm=False):
 @log_with(log)
 def token_exist(serial):
     """
-    returns true if the token with the given serial number exists
+    returns true if the token with the exact given serial number exists
 
     :param serial: the serial number of the token
     """
@@ -1015,7 +1027,7 @@ def remove_token(serial=None, user=None):
 
     :param user: The user, who's tokens should be deleted.
     :type user: User object
-    :param serial: The serial number of the token to delete
+    :param serial: The serial number of the token to delete (exact)
     :type serial: basestring
     :return: The number of deleted token
     :rtype: int
@@ -1054,7 +1066,7 @@ def set_realms(serial, realms=None, add=False):
 
     Thus, setting realms=[] clears all realms assignments.
 
-    :param serial: the serial number of the token
+    :param serial: the serial number of the token (exact)
     :type serial: basestring
     :param realms: A list of realm names
     :type realms: list
@@ -1084,7 +1096,7 @@ def set_realms(serial, realms=None, add=False):
 @log_with(log)
 def set_defaults(serial):
     """
-    Set the default values for the token with the given serial number
+    Set the default values for the token with the given serial number (exact)
     :param serial: token serial
     :type serial: basestring
     :return: None
@@ -1161,7 +1173,7 @@ def unassign_token(serial, user=None):
     """
     unassign the user from the token
 
-    :param serial: The serial number of the token to unassign
+    :param serial: The serial number of the token to unassign (exact)
     :return: True
     """
     tokenobject_list = get_tokens(serial=serial, user=user)
@@ -1218,7 +1230,7 @@ def resync_token(serial, otp1, otp2, options=None, user=None):
 def reset_token(serial, user=None):
     """
     Reset the failcounter
-    :param serial:
+    :param serial: serial number (exact)
     :param user:
     :return: The number of tokens, that were resetted
     :rtype: int
@@ -1245,7 +1257,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
     user will be set
     :type used: User object
     :param serial: If the serial is specified, the PIN for this very token
-    will be set.
+    will be set. (exact)
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
@@ -1271,7 +1283,7 @@ def set_pin_user(serial, user_pin, user=None):
     This sets the user pin of a token. This just stores the information of
     the user pin for (e.g. an eTokenNG, Smartcard) in the database
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param user_pin: The user PIN
     :type user_pin: basestring
@@ -1294,7 +1306,7 @@ def set_pin_so(serial, so_pin, user=None):
     PIN of a smartcard. The SO PIN is stored in the database, so that it
     could be used for automatic processes for User PIN resetting.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param so_pin: The Security Officer PIN
     :type so_ping: basestring
@@ -1316,7 +1328,7 @@ def revoke_token(serial, user=None):
     """
     Revoke a token.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param enable: False is the token should be disabled
     :type enable: bool
@@ -1389,7 +1401,7 @@ def set_otplen(serial, otplen=6, user=None):
     the user.
     The OTP length is usually 6 or 8.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param otplen: The length of the OTP value
     :type otplen: int
@@ -1414,7 +1426,7 @@ def set_hashlib(serial, hashlib="sha1", user=None):
     Set the hashlib in the tokeninfo.
     Can be something like sha1, sha256...
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param hashlib: The hashlib of the token
     :type hashlib: basestring
@@ -1447,7 +1459,7 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
     :type count: int
     :param user: The user owner of the tokens tokens to modify
     :type user: User object
-    :param serial: The serial number of the one token to modifiy
+    :param serial: The serial number of the one token to modifiy (exact)
     :type serial: basestring
     :param max: True, if either count_auth_max or count_auth_success_max are
     to be modified
@@ -1536,7 +1548,7 @@ def set_validity_period_start(serial, user, start):
     """
     Set the validity period for the given token.
 
-    :param serial:
+    :param serial: serial number (exact)
     :param user:
     :param start: Timestamp in the format DD/MM/YY HH:MM
     :type start: basestring
@@ -1554,7 +1566,7 @@ def set_validity_period_end(serial, user, end):
     """
     Set the validity period for the given token.
 
-    :param serial:
+    :param serial: serial number (exact)
     :param user:
     :param end: Timestamp in the format DD/MM/YY HH:MM
     :type end: basestring
@@ -1574,7 +1586,7 @@ def set_sync_window(serial, syncwindow=1000, user=None):
     Such many OTP values are calculated ahead, to find the matching otp value
     and counter.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param syncwindow: The size of the sync window
     :type syncwindow: int
@@ -1599,7 +1611,7 @@ def set_count_window(serial, countwindow=10, user=None):
     The count window is used during authentication to find the matching OTP
     value. This sets the count window per token.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param countwindow: the size of the window
     :type countwindow: int
@@ -1623,7 +1635,7 @@ def set_description(serial, description, user=None):
     """
     Set the description of a token
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param description: The description for the token
     :type description: int
@@ -1647,7 +1659,7 @@ def set_failcounter(serial, counter, user=None):
     """
     Set the fail counter of a  token.
     
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :param counter: THe counter to which the fail counter should be set
     :param user: An optional user
     :return: Number of tokens, where the fail counter was set.
@@ -1668,7 +1680,7 @@ def set_max_failcount(serial, maxfail, user=None):
     Set the maximum fail counts of tokens. This is the maximum number a
     failed authentication is allowed.
 
-    :param serial: The serial number of the token
+    :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param maxfail: The maximum allowed failed authentications
     :type maxfail: int
