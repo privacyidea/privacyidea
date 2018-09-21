@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add App Image URL
 #  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokeninfo field policy
 #             Add add_resolver_in_result
@@ -198,6 +200,7 @@ class SCOPE(object):
 class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
+    APPIMAGEURL = "appimageurl"
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
@@ -306,6 +309,7 @@ class ACTION(object):
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
     HIDE_WELCOME = "hide_welcome_info"
+    SHOW_SEED = "show_seed"
     CUSTOM_MENU = "custom_menu"
     CUSTOM_BASELINE = "custom_baseline"
     STATISTICSREAD = "statistics_read"
@@ -970,7 +974,7 @@ def delete_all_policies():
 def export_policies(policies):
     """
     This function takes a policy list and creates an export file from it
-    
+
     :param policies: a policy definition
     :type policies: list of policy dictionaries
     :return: the contents of the file
@@ -1523,6 +1527,12 @@ def get_static_policy_definitions(scope=None):
                           "Authenticators."),
                 'group': GROUP.TOKEN
             },
+            ACTION.APPIMAGEURL: {
+                'type': 'str',
+                'desc': _("This is the URL to the token image for smartphone apps "
+                          "like FreeOTP."),
+                'group': GROUP.TOKEN
+            },
             ACTION.AUTOASSIGN: {
                 'type': 'str',
                 'value': [AUTOASSIGNVALUE.NONE, AUTOASSIGNVALUE.USERSTORE],
@@ -1756,6 +1766,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this checked, the administrator will not see "
                           "the welcome dialog anymore.")
+            },
+            ACTION.SHOW_SEED: {
+                'type': 'bool',
+                'desc': _("If this is checked, the seed "
+                          "will be displayed as text during enrollment.")
             }
         }
 

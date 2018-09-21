@@ -294,6 +294,33 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            error = result.get("error")
+            self.assertEqual(error.get("message"), "ERR1103: Token already assigned to user User(login=u'cornelius', "
+                                                   "realm=u'realm1', resolver=u'resolver1')")
+
+        # Now the user tries to assign a foreign token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username":
+                                                     "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.at_user = result.get("value").get("token")
+
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"serial": "S1"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = json.loads(res.data).get("result")
+            error = result.get("error")
+            self.assertEqual(error.get("message"), "ERR1103: Token already assigned to another user.")
 
         # Now unassign the token
         with self.app.test_request_context('/token/unassign',
@@ -1453,6 +1480,29 @@ class APITokenTestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), 905)
+            
+  def test_28_enroll_app_with_image_url(self):
+        set_policy("imgurl", scope=SCOPE.ENROLL,
+                   action="{0!s}=https://example.com/img.png".format(ACTION.APPIMAGEURL))
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "genkey": "1",
+                                                 "realm": self.realm1,
+                                                 "serial": "goog1",
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")                                                 
+            detail = json.loads(res.data).get("detail")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertTrue(u'image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+
+        remove_token("goog1")
+        delete_policy("imgurl")                                                          
 
 
 class API00TokenPerformance(MyTestCase):
@@ -1717,3 +1767,4 @@ class API00TokenPerformance(MyTestCase):
             result = json.loads(res.data).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result.get("value"))
+

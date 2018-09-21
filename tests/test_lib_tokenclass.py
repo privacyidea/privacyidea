@@ -19,7 +19,7 @@ from privacyidea.models import (Token,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
-
+import binascii
 
 class TokenBaseTestCase(MyTestCase):
     '''
@@ -484,7 +484,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        token.add_init_details("otpkey", "secretkey")
+        token.add_init_details("otpkey", binascii.hexlify("secretkey"))
         detail = token.get_init_detail()
         self.assertTrue("otpkey" in detail, detail)
 
