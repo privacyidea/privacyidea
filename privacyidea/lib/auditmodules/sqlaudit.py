@@ -97,9 +97,9 @@ class Audit(AuditBase):
         self.name = "sqlaudit"
         self.config = config or {}
         self.audit_data = {}
-        self.no_sign = self.config.get("PI_AUDIT_NO_SIGN")
+        self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
-        if not self.no_sign:
+        if self.sign_data:
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))
 
@@ -263,7 +263,7 @@ class Audit(AuditBase):
             self.session.add(le)
             self.session.commit()
             # Add the signature
-            if not self.no_sign and self.sign_object:
+            if self.sign_data and self.sign_object:
                 s = self._log_to_string(le)
                 sign = self.sign_object.sign(s)
                 le.signature = sign
@@ -531,11 +531,11 @@ class Audit(AuditBase):
         self.session.commit()
     
     def audit_entry_to_dict(self, audit_entry):
-        if self.no_sign:
-            sig = None
-        else:
+        sig = None
+        if self.sign_data:
             sig = self.sign_object.verify(self._log_to_string(audit_entry),
                                           audit_entry.signature)
+
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
         audit_dict = {'number': audit_entry.id,

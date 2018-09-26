@@ -118,7 +118,9 @@ In certain cases when you experiencing problems you may use the parameters
 effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 
 If you by any reason want to avoid signing audit entries you can
-set ``PI_AUDIT_NO_SIGN = True``.
+set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
+audit entries will not be signed and also the signature of audit entries will not be
+verified. Audit entries will appears with *signature* *fail*.
 
 
 privacyIDEA Nodes
