@@ -117,6 +117,8 @@ In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
 effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 
+If you by any reason want to avoid signing audit entries you can
+set ``PI_AUDIT_NO_SIGN = True``.
 
 
 privacyIDEA Nodes
