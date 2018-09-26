@@ -76,17 +76,21 @@ class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
     to an SQL database table.
-    It requires the configuration parameters.
-    PI_AUDIT_SQL_URI
-    PI_AUDIT_KEY_PUBLIC
-    PI_AUDIT_KEY_PRIVATE
-    PI_AUDIT_SQL_URI
-    PI_AUDIT_POOL_SIZE
-    PI_AUDIT_POOL_RECYCLE
-    PI_AUDIT_SQL_TRUNCATE
-    PI_AUDIT_NO_SIGN
+    It requires the configuration parameters in pi.cfg:
+    * PI_AUDIT_KEY_PUBLIC
+    * PI_AUDIT_KEY_PRIVATE
 
-    You can use PI_AUDIT_NO_SIGN to avoid signing of the audit log.
+    If you want to host the SQL Audit database in another DB than the
+    token DB, you can use:
+    * PI_AUDIT_SQL_URI
+
+    It also takes the optional parameters:
+    * PI_AUDIT_POOL_SIZE
+    * PI_AUDIT_POOL_RECYCLE
+    * PI_AUDIT_SQL_TRUNCATE
+    * PI_AUDIT_NO_SIGN
+
+    You can use PI_AUDIT_NO_SIGN = True to avoid signing of the audit log.
     """
     
     def __init__(self, config=None):
