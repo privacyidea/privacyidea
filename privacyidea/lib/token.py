@@ -1993,6 +1993,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     """
     res = False
     reply_dict = {}
+    increase_auth_counters = not is_true(get_from_config(key="no_auth_counter"))
 
     # add the user to the options, so that every token, that get passed the
     # options can see the user
@@ -2084,7 +2085,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            if not is_true(get_from_config(key="no_auth_counter")):
+            if increase_auth_counters:
                 token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
@@ -2154,7 +2155,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if tokenobject.is_active():
                     # OTP matches
                     res = True
-                    if not is_true(get_from_config(key="no_auth_counter")):
+                    if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
                     tokenobject.challenge_janitor()
@@ -2230,8 +2231,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 _r, pin, otp = token.split_pin_pass(passw)
                 if token.is_previous_otp(otp):
                     reply_dict["message"] += ". previous otp used again"
-            for token_obj in pin_matching_token_list:
-                if not is_true(get_from_config(key="no_auth_counter")):
+            if increase_auth_counters:
+                for token_obj in pin_matching_token_list:
                     token_obj.inc_count_auth()
             # write the serial numbers to the audit log
             if len(pin_matching_token_list) == 1:
@@ -2247,7 +2248,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         if get_inc_fail_count_on_false_pin():
             for tokenobject in invalid_token_list:
                 tokenobject.inc_failcount()
-                if not is_true(get_from_config(key="no_auth_counter")):
+                if increase_auth_counters:
                     tokenobject.inc_count_auth()
 
     return res, reply_dict
