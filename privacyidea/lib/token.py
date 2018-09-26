@@ -72,7 +72,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password
+from privacyidea.lib.utils import generate_password, is_true
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo)
@@ -2084,7 +2084,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            token_obj.inc_count_auth_success()
+            if not is_true(get_from_config(key="no_auth_counter")):
+                token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
@@ -2153,7 +2154,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if tokenobject.is_active():
                     # OTP matches
                     res = True
-                    tokenobject.inc_count_auth_success()
+                    if not is_true(get_from_config(key="no_auth_counter")):
+                        tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
                     tokenobject.challenge_janitor()
                     # clean up all other challenges from other tokens. I.e.
@@ -2229,7 +2231,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if token.is_previous_otp(otp):
                     reply_dict["message"] += ". previous otp used again"
             for token_obj in pin_matching_token_list:
-                token_obj.inc_count_auth()
+                if not is_true(get_from_config(key="no_auth_counter")):
+                    token_obj.inc_count_auth()
             # write the serial numbers to the audit log
             if len(pin_matching_token_list) == 1:
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
@@ -2244,7 +2247,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         if get_inc_fail_count_on_false_pin():
             for tokenobject in invalid_token_list:
                 tokenobject.inc_failcount()
-                tokenobject.inc_count_auth()
+                if not is_true(get_from_config(key="no_auth_counter")):
+                    tokenobject.inc_count_auth()
 
     return res, reply_dict
 
