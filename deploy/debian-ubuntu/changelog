@@ -1,3 +1,11 @@
+python-privacyidea (2.23.3~dev4-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Allow SQL audit signing to be deactivated
+  * Allow token auth counter to be deactivated
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 27 Sep 2018 17:00:00 +0200
+
 python-privacyidea (2.23.3~dev3-1trusty) trusty; urgency=medium
 
   Fixes:
