@@ -14,8 +14,10 @@ def usage():
     print("""
 privacyidea-pip-update
 
-    -f, --force    force the update
-    -h, --help     show this help
+    -f, --force      force the update
+    -s, --skipstamp  skip the stamping of the database. Use this, if you know your DB has the correct version.
+    -n, --noschema   do not run the schema update.
+    -h, --help       show this help
     """)
 
 
@@ -42,14 +44,19 @@ def update():
     call(PIP_EXECUTABLE + ["install", "--upgrade", "privacyidea"])
 
 
-def update_db_schema(environment):
+def update_db_schema(environment, skip_stamp=False):
     mig_path = environment + "/lib/privacyidea/migrations"
+    command = "privacyidea-schema-upgrade {0}".format(pipes.quote(mig_path))
+    if skip_stamp:
+        command += " --skipstamp"
     # update the database schema
-    call("privacyidea-schema-upgrade {0}".format(pipes.quote(mig_path)), shell=True)
+    call(command, shell=True)
 
 
 def main():
     force = False
+    skip_stamp = False
+    no_schema = False
 
     environment = os.environ.get("VIRTUAL_ENV")
 
@@ -58,7 +65,7 @@ def main():
         sys.exit(2)
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hf", ["help", "force"])
+        opts, args = getopt.getopt(sys.argv[1:], "snhf", ["help", "force", "skipstamp", "noschema"])
     except getopt.GetoptError as e:
         print(str(e))
         sys.exit(1)
@@ -66,6 +73,10 @@ def main():
     for o, a in opts:
         if o in ("-f", "--force"):
             force = True
+        if o in ("-s", "--skipstamp"):
+            skip_stamp = True
+        if o in ("-n", "--noschema"):
+            no_schema = True
         if o in ("-h", "--help"):
             usage()
             sys.exit(2)
@@ -81,7 +92,8 @@ def main():
 
         if res.lower() == 'y':
             update()
-            update_db_schema(environment)
+            if not no_schema:
+                update_db_schema(environment, skip_stamp)
         else:
             print("You canceled the update process.")
 
