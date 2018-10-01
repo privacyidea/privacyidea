@@ -173,6 +173,10 @@ order to improve performance. This checkbox is deactivated by default
 and should only be activated after having ensured that schema information
 are unnecessary.
 
+The ``CACHE_TIMEOUT`` configures a short living per process cache for LDAP users.
+The cache is not shared between different Python processes, if you are running more processes
+in Apache or Nginx. You can set this to ``0`` to deactivate this cache.
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
