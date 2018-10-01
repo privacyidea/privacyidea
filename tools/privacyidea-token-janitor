@@ -242,7 +242,7 @@ def build_tokenvalue_filter(key,
 
 
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                   tokeninfo_value_filter, orphaned, tokentype, serial, description):
+                   tokeninfo_value_filter, orphaned, tokentype, serial, description, psize, page):
     tlist = []
     filter_tokentype = None
     filter_active = None
@@ -253,10 +253,19 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     if active is not None:
         filter_active = active.lower() == "true"
 
-    tokenobj_list = get_tokens(tokentype=tokentype,
-                               active=filter_active,
-                               assigned=filter_assigned)
+    count, prev, next, tokenobj_list = get_tokens(tokentype=tokentype,
+                                                  active=filter_active,
+                                                  assigned=filter_assigned,
+                                                  page=page,
+                                                  psize=psize)
+
+    sys.stderr.write("++ Creating token object list.\n")
+    tok_count = 0
+    tok_found = 0
     for token_obj in tokenobj_list:
+        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+        sys.stderr.flush()
+        tok_count += 1
         if last_auth and token_obj.check_last_auth_newer(last_auth):
             continue
         if serial and not re.search(serial, token_obj.token.serial):
@@ -278,10 +287,14 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         if orphaned and not token_obj.is_orphaned():
             continue
 
+        tok_found += 1
         # if everything matched, we append the token object
         tlist.append(token_obj)
 
-    return tlist
+    sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
+    sys.stderr.write("++ Token object list created.\n")
+    sys.stderr.flush()
+    return count, prev, next, tlist
 
 
 def export_token_data(token_list):
@@ -366,11 +379,13 @@ def export_user_data(token_list):
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
+@manager.option('--chunksize', default=1000,
+                help='Read tokens from the database in smaller chunks to perform operations.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, sum, csv):
+         set_tokeninfo_key, set_tokeninfo_value, sum, csv, chunksize):
     """
     finds all tokens which match the conditions
     """
@@ -386,72 +401,77 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                      tokeninfo_value_after,
                                      tokeninfo_value_before)
 
-    tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                           filter, orphaned, tokentype, serial,
-                           description)
+    next = 1
+    chunksize = int(chunksize)
+    while next:
+        sys.stderr.write("+ Reading tokens in chunk from database...\n")
+        _, _, next, tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
+                                                    filter, orphaned, tokentype, serial,
+                                                    description, chunksize, next)
+        sys.stderr.write("+ Tokens read. Starting action.\n")
+        if not action:
+            if not csv:
+                print("Token serial\tTokeninfo")
+                print("="*42)
+                for token_obj in tlist:
+                    print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                        token_obj.token.serial,
+                        token_obj.token.tokentype,
+                        token_obj.token.description,
+                        token_obj.get_tokeninfo()))
+            else:
+                for token_obj in tlist:
+                    print(u"'{!s}','{!s}','{!s}','{!s}'".format(
+                        token_obj.token.serial,
+                        token_obj.token.tokentype,
+                        token_obj.token.description,
+                        token_obj.get_tokeninfo()
+                    ))
 
-    if not action:
-        if not csv:
-            print("Token serial\tTokeninfo")
-            print("="*42)
-            for token_obj in tlist:
-                print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                    token_obj.token.serial,
-                    token_obj.token.tokentype,
-                    token_obj.token.description,
-                    token_obj.get_tokeninfo()))
+        elif action == "listuser":
+            if not sum:
+                tokens = export_token_data(tlist)
+                for token in tokens:
+                    print(u",".join([u"'{0!s}'".format(x) for x in token]))
+            else:
+                users = export_user_data(tlist)
+                for user, tokens in users.iteritems():
+                    print(u"{0!s},{1!s}".format(user, len(tokens)))
+
+        elif action == "export":
+            key, token_num, soup = export_pskc(tlist)
+            sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
+            sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                             "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
+            print("{0!s}".format(soup))
         else:
             for token_obj in tlist:
-                print(u"'{!s}','{!s}','{!s}','{!s}'".format(
-                    token_obj.token.serial,
-                    token_obj.token.tokentype,
-                    token_obj.token.description,
-                    token_obj.get_tokeninfo()
-                ))
-
-    elif action == "listuser":
-        if not sum:
-            tokens = export_token_data(tlist)
-            for token in tokens:
-                print(u",".join([u"'{0!s}'".format(x) for x in token]))
-        else:
-            users = export_user_data(tlist)
-            for user, tokens in users.iteritems():
-                print(u"{0!s},{1!s}".format(user, len(tokens)))
-
-    elif action == "export":
-        key, token_num, soup = export_pskc(tlist)
-        sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
-        sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                         "You need this key to import the tokens again:\n\n\t{0!s}\n\n".format(key))
-        print("{0!s}".format(soup))
-    else:
-        for token_obj in tlist:
-            try:
-                if action == "disable":
-                    enable_token(serial=token_obj.token.serial, enable=False)
-                    print("Disabling token {0!s}".format(token_obj.token.serial))
-                elif action == "delete":
-                    remove_token(serial=token_obj.token.serial)
-                    print("Deleting token {0!s}".format(token_obj.token.serial))
-                elif action == "unassign":
-                    unassign_token(serial=token_obj.token.serial)
-                    print("Unassigning token {0!s}".format(token_obj.token.serial))
-                elif action == "mark":
-                    if set_description:
-                        print("Setting description for token {0!s}: {1!s}".format(
-                            token_obj.token.serial, set_description))
-                        token_obj.set_description(set_description)
-                        token_obj.save()
-                    if set_tokeninfo_value and set_tokeninfo_key:
-                        print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                            token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
-                        token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
-                        token_obj.save()
-            except Exception as exx:
-                print("Failed to process token {0}.".format(
-                    token_obj.token.serial))
-                print(u"{0}".format(exx))
+                try:
+                    if action == "disable":
+                        enable_token(serial=token_obj.token.serial, enable=False)
+                        print("Disabling token {0!s}".format(token_obj.token.serial))
+                    elif action == "delete":
+                        remove_token(serial=token_obj.token.serial)
+                        print("Deleting token {0!s}".format(token_obj.token.serial))
+                    elif action == "unassign":
+                        unassign_token(serial=token_obj.token.serial)
+                        print("Unassigning token {0!s}".format(token_obj.token.serial))
+                    elif action == "mark":
+                        if set_description:
+                            print("Setting description for token {0!s}: {1!s}".format(
+                                token_obj.token.serial, set_description))
+                            token_obj.set_description(set_description)
+                            token_obj.save()
+                        if set_tokeninfo_value and set_tokeninfo_key:
+                            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                                token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
+                            token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                            token_obj.save()
+                except Exception as exx:
+                    print("Failed to process token {0}.".format(
+                        token_obj.token.serial))
+                    print(u"{0}".format(exx))
+        del tlist
 
 
 @manager.option('--pskc', dest='pskc',
