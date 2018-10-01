@@ -259,12 +259,12 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                                                   page=page,
                                                   psize=psize)
 
-    print("++ Creating token object list.")
+    sys.stderr.write("++ Creating token object list.\n")
     tok_count = 0
     tok_found = 0
     for token_obj in tokenobj_list:
-        sys.stdout.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
-        sys.stdout.flush()
+        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+        sys.stderr.flush()
         tok_count += 1
         if last_auth and token_obj.check_last_auth_newer(last_auth):
             continue
@@ -291,10 +291,9 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         # if everything matched, we append the token object
         tlist.append(token_obj)
 
-    sys.stdout.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
-    sys.stdout.flush()
-    print("\n")
-    print("++ Token object list created.")
+    sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
+    sys.stderr.write("++ Token object list created.\n")
+    sys.stderr.flush()
     return count, prev, next, tlist
 
 
