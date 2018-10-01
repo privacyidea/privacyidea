@@ -201,9 +201,14 @@ def cache(func):
             else:
                 # Clean up the cache in the current resolver and the current function
                 _to_be_deleted = []
-                for user, cached_result in CACHE[resolver_id].get(func.func_name).iteritems():
-                    if now > cached_result.get("timestamp") + tdelta:
-                        _to_be_deleted.append(user)
+                try:
+                    for user, cached_result in CACHE[resolver_id].get(func.func_name).iteritems():
+                        if now > cached_result.get("timestamp") + tdelta:
+                            _to_be_deleted.append(user)
+                except RuntimeError:
+                    # This might happen if thread A evicts an expired
+                    # cache entry while thread B looks for expired cache entries
+                    pass
                 for user in _to_be_deleted:
                     try:
                         del CACHE[resolver_id][func.func_name][user]
