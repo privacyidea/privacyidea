@@ -37,13 +37,13 @@ backup) and run the command:
 
    privacyidea-pip-update
 
-The following parameters are allows:
+The following parameters are allowed:
 
-``-f`` or ``--force`` skips the safety question, if you really wnat to update.
+``-f`` or ``--force`` skips the safety question, if you really want to update.
 
 ``-s`` or ``--skipstamp`` skips the version stamping during schema update.
 
-``-n`` or ``--noshema`` completely skips the schema update an only updates the code.
+``-n`` or ``--noshema`` completely skips the schema update and only updates the code.
 
 
 Manual upgrade
