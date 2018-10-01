@@ -405,11 +405,11 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     next = 1
     chunksize = int(chunksize)
     while next:
-        print("+ Reading token in chunk from database...")
-        count, _prev, next, tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                                                   filter, orphaned, tokentype, serial,
-                                                   description, chunksize, next)
-        print("+ Token read. Starting action.")
+        print("+ Reading tokens in chunk from database...")
+        _, _, next, tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
+                                                    filter, orphaned, tokentype, serial,
+                                                    description, chunksize, next)
+        print("+ Tokens read. Starting action.")
         if not action:
             if not csv:
                 print("Token serial\tTokeninfo")

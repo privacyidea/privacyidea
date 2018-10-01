@@ -348,10 +348,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     if count is True:
         ret = sql_query.count()
     elif psize:
-        count = sql_query.count()
         # We return a paginated list of token objects.
         pagination = sql_query.paginate(page, per_page=psize,
                                         error_out=False)
+        count = pagination.total
         prev = None
         if pagination.has_prev:
             prev = page - 1
