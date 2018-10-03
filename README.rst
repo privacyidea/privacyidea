@@ -130,6 +130,18 @@ Run it::
 
     ./pi-manage runserver
 
+
+Docker Installation
+====================
+This installation can be used to install privacyidea using the same steps mentioned above but using docker
+
+> Dont forget to change the password value
+
+     # Build the docker image
+     docker build --build-arg ADMIN=admin --build-arg PASSWORD=mypassword -t privacyidea/privacyidea .
+     # Run docker container
+     docker run --name privacyida_app -p 5000:5000 privacyidea/privacyidea
+
 Now you can connect to http://localhost:5000 with your browser and login
 as administrator.
 
