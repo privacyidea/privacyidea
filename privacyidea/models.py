@@ -39,9 +39,13 @@ import binascii
 import logging
 from datetime import datetime, timedelta
 
+import functools
+import re
 from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import OperationalError
+
 from .lib.crypto import (encrypt,
                          encryptPin,
                          decryptPin,
@@ -67,6 +71,44 @@ implicit_returning = True
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
 
 db = SQLAlchemy()
+
+
+def retry_on_deadlock(f):
+    """
+    Decorator for ``save`` methods. In case a Galera deadlock exception occurs, this
+    decorator calls the method again in order to recover from the error.
+    This is only done if there are no other dirty objects in the session.
+    """
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        # There could be a scenario in which changes are lost. Assume we
+        # change a model instance A, but do not commit the session. We then
+        # proceed to change a model instance B and call ``B.save()``, which
+        # is decorated with ``retry_on_deadlock``.
+        # Assume a deadlock occurs in ``B.save()``. If we just rollback the
+        # session and call ``B.save()`` again, we will lose the changes on A!
+        # Thus, we check for other dirty instances before calling ``B.save()``
+        # for the first time. If there are other dirty instances and
+        # a deadlock occurs, we have no choice but to re-throw the deadlock error
+        # in order to keep the database consistent.
+        dirty_objects = set(db.session.dirty)
+        dirty_objects.discard(self)
+        try:
+            return f(self, *args, **kwargs)
+        except OperationalError as e:
+            if re.match(r"^.*\(1213\s*,\s*'Deadlock found when trying to get lock.*$", e.message):
+                if dirty_objects:
+                    log.warning(u'Detected a deadlock while saving {!r}, '
+                                u'but cannot retry due to prior uncommitted changes in the'
+                                u'session which would get lost: {!r}'.format(self, dirty_objects))
+                    raise
+                else:
+                    log.info(u'Detected a deadlock while saving {!r}, retrying transaction'.format(self))
+                    db.session.rollback()
+                    return f(self, *args, **kwargs)
+            else:
+                raise
+    return wrapper
 
 
 class MethodsMixin(object):
@@ -2252,6 +2294,7 @@ class ClientApplication(MethodsMixin, db.Model):
                                           name='caix'),
                       {'mysql_row_format': 'DYNAMIC'})
 
+    @retry_on_deadlock
     def save(self):
         clientapp = ClientApplication.query.filter(
             ClientApplication.ip == self.ip,
@@ -2260,7 +2303,6 @@ class ClientApplication(MethodsMixin, db.Model):
         if clientapp is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
             ret = self.id
         else:
             # update
@@ -2352,6 +2394,7 @@ class EventCounter(db.Model):
         self.counter_name = name
         self.save()
 
+    @retry_on_deadlock
     def save(self):
         db.session.add(self)
         db.session.commit()
