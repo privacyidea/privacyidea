@@ -2303,6 +2303,7 @@ class ClientApplication(MethodsMixin, db.Model):
         if clientapp is None:
             # create a new one
             db.session.add(self)
+            db.session.commit()
             ret = self.id
         else:
             # update
@@ -2312,7 +2313,7 @@ class ClientApplication(MethodsMixin, db.Model):
             ClientApplication.query.filter(
                 ClientApplication.id == clientapp.id).update(values)
             ret = clientapp.id
-        db.session.commit()
+            db.session.commit()
         return ret
 
     def __repr__(self):
