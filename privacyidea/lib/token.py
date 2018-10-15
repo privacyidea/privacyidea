@@ -221,7 +221,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(Token.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            sql_query = sql_query.filter(Token.user_id == uid)
+            sql_query = sql_query.filter(Token.user_id == str(uid))
 
     if active is not None:
         # Filter active or inactive tokens
@@ -1139,7 +1139,7 @@ def set_defaults(serial):
 
 
 @log_with(log)
-def assign_token(serial, user, pin=None, encrypt_pin=False):
+def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     """
     Assign token to a user.
     If the PIN is given, the PIN is reset.
@@ -1152,6 +1152,8 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     :type pin: basestring
     :param encrypt_pin: Whether the PIN should be stored in an encrypted way
     :type encrypt_pin: bool
+    :param err_message: The error message, that is displayed in case the token is already assigned
+    :type err_message: basestring
 
     :return: True if the token was assigned, in case of an error an exception
     is thrown
@@ -1169,8 +1171,8 @@ def assign_token(serial, user, pin=None, encrypt_pin=False):
     old_user = tokenobject.user
     if old_user:
         log.warning("token already assigned to user: {0!r}".format(old_user))
-        raise TokenAdminError("Token already assigned to user {0!r}".format(
-                              old_user), id=1103)
+        err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
+        raise TokenAdminError(err_message, id=1103)
 
     tokenobject.set_user(user)
     if pin is not None:

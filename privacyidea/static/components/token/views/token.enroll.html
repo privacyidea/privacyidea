@@ -38,7 +38,7 @@
         <!-- Token PIN -->
         <div class="form-group"
              ng-if="loggedInUser.role == 'user' && !hidePin &&
-                    !$state.includes('token.wizard') &&
+                    (!$state.includes('token.wizard') || getRightsValue('otp_pin_minlength'))&&
                     checkRight('enrollpin')">
             <label for="otppin" translate>PIN</label>
             <input name="otppin" ng-model="newUser.pin"
