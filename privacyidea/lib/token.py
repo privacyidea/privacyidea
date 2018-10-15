@@ -221,7 +221,8 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(Token.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            uid = str(uid) if type(uid) == int else uid
+            if type(uid) == int:
+                uid = str(uid)
             sql_query = sql_query.filter(Token.user_id == uid)
 
     if active is not None:
