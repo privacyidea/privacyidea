@@ -192,10 +192,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.encrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
@@ -212,10 +212,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.decrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
