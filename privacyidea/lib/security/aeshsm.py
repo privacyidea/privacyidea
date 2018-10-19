@@ -101,8 +101,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.session = None
         self.key_handles = {}
 
-        self.pkcs11 = PyKCS11.PyKCS11Lib()
-        self.pkcs11.load(self.module)
         self.initialize_hsm()
 
     def initialize_hsm(self):
@@ -113,6 +111,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         * get session
         :return:
         """
+        self.pkcs11 = PyKCS11.PyKCS11Lib()
+        self.pkcs11.load(self.module)
         self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
