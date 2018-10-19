@@ -101,8 +101,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.session = None
         self.key_handles = {}
 
-        self.pkcs11 = PyKCS11.PyKCS11Lib()
-        self.pkcs11.load(self.module)
         self.initialize_hsm()
 
     def initialize_hsm(self):
@@ -113,6 +111,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         * get session
         :return:
         """
+        self.pkcs11 = PyKCS11.PyKCS11Lib()
+        self.pkcs11.load(self.module)
         self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
@@ -192,10 +192,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.encrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
@@ -212,10 +212,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.decrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
