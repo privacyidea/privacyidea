@@ -294,7 +294,7 @@
         <!-- =================== TOKEN FUNCTIONS =============================== -->
 
         <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0
-            || token.locked">
+            || token.locked || !checkRight('resync')">
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
@@ -309,9 +309,7 @@
                 <button class="btn btn-primary"
                         id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
-                        ng-click="resyncToken()"
-                        ng-disabled="!checkRight('resync')"
-                        ng-hide="!checkRight('resync') && hide_buttons">
+                        ng-click="resyncToken()">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Resync Token</span>
                 </button>
