@@ -12,7 +12,8 @@
             <td>
                 <button class="btn btn-danger" ng-click="delete()"
                         id="deleteButton"
-                        ng-disabled="!checkRight('delete')">
+                        ng-disabled="!checkRight('delete')"
+                        ng-hide="!checkRight('delete') && hide_buttons">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
@@ -38,6 +39,7 @@
                 <button class="btn btn-danger"
                         id="disableButton"
                         ng-disabled="!checkRight('disable')"
+                        ng-hide="!checkRight('disable') && hide_buttons"
                         translate>Disable</button>
             </span>
             <span ng-show="!token.active && !token.locked"
@@ -45,13 +47,16 @@
                 <button class="btn btn-success"
                         id="enableButton"
                         ng-disabled="!checkRight('enable')"
+                        ng-hide="!checkRight('enable') && hide_buttons"
                         translate>Enable</button>
             </span>
             <span ng-show="!token.revoked"
                   ng-click="revoke()">
-                <button class="btn btn-danger" translate
+                <button class="btn btn-danger"
                         id="revokeButton"
-                        ng-disabled="!checkRight('revoke')">
+                        ng-disabled="!checkRight('revoke')"
+                        ng-hide="!checkRight('revoke') && hide_buttons"
+                        translate>
                     Revoke</button>
             </span>
             </td>
@@ -84,6 +89,7 @@
                         ng-show="token.failcount > 0"
                         ng-click="reset()"
                         ng-disabled="!checkRight('reset')"
+                        ng-hide="!checkRight('reset') && hide_buttons"
                         translate>Reset fail counter
                 </button>
             </td>
@@ -304,7 +310,8 @@
                         id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
                         ng-click="resyncToken()"
-                        ng-disabled="!checkRight('resync')">
+                        ng-disabled="!checkRight('resync')"
+                        ng-hide="!checkRight('resync') && hide_buttons">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Resync Token</span>
                 </button>
