@@ -179,6 +179,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Generate Random failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory, session and handles
+                self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
                 if retries > MAX_RETRIES:
@@ -200,6 +202,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Encryption failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory,session and handles
+                self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
                 if retries > MAX_RETRIES:
@@ -220,6 +224,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Decryption failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory, session and handlers
+                self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
                 if retries > MAX_RETRIES:
