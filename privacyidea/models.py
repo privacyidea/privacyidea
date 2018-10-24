@@ -2656,7 +2656,7 @@ class PeriodicTaskOption(db.Model):
     id = db.Column(db.Integer, Sequence("periodictaskopt_seq"),
                    primary_key=True)
     periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    key = db.Column(db.Unicode(256), nullable=False)
+    key = db.Column(db.Unicode(255), nullable=False)
     value = db.Column(db.Unicode(2000), default=u'')
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
@@ -2700,7 +2700,7 @@ class PeriodicTaskLastRun(db.Model):
     id = db.Column(db.Integer, Sequence("periodictasklastrun_seq"),
                    primary_key=True)
     periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    node = db.Column(db.Unicode(256), nullable=False)
+    node = db.Column(db.Unicode(255), nullable=False)
     timestamp = db.Column(db.DateTime(False), nullable=False)
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
