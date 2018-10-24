@@ -1,3 +1,27 @@
+python-privacyidea (2.23.3~dev5-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Performance: avoid using wildcard serials in functions like 
+    get_tokens, get_realms_of_token and copy_token
+  * Performance: avoid reload of static configuration
+  * Performance: Clean up LDAP cache, so that it will not grow to big and 
+    further LDAP cache usage optimization (#1246)
+  * Performance: Make signing the audit log configurable (#1262)
+  * Performance: Make the auth counter per token configurable (#1262)
+  * Performance: Fix HSM auto recovery after an HSM failure and make
+    MAX_RETRIES configurable (#1278)
+  * Fix the double get requests of challenges in the UI
+  * Auditlog now honors the admin realm in the policies (#1244)
+  * Fix description of realm dropdown policy (#1245)
+  * Allow token janitor to use chunk sizes
+  * Allow Audit rotation to be performed in chunks to avoid deadlocks.
+  * Improve documentation about required and optinal parameters in
+    the SQL Audit module.
+  * Cast userid to string to avoid casts problems with PostgreSQL
+  * Update pyopenssl dependency.
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Oct 2018 15:45:00 +0200
+
 python-privacyidea (2.23.3~dev4-1trusty) trusty; urgency=medium
 
   Fixes:
