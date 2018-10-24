@@ -98,6 +98,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         log.debug("Setting a password: {0!s}".format(bool(self.password)))
         self.module = config.get("module")
         log.debug("Setting the modules: {0!s}".format(self.module))
+        self.max_retries = config.get("max_retries", MAX_RETRIES)
+        log.debug("Setting max retires: {0!s}".format(self.max_retries))
         self.session = None
         self.key_handles = {}
 
@@ -183,7 +185,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
-                if retries > MAX_RETRIES:
+                if retries > self.max_retries:
                     raise HSMException("Failed to generate random number after multiple retries.")
 
         # convert the array of the random integers to a string
@@ -206,7 +208,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
-                if retries > MAX_RETRIES:
+                if retries > self.max_retries:
                     raise HSMException("Failed to encrypt after multiple retries.")
 
         return int_list_to_bytestring(r)
@@ -228,7 +230,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
-                if retries > MAX_RETRIES:
+                if retries > self.max_retries:
                     raise HSMException("Failed to decrypt after multiple retries.")
 
         return int_list_to_bytestring(r)

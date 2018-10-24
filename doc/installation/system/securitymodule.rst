@@ -97,6 +97,14 @@ located (default: ``1``).
 
 ``PI_HSM_MODULE_PASSWORD`` is the password to access the slot.
 
+``PI_HSM_MODULE_MAX_RETRIES`` is the number privacyIDEA tries to perform a cryptographic
+operation like *decrypt*, *encrypt* or *random* if the first attempt with the HSM fails.
+The default value is 5.
+
+.. note:: Some PKCS11 libraries for network attached HSMs also implement a retry.
+   You should take this into account, since retries would multiply and it could take
+   a while till a request would finally fail.
+
 ``PI_HSM_MODULE_KEY_LABEL`` is the label prefix for the keys on the
 HSM (default: ``privacyidea``). In order to locate the keys, the
 module will search for key with a label equal to the concatenation of
@@ -111,4 +119,3 @@ this prefix, ``_`` and the key identifier (respectively ``token``,
 
 ``PI_HSM_MODULE_KEY_LABEL_VALUE`` is the label for ``value`` key
 (defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
-
