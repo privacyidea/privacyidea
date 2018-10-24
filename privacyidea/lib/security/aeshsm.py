@@ -99,7 +99,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.module = config.get("module")
         log.debug("Setting the modules: {0!s}".format(self.module))
         self.max_retries = config.get("max_retries", MAX_RETRIES)
-        log.debug("Setting max retires: {0!s}".format(self.max_retries))
+        log.debug("Setting max retries: {0!s}".format(self.max_retries))
         self.session = None
         self.key_handles = {}
 
