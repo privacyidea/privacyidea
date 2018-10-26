@@ -602,6 +602,9 @@ class PolicyClass(object):
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
+        log.debug(u"Matched policies for action {!r}: {!r}".format(action,
+                                                                   list(p["name"] for p in reduced_policies)))
+
         return reduced_policies
 
     @staticmethod
