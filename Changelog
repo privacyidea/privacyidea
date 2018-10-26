@@ -15,7 +15,7 @@ Version 2.23.3, 2018-10-26
   * Fix description of realm dropdown policy (#1245)
   * Allow token janitor to use chunk sizes
   * Allow Audit rotation to be performed in chunks to avoid deadlocks.
-  * Improve documentation about required and optinal parameters in
+  * Improve documentation about required and optional parameters in
     the SQL Audit module.
   * Cast userid to string to avoid casts problems with PostgreSQL
   * Update pyopenssl dependency.
