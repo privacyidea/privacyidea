@@ -1,4 +1,4 @@
-python-privacyidea (2.23.3~dev5-1trusty) trusty; urgency=medium
+python-privacyidea (2.23.3-1trusty) trusty; urgency=medium
 
   Fixes:
   * Performance: avoid using wildcard serials in functions like 
@@ -20,7 +20,7 @@ python-privacyidea (2.23.3~dev5-1trusty) trusty; urgency=medium
   * Cast userid to string to avoid casts problems with PostgreSQL
   * Update pyopenssl dependency.
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Oct 2018 15:45:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 26 Oct 2018 15:00:00 +0200
 
 python-privacyidea (2.23.3~dev4-1trusty) trusty; urgency=medium
 

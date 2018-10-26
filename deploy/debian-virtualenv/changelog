@@ -1,4 +1,4 @@
-privacyidea-venv (2.23.3~dev5-1) jessie; urgency=medium
+privacyidea-venv (2.23.3-1) jessie; urgency=medium
 
   Fixes:
   * Performance: avoid using wildcard serials in functions like
@@ -20,7 +20,7 @@ privacyidea-venv (2.23.3~dev5-1) jessie; urgency=medium
   * Cast userid to string to avoid casts problems with PostgreSQL
   * Update pyopenssl dependency.
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 24 Oct 2018 15:45:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 26 Oct 2018 15:00:00 +0200
 
 privacyidea-venv (2.23.3~dev4-1) jessie; urgency=medium
 
