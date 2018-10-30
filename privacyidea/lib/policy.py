@@ -635,7 +635,7 @@ class PolicyClass(object):
         Get the defined action values for a certain action like
             scope: authorization
             action: tokentype
-        would return a list of the tokentypes
+        would return a list of tokentypes
 
             scope: authorization
             action: serial
@@ -650,7 +650,41 @@ class PolicyClass(object):
         :return: A list of action values, sorted by policy priorities.
         :rtype: list
         """
-        action_values = []
+        pol_values = self.get_action_values_with_name(action,
+                                                      scope=scope,
+                                                      realm=realm,
+                                                      resolver=resolver,
+                                                      user=user,
+                                                      client=client,
+                                                      unique=unique,
+                                                      allow_white_space_in_action=allow_white_space_in_action,
+                                                      adminrealm=adminrealm)
+        return pol_values.keys()
+
+    @log_with(log)
+    def get_action_values_with_name(self, action, scope=SCOPE.AUTHZ, realm=None,
+                                    resolver=None, user=None, client=None, unique=False,
+                                    allow_white_space_in_action=False, adminrealm=None):
+        """
+        Get the defined action values for a certain action like
+            scope: authorization
+            action: tokentype
+        would return a dictionary of {tokentype: policyname}
+
+            scope: authorization
+            action: serial
+        would return a dictionary of {serial: policyname}
+
+        :param unique: if set, the function will only consider the policy with the
+            highest priority and check for policy conflicts.
+        :param allow_white_space_in_action: Some policies like emailtext
+            would allow entering text with whitespaces. These whitespaces
+            must not be used to separate action values!
+        :type allow_white_space_in_action: bool
+        :return: A list of action values, sorted by policy priorities.
+        :rtype: list of tuples of (policyname, value)
+        """
+        policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
@@ -662,6 +696,7 @@ class PolicyClass(object):
         for pol in policies:
             action_dict = pol.get("action", {})
             action_value = action_dict.get(action, "")
+            policy_name = pol.get("name")
             """
             We must distinguish actions like:
                 tokentype=totp hotp motp,
@@ -669,21 +704,22 @@ class PolicyClass(object):
                 smstext='your otp is <otp>'
             where the spaces are part of the string.
             """
+            # By saving the policynames in a dict with the values being the key,
+            # we achieve unique policy_values.
             if action_value.startswith("'") and action_value.endswith("'"):
-                action_values.append(action_dict.get(action)[1:-1])
+                policy_values[action_dict.get(action)[1:-1]] = policy_name
             elif allow_white_space_in_action:
-                action_values.append(action_dict.get(action))
+                policy_values[action_dict.get(action)] = policy_name
             else:
-                action_values.extend(action_dict.get(action, "").split())
+                for value in action_dict.get(action, "").split():
+                    policy_values[value] = policy_name
 
-        # reduce the entries to unique entries
-        action_values = list(set(action_values))
         # Check if the policies with the highest priority agree on the action values
-        if unique and len(action_values) > 1:
+        if unique and len(policy_values.keys()) > 1:
             names = [p['name'] for p in policies]
             raise PolicyError(u"There are policies with conflicting actions: {!r}".format(names))
 
-        return action_values
+        return policy_values
 
     @log_with(log)
     def ui_get_main_menus(self, logged_in_user, client=None):
