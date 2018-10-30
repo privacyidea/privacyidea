@@ -34,7 +34,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
         kwargs['headers'] = headers
         with self.app.test_request_context(*args, **kwargs):
             res = self.app.full_dispatch_request()
-            return res.status_code, json.loads(res.data)
+            return res.status_code, json.loads(res.data.decode('utf8'))
 
     def test_01_crud(self):
         # no tasks yet

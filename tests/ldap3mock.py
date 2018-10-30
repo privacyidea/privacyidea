@@ -37,7 +37,7 @@ limitations under the License.
 """
 
 from __future__ import (
-    absolute_import, print_function, division, unicode_literals
+    absolute_import, division, unicode_literals
 )
 
 DIRECTORY = "tests/testdata/tmp_directory"
@@ -263,7 +263,7 @@ class Connection(object):
         entry = self.directory[index].get("attributes")
 
         # Loop over the changes hash and apply them
-        for k, v in changes.iteritems():
+        for k, v in six.iteritems(changes):
             if v[0] == "MODIFY_DELETE":
                 entry.pop(k)
             elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
@@ -478,7 +478,7 @@ class Connection(object):
         deDuped = list()
         for entry in results:
             dn = entry.get("dn")
-            if not dn in found.keys():
+            if not dn in found:
                 found[dn] = 1
                 deDuped.append(entry)
 

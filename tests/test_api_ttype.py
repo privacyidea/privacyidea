@@ -1,4 +1,3 @@
-from urllib import urlencode
 import json
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
@@ -34,7 +33,7 @@ class TtypeAPITestCase(MyTestCase):
                                                  "serial": "TIQR1",
                                                  "session": "12345"}):
             res = self.app.full_dispatch_request()
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             identity = data.get("identity")
             service = data.get("service")
             self.assertEqual(identity.get("displayName"), "Cornelius ")
@@ -47,7 +46,7 @@ class TtypeAPITestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertEqual(res.mimetype, u'application/fido.trusted-apps+json')
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertTrue("trustedFacets" in data)
 
         # Check the audit log.
@@ -56,7 +55,7 @@ class TtypeAPITestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             result = json_response.get("result")
             auditdata = result.get("value").get("auditdata")
             self.assertTrue(len(auditdata) > 0)

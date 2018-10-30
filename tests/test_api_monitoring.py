@@ -28,7 +28,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue("key1" in result.get("value"))
             self.assertTrue("key2" in result.get("value"))
 
@@ -39,7 +39,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result.get("value")), 4)
             self.assertEqual(result.get("value")[0][1], 1)
             self.assertEqual(result.get("value")[1][1], 2)
@@ -54,7 +54,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result.get("value")), 4)
 
         # End value in the past will return no data.
@@ -65,7 +65,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result.get("value")), 0)
 
         # check with start timestamp after the 2nd value.
@@ -77,7 +77,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result.get("value")), 2)
             self.assertEqual(result.get("value")[0][1], 3)
             self.assertEqual(result.get("value")[1][1], 4)
@@ -89,7 +89,7 @@ class APIMonitoringTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("value"), 4)
 
     def test_02_delete_stats(self):
@@ -105,7 +105,7 @@ class APIMonitoringTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Number of deleted values
             self.assertEqual(result.get("value"), 3)
 
@@ -115,6 +115,6 @@ class APIMonitoringTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Number of remaining values
             self.assertEqual(len(result.get("value")), 1)

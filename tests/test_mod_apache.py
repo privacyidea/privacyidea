@@ -7,7 +7,7 @@ from authmodules.apache2.privacyidea_apache import (OK, UNAUTHORIZED,
                                                     ROUNDS, SALT_SIZE)
 import responses
 import json
-import redismock
+from . import redismock
 import passlib.hash
 
 

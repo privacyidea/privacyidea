@@ -60,7 +60,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(r[0], True)
         question = r[1]
         transactionid = r[2]
-        self.assertTrue(question in self.questions.keys())
+        self.assertTrue(question in self.questions)
 
         # Now that we have the question, we can give the answer
         r = token.check_challenge_response(passw=self.questions[question],

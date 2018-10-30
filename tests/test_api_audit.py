@@ -20,7 +20,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue(json_response.get("result").get("value").get(
                 "current") == 1, res)
@@ -31,7 +31,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("serial_plot" in json_response.get(
                 "result").get("value"), json_response.get("result"))
@@ -46,7 +46,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("serial_plot" in json_response.get(
                 "result").get("value"), json_response.get("result"))
@@ -63,7 +63,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("serial_plot" in json_response.get(
                 "result").get("value"), json_response.get("result"))
@@ -87,7 +87,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 2)
@@ -99,7 +99,7 @@ class APIAuditTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 3)
@@ -114,7 +114,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             self.assertEqual(json_response.get("result").get("value").get(
@@ -139,7 +139,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 5)
@@ -151,7 +151,7 @@ class APIAuditTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 7)
@@ -180,7 +180,7 @@ class APIAuditTestCase(MyTestCase):
                                                                 'password': 'test'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             value = json_response.get("result").get("value")
             # Helpdesk user is allowed to view the audit log.
             self.assertTrue("auditlog" in value.get("rights"))
@@ -192,7 +192,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': helpdesk_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
@@ -208,7 +208,7 @@ class APIAuditTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")

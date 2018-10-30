@@ -3,6 +3,7 @@ This test file tests the api.lib.policy.py
 
 The api.lib.policy.py depends on lib.policy and on flask!
 """
+from __future__ import print_function
 import json
 
 from .base import (MyTestCase, PWFILE)
@@ -39,7 +40,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 
-from flask import Response, Request, g, current_app
+from flask import Response, Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError, RegistrationError
 from privacyidea.lib.machineresolver import save_resolver
@@ -1280,7 +1281,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "PISP0000AB00",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1327,7 +1328,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "id": 1,
                "detail": {"message": "matching 2 tokens",
                           "type": "undetermined"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1363,7 +1364,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "PISP0001",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does match
         set_policy(name="pol1",
@@ -1421,7 +1422,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1466,7 +1467,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the detail on success
         set_policy(name="pol2",
@@ -1497,7 +1498,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the detail on success
         set_policy(name="pol2",
@@ -1518,7 +1519,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = no_detail_on_fail(req, resp)
         jresult = json.loads(new_response.data)
@@ -1547,7 +1548,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         g.policy_object = PolicyClass()
 
@@ -1617,7 +1618,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": False},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set the autoassign policy
         # to "any_pin"
@@ -1677,7 +1678,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": False},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set the autoassign policy
         # to "userstore"
@@ -1743,7 +1744,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "version": "privacyIDEA test",
                "detail": {"serial": serial},
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = offline_info(req, resp)
         jresult = json.loads(new_response.data)
@@ -1792,7 +1793,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": True},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
         from privacyidea.lib.crypto import Sign
         g.sign_object = Sign("tests/testdata/private.pem",
                              "tests/testdata/public.pem")
@@ -1800,7 +1801,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = sign_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")
-        self.assertEqual(jresult.get("signature"), "7220461805369685253863294214862525311437731987121534735993146952136348520396812489782945679627890785973634896605293523175424850299832912878523161817380029213546063467888018205435416020286712762804412024065559270543774578319469096483246637875013247101135063221604113204491121777932147776087110152414627230087278622508771143940031542890514380486863296102037208395371717795767683973979032142677315402422403254992482761563612174177151960004042109847122772813717599078313600692433727690239340230353616318691769042290314664126975201679642739717702497638318611217001361093950139025744740660953017413716736691777322916588328")
+        self.assertEqual(jresult.get("signature"), "12286563956186851222763777429695584644324740652565581988587414544297432783523785532070055857619627542347973153465187816396752261730111152465977744264826200787508894389937562519240189748382275312824518790194963440380306202638365223197802490803597478514617706281242938294159192617108210623265084867605251009544178231020920999223970535034040822922068576537239452191722786808074622369000594984335557065543495017539992338002123756259365978375186660886179484370560915820484600337343618193501989005733515794341174572697366915377218917268995598532737466873248560512717129014931617597408250418461112752400750722207570913588830")
 
     def test_08_get_webui_settings(self):
         # Test that a machine definition will return offline hashes
@@ -1840,7 +1841,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "version": "privacyIDEA test",
                "detail": {"serial": serial},
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = get_webui_settings(req, resp)
         jresult = json.loads(new_response.data)
@@ -1936,7 +1937,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "changePIN1",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # the token itself
         token = init_token({"serial": "changePIN1",
@@ -1963,7 +1964,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "changePIN2",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         token = init_token({"type": "spass",
                             "serial": "changePIN2"}, tokenrealms=[self.realm1])
