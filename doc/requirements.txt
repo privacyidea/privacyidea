@@ -63,7 +63,7 @@ pyusb==1.0.0b2
 PyYAML==3.11
 qrcode==5.1
 redis==2.10.3
-requests==2.7.0
+requests==2.20.0
 responses==0.4.0
 six==1.10.0
 snowballstemmer==1.2.1
