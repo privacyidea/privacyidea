@@ -14,7 +14,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
                                    check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string)
+                                   convert_column_to_unicode, censor_connect_string,
+                                   truncate_comma_list)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -446,3 +447,22 @@ class UtilsTestCase(MyTestCase):
                          "mysql://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
                          u"mysql://knöbel:xxxx@localhost/pi")
+
+    def test_19_truncate_comma_list(self):
+        r = truncate_comma_list("123456,234567,345678", 19)
+        self.assertEqual(len(r), 19)
+        self.assertEqual(r, "12345,234567,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 18)
+        self.assertEqual(len(r), 18)
+        self.assertEqual(r, "12345,23456,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 16)
+        self.assertEqual(len(r), 16)
+        self.assertEqual(r, "1234,23456,34567")
+
+        # There are more entries than the max_len. We will not be able
+        # to shorten all entries, so we simply take the beginning of the string.
+        r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
+        self.assertEqual(len(r), 4)
+        self.assertEqual(r, "12,2")

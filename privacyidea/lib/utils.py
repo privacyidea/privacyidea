@@ -1127,3 +1127,28 @@ def censor_connect_string(connect_string):
     except Exception:
         return "<error when censoring connect string>"
 
+
+def truncate_comma_list(data, max_len):
+    """
+    This function takes a string with a comma separated list and
+    shortens the longest entries this way, that the final string has a maximum
+    length of max_len
+    :param data: A comma separated list
+    :type data: basestring
+    :return: shortened string
+    """
+    data = data.split(",")
+    # if there are more entries than the maximum length, we do an early exit
+    if len(data) >= max_len:
+        return ",".join(data)[:max_len]
+
+    while len(",".join(data)) > max_len:
+        new_data = []
+        longest = max(data, key=len)
+        for d in data:
+            if d == longest:
+                # Shorten the longest
+                d = d[:-1]
+            new_data.append(d)
+        data = new_data
+    return ",".join(data)
