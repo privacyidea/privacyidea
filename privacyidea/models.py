@@ -2408,7 +2408,8 @@ audit_column_length = {"signature": 620,
                        "privacyidea_server": 255,
                        "client": 50,
                        "loglevel": 12,
-                       "clearance_level": 12}
+                       "clearance_level": 12,
+                       "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 
@@ -2439,6 +2440,7 @@ class Audit(MethodsMixin, db.Model):
     loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.String(audit_column_length.get(
         "clearance_level")))
+    policies = db.Column(db.String(audit_column_length.get("policies")))
 
     def __init__(self,
                  action="",
@@ -2454,7 +2456,8 @@ class Audit(MethodsMixin, db.Model):
                  privacyidea_server="",
                  client="",
                  loglevel="default",
-                 clearance_level="default"
+                 clearance_level="default",
+                 policies=""
                  ):
         self.signature = ""
         self.date = datetime.now()
@@ -2472,6 +2475,7 @@ class Audit(MethodsMixin, db.Model):
         self.client = convert_column_to_unicode(client)
         self.loglevel = convert_column_to_unicode(loglevel)
         self.clearance_level = convert_column_to_unicode(clearance_level)
+        self.policies = convert_column_to_unicode(policies)
 
 
 ### User Cache

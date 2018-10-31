@@ -44,6 +44,7 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.utils import truncate_comma_list
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -133,7 +134,11 @@ class Audit(AuditBase):
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, basestring):
-                    data = data[:l]
+                    if column == "policies":
+                        # The policies column is shortend per comma entry
+                        data = truncate_comma_list(data, l)
+                    else:
+                        data = data[:l]
                 self.audit_data[column] = data
 
     @staticmethod

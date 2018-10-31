@@ -207,6 +207,23 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(self.Audit.audit_data.get("token_type"), None)
         self.assertEqual(self.Audit.audit_data.get("info"), True)
 
+        # check treatment of policy entries:
+        self.Audit.log({"serial": long_serial,
+                        "token_type": token_type,
+                        "policies": u"Berlin,Hamburg,München,Köln,Frankfurt am Main,"
+                                    u"Stuttgart,Düsseldorf,Dortmund,Essen,Leipzig,"
+                                    u"Bremen,Dresden,Hannover,Nürnberg,Duisburg,Bochum,"
+                                    u"Wuppertal,Bielefeld,Bonn,Münster,Karlsruhe,"
+                                    u"Mannheim,Augsburg,Wiesbaden,Gelsenkirchen,Mönchengladbach,"
+                                    u"Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
+        self.Audit._truncate_data()
+        self.assertTrue(len(self.Audit.audit_data.get("policies")) <= 255)
+        # Some cities like Stuttart and Düsseldorf already get truncated :-)
+        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfur,Stuttgar,Düsseldo,Dortmund,Essen,Leipzig,Bremen,"
+                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wupperta,Bielefel,Bonn,Münster,Karlsruh,"
+                         u"Mannheim,Augsburg,Wiesbaden,Gelsenkir,Mönchengl,Braunschw,Kiel,Chemnitz,Aachen,Magdeburg",
+                         self.Audit.audit_data.get("policies"))
+
     def test_07_sign_non_ascii_entry(self):
         # Log a username as unicode with a non-ascii character
         self.Audit.log({"serial": "1234",
