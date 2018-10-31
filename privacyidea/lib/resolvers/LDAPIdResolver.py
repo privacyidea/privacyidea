@@ -188,28 +188,48 @@ def cache(func):
     """
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
-        # If it does not exist, create the node for this instance
-        resolver_id = self.getResolverId()
-        if not resolver_id in CACHE:
-            CACHE[resolver_id] = {"getUserId": {},
-                                  "getUserInfo": {},
-                                  "_getDN": {}}
+        # Only run the code, in case we have a configured cache!
+        if self.cache_timeout > 0:
+            # If it does not exist, create the node for this instance
+            resolver_id = self.getResolverId()
+            now = datetime.datetime.now()
+            tdelta = datetime.timedelta(seconds=self.cache_timeout)
+            if not resolver_id in CACHE:
+                CACHE[resolver_id] = {"getUserId": {},
+                                      "getUserInfo": {},
+                                      "_getDN": {}}
+            else:
+                # Clean up the cache in the current resolver and the current function
+                _to_be_deleted = []
+                try:
+                    for user, cached_result in CACHE[resolver_id].get(func.func_name).iteritems():
+                        if now > cached_result.get("timestamp") + tdelta:
+                            _to_be_deleted.append(user)
+                except RuntimeError:
+                    # This might happen if thread A evicts an expired
+                    # cache entry while thread B looks for expired cache entries
+                    pass
+                for user in _to_be_deleted:
+                    try:
+                        del CACHE[resolver_id][func.func_name][user]
+                    except KeyError:
+                        pass
+                del _to_be_deleted
 
-        # get the portion of the cache for this very LDAP resolver
-        r_cache = CACHE.get(resolver_id).get(func.func_name)
-        if args[0] in r_cache and \
-                        datetime.datetime.now() < r_cache[args[0]][
-                    "timestamp"] + \
-                        datetime.timedelta(seconds=self.cache_timeout):
-            log.debug("Reading {0!r} from cache for {1!r}".format(args[0],
-                                                              func.func_name))
-            return r_cache[args[0]]["value"]
+            # get the portion of the cache for this very LDAP resolver
+            r_cache = CACHE.get(resolver_id).get(func.func_name)
+            entry = r_cache.get(args[0])
+            if entry and now < entry.get("timestamp") + tdelta:
+                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.func_name))
+                return entry.get("value")
 
         f_result = func(self, *args, **kwds)
-        # now we cache the result
-        CACHE[resolver_id][func.func_name][args[0]] = {
-            "value": f_result,
-            "timestamp": datetime.datetime.now()}
+
+        if self.cache_timeout > 0:
+            # now we cache the result
+            CACHE[resolver_id][func.func_name][args[0]] = {
+                "value": f_result,
+                "timestamp": now}
 
         return f_result
 

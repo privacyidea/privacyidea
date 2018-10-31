@@ -444,11 +444,11 @@ msgstr "URI des Authentisierungsservers"
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
-#: privacyidea/static/components/config/views/config.system.html:135
+#: privacyidea/static/components/config/views/config.system.html:143
 msgid "Auto resync timeout"
 msgstr "Zeitüberschreitung der automatischen Resynchronisation"
 
-#: privacyidea/static/components/config/views/config.system.html:131
+#: privacyidea/static/components/config/views/config.system.html:139
 msgid "Automatic resync during authentication"
 msgstr "Automatische Resynchronisation während der Authentifizierung"
 
@@ -717,7 +717,7 @@ msgstr "Zähler"
 msgid "Count Window"
 msgstr "Zählerfenster"
 
-#: privacyidea/static/components/config/views/config.system.html:210
+#: privacyidea/static/components/config/views/config.system.html:218
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
@@ -948,6 +948,10 @@ msgstr "Token deaktivieren"
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:166
 msgid "Dive In!"
 msgstr "Los geht's!"
+
+#: privacyidea/static/components/config/views/config.system.html:98
+msgid "Do not use an authentication counter per token."
+msgstr "Den Authentifizierungszähler pro Token nicht verwenden."
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
@@ -1517,13 +1521,13 @@ msgstr ""
 "Im Fall eines Richtlinienkonflikts wird die Richtlinie mit dem niedrigsten "
 "\"Priorität\"-Wert berücksichtigt."
 
-#: privacyidea/static/components/config/views/config.system.html:121
+#: privacyidea/static/components/config/views/config.system.html:129
 msgid "Include SAML attributes even if the user failed to authenticate."
 msgstr ""
 "SAML Attribute einbinden, auch wenn die Authentisierungsanfrage "
 "fehlgeschlagen ist."
 
-#: privacyidea/static/components/config/views/config.system.html:108
+#: privacyidea/static/components/config/views/config.system.html:116
 msgid ""
 "Include SAML attributes in the\n"
 "                authentication response."
@@ -1704,7 +1708,7 @@ msgstr "Zuordnung"
 msgid "Mark the token to be lost"
 msgstr "Den Token als verloren markieren"
 
-#: privacyidea/static/components/config/views/config.system.html:223
+#: privacyidea/static/components/config/views/config.system.html:231
 msgid ""
 "Max Failcount of\n"
 "                    newly enrolled tokens"
@@ -1874,7 +1878,7 @@ msgstr "OTP-Wert"
 msgid "OTP length"
 msgstr "OTP-Länge "
 
-#: privacyidea/static/components/config/views/config.system.html:196
+#: privacyidea/static/components/config/views/config.system.html:204
 msgid ""
 "OTP length of\n"
 "                    newly enrolled tokens"
@@ -1950,7 +1954,7 @@ msgstr "Allgemeine Tokennutzung"
 msgid "Overlap Period"
 msgstr "Überlappungsdauer"
 
-#: privacyidea/static/components/config/views/config.system.html:161
+#: privacyidea/static/components/config/views/config.system.html:169
 msgid "Override Authorization Clients"
 msgstr "Überschreibe den authorisierenden Client"
 
@@ -2087,9 +2091,8 @@ msgid "Policy Templates"
 msgstr "Vorlagen für Richtlinien"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:226
-#, fuzzy
 msgid "Pool recycle timeout"
-msgstr "Pool-Timeout"
+msgstr "Pool-Recycle Timeout"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:204
 msgid "Pool size"
@@ -2114,7 +2117,7 @@ msgstr "Position"
 msgid "Pre Shared Key"
 msgstr "Preshared Key"
 
-#: privacyidea/static/components/config/views/config.system.html:98
+#: privacyidea/static/components/config/views/config.system.html:106
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "                . Otherwise it will be post pended."
@@ -2452,7 +2455,7 @@ msgstr "SMTP-Konfiguration erfolgreich gespeichert."
 msgid "SMTP server configuration"
 msgstr "SMTP-Server Konfiguration"
 
-#: privacyidea/static/components/config/views/config.system.html:179
+#: privacyidea/static/components/config/views/config.system.html:187
 msgid "SMTP server for password recovery"
 msgstr "SMTP-Server für die Passwort-Wiederherstellung"
 
@@ -2507,7 +2510,7 @@ msgstr "SMS-Gateway speichern"
 msgid "Save SMTP server"
 msgstr "SMTP-Server speichern"
 
-#: privacyidea/static/components/config/views/config.system.html:289
+#: privacyidea/static/components/config/views/config.system.html:297
 msgid "Save System Config"
 msgstr "Systemkonfiguration speichern"
 
@@ -2559,7 +2562,7 @@ msgstr "Secret"
 msgid "Select Realm"
 msgstr "Realm auswählen"
 
-#: privacyidea/static/components/config/views/config.system.html:188
+#: privacyidea/static/components/config/views/config.system.html:196
 msgid ""
 "Select a predefined\n"
 "                    <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -2764,7 +2767,7 @@ msgstr "Nachname"
 msgid "Sync Window"
 msgstr "Sync-Fenster"
 
-#: privacyidea/static/components/config/views/config.system.html:235
+#: privacyidea/static/components/config/views/config.system.html:243
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
@@ -3280,7 +3283,7 @@ msgstr ""
 "Das Zertifikat wird auf einen gültigen Hostname und auf eine gültige "
 "Signatur einer vertrauten Zertifizierungsstelle hin überprüft."
 
-#: privacyidea/static/components/config/views/config.system.html:248
+#: privacyidea/static/components/config/views/config.system.html:256
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
@@ -3608,7 +3611,7 @@ msgstr ""
 "nach erfolgreichen und fehlgeschlagenen Authentisierungsanfragen "
 "unterschieden."
 
-#: privacyidea/static/components/config/views/config.system.html:171
+#: privacyidea/static/components/config/views/config.system.html:179
 msgid ""
 "These client IP addresses or subnets are\n"
 "                    allowed to masquerade as another client."
@@ -3995,7 +3998,7 @@ msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 msgid "User"
 msgstr "Benutzer "
 
-#: privacyidea/static/components/config/views/config.system.html:148
+#: privacyidea/static/components/config/views/config.system.html:156
 msgid ""
 "User Cache\n"
 "                expiration in seconds"

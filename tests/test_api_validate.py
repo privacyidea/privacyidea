@@ -2227,6 +2227,38 @@ class ValidateAPITestCase(MyTestCase):
             error_msg = result.get("error").get("message")
             self.assertEqual("ERR905: Invalid serial number.", error_msg)
 
+    def test_31_count_auth(self):
+
+        serial = "authcount001"
+        tok = init_token({"serial": serial,
+                          "type": "spass",
+                          "pin": "spass"})
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        self.assertEqual(int(tok.get_tokeninfo("count_auth")), 1)
+
+        set_privacyidea_config("no_auth_counter", "True")
+        # Now an authentication does not increase the counter!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data).get("result")
+            self.assertTrue(result.get("value"))
+
+        self.assertEqual(int(tok.get_tokeninfo("count_auth")), 1)
+        remove_token(serial)
+        delete_privacyidea_config("no_auth_counter")
+
 
 class AChallengeResponse(MyTestCase):
 
