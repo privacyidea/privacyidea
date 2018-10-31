@@ -17,6 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.queue import fire_and_forget, task
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
@@ -127,6 +128,8 @@ class SMTPServer(object):
         return success
 
 
+@task()
+@fire_and_forget(True)
 @log_with(log)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):

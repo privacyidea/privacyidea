@@ -60,6 +60,7 @@ from privacyidea.config import config
 from privacyidea.models import db
 from flask_migrate import Migrate
 from flask_babel import Babel
+from privacyidea.lib.queue import huey
 
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
