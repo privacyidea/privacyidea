@@ -59,6 +59,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
         $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
         $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
+        $scope.params.policies = "*" + ($scope.policiesFilter || "") + "*";
         $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";

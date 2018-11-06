@@ -375,6 +375,7 @@ class Audit(AuditBase):
                     'privacyidea_server': LogEntry.privacyidea_server,
                     'client': LogEntry.client,
                     'loglevel': LogEntry.loglevel,
+                    'policies': LogEntry.policies,
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
 
@@ -548,6 +549,7 @@ class Audit(AuditBase):
                       'action_detail': audit_entry.action_detail,
                       'info': audit_entry.info,
                       'privacyidea_server': audit_entry.privacyidea_server,
+                      'policies': audit_entry.policies,
                       'client': audit_entry.client,
                       'log_level': audit_entry.loglevel,
                       'clearance_level': audit_entry.clearance_level
