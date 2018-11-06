@@ -7,7 +7,7 @@ PWFILE2 = "tests/testdata/passwords"
 DICT_FILE = "tests/testdata/dictionary"
 
 
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
@@ -64,6 +64,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # NONE with empty PIN -> success
@@ -89,6 +90,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         r = auth_otppin(self.fake_check_otp, None,
@@ -119,6 +121,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Wrong password
@@ -142,6 +145,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g,
                    "serial": "T001"}
 
@@ -230,6 +234,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSNOTOKEN)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_has_no_token(check_user_pass, user, passw,
                                       options=options)
@@ -258,6 +263,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSTHRU)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -493,6 +499,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # user in reso001 fails with empty PIN, since the policy does not
@@ -541,6 +548,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # This successfully authenticates against the authcache
@@ -587,6 +595,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         delete_from_cache(username, realm, resolver, pw_hash)
@@ -625,6 +634,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=userstore".format(ACTION.PASSTHRU))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -642,6 +652,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertTrue(r > 0)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # They will conflict, because they use the same priority
@@ -714,6 +725,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # error because of conflicting policies

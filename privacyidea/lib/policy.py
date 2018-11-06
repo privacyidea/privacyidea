@@ -681,8 +681,8 @@ class PolicyClass(object):
             would allow entering text with whitespaces. These whitespaces
             must not be used to separate action values!
         :type allow_white_space_in_action: bool
-        :return: A list of action values, sorted by policy priorities.
-        :rtype: list of tuples of (policyname, value)
+        :return: A dictionary of policy-values and policy-names. The policy-value being the key.
+        :rtype: dict
         """
         policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,

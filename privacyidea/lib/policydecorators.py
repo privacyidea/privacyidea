@@ -162,7 +162,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
-        auth_cache = policy_object.get_action_values(
+        auth_cache_dict = policy_object.get_action_values_with_name(
             action=ACTION.AUTH_CACHE,
             scope=SCOPE.AUTH,
             realm=user_object.realm,
@@ -170,9 +170,9 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             user=user_object.login,
             client=clientip,
             unique=True)
-        if auth_cache:
+        if auth_cache_dict.keys():
             # verify in cache and return an early success
-            auth_times = auth_cache[0].split("/")
+            auth_times = auth_cache_dict.keys()[0].split("/")
             # determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
 
@@ -190,6 +190,8 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      first_auth=first_auth,
                                      last_auth=last_auth)
             if result:
+                g.audit_object.add_to_log({"policies":auth_cache_dict.values()[0]},
+                                          add_with_comma=True)
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, we return the wrapped function
@@ -568,23 +570,25 @@ def auth_otppin(wrapped_function, *args, **kwds):
             user_object=User("", realm="")
         # get the policy
         policy_object = g.policy_object
-        otppin_list = policy_object.get_action_values(ACTION.OTPPIN,
-                                                      scope=SCOPE.AUTH,
-                                                      realm=user_object.realm,
-                                                      resolver=user_object.resolver,
-                                                      user=user_object.login,
-                                                      client=clientip,
-                                                      unique=True)
-        if otppin_list:
+        otppin_dict = policy_object.get_action_values_with_name(ACTION.OTPPIN,
+                                                                scope=SCOPE.AUTH,
+                                                                realm=user_object.realm,
+                                                                resolver=user_object.resolver,
+                                                                user=user_object.login,
+                                                                client=clientip,
+                                                                unique=True)
+        if otppin_dict.keys():
             # There is an otppin policy
-            if otppin_list[0] == ACTIONVALUE.NONE:
+            g.audit_object.add_to_log({"policies": otppin_dict.values()[0]},
+                                      add_with_comma=True)
+            if otppin_dict.keys()[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
                     return True
                 else:
                     return False
 
-            if otppin_list[0] == ACTIONVALUE.USERSTORE:
+            if otppin_dict.keys()[0] == ACTIONVALUE.USERSTORE:
                 rv = user_object.check_password(pin)
                 return rv is not None
 

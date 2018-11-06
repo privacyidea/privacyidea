@@ -21,6 +21,9 @@ class FakeFlaskG(object):
 class FakeAudit(object):
     audit_data = {}
 
+    def add_to_log(self, param, add_with_comma=True):
+        pass
+
 
 class MyTestCase(unittest.TestCase):
     resolvername1 = "resolver1"

@@ -172,10 +172,11 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def add_to_log(self, param):
+    def add_to_log(self, param, add_with_comma=False):
         """
         Add to existing log entry
         :param param:
+        :param add_with_comma: If set to true, new values will be appended comma separated
         :return:
         """
         pass

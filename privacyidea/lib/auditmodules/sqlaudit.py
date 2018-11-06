@@ -218,14 +218,21 @@ class Audit(AuditBase):
         for k, v in param.items():
             self.audit_data[k] = v
 
-    def add_to_log(self, param):
+    def add_to_log(self, param, add_with_comma=False):
         """
         Add new text to an existing log entry
         :param param:
+        :param add_with_comma: If this value is set, then the data will be appended with a comma.
         :return:
         """
         for k, v in param.items():
-            self.audit_data[k] += v
+            if not k in self.audit_data:
+                # We need to create the entry
+                self.audit_data[k] = v
+            else:
+                if add_with_comma:
+                    self.audit_data[k] += ","
+                self.audit_data[k] += v
 
     def finalize_log(self):
         """
@@ -248,7 +255,8 @@ class Audit(AuditBase):
                           privacyidea_server=self.audit_data.get("privacyidea_server"),
                           client=self.audit_data.get("client", ""),
                           loglevel=self.audit_data.get("log_level"),
-                          clearance_level=self.audit_data.get("clearance_level")
+                          clearance_level=self.audit_data.get("clearance_level"),
+                          policies=self.audit_data.get("policies")
                           )
             self.session.add(le)
             self.session.commit()
