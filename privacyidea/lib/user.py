@@ -278,20 +278,29 @@ class User(object):
         return userInfo
     
     @log_with(log)
-    def get_user_phone(self, phone_type='phone'):
+    def get_user_phone(self, phone_type='phone', index=None):
         """
-        Returns the phone number of a user
+        Returns the phone number or a list of phone numbers of a user.
     
         :param phone_type: The type of the phone, i.e. either mobile or
                            phone (land line)
         :type phone_type: string
+        :param index: The index of the list of the phones of the user. If the
     
         :returns: list with phone numbers of this user object
         """
         userinfo = self.info
         if phone_type in userinfo:
-            log.debug("got user phone {0!r} of type {1!r}".format(userinfo[phone_type], phone_type))
-            return userinfo[phone_type]
+            phone = userinfo[phone_type]
+            log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
+            if type(phone) == list and index is not None:
+                if len(phone) > index:
+                    return phone[index]
+                else:
+                    log.warning("userobject ({0!r}) has not that much phone numbers (1!r).".format(self, index))
+                    return ""
+            else:
+                return phone
         else:
             log.warning("userobject ({0!r}) has no phone of type {1!r}.".format(self, phone_type))
             return ""
