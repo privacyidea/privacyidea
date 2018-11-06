@@ -285,7 +285,9 @@ class User(object):
         :param phone_type: The type of the phone, i.e. either mobile or
                            phone (land line)
         :type phone_type: string
-        :param index: The index of the list of the phones of the user. If the
+        :param index: The index of the selected phone number of list of the phones of the user.
+            If the index is given, this phone number as string is returned.
+            If the index is omitted, all phone numbers are returned.
     
         :returns: list with phone numbers of this user object
         """
@@ -297,7 +299,8 @@ class User(object):
                 if len(phone) > index:
                     return phone[index]
                 else:
-                    log.warning("userobject ({0!r}) has not that much phone numbers (1!r).".format(self, index))
+                    log.warning("userobject ({0!r}) has not that much "
+                                "phone numbers ({1!r} of {2!r}).".format(self, index, phone))
                     return ""
             else:
                 return phone
