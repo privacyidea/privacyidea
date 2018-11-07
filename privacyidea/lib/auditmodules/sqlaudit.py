@@ -239,7 +239,11 @@ class Audit(AuditBase):
         This method adds a triggered policyname to the list of triggered policies.
         :return:
         """
-        self.add_to_log({"policies": policyname}, add_with_comma=True)
+        if type(policyname) == list:
+            for p in policyname:
+                self.add_to_log({"policies": p}, add_with_comma=True)
+        else:
+            self.add_to_log({"policies": policyname}, add_with_comma=True)
 
     def finalize_log(self):
         """

@@ -246,3 +246,9 @@ class AuditTestCase(MyTestCase):
         audit_log = self.Audit.search({"policies": "*rule1*"})
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")
+
+        self.Audit.add_policy(["rule4", "rule5"])
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule4*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule4,rule5")
