@@ -72,7 +72,12 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.getParams();
         AuditFactory.get($scope.params, function(data) {
             $scope.auditdata = data.result.value;
-            //debug: console.log($scope.auditdata);
+            // We split the policies, which come as comma separated string to an array.
+            angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
+                if ($scope.auditdata.auditdata[key].policies != null) {
+                    $scope.auditdata.auditdata[key].policies = $scope.auditdata.auditdata[key].policies.split(",");
+                }
+            });
         });
     };
 

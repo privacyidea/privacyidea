@@ -104,8 +104,11 @@
                 <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
                 <td><a ui-sref="config.resolvers.list">
                     {{ audit.resolver }}</a></td>
-                <td><a ui-sref="config.policies.details({policyname:audit.policies})"
-                       ng-click="$rootScope.returnTo=audit;">{{ audit.policies }}</a></td>
+                <td><span ng-repeat="policy in audit.policies">
+                        <a ui-sref="config.policies.details({policyname:policy})"
+                            ng-click="$rootScope.returnTo=audit;">{{ policy }}</a> 
+                    </span>
+                </td>
                 <td>{{ audit.client }}</td>
                 <td>{{ audit.info }}</td>
                 <td><span status-class="{{ audit.sig_check }}">
