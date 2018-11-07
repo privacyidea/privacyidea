@@ -41,7 +41,7 @@ import logging
 import traceback
 log = logging.getLogger(__name__)
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 import yaml
 import requests
 import base64
