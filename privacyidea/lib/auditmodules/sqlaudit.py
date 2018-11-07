@@ -237,6 +237,7 @@ class Audit(AuditBase):
     def add_policy(self, policyname):
         """
         This method adds a triggered policyname to the list of triggered policies.
+        :param policyname: A string or a list of strings as policynames
         :return:
         """
         if type(policyname) == list:
