@@ -190,8 +190,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      first_auth=first_auth,
                                      last_auth=last_auth)
             if result:
-                g.audit_object.add_to_log({"policies":auth_cache_dict.values()[0]},
-                                          add_with_comma=True)
+                g.audit_object.add_policy(auth_cache_dict.values()[0])
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, we return the wrapped function
@@ -466,7 +465,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth = policy_object.get_action_values(
+            last_auth_dict = policy_object.get_action_values_with_name(
                 action=ACTION.LASTAUTH,
                 scope=SCOPE.AUTHZ,
                 realm=realm,
@@ -474,13 +473,14 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 user=login,
                 client=clientip, unique=True)
 
-            if len(last_auth) == 1:
-                res = token.check_last_auth_newer(last_auth[0])
+            if len(last_auth_dict.keys()) == 1:
+                res = token.check_last_auth_newer(last_auth_dict.keys()[0])
                 if not res:
                     reply_dict["message"] = "The last successful " \
                                             "authentication was %s. " \
                                             "It is to long ago." % \
                                             token.get_tokeninfo(ACTION.LASTAUTH)
+                    g.audit_object.add_policy(last_auth_dict.values()[0])
 
             # set the last successful authentication, if res still true
             if res:
@@ -579,8 +579,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                                                 unique=True)
         if otppin_dict.keys():
             # There is an otppin policy
-            g.audit_object.add_to_log({"policies": otppin_dict.values()[0]},
-                                      add_with_comma=True)
+            g.audit_object.add_policy(otppin_dict.values()[0])
             if otppin_dict.keys()[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!

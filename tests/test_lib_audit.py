@@ -17,6 +17,7 @@ from privacyidea.app import create_app
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
 
+
 class AuditTestCase(MyTestCase):
     """
     Test the Audit module
@@ -235,3 +236,13 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
+
+    def test_08_policies(self):
+        self.Audit.log({"action": "validate/check"})
+        self.Audit.add_to_log({"policies": "rule1"}, add_with_comma=True)
+        self.Audit.add_to_log({"policies": "rule2"}, add_with_comma=True)
+        self.Audit.add_policy("rule3")
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule1*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")

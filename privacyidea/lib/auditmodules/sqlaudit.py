@@ -226,13 +226,20 @@ class Audit(AuditBase):
         :return:
         """
         for k, v in param.items():
-            if not k in self.audit_data:
+            if k not in self.audit_data:
                 # We need to create the entry
                 self.audit_data[k] = v
             else:
                 if add_with_comma:
                     self.audit_data[k] += ","
                 self.audit_data[k] += v
+
+    def add_policy(self, policyname):
+        """
+        This method adds a triggered policyname to the list of triggered policies.
+        :return:
+        """
+        self.add_to_log({"policies": policyname}, add_with_comma=True)
 
     def finalize_log(self):
         """
