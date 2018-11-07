@@ -178,7 +178,7 @@ class ConfigTestCase(MyTestCase):
         (classes, types) = get_machine_resolver_class_dict()
         self.assertTrue("hosts" in types.values(), types.values())
         self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
-                        in classes.keys(), classes)
+                        in classes, classes)
 
     def test_06_public_and_admin(self):
         # This tests the new public available config

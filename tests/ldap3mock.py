@@ -263,7 +263,7 @@ class Connection(object):
         entry = self.directory[index].get("attributes")
 
         # Loop over the changes hash and apply them
-        for k, v in six.iteritems(changes):
+        for k, v in changes.items():
             if v[0] == "MODIFY_DELETE":
                 entry.pop(k)
             elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":

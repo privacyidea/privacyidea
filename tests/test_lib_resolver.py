@@ -8,6 +8,7 @@ lib.resolvers.ldapresolver
 
 The lib.resolver.py only depends on the database model.
 """
+PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
@@ -30,7 +31,6 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver)
 from privacyidea.models import ResolverConfig
 
-PWFILE = "tests/testdata/passwords"
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
