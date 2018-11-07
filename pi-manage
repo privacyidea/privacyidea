@@ -125,7 +125,8 @@ def create_keys():
     """
     Create new encryption keys on the HSM. Be sure to first setup the HSM module, the PKCS11
     module and the slot/password for the given HSM in your pi.cfg.
-    Set the variables PI_HSM_MODULE, PI_HSM_MODULE_MODULE, PI_HSM_MODULE_SLOT, PI_HSM_MODULE_PASSWORD.
+    Set the variables PI_HSM_MODULE, PI_HSM_MODULE_MODULE, PI_HSM_MODULE_SLOT,
+                      PI_HSM_MODULE_PASSWORD.
     """
     hsm_object = create_hsm_object(app.config)
     r = hsm_object.create_keys()
@@ -135,15 +136,20 @@ def create_keys():
     print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("value")))
 
 
-@ca_manager.command
-def list(verbose=False):
-    l = get_caconnector_list()
-    for ca in l:
+def list_ca(verbose=False):
+    """
+    List the Certificate Authorities.
+    """
+    lst = get_caconnector_list()
+    for ca in lst:
         print("{ca!s} (type {typ!s})".format(ca=ca.get("connectorname"),
                                              typ=ca.get("type")))
         if verbose:
-            for k, v in ca.get("data").iteritems():
+            for (k, v) in ca.get("data").items():
                 print("\t{key!s:20}: {value!s}".format(key=k, value=v))
+
+
+ca_manager.add_command('list', Command(list_ca))
 
 
 @ca_manager.command
@@ -159,7 +165,7 @@ def create_crl(ca, force=False):
 @ca_manager.option('name', help='The name of the new CA')
 @ca_manager.option('-t', '--type', help='The type of the new CA. The default '
                                         'is "local"')
-def create(name, type):
+def create(name, catype='local'):
     """
     Create a new CA connector. In case of the "localca" also the directory
     structure, the openssl.cnf and the key pair is created.
@@ -169,10 +175,10 @@ def create(name, type):
         print("A CA connector with the name '{0!s}' already exists.".format(
             name))
         sys.exit(1)
-    if not type:
-        type = "local"
-    print("Creating CA connector of type {0!s}.".format(type))
-    ca_class = get_caconnector_class(type)
+    if not catype:
+        catype = "local"
+    print("Creating CA connector of type {0!s}.".format(catype))
+    ca_class = get_caconnector_class(catype)
     ca_params = ca_class.create_ca(name)
     r = save_caconnector(ca_params)
     if r:
@@ -198,12 +204,14 @@ def add(username, email=None, password=None):
     print('Admin {0} was registered successfully.'.format(username))
 
 
-@admin_manager.command
-def list():
+def list_admins():
     """
     List all administrators.
     """
     list_db_admin()
+
+
+admin_manager.add_command('list', Command(list_admins))
 
 
 @admin_manager.command
@@ -279,14 +287,14 @@ def create(directory="/var/lib/privacyidea/backup/",
     enc_file = app.config.get("PI_ENCFILE")
 
     backup_call = ["tar", "-zcf",
-          backup_file, CONF_DIR, sqlfile]
+                   backup_file, CONF_DIR, sqlfile]
     if not enckey:
         # Exclude enckey from backup
         backup_call.append("--exclude={0!s}".format(enc_file))
 
     call(backup_call)
     os.unlink(sqlfile)
-    os.chmod(backup_file, 0600)
+    os.chmod(backup_file, 0o600)
 
 
 def _write_mysql_defaults(filename, username, password):
@@ -303,7 +311,7 @@ def _write_mysql_defaults(filename, username, password):
 user={0!s}
 password={1!s}""".format(username, password))
 
-    os.chmod(filename, 0600)
+    os.chmod(filename, 0o600)
     # set correct owner, if possible
     if os.geteuid() == 0:
         directory_stat = os.stat(os.path.dirname(filename))
@@ -373,9 +381,9 @@ def restore(backup_file):
         # Rewriting database
         print("Restoring database.")
         call("mysql --defaults-file=%s -h %s %s < %s" % (defaults_file,
-                                                          datahost,
-                                                          database,
-                                                          sqlfile), shell=True)
+                                                         datahost,
+                                                         database,
+                                                         sqlfile), shell=True)
         os.unlink(sqlfile)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
@@ -423,7 +431,7 @@ def create_enckey():
     """
     If the key of the given configuration does not exist, it will be created
     """
-    print
+    print()
     filename = app.config.get("PI_ENCFILE")
     if os.path.isfile(filename):
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
@@ -433,7 +441,7 @@ def create_enckey():
         f.write(DefaultSecurityModule.random(96))
 
     print("Encryption key written to %s" % filename)
-    os.chmod(filename, 0400)
+    os.chmod(filename, 0o400)
     print("The file permission of %s was set to 400!" % filename)
     print("Please ensure, that it is owned by the right user.   ")
 
@@ -480,7 +488,7 @@ def create_audit_keys(keysize=2048):
 
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
-    os.chmod(filename, 0400)
+    os.chmod(filename, 0o400)
     print("The file permission of %s was set to 400!" % filename)
     print("Please ensure, that it is owned by the right user.")
 
@@ -538,6 +546,9 @@ class CommandOutsideRequestContext(Command):
     def __call__(self, app=None, *args, **kwargs):
         return self.run(*args, **kwargs)
 
+    def run(self, *arg, **kwargs):
+        pass
+
 
 def profile(length=30, profile_dir=None):
     """
@@ -549,6 +560,7 @@ def profile(length=30, profile_dir=None):
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
                                       profile_dir=profile_dir)
     app.run()
+
 
 # If flask_script's `Command` is used here instead of `CommandOutsideRequestContext`,
 # the request context will persist over requests. Thus, `g` is not
@@ -572,13 +584,13 @@ except TypeError:
 @manager.option('--chunksize', help="Delete entries in chunks of the given size "
                                     "to avoid deadlocks")
 @audit_manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
-                                                "old entries are deleted.")
+                                                      "old entries are deleted.")
 @audit_manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
 @audit_manager.option('--age', help="Delete audit entries older than these number "
-                              "of days.")
+                                    "of days.")
 @audit_manager.option('--config', help="Read config from the specified yaml file.")
 @audit_manager.option('--dryrun', help="Do not actually delete, only show "
-                                 "what would be done.", action="store_true")
+                                       "what would be done.", action="store_true")
 @audit_manager.option('--chunksize', help="Delete entries in chunks of the given size "
                                           "to avoid deadlocks")
 def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
@@ -623,8 +635,8 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
         print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
     else:
         print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
-                                                      lowwatermark,
-                                                      audit_db_uri))
+                                                          lowwatermark,
+                                                          audit_db_uri))
 
     engine = create_engine(audit_db_uri)
     # create a configured "Session" class
@@ -633,12 +645,12 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     metadata.create_all(engine)
     if config:
         with open(config, 'r') as f:
-            Config = yaml.load(f)
+            yml_config = yaml.load(f)
         auditlogs = session.query(LogEntry).all()
         delete_list = []
         for log in auditlogs:
             print("investigating log entry {0!s}".format(log.id))
-            for rule in Config:
+            for rule in yml_config:
                 age = int(rule.get("rotate"))
                 rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
 
@@ -646,7 +658,8 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
                 for key in rule.keys():
                     if key not in ["rotate"]:
                         search_value = rule.get(key)
-                        print(" + searching for {0!r} in {1!s}".format(search_value, getattr(LogEntry, key)))
+                        print(" + searching for {0!r} in {1!s}".format(search_value,
+                                                                       getattr(LogEntry, key)))
                         audit_value = getattr(log, key) or ""
                         m = re.search(search_value, audit_value)
                         if m:
@@ -668,10 +681,12 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
                     # skip all other rules and go to the next log entry
                     break
         if dryrun:
-            print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
+            print("If you only would let me I would clean up "
+                  "{0!s} entries!".format(len(delete_list)))
         else:
             print("Cleaning up {0!s} entries.".format(len(delete_list)))
-            delete_matching_rows(session, LogEntry.__table__, LogEntry.id.in_(delete_list), chunksize)
+            delete_matching_rows(session, LogEntry.__table__,
+                                 LogEntry.id.in_(delete_list), chunksize)
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
@@ -684,6 +699,7 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
             print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
+        last_id = 0
         for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
             last_id = l[0]
         print("The log audit log has %i entries, the last one is %i" % (count,
@@ -771,6 +787,7 @@ def create_internal(name):
     database = "/".join(sqlelements[3:])
     username = ""
     password = ""
+    host = ""
     # determine host and user
     hostparts = user_pw_host.split("@")
     if len(hostparts) > 2:
@@ -827,7 +844,8 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-@resolver_manager.option('-v', help="Verbose output - also print the configuration of the resolvers.",
+@resolver_manager.option('-v',
+                         help="Verbose output - also print the configuration of the resolvers.",
                          dest="verbose", action="store_true")
 def list(verbose):
     """
@@ -837,14 +855,14 @@ def list(verbose):
     resolver_list = get_resolver_list()
 
     if not verbose:
-        for name, resolver in resolver_list.iteritems():
+        for (name, resolver) in resolver_list.items():
             print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
     else:
-        for name, resolver in resolver_list.iteritems():
+        for (name, resolver) in resolver_list.items():
             print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
             print("."*32)
             data = resolver.get("data", {})
-            for k, v in data.iteritems():
+            for (k, v) in data.items():
                 if k.lower() in ["bindpw", "password"]:
                     v = "xxxxx"
                 print("{0!s:>24}: {1!r}".format(k, v))
@@ -852,15 +870,18 @@ def list(verbose):
 
 
 @realm_manager.command
-def list():
+def list_realms():
     """
     list the available realms
     """
     from privacyidea.lib.realm import get_realms
     realm_list = get_realms()
-    for name, realm_data in realm_list.iteritems():
+    for (name, realm_data) in realm_list.items():
         resolvernames = [x.get("name") for x in realm_data.get("resolver")]
         print("%16s: %s" % (name, resolvernames))
+
+
+realm_manager.add_command('list', Command(list_realms))
 
 
 @realm_manager.command
@@ -877,20 +898,24 @@ def create(name, resolver):
 
 # Event interface
 
-@event_manager.command
-def list():
+
+def list_events():
     """
     List events
     """
-    E = EventConfiguration()
-    events = E.events
+    conf = EventConfiguration()
+    events = conf.events
     print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
     print(90*"=")
     for event in events:
         print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
-                                                 event.get("name")[0:30],
-                                         event.get("handlermodule"),
-                                         event.get("action"),event.get("id"),))
+                                                            event.get("name")[0:30],
+                                                            event.get("handlermodule"),
+                                                            event.get("action"), event.get("id"),))
+
+
+event_manager.add_command('list', Command(list_events))
+
 
 @event_manager.command
 def enable(eid):
@@ -899,6 +924,7 @@ def enable(eid):
     """
     r = enable_event(eid)
     print(r)
+
 
 @event_manager.command
 def disable(eid):
@@ -917,6 +943,7 @@ def delete(eid):
     r = delete_event(eid)
     print(r)
 
+
 @event_manager.command
 def e_export(filename=None):
     """
@@ -924,14 +951,15 @@ def e_export(filename=None):
     """
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
-    E = EventConfiguration()
-    events = E.events
+    conf = EventConfiguration()
+    events = conf.events
     event_str = pp.pformat(events)
     if filename:
         with open(filename, "w") as f:
             f.write(event_str)
     else:
         print(event_str)
+
 
 @event_manager.command
 def e_import(filename, cleanup=False):
@@ -942,8 +970,8 @@ def e_import(filename, cleanup=False):
     """
     if cleanup:
         print("Cleanup old events.")
-        E = EventConfiguration()
-        events = E.events
+        conf = EventConfiguration()
+        events = conf.events
         for event in events:
             name = event.get("name")
             r = delete_event(event.get("id"))
@@ -966,18 +994,20 @@ def e_import(filename, cleanup=False):
 
 # Policy interface
 
-@policy_manager.command
-def list():
+def list_policies():
     """
     list the policies
     """
-    P = PolicyClass()
-    policies = P.get_policies()
+    pol_cls = PolicyClass()
+    policies = pol_cls.get_policies()
     print("Active \t Name \t Scope")
     print(40*"=")
     for policy in policies:
         print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
                                   policy.get("scope")))
+
+
+policy_manager.add_command('list', Command(list_policies))
 
 
 @policy_manager.command
@@ -1015,8 +1045,8 @@ def p_export(filename=None):
     """
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
-    P = PolicyClass()
-    policies = P.get_policies()
+    pol_cls = PolicyClass()
+    policies = pol_cls.get_policies()
     pol_str = pp.pformat(policies)
     if filename:
         with open(filename, 'w') as f:
@@ -1034,8 +1064,8 @@ def p_import(filename, cleanup=False):
     """
     if cleanup:
         print("Cleanup old policies.")
-        P = PolicyClass()
-        policies = P.get_policies()
+        pol_cls = PolicyClass()
+        policies = pol_cls.get_policies()
         for policy in policies:
             name = policy.get("name")
             r = delete_policy(name)
@@ -1053,7 +1083,7 @@ def p_import(filename, cleanup=False):
                        check_all_resolvers=policy.get(
                            "check_all_resolvers", False),
                        client=policy.get("client"),
-                       #condition=policy.get("condition"),
+                       # condition=policy.get("condition"),
                        realm=policy.get("realm"),
                        resolver=policy.get("resolver"),
                        scope=policy.get("scope"),
@@ -1079,7 +1109,7 @@ def create(name, scope, action, filename=None):
 
             params = ast.literal_eval(contents)
 
-            if params.get("scope") and params.get("scope")!=scope:
+            if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
                       "'{1!s}'.".format(params.get("scope"), scope))
             else:
@@ -1087,13 +1117,13 @@ def create(name, scope, action, filename=None):
                       "{0!s}.".format(scope))
                 params["scope"] = scope
 
-            if params.get("action") and params.get("action")!=action:
+            if params.get("action") and params.get("action") != action:
                 print("Found action in file: '{0!s}', will use that instead "
                       "of: '{1!s}'.".format(params.get("action"), action))
             else:
                 print("action not defined in file, will use the cli value "
                       "{0!s}.".format(action))
-                params["action"]=action
+                params["action"] = action
 
             r = set_policy(name, scope=params.get("scope"),
                            action=params.get("action"),
@@ -1108,7 +1138,7 @@ def create(name, scope, action, filename=None):
                                "check_all_resolvers", False))
             return r
 
-        except Exception:
+        except Exception as _e:
             print("Unexpected error: {0!s}".format(sys.exc_info()[1]))
 
     else:
