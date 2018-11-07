@@ -29,7 +29,9 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver)
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
+
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -103,7 +105,13 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
                                 "objectGUID": objectGUIDs[1],
-                                'oid': "1"}}
+                                'oid': "1"}},
+                       {"dn": 'cn=salesman,ou=example,o=test',
+                        "attributes": {'cn': 'salesman',
+                                       'givenName': 'hans',
+                                       'sn': 'Meyer',
+                                       'mobile': ['1234', '3456'],
+                                       'objectGUID': objectGUIDs[2]}}
                        ]
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1

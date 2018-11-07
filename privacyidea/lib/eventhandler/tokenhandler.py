@@ -377,7 +377,7 @@ class TokenEventHandler(BaseEventHandler):
                         init_param["dynamic_phone"] = 1
                     else:
                         init_param['phone'] = user.get_user_phone(
-                            phone_type='mobile')
+                            phone_type='mobile', index=0)
                         if not init_param['phone']:
                             log.warning("Enrolling SMS token. But the user "
                                         "{0!r} has no mobile number!".format(user))
