@@ -455,6 +455,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=1d".format(ACTION.LASTAUTH))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         rv = auth_lastauth(fake_auth, user, pin, options)

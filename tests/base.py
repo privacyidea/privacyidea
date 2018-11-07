@@ -19,10 +19,19 @@ class FakeFlaskG(object):
 
 
 class FakeAudit(object):
-    audit_data = {}
 
-    def add_to_log(self, param, add_with_comma=True):
-        pass
+    def __init__(self):
+        self.audit_data = {}
+
+    def add_policy(self, policyname):
+        self.add_to_log({"policies": policyname}, add_with_comma=True)
+
+    def add_to_log(self, param, add_with_comma=False):
+        for k, v in param.iteritems():
+            if k in self.audit_data:
+                self.audit_data[k] += v
+            else:
+                self.audit_data[k] = v
 
 
 class MyTestCase(unittest.TestCase):
