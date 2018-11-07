@@ -2135,6 +2135,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 user=token_owner.realm if token_owner else None,
                 client=clientip, active=True)
             if reset_all:
+                g.audit_object.add_policy(reset_all[0].get("name"))
                 log.debug("Reset failcounter of all tokens of {0!s}".format(
                     token_owner))
                 for tok_obj_reset in tokenobject_list:
