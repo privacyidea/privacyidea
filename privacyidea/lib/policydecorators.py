@@ -116,28 +116,27 @@ def challenge_response_allowed(func):
         user_object = kwds.get("user") or User()
         if g:
             policy_object = g.policy_object
-            allowed_tokentypes = policy_object.get_action_values(
+            allowed_tokentypes_dict = policy_object.get_action_values_with_name(
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
                 realm=user_object.realm,
                 resolver=user_object.resolver,
                 user=user_object.login,
                 client=clientip)
-            log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes))
+            log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes_dict.keys()))
 
-            # allowed_tokentypes is a list of actions from several policies. I
+            # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
             # could look like this:
             # ["tiqr hotp totp", "tiqr motp"]
-            # We need to create a upper case list of pure tokentypes.
-            token_list = " ".join(allowed_tokentypes)
-            token_list = token_list.split(" ")
-            # uniquify
-            token_list = list(set(token_list))
-            # uppercase
-            token_list = [x.upper() for x in token_list]
-            if token.get_tokentype().upper() not in token_list:
-                # The chal resp is not defined for this tokentype
-                # This is no challenge response request!
+            chal_resp_found = False
+            for toks in allowed_tokentypes_dict.keys():
+                if token.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
+                    # This token is allowed to to chal resp
+                    chal_resp_found = True
+                    g.audit_object.add_policy(allowed_tokentypes_dict.get(toks))
+
+            if not chal_resp_found:
+                # No policy to allow this token to do challenge response
                 return False
 
         f_result = func(*args, **kwds)

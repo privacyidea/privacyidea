@@ -429,6 +429,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=hotp motp".format(ACTION.CHALLENGERESPONSE))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = token.is_challenge_request(pin, user=user, options=options)
         self.assertEqual(rv, True)
