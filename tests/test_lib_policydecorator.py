@@ -345,6 +345,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set, the function is called with check_otp=True
@@ -358,6 +359,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set. Trying to login raises a policy error
@@ -401,6 +403,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set, the function is called with check_otp=True
