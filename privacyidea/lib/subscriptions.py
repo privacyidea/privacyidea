@@ -235,11 +235,11 @@ def check_subscription(application, max_free_subscriptions=None):
     if application.lower() in APPLICATIONS.keys():
         subscriptions = get_subscription(application) or get_subscription(
             application.lower())
-        # get the number of active assigned tokens
-        active_tokens = get_tokens(assigned=True, active=True, count=True)
+        # get the number of users with active tokens
+        token_users = get_users_with_active_tokens()
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
         if len(subscriptions) == 0:
-            if active_tokens > free_subscriptions:
+            if token_users > free_subscriptions:
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
         else:
@@ -254,7 +254,7 @@ def check_subscription(application, max_free_subscriptions=None):
             else:
                 # subscription is still valid, so check the signature.
                 check_signature(subscription)
-                if active_tokens > subscription.get("num_tokens"):
+                if token_users > subscription.get("num_tokens"):
                     # subscription is exceeded
                     raise SubscriptionError(description="Too many tokens "
                                                         "enrolled. "
