@@ -256,8 +256,8 @@ def check_subscription(application, max_free_subscriptions=None):
                 check_signature(subscription)
                 if token_users > subscription.get("num_tokens"):
                     # subscription is exceeded
-                    raise SubscriptionError(description="Too many tokens "
-                                                        "enrolled. "
+                    raise SubscriptionError(description="Too many users "
+                                                        "with assigned tokens. "
                                                         "Subscription exceeded.",
                                             application="privacyIDEA")
 
