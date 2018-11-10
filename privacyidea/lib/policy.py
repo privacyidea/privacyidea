@@ -454,7 +454,7 @@ class PolicyClass(object):
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
                      adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True):
+                     sort_by_priority=True, audit_data=None):
         """
         Return the policies of the given filter values.
 
@@ -478,6 +478,8 @@ class PolicyClass(object):
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
+        :param audit_data: A dictionary with audit data collected during a request. This
+            method will add found policies to the dictionary.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -601,6 +603,13 @@ class PolicyClass(object):
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
+
+        if audit_data is not None:
+            for p in reduced_policies:
+                if "policies" not in audit_data:
+                    audit_data["policies"] = p.get("name")
+                else:
+                    audit_data["policies"] += u",{0!s}".format(p.get("name"))
 
         return reduced_policies
 

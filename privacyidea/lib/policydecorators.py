@@ -227,6 +227,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
+                g.audit_object.add_policy([p.get("name") for p in pass_no_token])
                 return True, {"message": u"user has no token, accepted due to '{!s}'".format(
                     pass_no_token[0].get("name"))}
 
@@ -264,6 +265,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
+                g.audit_object.add_policy([p.get("name") for p in pass_no_user])
                 return True, {"message": u"user does not exist, accepted due to '{!s}'".format(
                     pass_no_user[0].get("name"))}
 
@@ -309,6 +311,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
+                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     return True, {"message": u"against userstore due to '{!s}'".format(
                                       policy_name)}
             else:
@@ -318,6 +321,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 radius = get_radius(pass_thru_action)
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
+                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     return True, {'message': u"against RADIUS server {!s} due to '{!s}'".format(
                                       pass_thru_action, policy_name)}
 

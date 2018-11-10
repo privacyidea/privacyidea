@@ -194,7 +194,7 @@ def realmadmin(request=None, action=None):
                 action=action, scope=SCOPE.ADMIN,
                 user=g.logged_in_user.get("username"),
                 adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
-                active=True)
+                active=True, audit_data=g.audit_object.audit_data)
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -392,7 +392,8 @@ def encrypt_pin(request=None, action=None):
                                           user=user_object.login,
                                           realm=user_object.realm,
                                           client=g.client_ip,
-                                          active=True)
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
 
     if pin_pols:
         request.all_data["encryptpin"] = "True"
@@ -427,7 +428,8 @@ def enroll_pin(request=None, action=None):
                                           realm=realm,
                                           adminrealm=adminrealm,
                                           client=g.client_ip,
-                                          active=True)
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.get_policies(scope=scope,
                                                active=True,
                                                all_times=True)
@@ -905,7 +907,8 @@ def check_anonymous_user(request=None, action=None):
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=None,
-                                        active=True)
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.get_policies(scope=scope,
                                                active=True,
                                                all_times=True)
@@ -967,7 +970,8 @@ def check_base_action(request=None, action=None, anonymous=False):
                                         resolver=resolver,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
-                                        active=True)
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.get_policies(scope=scope,
                                                active=True,
                                                all_times=True)
@@ -994,7 +998,8 @@ def check_token_upload(request=None, action=None):
                                         scope=SCOPE.ADMIN,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
-                                        active=True)
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN,
                                                active=True, all_times=True)
     if action_at_all and len(action) == 0:
@@ -1033,7 +1038,8 @@ def check_token_init(request=None, action=None):
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
-                                        active=True)
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.get_policies(scope=scope, active=True,
                                                all_times=True)
     if action_at_all and len(action) == 0:
@@ -1090,7 +1096,8 @@ def api_key_required(request=None, action=None):
                                         realm=user_object.realm,
                                         scope=SCOPE.AUTHZ,
                                         client=g.client_ip,
-                                        active=True)
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1217,7 +1224,8 @@ def u2ftoken_verify_cert(request, action):
             user=token_user,
             resolver=token_resolver,
             active=True,
-            client=g.client_ip)
+            client=g.client_ip,
+            audit_data=g.audit_object.audit_data)
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
 
@@ -1313,7 +1321,8 @@ def allowed_audit_realm(request=None, action=None):
         user=admin_user.get("username"),
         adminrealm=admin_user.get("realm"),
         client=g.client_ip,
-        active=True)
+        active=True,
+        audit_data=g.audit_object.audit_data)
 
     if pols:
         # get all values in realm:

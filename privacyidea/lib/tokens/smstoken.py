@@ -519,7 +519,8 @@ class SmsTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip, active=True)
+                             client=clientip, active=True,
+                             audit_data=g.audit_object.audit_data)
             autosms = len(autosmspol) >= 1
 
         return autosms

@@ -307,7 +307,8 @@ def no_detail_on_success(request, response):
     detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
                                            scope=SCOPE.AUTHZ,
                                            client=g.client_ip,
-                                           active=True)
+                                           active=True,
+                                           audit_data=g.audit_object.audit_data)
 
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
@@ -335,7 +336,8 @@ def add_user_detail_to_response(request, response):
     detail_pol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
                                             scope=SCOPE.AUTHZ,
                                             client=g.client_ip,
-                                            active=True)
+                                            active=True,
+                                            audit_data=g.audit_object.audit_data)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -352,7 +354,8 @@ def add_user_detail_to_response(request, response):
     detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
                                             scope=SCOPE.AUTHZ,
                                             client=g.client_ip,
-                                            active=True)
+                                            active=True,
+                                            audit_data=g.audit_object.audit_data)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
@@ -381,7 +384,8 @@ def no_detail_on_fail(request, response):
     detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
                                            scope=SCOPE.AUTHZ,
                                            client=g.client_ip,
-                                           active=True)
+                                           active=True,
+                                           audit_data=g.audit_object.audit_data)
 
     if detailPol and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
@@ -428,7 +432,8 @@ def save_pin_change(request, response, serial=None):
         if g.logged_in_user.get("role") == ROLE.ADMIN:
             pinpol = policy_object.get_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
                                                 scope=SCOPE.ENROLL, realm=realm,
-                                                client=g.client_ip, active=True)
+                                                client=g.client_ip, active=True,
+                                                audit_data=g.audit_object.audit_data)
             if pinpol:
                 token = get_tokens(serial=serial)[0]
                 token.set_next_pin_change(diff="0d")
@@ -541,7 +546,8 @@ def get_webui_settings(request, response):
                                        scope=SCOPE.WEBUI,
                                        realm=realm,
                                        client=client,
-                                       active=True))
+                                       active=True,
+                                       audit_data=g.audit_object.audit_data))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
@@ -549,7 +555,8 @@ def get_webui_settings(request, response):
                 scope=SCOPE.WEBUI,
                 realm=realm,
                 client=client,
-                active=True
+                active=True,
+                audit_data=g.audit_object.audit_data
             )
 
             # We also need to check, if the user has not tokens assigned.
@@ -563,21 +570,24 @@ def get_webui_settings(request, response):
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         search_on_enter = policy_object.get_policies(
             action=ACTION.SEARCH_ON_ENTER,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         hide_welcome = policy_object.get_policies(
             action=ACTION.HIDE_WELCOME,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         hide_welcome = bool(hide_welcome)
         default_tokentype_pol = policy_object.get_action_values(
@@ -585,14 +595,16 @@ def get_webui_settings(request, response):
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True
+            unique=True,
+            audit_data=g.audit_object.audit_data
         )
         show_seed = policy_object.get_policies(
             action=ACTION.SHOW_SEED,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         show_seed = bool(show_seed)
 
