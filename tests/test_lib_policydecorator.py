@@ -184,6 +184,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSNOUSER)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                         options=options)
@@ -209,6 +210,7 @@ class LibPolicyTestCase(MyTestCase):
                    realm=self.realm1)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                       options=options)
@@ -277,6 +279,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=userstore".format(ACTION.PASSTHRU))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -294,6 +297,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertTrue(r > 0)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)

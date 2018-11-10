@@ -595,8 +595,7 @@ def get_webui_settings(request, response):
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data
+            unique=True
         )
         show_seed = policy_object.get_policies(
             action=ACTION.SHOW_SEED,

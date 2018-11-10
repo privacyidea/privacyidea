@@ -4,7 +4,7 @@ This test file tests the lib.tokens.smstoken
 PWFILE = "tests/testdata/passwords"
 TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
@@ -421,6 +421,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         r = token.check_otp("287922", options=options)
