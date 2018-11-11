@@ -75,7 +75,13 @@ myApp.controller("auditController", function (AuditFactory, $scope,
             // We split the policies, which come as comma separated string to an array.
             angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
                 if ($scope.auditdata.auditdata[key].policies != null) {
-                    $scope.auditdata.auditdata[key].policies = $scope.auditdata.auditdata[key].policies.split(",");
+                    var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
+                    // Duplicates in a repeater are not allowed!
+                    var uniquePolnameList = [];
+                    angular.forEach(polname_list, function(pol, i){
+                        if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
+                    });
+                    $scope.auditdata.auditdata[key].policies = uniquePolnameList;
                 }
             });
         });
