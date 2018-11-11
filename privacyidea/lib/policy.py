@@ -687,13 +687,22 @@ class PolicyClass(object):
             """
             # By saving the policynames in a dict with the values being the key,
             # we achieve unique policy_values.
+            # Save the policynames in a list
             if action_value.startswith("'") and action_value.endswith("'"):
-                policy_values[action_dict.get(action)[1:-1]] = policy_name
+                action_key = action_dict.get(action)[1:-1]
+                if action_key not in policy_values:
+                    policy_values[action_key] = []
+                policy_values[action_key].append(policy_name)
             elif allow_white_space_in_action:
-                policy_values[action_dict.get(action)] = policy_name
+                action_key = action_dict.get(action)
+                if action_key not in policy_values:
+                    policy_values[action_key] = []
+                policy_values[action_key].append(policy_name)
             else:
-                for value in action_dict.get(action, "").split():
-                    policy_values[value] = policy_name
+                for action_key in action_dict.get(action, "").split():
+                    if action_key not in policy_values:
+                        policy_values[action_key] = []
+                    policy_values[action_key].append(policy_name)
 
         # Check if the policies with the highest priority agree on the action values
         if unique and len(policy_values.keys()) > 1:

@@ -332,10 +332,10 @@ class PolicyTestCase(MyTestCase):
         self.assertFalse("spass" in type_policies.keys())
 
         # motp is defined in policy "tt2"
-        self.assertEqual(type_policies.get("motp"), "tt2")
+        self.assertEqual(type_policies.get("motp"), ["tt2"])
         # totp and hotp is defined in policy "tt1"
-        self.assertEqual(type_policies.get("hotp"), "tt1")
-        self.assertEqual(type_policies.get("totp"), "tt1")
+        self.assertEqual(type_policies.get("hotp"), ["tt1"])
+        self.assertEqual(type_policies.get("totp"), ["tt1"])
 
     def test_13_get_allowed_serials(self):
         set_policy(name="st1", scope=SCOPE.AUTHZ, action="serial=OATH")
@@ -348,8 +348,8 @@ class PolicyTestCase(MyTestCase):
         self.assertFalse("TOTP" in ttypes)
 
         serial_policies = P.get_action_values("serial", scope=SCOPE.AUTHZ)
-        self.assertEqual(serial_policies.get("OATH"), "st1")
-        self.assertEqual(serial_policies.get("mOTP"), "st2")
+        self.assertEqual(serial_policies.get("OATH"), ["st1"])
+        self.assertEqual(serial_policies.get("mOTP"), ["st2"])
 
     def test_14_fail_unique_policies(self):
         # create policies with two different texts
