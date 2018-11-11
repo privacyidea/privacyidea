@@ -580,15 +580,14 @@ def auth_otppin(wrapped_function, *args, **kwds):
         # get the policy
         policy_object = g.policy_object
         otppin_dict = policy_object.get_action_values(ACTION.OTPPIN,
-                                                                scope=SCOPE.AUTH,
-                                                                realm=user_object.realm,
-                                                                resolver=user_object.resolver,
-                                                                user=user_object.login,
-                                                                client=clientip,
-                                                                unique=True)
+                                                      scope=SCOPE.AUTH,
+                                                      realm=user_object.realm,
+                                                      resolver=user_object.resolver,
+                                                      user=user_object.login,
+                                                      client=clientip,
+                                                      unique=True,
+                                                      audit_data=g.audit_object.audit_data)
         if otppin_dict.keys():
-            # There is an otppin policy
-            g.audit_object.add_policy(otppin_dict.values()[0])
             if otppin_dict.keys()[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
