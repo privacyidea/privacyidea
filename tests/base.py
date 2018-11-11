@@ -6,6 +6,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.auditmodules.base import Audit
 
 
 PWFILE = "tests/testdata/passwords"
@@ -18,20 +19,10 @@ class FakeFlaskG(object):
     audit_object = None
 
 
-class FakeAudit(object):
+class FakeAudit(Audit):
 
     def __init__(self):
         self.audit_data = {}
-
-    def add_policy(self, policyname):
-        self.add_to_log({"policies": policyname}, add_with_comma=True)
-
-    def add_to_log(self, param, add_with_comma=False):
-        for k, v in param.iteritems():
-            if k in self.audit_data:
-                self.audit_data[k] += v
-            else:
-                self.audit_data[k] = v
 
 
 class MyTestCase(unittest.TestCase):

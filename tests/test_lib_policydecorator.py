@@ -337,6 +337,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # No policy, the function is called with check_otp=False
@@ -393,6 +394,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # No policy, the function is called with default values

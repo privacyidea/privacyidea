@@ -525,17 +525,16 @@ def login_mode(wrapped_function, *args, **kwds):
             resolver=user_object.resolver,
             user=user_object.login,
             client=clientip,
-            unique=True)
+            unique=True,
+            audit_data=g.audit_object.audit_data)
 
         if login_mode_dict:
             # There is a login mode policy
             if login_mode_dict.keys()[0] == LOGINMODE.PRIVACYIDEA:
-                g.audit_object.add_policy(login_mode_dict.values()[0])
                 # The original function should check against privacyidea!
                 kwds["check_otp"] = True
 
             if login_mode_dict.keys()[0] == LOGINMODE.DISABLE:
-                g.audit_object.add_policy(login_mode_dict.values()[0])
                 # The login to the webui is disabled
                 raise PolicyError("The login for this user is disabled.")
 
@@ -646,7 +645,8 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
+                unique=True,
+                audit_data=g.audit_object.audit_data)
             validity_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
@@ -654,7 +654,8 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
+                unique=True,
+                audit_data=g.audit_object.audit_data)
             pw_len_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
@@ -662,7 +663,8 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
+                unique=True,
+                audit_data=g.audit_object.audit_data)
 
             if contents_dict:
                 g.audit_object.add_policy(contents_dict.values()[0])

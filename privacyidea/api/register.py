@@ -63,7 +63,8 @@ def register_status():
     """
     resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
                                                      scope=SCOPE.REGISTER,
-                                                     unique=True)
+                                                     unique=True,
+                                                     audit_data=g.audit_object.audit_data)
 
     result = bool(resolvername)
     g.audit_object.log({"info": result,
@@ -122,14 +123,16 @@ def register_post():
     # 0. check, if we can do the registration at all!
     smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
                                                    scope=SCOPE.REGISTER,
-                                                   unique=True)
+                                                   unique=True,
+                                                   audit_data=g.audit_object.audit_data)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
     realm = g.policy_object.get_action_values(ACTION.REALM,
                                               scope=SCOPE.REGISTER,
-                                              unique=True)
+                                              unique=True,
+                                              audit_data=g.audit_object.audit_data)
     if not realm:
         # No policy for realm, so we use the default realm
         realm = get_default_realm
@@ -138,7 +141,8 @@ def register_post():
         realm = realm.keys()[0]
     resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
                                                      scope=SCOPE.REGISTER,
-                                                     unique=True)
+                                                     unique=True,
+                                                     audit_data=g.audit_object.audit_data)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = resolvername.keys()[0]
@@ -165,7 +169,8 @@ def register_post():
     # Send the registration key via email
     body = g.policy_object.get_action_values(ACTION.REGISTERBODY,
                                              scope=SCOPE.REGISTER,
-                                             unique=True)
+                                             unique=True,
+                                             audit_data=g.audit_object.audit_data)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(
         smtpconfig, email,

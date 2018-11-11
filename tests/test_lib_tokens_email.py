@@ -399,6 +399,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098713"
@@ -436,6 +437,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098714"

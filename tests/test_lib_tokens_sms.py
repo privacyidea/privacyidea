@@ -436,6 +436,7 @@ class SMSTokenTestCase(MyTestCase):
 
         g = FakeFlaskG()
         P = PolicyClass()
+        g.audit_object = FakeAudit()
         g.policy_object = P
         options = {"g": g}
 

@@ -484,7 +484,8 @@ class SmsTokenClass(HotpTokenClass):
                                   user=username,
                                   client=clientip,
                                   unique=True,
-                                  allow_white_space_in_action=True)
+                                  allow_white_space_in_action=True,
+                                  audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
                 message = messages.keys()[0]

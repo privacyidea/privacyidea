@@ -140,7 +140,8 @@ def init_random_pin(request=None, action=None):
                                                user=user_object.login,
                                                realm=user_object.realm,
                                                client=g.client_ip,
-                                               unique=True)
+                                               unique=True,
+                                               audit_data=g.audit_object.audit_data)
 
     if len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(pin_pols.keys()[0]))
@@ -150,7 +151,8 @@ def init_random_pin(request=None, action=None):
         handle_pols = policy_object.get_action_values(
             action=ACTION.PINHANDLING, scope=SCOPE.ENROLL,
             user=user_object.login, realm=user_object.realm,
-            client=g.client_ip)
+            client=g.client_ip,
+            audit_data=g.audit_object.audit_data)
         # We can have more than one pin handler policy. So we can process the
         #  PIN in several ways!
         for handle_pol in handle_pols:
@@ -252,29 +254,29 @@ def check_otp_pin(request=None, action=None):
     pol_minlen = policy_object.get_action_values(
         action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
         scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True) or \
+        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
                  policy_object.get_action_values(
                      action=ACTION.OTPPINMINLEN, scope=scope, user=username,
                      realm=realm, adminrealm=admin_realm, client=g.client_ip,
-                     unique=True)
+                     unique=True, audit_data=g.audit_object.audit_data)
 
     pol_maxlen = policy_object.get_action_values(
         action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
         scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True) or \
+        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
                  policy_object.get_action_values(
                      action=ACTION.OTPPINMAXLEN, scope=scope, user=username,
                      realm=realm, adminrealm=admin_realm, client=g.client_ip,
-                     unique=True)
+                     unique=True, audit_data=g.audit_object.audit_data)
 
     pol_contents = policy_object.get_action_values(
         action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
         scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True) or \
+        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
                    policy_object.get_action_values(
                        action=ACTION.OTPPINCONTENTS, scope=scope,
                        user=username, realm=realm, adminrealm=admin_realm,
-                       client=g.client_ip, unique=True)
+                       client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data)
 
     if len(pol_minlen) == 1 and len(pin) < int(pol_minlen.keys()[0]):
         # check the minimum length requirement
@@ -333,7 +335,8 @@ def papertoken_count(request=None, action=None):
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip,
-        unique=True)
+        unique=True,
+        audit_data=g.audit_object.audit_data)
 
     if pols:
         papertoken_count = pols.keys()[0]
@@ -364,7 +367,8 @@ def tantoken_count(request=None, action=None):
         resolver=user_object.resolver,
         realm=user_object.realm,
         client=g.client_ip,
-        unique=True)
+        unique=True,
+        audit_data=g.audit_object.audit_data)
 
     if pols:
         tantoken_count = pols.keys()[0]
@@ -484,7 +488,8 @@ def init_tokenlabel(request=None, action=None):
                                                  realm=user_object.realm,
                                                  client=g.client_ip,
                                                  unique=True,
-                                                 allow_white_space_in_action=True)
+                                                 allow_white_space_in_action=True,
+                                                 audit_data=g.audit_object.audit_data)
 
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
@@ -496,7 +501,8 @@ def init_tokenlabel(request=None, action=None):
                                                   realm=user_object.realm,
                                                   client=g.client_ip,
                                                   unique=True,
-                                                  allow_white_space_in_action=True)
+                                                  allow_white_space_in_action=True,
+                                                  audit_data=g.audit_object.audit_data)
     if len(issuer_pols) == 1:
         request.all_data["tokenissuer"] = issuer_pols.keys()[0]
 
@@ -506,7 +512,8 @@ def init_tokenlabel(request=None, action=None):
                                                     realm=user_object.realm,
                                                     client=g.client_ip,
                                                     unique=True,
-                                                    allow_white_space_in_action=True)
+                                                    allow_white_space_in_action=True,
+                                                    audit_data=g.audit_object.audit_data)
     if len(imageurl_pols) == 1:
         request.all_data["appimageurl"] = imageurl_pols.keys()[0]
 
@@ -555,7 +562,8 @@ def twostep_enrollment_activation(request=None, action=None):
                                                            user=user,
                                                            realm=realm,
                                                            client=g.client_ip,
-                                                           adminrealm=adminrealm)
+                                                           adminrealm=adminrealm,
+                                                           audit_data=g.audit_object.audit_data)
     if twostep_enabled_pols:
         enabled_setting = twostep_enabled_pols.keys()[0]
         if enabled_setting == "allow":
@@ -622,7 +630,8 @@ def twostep_enrollment_parameters(request=None, action=None):
                                                             user=user,
                                                             realm=realm,
                                                             client=g.client_ip,
-                                                            adminrealm=adminrealm)
+                                                            adminrealm=adminrealm,
+                                                            audit_data=g.audit_object.audit_data)
             if action_values:
                 request.all_data[parameter] = action_values.keys()[0]
 
@@ -660,7 +669,9 @@ def check_max_token_user(request=None, action=None):
                 # token can be regenerated
                 return True
             already_assigned_tokens = len(tokenobject_list)
-            if already_assigned_tokens >= max([int(x) for x in limit_list]):
+            max_value = max([int(x) for x in limit_list.keys()])
+            if already_assigned_tokens >= max_value:
+                g.audit_object.add_policy(limit_list.get(str(max_value)))
                 raise PolicyError(ERROR)
     return True
 
@@ -700,7 +711,9 @@ def check_max_token_realm(request=None, action=None):
             # we need to check how many tokens the realm already has assigned!
             tokenobject_list = get_tokens(realm=realm)
             already_assigned_tokens = len(tokenobject_list)
-            if already_assigned_tokens >= max([int(x) for x in limit_list]):
+            max_value = max([int(x) for x in limit_list.keys()])
+            if already_assigned_tokens >= max_value:
+                g.audit_object.add_policy(limit_list.get(str(max_value)))
                 raise PolicyError(ERROR)
     return True
 
@@ -741,7 +754,8 @@ def set_realm(request=None, action=None):
                                                 scope=SCOPE.AUTHZ,
                                                 user=username,
                                                 realm=realm,
-                                                client=g.client_ip)
+                                                client=g.client_ip,
+                                                audit_data=g.audit_object.audit_data)
     if len(new_realm) > 1:
         raise PolicyError("I do not know, to which realm I should set the "
                           "new realm. Conflicting policies exist.")
@@ -770,7 +784,8 @@ def required_email(request=None, action=None):
     email_found = False
     email_pols = g.policy_object.\
         get_action_values(ACTION.REQUIREDEMAIL, scope=SCOPE.REGISTER,
-                          client=g.client_ip)
+                          client=g.client_ip,
+                          audit_data=g.audit_object.audit_data)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -819,7 +834,8 @@ def auditlog_age(request=None, action=None):
                                                 realm=realm,
                                                 user=user,
                                                 client=g.client_ip,
-                                                unique=True)
+                                                unique=True,
+                                                audit_data=g.audit_object.audit_data)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -876,6 +892,8 @@ def mangle(request=None, action=None):
             log.debug("mangling authentication data: {0!s}".format(mangle_key))
             request.all_data[mangle_key] = re.sub(search, replace,
                                                   mangle_value)
+            # If we mangled something, we add the name of the policies
+            g.audit_object.add_policy(mangle_pols.get(mangle_pol_action))
             if mangle_key in ["user", "realm"]:
                 request.User = get_user_from_param(request.all_data)
     return True
@@ -1164,7 +1182,8 @@ def is_remote_user_allowed(req):
                                                          scope=SCOPE.WEBUI,
                                                          user=loginname,
                                                          realm=realm,
-                                                         client=g.client_ip)
+                                                         client=g.client_ip,
+                                                         audit_data=g.audit_object.audit_data)
 
         res = ruser_active.keys()
 
@@ -1284,7 +1303,8 @@ def u2ftoken_allowed(request, action):
             realm=token_realm,
             user=token_user,
             resolver=token_resolver,
-            client=g.client_ip)
+            client=g.client_ip,
+            audit_data=g.audit_object.audit_data)
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)
             tag_value = cert_info.get("attestation_{0!s}".format(tag))
