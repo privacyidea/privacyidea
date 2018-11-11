@@ -363,7 +363,7 @@ class EmailTokenClass(HotpTokenClass):
                                   allow_white_space_in_action=True)
 
             if len(messages) == 1:
-                message = messages[0]
+                message = messages.keys()[0]
 
         message = message.format(challenge=options.get("challenge"))
         if message.startswith("file:"):

@@ -116,7 +116,7 @@ def challenge_response_allowed(func):
         user_object = kwds.get("user") or User()
         if g:
             policy_object = g.policy_object
-            allowed_tokentypes_dict = policy_object.get_action_values_with_name(
+            allowed_tokentypes_dict = policy_object.get_action_values(
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
                 realm=user_object.realm,
@@ -161,7 +161,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
-        auth_cache_dict = policy_object.get_action_values_with_name(
+        auth_cache_dict = policy_object.get_action_values(
             action=ACTION.AUTH_CACHE,
             scope=SCOPE.AUTH,
             realm=user_object.realm,
@@ -358,7 +358,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         clientip = options.get("clientip")
         policy_object = g.policy_object
 
-        max_success_dict = policy_object.get_action_values_with_name(
+        max_success_dict = policy_object.get_action_values(
             action=ACTION.AUTHMAXSUCCESS,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
@@ -366,7 +366,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             user=user_object.login,
             client=clientip,
             unique=True)
-        max_fail_dict = policy_object.get_action_values_with_name(
+        max_fail_dict = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
@@ -471,7 +471,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth_dict = policy_object.get_action_values_with_name(
+            last_auth_dict = policy_object.get_action_values(
                 action=ACTION.LASTAUTH,
                 scope=SCOPE.AUTHZ,
                 realm=realm,
@@ -518,7 +518,7 @@ def login_mode(wrapped_function, *args, **kwds):
         clientip = options.get("clientip")
         # get the policy
         policy_object = g.policy_object
-        login_mode_dict = policy_object.get_action_values_with_name(
+        login_mode_dict = policy_object.get_action_values(
             ACTION.LOGINMODE,
             scope=SCOPE.WEBUI,
             realm=user_object.realm,
@@ -579,7 +579,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
             user_object=User("", realm="")
         # get the policy
         policy_object = g.policy_object
-        otppin_dict = policy_object.get_action_values_with_name(ACTION.OTPPIN,
+        otppin_dict = policy_object.get_action_values(ACTION.OTPPIN,
                                                                 scope=SCOPE.AUTH,
                                                                 realm=user_object.realm,
                                                                 resolver=user_object.resolver,
@@ -640,7 +640,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
-            contents_dict = policy_object.get_action_values_with_name(
+            contents_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
                 realm=realm,
@@ -648,7 +648,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 user=username,
                 client=clientip,
                 unique=True)
-            validity_dict = policy_object.get_action_values_with_name(
+            validity_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
                 realm=realm,
@@ -656,7 +656,7 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 user=username,
                 client=clientip,
                 unique=True)
-            pw_len_dict = policy_object.get_action_values_with_name(
+            pw_len_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
                 realm=realm,

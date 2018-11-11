@@ -135,13 +135,13 @@ def register_post():
         realm = get_default_realm
     else:
         # we use the first realm in the list
-        realm = realm[0]
+        realm = realm.keys()[0]
     resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
                                                      scope=SCOPE.REGISTER,
                                                      unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
-    resolvername = resolvername[0]
+    resolvername = resolvername.keys()[0]
     # Check if the user exists
     user = User(username, realm=realm, resolver=resolvername)
     if user.exist():
@@ -161,7 +161,7 @@ def register_post():
     # 4. send the registration token to the users email
     registration_key = token.init_details.get("otpkey")
 
-    smtpconfig = smtpconfig[0]
+    smtpconfig = smtpconfig.keys()[0]
     # Send the registration key via email
     body = g.policy_object.get_action_values(ACTION.REGISTERBODY,
                                              scope=SCOPE.REGISTER,

@@ -181,6 +181,14 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
+    def add_policy(self, policyname):
+        """
+        This method adds a triggered policyname to the list of triggered policies.
+        :param policyname: A string or a list of strings as policynames
+        :return:
+        """
+        pass
+
     def finalize_log(self):
         """
         This method is called to finalize the audit_data. I.e. sign the data

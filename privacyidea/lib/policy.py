@@ -639,41 +639,8 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None):
-        """
-        Get the defined action values for a certain action like
-            scope: authorization
-            action: tokentype
-        would return a list of tokentypes
-
-            scope: authorization
-            action: serial
-        would return a list of allowed serials
-
-        :param unique: if set, the function will only consider the policy with the
-            highest priority and check for policy conflicts.
-        :param allow_white_space_in_action: Some policies like emailtext
-            would allow entering text with whitespaces. These whitespaces
-            must not be used to separate action values!
-        :type allow_white_space_in_action: bool
-        :return: A list of action values, sorted by policy priorities.
-        :rtype: list
-        """
-        pol_values = self.get_action_values_with_name(action,
-                                                      scope=scope,
-                                                      realm=realm,
-                                                      resolver=resolver,
-                                                      user=user,
-                                                      client=client,
-                                                      unique=unique,
-                                                      allow_white_space_in_action=allow_white_space_in_action,
-                                                      adminrealm=adminrealm)
-        return pol_values.keys()
-
-    @log_with(log)
-    def get_action_values_with_name(self, action, scope=SCOPE.AUTHZ, realm=None,
-                                    resolver=None, user=None, client=None, unique=False,
-                                    allow_white_space_in_action=False, adminrealm=None):
+                          allow_white_space_in_action=False, adminrealm=None,
+                          audit_data=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -690,14 +657,19 @@ class PolicyClass(object):
             would allow entering text with whitespaces. These whitespaces
             must not be used to separate action values!
         :type allow_white_space_in_action: bool
-        :return: A dictionary of policy-values and policy-names. The policy-value being the key.
+        :param audit_data: This is a dictionary, that can take audit_data in the g object.
+            If set, this dictionary will be filled with the list of triggered policynames in the
+            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
+            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
+            the value of the action needs to be evaluated in a more special case.
         :rtype: dict
         """
         policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
-                                     client=client, sort_by_priority=True)
+                                     client=client, sort_by_priority=True,
+                                     audit_data=audit_data)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -1856,7 +1828,7 @@ def get_action_values_from_options(scope, action, options):
                               unique=True,
                               allow_white_space_in_action=True)
         if len(value) >= 1:
-            return value[0]
+            return value.keys()[0]
         else:
             return None
 
