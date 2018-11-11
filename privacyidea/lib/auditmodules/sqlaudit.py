@@ -207,45 +207,6 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    def log(self, param):
-        """
-        Add new log details in param to the internal log data self.audit_data.
-
-        :param param: Log data that is to be added
-        :type param: dict
-        :return: None
-        """
-        for k, v in param.items():
-            self.audit_data[k] = v
-
-    def add_to_log(self, param, add_with_comma=False):
-        """
-        Add new text to an existing log entry
-        :param param:
-        :param add_with_comma: If this value is set, then the data will be appended with a comma.
-        :return:
-        """
-        for k, v in param.items():
-            if k not in self.audit_data:
-                # We need to create the entry
-                self.audit_data[k] = v
-            else:
-                if add_with_comma:
-                    self.audit_data[k] += ","
-                self.audit_data[k] += v
-
-    def add_policy(self, policyname):
-        """
-        This method adds a triggered policyname to the list of triggered policies.
-        :param policyname: A string or a list of strings as policynames
-        :return:
-        """
-        if type(policyname) == list:
-            for p in policyname:
-                self.add_to_log({"policies": p}, add_with_comma=True)
-        else:
-            self.add_to_log({"policies": policyname}, add_with_comma=True)
-
     def finalize_log(self):
         """
         This method is used to log the data.
