@@ -42,6 +42,9 @@ import traceback
 
 log = logging.getLogger(__name__)
 
+SCRIPT_BACKGROUND = "Run in background"
+SCRIPT_WAIT = "Wait for script to finish"
+
 
 class ScriptEventHandler(BaseEventHandler):
     """
@@ -80,6 +83,19 @@ class ScriptEventHandler(BaseEventHandler):
         actions = {}
         for script in scripts:
             actions[script] = {
+                "background": {
+                    "type": "str",
+                    "required": True,
+                    "description": _("Wait for script to complete or run script in background. This will "
+                                     "either return the HTTP request early or could also block the request."),
+                    "value": [SCRIPT_BACKGROUND, SCRIPT_WAIT]
+                },
+                "raise_error": {
+                    "type": "bool",
+                    "visibleIf": "background",
+                    "visibleValue": SCRIPT_WAIT,
+                    "description": _("On script error raise exception in HTTP request.")
+                },
                 "serial": {
                     "type": "bool",
                     "description": _("Add '--serial <serial number>' as script "
@@ -164,14 +180,26 @@ class ScriptEventHandler(BaseEventHandler):
             proc_args.append("--logged_in_role")
             proc_args.append(logged_in_user.get("role", "none"))
 
-        try:
-            p = subprocess.Popen(proc_args, cwd=self.script_directory)
-            log.info("Started script {script!r}:"
-                     " {process!r}".format(script=script_name, process=p))
-        except Exception as e:
-            log.warning("Failed to execute script {0!r}: {1!r}".format(
-                script_name, e))
-            log.warning(traceback.format_exc())
+        if handler_options.get("background", SCRIPT_BACKGROUND) == SCRIPT_BACKGROUND:
+            try:
+                p = subprocess.Popen(proc_args, cwd=self.script_directory)
+                log.info("Started script {script!r} in background:"
+                         " {process!r}".format(script=script_name, process=p))
+            except Exception as e:
+                log.warning("Failed to execute script {0!r}: {1!r}".format(
+                    script_name, e))
+                log.warning(traceback.format_exc())
+
+        elif handler_options.get("background") == SCRIPT_WAIT:
+            try:
+                log.info("Starting script {script!r} in foreground.".format(script=script_name))
+                r = subprocess.check_call(proc_args, cwd=self.script_directory)
+            except Exception as e:
+                log.warning("Failed to execute script {0!r}: {1!r}".format(
+                    script_name, e))
+                log.warning(traceback.format_exc())
+                if handler_options.get("raise_error"):
+                    raise e
 
         return ret
 

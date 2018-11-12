@@ -12,7 +12,7 @@ from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
-from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
@@ -511,12 +511,12 @@ class ScriptEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {
-                       "options":{
+                       "options": {
                            "user": "1",
                            "realm": "1",
                            "serial": "1",
                            "logged_in_user": "1",
-                           "logged_in_role": "1",}
+                           "logged_in_role": "1"}
                    }
                    }
 
@@ -524,6 +524,49 @@ class ScriptEventTestCase(MyTestCase):
         t_handler = ScriptEventHandler()
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
+        remove_token("SPASS01")
+
+    def test_02_failscript(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "background": SCRIPT_WAIT,
+                           "raise_error": True,
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }
+                   }
+
+        script_name = "fail.sh"
+        t_handler = ScriptEventHandler()
+        self.assertRaises(Exception, t_handler.do, script_name, options=options)
         remove_token("SPASS01")
 
 
