@@ -235,11 +235,11 @@
             </td>
             <td>
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
+                    <!-- These values are set via the set-API not via the settokeninfo API! -->
                     <button class="btn btn-primary"
                             id="tiEditButton"
-                            ng-hide="editTokenInfo"
-                            ng-disable="!checkRight('settokeninfo')"
-                            ng-hide="!checkRight('settokeninfo') && hide_buttons"
+                            ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
+                            ng-disable="!checkRight('set')"
                             ng-click="editTokenInfo=1"
                             translate>Edit
                     </button>
@@ -281,7 +281,8 @@
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
                             id="trEditButton"
-                            ng-hide="editTokenRealm"
+                            ng-hide="editTokenRealm || (!checkRight('tokenrealms') && hide_buttons)"
+                            ng-disable="!checkRight('tokenrealms')"
                             ng-click="startEditRealm()"
                             translate>Edit
                     </button>
