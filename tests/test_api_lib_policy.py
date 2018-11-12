@@ -418,6 +418,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
         req.all_data = {"realm": "somerealm"}
+        req.User = None
         self.assertRaises(PolicyError, set_realm, req)
 
         # finally delete policy

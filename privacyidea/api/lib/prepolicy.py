@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-11-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             In case of "setrealm" allow a user no to be in the
+#             original realm.
 #  2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add wrapper for U2F token
 #  2017-01-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -61,7 +64,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
-                                  split_user)
+                                  split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import (generate_password, get_client_ip,
                                    parse_timedelta, is_true)
@@ -746,6 +749,8 @@ def set_realm(request=None, action=None):
     elif len(new_realm) == 1:
         # There is one specific realm, which we set in the request
         request.all_data["realm"] = new_realm[0]
+        # We also need to update the user
+        request.User = User(username, request.all_data["realm"])
 
     return True
 
