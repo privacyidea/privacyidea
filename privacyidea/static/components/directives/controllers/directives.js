@@ -26,6 +26,8 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
             tokenData: '@',
             tokenLocked: '@',
             tokenKey: '@',
+            hideButtons: '@',
+            setRight: '@',
             inputPattern: '@',
             inputType: '@',
             callback: '&',
