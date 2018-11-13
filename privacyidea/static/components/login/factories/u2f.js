@@ -32,7 +32,17 @@ angular.module("privacyideaAuth")
 
             return {
                 register_request: function (registerRequest, callback) {
-                    u2f.register([registerRequest], [], function (result) {
+
+                    // set variables for U2F API v1.1
+                    var appId = registerRequest.appId;
+                    var registerRequests = [{
+                      version : registerRequest.version,
+                      challenge : registerRequest.challenge,
+                      attestation : "direct"
+                    }];
+                    var registeredKeys = [];
+
+                    u2f.register(appId, registerRequests, registeredKeys, function (result) {
                         //debug: console.log(result);
                         if (result.errorCode > 0) {
                             inform.add(u2fErrors[result.errorCode] + " / " + result.errorMessage,
@@ -50,7 +60,16 @@ angular.module("privacyideaAuth")
                 },
                 sign_request: function (data, signRequests, username, transactionid,
                                         login_callback) {
-                    u2f.sign(signRequests, function (result) {
+
+                    // set variables for U2F API v1.1
+                    var appId = signRequests[0].appId;
+                    var challenge = signRequests[0].challenge;
+                    var registeredKeys= [{
+                        version: signRequests[0].version,
+                        keyHandle: signRequests[0].keyHandle
+                    }];
+
+                    u2f.sign(appId, challenge, registeredKeys, function (result) {
                         inform.clear();
                         if (result.errorCode > 0) {
                             //debug: console.log("U2F error.");
