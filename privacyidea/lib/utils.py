@@ -32,10 +32,11 @@ import binascii
 import base64
 import qrcode
 import urlparse
+import sqlalchemy
 import StringIO
 import urllib
 from privacyidea.lib.crypto import urandom, geturandom
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
 from datetime import timedelta, datetime
@@ -1127,3 +1128,14 @@ def censor_connect_string(connect_string):
     except Exception:
         return "<error when censoring connect string>"
 
+
+def fetch_one_resource(table, **query):
+    """
+    Given an SQLAlchemy table and query keywords, fetch exactly one result and return it.
+    If no results is found, this raises a ``ResourceNotFoundError``.
+    If more than one result is found, this raises SQLAlchemy's ``MultipleResultsFound``
+    """
+    try:
+        return table.query.filter_by(**query).one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        raise ResourceNotFoundError(u"The requested {!s} could not be found.".format(table.__name__))

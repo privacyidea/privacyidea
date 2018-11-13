@@ -10,7 +10,7 @@ from dateutil.parser import parse as parse_timestamp
 from dateutil.tz import gettz, tzutc
 from mock import mock
 
-from privacyidea.lib.error import ServerError, ParameterError
+from privacyidea.lib.error import ServerError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
     get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id
@@ -233,17 +233,17 @@ class BasePeriodicTaskTestCase(MyTestCase):
         task1_last_update = get_periodic_task_by_id(task1)["last_update"]
 
         self.assertEqual(get_periodic_task_by_name("task three")["id"], task3)
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ResourceNotFoundError):
             get_periodic_task_by_name("task does not exist")
 
         self.assertEqual(get_periodic_task_by_id(task3)["name"], "task three")
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ResourceNotFoundError):
             get_periodic_task_by_id(1337)
 
         self.assertEqual(len(PeriodicTask.query.all()), 3)
 
         # Updating an nonexistent task fails
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ResourceNotFoundError):
             set_periodic_task("some task", "0 0 1 * *", ["pinode1"], "some.task.module", 5, {}, id=123456)
 
         task1_modified = set_periodic_task("every month", "0 0 1 * *", ["pinode1"], "some.task.module", 3, {
@@ -288,7 +288,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
 
         enable_periodic_task(task1, False)
         delete_periodic_task(task3)
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ResourceNotFoundError):
             enable_periodic_task(task3)
 
         active_tasks_on_pinode1 = get_periodic_tasks(active=True, node="pinode1")
@@ -300,7 +300,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
 
         delete_periodic_task(task1)
         delete_periodic_task(task2)
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ResourceNotFoundError):
             delete_periodic_task(task2)
 
         self.assertEqual(get_periodic_tasks(), [])

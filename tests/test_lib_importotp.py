@@ -614,7 +614,6 @@ class ImportOTPTestCase(MyTestCase):
         remove_token("t2")
         remove_token("t3")
         remove_token("t4")
-        remove_token("t5")
         # import the tokens again
         tokens = parsePSKCdata(export, preshared_key_hex=psk)
         self.assertEqual(len(tokens), 3)

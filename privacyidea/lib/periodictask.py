@@ -26,7 +26,8 @@ from datetime import datetime
 from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
-from privacyidea.lib.error import ServerError, ParameterError
+from privacyidea.lib.error import ServerError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.models import PeriodicTask
@@ -183,7 +184,7 @@ def get_periodic_task_by_name(name):
     """
     periodic_tasks = get_periodic_tasks(name)
     if len(periodic_tasks) != 1:
-        raise ParameterError("The periodic task with unique name {!r} does not exist".format(name))
+        raise ResourceNotFoundError(u"The periodic task with unique name {!r} does not exist".format(name))
     return periodic_tasks[0]
 
 
@@ -199,15 +200,12 @@ def get_periodic_task_by_id(ptask_id):
 
 def _get_periodic_task_entry(ptask_id):
     """
-    Get a periodic task entry by ID. Raise ParameterError if the task could not be found.
+    Get a periodic task entry by ID. Raise ResourceNotFoundError if the task could not be found.
     This is only for internal use.
     :param id: task ID as integer
     :return: PeriodicTask object
     """
-    periodic_task = PeriodicTask.query.filter_by(id=ptask_id).first()
-    if periodic_task is None:
-        raise ParameterError("The periodic task with id {!r} does not exist".format(ptask_id))
-    return periodic_task
+    return fetch_one_resource(PeriodicTask, id=ptask_id)
 
 
 def set_periodic_task_last_run(ptask_id, node, last_run_timestamp):

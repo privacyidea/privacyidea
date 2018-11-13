@@ -1915,7 +1915,7 @@ class ValidateAPITestCase(MyTestCase):
 
         remove_token("CR2A")
         remove_token("CR2B")
-        delete_policy("test49")
+        delete_policy("test48")
 
     def test_28_validate_radiuscheck(self):
         # setup a spass token
@@ -2089,7 +2089,6 @@ class ValidateAPITestCase(MyTestCase):
             result = json.loads(res.data).get("result")
             self.assertEqual(result.get("value"), True)
 
-        delete_policy("onlyHOTP")
         delete_policy("onlyHOTP")
         delete_policy("passthru")
         remove_token("SPASS1")

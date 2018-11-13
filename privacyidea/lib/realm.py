@@ -43,7 +43,7 @@ from log import log_with
 from flask import g
 from privacyidea.lib.config import ConfigClass
 import logging
-from privacyidea.lib.utils import sanity_name_check
+from privacyidea.lib.utils import sanity_name_check, fetch_one_resource
 log = logging.getLogger(__name__)
 
 
@@ -154,7 +154,7 @@ def delete_realm(realmname):
     defRealm = get_default_realm()
     hadDefRealmBefore = (defRealm != "")
 
-    realm = Realm.query.filter_by(name=realmname).first()
+    realm = fetch_one_resource(Realm, name=realmname)
     ret = realm.delete()
 
     # If there was a default realm before

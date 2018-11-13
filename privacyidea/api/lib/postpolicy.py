@@ -46,7 +46,7 @@ from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token
+from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
@@ -430,7 +430,7 @@ def save_pin_change(request, response, serial=None):
                                                 scope=SCOPE.ENROLL, realm=realm,
                                                 client=g.client_ip, active=True)
             if pinpol:
-                token = get_tokens(serial=serial)[0]
+                token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:
@@ -439,7 +439,7 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token = get_tokens(serial=serial)[0]
+                token = get_one_token(serial=serial)
                 token.del_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN
@@ -448,7 +448,7 @@ def save_pin_change(request, response, serial=None):
                     ACTION.CHANGE_PIN_EVERY, scope=SCOPE.ENROLL,
                     realm=realm, client=g.client_ip, unique=True)
                 if pinpol:
-                    token = get_tokens(serial=serial)[0]
+                    token = get_one_token(serial=serial)
                     token.set_next_pin_change(diff=pinpol[0])
 
     # we do not modify the response!

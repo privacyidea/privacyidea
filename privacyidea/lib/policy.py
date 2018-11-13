@@ -164,12 +164,12 @@ from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
 from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import check_time_in_range, reload_db
+from privacyidea.lib.utils import check_time_in_range, reload_db, fetch_one_resource
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -941,7 +941,7 @@ def enable_policy(name, enable=True):
     :return: ID of the policy
     """
     if not Policy.query.filter(Policy.name == name).first():
-        raise ParameterError("The policy with name '{0!s}' does not exist".format(name))
+        raise ResourceNotFoundError(u"The policy with name '{0!s}' does not exist".format(name))
 
     # Update the policy
     p = set_policy(name=name, active=enable)
@@ -951,17 +951,14 @@ def enable_policy(name, enable=True):
 @log_with(log)
 def delete_policy(name):
     """
-    Function to delete one named policy
+    Function to delete one named policy.
+    Raise ResourceNotFoundError if there is no such policy.
 
     :param name: the name of the policy to be deleted
-    :return: the count of the deleted policies.
+    :return: the ID of the deletec policy
     :rtype: int
     """
-    res = False
-    p = Policy.query.filter_by(name=name).first()
-    if p:
-        res = p.delete()
-    return res
+    return fetch_one_resource(Policy, name=name).delete()
 
 
 @log_with(log)
