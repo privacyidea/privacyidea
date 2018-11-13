@@ -114,7 +114,7 @@ class TokenEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        realm_list = get_realms().keys()
+        realm_list = list(get_realms())
         actions = {ACTION_TYPE.SET_TOKENREALM:
                        {"realm":
                             {"type": "str",

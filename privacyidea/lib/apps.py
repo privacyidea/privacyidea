@@ -62,7 +62,7 @@ def _construct_extra_parameters(extra_data):
     :return: a string (may be empty if ``extra_data`` is empty
     """
     extra_data_list = []
-    for key, value in extra_data.iteritems():
+    for key, value in extra_data.items():
         if isinstance(key, unicode):
             key = key.encode('utf-8')
         if isinstance(value, unicode):

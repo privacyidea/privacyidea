@@ -213,7 +213,7 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
 
             for r in result:
-                if userinfo.keys():  # pragma: no cover
+                if userinfo:  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(userId))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover

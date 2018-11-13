@@ -144,7 +144,7 @@ class Audit(AuditBase):
         Truncate self.audit_data according to the column_length.
         :return: None
         """
-        for column, l in column_length.iteritems():
+        for column, l in column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, basestring):
@@ -396,7 +396,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            audit_list = audit_dict.values()
+            audit_list = list(audit_dict.values())
             string_list = [u"'{0!s}'".format(x) for x in audit_list]
             yield ",".join(string_list)+"\n"
 

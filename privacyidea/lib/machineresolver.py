@@ -76,7 +76,8 @@ def save_resolver(params):
     # check the type
     (class_dict, type_dict) = get_machine_resolver_class_dict()
     if resolvertype not in type_dict.values():
-            raise Exception("machine resolver type : {0!s} not in {1!s}".format(resolvertype, type_dict.values()))
+        raise Exception("machine resolver type : {0!s} "
+                        "not in {1!s}".format(resolvertype, list(type_dict.values())))
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)

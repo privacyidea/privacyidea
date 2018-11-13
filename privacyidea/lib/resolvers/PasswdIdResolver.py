@@ -265,7 +265,7 @@ class IdResolver (UserIdResolver):
         """
         # We do not encode the LoginName anymore, as we are
         # storing unicode in nameDict now.
-        if LoginName in self.nameDict.keys():
+        if LoginName in self.nameDict:
             return self.nameDict[LoginName]
         else:
             return ""

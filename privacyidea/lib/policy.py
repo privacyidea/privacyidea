@@ -761,9 +761,9 @@ class PolicyClass(object):
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            static_rights = get_static_policy_definitions(scope).keys()
-            enroll_rights = get_dynamic_policy_definitions(scope).keys()
-            rights = static_rights + enroll_rights
+            tmp_rights = get_static_policy_definitions(scope)
+            tmp_rights.update(get_dynamic_policy_definitions(scope))
+            rights = list(tmp_rights)
         # reduce the list
         rights = list(set(rights))
         log.debug("returning the admin rights: {0!s}".format(rights))
@@ -1008,7 +1008,7 @@ def import_policies(file_contents):
     """
     policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
     res = 0
-    for policy_name, policy in policies.iteritems():
+    for policy_name, policy in policies.items():
         ret = set_policy(name=policy_name,
                          action=ast.literal_eval(policy.get("action")),
                          scope=policy.get("scope"),
@@ -1038,8 +1038,8 @@ def get_static_policy_definitions(scope=None):
     description.
     :rtype: dict
     """
-    resolvers = get_resolver_list().keys()
-    realms = get_realms().keys()
+    resolvers = list(get_resolver_list())
+    realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
     radiusconfigs = [radius.config.identifier for radius in
                      get_radiusservers()]

@@ -172,13 +172,13 @@ class ConfigClass(object):
 
         # reduce the dictionary to only public keys!
         reduced_config = {}
-        for ckey, cvalue in self.config.iteritems():
+        for ckey, cvalue in self.config.items():
             if role == "admin" or cvalue.get("Type") == "public":
                 reduced_config[ckey] = self.config[ckey]
         if not reduced_config and role=="admin":
             reduced_config = self.config
 
-        for ckey, cvalue in reduced_config.iteritems():
+        for ckey, cvalue in reduced_config.items():
             if cvalue.get("Type") == "password":
                 # decrypt the password
                 r_config[ckey] = decryptPassword(cvalue.get("Value"), convert_unicode=True)
@@ -252,7 +252,7 @@ def get_resolver_types():
         this.config["pi_resolver_classes"] = r_classes
         this.config["pi_resolver_types"] = r_types
 
-    return this.config["pi_resolver_types"].values()
+    return list(this.config["pi_resolver_types"].values())
 
 
 def get_caconnector_types():
@@ -279,7 +279,7 @@ def get_resolver_classes():
         this.config["pi_resolver_types"] = r_types
         this.config["pi_resolver_classes"] = r_classes
 
-    return this.config["pi_resolver_classes"].values()
+    return list(this.config["pi_resolver_classes"].values())
 
 
 #@cache.cached(key_prefix="classes")
@@ -355,7 +355,7 @@ def get_token_types():
         this.config["pi_token_types"] = t_types
         this.config["pi_token_classes"] = t_classes
 
-    return this.config["pi_token_types"].values()
+    return list(this.config["pi_token_types"].values())
 
 
 #@cache.cached(key_prefix="prefix")
@@ -397,7 +397,7 @@ def get_token_classes():
         this.config["pi_token_classes"] = t_classes
         this.config["pi_token_types"] = t_types
 
-    return this.config["pi_token_classes"].values()
+    return list(this.config["pi_token_classes"].values())
 
 
 def get_machine_resolver_class_dict():

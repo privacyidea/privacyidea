@@ -523,9 +523,9 @@ def get_policy_defs(scope=None):
     dynamic_pol = get_dynamic_policy_definitions()
 
     # combine static and dynamic policies
-    keys = static_pol.keys() + dynamic_pol.keys()
-    pol = {k: dict(static_pol.get(k, {}).items()
-                   + dynamic_pol.get(k, {}).items()) for k in keys}
+    keys = list(static_pol.keys()) + list(dynamic_pol.keys())
+    pol = {k: dict(list(static_pol.get(k, {}).items())
+                   + list(dynamic_pol.get(k, {}).items())) for k in keys}
 
     if scope:
         pol = pol.get(scope)

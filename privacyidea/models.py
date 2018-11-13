@@ -1605,16 +1605,16 @@ class EventHandler(MethodsMixin, db.Model):
         self.save()
         # add the options to the event handler
         options = options or {}
-        for k, v in options.iteritems():
+        for k, v in options.items():
             EventHandlerOption(eventhandler_id=self.id, Key=k, Value=v).save()
         conditions = conditions or {}
-        for k, v in conditions.iteritems():
+        for k, v in conditions.items():
             EventHandlerCondition(eventhandler_id=self.id, Key=k, Value=v).save()
         # Delete event handler conditions, that ar not used anymore.
         ev_conditions = EventHandlerCondition.query.filter_by(
             eventhandler_id=self.id).all()
         for cond in ev_conditions:
-            if cond.Key not in conditions.keys():
+            if cond.Key not in conditions:
                 EventHandlerCondition.query.filter_by(
                     eventhandler_id=self.id, Key=cond.Key).delete()
                 db.session.commit()
@@ -1966,7 +1966,7 @@ class SMSGateway(MethodsMixin, db.Model):
                     SMSGatewayOption.query.filter_by(gateway_id=self.id,
                                                      Key=option).delete()
         # add the options to the SMS Gateway
-        for k, v in options.iteritems():
+        for k, v in options.items():
             SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
 
     def save(self):
@@ -2565,7 +2565,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.save()
         # add the options to the periodic task
         options = options or {}
-        for k, v in options.iteritems():
+        for k, v in options.items():
             PeriodicTaskOption(periodictask_id=self.id, key=k, value=v)
         # remove all leftover options
         all_options = PeriodicTaskOption.query.filter_by(periodictask_id=self.id).all()

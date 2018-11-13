@@ -342,7 +342,7 @@ def add_user_detail_to_response(request, response):
         #  details
         ui = request.User.info
         ui["password"] = ""
-        for key, value in ui.iteritems():
+        for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui

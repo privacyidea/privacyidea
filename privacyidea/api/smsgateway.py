@@ -95,7 +95,7 @@ def set_gateway():
     providermodule = getParam(param, "module", optional=False)
     description = getParam(param, "description", optional=True)
     options = {}
-    for k, v in param.iteritems():
+    for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
 
