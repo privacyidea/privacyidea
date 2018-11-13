@@ -7,6 +7,7 @@ lib/event.py (the decorator)
 
 import smtpmock
 import responses
+import os
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
@@ -521,7 +522,9 @@ class ScriptEventTestCase(MyTestCase):
                    }
 
         script_name = "ls.sh"
-        t_handler = ScriptEventHandler()
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
         remove_token("SPASS01")
@@ -565,7 +568,9 @@ class ScriptEventTestCase(MyTestCase):
                    }
 
         script_name = "fail.sh"
-        t_handler = ScriptEventHandler()
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
         remove_token("SPASS01")
 

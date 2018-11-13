@@ -33,6 +33,7 @@ The scripts can take parameters like
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
 import json
 import logging
@@ -50,18 +51,23 @@ class ScriptEventHandler(BaseEventHandler):
     """
     An Eventhandler needs to return a list of actions, which it can handle.
     It also returns a list of allowed action and conditions
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the eventhandling definitions
     """
 
     identifier = "Script"
     description = "This event handler can trigger external scripts."
 
-    try:
-        script_directory = get_from_config("PI_SCRIPT_HANDLER_DIRECTORY",
-                                           "/etc/privacyidea/scripts")
-    except RuntimeError:
-        # In case of the tests we are outside of the application context
-        script_directory = "tests/testdata/scripts"
+    def __init__(self, script_directory=None):
+        if not script_directory:
+            try:
+                self.script_directory = get_from_config("PI_SCRIPT_HANDLER_DIRECTORY",
+                                                        "/etc/privacyidea/scripts")
+            except RuntimeError:
+                # In case of the tests we are outside of the application context
+                script_directory = "tests/testdata/scripts"
+
+        else:
+            self.script_directory = script_directory
 
     @property
     def allowed_positions(cls):
@@ -180,26 +186,22 @@ class ScriptEventHandler(BaseEventHandler):
             proc_args.append("--logged_in_role")
             proc_args.append(logged_in_user.get("role", "none"))
 
-        if handler_options.get("background", SCRIPT_BACKGROUND) == SCRIPT_BACKGROUND:
-            try:
-                p = subprocess.Popen(proc_args, cwd=self.script_directory)
-                log.info("Started script {script!r} in background:"
-                         " {process!r}".format(script=script_name, process=p))
-            except Exception as e:
-                log.warning("Failed to execute script {0!r}: {1!r}".format(
-                    script_name, e))
-                log.warning(traceback.format_exc())
+        rcode = 0
+        try:
+            log.info("Starting script {script!r}.".format(script=script_name))
+            p = subprocess.Popen(proc_args, cwd=self.script_directory)
+            if handler_options.get("background") == SCRIPT_WAIT:
+                rcode = p.wait()
 
-        elif handler_options.get("background") == SCRIPT_WAIT:
-            try:
-                log.info("Starting script {script!r} in foreground.".format(script=script_name))
-                r = subprocess.check_call(proc_args, cwd=self.script_directory)
-            except Exception as e:
-                log.warning("Failed to execute script {0!r}: {1!r}".format(
-                    script_name, e))
-                log.warning(traceback.format_exc())
-                if handler_options.get("raise_error"):
-                    raise e
+        except Exception as e:
+            log.warning("Failed to execute script {0!r}: {1!r}".format(
+                script_name, e))
+            log.warning(traceback.format_exc())
+
+        if rcode and handler_options.get("raise_error"):
+            log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
+                                                                                               error=rcode))
+            raise ServerError("Error during execution of the script.")
 
         return ret
 
