@@ -606,10 +606,7 @@ class PolicyClass(object):
 
         if audit_data is not None:
             for p in reduced_policies:
-                if "policies" not in audit_data:
-                    audit_data["policies"] = [p.get("name")]
-                else:
-                    audit_data["policies"].append(p.get("name"))
+                audit_data.setdefault("policies", []).append(p.get("name"))
 
         return reduced_policies
 
@@ -690,19 +687,13 @@ class PolicyClass(object):
             # Save the policynames in a list
             if action_value.startswith("'") and action_value.endswith("'"):
                 action_key = action_dict.get(action)[1:-1]
-                if action_key not in policy_values:
-                    policy_values[action_key] = []
-                policy_values[action_key].append(policy_name)
+                policy_values.setdefault(action_key, []).append(policy_name)
             elif allow_white_space_in_action:
                 action_key = action_dict.get(action)
-                if action_key not in policy_values:
-                    policy_values[action_key] = []
-                policy_values[action_key].append(policy_name)
+                policy_values.setdefault(action_key, []).append(policy_name)
             else:
                 for action_key in action_dict.get(action, "").split():
-                    if action_key not in policy_values:
-                        policy_values[action_key] = []
-                    policy_values[action_key].append(policy_name)
+                    policy_values.setdefault(action_key, []).append(policy_name)
 
         # Check if the policies with the highest priority agree on the action values
         if unique and len(policy_values.keys()) > 1:

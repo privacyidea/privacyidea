@@ -667,15 +667,12 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 audit_data=g.audit_object.audit_data)
 
             if contents_dict:
-                g.audit_object.add_policy(contents_dict.values()[0])
                 kwds["contents"] = contents_dict.keys()[0]
 
             if validity_dict:
-                g.audit_object.add_policy(validity_dict.values()[0])
                 kwds["validity"] = int(validity_dict.keys()[0])
 
             if pw_len_dict:
-                g.audit_object.add_policy(pw_len_dict.values()[0])
                 kwds["pw_len"] = int(pw_len_dict.keys()[0])
 
     return wrapped_function(*args, **kwds)

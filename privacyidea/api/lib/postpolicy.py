@@ -310,14 +310,14 @@ def no_detail_on_success(request, response):
     detailPol = policy_object.get_policies(action=ACTION.NODETAILSUCCESS,
                                            scope=SCOPE.AUTHZ,
                                            client=g.client_ip,
-                                           active=True,
-                                           audit_data=g.audit_object.audit_data)
+                                           active=True)
 
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
+        g.audit_object.add_policy(list(detailPol.values())[0])
 
     return response
 
@@ -339,8 +339,7 @@ def add_user_detail_to_response(request, response):
     detail_pol = policy_object.get_policies(action=ACTION.ADDUSERINRESPONSE,
                                             scope=SCOPE.AUTHZ,
                                             client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
+                                            active=True)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -352,19 +351,20 @@ def add_user_detail_to_response(request, response):
                 ui[key] = str(value)
         content["detail"]["user"] = ui
         response.data = json.dumps(content)
+        g.audit_object.add_policy(list(detail_pol.values())[0])
 
     # Check for ADD RESOLVER IN RESPONSE
     detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
                                             scope=SCOPE.AUTHZ,
                                             client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
+                                            active=True)
 
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
         content["detail"]["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
         response.data = json.dumps(content)
+        g.audit_object.add_policy(list(detail_pol.values())[0])
 
     return response
 
@@ -387,14 +387,14 @@ def no_detail_on_fail(request, response):
     detailPol = policy_object.get_policies(action=ACTION.NODETAILFAIL,
                                            scope=SCOPE.AUTHZ,
                                            client=g.client_ip,
-                                           active=True,
-                                           audit_data=g.audit_object.audit_data)
+                                           active=True)
 
     if detailPol and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
+        g.audit_object.add_policy(list(detailPol.values())[0])
 
     return response
 
