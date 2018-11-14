@@ -201,11 +201,13 @@ class Audit(object):  # pragma: no cover
         :param policyname: A string or a list of strings as policynames
         :return:
         """
+        if "policies" not in self.audit_data:
+            self.audit_data["policies"] = []
         if type(policyname) == list:
             for p in policyname:
-                self.add_to_log({"policies": p}, add_with_comma=True)
+                self.audit_data["policies"].append(p)
         else:
-            self.add_to_log({"policies": policyname}, add_with_comma=True)
+            self.audit_data["policies"].append(policyname)
 
     def finalize_log(self):
         """

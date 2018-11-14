@@ -607,9 +607,9 @@ class PolicyClass(object):
         if audit_data is not None:
             for p in reduced_policies:
                 if "policies" not in audit_data:
-                    audit_data["policies"] = p.get("name")
+                    audit_data["policies"] = [p.get("name")]
                 else:
-                    audit_data["policies"] += u",{0!s}".format(p.get("name"))
+                    audit_data["policies"].append(p.get("name"))
 
         return reduced_policies
 

@@ -213,6 +213,7 @@ class Audit(AuditBase):
         It should hash the data and do a hash chain and sign the data
         """
         try:
+            self.audit_data["policies"] = ",".join(self.audit_data.get("policies",[]))
             if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
                 self._truncate_data()
             le = LogEntry(action=self.audit_data.get("action"),

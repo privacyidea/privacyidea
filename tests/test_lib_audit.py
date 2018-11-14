@@ -239,8 +239,7 @@ class AuditTestCase(MyTestCase):
 
     def test_08_policies(self):
         self.Audit.log({"action": "validate/check"})
-        self.Audit.add_to_log({"policies": "rule1"}, add_with_comma=True)
-        self.Audit.add_to_log({"policies": "rule2"}, add_with_comma=True)
+        self.Audit.add_policy(["rule1", "rule2"])
         self.Audit.add_policy("rule3")
         self.Audit.finalize_log()
         audit_log = self.Audit.search({"policies": "*rule1*"})
