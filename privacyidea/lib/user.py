@@ -597,20 +597,12 @@ def get_user_list(param=None, user=None):
     searchDict = {"username": "*"}
     param = param or {}
 
-    # we have to recreate a new searchdict without the realm key
-    # as delete does not work
-    for key in param:
-        lval = param[key]
-        if key == "realm":
-            continue
-        if key == "resolver":
-            continue
-        if key == "user":
-            # If "user" is in the param we overwrite the username
-            key = "username"
-
-        searchDict[key] = lval
-        log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
+    # update searchdict depending on existence of 'user' or 'username' in param
+    if 'username' in param:
+        searchDict['username'] = param['username']
+    if 'user' in param:
+        searchDict['username'] = param['user']
+    log.debug('Changed search key to username: %s.', searchDict['username'])
 
     # determine which scope we want to show
     param_resolver = getParam(param, "resolver")

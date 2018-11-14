@@ -82,6 +82,7 @@ from privacyidea.lib.utils import to_utf8, to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
+from operator import itemgetter
 
 CACHE = {}
 
@@ -664,7 +665,8 @@ class IdResolver (UserIdResolver):
         and the name of the resolver.
         """
         s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
-                                          self.searchfilter, self.userinfo)
+                                           self.searchfilter,
+                                           sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
         return r
 

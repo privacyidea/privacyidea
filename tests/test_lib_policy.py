@@ -497,7 +497,7 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
         rights = P.ui_get_rights(SCOPE.USER, "realm2", "user")
         # there was still another policy...
-        self.assertEqual(rights, ["enable", "disable"])
+        self.assertEqual(set(rights), {"enable", "disable"})
 
         delete_policy("tokenEnroll")
         delete_policy("userpol")

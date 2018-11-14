@@ -721,7 +721,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -789,7 +789,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertEqual('8372b96a28ff8b4710f4aba838d5f9891ad4e381', rid)
+        self.assertEqual('2a92363e3f9da66321d9ff71b3cd0c464e990b02', rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -856,7 +856,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), len(LDAPDirectory))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -898,7 +898,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1537,7 +1537,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1591,7 +1591,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
