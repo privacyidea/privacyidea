@@ -15,6 +15,7 @@ from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import mock
 import responses
+import datetime
 import uuid
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
@@ -28,7 +29,9 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver)
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
+
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -102,7 +105,13 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
                                 "objectGUID": objectGUIDs[1],
-                                'oid': "1"}}
+                                'oid': "1"}},
+                       {"dn": 'cn=salesman,ou=example,o=test',
+                        "attributes": {'cn': 'salesman',
+                                       'givenName': 'hans',
+                                       'sn': 'Meyer',
+                                       'mobile': ['1234', '3456'],
+                                       'objectGUID': objectGUIDs[2]}}
                        ]
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1
@@ -1819,6 +1828,99 @@ class LDAPResolverTestCase(MyTestCase):
 
         info = y.getUserInfo(uid)
         self.assertEqual(info['username'], objectGUIDs[0])
+
+    @ldap3mock.activate
+    def test_32_cache_expiration(self):
+        # This test checks if the short-living cache deletes expired
+        # entries. NOTE: This does not test a multi-threaded scenario!
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        cache_timeout = 120
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(&(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': cache_timeout
+                      })
+        from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
+        # assert that the other tests haven't left anything in the cache
+        self.assertNotIn(y.getResolverId(), CACHE)
+        bob_id = y.getUserId('bob')
+        # assert the cache contains this entry
+        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob']['value'], bob_id)
+        # assert subsequent requests for the same data hit the cache
+        with mock.patch.object(ldap3mock.Connection, 'search') as mock_search:
+            bob_id2 = y.getUserId('bob')
+            self.assertEqual(bob_id, bob_id2)
+            mock_search.assert_not_called()
+        self.assertIn('bob', CACHE[y.getResolverId()]['getUserId'])
+        # assert requests later than CACHE_TIMEOUT seconds query the directory again
+        now = datetime.datetime.now()
+        with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
+                        wraps=datetime.datetime) as mock_datetime:
+            # we now live CACHE_TIMEOUT + 2 seconds in the future
+            mock_datetime.now.return_value = now + datetime.timedelta(seconds=cache_timeout + 2)
+            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+                bob_id3 = y.getUserId('bob')
+                self.assertEqual(bob_id, bob_id3)
+                mock_search.assert_called_once()
+        # assert the cache contains this entry, with the updated timestamp
+        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob'],
+                         {'value': bob_id,
+                          'timestamp': now + datetime.timedelta(seconds=cache_timeout + 2)})
+        # we now go 2 * (CACHE_TIMEOUT + 2) seconds to the future and query for someone else's user ID.
+        # This will cause bob's cache entry to be evicted.
+        with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
+                        wraps=datetime.datetime) as mock_datetime:
+            mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
+            manager_id = y.getUserId('manager')
+        self.assertEqual(CACHE[y.getResolverId()]['getUserId'].keys(), ['manager'])
+
+    @ldap3mock.activate
+    def test_33_cache_disabled(self):
+        # This test checks if the short-living cache deletes expired
+        # entries. NOTE: This does not test a multi-threaded scenario!
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(|(cn=*))', # we use this weird search filter to get a unique resolver ID
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'NOREFERRALS': True,
+                      'CACHE_TIMEOUT': 0
+                      })
+        from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
+        # assert that the other tests haven't left anything in the cache
+        self.assertNotIn(y.getResolverId(), CACHE)
+        bob_id = y.getUserId('bob')
+        # assert the cache does not contain this entry
+        self.assertNotIn(y.getResolverId(), CACHE)
+        # assert subsequent requests query the directory
+        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.l.search) as mock_search:
+            bob_id2 = y.getUserId('bob')
+            self.assertEqual(bob_id, bob_id2)
+            mock_search.assert_called_once()
+
+
 
 class BaseResolverTestCase(MyTestCase):
 

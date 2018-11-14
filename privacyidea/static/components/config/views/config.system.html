@@ -91,6 +91,14 @@
             </div>
         </div>
         <div class="form-group col-sm-12">
+            <input name="NoAuthCounter" id="NoAuthCounter"
+                   ng-model="params.no_auth_counter"
+                   type="checkbox"
+                    ng-checked="isChecked(params.no_auth_counter)"/>
+            <label for="NoAuthCounter" translate>Do not use an authentication counter per token.
+            </label>
+        </div>
+        <div class="form-group col-sm-12">
             <input name="PrependPin" id="PrependPin"
                    ng-model="params.PrependPin"
                    type="checkbox"

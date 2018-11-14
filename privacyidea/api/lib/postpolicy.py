@@ -595,6 +595,14 @@ def get_webui_settings(request, response):
             audit_data=g.audit_object.audit_data
         )
         hide_welcome = bool(hide_welcome)
+        hide_buttons = policy_object.get_policies(
+            action=ACTION.HIDE_BUTTONS,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True,
+        )
+        hide_buttons = bool(hide_buttons)
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -653,6 +661,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
         content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)

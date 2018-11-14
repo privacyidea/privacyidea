@@ -677,6 +677,7 @@ myApp.controller("configController", function ($scope, $location,
             //debug: console.log(data);
             $scope.params = data.result.value;
             $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
+            $scope.params.no_auth_counter = $scope.isChecked($scope.params.no_auth_counter);
             $scope.params['PrependPin.type'] = "public";
             $scope.params.splitAtSign = $scope.isChecked($scope.params.splitAtSign);
             $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);

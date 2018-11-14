@@ -72,7 +72,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password
+from privacyidea.lib.utils import generate_password, is_true
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo)
@@ -221,6 +221,8 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(Token.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
+            if type(uid) == int:
+                uid = str(uid)
             sql_query = sql_query.filter(Token.user_id == uid)
 
     if active is not None:
@@ -272,7 +274,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None):
+               maxfail=None, psize=None, page=1):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -318,8 +320,14 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
+    :param psize: The number of returned tokens can be restricted by using the parameter psize.
+        Pagination then is used.
+    :type psize: int
+    :param page: If pagination is used, this is the page to get
+    :type page: int
 
-    :return: A list of tokenclasses (lib.tokenclass)
+    :return: A list of tokenclasses (lib.tokenclass).
+        In case of pagination a tuple of count, prev, next, token_list
     :rtype: list
     """
     token_list = []
@@ -341,6 +349,25 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
+    elif psize:
+        # We return a paginated list of token objects.
+        pagination = sql_query.paginate(page, per_page=psize,
+                                        error_out=False)
+        count = pagination.total
+        prev = None
+        if pagination.has_prev:
+            prev = page - 1
+        next = None
+        if pagination.has_next:
+            next = page + 1
+        for token in pagination.items:
+            tokenobject = create_tokenclass_object(token)
+            if isinstance(tokenobject, TokenClass):
+                # A database token, that has a non existing type, will
+                # return None, and not a TokenClass. We do not want to
+                # add None to our list
+                token_list.append(tokenobject)
+        ret = count, prev, next, token_list
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():
@@ -1995,6 +2022,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     """
     res = False
     reply_dict = {}
+    increase_auth_counters = not is_true(get_from_config(key="no_auth_counter"))
 
     # add the user to the options, so that every token, that get passed the
     # options can see the user
@@ -2086,7 +2114,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            token_obj.inc_count_auth_success()
+            if increase_auth_counters:
+                token_obj.inc_count_auth_success()
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
@@ -2156,7 +2185,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 if tokenobject.is_active():
                     # OTP matches
                     res = True
-                    tokenobject.inc_count_auth_success()
+                    if increase_auth_counters:
+                        tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
                     tokenobject.challenge_janitor()
                     # clean up all other challenges from other tokens. I.e.
@@ -2231,8 +2261,9 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 _r, pin, otp = token.split_pin_pass(passw)
                 if token.is_previous_otp(otp):
                     reply_dict["message"] += ". previous otp used again"
-            for token_obj in pin_matching_token_list:
-                token_obj.inc_count_auth()
+            if increase_auth_counters:
+                for token_obj in pin_matching_token_list:
+                    token_obj.inc_count_auth()
             # write the serial numbers to the audit log
             if len(pin_matching_token_list) == 1:
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
@@ -2247,7 +2278,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         if get_inc_fail_count_on_false_pin():
             for tokenobject in invalid_token_list:
                 tokenobject.inc_failcount()
-                tokenobject.inc_count_auth()
+                if increase_auth_counters:
+                    tokenobject.inc_count_auth()
 
     return res, reply_dict
 

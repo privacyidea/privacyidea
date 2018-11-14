@@ -12,7 +12,8 @@
             <td>
                 <button class="btn btn-danger" ng-click="delete()"
                         id="deleteButton"
-                        ng-disabled="!checkRight('delete')">
+                        ng-disabled="!checkRight('delete')"
+                        ng-hide="!checkRight('delete') && hide_buttons">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
@@ -38,6 +39,7 @@
                 <button class="btn btn-danger"
                         id="disableButton"
                         ng-disabled="!checkRight('disable')"
+                        ng-hide="!checkRight('disable') && hide_buttons"
                         translate>Disable</button>
             </span>
             <span ng-show="!token.active && !token.locked"
@@ -45,13 +47,16 @@
                 <button class="btn btn-success"
                         id="enableButton"
                         ng-disabled="!checkRight('enable')"
+                        ng-hide="!checkRight('enable') && hide_buttons"
                         translate>Enable</button>
             </span>
             <span ng-show="!token.revoked"
                   ng-click="revoke()">
-                <button class="btn btn-danger" translate
+                <button class="btn btn-danger"
                         id="revokeButton"
-                        ng-disabled="!checkRight('revoke')">
+                        ng-disabled="!checkRight('revoke')"
+                        ng-hide="!checkRight('revoke') && hide_buttons"
+                        translate>
                     Revoke</button>
             </span>
             </td>
@@ -66,6 +71,8 @@
             token-data="{{ token.maxfail }}"
             token-key="max_failcount"
             token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('set') }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -84,6 +91,7 @@
                         ng-show="token.failcount > 0"
                         ng-click="reset()"
                         ng-disabled="!checkRight('reset')"
+                        ng-hide="!checkRight('reset') && hide_buttons"
                         translate>Reset fail counter
                 </button>
             </td>
@@ -104,6 +112,8 @@
             token-data="{{ token.count_window }}"
             token-key="count_window"
             token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('set') }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -114,6 +124,8 @@
             token-data="{{ token.sync_window }}"
             token-key="sync_window"
             token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('set') }}"
             input-pattern="[0-9]*"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -124,6 +136,8 @@
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ token.description }}"
             token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('set') }}"
             token-key="description"
             callback-cancel="get()"
             callback="set(key, value)"
@@ -221,9 +235,11 @@
             </td>
             <td>
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
+                    <!-- These values are set via the set-API not via the settokeninfo API! -->
                     <button class="btn btn-primary"
                             id="tiEditButton"
-                            ng-hide="editTokenInfo"
+                            ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
+                            ng-disable="!checkRight('set')"
                             ng-click="editTokenInfo=1"
                             translate>Edit
                     </button>
@@ -265,7 +281,8 @@
                 <div ng-show="loggedInUser.role == 'admin' && !token.locked">
                     <button class="btn btn-primary"
                             id="trEditButton"
-                            ng-hide="editTokenRealm"
+                            ng-hide="editTokenRealm || (!checkRight('tokenrealms') && hide_buttons)"
+                            ng-disable="!checkRight('tokenrealms')"
                             ng-click="startEditRealm()"
                             translate>Edit
                     </button>
@@ -288,7 +305,7 @@
         <!-- =================== TOKEN FUNCTIONS =============================== -->
 
         <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0
-            || token.locked">
+            || token.locked || !checkRight('resync')">
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
@@ -303,8 +320,7 @@
                 <button class="btn btn-primary"
                         id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
-                        ng-click="resyncToken()"
-                        ng-disabled="!checkRight('resync')">
+                        ng-click="resyncToken()">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Resync Token</span>
                 </button>
