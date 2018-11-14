@@ -16,29 +16,20 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-import functools
-from huey import RedisHuey
-
-huey = RedisHuey()
 
 
-def fire_and_forget(result):
-    def decorator(f):
-        @functools.wraps(f)
-        def decorated(*args, **kwargs):
-            f(*args, **kwargs)
-            return result
-        return decorated
-    return decorator
+class Promise(object):
+    def __init__(self):
+        pass
+
+    def get(self):
+        raise NotImplementedError()
 
 
-def task():
-    def decorator(f):
-        @functools.wraps(f)
-        def decorated(*args, **kwargs):
-            from privacyidea.app import create_app
-            app = create_app()
-            with app.app_context():
-                return f(*args, **kwargs)
-        return huey.task()(decorated)
-    return decorator
+class ImmediatePromise(Promise):
+    def __init__(self, result):
+        Promise.__init__(self)
+        self.result = result
+
+    def get(self):
+        return self.result
