@@ -64,7 +64,7 @@ class ScriptEventHandler(BaseEventHandler):
                                                         "/etc/privacyidea/scripts")
             except RuntimeError:
                 # In case of the tests we are outside of the application context
-                script_directory = "tests/testdata/scripts"
+                self.script_directory = "tests/testdata/scripts"
 
         else:
             self.script_directory = script_directory
