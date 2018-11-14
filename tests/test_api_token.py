@@ -2,6 +2,7 @@ from .base import MyTestCase
 import json
 import os
 import datetime
+import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     PolicyClass)
 from privacyidea.lib.token import get_tokens, init_token, remove_token
@@ -1464,7 +1465,7 @@ class APITokenTestCase(MyTestCase):
             seed_url = detail.get("otpkey").get("value")
             self.assertEqual(seed_url[:len('seed://')], 'seed://')
             seed = seed_url[len('seed://'):]
-            self.assertEqual(len(seed.decode('hex')), 42)
+            self.assertEqual(len(codecs.decode(seed, 'hex')), 42)
         remove_token(serial)
 
     def test_27_fail_to_assign_empty_serial(self):

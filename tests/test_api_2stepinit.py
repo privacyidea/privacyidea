@@ -458,7 +458,7 @@ class TwoStepInitTestCase(MyTestCase):
                           result.get("error").get("message"))
 
         # Authentication does not work yet!
-        wrong_otp_value = HmacOtp().generate(key=server_component, counter=int(time.time()/30))
+        wrong_otp_value = HmacOtp().generate(key=server_component, counter=int(time.time() // 30))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -491,7 +491,7 @@ class TwoStepInitTestCase(MyTestCase):
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp().generate(key=otpkey_bin, counter=int(time.time()/30))
+        otp_value = HmacOtp().generate(key=otpkey_bin, counter=int(time.time() // 30))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -553,7 +553,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertIn('2step_salt=11', google_url)
             self.assertIn('2step_output=64', google_url)
         # Authentication does not work yet!
-        wrong_otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=server_component, counter=int(time.time() / 60))
+        wrong_otp_value = HmacOtp(digits=8,
+                                  hashfunc=hashlib.sha512).generate(key=server_component,
+                                                                    counter=int(time.time() // 60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
@@ -607,7 +609,9 @@ class TwoStepInitTestCase(MyTestCase):
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=otpkey_bin, counter=int(time.time()/60))
+        otp_value = HmacOtp(digits=8,
+                            hashfunc=hashlib.sha512).generate(key=otpkey_bin,
+                                                              counter=int(time.time() // 60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,

@@ -49,6 +49,7 @@ import hashlib
 import ldap3
 import re
 import pyparsing
+import codecs
 
 try:
     from six import cStringIO as BufferIO
@@ -738,7 +739,7 @@ class Ldap3Mock(object):
         label_removed = reference_pw[6:]
 
         # Decode base64 and strip salt
-        digest_salt = label_removed.decode('base64')
+        digest_salt = codecs.decode(label_removed, 'base64')
         reference_pw_sha = digest_salt[:20]
         # Strip off the salt for use encoding the user supplied password
         salt = digest_salt[20:]

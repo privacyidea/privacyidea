@@ -176,7 +176,7 @@ class ConfigTestCase(MyTestCase):
 
     def test_05_machine_resolvers(self):
         (classes, types) = get_machine_resolver_class_dict()
-        self.assertTrue("hosts" in types.values(), types.values())
+        self.assertTrue("hosts" in types.values(), list(types.values()))
         self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
                         in classes, classes)
 
