@@ -105,8 +105,13 @@
                 <td><a ui-sref="config.resolvers.list">
                     {{ audit.resolver }}</a></td>
                 <td><span ng-repeat="policy in audit.policies">
-                        <a ui-sref="config.policies.details({policyname:policy})"
-                            ng-click="$rootScope.returnTo=audit;">{{ policy }}</a> 
+                        <span ng-if="policy.endsWith('+')">
+                            {{ policy }}
+                        </span>
+                        <span ng-if="!policy.endsWith('+')">
+                            <a ui-sref="config.policies.details({policyname:policy})"
+                                ng-click="$rootScope.returnTo=audit;">{{ policy }}</a>
+                        </span>
                     </span>
                 </td>
                 <td>{{ audit.client }}</td>

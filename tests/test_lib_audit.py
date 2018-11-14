@@ -219,10 +219,10 @@ class AuditTestCase(MyTestCase):
                                     u"Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
         self.Audit._truncate_data()
         self.assertTrue(len(self.Audit.audit_data.get("policies")) <= 255)
-        # Some cities like Stuttart and Düsseldorf already get truncated :-)
-        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfur,Stuttgar,Düsseldo,Dortmund,Essen,Leipzig,Bremen,"
-                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wupperta,Bielefel,Bonn,Münster,Karlsruh,"
-                         u"Mannheim,Augsburg,Wiesbaden,Gelsenkir,Mönchengl,Braunschw,Kiel,Chemnitz,Aachen,Magdeburg",
+        # Some cities like Stuttgart and Düsseldorf already get truncated :-)
+        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfu+,Stuttga+,Düsseld+,Dortmund,Essen,Leipzig,Bremen,"
+                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wuppert+,Bielefe+,Bonn,Münster,Karlsru+,"
+                         u"Mannheim,Augsburg,Wiesbaden,Gelsenki+,Möncheng+,Braunsch+,Kiel,Chemnitz,Aachen,Magdeburg",
                          self.Audit.audit_data.get("policies"))
 
     def test_07_sign_non_ascii_entry(self):

@@ -451,18 +451,18 @@ class UtilsTestCase(MyTestCase):
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
         self.assertEqual(len(r), 19)
-        self.assertEqual(r, "12345,234567,345678")
+        self.assertEqual(r, "1234+,234567,345678")
 
         r = truncate_comma_list("123456,234567,345678", 18)
         self.assertEqual(len(r), 18)
-        self.assertEqual(r, "12345,23456,345678")
+        self.assertEqual(r, "1234+,2345+,345678")
 
         r = truncate_comma_list("123456,234567,345678", 16)
         self.assertEqual(len(r), 16)
-        self.assertEqual(r, "1234,23456,34567")
+        self.assertEqual(r, "123+,2345+,3456+")
 
         # There are more entries than the max_len. We will not be able
         # to shorten all entries, so we simply take the beginning of the string.
         r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
         self.assertEqual(len(r), 4)
-        self.assertEqual(r, "12,2")
+        self.assertEqual(r, "12,+")
