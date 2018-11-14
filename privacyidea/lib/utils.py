@@ -1158,3 +1158,54 @@ def truncate_comma_list(data, max_len):
             new_data.append(d)
         data = new_data
     return ",".join(data)
+
+
+def check_pin_policy(pin, policy):
+    """
+    The policy to check a PIN can contain of "c", "n" and "s".
+    "cn" means, that the PIN should contain a character and a number.
+    "+cn" means, that the PIN should contain elements from the group of characters and numbers
+    "-ns" means, that the PIN must not contain numbers or special characters
+
+    :param pin: The PIN to check
+    :param policy: The policy that describes the allowed contents of the PIN.
+    :return: Tuple of True or False and a description
+    """
+    chars = {"c": "[a-zA-Z]",
+             "n": "[0-9]",
+             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
+    exclusion = False
+    grouping = False
+    ret = True
+    comment = []
+
+    if not policy:
+        return False, "No policy given."
+
+    if policy[0] == "+":
+        # grouping
+        necessary = []
+        for char in policy[1:]:
+            necessary.append(chars.get(char))
+        necessary = "|".join(necessary)
+        if not re.search(necessary, pin):
+            ret = False
+            comment.append("Missing character in PIN: {0!s}".format(necessary))
+
+    elif policy[0] == "-":
+        # exclusion
+        not_allowed = []
+        for char in policy[1:]:
+            not_allowed.append(chars.get(char))
+        not_allowed = "|".join(not_allowed)
+        if re.search(not_allowed, pin):
+            ret = False
+            comment.append("Not allowed character in PIN!")
+
+    else:
+        for c in chars:
+            if c in policy and not re.search(chars[c], pin):
+                ret = False
+                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+
+    return ret, ",".join(comment)

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Implement remaining pin policies
 #  2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add wrapper for U2F token
 #  2017-01-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -64,7 +66,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import (generate_password, get_client_ip,
-                                   parse_timedelta, is_true)
+                                   parse_timedelta, is_true, check_pin_policy)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -290,25 +292,9 @@ def check_otp_pin(request=None, action=None):
 
     if len(pol_contents) == 1:
         # check the contents requirement
-        chars = "[a-zA-Z]"  # c
-        digits = "[0-9]"    # n
-        special = "[.:,;_<>+*!/()=?$§%&#~\^-]"  # s
-        no_others = False
-        grouping = False
-
-        #if pol_contents.keys()[0][0] == "-":
-        #    no_others = True
-        #    pol_contents = pol_contents[1:]
-        #elif pol_contents.keys()[0][0] == "+":
-        #    grouping = True
-        #    pol_contents = pol_contents[1:]
-        #  TODO implement grouping and substraction
-        if "c" in pol_contents.keys()[0] and not re.search(chars, pin):
-            raise PolicyError("Missing character in PIN: {0!s}".format(chars))
-        if "n" in pol_contents.keys()[0] and not re.search(digits, pin):
-            raise PolicyError("Missing character in PIN: {0!s}".format(digits))
-        if "s" in pol_contents.keys()[0] and not re.search(special, pin):
-            raise PolicyError("Missing character in PIN: {0!s}".format(special))
+        r, comment = check_pin_policy(pin, list(pol_contents)[0])
+        if r is False:
+            raise PolicyError(comment)
 
     return True
 
