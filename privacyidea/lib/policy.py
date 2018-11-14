@@ -1828,7 +1828,7 @@ def get_action_values_from_options(scope, action, options):
                               unique=True,
                               allow_white_space_in_action=True)
         if len(value) >= 1:
-            return value.keys()[0]
+            return list(value)[0]
         else:
             return None
 

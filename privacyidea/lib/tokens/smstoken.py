@@ -488,7 +488,7 @@ class SmsTokenClass(HotpTokenClass):
                                   audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
-                message = messages.keys()[0]
+                message = list(messages)[0]
 
         # Replace the {challenge}:
         message = message.format(challenge=options.get("challenge"))

@@ -169,9 +169,9 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             user=user_object.login,
             client=clientip,
             unique=True)
-        if auth_cache_dict.keys():
+        if auth_cache_dict:
             # verify in cache and return an early success
-            auth_times = auth_cache_dict.keys()[0].split("/")
+            auth_times = list(auth_cache_dict)[0].split("/")
             # determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
 
@@ -377,7 +377,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
         if len(max_fail_dict) == 1:
-            policy_count, tdelta = parse_timelimit(max_fail_dict.keys()[0])
+            policy_count, tdelta = parse_timelimit(list(max_fail_dict)[0])
             fail_c = g.audit_object.get_count({"user": user_object.login,
                                                "realm": user_object.realm,
                                                "action":
@@ -386,7 +386,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                               timedelta=tdelta)
             log.debug("Checking users timelimit %s: %s "
                       "failed authentications" %
-                      (max_fail_dict.keys()[0], fail_c))
+                      (list(max_fail_dict)[0], fail_c))
             if fail_c >= policy_count:
                 res = False
                 reply_dict["message"] = ("Only %s failed authentications "
@@ -397,7 +397,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             # Check for maximum successful authentications
             # Only in case of a successful authentication
             if len(max_success_dict) == 1:
-                policy_count, tdelta = parse_timelimit(max_success_dict.keys()[0])
+                policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
                 # check the successful authentications for this user
                 succ_c = g.audit_object.get_count({"user": user_object.login,
                                                    "realm": user_object.realm,
@@ -407,7 +407,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                   timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
                           "succesful authentications" %
-                          (max_success_dict.keys()[0], succ_c))
+                          (list(max_success_dict)[0], succ_c))
                 if succ_c >= policy_count:
                     res = False
                     reply_dict["message"] = ("Only %s successfull "
@@ -480,7 +480,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 client=clientip, unique=True)
 
             if len(last_auth_dict.keys()) == 1:
-                res = token.check_last_auth_newer(last_auth_dict.keys()[0])
+                res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
                     reply_dict["message"] = "The last successful " \
                                             "authentication was %s. " \
@@ -530,11 +530,11 @@ def login_mode(wrapped_function, *args, **kwds):
 
         if login_mode_dict:
             # There is a login mode policy
-            if login_mode_dict.keys()[0] == LOGINMODE.PRIVACYIDEA:
+            if list(login_mode_dict)[0] == LOGINMODE.PRIVACYIDEA:
                 # The original function should check against privacyidea!
                 kwds["check_otp"] = True
 
-            if login_mode_dict.keys()[0] == LOGINMODE.DISABLE:
+            if list(login_mode_dict)[0] == LOGINMODE.DISABLE:
                 # The login to the webui is disabled
                 raise PolicyError("The login for this user is disabled.")
 
@@ -586,15 +586,15 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                                       client=clientip,
                                                       unique=True,
                                                       audit_data=g.audit_object.audit_data)
-        if otppin_dict.keys():
-            if otppin_dict.keys()[0] == ACTIONVALUE.NONE:
+        if otppin_dict:
+            if list(otppin_dict)[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
                     return True
                 else:
                     return False
 
-            if otppin_dict.keys()[0] == ACTIONVALUE.USERSTORE:
+            if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
                 rv = user_object.check_password(pin)
                 return rv is not None
 
@@ -667,13 +667,13 @@ def config_lost_token(wrapped_function, *args, **kwds):
                 audit_data=g.audit_object.audit_data)
 
             if contents_dict:
-                kwds["contents"] = contents_dict.keys()[0]
+                kwds["contents"] = list(contents_dict)[0]
 
             if validity_dict:
-                kwds["validity"] = int(validity_dict.keys()[0])
+                kwds["validity"] = int(list(validity_dict)[0])
 
             if pw_len_dict:
-                kwds["pw_len"] = int(pw_len_dict.keys()[0])
+                kwds["pw_len"] = int(list(pw_len_dict)[0])
 
     return wrapped_function(*args, **kwds)
 

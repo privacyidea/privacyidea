@@ -260,7 +260,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         if len(tokeninfo) != 1:
             raise privacyIDEAError("I can only create SQL filters from "
                                    "tokeninfo of length 1.")
-        sql_query = sql_query.filter(TokenInfo.Key == tokeninfo.keys()[0])
+        sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
         sql_query = sql_query.filter(TokenInfo.Value == tokeninfo.values()[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 

@@ -458,7 +458,7 @@ def save_pin_change(request, response, serial=None):
                     audit_data=g.audit_object.audit_data)
                 if pinpol:
                     token = get_tokens(serial=serial)[0]
-                    token.set_next_pin_change(diff=pinpol.keys()[0])
+                    token.set_next_pin_change(diff=list(pinpol)[0])
 
     # we do not modify the response!
     return response
@@ -617,19 +617,19 @@ def get_webui_settings(request, response):
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
         if len(token_page_size_pol) == 1:
-            token_page_size = int(token_page_size_pol.keys()[0])
+            token_page_size = int(list(token_page_size_pol)[0])
         if len(user_page_size_pol) == 1:
-            user_page_size = int(user_page_size_pol.keys()[0])
+            user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
-            default_tokentype = default_tokentype_pol.keys()[0]
+            default_tokentype = list(default_tokentype_pol)[0]
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
-            logout_time = int(logout_time_pol.keys()[0])
+            logout_time = int(list(logout_time_pol)[0])
 
         timeout_action = DEFAULT_TIMEOUT_ACTION
         if len(timeout_action_pol) == 1:
-            timeout_action = timeout_action_pol.keys()[0]
+            timeout_action = list(timeout_action_pol)[0]
 
         policy_template_url_pol = policy_object.get_action_values(
             action=ACTION.POLICYTEMPLATEURL,
@@ -640,7 +640,7 @@ def get_webui_settings(request, response):
 
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
         if len(policy_template_url_pol) == 1:
-            policy_template_url = policy_template_url_pol.keys()[0]
+            policy_template_url = list(policy_template_url_pol)[0]
 
         content["result"]["value"]["logout_time"] = logout_time
         content["result"]["value"]["token_page_size"] = token_page_size
@@ -703,7 +703,7 @@ def autoassign(request, response):
                     (res, pin, otp) = token_obj.split_pin_pass(password)
                     if res:
                         pin_check = True
-                        if autoassign_values.keys()[0] == \
+                        if list(autoassign_values)[0] == \
                                 AUTOASSIGNVALUE.USERSTORE:
                             # If the autoassign policy is set to userstore,
                             # we need to check against the userstore.

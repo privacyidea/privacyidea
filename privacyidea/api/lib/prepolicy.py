@@ -146,8 +146,8 @@ def init_random_pin(request=None, action=None):
                                                audit_data=g.audit_object.audit_data)
 
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(pin_pols.keys()[0]))
-        request.all_data["pin"] = generate_password(size=int(pin_pols.keys()[0]))
+        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
         handle_pols = policy_object.get_action_values(
@@ -280,15 +280,15 @@ def check_otp_pin(request=None, action=None):
                        user=username, realm=realm, adminrealm=admin_realm,
                        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data)
 
-    if len(pol_minlen) == 1 and len(pin) < int(pol_minlen.keys()[0]):
+    if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
         # check the minimum length requirement
         raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                          pol_minlen.keys()[0]))
+                          list(pol_minlen)[0]))
 
-    if len(pol_maxlen) == 1 and len(pin) > int(pol_maxlen.keys()[0]):
+    if len(pol_maxlen) == 1 and len(pin) > int(list(pol_maxlen)[0]):
         # check the maximum length requirement
         raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                          pol_maxlen.keys()[0]))
+                          list(pol_maxlen)[0]))
 
     if len(pol_contents) == 1:
         # check the contents requirement
@@ -325,7 +325,7 @@ def papertoken_count(request=None, action=None):
         audit_data=g.audit_object.audit_data)
 
     if pols:
-        papertoken_count = pols.keys()[0]
+        papertoken_count = list(pols)[0]
         request.all_data["papertoken_count"] = papertoken_count
 
     return True
@@ -357,7 +357,7 @@ def tantoken_count(request=None, action=None):
         audit_data=g.audit_object.audit_data)
 
     if pols:
-        tantoken_count = pols.keys()[0]
+        tantoken_count = list(pols)[0]
         request.all_data["tantoken_count"] = tantoken_count
 
     return True
@@ -479,7 +479,7 @@ def init_tokenlabel(request=None, action=None):
 
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
-        request.all_data["tokenlabel"] = label_pols.keys()[0]
+        request.all_data["tokenlabel"] = list(label_pols)[0]
 
     issuer_pols = policy_object.get_action_values(action=ACTION.TOKENISSUER,
                                                   scope=SCOPE.ENROLL,
@@ -490,7 +490,7 @@ def init_tokenlabel(request=None, action=None):
                                                   allow_white_space_in_action=True,
                                                   audit_data=g.audit_object.audit_data)
     if len(issuer_pols) == 1:
-        request.all_data["tokenissuer"] = issuer_pols.keys()[0]
+        request.all_data["tokenissuer"] = list(issuer_pols)[0]
 
     imageurl_pols = policy_object.get_action_values(action=ACTION.APPIMAGEURL,
                                                     scope=SCOPE.ENROLL,
@@ -501,7 +501,7 @@ def init_tokenlabel(request=None, action=None):
                                                     allow_white_space_in_action=True,
                                                     audit_data=g.audit_object.audit_data)
     if len(imageurl_pols) == 1:
-        request.all_data["appimageurl"] = imageurl_pols.keys()[0]
+        request.all_data["appimageurl"] = list(imageurl_pols)[0]
 
     return True
 
@@ -551,7 +551,7 @@ def twostep_enrollment_activation(request=None, action=None):
                                                            adminrealm=adminrealm,
                                                            audit_data=g.audit_object.audit_data)
     if twostep_enabled_pols:
-        enabled_setting = twostep_enabled_pols.keys()[0]
+        enabled_setting = list(twostep_enabled_pols)[0]
         if enabled_setting == "allow":
             # The user is allowed to pass 2stepinit=1
             pass
@@ -619,7 +619,7 @@ def twostep_enrollment_parameters(request=None, action=None):
                                                             adminrealm=adminrealm,
                                                             audit_data=g.audit_object.audit_data)
             if action_values:
-                request.all_data[parameter] = action_values.keys()[0]
+                request.all_data[parameter] = list(action_values)[0]
 
 
 def check_max_token_user(request=None, action=None):
@@ -747,7 +747,7 @@ def set_realm(request=None, action=None):
                           "new realm. Conflicting policies exist.")
     elif len(new_realm) == 1:
         # There is one specific realm, which we set in the request
-        request.all_data["realm"] = new_realm.keys()[0]
+        request.all_data["realm"] = list(new_realm)[0]
 
     return True
 
