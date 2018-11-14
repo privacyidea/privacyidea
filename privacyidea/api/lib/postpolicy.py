@@ -317,7 +317,7 @@ def no_detail_on_success(request, response):
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
-        g.audit_object.add_policy(list(detailPol.values())[0])
+        g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
 
@@ -351,7 +351,7 @@ def add_user_detail_to_response(request, response):
                 ui[key] = str(value)
         content["detail"]["user"] = ui
         response.data = json.dumps(content)
-        g.audit_object.add_policy(list(detail_pol.values())[0])
+        g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
     detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
@@ -364,7 +364,7 @@ def add_user_detail_to_response(request, response):
         content["detail"]["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
         response.data = json.dumps(content)
-        g.audit_object.add_policy(list(detail_pol.values())[0])
+        g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     return response
 
@@ -394,7 +394,7 @@ def no_detail_on_fail(request, response):
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
-        g.audit_object.add_policy(list(detailPol.values())[0])
+        g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
 
