@@ -955,7 +955,7 @@ def delete_policy(name):
     Raise ResourceNotFoundError if there is no such policy.
 
     :param name: the name of the policy to be deleted
-    :return: the ID of the deletec policy
+    :return: the ID of the deleted policy
     :rtype: int
     """
     return fetch_one_resource(Policy, name=name).delete()
