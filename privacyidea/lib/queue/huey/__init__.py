@@ -16,9 +16,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+import functools
 from huey import RedisHuey
 
-from privacyidea.lib.queue.base import BaseQueue
+from privacyidea.lib.queue.base import BaseQueue, QueueError
 from privacyidea.lib.queue.promise import Promise
 
 
@@ -32,10 +33,25 @@ class HueyQueue(BaseQueue):
     def huey(self):
         return self._huey
 
-    def add_task(self, name, func):
-        self._tasks[name] = self._huey.task()(func)
+    def add_task(self, name, func, fire_and_forget=True):
+        if name in self._tasks:
+            raise QueueError(u"Task {!r} already exists".format(name))
+
+        @functools.wraps(func)
+        def decorated(*args, **kwargs):
+            from privacyidea.app import create_app
+            app = create_app()
+            with app.app_context():
+                result = func(*args, **kwargs)
+                if fire_and_forget:
+                    return None
+                else:
+                    return result
+        self._tasks[name] = self._huey.task()(decorated)
 
     def enqueue(self, name, args, kwargs):
+        if name not in self._tasks:
+            raise QueueError(u"Unknown task: {!r}".format(name))
         return HueyPromise(self._tasks[name](*args, **kwargs))
 
 

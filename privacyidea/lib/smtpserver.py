@@ -128,7 +128,6 @@ class SMTPServer(object):
         return success
 
 
-@task("smtpserver.send_email_identifier", fire_and_forget=True)
 @log_with(log)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):

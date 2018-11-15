@@ -69,7 +69,6 @@ import logging
 import traceback
 import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
-from privacyidea.lib.queue import wrap_task
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true
@@ -106,12 +105,6 @@ class EmailTokenClass(HotpTokenClass):
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         self.hashlibStr = get_from_config("hotp.hashlib", "sha1")
-
-        # TODO: Here, we can decide whether to use a task queue or not
-        if True:
-            self.send_email_identifier = wrap_task("smtpserver.send_email_identifier", True)
-        else:
-            self.send_email_identifier = send_email_identifier
 
     @property
     def _email_address(self):
@@ -454,8 +447,8 @@ class EmailTokenClass(HotpTokenClass):
         identifier = get_from_config("email.identifier")
         if identifier:
             # New way to send email
-            ret = self.send_email_identifier(identifier, recipient, subject, message, mimetype=mimetype)
-            # TODO: Check if this will cause a memory leak for the result
+            ret = send_email_identifier(identifier, recipient, subject, message,
+                                        mimetype=mimetype)
         else:
             # old way to send email / DEPRECATED
             mailserver = get_from_config("email.mailserver", "localhost")

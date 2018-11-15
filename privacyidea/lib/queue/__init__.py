@@ -16,9 +16,9 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-import functools
 from flask import current_app
 
+from privacyidea.lib.queue.collector import TaskCollector
 from privacyidea.lib.queue.huey import HueyQueue
 from privacyidea.lib.queue.null import NullQueue
 
@@ -27,54 +27,50 @@ QUEUE_CLASSES = {
     "null": NullQueue,
 }
 
-class JobCollector(object):
-    def __init__(self):
-        self._tasks = {}
-
-    def add_task(self, name, func, *args, **kwargs):
-        self._tasks[name] = (func, args, kwargs)
-
-    def register_app(self, app):
-        if "task_queue" in app.config:
-            raise RuntimeError("App already has a task queue: {!r}".format(app.config["task_queue"]))
-        queue_class = QUEUE_CLASSES[app.config.get("PI_TASK_QUEUE_CLASS", "null")]
-        task_queue = queue_class()
-        app.config["task_queue"] = task_queue
-        for name, (func, args, kwargs) in self._tasks.items():
-            task_queue.add_task(name, func, *args, **kwargs)
+#: A singleton is fine here, because it is only used at
+#: import time and once when a new app is created.
+#: Afterwards, the object is unused.
+TASK_COLLECTOR = TaskCollector(QUEUE_CLASSES, "null")
 
 
-COLLECTOR = JobCollector()
-
-
-def task(name, fire_and_forget=False):
+def task(name, *args, **kwargs):
+    """
+    Decorator to mark a task to be collected by the task collector.
+    All arguments are passed to ``BaseQueue.add_task``.
+    """
     def decorator(f):
-        @functools.wraps(f)
-        def decorated(*args, **kwargs):
-            from privacyidea.app import create_app
-            app = create_app()
-            with app.app_context():
-                result = f(*args, **kwargs)
-                if fire_and_forget:
-                    return None
-                else:
-                    return result
-
-        COLLECTOR.add_task(name, decorated)
+        TASK_COLLECTOR.add_task(name, f, args, kwargs)
         return f
     return decorator
 
 
 def register_app(app):
-    COLLECTOR.register_app(app)
+    """
+    Register the app ``app`` with the global task collector.
+    """
+    TASK_COLLECTOR.register_app(app)
 
 
 def get_task_queue():
+    """
+    Get the task queue registered with the current app.
+    """
     return current_app.config["task_queue"]
 
 
 def wrap_task(name, result):
+    """
+    Wrap a task and return a function that can be used like the original function.
+    The returned function will always return ``result``.
+    This is only useful for fire-and-forget tasks. Then, the returned function
+    can be used to simulate a successful execution of the task, even though
+    the task is actually executed later and asynchronously by the task queue worker.
+    In particular, this does not wait for the actual task result.
+    This may cause memory leaks for tasks that are not fire-and-forget tasks.
+    :return: a function
+    """
     def caller(*args, **kwargs):
-        _ = get_task_queue().enqueue(name, args, kwargs) # we discard the promise
+        # We discard the promise
+        _ = get_task_queue().enqueue(name, args, kwargs)
         return result
     return caller

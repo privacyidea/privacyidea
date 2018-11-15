@@ -16,7 +16,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea.lib.queue.base import BaseQueue
+from privacyidea.lib.queue.base import BaseQueue, QueueError
 from privacyidea.lib.queue.promise import ImmediatePromise
 
 
@@ -25,8 +25,16 @@ class NullQueue(BaseQueue):
         BaseQueue.__init__(self)
         self._tasks = {}
 
-    def add_task(self, name, func):
+    @property
+    def tasks(self):
+        return self._tasks
+
+    def add_task(self, name, func, fire_and_forget=False):
+        if name in self._tasks:
+            raise QueueError(u"Task {!r} already exists".format(name))
         self._tasks[name] = func
 
     def enqueue(self, name, args, kwargs):
+        if name not in self._tasks:
+            raise QueueError(u"Unknown task: {!r}".format(name))
         return ImmediatePromise(self._tasks[name](*args, **kwargs))

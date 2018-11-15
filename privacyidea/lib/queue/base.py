@@ -18,8 +18,12 @@
 #
 
 
+class QueueError(Exception):
+    pass
+
+
 class BaseQueue(object):
-    def add_task(self, name, func):
+    def add_task(self, name, func, fire_and_forget=False):
         raise NotImplementedError()
 
     def enqueue(self, name, args, kwargs):
