@@ -748,8 +748,8 @@ def autoassign(request, response):
                                      "info":
                                          "Token assigned via auto assignment",
                                      "serial": token_obj.token.serial})
-                                # The token was assigned by autoassign. We save the policy name
-                                g.audit_object.add_policy(autoassign_values.values()[0])
+                                # The token was assigned by autoassign. We save the first policy name
+                                g.audit_object.add_policy(next(iter(autoassign_values.values())))
                                 break
 
     return response

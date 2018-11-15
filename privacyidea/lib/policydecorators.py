@@ -123,7 +123,7 @@ def challenge_response_allowed(func):
                 resolver=user_object.resolver,
                 user=user_object.login,
                 client=clientip)
-            log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes_dict.keys()))
+            log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
 
             # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
             # could look like this:
@@ -189,7 +189,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      first_auth=first_auth,
                                      last_auth=last_auth)
             if result:
-                g.audit_object.add_policy(auth_cache_dict.values()[0])
+                g.audit_object.add_policy(next(iter(auth_cache_dict.values())))
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, we return the wrapped function
@@ -391,7 +391,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                 res = False
                 reply_dict["message"] = ("Only %s failed authentications "
                                          "per %s" % (policy_count, tdelta))
-                g.audit_object.add_policy(max_fail_dict.values()[0])
+                g.audit_object.add_policy(next(iter(max_fail_dict.values())))
 
         if res:
             # Check for maximum successful authentications
@@ -413,7 +413,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                     reply_dict["message"] = ("Only %s successfull "
                                              "authentications per %s"
                                              % (policy_count, tdelta))
-                    g.audit_object.add_policy(max_success_dict.values()[0])
+                    g.audit_object.add_policy(next(iter(max_success_dict.values())))
 
     return res, reply_dict
 
@@ -486,7 +486,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                                             "authentication was %s. " \
                                             "It is to long ago." % \
                                             token.get_tokeninfo(ACTION.LASTAUTH)
-                    g.audit_object.add_policy(last_auth_dict.values()[0])
+                    g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
             # set the last successful authentication, if res still true
             if res:
