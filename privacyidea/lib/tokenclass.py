@@ -97,7 +97,7 @@ from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
 from .utils import parse_timedelta, parse_legacy_time
-from policy import ACTION
+from .policy import ACTION
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import is_true

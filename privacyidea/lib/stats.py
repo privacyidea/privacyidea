@@ -27,7 +27,7 @@ import logging
 import traceback
 from privacyidea.lib.log import log_with
 import datetime
-import StringIO
+from io import BytesIO
 log = logging.getLogger(__name__)
 
 try:
@@ -79,7 +79,7 @@ def get_statistics(auditobject, start_time=datetime.datetime.now()
 def _get_success_fail(df, key):
 
     try:
-        output = StringIO.StringIO()
+        output = BytesIO()
         # in this case series is actually a dataframe
         series = df[df.action.isin(["POST /validate/check",
                                     "GET /validate/check"])].groupby([key,
@@ -105,7 +105,7 @@ def _get_success_fail(df, key):
 def _get_fail(df, key, nums=5):
 
     try:
-        output = StringIO.StringIO()
+        output = BytesIO()
         series = df[(df.success==0)
                     & (df.action.isin(["POST /validate/check",
                                        "GET /validate/check"]))][
@@ -145,7 +145,7 @@ def _get_number_of(df, key, nums=5):
     :param num: how many of the most often values should be plotted
     :return: A data url
     """
-    output = StringIO.StringIO()
+    output = BytesIO()
     output.truncate(0)
     try:
         plot_canvas = matplotlib.pyplot.figure()

@@ -58,7 +58,7 @@ import logging
 import yaml
 import functools
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE

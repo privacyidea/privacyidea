@@ -47,7 +47,7 @@ import base64
 
 import logging
 log = logging.getLogger(__name__)
-from urllib import quote
+from six.moves.urllib.parse import quote
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
 

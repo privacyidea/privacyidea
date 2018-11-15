@@ -47,7 +47,7 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 import re
 import logging
 log = logging.getLogger(__name__)
