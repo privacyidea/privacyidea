@@ -129,7 +129,7 @@ def challenge_response_allowed(func):
             # could look like this:
             # ["tiqr hotp totp", "tiqr motp"]
             chal_resp_found = False
-            for toks in allowed_tokentypes_dict.keys():
+            for toks in allowed_tokentypes_dict:
                 if token.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
                     # This token is allowed to to chal resp
                     chal_resp_found = True
@@ -479,7 +479,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 user=login,
                 client=clientip, unique=True)
 
-            if len(last_auth_dict.keys()) == 1:
+            if len(last_auth_dict) == 1:
                 res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
                     reply_dict["message"] = "The last successful " \

@@ -658,7 +658,7 @@ def check_max_token_user(request=None, action=None):
                 # token can be regenerated
                 return True
             already_assigned_tokens = len(tokenobject_list)
-            max_value = max([int(x) for x in limit_list.keys()])
+            max_value = max([int(x) for x in limit_list])
             if already_assigned_tokens >= max_value:
                 g.audit_object.add_policy(limit_list.get(str(max_value)))
                 raise PolicyError(ERROR)
@@ -700,7 +700,7 @@ def check_max_token_realm(request=None, action=None):
             # we need to check how many tokens the realm already has assigned!
             tokenobject_list = get_tokens(realm=realm)
             already_assigned_tokens = len(tokenobject_list)
-            max_value = max([int(x) for x in limit_list.keys()])
+            max_value = max([int(x) for x in limit_list])
             if already_assigned_tokens >= max_value:
                 g.audit_object.add_policy(limit_list.get(str(max_value)))
                 raise PolicyError(ERROR)
@@ -1156,7 +1156,7 @@ def is_remote_user_allowed(req):
     .. note:: This is not used as a decorator!
 
     :param req: The flask request, containing the remote user and the client IP
-    :return:
+    :return: a bool value
     """
     res = False
     if req.remote_user:
@@ -1176,7 +1176,7 @@ def is_remote_user_allowed(req):
                                                          client=g.client_ip,
                                                          audit_data=g.audit_object.audit_data)
 
-        res = ruser_active.keys()
+        res = bool(ruser_active)
 
     return res
 
