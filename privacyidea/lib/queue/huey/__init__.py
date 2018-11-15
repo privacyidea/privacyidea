@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  2018-11-14 Friedrich Weber <friedrich.weber@netknights.it>
-#             Add a task queue
+#             Add a job queue
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,15 +27,15 @@ class HueyQueue(BaseQueue):
     def __init__(self):
         BaseQueue.__init__(self)
         self._huey = RedisHuey()
-        self._tasks = {}
+        self._jobs = {}
 
     @property
     def huey(self):
         return self._huey
 
-    def add_task(self, name, func, fire_and_forget=True):
-        if name in self._tasks:
-            raise QueueError(u"Task {!r} already exists".format(name))
+    def add_job(self, name, func, fire_and_forget=True):
+        if name in self._jobs:
+            raise QueueError(u"Job {!r} already exists".format(name))
 
         @functools.wraps(func)
         def decorated(*args, **kwargs):
@@ -47,12 +47,12 @@ class HueyQueue(BaseQueue):
                     return None
                 else:
                     return result
-        self._tasks[name] = self._huey.task()(decorated)
+        self._jobs[name] = self._huey.task()(decorated)
 
     def enqueue(self, name, args, kwargs):
-        if name not in self._tasks:
-            raise QueueError(u"Unknown task: {!r}".format(name))
-        return HueyPromise(self._tasks[name](*args, **kwargs))
+        if name not in self._jobs:
+            raise QueueError(u"Unknown job: {!r}".format(name))
+        return HueyPromise(self._jobs[name](*args, **kwargs))
 
 
 class HueyPromise(Promise):

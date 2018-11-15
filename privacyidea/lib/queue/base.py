@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  2018-10-31 Friedrich Weber <friedrich.weber@netknights.it>
-#             Add a task queue
+#             Add a job queue
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,7 +23,7 @@ class QueueError(Exception):
 
 
 class BaseQueue(object):
-    def add_task(self, name, func, fire_and_forget=False):
+    def add_job(self, name, func, fire_and_forget=False):
         raise NotImplementedError()
 
     def enqueue(self, name, args, kwargs):

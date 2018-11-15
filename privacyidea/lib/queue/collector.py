@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  2018-11-15 Friedrich Weber <friedrich.weber@netknights.it>
-#             Add a task queue
+#             Add a job queue
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,16 +18,16 @@
 #
 
 
-class TaskCollector(object):
+class JobCollector(object):
     """
-    For most third-party task queue modules, the tasks are discovered by tracking all
-    functions decorated with a ``@task`` decorator. However, in order
+    For most third-party job queue modules, the jobs are discovered by tracking all
+    functions decorated with a ``@job`` decorator. However, in order
     to invoke the decorator, one usually needs to provide the queue
     configuration (e.g. the redis server) already.
     In privacyIDEA, we cannot do that, because the app config is not known
     yet -- it will be known when ``create_app`` is called!
-    Thus, we cannot directly use the @task decorator, but need a task collector
-    that collects tasks in privacyIDEA code and registers them with the task
+    Thus, we cannot directly use the @job decorator, but need a job collector
+    that collects jobs in privacyIDEA code and registers them with the job
     queue module when ``create_app`` has been called.
     """
     def __init__(self, queue_classes, default_queue_class_name):
@@ -35,40 +35,40 @@ class TaskCollector(object):
         :param queue_classes: A dictionary mapping class names to BaseQueue sclasses
         :param default_queue_class_name: Class name to use if the config specifies no queue class
         """
-        self._tasks = {}
+        self._jobs = {}
         self._queue_classes = queue_classes
         self._default_queue_class_name = default_queue_class_name
 
     @property
-    def tasks(self):
-        return self._tasks
+    def jobs(self):
+        return self._jobs
 
-    def add_task(self, name, func, args, kwargs):
+    def add_job(self, name, func, args, kwargs):
         """
-        Register a task with the collector.
-        :param name: unique name of the task
-        :param func: function of the task
-        :param args: arguments passed to the task queue's ``add_task`` method
-        :param kwargs: keyword arguments passed to the task queue's ``add_task`` method
+        Register a job with the collector.
+        :param name: unique name of the job
+        :param func: function of the job
+        :param args: arguments passed to the job queue's ``add_job`` method
+        :param kwargs: keyword arguments passed to the job queue's ``add_job`` method
         """
-        if name in self._tasks:
-            raise RuntimeError("Duplicate tasks: {!r}".format(name))
-        self._tasks[name] = (func, args, kwargs)
+        if name in self._jobs:
+            raise RuntimeError("Duplicate jobs: {!r}".format(name))
+        self._jobs[name] = (func, args, kwargs)
 
     def register_app(self, app):
         """
         Create an instance of a ``BaseQueue`` subclass according to the app config's
-        ``PI_TASK_QUEUE_CLASS`` option and store it in the ``task_queue`` config.
-        Register all collected tasks with this application.
+        ``PI_JOB_QUEUE_CLASS`` option and store it in the ``job_queue`` config.
+        Register all collected jobs with this application.
         This instance is shared between threads!
         This function should only be called once per process.
         :param app: privacyIDEA app
         """
-        if "task_queue" in app.config:
-            raise RuntimeError("App already has a task queue: {!r}".format(app.config["task_queue"]))
-        queue_class = self._queue_classes[app.config.get("PI_TASK_QUEUE_CLASS", self._default_queue_class_name)]
-        task_queue = queue_class()
-        app.config["task_queue"] = task_queue
-        for name, (func, args, kwargs) in self._tasks.items():
-            task_queue.add_task(name, func, *args, **kwargs)
+        if "job_queue" in app.config:
+            raise RuntimeError("App already has a job queue: {!r}".format(app.config["job_queue"]))
+        queue_class = self._queue_classes[app.config.get("PI_JOB_QUEUE_CLASS", self._default_queue_class_name)]
+        job_queue = queue_class()
+        app.config["job_queue"] = job_queue
+        for name, (func, args, kwargs) in self._jobs.items():
+            job_queue.add_job(name, func, *args, **kwargs)
 

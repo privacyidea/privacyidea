@@ -1,12 +1,12 @@
 """
-This file contains the tests for the task queue modules.
+This file contains the tests for the job queue modules.
 
 In particular, this tests
 lib/queue/*.py
 """
 from mock import MagicMock, mock
 
-from privacyidea.lib.queue import task, TASK_COLLECTOR, TaskCollector, get_task_queue, NullQueue, wrap_task
+from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, NullQueue, wrap_job
 from privacyidea.lib.queue.base import QueueError
 from privacyidea.lib.queue.promise import ImmediatePromise
 from .base import MyTestCase
@@ -20,12 +20,12 @@ class TestSender(object):
 SENDER = TestSender()
 
 
-@task("test.my_add")
+@job("test.my_add")
 def my_add(a, b):
     return a + b
 
 
-@task("test.my_send_mail", fire_and_forget=True)
+@job("test.my_send_mail", fire_and_forget=True)
 def my_send_mail(message):
     SENDER.send_mail(message)
     return 1337
@@ -33,26 +33,26 @@ def my_send_mail(message):
 
 class NullQueueTestCase(MyTestCase):
     def test_01_collector(self):
-        self.assertIsInstance(TASK_COLLECTOR, TaskCollector)
+        self.assertIsInstance(JOB_COLLECTOR, JobCollector)
         self.assertDictContainsSubset({
             "test.my_add": (my_add, (), {}),
             "test.my_send_mail": (my_send_mail, (), {"fire_and_forget": True})
-        }, TASK_COLLECTOR.tasks)
+        }, JOB_COLLECTOR.jobs)
         with self.assertRaises(RuntimeError):
-            TASK_COLLECTOR.register_app(self.app)
+            JOB_COLLECTOR.register_app(self.app)
 
-    def test_02_app_task_queue(self):
-        queue = get_task_queue()
+    def test_02_app_job_queue(self):
+        queue = get_job_queue()
         self.assertIsInstance(queue, NullQueue)
         self.assertDictContainsSubset({
             "test.my_add": my_add,
             "test.my_send_mail": my_send_mail
-        }, queue.tasks)
+        }, queue.jobs)
         with self.assertRaises(QueueError):
-            queue.add_task("test.my_add", lambda x: x)
+            queue.add_job("test.my_add", lambda x: x)
 
-    def test_03_enqueue_tasks(self):
-        queue = get_task_queue()
+    def test_03_enqueue_jobs(self):
+        queue = get_job_queue()
         promise = queue.enqueue("test.my_add", (3, 4), {})
         self.assertIsInstance(promise, ImmediatePromise)
         self.assertEqual(promise.get(), 7)
@@ -65,8 +65,8 @@ class NullQueueTestCase(MyTestCase):
         with self.assertRaises(QueueError):
             queue.enqueue("test.unknown", ("hi",), {})
 
-    def test_04_wrap_tasks(self):
-        wrapped = wrap_task("test.my_send_mail", True)
+    def test_04_wrap_jobs(self):
+        wrapped = wrap_job("test.my_send_mail", True)
         with mock.patch.object(SENDER, 'send_mail') as mock_mail:
             result = wrapped("hi")
             mock_mail.assert_called_once_with("hi")

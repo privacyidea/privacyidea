@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #  2018-11-14 Friedrich Weber <friedrich.weber@netknights.it>
-#             Add a task queue
+#             Add a job queue
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,13 +18,13 @@
 #
 
 from privacyidea.app import create_app
-from privacyidea.lib.queue import register_app, get_task_queue
+from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.queue.huey import HueyQueue
 
 app = create_app(config_name='production')
 
 with app.app_context():
-    queue = get_task_queue()
+    queue = get_job_queue()
     if not isinstance(queue, HueyQueue):
         raise NotImplementedError("{!r} is not a HueyQueue".format(queue))
 
