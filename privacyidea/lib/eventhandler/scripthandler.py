@@ -198,10 +198,11 @@ class ScriptEventHandler(BaseEventHandler):
                 script_name, e))
             log.warning(traceback.format_exc())
 
-        if rcode and handler_options.get("raise_error"):
+        if rcode:
             log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
                                                                                                error=rcode))
-            raise ServerError("Error during execution of the script.")
+            if handler_options.get("raise_error"):
+                raise ServerError("Error during execution of the script.")
 
         return ret
 
