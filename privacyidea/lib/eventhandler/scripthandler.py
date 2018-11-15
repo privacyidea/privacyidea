@@ -32,10 +32,10 @@ The scripts can take parameters like
 * logged_in_user
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_app_config
 from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
-import json
 import logging
 import subprocess
 import os
@@ -201,7 +201,7 @@ class ScriptEventHandler(BaseEventHandler):
         if rcode:
             log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
                                                                                                error=rcode))
-            if handler_options.get("raise_error"):
+            if is_true(handler_options.get("raise_error")):
                 raise ServerError("Error during execution of the script.")
 
         return ret
