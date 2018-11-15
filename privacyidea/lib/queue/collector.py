@@ -17,6 +17,10 @@
 #
 #
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class JobCollector(object):
     """
@@ -66,8 +70,13 @@ class JobCollector(object):
         """
         if "job_queue" in app.config:
             raise RuntimeError("App already has a job queue: {!r}".format(app.config["job_queue"]))
-        queue_class = self._queue_classes[app.config.get("PI_JOB_QUEUE_CLASS", self._default_queue_class_name)]
+        queue_class_name = app.config.get("PI_JOB_QUEUE_CLASS", self._default_queue_class_name)
+        if queue_class_name not in self._queue_classes:
+            log.warning(u"Unknown job queue class name: {!r}".format(queue_class_name))
+            queue_class_name = self._default_queue_class_name
+        queue_class = self._queue_classes[queue_class_name]
         job_queue = queue_class()
+        log.info(u"Created a new job queue: {!r}".format(job_queue))
         app.config["job_queue"] = job_queue
         for name, (func, args, kwargs) in self._jobs.items():
             job_queue.add_job(name, func, *args, **kwargs)

@@ -17,6 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.queue import job
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
@@ -128,6 +129,7 @@ class SMTPServer(object):
 
 
 @log_with(log)
+@job("smtpserver.send_email_identifier_faf", fire_and_forget=True)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):
     """
