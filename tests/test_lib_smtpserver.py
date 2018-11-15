@@ -7,7 +7,7 @@ from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer)
 from privacyidea.models import SMTPServer as SMTPServerDB
-import smtpmock
+from . import smtpmock
 from smtplib import SMTPException
 
 
