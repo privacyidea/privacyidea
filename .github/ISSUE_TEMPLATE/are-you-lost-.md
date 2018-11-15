@@ -1,6 +1,6 @@
 ---
 name: Are you lost?
-about: If you do not found a bug and do not want to suggest a new feature, you probably
+about: If you did not find a bug and do not want to suggest a new feature, you probably
   have some questions.
 labels: 
 
