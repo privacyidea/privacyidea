@@ -16,4 +16,6 @@ But you need to have working resolver.py and realm.py to be able to
 work with user.py
 """
 
-from flask_babel import gettext as _
+from .framework import _
+
+__all__ = ['_']

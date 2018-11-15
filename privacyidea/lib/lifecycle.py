@@ -19,7 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import logging
-from flask import g
+from .framework import get_request_local_store
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +31,10 @@ def register_finalizer(func):
     :param func: a function that takes no arguments
     """
     # from http://flask.pocoo.org/snippets/53/
-    if not hasattr(g, 'call_on_teardown'):
-        g.call_on_teardown = []
-    g.call_on_teardown.append(func)
+    store = get_request_local_store()
+    if 'call_on_teardown' not in store:
+        store['call_on_teardown'] = []
+    store['call_on_teardown'].append(func)
 
 
 def call_finalizers():
@@ -41,11 +42,12 @@ def call_finalizers():
     Call all finalizers that have been registered with the current request.
     Exceptions will be caught and written to the log.
     """
-    if hasattr(g, 'call_on_teardown'):
-        for func in g.call_on_teardown:
+    store = get_request_local_store()
+    if 'call_on_teardown' in store:
+        for func in store['call_on_teardown']:
             try:
                 func()
             except Exception as exx:
                 log.warning(u"Caught exception in finalizer: {!r}".format(exx))
                 log.debug(u"Exception in finalizer:", exc_info=True)
-        g.call_on_teardown = []
+        store['call_on_teardown'] = []

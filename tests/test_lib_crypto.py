@@ -12,7 +12,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
                                     get_alphanum_str,
-                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, _get_hsm)
+                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, get_hsm)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -414,17 +414,17 @@ class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
 
     def test_01_simple(self):
         with self.pkcs11:
-            self.assertIsInstance(_get_hsm(), AESHardwareSecurityModule)
+            self.assertIsInstance(get_hsm(), AESHardwareSecurityModule)
             r = encryptPin("test")
             pin = decryptPin(r)
             self.assertEqual(pin, "test")
 
-            self.assertTrue(_get_hsm().is_ready)
+            self.assertTrue(get_hsm().is_ready)
             self.assertEqual(self.pkcs11.session_mock.encrypt.call_count, 1)
 
     def test_02_fault_recovery(self):
         with self.pkcs11:
-            hsm = _get_hsm()
+            hsm = get_hsm()
             self.assertIsInstance(hsm, AESHardwareSecurityModule)
 
             # encryption initially works

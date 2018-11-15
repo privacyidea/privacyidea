@@ -46,7 +46,6 @@ from .log import log_with
 from .error import HSMException
 import binascii
 import ctypes
-from flask import current_app
 from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
@@ -63,6 +62,7 @@ import passlib.hash
 import sys
 import traceback
 
+from privacyidea.lib.framework import get_application_local_store, get_app_config, get_app_config_values
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -270,7 +270,7 @@ def hash_with_pepper(password, rounds=10023, salt_size=10):
 
     :return: Hash string
     """
-    key = current_app.config.get("PI_PEPPER", "missing")
+    key = get_app_config("PI_PEPPER", "missing")
     pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password, rounds=rounds,
                                                 salt_size=salt_size)
     return pw_dig
@@ -279,14 +279,14 @@ def hash_with_pepper(password, rounds=10023, salt_size=10):
 def verify_with_pepper(passwordhash, password):
     # get the password pepper
     password = password or ""
-    key = current_app.config.get("PI_PEPPER", "missing")
+    key = get_app_config("PI_PEPPER", "missing")
     success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
     return success
 
 
 def init_hsm():
     """
-    Initialize the HSM in the current_app config
+    Initialize the HSM in the app-local store
 
     The config file pi.cfg may contain PI_HSM_MODULE and parameters like:
     PI_HSM_MODULE_MODULE
@@ -294,27 +294,47 @@ def init_hsm():
 
     :return: hsm object
     """
-    config = current_app.config
-    if "pi_hsm" not in config or not isinstance(config["pi_hsm"], dict):
+    app_store = get_application_local_store()
+    if "pi_hsm" not in app_store or not isinstance(store["pi_hsm"], dict):
+        config = get_app_config_values()
         HSM_config = {"obj": create_hsm_object(config)}
-        current_app.config["pi_hsm"] = HSM_config
+        app_store["pi_hsm"] = HSM_config
         log.info("Initialized HSM object {0}".format(HSM_config))
-    hsm = current_app.config.get("pi_hsm").get('obj')
-    return hsm
+    return app_store["pi_hsm"]["obj"]
 
 
-def _get_hsm():
+def get_hsm(require_ready=True):
+    """
+    Check that the HSM has been set up properly and return it.
+    If it is None, raise a HSMException.
+    If it is not ready, raise a HSMException. Optionally, the ready check can be disabled.
+    :param require_ready: Check whether the HSM is ready
+    :return: a HSM module object
+    """
     hsm = init_hsm()
-    if hsm is None or not hsm.is_ready:  # pragma: no cover
+    if hsm is None:
+        raise HSMException('hsm is None!')
+    if require_ready and not hsm.is_ready:
         raise HSMException('hsm not ready!')
-
     return hsm
+
+
+def set_hsm_password(password):
+    """
+    Set the password for the HSM. Raises an exception if the HSM is already set up.
+    :param password: password string
+    :return: boolean flag indicating whether the HSM is ready now
+    """
+    hsm = init_hsm()
+    if hsm.is_ready:
+        raise HSMException("HSM already set up.")
+    return hsm.setup_module({"password": password})
 
 
 @log_with(log, log_entry=False)
 def encryptPassword(password):
     from privacyidea.lib.utils import to_utf8
-    hsm = _get_hsm()
+    hsm = get_hsm()
     try:
         ret = hsm.encrypt_password(to_utf8(password))
     except Exception as exx:  # pragma: no cover
@@ -325,7 +345,7 @@ def encryptPassword(password):
 
 @log_with(log, log_entry=False)
 def encryptPin(cryptPin):
-    hsm = _get_hsm()
+    hsm = get_hsm()
     ret = hsm.encrypt_pin(cryptPin)
     return ret
 
@@ -349,7 +369,7 @@ def decryptPassword(cryptPass, convert_unicode=False):
     # other call sites of ``decryptPassword``. So we add the
     # keyword argument to avoid breaking compatibility.
     from privacyidea.lib.utils import to_unicode
-    hsm = _get_hsm()
+    hsm = get_hsm()
     try:
         ret = hsm.decrypt_password(cryptPass)
     except Exception as exx:  # pragma: no cover
@@ -366,7 +386,7 @@ def decryptPassword(cryptPass, convert_unicode=False):
 
 @log_with(log, log_exit=False)
 def decryptPin(cryptPin):
-    hsm = _get_hsm()
+    hsm = get_hsm()
     ret = hsm.decrypt_pin(cryptPin)
     return ret
 
@@ -386,7 +406,7 @@ def encrypt(data, iv, id=0):
 
 
     '''
-    hsm = _get_hsm()
+    hsm = get_hsm()
     ret = hsm.encrypt(data, iv, id)
     return ret
 
@@ -405,7 +425,7 @@ def decrypt(input, iv, id=0):
     :return:      decryted buffer
 
     '''
-    hsm = _get_hsm()
+    hsm = get_hsm()
     ret = hsm.decrypt(input, iv, id)
     return ret
 
@@ -495,7 +515,7 @@ def geturandom(length=20, hex=False):
     :return: buffer of bytes
 
     '''
-    hsm = _get_hsm()
+    hsm = get_hsm()
     ret = hsm.random(length)
         
     if hex:

@@ -33,7 +33,7 @@ from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
 import functools
-from flask import current_app
+from privacyidea.lib.framework import get_app_config
 import os
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -273,7 +273,7 @@ def check_signature(subscription):
     :return: True
     """
     vendor = subscription.get("by_name").split()[0]
-    enckey = current_app.config.get("PI_ENCFILE", "/etc/privacyidea/enckey")
+    enckey = get_app_config("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
     filename = "{0!s}/{1!s}.pem".format(dirname, vendor)

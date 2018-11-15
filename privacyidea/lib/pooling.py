@@ -32,7 +32,7 @@ This module is tested in tests/test_lib_pooling.py.
 import logging
 from threading import Lock
 
-from flask import current_app
+from privacyidea.lib.framework import get_application_local_store, get_app_config
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ DEFAULT_REGISTRY_CLASS_NAME = "null"
 def get_registry():
     """
     Return the ``EngineRegistry`` object associated with the current application.
-    If there is no such object yet, create one and write it to ``current_app.config``.
+    If there is no such object yet, create one and write it to the app-local store.
     This respects the ``PI_ENGINE_REGISTRY_CLASS`` config option.
     :return: an ``EngineRegistry`` object
     """
@@ -104,19 +104,20 @@ def get_registry():
     # This is no problem when we already have an engine registry object.
     # However, if there is no registry object yet, two threads may concurrently
     # decide to create a new one. But as ``setdefault`` is atomic, only the
-    # first one will be the written to ``current_app.config``. The latter
+    # first one will be the written to ``store['config']``. The latter
     # one will not be referenced and will be garbage-collected at some point.
+    app_store = get_application_local_store()
     try:
-        return current_app.config["engine_registry"]
+        return app_store["engine_registry"]
     except KeyError:
         # create a new engine registry of the appropriate class
-        registry_class_name = current_app.config.get("PI_ENGINE_REGISTRY_CLASS", DEFAULT_REGISTRY_CLASS_NAME)
+        registry_class_name = get_app_config("PI_ENGINE_REGISTRY_CLASS", DEFAULT_REGISTRY_CLASS_NAME)
         if registry_class_name not in ENGINE_REGISTRY_CLASSES:
             log.warning(u"Unknown engine registry class: {!r}".format(registry_class_name))
             registry_class_name = DEFAULT_REGISTRY_CLASS_NAME
         registry = ENGINE_REGISTRY_CLASSES[registry_class_name]()
         log.info(u"Created a new engine registry: {!r}".format(registry))
-        return current_app.config.setdefault("engine_registry", registry)
+        return app_store.setdefault("engine_registry", registry)
 
 
 def get_engine(key, creator):

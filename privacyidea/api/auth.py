@@ -66,7 +66,7 @@ from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import get_client_ip
-from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging
 
@@ -81,7 +81,7 @@ def before_request():
     """
     This is executed before the request
     """
-    g.config_object = ConfigClass()
+    update_config_object()
     request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
