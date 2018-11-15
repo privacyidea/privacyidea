@@ -64,10 +64,13 @@ angular.module("privacyideaAuth")
                     // set variables for U2F API v1.1
                     var appId = signRequests[0].appId;
                     var challenge = signRequests[0].challenge;
-                    var registeredKeys= [{
-                        version: signRequests[0].version,
-                        keyHandle: signRequests[0].keyHandle
-                    }];
+                    var registeredKeys = [];
+                    for (let signRequest of signRequests) {
+                        registeredKeys.push({
+                            version: signRequest.version,
+                            keyHandle: signRequest.keyHandle
+                        });
+                    }
 
                     u2f.sign(appId, challenge, registeredKeys, function (result) {
                         inform.clear();
