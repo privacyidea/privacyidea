@@ -32,7 +32,7 @@ The scripts can take parameters like
 * logged_in_user
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.config import get_from_config
+from privacyidea.lib.config import get_app_config
 from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
 import json
@@ -43,8 +43,8 @@ import traceback
 
 log = logging.getLogger(__name__)
 
-SCRIPT_BACKGROUND = "Run in background"
-SCRIPT_WAIT = "Wait for script to finish"
+SCRIPT_BACKGROUND = "background"
+SCRIPT_WAIT = "wait"
 
 
 class ScriptEventHandler(BaseEventHandler):
@@ -60,8 +60,8 @@ class ScriptEventHandler(BaseEventHandler):
     def __init__(self, script_directory=None):
         if not script_directory:
             try:
-                self.script_directory = get_from_config("PI_SCRIPT_HANDLER_DIRECTORY",
-                                                        "/etc/privacyidea/scripts")
+                self.script_directory = get_app_config("PI_SCRIPT_HANDLER_DIRECTORY",
+                                                       "/etc/privacyidea/scripts")
             except RuntimeError as e:
                 # In case of the tests we are outside of the application context
                 self.script_directory = "tests/testdata/scripts"

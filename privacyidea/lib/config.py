@@ -880,3 +880,7 @@ def get_privacyidea_nodes():
     if own_node_name not in nodes:
         nodes.append(own_node_name)
     return nodes
+
+
+def get_app_config(key, default=None):
+    return current_app.config.get(key, default)
