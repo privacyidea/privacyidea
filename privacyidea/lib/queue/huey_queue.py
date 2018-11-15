@@ -39,14 +39,11 @@ class HueyQueue(BaseQueue):
 
         @functools.wraps(func)
         def decorated(*args, **kwargs):
-            from privacyidea.app import create_app
-            app = create_app()
-            with app.app_context():
-                result = func(*args, **kwargs)
-                if fire_and_forget:
-                    return None
-                else:
-                    return result
+            result = func(*args, **kwargs)
+            if fire_and_forget:
+                return None
+            else:
+                return result
         self._jobs[name] = self._huey.task()(decorated)
 
     def enqueue(self, name, args, kwargs):

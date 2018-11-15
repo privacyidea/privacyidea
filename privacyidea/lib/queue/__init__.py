@@ -19,7 +19,7 @@
 from flask import current_app
 
 from privacyidea.lib.queue.collector import JobCollector
-from privacyidea.lib.queue.huey import HueyQueue
+from privacyidea.lib.queue.huey_queue import HueyQueue
 from privacyidea.lib.queue.null import NullQueue
 
 QUEUE_CLASSES = {
