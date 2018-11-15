@@ -197,6 +197,8 @@ class ScriptEventHandler(BaseEventHandler):
             log.warning("Failed to execute script {0!r}: {1!r}".format(
                 script_name, e))
             log.warning(traceback.format_exc())
+            if handler_options.get("background") == SCRIPT_WAIT and is_true(handler_options.get("raise_error")):
+                raise ServerError("Failed to start script.")
 
         if rcode:
             log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
