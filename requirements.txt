@@ -20,6 +20,7 @@ Flask-Script==2.0.6
 Flask-SQLAlchemy==2.3.2
 funcparserlib==0.3.6
 gunicorn==19.8.1
+huey==1.10.4
 idna==2.6
 imagesize==1.0.0
 ipaddress==1.0.22
