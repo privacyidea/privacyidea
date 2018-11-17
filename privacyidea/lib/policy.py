@@ -666,8 +666,7 @@ class PolicyClass(object):
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
-                                     client=client, sort_by_priority=True,
-                                     audit_data=audit_data)
+                                     client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -697,9 +696,14 @@ class PolicyClass(object):
                     policy_values.setdefault(action_key, []).append(policy_name)
 
         # Check if the policies with the highest priority agree on the action values
-        if unique and len(policy_values.keys()) > 1:
+        if unique and len(policy_values) > 1:
             names = [p['name'] for p in policies]
             raise PolicyError(u"There are policies with conflicting actions: {!r}".format(names))
+
+        if audit_data is not None:
+            for action_value, policy_names in policy_values.items():
+                for p_name in policy_names:
+                    audit_data.setdefault("policies", []).append(p_name)
 
         return policy_values
 

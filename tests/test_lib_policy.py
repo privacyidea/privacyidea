@@ -849,3 +849,21 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(val, u"Wo du wolle?")
 
         delete_policy("chaltext")
+
+    def test_25_get_action_values(self):
+        # We test action values with different priority and values!
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        set_policy("act3", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN), priority=3)
+
+        # Now we should get the userstore action value. Both policies act1 and act2 have the unique value
+        # with prioritoy 1
+        P = PolicyClass()
+        audit_data = {}
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, unique=True, audit_data=audit_data)
+
+        self.assertEqual(r, {"userstore": ["act1", "act2"]})
+
+        # The audit_data contains act1 and act2
+        self.assertTrue("act1" in audit_data.get("policies"))
+        self.assertTrue("act2" in audit_data.get("policies"))
