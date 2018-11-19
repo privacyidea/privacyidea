@@ -1,8 +1,6 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-PWFILE = "tests/testdata/passwords"
-TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
@@ -19,8 +17,11 @@ from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib import _
 import datetime
 from dateutil.tz import tzlocal
-import smtpmock
+from . import smtpmock
 import mock
+
+PWFILE = "tests/testdata/passwords"
+TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
 
 class EmailTokenTestCase(MyTestCase):

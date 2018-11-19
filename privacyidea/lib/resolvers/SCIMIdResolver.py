@@ -41,11 +41,11 @@ import logging
 import traceback
 log = logging.getLogger(__name__)
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 import yaml
 import requests
 import base64
-from urllib import urlencode
+from six.moves.urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 

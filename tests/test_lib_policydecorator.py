@@ -28,7 +28,7 @@ from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
 from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.radiusserver import add_radius
 import datetime
-import radiusmock
+from . import radiusmock
 import binascii
 import hashlib
 from privacyidea.models import AuthCache

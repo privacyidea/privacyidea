@@ -61,9 +61,6 @@ class AuditTestCase(MyTestCase):
         self.assertTrue(tot == 3, tot)
         audit_log = self.Audit.search({}, sortorder="desc")
 
-        print("The Log:")
-        print(audit_log)
-
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
                                     "bullshit": "value"})

@@ -1,3 +1,10 @@
+---
+name: Bug report
+about: Create a report to help us improve
+labels: 
+
+---
+
 <!--
 Thank you for filing a bug within privacyIDEA.
 Please read the following blog post.
@@ -56,4 +63,3 @@ What did acutally happen?
 
 **Turn on debug level and take a look at the privacyidea.log!**
 **If appropriate, attach the log file.**
-

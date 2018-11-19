@@ -7,7 +7,7 @@ HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machines.ldap import LdapMachineResolver
 from privacyidea.lib.machines.base import MachineResolverError
-import ldap3mock
+from . import ldap3mock
 import netaddr
 
 LDAPDirectory = [{"dn": "cn=admin,ou=example,o=test",

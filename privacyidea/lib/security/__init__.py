@@ -1,1 +1,1 @@
-from default import SecurityModule
+from .default import SecurityModule

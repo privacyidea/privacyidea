@@ -39,7 +39,7 @@ in tests/test_lib_realm.py
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp)
-from log import log_with
+from .log import log_with
 from flask import g
 from privacyidea.lib.config import ConfigClass
 import logging

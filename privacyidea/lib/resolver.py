@@ -43,8 +43,8 @@ webservice!
 """
 
 import logging
-from log import log_with
-from config import (get_resolver_types, get_resolver_classes)
+from .log import log_with
+from .config import (get_resolver_types, get_resolver_classes)
 from privacyidea.lib.usercache import delete_user_cache
 from ..models import (Resolver,
                       ResolverConfig)

@@ -13,7 +13,7 @@ class APIClienttypeTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("PAM" in json_response.get("result").get("value"))
             self.assertTrue("RADIUS" in json_response.get("result").get(
@@ -34,7 +34,7 @@ class APIClienttypeTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue("PAM" in json_response.get("result").get("value"))
             self.assertTrue("RADIUS" in json_response.get("result").get(

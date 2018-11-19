@@ -5,7 +5,7 @@ lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
 
-import smtpmock
+from . import smtpmock
 import responses
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
@@ -2340,7 +2340,7 @@ class UserNotificationTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("value"), 1)
 
         # Cleanup

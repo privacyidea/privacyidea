@@ -31,10 +31,9 @@ log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
-import urlparse
 import sqlalchemy
-import StringIO
-import urllib
+from six.moves.urllib.parse import urlunparse, urlparse, urlencode
+from io import BytesIO
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
@@ -184,7 +183,7 @@ def generate_otpkey(key_size=20):
 def create_png(data, alt=None):
     img = qrcode.make(data)
 
-    output = StringIO.StringIO()
+    output = BytesIO()
     img.save(output)
     o_data = output.getvalue()
     output.close()
@@ -219,7 +218,7 @@ def create_img(data, width=0, alt=None, raw=False):
         width_str = " width={0:d} ".format((int(width)))
 
     if alt is not None:
-        val = urllib.urlencode({'alt': alt})
+        val = urlencode({'alt': alt})
         alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
     ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
@@ -1115,7 +1114,7 @@ def censor_connect_string(connect_string):
     In case any error occurs, return "<error when censoring connect string>"
     """
     try:
-        parsed = urlparse.urlparse(connect_string)
+        parsed = urlparse(connect_string)
         if parsed.password is not None:
             # We need to censor the ``netloc`` attribute: user:pass@host
             _, host = parsed.netloc.rsplit("@", 1)
@@ -1123,7 +1122,7 @@ def censor_connect_string(connect_string):
             # Convert the URL to six components. netloc is component #1.
             splitted = list(parsed)
             splitted[1] = new_netloc
-            return urlparse.urlunparse(splitted)
+            return urlunparse(splitted)
         return connect_string
     except Exception:
         return "<error when censoring connect string>"

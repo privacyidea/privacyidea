@@ -7,6 +7,7 @@ This depends on lib.tokenclass
 from .base import MyTestCase
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
+import six
 
 
 class SSHTokenTestCase(MyTestCase):
@@ -69,4 +70,4 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertTrue(sshkey == self.sshkey, sshkey)
-        self.assertIsInstance(sshkey, unicode)
+        self.assertIsInstance(sshkey, six.text_type)

@@ -2,12 +2,13 @@ from .base import MyTestCase
 import json
 import os
 import datetime
+import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     PolicyClass)
 from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
-from urllib import urlencode
+from six.moves.urllib.parse import urlencode
 from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
@@ -121,8 +122,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue(result.get("status"), result)
             self.assertTrue(result.get("value"), result)
             self.assertTrue("value" in detail.get("googleurl"), detail)
@@ -135,7 +136,7 @@ class APITokenTestCase(MyTestCase):
                                                  "genkey": 0},
                                            headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                data = json.loads(res.data)
+                data = json.loads(res.data.decode('utf8'))
                 self.assertTrue(res.status_code == 200, res)
                 result = data.get("result")
                 detail = data.get("detail")
@@ -155,7 +156,7 @@ class APITokenTestCase(MyTestCase):
                                                  "realm": self.realm1},
                                            headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                data = json.loads(res.data)
+                data = json.loads(res.data.decode('utf8'))
                 self.assertTrue(res.status_code == 200, res)
                 result = data.get("result")
                 detail = data.get("detail")
@@ -172,8 +173,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             tokenlist = result.get("value").get("tokens")
             count = result.get("value").get("count")
             next = result.get("value").get("next")
@@ -200,8 +201,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             tokenlist = result.get("value").get("tokens")
             # NO token assigned, yet
             self.assertTrue(len(tokenlist) == 0, "{0!s}".format(tokenlist))
@@ -214,8 +215,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             tokenlist = result.get("value").get("tokens")
             self.assertTrue(len(tokenlist) == 1, len(tokenlist))
 
@@ -263,8 +264,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             tokenlist = result.get("value").get("tokens")
             count = result.get("value").get("count")
             next = result.get("value").get("next")
@@ -282,7 +283,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
 
         # Assign the same token to another user will fail
@@ -294,7 +295,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             error = result.get("error")
             self.assertEqual(error.get("message"), "ERR1103: Token already assigned to user User(login=u'cornelius', "
                                                    "realm=u'realm1', resolver=u'resolver1')")
@@ -307,7 +308,7 @@ class APITokenTestCase(MyTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             self.at_user = result.get("value").get("token")
@@ -318,7 +319,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             error = result.get("error")
             self.assertEqual(error.get("message"), "ERR1103: Token already assigned to another user.")
 
@@ -330,7 +331,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # Assign the same token to another user will success
@@ -342,7 +343,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
 
         # Unassign without any arguments will raise a ParameterError
@@ -393,7 +394,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # Try to remove token, that does not exist raises a 404
@@ -402,7 +403,7 @@ class APITokenTestCase(MyTestCase):
                                            data={},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result.get("status"))
 
@@ -424,7 +425,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # disable a disabled token will not count, so the value will be 0
@@ -434,7 +435,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 0, result)
 
         # enable the token again
@@ -444,7 +445,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # try to enable an already enabled token returns value=0
@@ -454,7 +455,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 0, result)
 
     def test_07_reset_failcounter(self):
@@ -473,7 +474,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # test the failcount
@@ -484,7 +485,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(value.get("count") == 1, value)
@@ -497,7 +498,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
     def test_07_resync(self):
@@ -508,7 +509,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
             """
@@ -534,7 +535,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is False, result)
 
         # Successful resync with consecutive values
@@ -546,7 +547,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
 
         # Get the OTP token and inspect the counter
@@ -556,7 +557,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(token.get("count") == 4, result)
@@ -569,7 +570,7 @@ class APITokenTestCase(MyTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             self.at_user = result.get("value").get("token")
@@ -584,7 +585,7 @@ class APITokenTestCase(MyTestCase):
                                                          self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf-8')).get("result")
             self.assertFalse(result["status"])
 
         # assign the token to the user selfservice@realm1.
@@ -595,7 +596,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("value"), True)
 
         # let the user resync the token
@@ -608,7 +609,7 @@ class APITokenTestCase(MyTestCase):
                                                          self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
 
 
@@ -622,7 +623,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # Set both PINs of the token
@@ -633,7 +634,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 2, result)
 
         # set a pin
@@ -643,7 +644,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # set an empty pin
@@ -653,7 +654,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
     def test_09_set_token_attributes(self):
@@ -666,7 +667,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
 
@@ -687,7 +688,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 9, result)
 
         # check the values
@@ -698,7 +699,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(value.get("count") == 1, result)
@@ -727,7 +728,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value is True, result)
 
@@ -737,7 +738,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(token.get("realms") == ["realm1"], token)
@@ -752,7 +753,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 3, result)
 
@@ -766,7 +767,7 @@ class APITokenTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 3, result)
 
@@ -780,7 +781,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 3, result)
 
@@ -820,7 +821,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 1, result)
 
@@ -834,7 +835,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 1, result)
 
@@ -849,7 +850,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value is True, result)
 
@@ -860,7 +861,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value == 1, result)
 
@@ -872,7 +873,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value is True, result)
 
@@ -884,7 +885,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value is True, result)
 
@@ -917,7 +918,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value is True, result)
 
@@ -926,7 +927,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue("end_date" in value, value)
             self.assertTrue(value.get("serial") == "lostLOST001", value)
@@ -950,7 +951,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("count"), 28)
             self.assertEqual(value.get("serial"), None)
@@ -970,7 +971,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("serial"), "GETSERIAL2")
 
@@ -980,7 +981,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("serial"), None)
 
@@ -992,7 +993,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertNotEqual(value.get("serial"), "GETSERIAL2")
 
@@ -1003,7 +1004,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("serial"), "GETSERIAL2")
 
@@ -1018,9 +1019,9 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             registrationcode = detail.get("registrationcode")
 
         # check password
@@ -1030,7 +1031,7 @@ class APITokenTestCase(MyTestCase):
                                            method="POST"):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
         # check password again. THe second time it will fail, since the token
@@ -1041,7 +1042,7 @@ class APITokenTestCase(MyTestCase):
                                            method="POST"):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertFalse(result.get("value"))
 
     def test_16_totp_timestep(self):
@@ -1057,9 +1058,9 @@ class APITokenTestCase(MyTestCase):
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                result = json.loads(res.data).get("result")
+                result = json.loads(res.data.decode('utf8')).get("result")
                 self.assertTrue(result.get("value"))
-                detail = json.loads(res.data).get("detail")
+                detail = json.loads(res.data.decode('utf8')).get("detail")
 
             token = get_tokens(serial="totp{0!s}".format(timestep))[0]
             self.assertEqual(token.timestep, int(timestep))
@@ -1084,9 +1085,9 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             certificate = detail.get("certificate")
             self.assertTrue("-----BEGIN CERTIFICATE-----" in certificate)
 
@@ -1100,7 +1101,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") == 1, result)
 
         # Try to enable the revoked token
@@ -1127,7 +1128,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("count"), 1)
             challenges = value.get("challenges")
@@ -1140,7 +1141,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("count"), 1)
             challenges = value.get("challenges")
@@ -1153,7 +1154,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value.get("count"), 0)
 
@@ -1171,7 +1172,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), result)
             self.assertTrue(result.get("value"), result)
 
@@ -1248,8 +1249,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
 
             serial = detail.get("serial")
             token = get_tokens(serial=serial)[0]
@@ -1272,8 +1273,8 @@ class APITokenTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
 
             serial = "SP001"
             token = get_tokens(serial=serial)[0]
@@ -1292,7 +1293,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"), result)
         with self.app.test_request_context('/token/info/INF001/key2',
                                             method="POST",
@@ -1300,7 +1301,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"), result)
 
         with self.app.test_request_context('/token/',
@@ -1310,7 +1311,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(value.get("count") == 1, result)
@@ -1325,7 +1326,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"), result)
 
         with self.app.test_request_context('/token/',
@@ -1335,7 +1336,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(value.get("count") == 1, result)
@@ -1349,7 +1350,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
            res = self.app.full_dispatch_request()
            self.assertTrue(res.status_code == 200, res)
-           result = json.loads(res.data).get("result")
+           result = json.loads(res.data.decode('utf8')).get("result")
            self.assertTrue(result.get("value"), result)
 
         # Delete a non-existing tokeninfo value
@@ -1358,7 +1359,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"), result)
 
         # Try to delete with an unknown serial
@@ -1367,7 +1368,7 @@ class APITokenTestCase(MyTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertFalse(result.get("status"))
 
         # Check that the tokeninfo is correct
@@ -1378,7 +1379,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             token = value.get("tokens")[0]
             self.assertTrue(value.get("count") == 1, result)
@@ -1411,9 +1412,9 @@ class APITokenTestCase(MyTestCase):
                                                         self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             googleurl = detail.get("googleurl")
             self.assertTrue("sha256" in googleurl.get("value"))
             serial = detail.get("serial")
@@ -1439,9 +1440,9 @@ class APITokenTestCase(MyTestCase):
                                                         self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             token = get_tokens(serial=serial)[0]
             self.assertEqual(token.token.otplen, 8)
@@ -1463,9 +1464,9 @@ class APITokenTestCase(MyTestCase):
                                                         self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             token = get_tokens(serial=serial)[0]
             self.assertEqual(token.token.otplen, 6)
@@ -1484,7 +1485,7 @@ class APITokenTestCase(MyTestCase):
                                                  "realm": self.realm1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertTrue(res.status_code == 200, res)
             result = data.get("result")
             detail = data.get("detail")
@@ -1496,7 +1497,7 @@ class APITokenTestCase(MyTestCase):
             seed_url = detail.get("otpkey").get("value")
             self.assertEqual(seed_url[:len('seed://')], 'seed://')
             seed = seed_url[len('seed://'):]
-            self.assertEqual(len(seed.decode('hex')), 42)
+            self.assertEqual(len(codecs.decode(seed, 'hex')), 42)
         remove_token(serial)
 
     def test_27_fail_to_assign_empty_serial(self):
@@ -1509,7 +1510,7 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), 905)
 
@@ -1526,8 +1527,8 @@ class APITokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertTrue(u'image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
@@ -1561,7 +1562,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("value").get("count"), self.token_count)
 
     def test_02_several_requests(self):
@@ -1572,7 +1573,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("value").get("count"), 0)
 
         # Run POST assign with a wildcard. This shall not assign.
@@ -1585,7 +1586,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*"
             self.assertFalse(result["status"])
 
@@ -1599,7 +1600,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1614,7 +1615,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1625,7 +1626,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1635,7 +1636,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1645,7 +1646,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1655,7 +1656,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1666,7 +1667,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1676,7 +1677,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1686,7 +1687,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1696,7 +1697,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1708,7 +1709,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertEqual(result.get("error").get("code"), 1016)
             self.assertEqual(result.get("error").get("message"), "ERR1016: No unique token to copy from found")
@@ -1720,7 +1721,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertEqual(result.get("error").get("code"), 1017)
             self.assertEqual(result.get("error").get("message"), "ERR1017: No unique token to copy to found")
@@ -1733,7 +1734,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertEqual(result.get("error").get("code"), 1016)
             self.assertEqual(result.get("error").get("message"), "ERR1016: No unique token to copy from found")
@@ -1746,7 +1747,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertEqual(result.get("error").get("code"), 1017)
             self.assertEqual(result.get("error").get("message"), "ERR1017: No unique token to copy to found")
@@ -1764,7 +1765,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1779,7 +1780,7 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
 
@@ -1793,6 +1794,6 @@ class API00TokenPerformance(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
