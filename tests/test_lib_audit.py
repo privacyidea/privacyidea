@@ -17,6 +17,7 @@ from privacyidea.app import create_app
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
 
+
 class AuditTestCase(MyTestCase):
     """
     Test the Audit module
@@ -204,6 +205,23 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(self.Audit.audit_data.get("token_type"), None)
         self.assertEqual(self.Audit.audit_data.get("info"), True)
 
+        # check treatment of policy entries:
+        self.Audit.log({"serial": long_serial,
+                        "token_type": token_type,
+                        "policies": u"Berlin,Hamburg,München,Köln,Frankfurt am Main,"
+                                    u"Stuttgart,Düsseldorf,Dortmund,Essen,Leipzig,"
+                                    u"Bremen,Dresden,Hannover,Nürnberg,Duisburg,Bochum,"
+                                    u"Wuppertal,Bielefeld,Bonn,Münster,Karlsruhe,"
+                                    u"Mannheim,Augsburg,Wiesbaden,Gelsenkirchen,Mönchengladbach,"
+                                    u"Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
+        self.Audit._truncate_data()
+        self.assertTrue(len(self.Audit.audit_data.get("policies")) <= 255)
+        # Some cities like Stuttgart and Düsseldorf already get truncated :-)
+        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfu+,Stuttga+,Düsseld+,Dortmund,Essen,Leipzig,Bremen,"
+                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wuppert+,Bielefe+,Bonn,Münster,Karlsru+,"
+                         u"Mannheim,Augsburg,Wiesbaden,Gelsenki+,Möncheng+,Braunsch+,Kiel,Chemnitz,Aachen,Magdeburg",
+                         self.Audit.audit_data.get("policies"))
+
     def test_07_sign_non_ascii_entry(self):
         # Log a username as unicode with a non-ascii character
         self.Audit.log({"serial": "1234",
@@ -215,3 +233,18 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
+
+    def test_08_policies(self):
+        self.Audit.log({"action": "validate/check"})
+        self.Audit.add_policy(["rule1", "rule2"])
+        self.Audit.add_policy("rule3")
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule1*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")
+
+        self.Audit.add_policy(["rule4", "rule5"])
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule4*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule4,rule5")

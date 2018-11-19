@@ -656,7 +656,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = list(hashlib_pol)[0]
 
             timestep_pol = policy_object.get_action_values(
                 action="totp_timestep",
@@ -666,7 +666,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if timestep_pol:
-                ret["timeStep"] = timestep_pol[0]
+                ret["timeStep"] = list(timestep_pol)[0]
 
             otplen_pol = policy_object.get_action_values(
                 action="totp_otplen",
@@ -676,7 +676,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if otplen_pol:
-                ret["otplen"] = otplen_pol[0]
+                ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 

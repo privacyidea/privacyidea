@@ -59,6 +59,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
         $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
         $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
+        $scope.params.policies = "*" + ($scope.policiesFilter || "") + "*";
         $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
@@ -71,7 +72,18 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.getParams();
         AuditFactory.get($scope.params, function(data) {
             $scope.auditdata = data.result.value;
-            //debug: console.log($scope.auditdata);
+            // We split the policies, which come as comma separated string to an array.
+            angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
+                if ($scope.auditdata.auditdata[key].policies != null) {
+                    var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
+                    // Duplicates in a repeater are not allowed!
+                    var uniquePolnameList = [];
+                    angular.forEach(polname_list, function(pol, i){
+                        if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
+                    });
+                    $scope.auditdata.auditdata[key].policies = uniquePolnameList;
+                }
+            });
         });
     };
 

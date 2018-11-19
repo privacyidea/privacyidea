@@ -262,7 +262,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         if len(tokeninfo) != 1:
             raise privacyIDEAError("I can only create SQL filters from "
                                    "tokeninfo of length 1.")
-        sql_query = sql_query.filter(TokenInfo.Key == tokeninfo.keys()[0])
+        sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
         sql_query = sql_query.filter(TokenInfo.Value == tokeninfo.values()[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
@@ -2162,7 +2162,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 scope=SCOPE.AUTH,
                 realm=token_owner.login if token_owner else None,
                 user=token_owner.realm if token_owner else None,
-                client=clientip, active=True)
+                client=clientip, active=True,
+                audit_data=g.audit_object.audit_data)
             if reset_all:
                 log.debug("Reset failcounter of all tokens of {0!s}".format(
                     token_owner))

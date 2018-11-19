@@ -911,7 +911,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [REMOTE_USER.ACTIVE])
+        self.assertTrue(r)
 
         # Login for the REMOTE_USER is not allowed.
         # Only allowed for user "super", but REMOTE_USER=admin
@@ -922,7 +922,14 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [])
+        self.assertFalse(r)
+
+        # The remote_user "super" is allowed to login:
+        env["REMOTE_USER"] = "super"
+        req = Request(env)
+        g.policy_object = PolicyClass()
+        r = is_remote_user_allowed(req)
+        self.assertTrue(r)
 
         delete_policy("ruser")
 

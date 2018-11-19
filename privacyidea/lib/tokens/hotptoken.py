@@ -695,7 +695,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = list(hashlib_pol)[0]
 
             otplen_pol = policy_object.get_action_values(
                 action="hotp_otplen",
@@ -705,7 +705,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if otplen_pol:
-                ret["otplen"] = otplen_pol[0]
+                ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 

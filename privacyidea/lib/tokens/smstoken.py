@@ -484,10 +484,11 @@ class SmsTokenClass(HotpTokenClass):
                                   user=username,
                                   client=clientip,
                                   unique=True,
-                                  allow_white_space_in_action=True)
+                                  allow_white_space_in_action=True,
+                                  audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
-                message = messages[0]
+                message = list(messages)[0]
 
         # Replace the {challenge}:
         message = message.format(challenge=options.get("challenge"))
@@ -519,7 +520,8 @@ class SmsTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip, active=True)
+                             client=clientip, active=True,
+                             audit_data=g.audit_object.audit_data)
             autosms = len(autosmspol) >= 1
 
         return autosms

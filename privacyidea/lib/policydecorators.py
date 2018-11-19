@@ -116,28 +116,27 @@ def challenge_response_allowed(func):
         user_object = kwds.get("user") or User()
         if g:
             policy_object = g.policy_object
-            allowed_tokentypes = policy_object.get_action_values(
+            allowed_tokentypes_dict = policy_object.get_action_values(
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
                 realm=user_object.realm,
                 resolver=user_object.resolver,
                 user=user_object.login,
                 client=clientip)
-            log.debug("Found these allowed tokentypes: {0!s}".format(allowed_tokentypes))
+            log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
 
-            # allowed_tokentypes is a list of actions from several policies. I
+            # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
             # could look like this:
             # ["tiqr hotp totp", "tiqr motp"]
-            # We need to create a upper case list of pure tokentypes.
-            token_list = " ".join(allowed_tokentypes)
-            token_list = token_list.split(" ")
-            # uniquify
-            token_list = list(set(token_list))
-            # uppercase
-            token_list = [x.upper() for x in token_list]
-            if token.get_tokentype().upper() not in token_list:
-                # The chal resp is not defined for this tokentype
-                # This is no challenge response request!
+            chal_resp_found = False
+            for toks in allowed_tokentypes_dict:
+                if token.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
+                    # This token is allowed to to chal resp
+                    chal_resp_found = True
+                    g.audit_object.add_policy(allowed_tokentypes_dict.get(toks))
+
+            if not chal_resp_found:
+                # No policy to allow this token to do challenge response
                 return False
 
         f_result = func(*args, **kwds)
@@ -162,7 +161,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
-        auth_cache = policy_object.get_action_values(
+        auth_cache_dict = policy_object.get_action_values(
             action=ACTION.AUTH_CACHE,
             scope=SCOPE.AUTH,
             realm=user_object.realm,
@@ -170,9 +169,9 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             user=user_object.login,
             client=clientip,
             unique=True)
-        if auth_cache:
+        if auth_cache_dict:
             # verify in cache and return an early success
-            auth_times = auth_cache[0].split("/")
+            auth_times = list(auth_cache_dict)[0].split("/")
             # determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
 
@@ -190,6 +189,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                                      first_auth=first_auth,
                                      last_auth=last_auth)
             if result:
+                g.audit_object.add_policy(next(iter(auth_cache_dict.values())))
                 return True, {"message": "Authenticated by AuthCache."}
 
     # If nothing else returned, we return the wrapped function
@@ -227,6 +227,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
+                g.audit_object.add_policy([p.get("name") for p in pass_no_token])
                 return True, {"message": u"user has no token, accepted due to '{!s}'".format(
                     pass_no_token[0].get("name"))}
 
@@ -264,6 +265,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
+                g.audit_object.add_policy([p.get("name") for p in pass_no_user])
                 return True, {"message": u"user does not exist, accepted due to '{!s}'".format(
                     pass_no_user[0].get("name"))}
 
@@ -309,6 +311,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
+                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     return True, {"message": u"against userstore due to '{!s}'".format(
                                       policy_name)}
             else:
@@ -318,6 +321,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 radius = get_radius(pass_thru_action)
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
+                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     return True, {'message': u"against RADIUS server {!s} due to '{!s}'".format(
                                       pass_thru_action, policy_name)}
 
@@ -354,14 +358,15 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         clientip = options.get("clientip")
         policy_object = g.policy_object
 
-        max_success = policy_object.get_action_values(action=ACTION.AUTHMAXSUCCESS,
-                                                      scope=SCOPE.AUTHZ,
-                                                      realm=user_object.realm,
-                                                      resolver=user_object.resolver,
-                                                      user=user_object.login,
-                                                      client=clientip,
-                                                      unique=True)
-        max_fail = policy_object.get_action_values(
+        max_success_dict = policy_object.get_action_values(
+            action=ACTION.AUTHMAXSUCCESS,
+            scope=SCOPE.AUTHZ,
+            realm=user_object.realm,
+            resolver=user_object.resolver,
+            user=user_object.login,
+            client=clientip,
+            unique=True)
+        max_fail_dict = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
             realm=user_object.realm,
@@ -371,8 +376,8 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             unique=True)
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
-        if len(max_fail) == 1:
-            policy_count, tdelta = parse_timelimit(max_fail[0])
+        if len(max_fail_dict) == 1:
+            policy_count, tdelta = parse_timelimit(list(max_fail_dict)[0])
             fail_c = g.audit_object.get_count({"user": user_object.login,
                                                "realm": user_object.realm,
                                                "action":
@@ -381,17 +386,18 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                               timedelta=tdelta)
             log.debug("Checking users timelimit %s: %s "
                       "failed authentications" %
-                      (max_fail[0], fail_c))
+                      (list(max_fail_dict)[0], fail_c))
             if fail_c >= policy_count:
                 res = False
                 reply_dict["message"] = ("Only %s failed authentications "
                                          "per %s" % (policy_count, tdelta))
+                g.audit_object.add_policy(next(iter(max_fail_dict.values())))
 
         if res:
             # Check for maximum successful authentications
             # Only in case of a successful authentication
-            if len(max_success) == 1:
-                policy_count, tdelta = parse_timelimit(max_success[0])
+            if len(max_success_dict) == 1:
+                policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
                 # check the successful authentications for this user
                 succ_c = g.audit_object.get_count({"user": user_object.login,
                                                    "realm": user_object.realm,
@@ -401,12 +407,13 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                   timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
                           "succesful authentications" %
-                          (max_success[0], succ_c))
+                          (list(max_success_dict)[0], succ_c))
                 if succ_c >= policy_count:
                     res = False
                     reply_dict["message"] = ("Only %s successfull "
                                              "authentications per %s"
                                              % (policy_count, tdelta))
+                    g.audit_object.add_policy(next(iter(max_success_dict.values())))
 
     return res, reply_dict
 
@@ -464,7 +471,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth = policy_object.get_action_values(
+            last_auth_dict = policy_object.get_action_values(
                 action=ACTION.LASTAUTH,
                 scope=SCOPE.AUTHZ,
                 realm=realm,
@@ -472,13 +479,14 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 user=login,
                 client=clientip, unique=True)
 
-            if len(last_auth) == 1:
-                res = token.check_last_auth_newer(last_auth[0])
+            if len(last_auth_dict) == 1:
+                res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
                     reply_dict["message"] = "The last successful " \
                                             "authentication was %s. " \
                                             "It is to long ago." % \
                                             token.get_tokeninfo(ACTION.LASTAUTH)
+                    g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
             # set the last successful authentication, if res still true
             if res:
@@ -510,21 +518,23 @@ def login_mode(wrapped_function, *args, **kwds):
         clientip = options.get("clientip")
         # get the policy
         policy_object = g.policy_object
-        login_mode_list = policy_object.get_action_values(ACTION.LOGINMODE,
-                                                          scope=SCOPE.WEBUI,
-                                                          realm=user_object.realm,
-                                                          resolver=user_object.resolver,
-                                                          user=user_object.login,
-                                                          client=clientip,
-                                                          unique=True)
+        login_mode_dict = policy_object.get_action_values(
+            ACTION.LOGINMODE,
+            scope=SCOPE.WEBUI,
+            realm=user_object.realm,
+            resolver=user_object.resolver,
+            user=user_object.login,
+            client=clientip,
+            unique=True,
+            audit_data=g.audit_object.audit_data)
 
-        if login_mode_list:
+        if login_mode_dict:
             # There is a login mode policy
-            if login_mode_list[0] == LOGINMODE.PRIVACYIDEA:
+            if list(login_mode_dict)[0] == LOGINMODE.PRIVACYIDEA:
                 # The original function should check against privacyidea!
                 kwds["check_otp"] = True
 
-            if login_mode_list[0] == LOGINMODE.DISABLE:
+            if list(login_mode_dict)[0] == LOGINMODE.DISABLE:
                 # The login to the webui is disabled
                 raise PolicyError("The login for this user is disabled.")
 
@@ -568,23 +578,23 @@ def auth_otppin(wrapped_function, *args, **kwds):
             user_object=User("", realm="")
         # get the policy
         policy_object = g.policy_object
-        otppin_list = policy_object.get_action_values(ACTION.OTPPIN,
+        otppin_dict = policy_object.get_action_values(ACTION.OTPPIN,
                                                       scope=SCOPE.AUTH,
                                                       realm=user_object.realm,
                                                       resolver=user_object.resolver,
                                                       user=user_object.login,
                                                       client=clientip,
-                                                      unique=True)
-        if otppin_list:
-            # There is an otppin policy
-            if otppin_list[0] == ACTIONVALUE.NONE:
+                                                      unique=True,
+                                                      audit_data=g.audit_object.audit_data)
+        if otppin_dict:
+            if list(otppin_dict)[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
                     return True
                 else:
                     return False
 
-            if otppin_list[0] == ACTIONVALUE.USERSTORE:
+            if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
                 rv = user_object.check_password(pin)
                 return rv is not None
 
@@ -628,39 +638,42 @@ def config_lost_token(wrapped_function, *args, **kwds):
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
-            contents_list = policy_object.get_action_values(
+            contents_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
                 realm=realm,
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
-            validity_list = policy_object.get_action_values(
+                unique=True,
+                audit_data=g.audit_object.audit_data)
+            validity_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
                 realm=realm,
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
-            pw_len_list = policy_object.get_action_values(
+                unique=True,
+                audit_data=g.audit_object.audit_data)
+            pw_len_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
                 realm=realm,
                 resolver=resolver,
                 user=username,
                 client=clientip,
-                unique=True)
+                unique=True,
+                audit_data=g.audit_object.audit_data)
 
-            if contents_list:
-                kwds["contents"] = contents_list[0]
+            if contents_dict:
+                kwds["contents"] = list(contents_dict)[0]
 
-            if validity_list:
-                kwds["validity"] = int(validity_list[0])
+            if validity_dict:
+                kwds["validity"] = int(list(validity_dict)[0])
 
-            if pw_len_list:
-                kwds["pw_len"] = int(pw_len_list[0])
+            if pw_len_dict:
+                kwds["pw_len"] = int(list(pw_len_dict)[0])
 
     return wrapped_function(*args, **kwds)
 

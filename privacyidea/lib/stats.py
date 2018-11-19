@@ -111,7 +111,7 @@ def _get_fail(df, key, nums=5):
                                        "GET /validate/check"]))][
                      key].value_counts(sort=True, dropna=True)[:nums]
 
-        series_list = [{"key": series.keys()[i], "count": series.tolist()[i]} for i in range(series.size)]
+        series_list = [{"key": list(series)[i], "count": series.tolist()[i]} for i in range(series.size)]
         plot_canvas = matplotlib.pyplot.figure()
         ax = plot_canvas.add_subplot(1,1,1)
 
@@ -152,7 +152,7 @@ def _get_number_of(df, key, nums=5):
         ax = plot_canvas.add_subplot(1, 1, 1)
 
         series = df[key].value_counts(sort=True, dropna=True)[:nums]
-        series_list = [{"key": series.keys()[i], "count": series.tolist()[i]} for i in range(series.size)]
+        series_list = [{"key": list(series)[i], "count": series.tolist()[i]} for i in range(series.size)]
         fig = series.plot(ax=ax, kind="bar",
                           legend=False,
                           stacked=False,
