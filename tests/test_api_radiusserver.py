@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .base import MyTestCase
 import json
-import radiusmock
+from . import radiusmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.radiusserver import delete_radius
 DICT_FILE = "tests/testdata/dictionary"
@@ -34,7 +34,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
         # list servers
@@ -43,7 +43,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 1)
             server1 = server_list.get("server1")
@@ -64,7 +64,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 0)
 
@@ -85,7 +85,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
     def test_03_radiusserver_user(self):
@@ -122,7 +122,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
         # User is allowed to list the radius servers
@@ -131,7 +131,7 @@ class RADIUSServerTestCase(MyTestCase):
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 1)
             # The user does not get any information about the server!

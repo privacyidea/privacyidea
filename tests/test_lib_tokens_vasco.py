@@ -247,7 +247,7 @@ class VascoTokenTest(MyTestCase):
 
         self.assertTrue(token.check_failcount())
         # fail 10 times
-        for _ in xrange(10 + 1):
+        for _ in range(10 + 1):
             r = _step1()
             self.assertEqual(r[0], False)
             self.assertEqual(r[1].get('message'), 'wrong otp value')

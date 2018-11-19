@@ -3,7 +3,7 @@ from .base import MyTestCase
 import json
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
-from urllib import urlencode
+from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwd"
 
@@ -31,8 +31,8 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            self.assertTrue('"value": []' in res.data, res.data)
+            self.assertTrue(b'"status": true' in res.data, res.data)
+            self.assertTrue(b'"value": []' in res.data, res.data)
 
     def test_01_get_passwd_user(self):
         # create resolver
@@ -56,7 +56,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
             self.assertTrue('r1' in value["added"], res.data)
             self.assertTrue('r2' in value["failed"], res.data)
@@ -69,7 +69,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
             self.assertTrue('"username": "cornelius"' in res.data, res.data)
             self.assertTrue('"username": "corny"' in res.data, res.data)
@@ -82,7 +82,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
             self.assertTrue('"username": "cornelius"' in res.data, res.data)
             self.assertTrue('"username": "corny"' not in res.data, res.data)
@@ -95,7 +95,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
             self.assertTrue('"username": "cornelius"' not in res.data, res.data)
             self.assertTrue('"username": "corny"' not in res.data, res.data)
@@ -128,7 +128,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") > 6, result.get("value"))
 
         # Get users
@@ -139,7 +139,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"))
             self.assertEqual(result.get("value")[0].get("username"), "wordy")
 
@@ -153,7 +153,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
         # Get user authentication and update by user.
@@ -163,7 +163,7 @@ class APIUsersTestCase(MyTestCase):
                                                  "password": "passwort"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             wordy_auth_token = result.get("value").get("token")
@@ -183,7 +183,7 @@ class APIUsersTestCase(MyTestCase):
                                                         wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
         # Although the user "wordy" tried to update the password of user
@@ -194,7 +194,7 @@ class APIUsersTestCase(MyTestCase):
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             wordy_auth_token = result.get("value").get("token")
@@ -208,7 +208,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
     def test_03_create_update_delete_unicode_user(self):
@@ -239,7 +239,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") > 6, result.get("value"))
 
         # Get users
@@ -250,7 +250,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"))
             self.assertEqual(result.get("value")[0].get("username"), u"wördy")
 
@@ -264,7 +264,7 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
         # Get user authentication and update by user.
@@ -274,7 +274,7 @@ class APIUsersTestCase(MyTestCase):
                                                  "password": "passwort"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             wordy_auth_token = result.get("value").get("token")
@@ -294,7 +294,7 @@ class APIUsersTestCase(MyTestCase):
                                                         wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))
 
         # Although the user "wördy" tried to update the password of user
@@ -305,7 +305,7 @@ class APIUsersTestCase(MyTestCase):
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             wordy_auth_token = result.get("value").get("token")
@@ -319,5 +319,5 @@ class APIUsersTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value"))

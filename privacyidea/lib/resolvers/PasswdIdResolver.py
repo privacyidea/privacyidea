@@ -47,7 +47,7 @@ import logging
 import crypt
 import codecs
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"

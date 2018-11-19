@@ -230,7 +230,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+        self.assertEqual(d, datetime(2017, 4, 27, 12, 0,
                                      tzinfo=tzoffset(None, 7200)))
 
         d = parse_date("2016/04/03")

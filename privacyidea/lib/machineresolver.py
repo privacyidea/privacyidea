@@ -32,7 +32,7 @@ webservice!
 """
 
 import logging
-from log import log_with
+from .log import log_with
 from ..models import (MachineResolver,
                       MachineResolverConfig)
 from ..api.lib.utils import required

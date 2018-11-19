@@ -33,7 +33,7 @@ import yaml
 import binascii
 import re
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine

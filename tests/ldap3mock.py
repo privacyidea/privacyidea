@@ -37,7 +37,7 @@ limitations under the License.
 """
 
 from __future__ import (
-    absolute_import, print_function, division, unicode_literals
+    absolute_import, division, unicode_literals
 )
 
 DIRECTORY = "tests/testdata/tmp_directory"
@@ -49,6 +49,7 @@ import hashlib
 import ldap3
 import re
 import pyparsing
+import codecs
 
 try:
     from six import cStringIO as BufferIO
@@ -263,7 +264,7 @@ class Connection(object):
         entry = self.directory[index].get("attributes")
 
         # Loop over the changes hash and apply them
-        for k, v in changes.iteritems():
+        for k, v in changes.items():
             if v[0] == "MODIFY_DELETE":
                 entry.pop(k)
             elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
@@ -478,7 +479,7 @@ class Connection(object):
         deDuped = list()
         for entry in results:
             dn = entry.get("dn")
-            if not dn in found.keys():
+            if not dn in found:
                 found[dn] = 1
                 deDuped.append(entry)
 
@@ -738,7 +739,7 @@ class Ldap3Mock(object):
         label_removed = reference_pw[6:]
 
         # Decode base64 and strip salt
-        digest_salt = label_removed.decode('base64')
+        digest_salt = codecs.decode(label_removed, 'base64')
         reference_pw_sha = digest_salt[:20]
         # Strip off the salt for use encoding the user supplied password
         salt = digest_salt[20:]

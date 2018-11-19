@@ -13,9 +13,6 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-PWFILE = "tests/testdata/passwords"
-OTPKEY = "3132333435363738393031323334353637383930"
-OTPKE2 = "31323334353637383930313233343536373839AA"
 
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
@@ -62,6 +59,10 @@ from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from dateutil.tz import tzlocal
+
+PWFILE = "tests/testdata/passwords"
+OTPKEY = "3132333435363738393031323334353637383930"
+OTPKE2 = "31323334353637383930313233343536373839AA"
 
 
 class TokenTestCase(MyTestCase):
@@ -946,8 +947,6 @@ class TokenTestCase(MyTestCase):
                         len(tokendata.get("tokens")))
 
         tokens = tokendata.get("tokens")
-        for token in tokens:
-            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "A8",
                         tokens[0])
@@ -958,8 +957,6 @@ class TokenTestCase(MyTestCase):
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
-        for token in tokens:
-            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
         self.assertTrue(tokens[-1].get("serial") == "A8")
@@ -968,8 +965,6 @@ class TokenTestCase(MyTestCase):
         tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
                                         sortdir="asc")
         tokens = tokendata.get("tokens")
-        for token in tokens:
-            print(token.get("serial"))
 
         self.assertTrue(tokens[-1].get("serial") == "hotptoken")
         self.assertTrue(tokens[0].get("serial") == "A8")
@@ -977,8 +972,6 @@ class TokenTestCase(MyTestCase):
         tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
-        for token in tokens:
-            print(token.get("serial"))
 
         self.assertTrue(tokens[0].get("serial") == "hotptoken")
         self.assertTrue(tokens[-1].get("serial") == "A8")

@@ -14,8 +14,8 @@ from privacyidea.lib import _
 import re
 import binascii
 import hashlib
-from urlparse import urlparse
-from urllib import urlencode
+from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlencode
 import json
 from flask import Request, g
 from werkzeug.test import EnvironBuilder
@@ -501,8 +501,8 @@ class TiQRTokenTestCase(MyTestCase):
                                                "pass": pin})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
             transaction_id = detail.get("transaction_id")
