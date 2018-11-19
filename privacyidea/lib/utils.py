@@ -1138,3 +1138,86 @@ def fetch_one_resource(table, **query):
         return table.query.filter_by(**query).one()
     except sqlalchemy.orm.exc.NoResultFound:
         raise ResourceNotFoundError(u"The requested {!s} could not be found.".format(table.__name__))
+
+
+def truncate_comma_list(data, max_len):
+    """
+    This function takes a string with a comma separated list and
+    shortens the longest entries this way, that the final string has a maximum
+    length of max_len
+
+    Shorted entries are marked with a "+" at the end.
+
+    :param data: A comma separated list
+    :type data: basestring
+    :return: shortened string
+    """
+    data = data.split(",")
+    # if there are more entries than the maximum length, we do an early exit
+    if len(data) >= max_len:
+        r = ",".join(data)[:max_len]
+        # Also mark this string
+        r = u"{0!s}+".format(r[:-1])
+        return r
+
+    while len(",".join(data)) > max_len:
+        new_data = []
+        longest = max(data, key=len)
+        for d in data:
+            if d == longest:
+                # Shorten the longest and mark with "+"
+                d = u"{0!s}+".format(d[:-2])
+            new_data.append(d)
+        data = new_data
+    return ",".join(data)
+
+
+def check_pin_policy(pin, policy):
+    """
+    The policy to check a PIN can contain of "c", "n" and "s".
+    "cn" means, that the PIN should contain a character and a number.
+    "+cn" means, that the PIN should contain elements from the group of characters and numbers
+    "-ns" means, that the PIN must not contain numbers or special characters
+
+    :param pin: The PIN to check
+    :param policy: The policy that describes the allowed contents of the PIN.
+    :return: Tuple of True or False and a description
+    """
+    chars = {"c": "[a-zA-Z]",
+             "n": "[0-9]",
+             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
+    exclusion = False
+    grouping = False
+    ret = True
+    comment = []
+
+    if not policy:
+        return False, "No policy given."
+
+    if policy[0] == "+":
+        # grouping
+        necessary = []
+        for char in policy[1:]:
+            necessary.append(chars.get(char))
+        necessary = "|".join(necessary)
+        if not re.search(necessary, pin):
+            ret = False
+            comment.append("Missing character in PIN: {0!s}".format(necessary))
+
+    elif policy[0] == "-":
+        # exclusion
+        not_allowed = []
+        for char in policy[1:]:
+            not_allowed.append(chars.get(char))
+        not_allowed = "|".join(not_allowed)
+        if re.search(not_allowed, pin):
+            ret = False
+            comment.append("Not allowed character in PIN!")
+
+    else:
+        for c in chars:
+            if c in policy and not re.search(chars[c], pin):
+                ret = False
+                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+
+    return ret, ",".join(comment)

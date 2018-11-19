@@ -505,7 +505,8 @@ class U2fTokenClass(TokenClass):
                         realm=token_realm,
                         user=token_user,
                         resolver=token_resolver,
-                        client=g.client_ip)
+                        client=g.client_ip,
+                        audit_data=g.audit_object.audit_data)
                     for allowed_cert in allowed_certs_pols:
                         tag, matching, _rest = allowed_cert.split("/", 3)
                         tag_value = self.get_tokeninfo(
@@ -547,7 +548,8 @@ class U2fTokenClass(TokenClass):
         # Read the facets from the policies
         pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
                                                        scope=SCOPE.AUTH,
-                                                       client=g.client_ip)
+                                                       client=g.client_ip,
+                                                       audit_data=g.audit_object.audit_data)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 
