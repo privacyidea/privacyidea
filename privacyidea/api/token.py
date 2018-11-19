@@ -427,7 +427,7 @@ def assign_api():
     else:
         err_message = None
     res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, err_message=err_message)
-    g.audit_object.log({"success": res})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -449,7 +449,7 @@ def unassign_api():
     g.audit_object.log({"serial": serial})
 
     res = unassign_token(serial, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -480,7 +480,7 @@ def revoke_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = revoke_token(serial, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -508,7 +508,7 @@ def enable_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=True, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -538,7 +538,7 @@ def disable_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=False, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
