@@ -22,6 +22,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.models import EventHandler, EventHandlerOption, db
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.audit import getAudit
@@ -178,11 +179,7 @@ def enable_event(event_id, enable=True):
     :param event_id: ID of the event
     :return:
     """
-    ev = EventHandler.query.filter_by(id=event_id).first()
-    if not ev:
-        raise ParameterError("The event with id '{0!s}' does not "
-                             "exist".format(event_id))
-
+    ev = fetch_one_resource(EventHandler, id=event_id)
     # Update the event
     ev.active = enable
     r = ev.save()
@@ -241,9 +238,7 @@ def delete_event(event_id):
     :return:
     """
     event_id = int(event_id)
-    ev = EventHandler.query.filter_by(id=event_id).first()
-    r = ev.delete()
-    return r
+    return fetch_one_resource(EventHandler, id=event_id).delete()
 
 
 class EventConfiguration(object):

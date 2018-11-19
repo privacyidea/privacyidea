@@ -53,10 +53,10 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens_paginate,
                                    set_validity_period_end,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
-                                   import_token)
+                                   import_token, get_one_token, get_tokens_from_serial_or_user)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
-                                   privacyIDEAError)
+                                   privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from dateutil.tz import tzlocal
 
@@ -149,6 +149,7 @@ class TokenTestCase(MyTestCase):
         # get tokens for a given serial number
         tokenobject_list = get_tokens(serial="hotptoken")
         self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+
         # ...but not in an unassigned state!
         tokenobject_list = get_tokens(serial="hotptoken", assigned=False)
         self.assertTrue(len(tokenobject_list) == 0, tokenobject_list)
@@ -242,8 +243,8 @@ class TokenTestCase(MyTestCase):
         user = get_token_owner(self.serials[0])
         self.assertTrue(user is None, user)
         # for non existing token
-        user = get_token_owner("does not exist")
-        self.assertTrue(user is None, user)
+        with self.assertRaises(ResourceNotFoundError):
+            user = get_token_owner("does not exist")
 
         # check if the token owner is cornelius
         user = User("cornelius", realm=self.realm1, resolver=self.resolvername1)
@@ -287,8 +288,8 @@ class TokenTestCase(MyTestCase):
                       current_time=datetime.datetime(2014, 12, 4, 12, 0))
         self.assertTrue(otp[2] == "938938", otp)
         # the serial does not exist
-        otp = get_otp("does not exist")
-        self.assertTrue(otp[2] == "", otp)
+        with self.assertRaises(ResourceNotFoundError):
+            get_otp("does not exist")
 
     def test_12_get_token_by_otp(self):
         tokenobject = get_token_by_otp(get_tokens(), otp="755224")
@@ -410,8 +411,7 @@ class TokenTestCase(MyTestCase):
                                   "otpkey": "1234567890123456"})
         realms = get_realms_of_token(serial)
         self.assertTrue(realms == [], "{0!s}".format(realms))
-        rnum = set_realms(serial, [self.realm1])
-        self.assertTrue(rnum == 1, rnum)
+        set_realms(serial, [self.realm1])
         realms = get_realms_of_token(serial)
         self.assertTrue(realms == [self.realm1], "{0!s}".format(realms))
         remove_token(serial=serial)
@@ -453,8 +453,8 @@ class TokenTestCase(MyTestCase):
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
-        self.assertRaises(TokenAdminError, assign_token, serial, user)
-        self.assertRaises(TokenAdminError, unassign_token, serial)
+        self.assertRaises(ResourceNotFoundError, assign_token, serial, user)
+        self.assertRaises(ResourceNotFoundError, unassign_token, serial)
 
     def test_19_reset_resync(self):
         serial = "reset"
@@ -514,7 +514,8 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(is_token_active(serial))
 
         remove_token(serial)
-        self.assertTrue(is_token_active(serial) is None)
+        with self.assertRaises(ResourceNotFoundError):
+            is_token_active(serial)
 
         self.assertRaises(ParameterError, enable_token)
 
@@ -576,8 +577,8 @@ class TokenTestCase(MyTestCase):
         # tokeninfo has not changed
         self.assertEqual(tokenobject.token.get_info(), tinfo2)
         # try to delete non-existing tokeninfo
-        r = delete_tokeninfo('UNKNOWN-SERIAL', 'something')
-        self.assertEqual(r, 0)
+        with self.assertRaises(ResourceNotFoundError):
+            delete_tokeninfo('UNKNOWN-SERIAL', 'something')
         remove_token(serial)
 
     def test_26_set_sync_window(self):
@@ -616,10 +617,8 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(len(r.get("otp")) == 12, r.get("otp"))
 
         # unknown serial number
-        r = get_multi_otp("unknown", count=12)
-        self.assertTrue(r.get("result") is False, r)
-        self.assertTrue(r.get("error") == "No token with serial unknown "
-                                          "found.", r)
+        with self.assertRaises(ResourceNotFoundError):
+            get_multi_otp("unknown", count=12)
 
     def test_30_set_max_failcount(self):
         serial = "t1"
@@ -682,7 +681,8 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r, r)
 
         # call the losttoken
-        self.assertRaises(TokenAdminError, lost_token, "doesnotexist")
+        with self.assertRaises(ResourceNotFoundError):
+            lost_token("doesnotexist")
         validity = 10
         r = lost_token(serial1)
         end_date = (datetime.datetime.now(tzlocal())
@@ -793,8 +793,8 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.set_pin("hotppin")
         hotp_tokenobject.save()
 
-        r, reply = check_serial_pass("XXXXXXXXX", "password")
-        self.assertFalse(r)
+        with self.assertRaises(ResourceNotFoundError):
+            check_serial_pass("XXXXXXXXX", "password")
 
         #r = get_multi_otp("hotptoken", count=20)
         #self.assertTrue(r == 0, r)
@@ -1361,6 +1361,43 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(tok.get_user_displayname(), (u'cornelius_realm1', u'Cornelius '))
         remove_token("IMP002")
 
+    def test_54_helper_functions(self):
+        user = User("cornelius", self.realm1)
+        # unassign all tokens of cornelius, assign S1 and S2
+        unassign_token(serial=None, user=user)
+        assign_token(serial="S1", user=user)
+        assign_token(serial="S2", user=user)
+        self.assertEqual(get_one_token(serial="S1", user=None).token.serial, "S1")
+        self.assertEqual(get_one_token(serial="hotptoken", user=None).token.serial, "hotptoken")
+        self.assertEqual(get_one_token(serial="S1", user=user).token.serial, "S1")
+        with self.assertRaises(ResourceNotFoundError):
+            get_one_token(serial="doesnotexist", user=None)
+        with self.assertRaises(ResourceNotFoundError):
+            get_one_token(serial="hotptoken", user=user)
+        with self.assertRaises(ResourceNotFoundError):
+            get_one_token(serial="doesnotexist", user=user)
+        with self.assertRaises(ResourceNotFoundError):
+            get_one_token(serial="doesnotexist", user=user)
+        # exact match
+        with self.assertRaises(ResourceNotFoundError):
+            get_one_token(serial="*", user=None)
+        # more than 1 token
+        with self.assertRaises(ParameterError):
+            get_one_token(user=user)
+        # get_tokens_from_serial_or_user tests
+        shadow = User("shadow", self.realm1)
+        self.assertEqual(len(get_tokens_from_serial_or_user(serial=None, user=user)), 2)
+        self.assertEqual(len(get_tokens_from_serial_or_user(serial=None, user=shadow)), 0)
+        self.assertEqual(len(get_tokens_from_serial_or_user(serial="S1", user=user)), 1)
+        self.assertEqual(len(get_tokens_from_serial_or_user(serial="S2", user=user)), 1)
+        self.assertEqual(len(get_tokens_from_serial_or_user(serial="hotptoken", user=None)), 1)
+        with self.assertRaises(ResourceNotFoundError):
+            get_tokens_from_serial_or_user(serial="S*", user=None)
+        with self.assertRaises(ResourceNotFoundError):
+            get_tokens_from_serial_or_user(serial="doesnotexist", user=None)
+        with self.assertRaises(ResourceNotFoundError):
+            get_tokens_from_serial_or_user(serial="S1", user=shadow)
+        unassign_token(serial=None, user=user)
 
 class TokenFailCounterTestCase(MyTestCase):
     """

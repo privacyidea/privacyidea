@@ -426,8 +426,7 @@ def assign_api():
         err_message = "Token already assigned to another user."
     else:
         err_message = None
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin,
-                       err_message=err_message)
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, err_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -442,11 +441,13 @@ def unassign_api():
     You can either provide "serial" as an argument to unassign this very
     token or you can provide user and realm, to unassign all tokens of a user.
 
-    :return: In case of success it returns "value": True.
-    :rtype: json object
+    :return: In case of success it returns the number of unassigned tokens in "value".
+    :rtype: JSON object
     """
     user = get_user_from_param(request.all_data, optional)
     serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
+
     res = unassign_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -479,7 +480,7 @@ def revoke_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = revoke_token(serial, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -507,7 +508,7 @@ def enable_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=True, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -537,7 +538,7 @@ def disable_api(serial=None):
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=False, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -546,13 +547,11 @@ def disable_api(serial=None):
 @prepolicy(check_base_action, request, action=ACTION.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
-def delete_api(serial=None):
+def delete_api(serial):
     """
-    Delete a token by its serial number or delete all tokens of a user.
+    Delete a token by its serial number.
 
     :jsonparam serial: The serial number of a single token.
-    :jsonparam user: The username of the user, whose tokens should be deleted.
-    :jsonparam realm: The realm of the user.
 
     :return: In case of success it return the number of deleted tokens in
         "value"
@@ -800,9 +799,9 @@ def tokenrealm_api(serial=None):
         realm_list = [r.strip() for r in realms.split(",")]
     g.audit_object.log({"serial": serial})
 
-    res = set_realms(serial, realms=realm_list)
+    set_realms(serial, realms=realm_list)
     g.audit_object.log({"success": True})
-    return send_result(res == 1)
+    return send_result(True)
 
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])

@@ -25,6 +25,7 @@ from privacyidea.models import Admin
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
+from privacyidea.lib.utils import fetch_one_resource
 
 
 class ROLE(object):
@@ -87,7 +88,7 @@ def get_db_admin(username):
 
 def delete_db_admin(username):
     print("Deleting admin {0!s}".format(username))
-    Admin.query.filter(Admin.username == username).first().delete()
+    fetch_one_resource(Admin, username=username).delete()
 
 
 @libpolicy(login_mode)

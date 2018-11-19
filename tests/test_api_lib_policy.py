@@ -1782,7 +1782,6 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
-        delete_policy("pol2")
 
     def test_07_sign_response(self):
         builder = EnvironBuilder(method='POST',

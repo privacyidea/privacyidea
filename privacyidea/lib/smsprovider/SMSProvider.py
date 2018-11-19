@@ -25,6 +25,7 @@
 #               GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
 __doc__="""This is the base class for SMS Modules, that can send SMS via
 different means.
 The function get_sms_provider_class loads an SMS Provider Module dynamically
@@ -34,6 +35,7 @@ The code is tested in tests/test_lib_smsprovider
 """
 
 from privacyidea.models import SMSGateway, SMSGatewayOption
+from privacyidea.lib.utils import fetch_one_resource
 import logging
 log = logging.getLogger(__name__)
 
@@ -184,11 +186,7 @@ def delete_smsgateway(identifier):
     :type identifier: basestring
     :return:
     """
-    r = -1
-    gw = SMSGateway.query.filter_by(identifier=identifier).first()
-    if gw:
-        r = gw.delete()
-    return r
+    return fetch_one_resource(SMSGateway, identifier=identifier).delete()
 
 
 def delete_smsgateway_option(id, option_key):
@@ -199,9 +197,7 @@ def delete_smsgateway_option(id, option_key):
     :param option_key: The identifier/key of the option
     :return: True
     """
-    r = SMSGatewayOption.query.filter_by(gateway_id=id,
-                                         Key=option_key).first().delete()
-    return r
+    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
 
 
 def get_smsgateway(identifier=None, id=None):

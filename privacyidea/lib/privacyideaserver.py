@@ -20,6 +20,7 @@
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 import logging
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 import json
 from privacyidea.lib import _
@@ -158,15 +159,9 @@ def add_privacyideaserver(identifier, url, tls=True, description=""):
 @log_with(log)
 def delete_privacyideaserver(identifier):
     """
-    Delete the given server from the database
+    Delete the given server from the database.
+    Raise ResourceNotFoundError if it couldn't be found.
     :param identifier: The identifier/name of the server
     :return: The ID of the database entry, that was deleted
     """
-    ret = -1
-    pi = PrivacyIDEAServerDB.query.filter(PrivacyIDEAServerDB.identifier ==
-                                              identifier).first()
-    if pi:
-        pi.delete()
-        ret = pi.id
-    return ret
-
+    return fetch_one_resource(PrivacyIDEAServerDB, identifier=identifier).delete()

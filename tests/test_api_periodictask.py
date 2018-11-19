@@ -176,7 +176,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
         # unknown ID
         status_code, data = self.simulate_request('/periodictask/4242', method='GET')
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 404)
         self.assertFalse(data['result']['status'])
 
         # update existing task
@@ -252,7 +252,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
         # get updated task impossible now
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 404)
         self.assertFalse(data['result']['status'], False)
 
         # only 1 task left
