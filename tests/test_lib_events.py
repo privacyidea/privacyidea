@@ -571,7 +571,6 @@ class ScriptEventTestCase(MyTestCase):
         d = "{0!s}/tests/testdata/scripts/".format(d)
         t_handler = ScriptEventHandler(script_directory=d)
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
-        remove_token("SPASS01")
 
 
 class FederationEventTestCase(MyTestCase):
