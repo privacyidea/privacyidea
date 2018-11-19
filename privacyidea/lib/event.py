@@ -238,9 +238,7 @@ def delete_event(event_id):
     :return:
     """
     event_id = int(event_id)
-    ev = fetch_one_resource(EventHandler, id=event_id)
-    r = ev.delete()
-    return r
+    return fetch_one_resource(EventHandler, id=event_id).delete()
 
 
 class EventConfiguration(object):

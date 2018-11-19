@@ -154,8 +154,7 @@ def delete_realm(realmname):
     defRealm = get_default_realm()
     hadDefRealmBefore = (defRealm != "")
 
-    realm = fetch_one_resource(Realm, name=realmname)
-    ret = realm.delete()
+    ret = fetch_one_resource(Realm, name=realmname).delete()
 
     # If there was a default realm before
     # and if there is only one realm left, we set the
