@@ -518,12 +518,11 @@ def get_policy_defs(scope=None):
         action types. The top level key is the scope.
     :rtype: dict
     """
-    pol = {}
     static_pol = get_static_policy_definitions()
     dynamic_pol = get_dynamic_policy_definitions()
 
     # combine static and dynamic policies
-    keys = list(static_pol.keys()) + list(dynamic_pol.keys())
+    keys = list(static_pol) + list(dynamic_pol)
     pol = {k: dict(list(static_pol.get(k, {}).items())
                    + list(dynamic_pol.get(k, {}).items())) for k in keys}
 

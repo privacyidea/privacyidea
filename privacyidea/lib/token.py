@@ -2026,7 +2026,10 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
 
     # add the user to the options, so that every token, that get passed the
     # options can see the user
-    options = options or {}
+    if options:
+        options = options.copy()
+    else:
+        options = {}
     options.update({'user': user})
 
     # if there has been one token in challenge mode, we only handle challenges
