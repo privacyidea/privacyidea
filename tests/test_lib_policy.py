@@ -867,3 +867,4 @@ class PolicyTestCase(MyTestCase):
         # The audit_data contains act1 and act2
         self.assertTrue("act1" in audit_data.get("policies"))
         self.assertTrue("act2" in audit_data.get("policies"))
+        self.assertTrue("act3" not in audit_data.get("policies"))
