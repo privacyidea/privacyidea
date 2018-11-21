@@ -601,12 +601,7 @@ def get_user_list(param=None, user=None):
     # as delete does not work
     for key in param:
         lval = param[key]
-        if key == "realm":
-            continue
-        if key == "resolver":
-            continue
-        if key == "user" or key == "username":
-            # If "user" or "username" in param we skip to handle the user afterwards
+        if key in ["realm", "resolver", "user", "username"]:
             continue
         searchDict[key] = lval
         log.debug("Parameter key:{0!r}={1!r}".format(key, lval))

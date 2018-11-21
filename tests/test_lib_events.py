@@ -813,6 +813,14 @@ class FederationEventTestCase(MyTestCase):
 class TokenEventTestCase(MyTestCase):
 
     def test_01_set_tokenrealm(self):
+        # check actions
+        actions = TokenEventHandler().actions
+        self.assertTrue("set tokeninfo" in actions, actions)
+
+        # check positions
+        pos = TokenEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post", "pre"}, pos)
+
         # setup realms
         self.setUp_user_realms()
         self.setUp_user_realm2()

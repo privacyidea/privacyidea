@@ -2029,6 +2029,9 @@ class ResolverTestCase(MyTestCase):
         reso_list = get_resolver_list(editable=True)
         self.assertTrue(len(reso_list) == 0)
 
+        reso_list = get_resolver_list(filter_resolver_type="passwdresolver")
+        self.assertTrue(len(reso_list) == 2)
+
     def test_03_get_resolver_config(self):
         reso_config = get_resolver_config(self.resolvername2)
         self.assertTrue("UnknownKey" in reso_config, reso_config)
