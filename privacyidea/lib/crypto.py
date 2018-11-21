@@ -62,7 +62,7 @@ import passlib.hash
 import sys
 import traceback
 
-from privacyidea.lib.framework import get_application_local_store, get_app_config, get_app_config_values
+from privacyidea.lib.framework import get_application_local_store, get_app_config_value, get_app_config
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -270,7 +270,7 @@ def hash_with_pepper(password, rounds=10023, salt_size=10):
 
     :return: Hash string
     """
-    key = get_app_config("PI_PEPPER", "missing")
+    key = get_app_config_value("PI_PEPPER", "missing")
     pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password, rounds=rounds,
                                                 salt_size=salt_size)
     return pw_dig
@@ -279,7 +279,7 @@ def hash_with_pepper(password, rounds=10023, salt_size=10):
 def verify_with_pepper(passwordhash, password):
     # get the password pepper
     password = password or ""
-    key = get_app_config("PI_PEPPER", "missing")
+    key = get_app_config_value("PI_PEPPER", "missing")
     success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
     return success
 
@@ -296,7 +296,7 @@ def init_hsm():
     """
     app_store = get_application_local_store()
     if "pi_hsm" not in app_store or not isinstance(app_store["pi_hsm"], dict):
-        config = get_app_config_values()
+        config = get_app_config()
         HSM_config = {"obj": create_hsm_object(config)}
         app_store["pi_hsm"] = HSM_config
         log.info("Initialized HSM object {0}".format(HSM_config))

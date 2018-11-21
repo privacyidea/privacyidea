@@ -40,7 +40,7 @@ import inspect
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-from .framework import get_request_local_store, get_app_config
+from .framework import get_request_local_store, get_app_config_value
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -108,7 +108,7 @@ class ConfigClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
-        check_reload_config = get_app_config("PI_CHECK_RELOAD_CONFIG", 0)
+        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
             self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
@@ -885,7 +885,7 @@ def get_privacyidea_node():
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
     :return: the destinct node name
     """
-    node_name = get_app_config("PI_NODE", get_app_config("PI_AUDIT_SERVERNAME", "localnode"))
+    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
     return node_name
 
 
@@ -895,7 +895,7 @@ def get_privacyidea_nodes():
     :return: list of nodes
     """
     own_node_name = get_privacyidea_node()
-    nodes = get_app_config("PI_NODES", [])[:]
+    nodes = get_app_config_value("PI_NODES", [])[:]
     if own_node_name not in nodes:
         nodes.append(own_node_name)
     return nodes

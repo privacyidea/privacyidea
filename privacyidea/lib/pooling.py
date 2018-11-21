@@ -32,7 +32,7 @@ This module is tested in tests/test_lib_pooling.py.
 import logging
 from threading import Lock
 
-from privacyidea.lib.framework import get_application_local_store, get_app_config
+from privacyidea.lib.framework import get_application_local_store, get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ def get_registry():
         return app_store["engine_registry"]
     except KeyError:
         # create a new engine registry of the appropriate class
-        registry_class_name = get_app_config("PI_ENGINE_REGISTRY_CLASS", DEFAULT_REGISTRY_CLASS_NAME)
+        registry_class_name = get_app_config_value("PI_ENGINE_REGISTRY_CLASS", DEFAULT_REGISTRY_CLASS_NAME)
         if registry_class_name not in ENGINE_REGISTRY_CLASSES:
             log.warning(u"Unknown engine registry class: {!r}".format(registry_class_name))
             registry_class_name = DEFAULT_REGISTRY_CLASS_NAME

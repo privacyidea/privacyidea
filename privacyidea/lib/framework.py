@@ -43,7 +43,7 @@ def get_request_local_store():
     return g._request_local_store
 
 
-def get_app_config_values():
+def get_app_config():
     """
     Get all configuration options of the current app.
     :return: a dict-compatible object
@@ -51,15 +51,15 @@ def get_app_config_values():
     return current_app.config
 
 
-def get_app_config(key, default=None):
+def get_app_config_value(key, default=None):
     """
     Get a specific configuration option of the current app.
     :param key: a string key
     :param default: a default value, returned if the config does not contain ``key``
     :return: the config value or the default value
     """
-    return get_app_config_values().get(key, default)
+    return get_app_config().get(key, default)
 
 
 __all__ = ['get_application_local_store', 'get_request_local_store',
-           'get_app_config_values', 'get_app_config', '_']
+           'get_app_config', 'get_app_config_value', '_']

@@ -33,7 +33,7 @@ The scripts can take parameters like
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
 import logging
@@ -60,7 +60,7 @@ class ScriptEventHandler(BaseEventHandler):
     def __init__(self, script_directory=None):
         if not script_directory:
             try:
-                self.script_directory = get_app_config("PI_SCRIPT_HANDLER_DIRECTORY",
+                self.script_directory = get_app_config_value("PI_SCRIPT_HANDLER_DIRECTORY",
                                                        "/etc/privacyidea/scripts")
             except RuntimeError as e:
                 # In case of the tests we are outside of the application context

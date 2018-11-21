@@ -37,7 +37,7 @@ from ctypes import c_ulong
 from ctypes import c_char
 from ctypes import c_byte
 
-from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError
 
 __all__ = ["vasco_otp_check"]
@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 vasco_dll = None
 
 try:
-    vasco_library_path = get_app_config("PI_VASCO_LIBRARY")
+    vasco_library_path = get_app_config_value("PI_VASCO_LIBRARY")
     if vasco_library_path is not None: # pragma: no cover
         log.info(u"Loading VASCO library from {!s} ...".format(vasco_library_path))
         vasco_dll = CDLL(vasco_library_path)
