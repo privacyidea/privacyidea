@@ -33,7 +33,7 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
@@ -101,7 +101,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertEqual(r[0].get("position"), "post")
 
         # We can not enable an event, that does not exist.
-        self.assertRaises(ParameterError, enable_event, 1234567, True)
+        self.assertRaises(ResourceNotFoundError, enable_event, 1234567, True)
 
         # Cleanup
         r = delete_event(n_eid)
@@ -527,7 +527,6 @@ class ScriptEventTestCase(MyTestCase):
         t_handler = ScriptEventHandler(script_directory=d)
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
-        remove_token("SPASS01")
 
     def test_02_failscript(self):
         g = FakeFlaskG()
@@ -572,7 +571,6 @@ class ScriptEventTestCase(MyTestCase):
         d = "{0!s}/tests/testdata/scripts/".format(d)
         t_handler = ScriptEventHandler(script_directory=d)
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
-        remove_token("SPASS01")
 
 
 class FederationEventTestCase(MyTestCase):
@@ -2398,7 +2396,7 @@ class UserNotificationTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result.get("value") is True, result)
+            self.assertEqual(result.get("value"), 1)
 
         # Cleanup
         delete_event(eid)

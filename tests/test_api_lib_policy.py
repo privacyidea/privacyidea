@@ -911,7 +911,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [REMOTE_USER.ACTIVE])
+        self.assertTrue(r)
 
         # Login for the REMOTE_USER is not allowed.
         # Only allowed for user "super", but REMOTE_USER=admin
@@ -922,7 +922,14 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [])
+        self.assertFalse(r)
+
+        # The remote_user "super" is allowed to login:
+        env["REMOTE_USER"] = "super"
+        req = Request(env)
+        g.policy_object = PolicyClass()
+        r = is_remote_user_allowed(req)
+        self.assertTrue(r)
 
         delete_policy("ruser")
 
@@ -1775,7 +1782,6 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
-        delete_policy("pol2")
 
     def test_07_sign_response(self):
         builder = EnvironBuilder(method='POST',

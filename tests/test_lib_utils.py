@@ -14,7 +14,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
                                    check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string)
+                                   convert_column_to_unicode, censor_connect_string,
+                                   truncate_comma_list, check_pin_policy)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -446,3 +447,68 @@ class UtilsTestCase(MyTestCase):
                          "mysql://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
                          u"mysql://knöbel:xxxx@localhost/pi")
+
+    def test_19_truncate_comma_list(self):
+        r = truncate_comma_list("123456,234567,345678", 19)
+        self.assertEqual(len(r), 19)
+        self.assertEqual(r, "1234+,234567,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 18)
+        self.assertEqual(len(r), 18)
+        self.assertEqual(r, "1234+,2345+,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 16)
+        self.assertEqual(len(r), 16)
+        self.assertEqual(r, "123+,2345+,3456+")
+
+        # There are more entries than the max_len. We will not be able
+        # to shorten all entries, so we simply take the beginning of the string.
+        r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
+        self.assertEqual(len(r), 4)
+        self.assertEqual(r, "12,+")
+
+    def test_20_pin_policy(self):
+        r, c = check_pin_policy("1234", "n")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("abc", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [0-9]", c)
+
+        r, c = check_pin_policy("123", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [a-zA-Z]", c)
+
+        r, c = check_pin_policy("123", "ncs")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [a-zA-Z],Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]", c)
+
+        r, c = check_pin_policy("1234", "")
+        self.assertFalse(r)
+        self.assertEqual(c, "No policy given.")
+
+        # check for either number or character
+        r, c = check_pin_policy("1234", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("@@@@", "+cn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+
+        # check for exclusion
+        # No special character
+        r, c = check_pin_policy("1234", "-s")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234", "-sn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Not allowed character in PIN!")
+
+        r, c = check_pin_policy("1234@@@@", "-c")
+        self.assertTrue(r)

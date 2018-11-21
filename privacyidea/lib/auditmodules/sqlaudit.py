@@ -44,6 +44,7 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.utils import truncate_comma_list
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -148,7 +149,11 @@ class Audit(AuditBase):
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, basestring):
-                    data = data[:l]
+                    if column == "policies":
+                        # The policies column is shortend per comma entry
+                        data = truncate_comma_list(data, l)
+                    else:
+                        data = data[:l]
                 self.audit_data[column] = data
 
     @staticmethod
@@ -217,32 +222,13 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    def log(self, param):
-        """
-        Add new log details in param to the internal log data self.audit_data.
-
-        :param param: Log data that is to be added
-        :type param: dict
-        :return: None
-        """
-        for k, v in param.items():
-            self.audit_data[k] = v
-
-    def add_to_log(self, param):
-        """
-        Add new text to an existing log entry
-        :param param:
-        :return:
-        """
-        for k, v in param.items():
-            self.audit_data[k] += v
-
     def finalize_log(self):
         """
         This method is used to log the data.
         It should hash the data and do a hash chain and sign the data
         """
         try:
+            self.audit_data["policies"] = ",".join(self.audit_data.get("policies",[]))
             if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
                 self._truncate_data()
             le = LogEntry(action=self.audit_data.get("action"),
@@ -258,7 +244,8 @@ class Audit(AuditBase):
                           privacyidea_server=self.audit_data.get("privacyidea_server"),
                           client=self.audit_data.get("client", ""),
                           loglevel=self.audit_data.get("log_level"),
-                          clearance_level=self.audit_data.get("clearance_level")
+                          clearance_level=self.audit_data.get("clearance_level"),
+                          policies=self.audit_data.get("policies")
                           )
             self.session.add(le)
             self.session.commit()
@@ -377,6 +364,7 @@ class Audit(AuditBase):
                     'privacyidea_server': LogEntry.privacyidea_server,
                     'client': LogEntry.client,
                     'loglevel': LogEntry.loglevel,
+                    'policies': LogEntry.policies,
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
 
@@ -553,6 +541,7 @@ class Audit(AuditBase):
                       'action_detail': audit_entry.action_detail,
                       'info': audit_entry.info,
                       'privacyidea_server': audit_entry.privacyidea_server,
+                      'policies': audit_entry.policies,
                       'client': audit_entry.client,
                       'log_level': audit_entry.loglevel,
                       'clearance_level': audit_entry.clearance_level

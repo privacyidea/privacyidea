@@ -68,7 +68,7 @@ import logging
 from sqlalchemy import (and_, func)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError)
+                                   privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
@@ -479,6 +479,38 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     return ret
 
 
+def get_one_token(*args, **kwargs):
+    """
+    Fetch exactly one token according to the given filter arguments, which are passed to
+    ``get_tokens``. Raise ``ResourceNotFoundError`` if no token was found. Raise
+    ``ParameterError`` if more than one token was found.
+    """
+    result = get_tokens(*args, **kwargs)
+    if not result:
+        raise ResourceNotFoundError(u"The requested token could not be found.")
+    elif len(result) > 1:
+        raise ParameterError(u"More than one matching token were found.")
+    else:
+        return result[0]
+
+
+def get_tokens_from_serial_or_user(serial, user, **kwargs):
+    """
+    Fetch tokens, either by (exact) serial, or all tokens of a single user.
+    In case a serial number is given, check that exactly one token is returned
+    and raise a ResourceNotFoundError if that is not the case.
+    In case a user is given, the result can also be empty.
+    :param serial: exact serial number or None
+    :param user: a user object or None
+    :param kwargs: additional argumens to ``get_tokens``
+    :return: a (possibly empty) list of tokens
+    """
+    if serial:
+        return [get_one_token(serial=serial, user=user, **kwargs)]
+    else:
+        return get_tokens(serial=serial, user=user, **kwargs)
+
+
 @log_with(log)
 def get_token_type(serial):
     """
@@ -490,16 +522,10 @@ def get_token_type(serial):
     :return: tokentype
     :rtype: string
     """
-    if serial and "*" in serial:
+    try:
+        return get_one_token(serial=serial).type
+    except ResourceNotFoundError:
         return ""
-
-    tokenobject_list = get_tokens(serial=serial)
-
-    tokentype = ""
-    for tokenobject in tokenobject_list:
-        tokentype = tokenobject.type
-
-    return tokentype
 
 
 @log_with(log)
@@ -559,16 +585,13 @@ def get_realms_of_token(serial, only_first_realm=False):
     :return: list of the realm names
     :rtype: list
     """
-    if "*" in serial:
-        return []
-
-    tokenobject_list = get_tokens(serial=serial)
-
-    realms = []
-    for tokenobject in tokenobject_list:
+    try:
+        tokenobject = get_one_token(serial=serial)
         realms = tokenobject.get_realms()
+    except ResourceNotFoundError:
+        realms = []
 
-    if realms > 1:
+    if len(realms) > 1:
         log.debug(
             "Token {0!s} in more than one realm: {1!s}".format(serial, realms))
 
@@ -603,8 +626,8 @@ def get_token_owner(serial):
 
     If the token has no owner, None is returned
     
-    In case the serial number matches several tokens (like when containing a 
-    wildcard), also None is returned.
+    Wildcards in the serial number are ignored. This raises
+    ``ResourceNotFoundError`` if the token could not be found.
 
     :param serial: serial number of the token
     :type serial: basestring
@@ -612,15 +635,8 @@ def get_token_owner(serial):
     :return: The owner of the token
     :rtype: User object or None
     """
-    user = None
-
-    tokenobject_list = get_tokens(serial=serial)
-
-    if len(tokenobject_list) == 1:
-        tokenobject = tokenobject_list[0]
-        user = tokenobject.user
-
-    return user
+    tokenobject = get_one_token(serial=serial)
+    return tokenobject.user
 
 
 @log_with(log)
@@ -712,6 +728,7 @@ def get_otp(serial, current_time=None):
     This function returns the current OTP value for a given Token.
     The tokentype needs to support this function.
     if the token does not support getting the OTP value, a -2 is returned.
+    If the token could not be found, ResourceNotFoundError is raised.
 
     :param serial: serial number of the token
     :param current_time: a fake servertime for testing of TOTP token
@@ -719,14 +736,7 @@ def get_otp(serial, current_time=None):
     :return: tuple with (result, pin, otpval, passw)
     :rtype: tuple
     """
-    tokenobject_list = get_tokens(serial=serial)
-
-    if not tokenobject_list:
-        log.warning("there is no token with serial {0!r}".format(serial))
-        return -1, "", "", ""
-
-    tokenobject = tokenobject_list[0]
-
+    tokenobject = get_one_token(serial=serial)
     return tokenobject.get_otp(current_time=current_time)
 
 
@@ -754,29 +764,23 @@ def get_multi_otp(serial, count=0, epoch_start=0, epoch_end=0,
     :rtype: dictionary
     """
     ret = {"result": False}
-    tokenobject_list = get_tokens(serial=serial)
-    if not tokenobject_list:
-        log.warning("there is no token with serial {0!r}".format(serial))
-        ret["error"] = "No token with serial {0!s} found.".format(serial)
+    tokenobject = get_one_token(serial=serial)
+    log.debug("getting multiple otp values for token {0!r}. curTime={1!r}".format(tokenobject, curTime))
 
+    res, error, otp_dict = tokenobject.\
+        get_multi_otp(count=count,
+                      epoch_start=epoch_start,
+                      epoch_end=epoch_end,
+                      curTime=curTime,
+                      timestamp=timestamp)
+    log.debug("received {0!r}, {1!r}, and {2!r} otp values".format(res, error,
+                                                      len(otp_dict)))
+
+    if res is True:
+        ret = otp_dict
+        ret["result"] = True
     else:
-        tokenobject = tokenobject_list[0]
-        log.debug("getting multiple otp values for token {0!r}. curTime={1!r}".format(tokenobject, curTime))
-
-        res, error, otp_dict = tokenobject.\
-            get_multi_otp(count=count,
-                          epoch_start=epoch_start,
-                          epoch_end=epoch_end,
-                          curTime=curTime,
-                          timestamp=timestamp)
-        log.debug("received {0!r}, {1!r}, and {2!r} otp values".format(res, error,
-                                                          len(otp_dict)))
-
-        if res is True:
-            ret = otp_dict
-            ret["result"] = True
-        else:
-            ret["error"] = error
+        ret["error"] = error
 
     return ret
 
@@ -1059,7 +1063,7 @@ def remove_token(serial=None, user=None):
     :return: The number of deleted token
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     token_count = len(tokenobject_list)
 
     # Delete challenges of such a token
@@ -1091,6 +1095,8 @@ def set_realms(serial, realms=None, add=False):
     realms. So realms that are not contained in the list will not be assigned
     to the token anymore.
 
+    If the token could not be found, a ResourceNotFoundError is raised.
+
     Thus, setting realms=[] clears all realms assignments.
 
     :param serial: the serial number of the token (exact)
@@ -1099,9 +1105,6 @@ def set_realms(serial, realms=None, add=False):
     :type realms: list
     :param add: if the realms should be added and not replaced
     :type add: bool
-    :return: the number of tokens, to which realms where added. As a serial
-    number should be unique, this is either 1 or 0.
-    :rtype: int
     """
     realms = realms or []
     corrected_realms = []
@@ -1111,13 +1114,9 @@ def set_realms(serial, realms=None, add=False):
         if realm_is_defined(realm):
             corrected_realms.append(realm)
 
-    tokenobject_list = get_tokens(serial=serial)
-
-    for tokenobject in tokenobject_list:
-        tokenobject.set_realms(corrected_realms, add=add)
-        tokenobject.save()
-
-    return len(tokenobject_list)
+    tokenobject = get_one_token(serial=serial)
+    tokenobject.set_realms(corrected_realms, add=add)
+    tokenobject.save()
 
 
 @log_with(log)
@@ -1128,16 +1127,13 @@ def set_defaults(serial):
     :type serial: basestring
     :return: None
     """
-    tokenobject_list = get_tokens(serial=serial)
-    if tokenobject_list:
-        db_token = tokenobject_list[0].token
-        db_token.otplen = int(get_from_config("DefaultOtpLen", 6))
-        db_token.count_window = int(get_from_config("DefaultCountWindow", 15))
-        db_token.maxfail = int(get_from_config("DefaultMaxFailCount", 15))
-        db_token.sync_window = int(get_from_config("DefaultSyncWindow", 1000))
-        db_token.tokentype = u"hotp"
-        db_token.save()
-
+    db_token = get_one_token(serial=serial).token
+    db_token.otplen = int(get_from_config("DefaultOtpLen", 6))
+    db_token.count_window = int(get_from_config("DefaultCountWindow", 15))
+    db_token.maxfail = int(get_from_config("DefaultMaxFailCount", 15))
+    db_token.sync_window = int(get_from_config("DefaultSyncWindow", 1000))
+    db_token.tokentype = u"hotp"
+    db_token.save()
 
 
 @log_with(log)
@@ -1156,18 +1152,8 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     :type encrypt_pin: bool
     :param err_message: The error message, that is displayed in case the token is already assigned
     :type err_message: basestring
-
-    :return: True if the token was assigned, in case of an error an exception
-    is thrown
-    :rtype: bool
     """
-    tokenobject_list = get_tokens(serial=serial)
-
-    if not tokenobject_list:
-        log.warning("no tokens found with serial: {0!r}".format(serial))
-        raise TokenAdminError("no token found!", id=1102)
-
-    tokenobject = tokenobject_list[0]
+    tokenobject = get_one_token(serial=serial)
 
     # Check if the token already belongs to another user
     old_user = tokenobject.user
@@ -1198,41 +1184,38 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
 @check_user_or_serial
 def unassign_token(serial, user=None):
     """
-    unassign the user from the token
+    unassign the user from the token, or all tokens of a user
 
-    :param serial: The serial number of the token to unassign (exact)
-    :return: True
+    :param serial: The serial number of the token to unassign (exact). Can be None
+    :param user: A user whose tokens should be unassigned
+    :return: number of unassigned tokens
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    for tokenobject in tokenobject_list:
+        tokenobject.token.user_id = ""
+        tokenobject.token.resolver = ""
+        tokenobject.token.resolver_type = ""
+        tokenobject.set_pin("")
+        tokenobject.set_failcount(0)
 
-    if not tokenobject_list:
-        log.warning("no tokens found with serial: {0!r}".format(serial))
-        raise TokenAdminError("no token found!", id=1102)
+        try:
+            tokenobject.save()
+        except Exception as e:  # pragma: no cover
+            log.error('update token DB failed')
+            raise TokenAdminError("Token unassign failed for {0!r}/{1!r}: {2!r}".format(serial, user, e), id=1105)
 
-    tokenobject = tokenobject_list[0]
-    tokenobject.token.user_id = ""
-    tokenobject.token.resolver = ""
-    tokenobject.token.resolver_type = ""
-    tokenobject.set_pin("")
-    tokenobject.set_failcount(0)
-
-    try:
-        tokenobject.save()
-    except Exception as e:  # pragma: no cover
-        log.error('update token DB failed')
-        raise TokenAdminError("Token unassign failed for {0!r}: {1!r}".format(serial, e), id=1105)
-
-    log.debug("successfully unassigned token with serial {0!r}".format(serial))
-    return True
+        log.debug("successfully unassigned token with serial {0!r}".format(tokenobject))
+    # TODO: test with more than 1 token
+    return len(tokenobject_list)
 
 
 @log_with(log)
 def resync_token(serial, otp1, otp2, options=None, user=None):
     """
-    Resyncronize the token of the given serial number by searching the
+    Resyncronize the token of the given serial number and user by searching the
     otp1 and otp2 in the future otp values.
 
-    :param serial: token serial number
+    :param serial: token serial number (exact)
     :type serial: basestring
     :param otp1: first OTP value
     :type otp1: basestring
@@ -1244,7 +1227,7 @@ def resync_token(serial, otp1, otp2, options=None, user=None):
     """
     ret = False
 
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         ret = tokenobject.resync(otp1, otp2, options)
@@ -1256,13 +1239,13 @@ def resync_token(serial, otp1, otp2, options=None, user=None):
 @check_user_or_serial
 def reset_token(serial, user=None):
     """
-    Reset the failcounter
+    Reset the failcounter of a single token, or of all tokens of one user.
     :param serial: serial number (exact)
     :param user:
     :return: The number of tokens, that were resetted
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.reset()
@@ -1295,7 +1278,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         raise ParameterError("Parameter user must not be a string: {0!r}".format(
                              user), id=1212)
 
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_pin(pin, encrypt=encrypt_pin)
@@ -1317,7 +1300,7 @@ def set_pin_user(serial, user_pin, user=None):
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_user_pin(user_pin)
@@ -1340,7 +1323,7 @@ def set_pin_so(serial, so_pin, user=None):
     :return: The number of SO PINs set. (usually 1)
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_so_pin(so_pin)
@@ -1353,7 +1336,7 @@ def set_pin_so(serial, so_pin, user=None):
 @check_user_or_serial
 def revoke_token(serial, user=None):
     """
-    Revoke a token.
+    Revoke a token, or all tokens of a single user.
 
     :param serial: The serial number of the token (exact)
     :type serial: basestring
@@ -1364,7 +1347,7 @@ def revoke_token(serial, user=None):
     :return: Number of tokens that were enabled/disabled
     :rtype:
     """
-    tokenobject_list = get_tokens(user=user, serial=serial)
+    tokenobject_list = get_tokens_from_serial_or_user(user=user, serial=serial)
 
     for tokenobject in tokenobject_list:
         tokenobject.revoke()
@@ -1377,7 +1360,8 @@ def revoke_token(serial, user=None):
 @check_user_or_serial
 def enable_token(serial, enable=True, user=None):
     """
-    Enable or disable a token. This can be checked with is_token_active
+    Enable or disable a token, or all tokens of a single user.
+    This can be checked with is_token_active.
 
     Enabling an already active token will return 0.
 
@@ -1390,34 +1374,32 @@ def enable_token(serial, enable=True, user=None):
     :return: Number of tokens that were enabled/disabled
     :rtype:
     """
-    # We only search for those tokens, that need action.
-    # Tokens that are already active, do not need to be enabled, tokens
-    # that are inactive do not need to be disabled.
-    tokenobject_list = get_tokens(user=user, serial=serial, active=not enable)
+    # We search for all matching tokens first, in case the user has
+    # provided a wrong serial number. Then we filter for the desired tokens.
+    tokenobject_list = get_tokens_from_serial_or_user(user=user, serial=serial)
+    count = 0
 
     for tokenobject in tokenobject_list:
-        tokenobject.enable(enable)
-        tokenobject.save()
+        if tokenobject.is_active() == (not enable):
+            tokenobject.enable(enable)
+            tokenobject.save()
+            count += 1
 
-    return len(tokenobject_list)
+    return count
 
 
 def is_token_active(serial):
     """
     Return True if the token is active, otherwise false
-    Returns None, if the token does not exist.
+    Raise ResourceError if the token could not be found.
 
     :param serial: The serial number of the token
     :type serial: basestring
     :return: True or False
     :rtype: bool
     """
-    ret = None
-    tokenobject_list = get_tokens(serial=serial)
-    for tokenobject in tokenobject_list:
-        ret = tokenobject.token.active
-
-    return ret
+    tokenobject = get_one_token(serial=serial)
+    return tokenobject.token.active
 
 
 @log_with(log)
@@ -1437,7 +1419,7 @@ def set_otplen(serial, otplen=6, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_otplen(otplen)
@@ -1462,7 +1444,7 @@ def set_hashlib(serial, hashlib="sha1", user=None):
     :return: the number of token infos set
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_hashlib(hashlib)
@@ -1497,7 +1479,7 @@ def set_count_auth(serial, count, user=None, max=False, success=False):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         if max:
@@ -1536,7 +1518,7 @@ def add_tokeninfo(serial, info, value=None,
     :return: the number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.add_tokeninfo(info, value)
@@ -1561,7 +1543,7 @@ def delete_tokeninfo(serial, key, user=None):
     the token info *key* set in the first place!
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
         tokenobject.del_tokeninfo(key)
         tokenobject.save()
@@ -1580,7 +1562,7 @@ def set_validity_period_start(serial, user, start):
     :param start: Timestamp in the format DD/MM/YY HH:MM
     :type start: basestring
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
         tokenobject.set_validity_period_start(start)
         tokenobject.save()
@@ -1598,7 +1580,7 @@ def set_validity_period_end(serial, user, end):
     :param end: Timestamp in the format DD/MM/YY HH:MM
     :type end: basestring
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
         tokenobject.set_validity_period_end(end)
         tokenobject.save()
@@ -1622,7 +1604,7 @@ def set_sync_window(serial, syncwindow=1000, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_sync_window(syncwindow)
@@ -1647,7 +1629,7 @@ def set_count_window(serial, countwindow=10, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_count_window(countwindow)
@@ -1671,7 +1653,7 @@ def set_description(serial, description, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_description(description)
@@ -1691,7 +1673,7 @@ def set_failcounter(serial, counter, user=None):
     :param user: An optional user
     :return: Number of tokens, where the fail counter was set.
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_failcount(counter)
@@ -1716,7 +1698,7 @@ def set_max_failcount(serial, maxfail, user=None):
     :return: number of modified tokens
     :rtype: int
     """
-    tokenobject_list = get_tokens(serial=serial, user=user)
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
         tokenobject.set_maxfail(maxfail)
@@ -1742,11 +1724,11 @@ def copy_token_pin(serial_from, serial_to):
     :return: True. In case of an error raise an exception
     :rtype: bool
     """
-    tokenobject_list_from = get_tokens(serial=serial_from)
-    tokenobject_list_to = get_tokens(serial=serial_to)
-    pinhash, seed = tokenobject_list_from[0].get_pin_hash_seed()
-    tokenobject_list_to[0].set_pin_hash_seed(pinhash, seed)
-    tokenobject_list_to[0].save()
+    tokenobject_from = get_one_token(serial=serial_from)
+    tokenobject_to = get_one_token(serial=serial_to)
+    pinhash, seed = tokenobject_from.get_pin_hash_seed()
+    tokenobject_to.set_pin_hash_seed(pinhash, seed)
+    tokenobject_to.save()
     return True
 
 
@@ -1764,15 +1746,15 @@ def copy_token_user(serial_from, serial_to):
     :return: True. In case of an error raise an exception
     :rtype: bool
     """
-    tokenobject_list_from = get_tokens(serial=serial_from)
-    tokenobject_list_to = get_tokens(serial=serial_to)
-    user_id = tokenobject_list_from[0].token.user_id
-    resolver = tokenobject_list_from[0].token.resolver
-    resolver_type = tokenobject_list_from[0].token.resolver_type
-    tokenobject_list_to[0].set_user_identifiers(user_id, resolver,
+    tokenobject_from = get_one_token(serial=serial_from)
+    tokenobject_to = get_one_token(serial=serial_to)
+    user_id = tokenobject_from.token.user_id
+    resolver = tokenobject_from.token.resolver
+    resolver_type = tokenobject_from.token.resolver_type
+    tokenobject_to.set_user_identifiers(user_id, resolver,
                                                 resolver_type)
     copy_token_realms(serial_from, serial_to)
-    tokenobject_list_to[0].save()
+    tokenobject_to.save()
     return True
 
 @check_copy_serials
@@ -1784,10 +1766,10 @@ def copy_token_realms(serial_from, serial_to):
     :param serial_to: The token to copy to
     :return: None
     """
-    tokenobject_list_from = get_tokens(serial=serial_from)
-    tokenobject_list_to = get_tokens(serial=serial_to)
-    realm_list = tokenobject_list_from[0].token.get_realms()
-    tokenobject_list_to[0].set_realms(realm_list)
+    tokenobject_from = get_one_token(serial=serial_from)
+    tokenobject_to = get_one_token(serial=serial_to)
+    realm_list = tokenobject_from.token.get_realms()
+    tokenobject_to.set_realms(realm_list)
 
 
 @log_with(log)
@@ -1927,16 +1909,10 @@ def check_serial_pass(serial, passw, options=None):
     :rtype: tuple
     """
     reply_dict = {}
-    tokenobject_list = get_tokens(serial=serial)
-    if not tokenobject_list:
-        # The serial does not exist
-        res = False
-        reply_dict["message"] = "The token with this serial does not exist"
-    else:
-        tokenobject = tokenobject_list[0]
-        res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           user=tokenobject.user,
-                                           options=options)
+    tokenobject = get_one_token(serial=serial)
+    res, reply_dict = check_token_list([tokenobject], passw,
+                                       user=tokenobject.user,
+                                       options=options)
 
     return res, reply_dict
 
@@ -1950,15 +1926,10 @@ def check_otp(serial, otpval):
     :return:
     """
     reply_dict = {}
-    tokenobject_list = get_tokens(serial=serial)
-    if not tokenobject_list:
-        res = False
-        reply_dict["message"] = "The token with this serial does not exist"
-    else:
-        tokenobject = tokenobject_list[0]
-        res = tokenobject.check_otp(otpval) >= 0
-        if not res:
-            reply_dict["message"] = "OTP verification failed."
+    tokenobject = get_one_token(serial=serial)
+    res = tokenobject.check_otp(otpval) >= 0
+    if not res:
+        reply_dict["message"] = "OTP verification failed."
     return res, reply_dict
 
 
@@ -2165,7 +2136,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 scope=SCOPE.AUTH,
                 realm=token_owner.login if token_owner else None,
                 user=token_owner.realm if token_owner else None,
-                client=clientip, active=True)
+                client=clientip, active=True,
+                audit_data=g.audit_object.audit_data)
             if reset_all:
                 log.debug("Reset failcounter of all tokens of {0!s}".format(
                     token_owner))

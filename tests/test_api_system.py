@@ -246,9 +246,9 @@ class APIConfigTestCase(MyTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code, 404)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertFalse(result["status"])
 
         # check policy
         with self.app.test_request_context('/policy/pol_update_del',

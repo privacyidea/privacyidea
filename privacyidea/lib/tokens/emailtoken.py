@@ -360,10 +360,11 @@ class EmailTokenClass(HotpTokenClass):
                                   user=username,
                                   client=clientip,
                                   unique=True,
-                                  allow_white_space_in_action=True)
+                                  allow_white_space_in_action=True,
+                                  audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
-                message = messages[0]
+                message = list(messages)[0]
 
         message = message.format(challenge=options.get("challenge"))
         if message.startswith("file:"):
@@ -405,7 +406,8 @@ class EmailTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip, active=True)
+                             client=clientip, active=True,
+                             audit_data=g.audit_object.audit_data)
             autosms = len(autoemailpol) >= 1
 
         return autosms

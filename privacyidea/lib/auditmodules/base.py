@@ -164,21 +164,50 @@ class Audit(object):  # pragma: no cover
         return None
 
     @log_with(log)
-    def log(self, param):  # pragma: no cover
+    def log(self, param):
         """
         This method is used to log the data.
         During a request this method can be called several times to fill the
         internal audit_data dictionary.
-        """
-        pass
 
-    def add_to_log(self, param):
+        Add new log details in param to the internal log data self.audit_data.
+
+        :param param: Log data that is to be added
+        :type param: dict
+        :return: None
+        """
+        for k, v in param.items():
+            self.audit_data[k] = v
+
+    def add_to_log(self, param, add_with_comma=False):
         """
         Add to existing log entry
         :param param:
+        :param add_with_comma: If set to true, new values will be appended comma separated
         :return:
         """
-        pass
+        for k, v in param.items():
+            if k not in self.audit_data:
+                # We need to create the entry
+                self.audit_data[k] = v
+            else:
+                if add_with_comma:
+                    self.audit_data[k] += ","
+                self.audit_data[k] += v
+
+    def add_policy(self, policyname):
+        """
+        This method adds a triggered policyname to the list of triggered policies.
+        :param policyname: A string or a list of strings as policynames
+        :return:
+        """
+        if "policies" not in self.audit_data:
+            self.audit_data["policies"] = []
+        if type(policyname) == list:
+            for p in policyname:
+                self.audit_data["policies"].append(p)
+        else:
+            self.audit_data["policies"].append(policyname)
 
     def finalize_log(self):
         """

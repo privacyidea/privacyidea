@@ -62,6 +62,10 @@
                     <pi-filter ng-model="resolverFilter"
                                ng-change="getAuditList()">
                 </th>
+                <th><translate>policies</translate>
+                    <pi-filter ng-model="policiesFilter"
+                               ng-change="getAuditList()">
+                </th>
                 <th><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
                                ng-change="getAuditList()">
@@ -100,6 +104,16 @@
                 <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
                 <td><a ui-sref="config.resolvers.list">
                     {{ audit.resolver }}</a></td>
+                <td><span ng-repeat="policy in audit.policies">
+                        <span ng-if="policy.endsWith('+')">
+                            {{ policy }}
+                        </span>
+                        <span ng-if="!policy.endsWith('+')">
+                            <a ui-sref="config.policies.details({policyname:policy})"
+                                ng-click="$rootScope.returnTo=audit;">{{ policy }}</a>
+                        </span>
+                    </span>
+                </td>
                 <td>{{ audit.client }}</td>
                 <td>{{ audit.info }}</td>
                 <td><span status-class="{{ audit.sig_check }}">
