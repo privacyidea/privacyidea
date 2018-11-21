@@ -12,7 +12,8 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     decryptPassword, urandom,
                                     get_rand_digit_str, geturandom,
                                     get_alphanum_str,
-                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, get_hsm)
+                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, get_hsm,
+                                    init_hsm, set_hsm_password)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -452,3 +453,28 @@ class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
             r = encryptPin("test")
             pin = decryptPin(r)
             self.assertEqual(pin, "test")
+
+
+class AESHardwareSecurityModuleLibLevelPasswordTestCase(MyTestCase):
+    """ test case for HSM module where the password is provided later """
+    pkcs11 = PKCS11Mock()
+
+    def setUp(self):
+        """ set up config to load the AES HSM module """
+        current_app.config["PI_HSM_MODULE"] = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
+        current_app.config["PI_HSM_MODULE_MODULE"] = "testmodule"
+        # the config misses the password
+        with self.pkcs11:
+            MyTestCase.setUp(self)
+
+    def test_01_set_password(self):
+        with self.pkcs11:
+            hsm = init_hsm()
+            self.assertIsInstance(hsm, AESHardwareSecurityModule)
+            with self.assertRaises(HSMException):
+                get_hsm()
+            self.assertIs(get_hsm(require_ready=False), hsm)
+            ready = set_hsm_password("test123!")
+            self.assertTrue(ready)
+            self.assertIs(hsm, init_hsm())
+            self.assertIs(get_hsm(), hsm)
