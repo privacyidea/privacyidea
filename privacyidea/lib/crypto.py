@@ -62,7 +62,7 @@ import passlib.hash
 import sys
 import traceback
 
-from privacyidea.lib.framework import get_application_local_store, get_app_config_value, get_app_config
+from privacyidea.lib.framework import get_app_local_store, get_app_config_value, get_app_config
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -294,7 +294,7 @@ def init_hsm():
 
     :return: hsm object
     """
-    app_store = get_application_local_store()
+    app_store = get_app_local_store()
     if "pi_hsm" not in app_store or not isinstance(app_store["pi_hsm"], dict):
         config = get_app_config()
         HSM_config = {"obj": create_hsm_object(config)}

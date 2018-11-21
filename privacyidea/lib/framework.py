@@ -21,7 +21,7 @@ from flask import current_app, g
 from flask_babel import gettext as _
 
 
-def get_application_local_store():
+def get_app_local_store():
     """
     Get a dictionary which is local to the current flask application,
     but shared among all threads.
@@ -61,5 +61,5 @@ def get_app_config_value(key, default=None):
     return get_app_config().get(key, default)
 
 
-__all__ = ['get_application_local_store', 'get_request_local_store',
+__all__ = ['get_app_local_store', 'get_request_local_store',
            'get_app_config', 'get_app_config_value', '_']

@@ -32,7 +32,7 @@ This module is tested in tests/test_lib_pooling.py.
 import logging
 from threading import Lock
 
-from privacyidea.lib.framework import get_application_local_store, get_app_config_value
+from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ def get_registry():
     # decide to create a new one. But as ``setdefault`` is atomic, only the
     # first one will be the written to ``app_store['config']``. The latter
     # one will not be referenced and will be garbage-collected at some point.
-    app_store = get_application_local_store()
+    app_store = get_app_local_store()
     try:
         return app_store["engine_registry"]
     except KeyError:
