@@ -25,8 +25,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.framework import get_request_local_store, get_app_config
-
 __doc__="""The config module takes care about storing server configuration in
 the Config database table.
 
@@ -42,7 +40,7 @@ import inspect
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-
+from .framework import get_request_local_store, get_app_config
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver

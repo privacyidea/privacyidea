@@ -104,7 +104,7 @@ def get_registry():
     # This is no problem when we already have an engine registry object.
     # However, if there is no registry object yet, two threads may concurrently
     # decide to create a new one. But as ``setdefault`` is atomic, only the
-    # first one will be the written to ``store['config']``. The latter
+    # first one will be the written to ``app_store['config']``. The latter
     # one will not be referenced and will be garbage-collected at some point.
     app_store = get_application_local_store()
     try:

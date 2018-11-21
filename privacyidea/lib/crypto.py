@@ -295,7 +295,7 @@ def init_hsm():
     :return: hsm object
     """
     app_store = get_application_local_store()
-    if "pi_hsm" not in app_store or not isinstance(store["pi_hsm"], dict):
+    if "pi_hsm" not in app_store or not isinstance(app_store["pi_hsm"], dict):
         config = get_app_config_values()
         HSM_config = {"obj": create_hsm_object(config)}
         app_store["pi_hsm"] = HSM_config

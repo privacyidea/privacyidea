@@ -44,10 +44,10 @@ webservice!
 
 import logging
 
-from privacyidea.lib.framework import get_request_local_store
 from .log import log_with
 from .config import (get_resolver_types, get_resolver_classes, update_config_object)
 from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.framework import get_request_local_store
 from ..models import (Resolver,
                       ResolverConfig)
 from ..api.lib.utils import required
