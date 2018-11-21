@@ -52,17 +52,6 @@ import traceback
 
 
 log = logging.getLogger(__name__)
-try:
-    import matplotlib
-    MATPLOT_READY = True
-    matplotlib.use('Agg')
-    # We need to set the matplotlib backend before importing pandas with pyplot
-    from pandas import DataFrame
-    PANDAS_READY = True
-    # matplotlib is needed to plot
-except Exception as exx:
-    log.warning(exx)
-    PANDAS_READY = False
 
 metadata = MetaData()
 
@@ -477,37 +466,6 @@ class Audit(AuditBase):
             return iter([])
         else:
             return iter(logentries)
-
-    def get_dataframe(self,
-                      start_time=datetime.datetime.now()
-                                 -datetime.timedelta(days=7),
-                      end_time=datetime.datetime.now()):
-        """
-        The Audit module can handle its data the best. This function is used
-        to return a pandas.dataframe with all audit data in the given time
-        frame.
-
-        This dataframe then can be used for extracting statistics.
-
-        :param start_time: The start time of the data
-        :type start_time: datetime
-        :param end_time: The end time of the data
-        :type end_time: datetime
-        :return: Audit data
-        :rtype: dataframe
-        """
-        if not PANDAS_READY:
-            log.warning("If you want to use statistics, you need to install "
-                        "python-pandas.")
-            return None
-
-        q = self.session.query(LogEntry)\
-            .filter(LogEntry.date > start_time,
-                    LogEntry.date < end_time)
-        rows = q.all()
-        rows = [r.__dict__ for r in rows]
-        df = DataFrame(rows)
-        return df
 
     def clear(self):
         """

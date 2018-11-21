@@ -166,28 +166,6 @@ class AuditTestCase(MyTestCase):
             count += 1
         self.assertEqual(count, 5)
 
-    def test_05_dataframe(self):
-        self.Audit.log({"action": "action1",
-                        "serial": "s2"})
-        self.Audit.finalize_log()
-
-        # next audit entry
-        self.Audit.log({"action": "action2",
-                        "serial": "s1"})
-        self.Audit.finalize_log()
-
-        # 3rd audit entry
-        self.Audit.log({"action": "action2",
-                        "serial": "s1"})
-        self.Audit.finalize_log()
-        df = self.Audit.get_dataframe(start_time=datetime.datetime.now()
-                                      -datetime.timedelta(days=7),
-                                      end_time=datetime.datetime.now()
-                                      +datetime.timedelta(days=1))
-        series = df['serial'].value_counts()
-        self.assertEqual(series.values[0], 2)
-        self.assertEqual(series.values[1], 1)
-
     def test_06_truncate_data(self):
         long_serial = "This serial is much to long, you know it!"
         token_type = "12345678901234567890"
