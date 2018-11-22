@@ -107,13 +107,4 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         }
     });
 
-    // ===========================================================
-    // ===============  Date stuff ===============================
-    // ===========================================================
-
-    $scope.openDate = function($event) {
-        $event.stopPropagation();
-        return true;
-    };
-
 });
