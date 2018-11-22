@@ -22,6 +22,7 @@
 
 import binascii
 import logging
+from builtins import bytes
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import get_alphanum_str
@@ -50,10 +51,6 @@ try:
 except ImportError:
     log.info("The python module PyKCS11 is not available. "
              "So we can not use the PKCS11 security module.")
-
-
-def int_list_to_bytestring(int_list):  # pragma: no cover
-    return "".join([chr(i) for i in int_list])
 
 
 class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
@@ -172,7 +169,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         """
         Return a random bytestring
         :param length: length of the random bytestring
-        :return:
+        :rtype bytes
         """
         retries = 0
         while True:
@@ -189,9 +186,13 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                     raise HSMException("Failed to generate random number after multiple retries.")
 
         # convert the array of the random integers to a string
-        return int_list_to_bytestring(r_integers)
+        return bytes(r_integers)
 
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
+        """
+
+        :rtype: bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
@@ -211,9 +212,13 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 if retries > self.max_retries:
                     raise HSMException("Failed to encrypt after multiple retries.")
 
-        return int_list_to_bytestring(r)
+        return bytes(r)
 
     def decrypt(self, data, iv, key_id=TOKEN_KEY):
+        """
+
+        :rtype bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
@@ -233,7 +238,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 if retries > self.max_retries:
                     raise HSMException("Failed to decrypt after multiple retries.")
 
-        return int_list_to_bytestring(r)
+        return bytes(r)
 
     def decrypt_password(self, crypt_pass):
         """

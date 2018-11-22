@@ -38,6 +38,9 @@ import shlex
 import re
 import logging
 import os
+from six import string_types
+from six.moves import input
+
 log = logging.getLogger(__name__)
 
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
@@ -495,7 +498,7 @@ class LocalCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise
             an error is raised.
         """
-        if type(certificate) in [basestring, unicode, str]:
+        if isinstance(certificate, string_types):
             cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
         elif type(certificate) == crypto.X509:
             cert_obj = certificate
@@ -595,23 +598,21 @@ class LocalCAConnector(BaseCAConnector):
         config = CONFIG(name)
 
         while 1:
-            directory = raw_input("In which directory do you want to create "
-                                  "the CA [{0!s}]: ".format(config.directory))
+            directory = input("In which directory do you want to create "
+                              "the CA [{0!s}]: ".format(config.directory))
             config.directory = directory or config.directory
             if not config.directory.startswith("/"):
                 config.directory = os.path.abspath(config.directory)
 
-            keysize = raw_input(
-                "What should be the keysize of the CA (2048/4096/8192) [{"
-                "0!s}]: ".format(config.keysize))
+            keysize = input("What should be the keysize of the CA (2048/4096/8192)"
+                            "[{0!s}]: ".format(config.keysize))
             config.keysize = keysize or config.keysize
 
-            validity_ca = raw_input("How many days should the CA be valid ["
-                                    "{0!s}]: ".format(config.validity_ca))
+            validity_ca = input("How many days should the CA be valid ["
+                                "{0!s}]: ".format(config.validity_ca))
             config.validity_ca = validity_ca or config.validity_ca
 
-            dn = raw_input("What is the DN of the CA [{0!s}]: ".format(
-                config.dn))
+            dn = input("What is the DN of the CA [{0!s}]: ".format(config.dn))
             config.dn = dn or config.dn
             # At the moment we do not use this. This would be written to the
             # templates file.
@@ -619,17 +620,16 @@ class LocalCAConnector(BaseCAConnector):
             #    "What should be the validity period of enrolled certificates in days [{0!s}]: ".format(
             #    config.validity_cert))
             #config.validity_cert = validity_cert or config.validity_cert
-            crl_days = raw_input("How many days should the CRL be valid [{"
-                                 "0!s}]: ".format(config.crl_days))
+            crl_days = input("How many days should the CRL be valid "
+                             "[{0!s}]: ".format(config.crl_days))
             config.crl_days = crl_days or config.crl_days
-            crl_overlap = raw_input(
-                "What should be the overlap period of the CRL in days [{"
-                "0!s}]: ".format(config.crl_overlap))
+            crl_overlap = input("What should be the overlap period of the CRL in days "
+                                "[{0!s}]: ".format(config.crl_overlap))
             config.crl_overlap = crl_overlap or config.crl_overlap
 
             print("="*60)
             print("{0!s}".format(config))
-            answer = raw_input("Is this configuration correct? [y/n] ")
+            answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
                 break
 

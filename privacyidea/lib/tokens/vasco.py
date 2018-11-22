@@ -129,7 +129,7 @@ def vasco_serialize(datablob):
     :param datablob: Digipass blob
     :return: bytestring
     """
-    tokendata = buffer(datablob)[:]
+    tokendata = memoryview(datablob).tobytes()
     assert len(tokendata) == 248
     return tokendata
 

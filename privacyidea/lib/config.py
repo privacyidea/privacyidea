@@ -50,6 +50,7 @@ from .caconnectors.localca import BaseCAConnector
 from .utils import reload_db, is_true
 import importlib
 import datetime
+from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 
@@ -82,14 +83,13 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class ConfigClass(object):
+class ConfigClass(with_metaclass(Singleton, object)):
     """
     The Config_Object will contain all database configuration of system
     config, resolvers and realm.
     It will be created at the beginning of the request and is supposed to stay
     alive unchanged during the request.
     """
-    __metaclass__ = Singleton
 
     def __init__(self):
         """
@@ -198,7 +198,7 @@ class ConfigClass(object):
                 pass
             if isinstance(r_config, int):
                 r_config = r_config > 0
-            if isinstance(r_config, basestring):
+            if isinstance(r_config, string_types):
                 r_config = is_true(r_config.lower())
 
         return r_config
@@ -347,8 +347,8 @@ def get_token_class(tokentype):
 def get_token_types():
     """
     Return a simple list of the type names of the tokens.
-    :return: array of tokentypes like 'hotp', 'totp'...
-    :rtype: array
+    :return: list of tokentypes like 'hotp', 'totp'...
+    :rtype: list
     """
     if "pi_token_types" not in this.config:
         (t_classes, t_types) = get_token_class_dict()
