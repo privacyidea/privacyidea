@@ -98,7 +98,7 @@ def single_page_application():
         except AttributeError as ex:
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
-            realms = ",".join(get_realms().keys())
+            realms = ",".join(get_realms())
         if realms:
             realms = "," + realms
 

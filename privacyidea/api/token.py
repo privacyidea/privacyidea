@@ -901,7 +901,7 @@ def loadtokens_api(filename=None):
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
-                        'serial': ', '.join(TOKENS.keys())})
+                        'serial': ', '.join(TOKENS)})
     # logTokenNum()
 
     return send_result(len(TOKENS))

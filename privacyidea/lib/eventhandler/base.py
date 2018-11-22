@@ -122,7 +122,7 @@ class BaseEventHandler(object):
             "realm": {
                 "type": "str",
                 "desc": _("The user realm, for which this event should apply."),
-                "value": realms.keys()
+                "value": list(realms)
             },
             "tokenrealm": {
                 "type": "multi",

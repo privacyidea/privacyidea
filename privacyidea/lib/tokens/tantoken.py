@@ -137,7 +137,7 @@ class TanTokenClass(PaperTokenClass):
             PaperTokenClass.update(self, param, reset_failcount=reset_failcount)
             # After this creation, the init_details contain the complete list of the TANs
             tan_dict = self.init_details.get("otps", {})
-        for tankey, tanvalue in tan_dict.iteritems():
+        for tankey, tanvalue in tan_dict.items():
             # Get a 4 byte salt from the crypto module
             salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
@@ -162,7 +162,7 @@ class TanTokenClass(PaperTokenClass):
         """
         res = -1
         tans = self.get_tokeninfo()
-        for tankey, tanvalue in tans.iteritems():
+        for tankey, tanvalue in tans.items():
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
                 if tan == binascii.hexlify(hash(anOtpVal,salt)):

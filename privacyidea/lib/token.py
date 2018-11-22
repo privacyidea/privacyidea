@@ -263,7 +263,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             raise privacyIDEAError("I can only create SQL filters from "
                                    "tokeninfo of length 1.")
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
-        sql_query = sql_query.filter(TokenInfo.Value == tokeninfo.values()[0])
+        sql_query = sql_query.filter(TokenInfo.Value == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
     return sql_query
@@ -1997,8 +1997,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
 
     # add the user to the options, so that every token, that get passed the
     # options can see the user
-    options = options or {}
-    options = dict(options.items() + {'user': user}.items())
+    if options:
+        options = options.copy()
+    else:
+        options = {}
+    options.update({'user': user})
 
     # if there has been one token in challenge mode, we only handle challenges
     challenge_response_token_list = []
@@ -2291,7 +2294,7 @@ def get_dynamic_policy_definitions(scope=None):
         policy = get_tokenclass_info(ttype, section='policy')
 
         # get all policy sections like: admin, user, enroll, auth, authz
-        pol_keys = pol.keys()
+        pol_keys = list(pol)
 
         for pol_section in policy.keys():
             # if we have a dyn token definition of this section type

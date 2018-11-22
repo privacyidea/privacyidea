@@ -167,7 +167,7 @@ def sign_response(request, response):
         if nonce:
             content["nonce"] = nonce
 
-        content["signature"] = sign_object.sign(json.dumps(content))
+        content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
         response_object.data = json.dumps(content)
     except ValueError:
         # The response.data is no JSON (but CSV or policy export)
@@ -346,7 +346,7 @@ def add_user_detail_to_response(request, response):
         #  details
         ui = request.User.info
         ui["password"] = ""
-        for key, value in ui.iteritems():
+        for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui
