@@ -869,8 +869,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     If the policy with this name already exists, it updates the policy.
     It expects a dict of with the following keys:
     :param name: The name of the policy
-    :param scope: The scope of the policy. Something like "admin", "system",
-    "authentication"
+    :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
     :type active: basestring
     :param realm: A realm, for which this policy is valid
