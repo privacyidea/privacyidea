@@ -49,7 +49,6 @@ import traceback
 import os
 import time
 from base64 import (b64decode, b64encode)
-from collections import OrderedDict
 
 
 try:
@@ -1184,9 +1183,11 @@ def check_pin_policy(pin, policy):
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = OrderedDict([("c", "[a-zA-Z]"),
-                         ("n", "[0-9]"),
-                         ("s", "[.:,;_<>+*!/()=?$§%&#~\^-]")])
+    chars = {"c": "[a-zA-Z]",
+             "n": "[0-9]",
+             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
+    exclusion = False
+    grouping = False
     ret = True
     comment = []
 
