@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2018-11-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            Remove audit based statistics
  * 2015-07-16 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
  *     Add statistics endpoint
  * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -45,13 +47,6 @@ myApp.factory("AuditFactory", function (AuthFactory,
             },
             download: function(params, filename, callback) {
                 $http.get(auditUrl + "/" + filename, {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
-                }).success(callback
-                ).error(error_func);
-            },
-            statistics: function(params, callback) {
-                $http.get(auditUrl + "/statistics", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
                 }).success(callback

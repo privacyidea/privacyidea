@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-11-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Remove the audit log based statistics
 # 2016-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Restrict download to certain time
 # 2015-07-16 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
@@ -40,11 +42,7 @@ from ..lib.policy import ACTION
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
-from ..lib.stats import get_statistics
-import datetime
 from privacyidea.lib.utils import parse_timedelta
-from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -154,74 +152,3 @@ def download_csv(csvfile=None):
                     headers={"Content-Disposition": ("attachment; "
                                                      "filename=%s" % csvfile)})
 
-
-@audit_blueprint.route('/statistics', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.AUDIT)
-@admin_required
-def statistics():
-    """
-    get the statistics values from the audit log
-
-    :jsonparam days: The number of days to run the stats
-    :jsonparam start: The start time to run the stats
-    :jsonparam end: The end time to run the stats
-
-    If start or end is missing, the ``days`` are used.
-
-    The time is to be passed in the format
-        yyyy-MM-ddTHH:mmZ
-
-    **Example request**:
-
-    .. sourcecode:: http
-
-       GET /audit/statistics HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-    **Example response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.1 200 OK
-       Content-Type: text/csv
-
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              {
-                 "serial_plot": "...image data...",
-              }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
-    """
-    days = int(getParam(request.all_data, "days", default=7))
-    start = getParam(request.all_data, "start")
-    if start:
-        start = parse_date_string(start)
-
-    end = getParam(request.all_data, "end")
-    if end:
-        end = parse_date_string(end)
-
-    if not end and not start:
-        end = datetime.datetime.now(tzlocal())
-        start = end - datetime.timedelta(days=days)
-
-    else:
-        if not end:
-            end = start + datetime.timedelta(days=days)
-        elif not start:
-            start = end - datetime.timedelta(days=days)
-
-    stats = get_statistics(g.audit_object,
-                           start_time=start, end_time=end)
-    stats["time_start"] = start
-    stats["time_end"] = end
-    g.audit_object.log({'success': True})
-    return send_result(stats)
