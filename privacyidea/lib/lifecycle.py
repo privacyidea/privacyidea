@@ -19,7 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import logging
-from .framework import get_request_local_store
+from privacyidea.lib.framework import get_request_local_store
 
 log = logging.getLogger(__name__)
 

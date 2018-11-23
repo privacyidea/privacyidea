@@ -16,6 +16,6 @@ But you need to have working resolver.py and realm.py to be able to
 work with user.py
 """
 
-from .framework import _
+from privacyidea.lib.framework import _
 
 __all__ = ['_']

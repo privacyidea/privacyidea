@@ -40,7 +40,7 @@ import inspect
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-from .framework import get_request_local_store, get_app_config_value
+from privacyidea.lib.framework import get_request_local_store, get_app_config_value
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
