@@ -24,7 +24,7 @@ This module is tested in tests/test_api_periodictask.py"""
 import json
 import logging
 
-from flask import Blueprint, g, request
+from flask import Blueprint, g, request, current_app
 
 from privacyidea.lib.config import get_privacyidea_nodes
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
@@ -87,7 +87,7 @@ def get_taskmodule_options(taskmodule):
     :param taskmodule: Identifier of the task module
     :return: a dictionary mapping option keys to description dictionaries
     """
-    options = get_taskmodule(taskmodule).options
+    options = get_taskmodule(taskmodule, current_app.config).options
     g.audit_object.log({"success": True})
     return send_result(options)
 

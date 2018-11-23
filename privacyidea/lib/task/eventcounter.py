@@ -70,7 +70,7 @@ class EventCounterTask(BaseTask):
             log.warning(u"Trying to create statistics of a counter_value '{0}', "
                         u"that does not exist.".format(event_counter))
         else:
-            write_stats(stats_key, counter_value)
+            write_stats(self.config, stats_key, counter_value)
 
         return True
 

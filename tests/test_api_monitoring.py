@@ -3,6 +3,7 @@ from .base import MyTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
+from flask import current_app
 
 
 class APIMonitoringTestCase(MyTestCase):
@@ -11,15 +12,15 @@ class APIMonitoringTestCase(MyTestCase):
 
         # create some statistics
 
-        write_stats("key1", 1)
-        write_stats("key2", "A")
-        write_stats("key1", 2)
+        write_stats(current_app.config, "key1", 1)
+        write_stats(current_app.config, "key2", "A")
+        write_stats(current_app.config, "key1", 2)
         ts = datetime.datetime.now().isoformat()
 
-        write_stats("key2", "B")
-        write_stats("key1", 3)
-        write_stats("key2", "A")
-        write_stats("key1", 4)
+        write_stats(current_app.config, "key2", "B")
+        write_stats(current_app.config, "key1", 3)
+        write_stats(current_app.config, "key2", "A")
+        write_stats(current_app.config, "key1", 4)
 
         # get available stats keys
         with self.app.test_request_context('/monitoring/',
@@ -95,7 +96,7 @@ class APIMonitoringTestCase(MyTestCase):
     def test_02_delete_stats(self):
 
         ts = datetime.datetime.now()
-        write_stats("key2", "B")
+        write_stats(current_app.config, "key2", "B")
 
         # Now we delete some keys (the three old ones)
         with self.app.test_request_context('/monitoring/key2',

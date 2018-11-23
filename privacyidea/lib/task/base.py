@@ -31,8 +31,8 @@ class BaseTask(object):
     identifier = "BaseTask"
     description = "This is the base class of a task with no functionality"
 
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        self.config = config
 
     @property
     def options(self):

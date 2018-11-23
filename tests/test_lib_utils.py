@@ -15,7 +15,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    hash_password, PasswordHash, check_ssha,
                                    check_sha, otrs_sha256, parse_int, check_crypt,
                                    convert_column_to_unicode, censor_connect_string,
-                                   truncate_comma_list, check_pin_policy)
+                                   truncate_comma_list, check_pin_policy,
+                                   get_module_class)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -513,3 +514,12 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("1234@@@@", "-c")
         self.assertTrue(r)
+
+    def test_21_get_module_class(self):
+        r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+        from privacyidea.lib.auditmodules.sqlaudit import Audit
+        self.assertEqual(r, Audit)
+
+        # Fails to return the class, if the method does not exist
+        self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
+                          "this_method_does_not_exist")

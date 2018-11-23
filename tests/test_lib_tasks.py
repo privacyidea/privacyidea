@@ -12,7 +12,7 @@ import six
 
 class BaseTaskTestCase(MyTestCase):
     def test_01_base_functions(self):
-        task = BaseTask()
+        task = BaseTask({})
 
         self.assertEqual(task.identifier, "BaseTask")
         self.assertIsInstance(task.description, six.string_types)

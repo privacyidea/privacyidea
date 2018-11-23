@@ -1219,3 +1219,32 @@ def check_pin_policy(pin, policy):
                 comment.append("Missing character in PIN: {0!s}".format(chars[c]))
 
     return ret, ",".join(comment)
+
+
+def get_module_class(package_name, class_name, check_method=None):
+    """
+    helper method to load the Module class from a given
+    package in literal.
+
+    :param package_name: literal of the Module
+    :param class_name: Name of the class in the module
+    :param check_method: Name of the method to check, if this would be the right class
+
+    example:
+
+        get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+
+        get_module_class("privacyidea.lib.monitoringmodules.sqlstats", "Monitoring")
+
+    check:
+        checks, if the method exists
+        if not an error is thrown
+
+    """
+    mod = __import__(package_name, globals(), locals(), [class_name])
+    klass = getattr(mod, class_name)
+    log.debug("klass: {0!s}".format(klass))
+    if check_method and not hasattr(klass, check_method):
+        raise NameError(u"Class AttributeError: {0}.{1} "
+                        u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
+    return klass

@@ -47,7 +47,7 @@ def get_available_taskmodules():
     return list(TASK_MODULES.keys())
 
 
-def get_taskmodule(identifier):
+def get_taskmodule(identifier, config=None):
     """
     Return an instance of the given task module. Raise ParameterError if it does not exist.
     :param identifier: identifier of the task module
@@ -56,7 +56,8 @@ def get_taskmodule(identifier):
     if identifier not in TASK_MODULES:
         raise ParameterError(u"Unknown task module: {!r}".format(identifier))
     else:
-        return TASK_MODULES[identifier]()
+        r = TASK_MODULES[identifier](config=config)
+        return r
 
 
 def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
@@ -259,13 +260,14 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
     return scheduled_ptasks
 
 
-def execute_task(taskmodule, params):
+def execute_task(config, taskmodule, params):
     """
     Given a task module name, run the task with the given parameters.
+    :param config: The app configuration
     :param taskmodule: unicode determining the task module
     :param params: dictionary mapping task option keys (unicodes) to unicodes (or None)
     :return: boolean returned by the task
     """
-    module = get_taskmodule(taskmodule)
+    module = get_taskmodule(taskmodule, config)
     log.info(u"Running taskmodule {!r} with parameters {!r}".format(module, params))
     return module.do(params)

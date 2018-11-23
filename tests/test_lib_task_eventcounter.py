@@ -8,6 +8,7 @@ from privacyidea.lib.counter import increase, read
 from privacyidea.lib.monitoringstats import get_values
 
 from privacyidea.lib.task.eventcounter import EventCounterTask
+from flask import current_app
 
 
 class TaskEventCounterTestCase(MyTestCase):
@@ -31,7 +32,7 @@ class TaskEventCounterTestCase(MyTestCase):
         r = read("counter1")
         self.assertEqual(r, 2)
 
-        et = EventCounterTask()
+        et = EventCounterTask(current_app.config)
         params = {"event_counter": "counter1",
                   "stats_key": "C1",
                   "reset_event_counter": "True"}
@@ -39,11 +40,11 @@ class TaskEventCounterTestCase(MyTestCase):
         # Now we execute the task
         et.do(params)
 
-        # The counter "counter1" should be resetted
+        # The counter "counter1" should be reset
         self.assertEqual(read("counter1"), 0)
 
         # The value "2" should be written to the statistics key C1.
-        stats = get_values("C1")
+        stats = get_values(current_app.config, "C1")
         self.assertTrue(len(stats), 1)
         self.assertTrue(stats[0][1], 2)
 
@@ -52,7 +53,7 @@ class TaskEventCounterTestCase(MyTestCase):
 
         # ..and run the event counter task
         et.do(params)
-        stats = get_values("C1")
+        stats = get_values(current_app.config, "C1")
         self.assertTrue(len(stats), 2)
         self.assertTrue(stats[0][1], 2)
         self.assertTrue(stats[0][1], 1)
