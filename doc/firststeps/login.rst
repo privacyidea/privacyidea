@@ -29,8 +29,8 @@ The administrator just logs in with his username.
 
 .. note:: You can configure privacyIDEA to authenticate administrators
    against privacyIDEA itself, so that administrators
-   need to login with a second factor. See SUPERUSER_REALM in
-   :ref:`inifile_superusers` how to do this.
+   need to login with a second factor. See
+   :ref:`faq_admins` how to do this.
 
 
 Login for normal users
