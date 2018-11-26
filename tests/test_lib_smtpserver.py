@@ -90,9 +90,9 @@ class SMTPServerTestCase(MyTestCase):
         tls = True
         recipient = "user@example.com"
 
-        s = SMTPServerDB(identifier=identifier, server=server, port=port,
-                         username=username, password=password, sender=sender,
-                         tls=tls)
+        s = dict(identifier=identifier, server=server, port=port,
+                 username=username, password=password, sender=sender,
+                 tls=tls)
         r = SMTPServer.test_email(s, recipient,
                                   "Test Email from privacyIDEA",
                                   "This is a test email from privacyIDEA. "

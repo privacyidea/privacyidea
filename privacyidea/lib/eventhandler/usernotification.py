@@ -44,12 +44,10 @@ from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import get_db_admins, get_db_admin
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.queue import wrap_job
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib import _
-from privacyidea.lib.utils import is_true
 import logging
 import datetime
 
@@ -136,9 +134,6 @@ class UserNotificationEventHandler(BaseEventHandler):
                                          "description": _("The body of the "
                                                           "mail that is "
                                                           "sent.")},
-                                "enqueue_job": {"type": "bool",
-                                                "description": _("Send the mail via an "
-                                                                 "external job queue (if available)")},
                                 "To": {"type": "str",
                                        "required": True,
                                        "description": _("Send notification to "
@@ -333,27 +328,18 @@ class UserNotificationEventHandler(BaseEventHandler):
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
 
-                enqueue_job = is_true(handler_options.get("enqueue_job"))
-                if enqueue_job:
-                    _send_email = wrap_job("smtpserver.send_email_identifier_faf", True)
-                else:
-                    _send_email = send_email_identifier
                 try:
-                    ret = _send_email(emailconfig,
-                                      recipient=useremail,
-                                      subject=subject, body=body,
-                                      reply_to=reply_to,
-                                      mimetype=mimetype)
+                    ret = send_email_identifier(emailconfig,
+                                                recipient=useremail,
+                                                subject=subject, body=body,
+                                                reply_to=reply_to,
+                                                mimetype=mimetype)
                 except Exception as exx:
                     log.error("Failed to send email: {0!s}".format(exx))
                     ret = False
                 if ret:
-                    if enqueue_job:
-                        log.info("Sent a notification email job to task queue (user {0})".format(
-                            recipient))
-                    else:
-                        log.info("Sent a notification email to user {0}".format(
-                            recipient))
+                    log.info("Sent a notification email to user {0}".format(
+                        recipient))
                 else:
                     log.warning("Failed to send a notification email to user "
                                 "{0}".format(recipient))

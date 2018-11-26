@@ -2212,6 +2212,25 @@ class SMTPServer(MethodsMixin, db.Model):
     tls = db.Column(db.Boolean, default=False)
     description = db.Column(db.Unicode(2000), default=u'')
     timeout = db.Column(db.Integer, default=10)
+    enqueue_job = db.Column(db.Boolean, nullable=False, default=False)
+
+    def get(self):
+        """
+        :return: the configuration as a dictionary
+        """
+        return {
+            "id": self.id,
+            "identifier": self.identifier,
+            "server": self.server,
+            "port": self.port,
+            "username": self.username,
+            "password": self.password,
+            "sender": self.sender,
+            "tls": self.tls,
+            "description": self.description,
+            "timeout": self.timeout,
+            "enqueue_job": self.enqueue_job,
+        }
 
     def save(self):
         smtp = SMTPServer.query.filter(SMTPServer.identifier ==
@@ -2238,6 +2257,8 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["description"] = self.description
             if self.timeout is not None:
                 values["timeout"] = self.timeout
+            if self.enqueue_job is not None:
+                values["enqueue_job"] = self.enqueue_job
             SMTPServer.query.filter(SMTPServer.identifier ==
                                     self.identifier).update(values)
             ret = smtp.id

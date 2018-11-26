@@ -17,10 +17,13 @@
 #
 #
 import functools
+import logging
 from huey import RedisHuey
 
 from privacyidea.lib.queue.base import BaseQueue, QueueError
 from privacyidea.lib.queue.promise import Promise
+
+log = logging.getLogger(__name__)
 
 
 class HueyQueue(BaseQueue):
@@ -49,6 +52,7 @@ class HueyQueue(BaseQueue):
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:
             raise QueueError(u"Unknown job: {!r}".format(name))
+        log.info(u"Sending {!r} job to the queue ...".format(name))
         return HueyPromise(self._jobs[name](*args, **kwargs))
 
 

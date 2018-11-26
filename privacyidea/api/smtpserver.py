@@ -74,10 +74,11 @@ def create(identifier=None):
     tls = is_true(getParam(param, "tls", default=False))
     description = getParam(param, "description", default="")
     timeout = int(getParam(param, "timeout") or 10)
+    enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
-                       sender=sender, timeout=timeout)
+                       sender=sender, timeout=timeout, enqueue_job=enqueue_job)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -105,7 +106,8 @@ def list_smtpservers():
                                          "description":
                                              server.config.description,
                                          "sender": server.config.sender,
-                                         "timeout": server.config.timeout}
+                                         "timeout": server.config.timeout,
+                                         "enqueue_job": server.config.enqueue_job}
     g.audit_object.log({'success': True})
     return send_result(res)
 
@@ -144,10 +146,12 @@ def test():
     tls = is_true(getParam(param, "tls", default=False))
     recipient = getParam(param, "recipient", required)
     timeout = int(getParam(param, "timeout") or 10)
+    enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
-    s = SMTPServerDB(identifier=identifier, server=server, port=port,
-                     username=username, password=password, sender=sender,
-                     tls=tls, timeout=timeout)
+    s = dict(identifier=identifier, server=server, port=port,
+             username=username, password=password, sender=sender,
+             tls=tls, timeout=timeout)
+    # TODO: Test job queue
     r = SMTPServer.test_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "
