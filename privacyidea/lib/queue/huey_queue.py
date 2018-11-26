@@ -47,7 +47,7 @@ class HueyQueue(BaseQueue):
                 return None
             else:
                 return result
-        self._jobs[name] = self._huey.task()(decorated)
+        self._jobs[name] = self._huey.task(name=name)(decorated)
 
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:

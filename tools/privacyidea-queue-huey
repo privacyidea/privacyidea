@@ -51,10 +51,12 @@ def err(s):
     sys.stderr.write('\033[91m%s\033[0m\n' % s)
 
 
-def push_app_context():
-    app = create_app(config_name='production')
-    ctx = app.app_context()
-    ctx.push()
+def make_push_app_context(app):
+    def func():
+        ctx = app.app_context()
+        ctx.push()
+    return func
+
 
 def consumer_main():
     app = create_app(config_name='production')
@@ -72,10 +74,9 @@ def consumer_main():
                if v is not None}
     config = ConsumerConfig(**options)
     config.validate()
+    config.setup_logger()
 
-    config.setup_logger() # TODO. Fix logging with privacyIDEA
-
-    queue.huey.register_startup('push_app_context', push_app_context)
+    queue.huey.register_startup('push_app_context', make_push_app_context(app))
 
     consumer = queue.huey.create_consumer(**config.values)
     consumer.run()
