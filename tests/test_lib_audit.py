@@ -6,6 +6,7 @@ This tests the files
 """
 
 from .base import MyTestCase
+from mock import mock
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
@@ -112,23 +113,32 @@ class AuditTestCase(MyTestCase):
                         "success": False})
         self.Audit.finalize_log()
         time.sleep(2)
+        # remember the current time for later
+        current_timestamp = datetime.datetime.now()
 
         self.Audit.log({"action": "/validate/check",
                         "success": True})
         self.Audit.finalize_log()
 
-        # get 4 authentications
-        r = self.Audit.get_count({"action": "/validate/check"})
-        self.assertEqual(r, 4)
+        # freeze time at ``current_timestamp`` + 0.5s.
+        # This is necessary because when doing unit tests on a CI server,
+        # things will sometimes go slower than expected, which will
+        # cause the very last assertion to fail.
+        with mock.patch('datetime.datetime') as mock_dt:
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=0.5)
 
-        # get one failed authentication
-        r = self.Audit.get_count({"action": "/validate/check"}, success=False)
-        self.assertEqual(r, 1)
+            # get 4 authentications
+            r = self.Audit.get_count({"action": "/validate/check"})
+            self.assertEqual(r, 4)
 
-        # get one authentication during the last second
-        r = self.Audit.get_count({"action": "/validate/check"}, success=True,
-                                 timedelta=datetime.timedelta(seconds=1))
-        self.assertEqual(r, 1)
+            # get one failed authentication
+            r = self.Audit.get_count({"action": "/validate/check"}, success=False)
+            self.assertEqual(r, 1)
+
+            # get one authentication during the last second
+            r = self.Audit.get_count({"action": "/validate/check"}, success=True,
+                                     timedelta=datetime.timedelta(seconds=1))
+            self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
         res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
