@@ -39,7 +39,10 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
+from six import PY2
 
+if not PY2:
+    long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}

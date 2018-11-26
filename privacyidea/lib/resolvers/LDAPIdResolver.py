@@ -83,6 +83,7 @@ from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
+from six import string_types
 
 CACHE = {}
 
@@ -511,7 +512,7 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if isinstance(ldap_v, basestring):
+                        if isinstance(ldap_v, string_types):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
@@ -1066,8 +1067,7 @@ class IdResolver (UserIdResolver):
         sha_hash.update(salt)
 
         # Create a base64 encoded string
-        digest_b64 = '{0}{1}'.format(sha_hash.digest(),
-                salt).encode('base64').strip()
+        digest_b64 = binascii.b2a_base64(sha_hash.digest() + salt).strip()
 
         # Tag it with SSHA
         tagged_digest = '{{SSHA}}{}'.format(digest_b64)

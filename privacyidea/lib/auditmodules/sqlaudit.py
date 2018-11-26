@@ -49,6 +49,7 @@ from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
+from six import string_types
 
 
 log = logging.getLogger(__name__)
@@ -137,7 +138,7 @@ class Audit(AuditBase):
         for column, l in column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
-                if isinstance(data, basestring):
+                if isinstance(data, string_types):
                     if column == "policies":
                         # The policies column is shortend per comma entry
                         data = truncate_comma_list(data, l)
@@ -313,25 +314,27 @@ class Audit(AuditBase):
         
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
+
+        :param le: LogEntry object containing the data
+        :type le: LogEntry
+        :rtype str
         """
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,"\
-            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
-                                                  le.date,
-                                                  le.action,
-                                                  le.success,
-                                                  le.serial,
-                                                  le.token_type,
-                                                  le.user,
-                                                  le.realm,
-                                                  le.administrator,
-                                                  le.action_detail,
-                                                  le.info,
-                                                  le.privacyidea_server,
-                                                  le.client,
-                                                  le.loglevel,
-                                                  le.clearance_level)
-        if type(s) == unicode:
-            s = s.encode("utf-8")
+        s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
+            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+                                                   le.date,
+                                                   le.action,
+                                                   le.success,
+                                                   le.serial,
+                                                   le.token_type,
+                                                   le.user,
+                                                   le.realm,
+                                                   le.administrator,
+                                                   le.action_detail,
+                                                   le.info,
+                                                   le.privacyidea_server,
+                                                   le.client,
+                                                   le.loglevel,
+                                                   le.clearance_level)
         return s
 
     @staticmethod
@@ -416,12 +419,12 @@ class Audit(AuditBase):
                                       page=page, sortorder=sortorder,
                                       timelimit=timelimit)
         try:
-            le = auditIter.next()
+            le = next(auditIter)
             while le:
                 # Fill the list
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
-                le = auditIter.next()
-        except StopIteration:
+                le = next(auditIter)
+        except StopIteration as _e:
             log.debug("Interation stopped.")
 
         return paging_object
