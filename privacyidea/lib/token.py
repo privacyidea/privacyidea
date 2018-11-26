@@ -2042,8 +2042,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 # Token is locked
                 pin_match = False
                 otp_count = -1
-                _num, message = tae.args
-                repl = {'message': message}
+                repl = {'message': tae.message}
             repl = repl or {}
             reply_dict.update(repl)
             if otp_count >= 0:
@@ -2103,7 +2102,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 # reset the failcounter of valid token
                 try:
                     token_obj.reset()
-                except Exception as e:
+                except Exception as _e:
                     # In some cases (Registration Token) the token does not
                     # exist anymore. So this would bail an exception!
                     log.debug("registration token does not exist anymore and "

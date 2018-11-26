@@ -250,7 +250,7 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 def modhex_encode(s):
     return ''.join(
-        [hex2ModDict[c] for c in binascii.hexlify(s)]
+        [hex2ModDict[c] for c in binascii.hexlify(s).decode('utf8')]
     )
 # end def modhex_encode
 

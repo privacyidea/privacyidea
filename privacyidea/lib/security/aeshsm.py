@@ -22,10 +22,10 @@
 
 import binascii
 import logging
-from builtins import bytes
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import get_alphanum_str
+from six import int2byte
 
 __doc__ = """
 This is a PKCS11 Security module that encrypts and decrypts the data on a
@@ -51,6 +51,10 @@ try:
 except ImportError:
     log.info("The python module PyKCS11 is not available. "
              "So we can not use the PKCS11 security module.")
+
+
+def int_list_to_bytestring(int_list):  # pragma: no cover
+    return b"".join([int2byte(i) for i in int_list])
 
 
 class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
@@ -186,7 +190,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                     raise HSMException("Failed to generate random number after multiple retries.")
 
         # convert the array of the random integers to a string
-        return bytes(r_integers)
+        return int_list_to_bytestring(r_integers)
 
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
         """
@@ -212,7 +216,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 if retries > self.max_retries:
                     raise HSMException("Failed to encrypt after multiple retries.")
 
-        return bytes(r)
+        return int_list_to_bytestring(r)
 
     def decrypt(self, data, iv, key_id=TOKEN_KEY):
         """
@@ -238,7 +242,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 if retries > self.max_retries:
                     raise HSMException("Failed to decrypt after multiple retries.")
 
-        return bytes(r)
+        return int_list_to_bytestring(r)
 
     def decrypt_password(self, crypt_pass):
         """

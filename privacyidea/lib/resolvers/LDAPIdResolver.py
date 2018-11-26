@@ -1067,7 +1067,7 @@ class IdResolver (UserIdResolver):
         sha_hash.update(salt)
 
         # Create a base64 encoded string
-        digest_b64 = binascii.b2a_base64('{0}{1}'.format(sha_hash.digest(), salt)).strip()
+        digest_b64 = binascii.b2a_base64(sha_hash.digest() + salt).strip()
 
         # Tag it with SSHA
         tagged_digest = '{{SSHA}}{}'.format(digest_b64)

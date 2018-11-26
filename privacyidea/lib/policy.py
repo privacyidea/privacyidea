@@ -175,7 +175,7 @@ from privacyidea.lib import _
 import datetime
 import re
 import ast
-from six import with_metaclass, PY2, string_types
+from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 

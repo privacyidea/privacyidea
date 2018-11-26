@@ -63,7 +63,7 @@ except ImportError:
 import passlib.hash
 import sys
 import traceback
-from six import PY2, string_types
+from six import PY2, text_type
 
 if not PY2:
     long = int
@@ -714,7 +714,7 @@ class Sign(object):
         :return: The signature of the string
         :rtype: long
         """
-        if isinstance(s, string_types):
+        if isinstance(s, text_type):
             s = s.encode('utf8')
         RSAkey = RSA.importKey(self.private)
         if SIGN_WITH_RSA:
@@ -735,7 +735,7 @@ class Sign(object):
         :param signature: the signature to compare
         :type signature: str
         """
-        if isinstance(s, string_types):
+        if isinstance(s, text_type):
             s = s.encode('utf8')
         r = False
         try:
@@ -747,7 +747,7 @@ class Sign(object):
             else:
                 hashvalue = HashFunc.new(s)
                 pkcs1_15.new(RSAkey).verify(hashvalue, signature)
-        except Exception as e:  # pragma: no cover
+        except Exception as _e:  # pragma: no cover
             log.error("Failed to verify signature: {0!r}".format(s))
             log.debug("{0!s}".format(traceback.format_exc()))
         return r
