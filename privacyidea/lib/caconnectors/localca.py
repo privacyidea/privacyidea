@@ -359,8 +359,8 @@ class LocalCAConnector(BaseCAConnector):
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns the certificate
-        :rtype: basestring
+        :return: Returns the certificate object
+        :rtype: X509
         """
         # Sign the certificate for one year
         options = options or {}
@@ -504,6 +504,7 @@ class LocalCAConnector(BaseCAConnector):
             cert_obj = certificate
         else:
             raise CAError("Certificate in unsupported format")
+
         serial = cert_obj.get_serial_number()
         serial_hex = int_to_hex(serial)
         filename = serial_hex + ".pem"
@@ -568,12 +569,14 @@ class LocalCAConnector(BaseCAConnector):
 
         return ret
 
-    @classmethod
-    def create_ca(cls, name):
+    @staticmethod
+    def create_ca(name):
         """
-        Create a new CA connector.
-        The configurations is requested at the command line in questions and
-        answers. The CA connector definition is also written to the database.
+        Create parameters for a new CA connector.
+        The configuration is requested at the command line in questions and
+        answers.
+        If the configuration is valid, the CA will be created on the file system
+        and the configuration for the new LocalCAConnector is returned.
 
         We are asking for the following:
 
@@ -593,7 +596,9 @@ class LocalCAConnector(BaseCAConnector):
         * We create two templates for users and for servers.
 
         :param name: The name of the CA connector.
-        :return:
+        :type name: str
+        :return The LocalCAConnector configuration
+        :rtype: dict
         """
         config = CONFIG(name)
 
@@ -728,4 +733,3 @@ def _init_ca(config):
     print("Please check the ownership of the private key")
     print("{0!s}/cakey.pem".format(config.directory))
     print("!" * 60)
-
