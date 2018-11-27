@@ -40,6 +40,7 @@
 #
 import sys
 
+from flask import _app_ctx_stack
 from huey.consumer_options import ConsumerConfig
 from huey.consumer_options import OptionParserHandler
 
@@ -52,10 +53,21 @@ def err(s):
 
 
 def make_push_app_context(app):
-    def func():
+    """
+    Create a huey pre-execute hook that pushes a new app context before executing any job.
+    """
+    def func(task):
         ctx = app.app_context()
         ctx.push()
     return func
+
+
+def pop_app_context(task, ret, exc):
+    """
+    huey post-execute hook that pops the top elemen of the app context stack.
+    """
+    ctx = _app_ctx_stack.top
+    ctx.pop()
 
 
 def consumer_main():
@@ -76,7 +88,8 @@ def consumer_main():
     config.validate()
     config.setup_logger()
 
-    queue.huey.register_startup('push_app_context', make_push_app_context(app))
+    queue.huey.register_pre_execute('push_app_context', make_push_app_context(app))
+    queue.huey.register_post_execute('pop_app_context', pop_app_context)
 
     consumer = queue.huey.create_consumer(**config.values)
     consumer.run()
