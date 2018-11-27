@@ -197,17 +197,12 @@ def get_smtpserver(identifier):
     """
     This returns the SMTP Server object of the SMTP Server definition
     "identifier".
-    In case the identifier does not exist, an exception is raised.
+    In case the identifier does not exist, a ResourceNotFoundError is raised.
 
     :param identifier: The name of the SMTP server definition
     :return: A SMTP Server Object
     """
-    # TODO
-    server_list = get_smtpservers(identifier=identifier)
-    if not server_list:
-        raise ConfigAdminError("The specified SMTP server configuration does "
-                               "not exist.")
-    return server_list[0]
+    return SMTPServer(fetch_one_resource(SMTPServerDB, identifier=identifier))
 
 
 @log_with(log)

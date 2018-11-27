@@ -2,7 +2,7 @@
 This test file tests the lib/smtpserver.py
 """
 from .base import MyTestCase
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer)
@@ -75,7 +75,7 @@ class SMTPServerTestCase(MyTestCase):
         self.assertTrue(server_list[0].config.server, "100.2.3.4")
 
     def test_04_missing_configuration(self):
-        self.assertRaises(ConfigAdminError, get_smtpserver, "notExisting")
+        self.assertRaises(ResourceNotFoundError, get_smtpserver, "notExisting")
 
     @smtpmock.activate
     def test_05_test_email(self):
