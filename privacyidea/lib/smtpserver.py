@@ -98,17 +98,17 @@ class SMTPServer(object):
         msg['Reply-To'] = reply_to
 
         mail = smtplib.SMTP(config['server'], port=int(config['port']),
-                            timeout=config['timeout'] or TIMEOUT)
+                            timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
-        if config['tls']:
+        if config.get('tls', False):
             log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
-        if config['username']:
+        if config.get('username', None) is not None:
             log.debug("Doing authentication with {0!s}".format(config['username']))
             password = decryptPassword(config['password'])
             if password == FAILED_TO_DECRYPT_PASSWORD:
