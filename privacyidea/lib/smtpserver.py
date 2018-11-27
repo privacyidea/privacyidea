@@ -108,7 +108,7 @@ class SMTPServer(object):
             log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
-        if config.get('username', None) is not None:
+        if config.get('username', ''):
             log.debug("Doing authentication with {0!s}".format(config['username']))
             password = decryptPassword(config['password'])
             if password == FAILED_TO_DECRYPT_PASSWORD:
