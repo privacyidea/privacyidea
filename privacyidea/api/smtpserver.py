@@ -42,7 +42,7 @@ from flask import g
 from flask_babel import gettext as _
 import logging
 from privacyidea.lib.smtpserver import (add_smtpserver, SMTPServer,
-                                        get_smtpservers, delete_smtpserver)
+                                        get_smtpservers, delete_smtpserver, send_or_enqueue_email)
 from privacyidea.models import SMTPServer as SMTPServerDB
 
 log = logging.getLogger(__name__)
@@ -150,12 +150,11 @@ def test():
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
-             tls=tls, timeout=timeout)
-    # TODO: Test job queue
-    r = SMTPServer.test_email(s, recipient,
-                              "Test Email from privacyIDEA",
-                              "This is a test email from privacyIDEA. "
-                              "The configuration %s is working." % identifier)
+             tls=tls, timeout=timeout, enqueue_job=enqueue_job)
+    r = send_or_enqueue_email(s, recipient,
+                             "Test Email from privacyIDEA",
+                             "This is a test email from privacyIDEA. "
+                             "The configuration %s is working." % identifier)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})

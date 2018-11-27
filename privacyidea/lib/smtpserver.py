@@ -40,6 +40,8 @@ This module is tested in tests/test_lib_smtpserver.py
 log = logging.getLogger(__name__)
 TIMEOUT = 10
 
+SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
+
 
 class SMTPServer(object):
     """
@@ -54,22 +56,18 @@ class SMTPServer(object):
         :return: A SMTP Server Object
         """
         self.config = db_smtpserver_object
-        if self.config.enqueue_job:
-            self.send = wrap_job("smtpserver.send_email", True)
-        else:
-            self.send = self.test_email
 
     def send_email(self, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
-        return self.send(self.config.get(), recipient, subject, body, sender,
-                         reply_to, mimetype)
+        return send_or_enqueue_email(self.config.get(), recipient, subject, body, sender,
+                                     reply_to, mimetype)
 
     @staticmethod
-    @job("smtpserver.send_email", fire_and_forget=True)
+    @job(SEND_EMAIL_JOB_NAME, fire_and_forget=True)
     def test_email(config, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
         """
-        Sends an email via the SMTP Database Object
+        Sends an email via the configuration.
 
         :param config: The email configuration
         :type config: dict
@@ -131,6 +129,19 @@ class SMTPServer(object):
         mail.quit()
         log.debug("I am done sending your email.")
         return success
+
+
+def send_or_enqueue_email(config, recipient, subject, body, sender=None, reply_to=None, mimetype="plain"):
+    """
+    According to the value of ``config["enqueue_job"]``, send the email directly or send a job to the queue.
+    See ``SMTPServer.test_email`` for parameters.
+    :return: True if the job is sent to the queue, return value of ``SMTPServer.test_email`` otherwise
+    """
+    if config.get("enqueue_job", False):
+        send = wrap_job(SEND_EMAIL_JOB_NAME, True)
+    else:
+        send = SMTPServer.test_email
+    return send(config, recipient, subject, body, sender, reply_to, mimetype)
 
 
 @log_with(log)
