@@ -38,6 +38,9 @@ class SMTPServerTestCase(MyTestCase):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
         self.assertTrue(r > 0)
 
+        with self.assertRaises(ResourceNotFoundError):
+            get_smtpserver(None)
+
         server = get_smtpserver("myserver")
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
