@@ -21,22 +21,27 @@ import logging
 from huey import RedisHuey
 
 from privacyidea.lib.queue.base import BaseQueue, QueueError
-from privacyidea.lib.queue.promise import Promise
+from privacyidea.lib.queue.promise import Promise, ImmediatePromise
 
 log = logging.getLogger(__name__)
 
 
 class HueyQueue(BaseQueue):
-    def __init__(self):
-        BaseQueue.__init__(self)
-        self._huey = RedisHuey()
+    def __init__(self, options):
+        BaseQueue.__init__(self, options)
+        # TODO: We should rethink ``store_errors=False`` -- how do we notice errors?
+        self._huey = RedisHuey(store_none=False, store_errors=False, **options)
         self._jobs = {}
 
     @property
     def huey(self):
         return self._huey
 
-    def add_job(self, name, func, fire_and_forget=True):
+    @property
+    def jobs(self):
+        return self._jobs
+
+    def add_job(self, name, func, fire_and_forget=False):
         if name in self._jobs:
             raise QueueError(u"Job {!r} already exists".format(name))
 
@@ -53,7 +58,13 @@ class HueyQueue(BaseQueue):
         if name not in self._jobs:
             raise QueueError(u"Unknown job: {!r}".format(name))
         log.info(u"Sending {!r} job to the queue ...".format(name))
-        return HueyPromise(self._jobs[name](*args, **kwargs))
+        # If always_eager is True, huey will immediately return the result,
+        # which we need to wrap in an ImmediatePromise object
+        result = self._jobs[name](*args, **kwargs)
+        if self._huey.always_eager:
+            return ImmediatePromise(result)
+        else:
+            return HueyPromise(result)
 
 
 class HueyPromise(Promise):

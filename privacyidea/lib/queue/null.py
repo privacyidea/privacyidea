@@ -16,13 +16,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+import functools
+
 from privacyidea.lib.queue.base import BaseQueue, QueueError
 from privacyidea.lib.queue.promise import ImmediatePromise
 
 
 class NullQueue(BaseQueue):
-    def __init__(self):
-        BaseQueue.__init__(self)
+    def __init__(self, options):
+        BaseQueue.__init__(self, options)
         self._jobs = {}
 
     @property
@@ -32,7 +34,16 @@ class NullQueue(BaseQueue):
     def add_job(self, name, func, fire_and_forget=False):
         if name in self._jobs:
             raise QueueError(u"Job {!r} already exists".format(name))
-        self._jobs[name] = func
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            if fire_and_forget:
+                return None
+            else:
+                return result
+
+        self._jobs[name] = wrapper
 
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:

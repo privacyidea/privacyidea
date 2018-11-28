@@ -22,6 +22,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
+JOB_QUEUE_CLASS = "PI_JOB_QUEUE_CLASS"
+JOB_QUEUE_OPTION_PREFIX = "PI_JOB_QUEUE_"
+
+
 class JobCollector(object):
     """
     For most third-party job queue modules, the jobs are discovered by tracking all
@@ -70,12 +74,17 @@ class JobCollector(object):
         """
         if "job_queue" in app.config:
             raise RuntimeError("App already has a job queue: {!r}".format(app.config["job_queue"]))
-        queue_class_name = app.config.get("PI_JOB_QUEUE_CLASS", self._default_queue_class_name)
+        queue_class_name = app.config.get(JOB_QUEUE_CLASS, self._default_queue_class_name)
         if queue_class_name not in self._queue_classes:
             log.warning(u"Unknown job queue class name: {!r}".format(queue_class_name))
             queue_class_name = self._default_queue_class_name
         queue_class = self._queue_classes[queue_class_name]
-        job_queue = queue_class()
+        # Extract configuration from app config: All options starting with PI_JOB_QUEUE_
+        options = {}
+        for k, v in app.config.items():
+            if k.startswith(JOB_QUEUE_OPTION_PREFIX) and k != JOB_QUEUE_CLASS:
+                options[k[len(JOB_QUEUE_OPTION_PREFIX):].lower()] = v
+        job_queue = queue_class(options)
         log.info(u"Created a new job queue: {!r}".format(job_queue))
         app.config["job_queue"] = job_queue
         for name, (func, args, kwargs) in self._jobs.items():

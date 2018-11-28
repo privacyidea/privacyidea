@@ -23,6 +23,9 @@ class QueueError(Exception):
 
 
 class BaseQueue(object):
+    def __init__(self, options):
+        self.options = options
+
     def add_job(self, name, func, fire_and_forget=False):
         raise NotImplementedError()
 
