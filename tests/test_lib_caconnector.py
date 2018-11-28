@@ -4,11 +4,10 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
-import sys
 import six
 import shutil
 from io import StringIO
-from contextlib import contextmanager
+from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from OpenSSL import crypto
 from privacyidea.lib.utils import int_to_hex
@@ -76,14 +75,6 @@ SPKAC = "SPKAC=MIICQDCCASgwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggE" \
         "rmtBFA3aIp5RExiEpvBD88hg==\n" \
         "CN=Steve Test\n" \
         "emailAddress=steve@openssl.org"
-
-
-@contextmanager
-def replace_stdin(target):
-    orig = sys.stdin
-    sys.stdin = target
-    yield
-    sys.stdin = orig
 
 
 class CAConnectorTestCase(MyTestCase):
@@ -300,7 +291,7 @@ class CreateLocalCATestCase(MyTestCase):
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
         inputstr = six.text_type(workdir + '\n\n\n\n\n\ny\n')
-        with replace_stdin(StringIO(inputstr)):
+        with patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')
             self.assertEqual(caconfig.get("WorkingDir"), workdir)
             cacon = LocalCAConnector('localCA2', caconfig)
