@@ -46,7 +46,7 @@ def get_monitoring(config):
     Each monitoring module can have its own config values.
 
     :param config: The config entries from the file config
-    :return: Audit Object
+    :return: Monitoring Object
     """
     monitoring_module = config.get("PI_MONITORING_MODULE", "privacyidea.lib.monitoringmodules.sqlstats")
     monitoring = get_module_class(monitoring_module, "Monitoring")(config)

@@ -47,7 +47,7 @@ class Monitoring(object):
 
     def get_values(self, stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
         """
-        Return a list of tuples of (timestamp, value) for the request stats key.
+        Return a list of tuples of (timestamp, value) for the requested stats_key.
 
         :param stats_key: Identifier of the stats
         :param start_timestamp: utc start of the time frame

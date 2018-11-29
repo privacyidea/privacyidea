@@ -131,14 +131,14 @@ Monitoring parameters
 The monitoring module takes care of writing values with timestamps to a store.
 This is used e.g. by the :ref:`eventcounter` and :ref:`taskmodule_simplestats`.
 
-The first available monitoring module is ``privacyidea.lib.monitoringmodults.sqlstats``.
+The first available monitoring module is ``privacyidea.lib.monitoringmodules.sqlstats``.
 It accepts the following additional parameters:
 
 ``PI_MONITORING_SQL_URI`` can hold an alternative SQL connect string. If not specified the
 normal ``SQL_DATABASE_URI`` is used.
 
 ``PI_MONITORING_POOL_SIZE`` (default 20) and ``PI_MONITORING_POOL_RECYCLE`` (default 600) let
-you configure pooling. It used the settings from the above mentioned
+you configure pooling. It uses the settings from the above mentioned
 ``PI_ENGINE_REGISTRY_CLASS``.
 
 .. note:: A SQL database is probably not the best database to store time series.
