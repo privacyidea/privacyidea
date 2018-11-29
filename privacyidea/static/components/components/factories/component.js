@@ -25,20 +25,12 @@ myApp.factory("ComponentFactory", function (AuthFactory,
         /**
          Each service - just like this service factory - is a singleton.
          */
-        var error_func = function (error) {
-            if (error.result.error.code === -401) {
-                $state.go('login');
-            } else {
-                inform.add(error.result.error.message, {type: "danger", ttl: 10000});
-            }
-        };
-
         return {
             getClientType: function(callback) {
                 $http.get(clientUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).success(callback
-                ).error(error_func);
+                ).error(AuthFactory.authError);
             }
         }
     });
@@ -47,26 +39,18 @@ myApp.factory("ComponentFactory", function (AuthFactory,
 myApp.factory("SubscriptionFactory", function (AuthFactory, $http, $state,
                                                $rootScope, subscriptionsUrl,
                                                inform){
-    var error_func = function (error) {
-        if (error.result.error.code === -401) {
-            $state.go('login');
-        } else {
-            inform.add(error.result.error.message, {type: "danger", ttl: 10000});
-        }
-    };
-
     return {
         get: function(callback) {
             $http.get(subscriptionsUrl + "/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
-            ).error(error_func);
+            ).error(AuthFactory.authError);
         },
         delete: function(application, callback) {
             $http.delete(subscriptionsUrl + "/" + application, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
-            ).error(error_func);
+            ).error(AuthFactory.authError);
 
         }
     }
