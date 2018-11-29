@@ -83,7 +83,7 @@ class Monitoring(MonitoringBase):
             log.debug("Using no SQL pool_size.")
         return engine
 
-    def add_value(self, stats_key, stats_value, utc_timestamp, reset_values):
+    def add_value(self, stats_key, stats_value, utc_timestamp, reset_values=False):
         try:
             ms = MonitoringStats(utc_timestamp, stats_key, stats_value)
             self.session.add(ms)
