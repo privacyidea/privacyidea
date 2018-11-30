@@ -4,6 +4,10 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
+import six
+import shutil
+from io import StringIO
+from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from OpenSSL import crypto
 from privacyidea.lib.utils import int_to_hex
@@ -277,3 +281,21 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue(ddiff.days < 760, ddiff.days)
 
 
+class CreateLocalCATestCase(MyTestCase):
+    """
+    test creating a new CA using the local caconnector
+    """
+    def test_01_create_ca(self):
+        cwd = os.getcwd()
+        workdir = os.path.join(cwd, WORKINGDIR + '2')
+        if os.path.exists(workdir):
+            shutil.rmtree(workdir)
+        inputstr = six.text_type(workdir + '\n\n\n\n\n\ny\n')
+        with patch('sys.stdin', StringIO(inputstr)):
+            caconfig = LocalCAConnector.create_ca('localCA2')
+            self.assertEqual(caconfig.get("WorkingDir"), workdir)
+            cacon = LocalCAConnector('localCA2', caconfig)
+            self.assertEqual(cacon.name, 'localCA2')
+            self.assertEqual(cacon.workingdir, workdir)
+            # check if the generated files exist
+            self.assertTrue(os.path.exists(os.path.join(workdir, 'cacert.pem')))
