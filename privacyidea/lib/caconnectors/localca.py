@@ -597,7 +597,7 @@ class LocalCAConnector(BaseCAConnector):
 
         :param name: The name of the CA connector.
         :type name: str
-        :return The LocalCAConnector configuration
+        :return: The LocalCAConnector configuration
         :rtype: dict
         """
         config = CONFIG(name)
