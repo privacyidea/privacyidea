@@ -56,7 +56,7 @@ def get_statistics(stats_key=None):
     from which the statistics data should be fetched.
     """
     if stats_key is None:
-        stats_keys = get_stats_keys(current_app.config)
+        stats_keys = get_stats_keys()
         g.audit_object.log({"success": True})
         return send_result(stats_keys)
     else:
@@ -67,8 +67,7 @@ def get_statistics(stats_key=None):
         end = getParam(param, "end")
         if end:
             end = parse_legacy_time(end, return_date=True)
-        values = get_values(current_app.config,
-                            stats_key=stats_key, start_timestamp=start, end_timestamp=end,
+        values = get_values(stats_key=stats_key, start_timestamp=start, end_timestamp=end,
                             date_strings=True)
         g.audit_object.log({"success": True})
         return send_result(values)
@@ -96,7 +95,7 @@ def delete_statistics(stats_key):
     end = getParam(param, "end")
     if end:
         end = parse_legacy_time(end, return_date=True)
-    r = delete_stats(current_app.config, stats_key, start, end)
+    r = delete_stats(stats_key, start, end)
     g.audit_object.log({"success": True})
     return send_result(r)
 
@@ -108,7 +107,7 @@ def get_statistics_last(stats_key):
     """
     Get the last value of the stats key
     """
-    last_value = get_last_value(current_app.config, stats_key)
+    last_value = get_last_value(stats_key)
     g.audit_object.log({"success": True})
     return send_result(last_value)
 

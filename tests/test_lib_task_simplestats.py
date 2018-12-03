@@ -41,7 +41,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
 
         sst.do(params)
         for o in sst.options.keys():
-            self.assertEqual(simple_results[o][0], get_values(current_app.config, o)[0][1],
+            self.assertEqual(simple_results[o][0], get_values(o)[0][1],
                              msg="Current option: {0}".format(o))
 
         # add a hardware token
@@ -50,7 +50,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
 
         sst.do(params)
         for o in sst.options.keys():
-            self.assertEqual(simple_results[o][1], get_values(current_app.config, o)[1][1],
+            self.assertEqual(simple_results[o][1], get_values(o)[1][1],
                              msg="Current option: {0}".format(o))
 
         # add a hardware token and assign it to a user
@@ -63,7 +63,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
 
         sst.do(params)
         for o in sst.options.keys():
-            self.assertEqual(simple_results[o][2], get_values(current_app.config, o)[2][1],
+            self.assertEqual(simple_results[o][2], get_values(o)[2][1],
                              msg="Current option: {0}".format(o))
 
         # add a software token and assign it to a user
@@ -76,12 +76,12 @@ class TaskSimpleStatsTestCase(MyTestCase):
         # check if getting only certain stats works
         params['assigned_tokens'] = False
         sst.do(params)
-        self.assertEqual(3, len(get_values(current_app.config, 'assigned_tokens')))
-        self.assertEqual(4, len(get_values(current_app.config, 'user_with_token')))
+        self.assertEqual(3, len(get_values('assigned_tokens')))
+        self.assertEqual(4, len(get_values('user_with_token')))
         for o in sst.options.keys():
             if o != 'assigned_tokens':
-                self.assertEqual(simple_results[o][3], get_values(current_app.config, o)[3][1],
+                self.assertEqual(simple_results[o][3], get_values(o)[3][1],
                                  msg="Current option: {0}".format(o))
         self.assertEqual(simple_results['assigned_tokens'][3],
-                         get_values(current_app.config, 'assigned_tokens')[2][1])
+                         get_values('assigned_tokens')[2][1])
 

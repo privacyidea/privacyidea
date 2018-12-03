@@ -91,6 +91,6 @@ class SimpleStatsTask(BaseTask):
         for opt in self.options.keys():
             if is_true(params.get(opt)):
                 log.debug("Got param {0}".format(opt))
-                write_stats(self.config, opt, getattr(self, '_' + opt))
+                write_stats(opt, getattr(self, '_' + opt))
 
         return True

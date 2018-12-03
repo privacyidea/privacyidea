@@ -44,7 +44,7 @@ class TaskEventCounterTestCase(MyTestCase):
         self.assertEqual(read("counter1"), 0)
 
         # The value "2" should be written to the statistics key C1.
-        stats = get_values(current_app.config, "C1")
+        stats = get_values("C1")
         self.assertTrue(len(stats), 1)
         self.assertTrue(stats[0][1], 2)
 
@@ -53,7 +53,7 @@ class TaskEventCounterTestCase(MyTestCase):
 
         # ..and run the event counter task
         et.do(params)
-        stats = get_values(current_app.config, "C1")
+        stats = get_values("C1")
         self.assertTrue(len(stats), 2)
         self.assertTrue(stats[0][1], 2)
         self.assertTrue(stats[0][1], 1)

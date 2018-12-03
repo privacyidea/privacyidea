@@ -30,13 +30,14 @@ import logging
 from dateutil.tz import tzlocal
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_timestamp_to_utc, get_module_class
+from privacyidea.lib.framework import get_app_config
 import datetime
 
 log = logging.getLogger(__name__)
 
 
 @log_with(log, log_entry=False)
-def get_monitoring(config):
+def _get_monitoring():
     """
     This wrapper function creates a new monitoring object based on the config
     from the config file. The config file entry could look like this:
@@ -45,15 +46,15 @@ def get_monitoring(config):
 
     Each monitoring module can have its own config values.
 
-    :param config: The config entries from the file config
     :return: Monitoring Object
     """
+    config = get_app_config()
     monitoring_module = config.get("PI_MONITORING_MODULE", "privacyidea.lib.monitoringmodules.sqlstats")
     monitoring = get_module_class(monitoring_module, "Monitoring")(config)
     return monitoring
 
 
-def write_stats(config, stats_key, stats_value, timestamp=None, reset_values=False):
+def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
     """
     Write a new statistics value to the database
 
@@ -70,11 +71,11 @@ def write_stats(config, stats_key, stats_value, timestamp=None, reset_values=Fal
     # Convert timestamp to UTC for database
     utc_timestamp = convert_timestamp_to_utc(timestamp)
 
-    monitoring_obj = get_monitoring(config)
+    monitoring_obj = _get_monitoring()
     monitoring_obj.add_value(stats_key, stats_value, utc_timestamp, reset_values)
 
 
-def delete_stats(config, stats_key, start_timestamp=None, end_timestamp=None):
+def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
     """
     Delete statistics from a given key.
     Either delete all occurrences or only in a given time span.
@@ -86,22 +87,22 @@ def delete_stats(config, stats_key, start_timestamp=None, end_timestamp=None):
     :type end_timestamp: timezone-aware datetime object
     :return: The number of deleted entries
     """
-    monitoring_obj = get_monitoring(config)
+    monitoring_obj = _get_monitoring()
     r = monitoring_obj.delete(stats_key, start_timestamp, end_timestamp)
     return r
 
 
-def get_stats_keys(config):
+def get_stats_keys():
     """
     Return a list of all available statistics keys
 
     :return: list of keys
     """
-    monitoring_obj = get_monitoring(config)
+    monitoring_obj = _get_monitoring()
     return monitoring_obj.get_keys()
 
 
-def get_values(config, stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
+def get_values(stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
     """
     Return a list of sets of (timestamp, value), ordered by timestamps in ascending order
 
@@ -113,17 +114,17 @@ def get_values(config, stats_key, start_timestamp=None, end_timestamp=None, date
     :param date_strings: Return dates as strings formatted as AUTH_DATE_FORMAT
     :return: list of tuples, with timestamps being timezone-aware UTC datetime objects
     """
-    monitoring_obj = get_monitoring(config)
+    monitoring_obj = _get_monitoring()
     return monitoring_obj.get_values(stats_key, start_timestamp, end_timestamp, date_strings)
 
 
-def get_last_value(config, stats_key):
+def get_last_value(stats_key):
     """
     Return the last value of the given key
 
     :param stats_key:
     :return: The value as a scalar or None
     """
-    monitoring_obj = get_monitoring(config)
+    monitoring_obj = _get_monitoring()
     return monitoring_obj.get_last_value(stats_key)
 
