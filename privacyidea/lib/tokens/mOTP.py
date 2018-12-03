@@ -92,10 +92,10 @@ class mTimeOtp(object):
         if options is not None and type(options) == dict:
             initTime = int(options.get('initTime', 0))
 
-        if (initTime == 0):
-            otime = int(time.time() / 10)
+        if initTime == 0:
+            otime = int(time.time() // 10)
         else:
-            otime = int(initTime)
+            otime = initTime
 
 
         if self.secretObject is None:

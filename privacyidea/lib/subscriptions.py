@@ -39,7 +39,10 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
+from six import PY2
 
+if not PY2:
+    long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
@@ -232,7 +235,7 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    if application.lower() in APPLICATIONS.keys():
+    if application.lower() in APPLICATIONS:
         subscriptions = get_subscription(application) or get_subscription(
             application.lower())
         # get the number of users with active tokens

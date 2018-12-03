@@ -188,7 +188,7 @@ def get_resolver_list(filter_resolver_type=None,
     resolvers = config_object.resolver
     if filter_resolver_type:
         reduced_resolvers = {}
-        for reso_name, reso in resolvers.iteritems():
+        for reso_name, reso in resolvers.items():
             if reso.get("type") == filter_resolver_type:
                 reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
@@ -201,13 +201,13 @@ def get_resolver_list(filter_resolver_type=None,
     if editable is not None:
         reduced_resolvers = {}
         if editable is True:
-            for reso_name, reso in resolvers.iteritems():
+            for reso_name, reso in resolvers.items():
                 check_editable = is_true(reso["data"].get("Editable")) or \
                                  is_true(reso["data"].get("EDITABLE"))
                 if check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         elif editable is False:
-            for reso_name, reso in resolvers.iteritems():
+            for reso_name, reso in resolvers.items():
                 check_editable = is_true(reso["data"].get("Editable")) or \
                                  is_true(reso["data"].get("EDITABLE"))
                 if not check_editable:

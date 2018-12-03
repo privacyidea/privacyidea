@@ -25,6 +25,7 @@ import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import get_alphanum_str
+from six import int2byte
 
 __doc__ = """
 This is a PKCS11 Security module that encrypts and decrypts the data on a
@@ -53,7 +54,7 @@ except ImportError:
 
 
 def int_list_to_bytestring(int_list):  # pragma: no cover
-    return "".join([chr(i) for i in int_list])
+    return b"".join([int2byte(i) for i in int_list])
 
 
 class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
@@ -172,7 +173,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         """
         Return a random bytestring
         :param length: length of the random bytestring
-        :return:
+        :rtype bytes
         """
         retries = 0
         while True:
@@ -192,6 +193,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         return int_list_to_bytestring(r_integers)
 
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
+        """
+
+        :rtype: bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
@@ -214,6 +219,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         return int_list_to_bytestring(r)
 
     def decrypt(self, data, iv, key_id=TOKEN_KEY):
+        """
+
+        :rtype bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))

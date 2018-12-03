@@ -17,8 +17,8 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param)
-import ldap3mock
-from test_lib_resolver import objectGUIDs, LDAPDirectory_small
+from . import ldap3mock
+from .test_lib_resolver import objectGUIDs, LDAPDirectory_small
 
 
 class UserTestCase(MyTestCase):
@@ -124,7 +124,13 @@ class UserTestCase(MyTestCase):
                                            resolver=self.resolvername1,
                                            realm=self.realm1))
         self.assertTrue(len(userlist) > 10, userlist)
-        
+
+        # users with email
+        userlist = get_user_list({"realm": self.realm1,
+                                  "email": "root@testdomain.test",
+                                  "resolver": self.resolvername2})
+        self.assertTrue(len(userlist) == 0, userlist)
+
     def test_06_get_user_phone(self):
         phone = User(login="cornelius", realm=self.realm1).get_user_phone()
         self.assertTrue(phone == "+49 561 3166797", phone)

@@ -49,20 +49,10 @@ from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
+from six import string_types
 
 
 log = logging.getLogger(__name__)
-try:
-    import matplotlib
-    MATPLOT_READY = True
-    matplotlib.use('Agg')
-    # We need to set the matplotlib backend before importing pandas with pyplot
-    from pandas import DataFrame
-    PANDAS_READY = True
-    # matplotlib is needed to plot
-except Exception as exx:
-    log.warning(exx)
-    PANDAS_READY = False
 
 metadata = MetaData()
 
@@ -145,10 +135,10 @@ class Audit(AuditBase):
         Truncate self.audit_data according to the column_length.
         :return: None
         """
-        for column, l in column_length.iteritems():
+        for column, l in column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
-                if isinstance(data, basestring):
+                if isinstance(data, string_types):
                     if column == "policies":
                         # The policies column is shortend per comma entry
                         data = truncate_comma_list(data, l)
@@ -324,25 +314,27 @@ class Audit(AuditBase):
         
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
+
+        :param le: LogEntry object containing the data
+        :type le: LogEntry
+        :rtype str
         """
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,"\
-            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
-                                                  le.date,
-                                                  le.action,
-                                                  le.success,
-                                                  le.serial,
-                                                  le.token_type,
-                                                  le.user,
-                                                  le.realm,
-                                                  le.administrator,
-                                                  le.action_detail,
-                                                  le.info,
-                                                  le.privacyidea_server,
-                                                  le.client,
-                                                  le.loglevel,
-                                                  le.clearance_level)
-        if type(s) == unicode:
-            s = s.encode("utf-8")
+        s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
+            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+                                                   le.date,
+                                                   le.action,
+                                                   le.success,
+                                                   le.serial,
+                                                   le.token_type,
+                                                   le.user,
+                                                   le.realm,
+                                                   le.administrator,
+                                                   le.action_detail,
+                                                   le.info,
+                                                   le.privacyidea_server,
+                                                   le.client,
+                                                   le.loglevel,
+                                                   le.clearance_level)
         return s
 
     @staticmethod
@@ -384,7 +376,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            audit_list = audit_dict.values()
+            audit_list = list(audit_dict.values())
             string_list = [u"'{0!s}'".format(x) for x in audit_list]
             yield ",".join(string_list)+"\n"
 
@@ -427,12 +419,12 @@ class Audit(AuditBase):
                                       page=page, sortorder=sortorder,
                                       timelimit=timelimit)
         try:
-            le = auditIter.next()
+            le = next(auditIter)
             while le:
                 # Fill the list
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
-                le = auditIter.next()
-        except StopIteration:
+                le = next(auditIter)
+        except StopIteration as _e:
             log.debug("Interation stopped.")
 
         return paging_object
@@ -477,37 +469,6 @@ class Audit(AuditBase):
             return iter([])
         else:
             return iter(logentries)
-
-    def get_dataframe(self,
-                      start_time=datetime.datetime.now()
-                                 -datetime.timedelta(days=7),
-                      end_time=datetime.datetime.now()):
-        """
-        The Audit module can handle its data the best. This function is used
-        to return a pandas.dataframe with all audit data in the given time
-        frame.
-
-        This dataframe then can be used for extracting statistics.
-
-        :param start_time: The start time of the data
-        :type start_time: datetime
-        :param end_time: The end time of the data
-        :type end_time: datetime
-        :return: Audit data
-        :rtype: dataframe
-        """
-        if not PANDAS_READY:
-            log.warning("If you want to use statistics, you need to install "
-                        "python-pandas.")
-            return None
-
-        q = self.session.query(LogEntry)\
-            .filter(LogEntry.date > start_time,
-                    LogEntry.date < end_time)
-        rows = q.all()
-        rows = [r.__dict__ for r in rows]
-        df = DataFrame(rows)
-        return df
 
     def clear(self):
         """

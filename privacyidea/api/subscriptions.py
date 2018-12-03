@@ -6,7 +6,7 @@
 #            Initial writeup
 #
 #
-__doc__ = """This is the controller API for client componet
+__doc__ = """This is the controller API for client component
 subscriptions like ownCloud plugin or RADIUS Credential Provider.
 """
 from flask import (Blueprint, request, g)
@@ -57,6 +57,7 @@ def api_get(application=None):
 @log_with(log)
 def api_set():
     """
+    Upload a new subscription file
     """
     subscription_file = request.files['file']
     file_contents = subscription_file.read()
@@ -72,8 +73,7 @@ def api_set():
 @log_with(log)
 def api_delete(application=None):
     """
-    Create a subscription request.
-    This request needs to be sent to NetKnights to create a subscription
+    Delete an existing subscription
     """
     r = delete_subscription(application)
     g.audit_object.log({'success': True})

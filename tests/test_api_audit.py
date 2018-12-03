@@ -25,51 +25,6 @@ class APIAuditTestCase(MyTestCase):
             self.assertTrue(json_response.get("result").get("value").get(
                 "current") == 1, res)
 
-    def test_01_get_statistics(self):
-        with self.app.test_request_context('/audit/statistics',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
-            self.assertTrue(json_response.get("result").get("status"), res)
-            self.assertTrue("serial_plot" in json_response.get(
-                "result").get("value"), json_response.get("result"))
-
-        start = datetime.datetime.now(tzlocal()) - datetime.timedelta(days=10)
-        start_str = start.strftime("%Y-%m-%dT%H:%M%Z")
-        # We need to reparse it, to get rid of the seconds and milliseconds
-        start = parse_time_string(start_str)
-        with self.app.test_request_context('/audit/statistics',
-                                           method='GET',
-                                           data={"start": start_str},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
-            self.assertTrue(json_response.get("result").get("status"), res)
-            self.assertTrue("serial_plot" in json_response.get(
-                "result").get("value"), json_response.get("result"))
-            d = parse_time_string(json_response.get("result").get("value").get("time_start"))
-            self.assertEqual(d, start)
-
-        end = datetime.datetime.now(tzlocal()) - datetime.timedelta(days=10)
-        end_str = end.strftime("%Y-%m-%dT%H:%M%Z")
-        # We need to reparse it, to get rid of the seconds and milliseconds
-        end = parse_time_string(end_str)
-        with self.app.test_request_context('/audit/statistics',
-                                           method='GET',
-                                           data={"end": end_str},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
-            self.assertTrue(json_response.get("result").get("status"), res)
-            self.assertTrue("serial_plot" in json_response.get(
-                "result").get("value"), json_response.get("result"))
-            d = parse_time_string(json_response.get("result").get("value").get("time_end"))
-            self.assertEqual(d, end)
-
     def test_02_get_allowed_audit_realm(self):
         # Check that an administrator is only allowed to see log entries of
         # the defined realms.
@@ -202,7 +157,7 @@ class APIAuditTestCase(MyTestCase):
             for ad  in auditdata:
                 self.assertEqual(ad.get("realm"), "realm1A")
 
-        # Now check, that the testadmin (self.at) see all entries!
+        # Now check, that the testadmin (self.at) sees all entries!
         with self.app.test_request_context('/audit/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -213,7 +168,7 @@ class APIAuditTestCase(MyTestCase):
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
             auditdata = json_response.get("result").get("value").get("auditdata")
-            self.assertEqual(count, 25)
+            self.assertEqual(count, 21)
 
         # delete policy
         delete_policy("audit01")

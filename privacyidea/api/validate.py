@@ -446,7 +446,7 @@ def samlcheck():
                                         "phone": ui.get("phone")
                                         }
             # additional attributes
-            for k, v in ui.iteritems():
+            for k, v in ui.items():
                 result_obj["attributes"][k] = v
 
     g.audit_object.log({"info": details.get("message"),

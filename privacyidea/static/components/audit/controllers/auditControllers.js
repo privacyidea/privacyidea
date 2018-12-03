@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2018-11-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            Remove audit based statistics
  * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *     Add statistics
  * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -23,14 +25,11 @@
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location, gettextCatalog) {
+                                              $location) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-    $scope.statsTime = {7: "Last Week",
-        28: "Last 4 Weeks"};
-    $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
@@ -39,15 +38,6 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     if ($stateParams.user) {
         $scope.userFilter = $stateParams.user;
     }
-
-
-    // get statistics
-    $scope.getStatistics = function() {
-        AuditFactory.statistics($scope.params, function(data) {
-            $scope.stats = data.result.value;
-            //debug: console.log($scope.stats);
-        });
-    };
 
     $scope.getParams = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
@@ -103,35 +93,18 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         });
     };
 
-    if ($location.path() === "/audit/log") {
-        $scope.getAuditList();
-    }
-
     if ($location.path() === "/audit") {
         $location.path("/audit/log");
     }
 
+    if ($location.path() === "/audit/log") {
+        $scope.getAuditList();
+    }
+
     $scope.$on("piReload", function() {
-        if ($location.path() === "/audit/stats") {
-            $scope.getStatistics();
-        } else {
+        if ($location.path() === "/audit/log") {
             $scope.getAuditList();
         }
     });
-
-    // ===========================================================
-    // ===============  Date stuff ===============================
-    // ===========================================================
-
-    $scope.openDate = function($event) {
-        $event.stopPropagation();
-        return true;
-    };
-
-    $scope.today = new Date();
-    $scope.dateOptions = {
-        formatYear: 'yy',
-        startingDay: 1
-    };
 
 });

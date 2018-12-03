@@ -131,9 +131,11 @@ class User(object):
         :rtype: bool
         """
         # TODO: Should we add a check for `uid` here?
-        return (self.login == other.login) and (self.resolver ==
-                                                other.resolver) and (
-                self.realm == other.realm)
+        return isinstance(other, type(self)) and (self.login == other.login) and (
+                self.resolver == other.resolver) and (self.realm == other.realm)
+
+    def __hash__(self):
+        return hash((type(self), self.login, self.resolver, self.realm))
 
     def __unicode__(self):
         ret = u"<empty user>"
@@ -156,8 +158,10 @@ class User(object):
             self.login, self.realm, self.resolver))
         return ret
 
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.is_empty()
+
+    __nonzero__ = __bool__
     
     @log_with(log)
     def get_ordererd_resolvers(self):
@@ -601,16 +605,18 @@ def get_user_list(param=None, user=None):
     # as delete does not work
     for key in param:
         lval = param[key]
-        if key == "realm":
+        if key in ["realm", "resolver", "user", "username"]:
             continue
-        if key == "resolver":
-            continue
-        if key == "user":
-            # If "user" is in the param we overwrite the username
-            key = "username"
-
         searchDict[key] = lval
         log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
+
+    # update searchdict depending on existence of 'user' or 'username' in param
+    # Since 'user' takes precedence over 'username' we have to check the order
+    if 'username' in param:
+        searchDict['username'] = param['username']
+    if 'user' in param:
+        searchDict['username'] = param['user']
+    log.debug('Changed search key to username: %s.', searchDict['username'])
 
     # determine which scope we want to show
     param_resolver = getParam(param, "resolver")

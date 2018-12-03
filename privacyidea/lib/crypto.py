@@ -37,6 +37,7 @@ Security module functions are contained under lib/security/
 
 This lib.cryto is tested in tests/test_lib_crypto.py
 """
+from __future__ import division
 import hmac
 import logging
 from hashlib import sha256
@@ -61,8 +62,10 @@ except ImportError:
 import passlib.hash
 import sys
 import traceback
-
+from six import PY2, text_type
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value, get_app_config
+if not PY2:
+    long = int
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -510,7 +513,9 @@ def geturandom(length=20, hex=False):
     get random - from the security module
 
     :param length: length of the returned bytes - default is 20 bytes
-    :rtype length: int
+    :type length: int
+    :param hex: convert result to hexstring
+    :type hex: bool
 
     :return: buffer of bytes
 
@@ -537,10 +542,10 @@ class urandom(object):
         :return: float value
         """
         # get a binary random string
-        randbin = geturandom(urandom.precision)
+        randhex = geturandom(urandom.precision, hex=True)
 
         # convert this to an integer
-        randi = int(randbin.encode('hex'), 16) * 1.0
+        randi = int(randhex, 16) * 1.0
 
         # get the max integer
         intmax = 2 ** (8 * urandom.precision) * 1.0
@@ -648,8 +653,8 @@ def get_rand_digit_str(length=16):
     if length == 1:
         raise ValueError("get_rand_digit_str only works for values > 1")
     clen = int(length / 2.4 + 0.5)
-    randd = geturandom(clen)
-    s = "{0:d}".format((int(randd.encode('hex'), 16)))
+    randd = geturandom(clen, hex=True)
+    s = "{0:d}".format((int(randd, 16)))
     if len(s) < length:
         s = "0" * (length - len(s)) + s
     elif len(s) > length:
@@ -666,8 +671,7 @@ def get_alphanum_str(length=16):
     """
     ret = ""
     for i in range(length):
-        ret += random.choice(string.lowercase + string.uppercase +
-                             string.digits)
+        ret += random.choice(string.ascii_letters + string.digits)
     return ret
 
 
@@ -724,9 +728,13 @@ class Sign(object):
         """
         Create a signature of the string s
 
+        :param s: String to sign
+        :type s: str
         :return: The signature of the string
         :rtype: long
         """
+        if isinstance(s, text_type):
+            s = s.encode('utf8')
         RSAkey = RSA.importKey(self.private)
         if SIGN_WITH_RSA:
             hashvalue = HashFunc.new(s).digest()
@@ -740,7 +748,14 @@ class Sign(object):
     def verify(self, s, signature):
         """
         Check the signature of the string s
+
+        :param s: String to check
+        :type s: str
+        :param signature: the signature to compare
+        :type signature: str
         """
+        if isinstance(s, text_type):
+            s = s.encode('utf8')
         r = False
         try:
             RSAkey = RSA.importKey(self.public)
@@ -751,7 +766,7 @@ class Sign(object):
             else:
                 hashvalue = HashFunc.new(s)
                 pkcs1_15.new(RSAkey).verify(hashvalue, signature)
-        except Exception:  # pragma: no cover
+        except Exception as _e:  # pragma: no cover
             log.error("Failed to verify signature: {0!r}".format(s))
             log.debug("{0!s}".format(traceback.format_exc()))
         return r

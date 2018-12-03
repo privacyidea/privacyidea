@@ -212,7 +212,7 @@ def create_img(data, width=0, alt=None, raw=False):
         o_data = create_png(data, alt=alt)
     else:
         o_data = data
-    data_uri = o_data.encode("base64").replace("\n", "")
+    data_uri = binascii.b2a_base64(o_data).replace(b"\n", b"")
 
     if width != 0:
         width_str = " width={0:d} ".format((int(width)))
@@ -250,21 +250,19 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 def modhex_encode(s):
     return ''.join(
-        [hex2ModDict[c] for c in s.encode('hex')]
+        [hex2ModDict[c] for c in binascii.hexlify(s).decode('utf8')]
     )
 # end def modhex_encode
 
 
 def modhex_decode(m):
-    return ''.join(
-        [mod2HexDict[c] for c in m]
-    ).decode('hex')
+    return binascii.unhexlify(''.join([mod2HexDict[c] for c in m]))
 # end def modhex_decode
 
 
 def checksum(msg):
     crc = 0xffff
-    for i in range(0, len(msg) / 2):
+    for i in range(0, len(msg) // 2):
         b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
@@ -993,7 +991,7 @@ class PasswordHash(object):
         itoa64 = \
             './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         outp = '$2a$'
-        outp += chr(ord('0') + self.iteration_count_log2 / 10)
+        outp += chr(ord('0') + self.iteration_count_log2 // 10)
         outp += chr(ord('0') + self.iteration_count_log2 % 10)
         outp += '$'
         cur = 0

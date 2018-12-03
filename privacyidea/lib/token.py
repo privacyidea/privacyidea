@@ -64,6 +64,7 @@ import datetime
 import binascii
 import os
 import logging
+from six import string_types
 
 from sqlalchemy import (and_, func)
 from privacyidea.lib.error import (TokenAdminError,
@@ -263,7 +264,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             raise privacyIDEAError("I can only create SQL filters from "
                                    "tokeninfo of length 1.")
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
-        sql_query = sql_query.filter(TokenInfo.Value == tokeninfo.values()[0])
+        sql_query = sql_query.filter(TokenInfo.Value == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
     return sql_query
@@ -428,7 +429,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 rollout_state=rollout_state,
                                 description=description, userid=userid)
 
-    if type(sortby) in [str, unicode]:
+    if isinstance(sortby, string_types):
         # convert the string to a Token column
         cols = Token.__table__.columns
         sortby = cols.get(sortby)
@@ -1265,13 +1266,13 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
     :type pin: basestring
     :param user: If the user is specified, the pins for all tokens of this
     user will be set
-    :type used: User object
+    :type user: User object
     :param serial: If the serial is specified, the PIN for this very token
     will be set. (exact)
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    if isinstance(user, basestring):
+    if isinstance(user, string_types):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))
@@ -1997,8 +1998,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
 
     # add the user to the options, so that every token, that get passed the
     # options can see the user
-    options = options or {}
-    options = dict(options.items() + {'user': user}.items())
+    if options:
+        options = options.copy()
+    else:
+        options = {}
+    options.update({'user': user})
 
     # if there has been one token in challenge mode, we only handle challenges
     challenge_response_token_list = []
@@ -2098,7 +2102,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 # reset the failcounter of valid token
                 try:
                     token_obj.reset()
-                except Exception:
+                except Exception as _e:
                     # In some cases (Registration Token) the token does not
                     # exist anymore. So this would bail an exception!
                     log.debug("registration token does not exist anymore and "
@@ -2291,7 +2295,7 @@ def get_dynamic_policy_definitions(scope=None):
         policy = get_tokenclass_info(ttype, section='policy')
 
         # get all policy sections like: admin, user, enroll, auth, authz
-        pol_keys = pol.keys()
+        pol_keys = list(pol)
 
         for pol_section in policy.keys():
             # if we have a dyn token definition of this section type
@@ -2312,14 +2316,14 @@ def get_dynamic_policy_definitions(scope=None):
         for pin_scope in pin_scopes:
             pol[pin_scope]['{0!s}_otp_pin_maxlength'.format(ttype.lower())] = {
                 'type': 'int',
-                'value': range(0, 32),
+                'value': list(range(0, 32)),
                 "desc": _("Set the maximum allowed PIN length of the {0!s}"
                           " token.").format(ttype.upper()),
                 'group': GROUP.PIN
             }
             pol[pin_scope]['{0!s}_otp_pin_minlength'.format(ttype.lower())] = {
                 'type': 'int',
-                'value': range(0, 32),
+                'value': list(range(0, 32)),
                 "desc": _("Set the minimum required PIN length of the {0!s}"
                           " token.").format(ttype.upper()),
                 'group': GROUP.PIN

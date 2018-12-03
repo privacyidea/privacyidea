@@ -481,7 +481,8 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("123", "ncs")
         self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: [a-zA-Z],Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]", c)
+        self.assertTrue("Missing character in PIN: [a-zA-Z]" in c, c)
+        self.assertTrue("Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]" in c, c)
 
         r, c = check_pin_policy("1234", "")
         self.assertFalse(r)

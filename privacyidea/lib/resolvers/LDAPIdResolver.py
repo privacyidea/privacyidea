@@ -82,6 +82,8 @@ from privacyidea.lib.utils import to_utf8, to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
+from operator import itemgetter
+from six import string_types
 
 CACHE = {}
 
@@ -202,7 +204,7 @@ def cache(func):
                 # Clean up the cache in the current resolver and the current function
                 _to_be_deleted = []
                 try:
-                    for user, cached_result in CACHE[resolver_id].get(func.func_name).iteritems():
+                    for user, cached_result in CACHE[resolver_id].get(func.func_name).items():
                         if now > cached_result.get("timestamp") + tdelta:
                             _to_be_deleted.append(user)
                 except RuntimeError:
@@ -424,7 +426,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
-                          attributes=self.userinfo.values())
+                          attributes=list(self.userinfo.values()))
             r = self.l.response
             r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
@@ -474,7 +476,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=to_utf8(userId),
                           search_scope=self.scope,
                           search_filter=u"(&" + self.searchfilter + u")",
-                          attributes=self.userinfo.values())
+                          attributes=list(self.userinfo.values()))
         else:
             search_userId = to_unicode(self._trim_user_id(userId))
             filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
@@ -483,7 +485,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
                               search_filter=filter,
-                              attributes=self.userinfo.values())
+                              attributes=list(self.userinfo.values()))
 
         r = self.l.response
         r = self._trim_result(r)
@@ -510,7 +512,7 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if isinstance(ldap_v, basestring):
+                        if isinstance(ldap_v, string_types):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
@@ -580,7 +582,7 @@ class IdResolver (UserIdResolver):
         filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
 
         # create search attributes
-        attributes = self.userinfo.values()
+        attributes = list(self.userinfo.values())
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
@@ -609,7 +611,7 @@ class IdResolver (UserIdResolver):
         """
         ret = []
         self._bind()
-        attributes = self.userinfo.values()
+        attributes = list(self.userinfo.values())
         ad_timestamp = get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
@@ -664,7 +666,8 @@ class IdResolver (UserIdResolver):
         and the name of the resolver.
         """
         s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
-                                          self.searchfilter, self.userinfo)
+                                           self.searchfilter,
+                                           sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
         return r
 
@@ -919,7 +922,7 @@ class IdResolver (UserIdResolver):
             if not l.bind():
                 raise Exception("Wrong credentials")
             # create searchattributes
-            attributes = yaml.safe_load(param["USERINFO"]).values()
+            attributes = list(yaml.safe_load(param["USERINFO"]).values())
             if uidtype.lower() != "dn":
                 attributes.append(str(uidtype))
             # search for users...
@@ -1030,7 +1033,7 @@ class IdResolver (UserIdResolver):
         :return: dict with attribute name as keys and values
         """
         ldap_attributes = {}
-        for fieldname, value in attributes.iteritems():
+        for fieldname, value in attributes.items():
             if self.map.get(fieldname):
                 if fieldname == "password":
                     # Variable value may be either a string or a list
@@ -1064,8 +1067,7 @@ class IdResolver (UserIdResolver):
         sha_hash.update(salt)
 
         # Create a base64 encoded string
-        digest_b64 = '{0}{1}'.format(sha_hash.digest(),
-                salt).encode('base64').strip()
+        digest_b64 = binascii.b2a_base64(sha_hash.digest() + salt).strip()
 
         # Tag it with SSHA
         tagged_digest = '{{SSHA}}{}'.format(digest_b64)
@@ -1085,7 +1087,7 @@ class IdResolver (UserIdResolver):
         modify_changes = {}
         uinfo = self.getUserInfo(uid)
 
-        for fieldname, value in attributes.iteritems():
+        for fieldname, value in attributes.items():
             if value:
                 if fieldname in uinfo:
                     modify_changes[fieldname] = [MODIFY_REPLACE, [value]]
