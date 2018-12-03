@@ -1,5 +1,5 @@
 myApp.factory("RegisterFactory", function ($http, $state, $rootScope,
-                                           registerUrl, inform) {
+                                           registerUrl, AuthFactory) {
     /**
      Each service - just like this service factory - is a singleton.
      */
