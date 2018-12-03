@@ -161,9 +161,9 @@ from operator import itemgetter
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
-from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -402,9 +402,9 @@ class PolicyClass(with_metaclass(Singleton, object)):
         the internal timestamp, then read the complete data
         :return:
         """
+        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=current_app.config.get(
-                    "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+                seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 self.policies = []

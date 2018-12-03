@@ -43,9 +43,11 @@ webservice!
 """
 
 import logging
+
 from .log import log_with
-from .config import (get_resolver_types, get_resolver_classes)
+from .config import (get_resolver_types, get_resolver_classes, update_config_object)
 from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.framework import get_request_local_store
 from ..models import (Resolver,
                       ResolverConfig)
 from ..api.lib.utils import required
@@ -54,8 +56,6 @@ from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
-from flask import g
-from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.utils import is_true
 #from privacyidea.lib.cache import cache
 
@@ -184,8 +184,8 @@ def get_resolver_list(filter_resolver_type=None,
     :rtype: Dictionary of the resolvers and their configuration
     """
     # We need to check if we need to update the config object
-    g.config_object = ConfigClass()
-    resolvers = g.config_object.resolver
+    config_object = update_config_object()
+    resolvers = config_object.resolver
     if filter_resolver_type:
         reduced_resolvers = {}
         for reso_name, reso in resolvers.items():
@@ -240,9 +240,10 @@ def delete_resolver(resolvername):
         reso.delete()
         ret = reso.id
     # Delete resolver object from cache
-    if 'resolver_objects' in g:
-        if g.resolver_objects.get(resolvername):
-            del(g.resolver_objects[resolvername])
+    store = get_request_local_store()
+    if 'resolver_objects' in store:
+        if resolvername in store['resolver_objects']:
+            del store['resolver_objects'][resolvername]
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
@@ -340,15 +341,17 @@ def get_resolver_object(resolvername):
         log.error("Can not find resolver with name {0!s} ".format(resolvername))
         return None
     else:
-        if 'resolver_objects' not in g:
-            g.resolver_objects = {}
-        if resolvername not in g.resolver_objects:
+        store = get_request_local_store()
+        if 'resolver_objects' not in store:
+            store['resolver_objects'] = {}
+        resolver_objects = store['resolver_objects']
+        if resolvername not in resolver_objects:
             # create the resolver instance and load the config
-            r_obj = g.resolver_objects[resolvername] = r_obj_class()
+            r_obj = resolver_objects[resolvername] = r_obj_class()
             if r_obj is not None:
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)
-        return g.resolver_objects[resolvername]
+        return resolver_objects[resolvername]
 
 @log_with(log)
 def pretestresolver(resolvertype, params):

@@ -36,12 +36,11 @@ The code is tested in tests/test_lib_config
 import sys
 import logging
 import inspect
-from flask import current_app, g
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-
+from privacyidea.lib.framework import get_request_local_store, get_app_config_value
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -109,9 +108,9 @@ class ConfigClass(with_metaclass(Singleton, object)):
         the internal timestamp, then read the complete data
         :return:
         """
+        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
-            self.timestamp + datetime.timedelta(seconds=current_app.config.get(
-                "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+            self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 self.config = {}
@@ -219,6 +218,29 @@ def get_privacyidea_config():
     return get_from_config()
 
 
+def update_config_object():
+    """
+    Ensure that the request-local store contains a config object.
+    If it already contains one, check for updated configuration.
+    :return: a ConfigClass object
+    """
+    store = get_request_local_store()
+    config_object = store['config_object'] = ConfigClass()
+    return config_object
+
+
+def get_config_object():
+    """
+    Return the request-local config object. If it does not exist yet, create it.
+    Currently, the config object is a singleton, so it is shared among threads.
+    :return: a ConfigClass object
+    """
+    store = get_request_local_store()
+    if 'config_object' not in store:
+        store['config_object'] = update_config_object()
+    return store['config_object']
+
+
 @log_with(log)
 #@cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
@@ -235,9 +257,9 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
-    g.config_object = ConfigClass()
-    return g.config_object.get_config(key=key, default=default, role=role,
-                                      return_bool=return_bool)
+    config_object = update_config_object()
+    return config_object.get_config(key=key, default=default, role=role,
+                                    return_bool=return_bool)
 
 
 #@cache.cached(key_prefix="resolver")
@@ -831,7 +853,6 @@ def get_prepend_pin():
     :return: True or False
     :rtype: bool
     """
-    from flask import g
     r = get_from_config(key="PrependPin", default=False, return_bool=True)
     return r
 
@@ -864,9 +885,7 @@ def get_privacyidea_node():
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
     :return: the destinct node name
     """
-    node_name = current_app.config.get("PI_NODE",
-                                       current_app.config.get("PI_AUDIT_SERVERNAME",
-                                                              "localnode"))
+    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
     return node_name
 
 
@@ -876,11 +895,8 @@ def get_privacyidea_nodes():
     :return: list of nodes
     """
     own_node_name = get_privacyidea_node()
-    nodes = current_app.config.get("PI_NODES", [])[:]
+    nodes = get_app_config_value("PI_NODES", [])[:]
     if own_node_name not in nodes:
         nodes.append(own_node_name)
     return nodes
 
-
-def get_app_config(key, default=None):
-    return current_app.config.get(key, default)

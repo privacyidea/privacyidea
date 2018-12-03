@@ -71,7 +71,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.lib.auth import get_db_admins
 from privacyidea.lib.error import HSMException
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 import base64
 import binascii
@@ -291,12 +291,7 @@ def set_security_module():
     Set the password for the security module
     """
     password = getParam(request.all_data, "password", required)
-    HSM = current_app.config["pi_hsm"]
-    hsm = HSM.get("obj")
-    if hsm.is_ready:
-        raise HSMException("HSM already set up.")
-
-    is_ready = hsm.setup_module({"password": password})
+    is_ready = set_hsm_password(password)
     res = {"is_ready": is_ready}
     g.audit_object.log({'success': res})
     return send_result(res)
@@ -309,8 +304,8 @@ def get_security_module():
     """
     Get the status of the security module.
     """
-    HSM = current_app.config["pi_hsm"]
-    is_ready = HSM.get("obj").is_ready
+    hsm = get_hsm(require_ready=False)
+    is_ready = hsm.is_ready
     res = {"is_ready": is_ready}
     g.audit_object.log({'success': res})
     return send_result(res)
