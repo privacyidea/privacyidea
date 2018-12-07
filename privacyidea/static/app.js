@@ -87,6 +87,9 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             $rootScope.$stateParams = $stateParams;
             gettextCatalog.setCurrentLanguage(browserLanguage);
             gettextCatalog.debug = true;
+
+            $rootScope.publicLink = "https://netknights.it/" + gettextCatalog.getCurrentLanguage() + "/OB2WE3DJMMFA";
+            $rootScope.privacyideaSupportLink = $rootScope.publicLink;
         }
     ]
 );
