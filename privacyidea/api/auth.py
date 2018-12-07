@@ -69,8 +69,10 @@ from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging
+import base64
 
 log = logging.getLogger(__name__)
+
 
 
 jwtauth = Blueprint('jwtauth', __name__)
@@ -302,6 +304,7 @@ def get_auth_token():
                         "username": loginname,
                         "realm": realm,
                         "log_level": log_level,
+                        "supportlink": base64.b32encode(role),
                         "rights": rights,
                         "menus": menus},
                        details=details)

@@ -335,6 +335,8 @@ angular.module("privacyideaApp")
             $scope.backend_log_level = data.result.value.log_level;
             $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
+            var lang = gettextCatalog.getCurrentLanguage();
+            $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/" + data.result.value.supportlink;
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;
             $scope.token_wizard_2nd = data.result.value.token_wizard_2nd;
@@ -382,6 +384,7 @@ angular.module("privacyideaApp")
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
         $scope.welcomeStep = 0;
+        $scope.privacyideaSupportLink = $rootScope.publicLink;
         $state.go("login");
         Idle.unwatch();
         // Jump to top when the policy is saved
