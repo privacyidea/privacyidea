@@ -462,3 +462,12 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
 New in version 2.21
+
+system_documentation
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to export a complete system documentation
+including resolvers and realm.
+The documentation is created as restructured text.
