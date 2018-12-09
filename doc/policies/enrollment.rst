@@ -211,6 +211,7 @@ should have. You can use
  * n: for digits
  * s: for special characters (!#$%&()*+,-./:;<=>?@[]^_)
  * C: for uppercase letters
+ * 8: Base58 character set
 
 **Example:**
 

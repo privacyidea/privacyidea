@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
+#  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add Base58
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenkind
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -73,7 +75,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password, is_true
+from privacyidea.lib.utils import generate_password, is_true, BASE58
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo)
@@ -1776,7 +1778,7 @@ def copy_token_realms(serial_from, serial_to):
 @log_with(log)
 @libpolicy(config_lost_token)
 def lost_token(serial, new_serial=None, password=None,
-               validity=10, contents="Ccns", pw_len=16, options=None):
+               validity=10, contents="8", pw_len=16, options=None):
     """
     This is the workflow to handle a lost token.
     The token <serial> is lost and will be disabled. A new token of type
@@ -1791,7 +1793,7 @@ def lost_token(serial, new_serial=None, password=None,
     :type validity: int
     :param contents: The contents of the generated password. "C": upper case
     characters, "c": lower case characters, "n": digits and "s": special
-    characters
+    characters, "8": base58
     :type contents: A string like "Ccn"
     :param pw_len: The length of the generated password
     :type pw_len: int
@@ -1824,6 +1826,8 @@ def lost_token(serial, new_serial=None, password=None,
             character_pool += string.digits
         if "s" in contents:
             character_pool += "!#$%&()*+,-./:;<=>?@[]^_"
+        if "8" in contents:
+            character_pool += BASE58
 
     if password is None:
         password = generate_password(size=pw_len, characters=character_pool)
