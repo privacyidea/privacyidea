@@ -46,10 +46,6 @@ class Monitoring(MonitoringBase):
     def __init__(self, config=None):
         self.name = "sqlstats"
         self.config = config or {}
-
-        # We can use "sqlstats" as the key because the SQLAudit connection
-        # string is fixed for a running privacyIDEA instance.
-        # In other words, we will not run into any problems with changing connect strings.
         self.engine = get_engine(self.name, self._create_engine)
         # create a configured "Session" class. ``scoped_session`` is not
         # necessary because we do not share session objects among threads.
@@ -83,7 +79,8 @@ class Monitoring(MonitoringBase):
             log.debug("Using no SQL pool_size.")
         return engine
 
-    def add_value(self, stats_key, stats_value, utc_timestamp, reset_values=False):
+    def add_value(self, stats_key, stats_value, timestamp, reset_values=False):
+        utc_timestamp = convert_timestamp_to_utc(timestamp)
         try:
             ms = MonitoringStats(utc_timestamp, stats_key, stats_value)
             self.session.add(ms)

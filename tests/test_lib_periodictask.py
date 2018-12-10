@@ -472,8 +472,8 @@ class BasePeriodicTaskTestCase(MyTestCase):
                 return True
 
         with self.assertRaises(ParameterError):
-            execute_task({}, "Test", {"key": "value"})
+            execute_task("Test", {"key": "value"})
 
         with mock.patch.dict(TASK_MODULES, values={"Test": _TestTask}):
-            ret = execute_task({}, "Test", {"key": "value"})
+            ret = execute_task("Test", {"key": "value"})
             self.assertTrue(ret)

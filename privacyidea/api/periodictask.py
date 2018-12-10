@@ -87,7 +87,7 @@ def get_taskmodule_options(taskmodule):
     :param taskmodule: Identifier of the task module
     :return: a dictionary mapping option keys to description dictionaries
     """
-    options = get_taskmodule(taskmodule, current_app.config).options
+    options = get_taskmodule(taskmodule).options
     g.audit_object.log({"success": True})
     return send_result(options)
 

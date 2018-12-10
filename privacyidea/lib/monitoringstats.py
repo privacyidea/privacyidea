@@ -29,7 +29,7 @@ This module is tested in tests/test_lib_monitoringstats.py
 import logging
 from dateutil.tz import tzlocal
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import convert_timestamp_to_utc, get_module_class
+from privacyidea.lib.utils import get_module_class
 from privacyidea.lib.framework import get_app_config
 import datetime
 
@@ -68,11 +68,8 @@ def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
     :return: id of the database entry
     """
     timestamp = timestamp or datetime.datetime.now(tzlocal())
-    # Convert timestamp to UTC for database
-    utc_timestamp = convert_timestamp_to_utc(timestamp)
-
     monitoring_obj = _get_monitoring()
-    monitoring_obj.add_value(stats_key, stats_value, utc_timestamp, reset_values)
+    monitoring_obj.add_value(stats_key, stats_value, timestamp, reset_values)
 
 
 def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):

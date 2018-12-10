@@ -50,10 +50,10 @@ class Monitoring(object):
         Return a list of tuples of (timestamp, value) for the requested stats_key.
 
         :param stats_key: Identifier of the stats
-        :param start_timestamp: utc start of the time frame
-        :type start_timestamp: datetime
-        :param end_timestamp:  utc end of the time frame
-        :type end_timestamp: datetime
+        :param start_timestamp: start of the time frame
+        :type start_timestamp: timezone aware datetime
+        :param end_timestamp:  end of the time frame
+        :type end_timestamp: timezone aware datetime
         :param date_strings: If set to True, the timestamps are returned as strings. Otherwise as python timestamp
         :return:
         """
@@ -70,24 +70,26 @@ class Monitoring(object):
     def delete(self, stats_key, start_timestamp, end_timestamp):
         """
         Delete all entries of the stats_key for the given time frame.
+        The start_timestamp and end_timestamp are also deleted.
 
         :param stats_key: Identifier of the stats
-        :param start_timestamp: utc beginning of the time frame
-        :type start_timestamp: datetime
-        :param end_timestamp: utc end of the time frame
-        :type end_timestamp: datetime
+        :param start_timestamp: beginning of the time frame
+        :type start_timestamp: timezone aware datetime
+        :param end_timestamp: end of the time frame
+        :type end_timestamp: timezone aware datetime
         :return: number of deleted entries
         """
         return 0
 
-    def add_value(self, stats_key, stats_value, utc_timestamp, reset_values=False):
+    def add_value(self, stats_key, stats_value, timestamp, reset_values=False):
         """
         This method adds a measurement point to the statistics key "stats_key".
         If reset_values is set to True, all old values of this stats_key are deleted.
 
         :param stats_key: Identifier of the stats
         :param stats_value: measured value
-        :param utc_timestamp: the timestamp of the measurement
+        :param timestamp: the timestamp of the measurement
+        :type timestamp: timezone aware datetime
         :param reset_values: boolean to indicate the reset
         :return: None
         """
