@@ -96,6 +96,9 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             //debug: console.log("Setting language to " + nlang);
             gettextCatalog.setCurrentLanguage(nlang);
             gettextCatalog.debug = true;
+
+            $rootScope.publicLink = "https://netknights.it/" + gettextCatalog.getCurrentLanguage() + "/support-link-public";
+            $rootScope.privacyideaSupportLink = $rootScope.publicLink;
         }
     ]
 );
