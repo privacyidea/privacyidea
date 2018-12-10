@@ -34,7 +34,6 @@ from privacyidea.models import MonitoringStats
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 import traceback
-from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from dateutil.tz import tzlocal, tzutc
 
 
@@ -155,8 +154,6 @@ class Monitoring(MonitoringBase):
             for ms in MonitoringStats.query.filter(and_(*conditions)). \
                     order_by(MonitoringStats.timestamp.asc()):
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
-                if date_strings:
-                    aware_timestamp = aware_timestamp.strftime(AUTH_DATE_FORMAT)
                 values.append((aware_timestamp, ms.stats_value))
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))

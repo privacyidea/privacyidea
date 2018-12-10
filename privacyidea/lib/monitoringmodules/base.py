@@ -45,7 +45,7 @@ class Monitoring(object):
         """
         return []
 
-    def get_values(self, stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
+    def get_values(self, stats_key, start_timestamp=None, end_timestamp=None):
         """
         Return a list of tuples of (timestamp, value) for the requested stats_key.
 
@@ -54,7 +54,6 @@ class Monitoring(object):
         :type start_timestamp: timezone aware datetime
         :param end_timestamp:  end of the time frame
         :type end_timestamp: timezone aware datetime
-        :param date_strings: If set to True, the timestamps are returned as strings. Otherwise as python timestamp
         :return:
         """
         return []
