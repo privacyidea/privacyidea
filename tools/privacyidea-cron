@@ -81,7 +81,7 @@ def run_task_on_node(ptask, node):
     """
     try:
         print_stdout(u"Running {!r} ...".format(ptask["name"]), end="")
-        result = execute_task(app.config, ptask["taskmodule"], ptask["options"])
+        result = execute_task(ptask["taskmodule"], ptask["options"])
     except Exception as e:
         print_stderr(u'Caught exception when running {!r}: {!r}'.format(ptask["name"], e))
         result = False
