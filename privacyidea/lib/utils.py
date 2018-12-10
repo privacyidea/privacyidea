@@ -66,6 +66,7 @@ else:  # pragma: no cover
 
 ENCODING = "utf-8"
 
+BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 def check_time_in_range(time_range, check_time=None):
     """

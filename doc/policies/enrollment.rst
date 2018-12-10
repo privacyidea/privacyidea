@@ -211,11 +211,17 @@ should have. You can use
  * n: for digits
  * s: for special characters (!#$%&()*+,-./:;<=>?@[]^_)
  * C: for uppercase letters
+ * 8: Base58 character set
 
 **Example:**
 
 The action *lostTokenPWLen=10, lostTokenPWContents=Cns* could generate a
 password like *AC#!49MK))*.
+
+.. note:: If you combine ``8`` with e.g. ``C`` there will be double characters
+   like "A", "B"... Thus, those characters will have a higher probability of being
+   part of the password. Also ``C`` would again add the character "I", which is
+   not part of Base58.
 
 lostTokenValid
 ~~~~~~~~~~~~~~

@@ -1563,7 +1563,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.LOSTTOKENPWCONTENTS: {
                 'type': 'str',
                 'desc': _('The contents of the temporary password, '
-                          'described by the characters C, c, n, s.')},
+                          'described by the characters C, c, n, s, 8.')},
             ACTION.LOSTTOKENVALID: {
                 'type': 'int',
                 'value': list(range(1, 61)),
