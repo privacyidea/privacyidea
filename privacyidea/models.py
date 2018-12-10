@@ -2786,4 +2786,4 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.timestamp = timestamp
         self.stats_key = key
         self.stats_value = value
-        self.save()
+        #self.save()

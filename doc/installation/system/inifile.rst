@@ -34,7 +34,7 @@ The file should contain the following contents::
    # This is used to sign the audit log
    PI_AUDIT_KEY_PRIVATE = '/home/cornelius/src/privacyidea/private.pem'
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
-   # PI_AUDIT_MODUL = <python audit module>
+   # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
@@ -121,6 +121,28 @@ If you by any reason want to avoid signing audit entries you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
 audit entries will not be signed and also the signature of audit entries will not be
 verified. Audit entries will appears with *signature* *fail*.
+
+.. _monitoring_modules:
+
+Monitoring parameters
+---------------------
+
+``PI_MONITORING_MODULE`` lets you specify an alternative statistics monitoring module.
+The monitoring module takes care of writing values with timestamps to a store.
+This is used e.g. by the :ref:`eventcounter` and :ref:`taskmodule_simplestats`.
+
+The first available monitoring module is ``privacyidea.lib.monitoringmodules.sqlstats``.
+It accepts the following additional parameters:
+
+``PI_MONITORING_SQL_URI`` can hold an alternative SQL connect string. If not specified the
+normal ``SQLALCHEMY_DATABASE_URI`` is used.
+
+``PI_MONITORING_POOL_SIZE`` (default 20) and ``PI_MONITORING_POOL_RECYCLE`` (default 600) let
+you configure pooling. It uses the settings from the above mentioned
+``PI_ENGINE_REGISTRY_CLASS``.
+
+.. note:: A SQL database is probably not the best database to store time series.
+   Other monitoring modules will follow.
 
 
 privacyIDEA Nodes

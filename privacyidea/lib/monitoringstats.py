@@ -27,16 +27,35 @@ database table "monitoringstats". This can be arbitrary data for time series of
 This module is tested in tests/test_lib_monitoringstats.py
 """
 import logging
-from dateutil.tz import tzlocal, tzutc
-import traceback
+from dateutil.tz import tzlocal
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import convert_timestamp_to_utc
-from privacyidea.models import MonitoringStats
-from sqlalchemy import and_, distinct
-from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+from privacyidea.lib.utils import get_module_class
+from privacyidea.lib.framework import get_app_config, get_request_local_store
 import datetime
 
 log = logging.getLogger(__name__)
+
+
+@log_with(log, log_entry=False)
+def _get_monitoring():
+    """
+    This wrapper function creates a new monitoring object based on the config
+    from the config file. The config file entry could look like this:
+
+        PI_MONITORING_MODULE = privacyidea.lib.monitoringmodule.sqlstats
+
+    Each monitoring module can have its own config values.
+
+    :return: Monitoring Object
+    """
+    store = get_request_local_store()
+    # check if the monitoring object is not yet in this request_store
+    if 'monitoring_object' not in store:
+        config = get_app_config()
+        monitoring_module = config.get("PI_MONITORING_MODULE", "privacyidea.lib.monitoringmodules.sqlstats")
+        monitoring = get_module_class(monitoring_module, "Monitoring")(config)
+        store['monitoring_object'] = monitoring
+    return store.get('monitoring_object')
 
 
 def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
@@ -53,13 +72,8 @@ def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
     :return: id of the database entry
     """
     timestamp = timestamp or datetime.datetime.now(tzlocal())
-    # Convert timestamp to UTC for database
-    utc_timestamp = convert_timestamp_to_utc(timestamp)
-    MonitoringStats(utc_timestamp, stats_key, stats_value)
-    if reset_values:
-        # Successfully saved the new stats entry, so remove old entries
-        MonitoringStats.query.filter(and_(MonitoringStats.stats_key == stats_key,
-                                          MonitoringStats.timestamp < utc_timestamp)).delete()
+    monitoring_obj = _get_monitoring()
+    monitoring_obj.add_value(stats_key, stats_value, timestamp, reset_values)
 
 
 def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
@@ -74,14 +88,8 @@ def delete_stats(stats_key, start_timestamp=None, end_timestamp=None):
     :type end_timestamp: timezone-aware datetime object
     :return: The number of deleted entries
     """
-    conditions = [MonitoringStats.stats_key == stats_key]
-    if start_timestamp:
-        utc_start_timestamp = convert_timestamp_to_utc(start_timestamp)
-        conditions.append(MonitoringStats.timestamp >= utc_start_timestamp)
-    if end_timestamp:
-        utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
-        conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
-    r = MonitoringStats.query.filter(and_(*conditions)).delete()
+    monitoring_obj = _get_monitoring()
+    r = monitoring_obj.delete(stats_key, start_timestamp, end_timestamp)
     return r
 
 
@@ -91,13 +99,11 @@ def get_stats_keys():
 
     :return: list of keys
     """
-    keys = []
-    for monStat in MonitoringStats.query.with_entities(MonitoringStats.stats_key).distinct():
-        keys.append(monStat.stats_key)
-    return keys
+    monitoring_obj = _get_monitoring()
+    return monitoring_obj.get_keys()
 
 
-def get_values(stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
+def get_values(stats_key, start_timestamp=None, end_timestamp=None):
     """
     Return a list of sets of (timestamp, value), ordered by timestamps in ascending order
 
@@ -106,25 +112,10 @@ def get_values(stats_key, start_timestamp=None, end_timestamp=None, date_strings
     :type start_timestamp: timezone-aware datetime object
     :param end_timestamp: the end of the timespan, inclusive
     :type end_timestamp: timezone-aware datetime object
-    :param date_strings: Return dates as strings formatted as AUTH_DATE_FORMAT
     :return: list of tuples, with timestamps being timezone-aware UTC datetime objects
     """
-    values = []
-    conditions = [MonitoringStats.stats_key == stats_key]
-    if start_timestamp:
-        utc_start_timestamp = convert_timestamp_to_utc(start_timestamp)
-        conditions.append(MonitoringStats.timestamp >= utc_start_timestamp)
-    if end_timestamp:
-        utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
-        conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
-    for ms in MonitoringStats.query.filter(and_(*conditions)).\
-            order_by(MonitoringStats.timestamp.asc()):
-        aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
-        if date_strings:
-            aware_timestamp = aware_timestamp.strftime(AUTH_DATE_FORMAT)
-        values.append((aware_timestamp, ms.stats_value))
-
-    return values
+    monitoring_obj = _get_monitoring()
+    return monitoring_obj.get_values(stats_key, start_timestamp, end_timestamp)
 
 
 def get_last_value(stats_key):
@@ -134,10 +125,6 @@ def get_last_value(stats_key):
     :param stats_key:
     :return: The value as a scalar or None
     """
-    val = None
-    s = MonitoringStats.query.filter(MonitoringStats.stats_key == stats_key).\
-        order_by(MonitoringStats.timestamp.desc()).first()
-    if s:
-        val = s.stats_value
-    return val
+    monitoring_obj = _get_monitoring()
+    return monitoring_obj.get_last_value(stats_key)
 

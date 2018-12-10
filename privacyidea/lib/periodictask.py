@@ -26,11 +26,12 @@ from datetime import datetime
 from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
-from privacyidea.lib.error import ServerError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.models import PeriodicTask
+from privacyidea.lib.framework import get_app_config
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def get_available_taskmodules():
     return list(TASK_MODULES.keys())
 
 
-def get_taskmodule(identifier):
+def get_taskmodule(identifier, config=None):
     """
     Return an instance of the given task module. Raise ParameterError if it does not exist.
     :param identifier: identifier of the task module
@@ -56,7 +57,8 @@ def get_taskmodule(identifier):
     if identifier not in TASK_MODULES:
         raise ParameterError(u"Unknown task module: {!r}".format(identifier))
     else:
-        return TASK_MODULES[identifier]()
+        r = TASK_MODULES[identifier](config=get_app_config())
+        return r
 
 
 def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
@@ -262,6 +264,7 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
 def execute_task(taskmodule, params):
     """
     Given a task module name, run the task with the given parameters.
+    :param config: The app configuration
     :param taskmodule: unicode determining the task module
     :param params: dictionary mapping task option keys (unicodes) to unicodes (or None)
     :return: boolean returned by the task

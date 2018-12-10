@@ -19,7 +19,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
         Mock a UnitTest task module, use as ``with self.mock_task_module() as module:``
         """
         taskmodule = mock.MagicMock()
-        cls = lambda: taskmodule
+        cls = lambda config: taskmodule
         with mock.patch.dict(TASK_MODULES, {"UnitTest": cls}, clear=True):
             yield taskmodule
 

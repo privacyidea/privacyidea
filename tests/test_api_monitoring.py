@@ -3,6 +3,7 @@ from .base import MyTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
+from flask import current_app
 
 
 class APIMonitoringTestCase(MyTestCase):

@@ -852,9 +852,9 @@ class TokenModelTestCase(MyTestCase):
         key1 = "user_count"
         key2 = "successful_auth"
         utcnow = datetime.utcnow()
-        MonitoringStats(utcnow - timedelta(seconds=1), key1, 15)
-        MonitoringStats(utcnow, key1, 21)
-        MonitoringStats(utcnow, key2, 123)
+        MonitoringStats(utcnow - timedelta(seconds=1), key1, 15).save()
+        MonitoringStats(utcnow, key1, 21).save()
+        MonitoringStats(utcnow, key2, 123).save()
 
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 2)
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 1)
