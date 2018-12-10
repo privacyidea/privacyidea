@@ -73,7 +73,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-
 jwtauth = Blueprint('jwtauth', __name__)
 
 
