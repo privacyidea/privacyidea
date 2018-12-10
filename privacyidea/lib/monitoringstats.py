@@ -30,7 +30,7 @@ import logging
 from dateutil.tz import tzlocal
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import get_module_class
-from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.framework import get_app_config, get_request_local_store
 import datetime
 
 log = logging.getLogger(__name__)
@@ -48,10 +48,14 @@ def _get_monitoring():
 
     :return: Monitoring Object
     """
-    config = get_app_config()
-    monitoring_module = config.get("PI_MONITORING_MODULE", "privacyidea.lib.monitoringmodules.sqlstats")
-    monitoring = get_module_class(monitoring_module, "Monitoring")(config)
-    return monitoring
+    store = get_request_local_store()
+    # check if the monitoring object is not yet in this request_store
+    if 'monitoring_object' not in store:
+        config = get_app_config()
+        monitoring_module = config.get("PI_MONITORING_MODULE", "privacyidea.lib.monitoringmodules.sqlstats")
+        monitoring = get_module_class(monitoring_module, "Monitoring")(config)
+        store['monitoring_object'] = monitoring
+    return store.get('monitoring_object')
 
 
 def write_stats(stats_key, stats_value, timestamp=None, reset_values=False):
