@@ -38,18 +38,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+
+from __future__ import print_function
+import os
 import sys
 
+import copy
+import logging
 from flask import _app_ctx_stack
 from huey.consumer_options import ConsumerConfig
 from huey.consumer_options import OptionParserHandler
 
-from privacyidea.app import create_app
+from privacyidea.app import create_app, PI_LOGGING_CONFIG
 from privacyidea.lib.queue import get_job_queue, HueyQueue
 
-
-def err(s):
-    sys.stderr.write('\033[91m%s\033[0m\n' % s)
+DEFAULT_LOGFILE = "privacyidea-queue.log"
 
 
 def make_push_app_context(app):
@@ -64,14 +67,27 @@ def make_push_app_context(app):
 
 def pop_app_context(task, ret, exc):
     """
-    huey post-execute hook that pops the top elemen of the app context stack.
+    huey post-execute hook that pops the top element of the app context stack.
     """
     ctx = _app_ctx_stack.top
     ctx.pop()
 
 
+def make_logging_config(logfile, loglevel):
+    config = copy.deepcopy(PI_LOGGING_CONFIG)
+    config["handlers"]["file"]["filename"] = logfile
+    config["handlers"]["file"]["level"] = loglevel
+    config["loggers"]["privacyidea"]["level"] = loglevel
+    config["loggers"]["huey"] = {
+        "handlers": ["file"],
+        "qualname": "huey",
+        "level": loglevel,
+    }
+    return config
+
+
 def consumer_main():
-    app = create_app(config_name='production')
+    app = create_app(config_name='production', silent=True)
 
     with app.app_context():
         queue = get_job_queue()
@@ -86,7 +102,32 @@ def consumer_main():
                if v is not None}
     config = ConsumerConfig(**options)
     config.validate()
-    config.setup_logger()
+    # setup logging:
+    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    # If the file does not exist, we reconfigure logging.
+    if os.path.isfile(log_config_file):
+        # If PI_LOGCONFIG points to an existing file, the user is responsible for configuring
+        # huey logging in the logconfig file. In this case, we do nothing, because logging
+        # has already been set up by ``create_app``.
+        # But we ensure that the user hasn't passed ``-v``, ``-q`` or ``-l``
+        if config.logfile is not None or config.verbose is not None:
+            sys.stderr.write("-v, -q and -l are unsupported if PI_LOGCONFIG is used. Exiting.\n")
+            sys.exit(1)
+        print(u"Using logging configuration from {!r}".format(log_config_file))
+    else:
+        # If a logfile was given, we write to that logfile. If not, we write to ``privacyidea-queue.log``.
+        if config.logfile is not None:
+            logfile = config.logfile
+        else:
+            logfile = DEFAULT_LOGFILE
+        # We determine the loglevel as follows: ``-v`` or ``-q`` take priority, then we look at PI_LOGLEVEL.
+        if config.verbose is not None:
+            loglevel = config.loglevel
+        else:
+            loglevel = app.config.get("PI_LOGLEVEL", logging.INFO)
+        log_config = make_logging_config(logfile, loglevel)
+        logging.config.dictConfig(log_config)
+        print(u"Logging to {!r}".format(logfile))
 
     queue.huey.register_pre_execute('push_app_context', make_push_app_context(app))
     queue.huey.register_post_execute('pop_app_context', pop_app_context)
