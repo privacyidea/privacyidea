@@ -19,13 +19,17 @@
 from flask import current_app
 
 from privacyidea.lib.queue.collector import JobCollector
-from privacyidea.lib.queue.huey_queue import HueyQueue
 from privacyidea.lib.queue.null import NullQueue
 
 QUEUE_CLASSES = {
-    "huey": HueyQueue,
     "null": NullQueue,
 }
+
+try:
+    from privacyidea.lib.queue.huey_queue import HueyQueue
+    QUEUE_CLASSES["huey"] = HueyQueue
+except ImportError as e:
+    pass
 
 #: A singleton is fine here, because it is only used at
 #: import time and once when a new app is created.
