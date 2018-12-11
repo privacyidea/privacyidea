@@ -783,18 +783,13 @@ def create_hsm_object(config):
     :param config: A configuration dictionary
     :return: A HSM object
     """
+    # TODO: We need this to resolve the circular dependency between utils and crypto.
+    from privacyidea.lib.utils import get_module_class
     hsm_module_name = config.get("PI_HSM_MODULE",
                                  "privacyidea.lib.security.default.DefaultSecurityModule")
-    module_parts = hsm_module_name.split(".")
-    package_name = ".".join(module_parts[:-1])
-    class_name = module_parts[-1]
-    mod = __import__(package_name, globals(), locals(), [class_name])
-    hsm_class = getattr(mod, class_name)
+    package_name, class_name = hsm_module_name.rsplit(".", 1)
+    hsm_class = get_module_class(package_name, class_name, "setup_module")
     log.info("initializing HSM class: {0!s}".format(hsm_class))
-    if not hasattr(hsm_class, "setup_module"):  # pragma: no cover
-        raise NameError("Security Module AttributeError: " + package_name + "." +
-                        class_name + " instance has no attribute 'setup_module'")
-
     hsm_parameters = {}
     if class_name == "DefaultSecurityModule":
         hsm_parameters = {"file": config.get("PI_ENCFILE")}
