@@ -525,6 +525,8 @@ def get_token_type(serial):
     :return: tokentype
     :rtype: string
     """
+    if serial and "*" in serial:
+        return ""
     try:
         return get_one_token(serial=serial).type
     except ResourceNotFoundError:
@@ -588,6 +590,9 @@ def get_realms_of_token(serial, only_first_realm=False):
     :return: list of the realm names
     :rtype: list
     """
+    if serial and "*" in serial:
+        return []
+
     try:
         tokenobject = get_one_token(serial=serial)
         realms = tokenobject.get_realms()
