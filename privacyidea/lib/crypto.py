@@ -783,7 +783,7 @@ def create_hsm_object(config):
     :param config: A configuration dictionary
     :return: A HSM object
     """
-    # TODO: We need this to resolve the circular dependency between utils and crypto.
+    # We need this to resolve the circular dependency between utils and crypto.
     from privacyidea.lib.utils import get_module_class
     hsm_module_name = config.get("PI_HSM_MODULE",
                                  "privacyidea.lib.security.default.DefaultSecurityModule")
