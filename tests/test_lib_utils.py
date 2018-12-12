@@ -523,3 +523,12 @@ class UtilsTestCase(MyTestCase):
         # Fails to return the class, if the method does not exist
         self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
                           "this_method_does_not_exist")
+
+        # Fails if the class does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.sqlaudit", "DoesNotExist")
+
+        # Fails if the package does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
+
