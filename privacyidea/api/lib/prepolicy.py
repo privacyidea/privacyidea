@@ -69,7 +69,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
 from privacyidea.lib.utils import (generate_password, get_client_ip,
-                                   parse_timedelta, is_true, check_pin_policy)
+                                   parse_timedelta, is_true, check_pin_policy, get_module_class)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -162,10 +162,8 @@ def init_random_pin(request=None, action=None):
         #  PIN in several ways!
         for handle_pol in handle_pols:
             log.debug("Handle the random PIN with the class {0!s}".format(handle_pol))
-            packageName = ".".join(handle_pol.split(".")[:-1])
-            className = handle_pol.split(".")[-1:][0]
-            mod = __import__(packageName, globals(), locals(), [className])
-            pin_handler_class = getattr(mod, className)
+            package_name, class_name = handle_pol.rsplit(".", 1)
+            pin_handler_class = get_module_class(package_name, class_name)
             pin_handler = pin_handler_class()
             # Send the PIN
             pin_handler.send(request.all_data["pin"],

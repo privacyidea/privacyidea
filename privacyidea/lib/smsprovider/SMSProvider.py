@@ -35,7 +35,7 @@ The code is tested in tests/test_lib_smsprovider
 """
 
 from privacyidea.models import SMSGateway, SMSGatewayOption
-from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils import fetch_one_resource, get_module_class
 import logging
 log = logging.getLogger(__name__)
 
@@ -146,14 +146,7 @@ def get_sms_provider_class(packageName, className):
         if not an error is thrown
     
     """
-    mod = __import__(packageName, globals(), locals(), [className])
-    klass = getattr(mod, className)
-    if not hasattr(klass, "submit_message"):
-        raise NameError("SMSProvider AttributeError: " + packageName + "." +
-                        className + " instance of SMSProvider has no method"
-                        " 'submitMessage'")
-    else:
-        return klass
+    return get_module_class(packageName, className, "submit_message")
 
 
 def set_smsgateway(identifier, providermodule, description=None,
@@ -235,9 +228,8 @@ def create_sms_instance(identifier):
     :return: SMS Provider object
     """
     gateway_definition = get_smsgateway(identifier)[0]
-    sms_klass = get_sms_provider_class(
-        ".".join(gateway_definition.providermodule.split(".")[:-1]),
-        gateway_definition.providermodule.split(".")[-1])
+    package_name, class_name = gateway_definition.providermodule.rsplit(".", 1)
+    sms_klass = get_sms_provider_class(package_name, class_name)
     sms_object = sms_klass(smsgateway=gateway_definition)
     return sms_object
 

@@ -27,6 +27,8 @@ This is the library with base functions for privacyIDEA.
 This module is tested in tests/test_lib_utils.py
 """
 import logging
+from importlib import import_module
+
 log = logging.getLogger(__name__)
 import binascii
 import base64
@@ -1242,7 +1244,9 @@ def get_module_class(package_name, class_name, check_method=None):
         if not an error is thrown
 
     """
-    mod = __import__(package_name, globals(), locals(), [class_name])
+    mod = import_module(package_name)
+    if not hasattr(mod, class_name):
+        raise ImportError(u"{0} has no attribute {1}".format(package_name, class_name))
     klass = getattr(mod, class_name)
     log.debug("klass: {0!s}".format(klass))
     if check_method and not hasattr(klass, check_method):
