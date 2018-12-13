@@ -85,6 +85,7 @@ from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
 from six import string_types
 
+CENSORED = "__CENSORED__"
 CACHE = {}
 
 log = logging.getLogger(__name__)

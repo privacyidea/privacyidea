@@ -77,7 +77,7 @@ def get_resolvers():
         editable = True
     elif editable == "0":
         editable = False
-    res = get_resolver_list(filter_resolver_type=typ, editable=editable)
+    res = get_resolver_list(filter_resolver_type=typ, editable=editable, censor=True)
     g.audit_object.log({"success": True})
     return send_result(res)
 

@@ -2233,6 +2233,13 @@ class ResolverTestCase(MyTestCase):
         # Check that the email is NOT contained in the UI
         self.assertTrue("email" not in ui, ui)
 
+    def test_14_censor_resolver(self):
+        reso_list = get_resolver_list()
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "ldaptest")
+        reso_list = get_resolver_list(censor=True)
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "__CENSORED__")
+
+
 class PasswordHashTestCase(MyTestCase):
     """
     Test the password hashing in the SQL database

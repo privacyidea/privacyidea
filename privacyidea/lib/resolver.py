@@ -171,7 +171,8 @@ def save_resolver(params):
 #@cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None,
-                      editable=None):
+                      editable=None,
+                      censor=False):
     """
     Gets the list of configured resolvers from the database
 
@@ -181,6 +182,9 @@ def get_resolver_list(filter_resolver_type=None,
     :type filter_resolver_name: basestring
     :param editable: Whether only return editable resolvers
     :type editable: bool
+    :param censor: censor sensitive data. Each resolver class decides on its own,
+        which data should be censored.
+    :type censor: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
     # We need to check if we need to update the config object
@@ -213,6 +217,10 @@ def get_resolver_list(filter_resolver_type=None,
                 if not check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
+    if censor:
+        for reso_name, reso in resolvers.items():
+            for censor_key in reso.get("__CENSOR_KEYS__", []):
+                reso["data"][censor_key] = "__CENSORED__"
 
     return resolvers
 
