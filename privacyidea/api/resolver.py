@@ -55,21 +55,20 @@ log = logging.getLogger(__name__)
 resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 
 
-# ----------------------------------------------------------------------
-#
-#   Resolver methods
-#
-
 @resolver_blueprint.route('/', methods=['GET'])
+@resolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
-def get_resolvers():
+def get_resolvers(resolver=None):
     """
-    returns a json list of all resolver.
+    returns a json list of the specified resolvers.
 
+    :param resolver: the name of the resolver
+    :type resolver: basestring
     :param type: Only return resolvers of type (like passwdresolver..)
     :type type: basestring
     :param editable: Set to "1" if only editable resolvers should be returned.
     :type editable: basestring
+    :return: a json result with the configuration of resolvers
     """
     typ = getParam(request.all_data, "type", optional)
     editable = getParam(request.all_data, "editable", optional)
@@ -77,8 +76,13 @@ def get_resolvers():
         editable = True
     elif editable == "0":
         editable = False
-    res = get_resolver_list(filter_resolver_type=typ, editable=editable, censor=True)
-    g.audit_object.log({"success": True})
+
+    res = get_resolver_list(filter_resolver_name=resolver,
+                            filter_resolver_type=typ,
+                            editable=editable,
+                            censor=True)
+    g.audit_object.log({"success": True,
+                        "info": resolver})
     return send_result(res)
 
 
@@ -154,23 +158,6 @@ def delete_resolver_api(resolver=None):
     """
     res = delete_resolver(resolver)
     g.audit_object.log({"success": res,
-                        "info": resolver})
-
-    return send_result(res)
-
-
-@resolver_blueprint.route('/<resolver>', methods=['GET'])
-@log_with(log)
-def get_resolver(resolver=None):
-    """
-    This function retrieves the definition of a single resolver.
-
-    :param resolver: the name of the resolver
-    :return: a json result with the configuration of a specified resolver
-    """
-    res = get_resolver_list(filter_resolver_name=resolver, censor=True)
-
-    g.audit_object.log({"success": True,
                         "info": resolver})
 
     return send_result(res)
