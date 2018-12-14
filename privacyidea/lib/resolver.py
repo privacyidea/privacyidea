@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
-#  2016-04-08 Cornelius Kölbel <cornelus@privacyidea.org>
+#  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add censor-password functionality
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             simplify repetetive unequal checks
 #
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -57,8 +59,8 @@ from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
 from privacyidea.lib.utils import is_true
-#from privacyidea.lib.cache import cache
 
+CENSORED = "__CENSORED__"
 log = logging.getLogger(__name__)
 
 
@@ -154,7 +156,11 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
-            value = encryptPassword(value)
+            if value == CENSORED:
+                continue
+            else:
+                value = encryptPassword(value)
+
         ResolverConfig(resolver_id=resolver_id,
                        Key=key,
                        Value=value,
@@ -220,7 +226,7 @@ def get_resolver_list(filter_resolver_type=None,
     if censor:
         for reso_name, reso in resolvers.items():
             for censor_key in reso.get("__CENSOR_KEYS__", []):
-                reso["data"][censor_key] = "__CENSORED__"
+                reso["data"][censor_key] = CENSORED
 
     return resolvers
 
@@ -372,6 +378,16 @@ def pretestresolver(resolvertype, params):
     :type params: dict
     :return:
     """
+    # If an already saved resolver is tested again, the password
+    # could be "__CENSORED__". In this case we use the old, saved password.
+    if params.get("resolver"):
+        old_config_list = get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
+        old_config = old_config_list.get(params.get("resolver")) or {}
+        for key in old_config.get("__CENSOR_KEYS__"):
+            if params.get(key) == CENSORED:
+                # Overwrite with the value from the database
+                params[key] = old_config.get("data").get(key)
+
     # determine the class by the given type
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)

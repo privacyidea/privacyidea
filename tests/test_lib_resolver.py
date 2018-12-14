@@ -28,7 +28,8 @@ from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
-                                      get_resolver_object, pretestresolver)
+                                      get_resolver_object, pretestresolver,
+                                      CENSORED)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 
@@ -666,33 +667,31 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_00_testconnection(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        success, desc = \
-            pretestresolver("ldapresolver", {'LDAPURI':
-                                                 'ldap://localhost',
-                                             'LDAPBASE': 'o=test',
-                                             'BINDDN':
-                                                 'cn=manager,'
-                                                 'ou=example,'
-                                                 'o=test',
-                                             'BINDPW': 'ldaptest',
-                                             'LOGINNAMEATTRIBUTE': 'cn',
-                                             'LDAPSEARCHFILTER':
-                                                 '(cn=*)',
-                                             'USERINFO': '{ '
-                                                         '"username": "cn",'
-                                                         '"phone" '
-                                                         ': '
-                                                         '"telephoneNumber", '
-                                                         '"mobile" : "mobile"'
-                                                         ', '
-                                                         '"email" '
-                                                         ': '
-                                                         '"mail", '
-                                                         '"surname" : "sn", '
-                                                         '"givenname" : '
-                                                         '"givenName" }',
-                                             'UIDTYPE': 'DN'})
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN'}
+        success, desc = pretestresolver("ldapresolver", params)
         self.assertTrue(success, (success, desc))
+
+        # Now we test a resolver, that is already saved in the database
+        # But the UI sends the __CENSORED__ password
+        params["resolver"] = "testname1"
+        params["type"] = "ldapresolver"
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Now check the resolver again
+        params["BINDPW"] = CENSORED
+        success, desc = pretestresolver("ldapresolver", params)
+        self.assertTrue(success)
+        r = delete_resolver("testname1")
+        self.assertTrue(r)
 
     @ldap3mock.activate
     def test_01_LDAP_DN(self):

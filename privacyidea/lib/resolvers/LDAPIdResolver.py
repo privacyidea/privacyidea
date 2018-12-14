@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add censored password functionality
 #  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add configurable multi-value-attributes
 #             with the help of Nomen Nescio
@@ -85,7 +87,6 @@ from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
 from six import string_types
 
-CENSORED = "__CENSORED__"
 CACHE = {}
 
 log = logging.getLogger(__name__)
@@ -872,12 +873,9 @@ class IdResolver (UserIdResolver):
         """
         This function lets you test the to be saved LDAP connection.
 
-        
-
         :param param: A dictionary with all necessary parameter to test
                         the connection.
         :type param: dict
-
         :return: Tuple of success and a description
         :rtype: (bool, string)
 

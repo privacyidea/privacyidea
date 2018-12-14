@@ -168,12 +168,13 @@ def get_resolver(resolver=None):
     :param resolver: the name of the resolver
     :return: a json result with the configuration of a specified resolver
     """
-    res = get_resolver_list(filter_resolver_name=resolver)
+    res = get_resolver_list(filter_resolver_name=resolver, censor=True)
 
     g.audit_object.log({"success": True,
                         "info": resolver})
 
     return send_result(res)
+
 
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)

@@ -223,7 +223,6 @@ class IdResolver (UserIdResolver):
         :param param: A dictionary with all necessary parameter to test the
                         connection.
         :type param: dict
-        
         :return: Tuple of success and a description
         :rtype: (bool, string)
         

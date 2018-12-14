@@ -1,11 +1,11 @@
 from __future__ import print_function
 import json
 from .base import MyTestCase
-from privacyidea.lib.error import (ParameterError, ConfigAdminError,
-                                   HSMException)
+
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwords"
@@ -293,6 +293,43 @@ class APIConfigTestCase(MyTestCase):
                             detail.get("description"),
                             detail.get("description"))
     """
+    def test_08_no_ldap_password(self):
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'type': 'ldapresolver',
+                  'resolver': 'testL'}
+        r = save_resolver(params)
+        self.assertTrue(r)
+        with self.app.test_request_context('/resolver/testL',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"] is True, result)
+            data = result["value"]["testL"]["data"]
+            self.assertEqual(data.get("BINDPW"), CENSORED)
+
+        with self.app.test_request_context('/resolver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"] is True, result)
+            data = result["value"]["testL"]["data"]
+            self.assertEqual(data.get("BINDPW"), CENSORED)
+
+        r = delete_resolver(params.get("resolver"))
+        self.assertTrue(r)
 
     def test_08_resolvers(self):
         with self.app.test_request_context('/resolver/resolver1',
