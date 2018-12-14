@@ -46,6 +46,7 @@ import string
 from .log import log_with
 from .error import HSMException
 import binascii
+import six
 import ctypes
 from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
@@ -120,8 +121,7 @@ class SecretObj(object):
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
         enc_otp_key = encrypt(bhOtpKey, self.iv)
-        otpKeyEnc = binascii.hexlify(enc_otp_key)
-        return (otpKeyEnc == self.val)
+        return (enc_otp_key == self.val)
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
@@ -254,14 +254,36 @@ class SecretObj(object):
 #                         salt=bSalt, rounds=iterations)
 #     return key
 
+def _to_bytes(s):
+    """
+    Convert string to bytes if it isn't already
+    :param s: string to convert
+    :type s: str, bytes, unicode
+    :return: the converted string
+    :rtype: bytes
+    """
+    if isinstance(s, six.text_type):
+        return s.encode('utf8')
+    return s
+
 
 @log_with(log, log_entry=False, log_exit=False)
 def hash(val, seed, algo=None):
+    """
+
+    :param val: value to hash
+    :type val: bytes, str, unicode
+    :param seed: seed for the hash
+    :type seed: bytes, str, unicode
+    :param algo:
+    :return: the hexlified hash value calculated from hash and seed
+    :rtype: str
+    """
     log.debug('hash()')
     m = sha256()
-    m.update(val.encode('utf-8'))
-    m.update(seed)
-    return m.digest()
+    m.update(_to_bytes(val))
+    m.update(_to_bytes(seed))
+    return binascii.hexlify(m.digest()).decode('utf8')
 
 
 def hash_with_pepper(password, rounds=10023, salt_size=10):
@@ -348,9 +370,14 @@ def encryptPassword(password):
 
 @log_with(log, log_entry=False)
 def encryptPin(cryptPin):
+    """
+    :param cryptPin: the pin to encrypt
+    :type cryptPin: bytes, str, unicode
+    :return: the encrypted pin
+    :rtype: str
+    """
     hsm = get_hsm()
-    ret = hsm.encrypt_pin(cryptPin)
-    return ret
+    return hsm.encrypt_pin(_to_bytes(cryptPin)).decode('utf8')
 
 
 @log_with(log, log_exit=False)
@@ -389,29 +416,35 @@ def decryptPassword(cryptPass, convert_unicode=False):
 
 @log_with(log, log_exit=False)
 def decryptPin(cryptPin):
+    """
+
+    :param cryptPin: the encrypted pin
+    :type cryptPin: str, bytes, unicode
+    :return: the decrypted pin
+    :rtype: str
+    """
     hsm = get_hsm()
-    ret = hsm.decrypt_pin(cryptPin)
-    return ret
+    return hsm.decrypt_pin(_to_bytes(cryptPin)).decode('utf8')
 
 
 @log_with(log, log_entry=False)
 def encrypt(data, iv, id=0):
     '''
-    encrypt a variable from the given input with an initialiation vector
+    encrypt a variable from the given input with an initialisation vector
 
-    :param input: buffer, which contains the value
-    :type  input: buffer of bytes
-    :param iv:    initilaitation vector
-    :type  iv:    buffer (20 bytes random)
-    :param id:    contains the id of which key of the keyset should be used
-    :type  id:    int
-    :return:      encryted buffer
-
+    :param data: buffer, which contains the value
+    :type  data: bytes
+    :param iv:   initialisation vector
+    :type  iv:   bytes
+    :param id:   contains the id of which key of the keyset should be used
+    :type  id:   int
+    :return:     encryted and hexlified data
+    :rtype: str
 
     '''
     hsm = get_hsm()
-    ret = hsm.encrypt(data, iv, id)
-    return ret
+    ret = hsm.encrypt(_to_bytes(data), _to_bytes(iv), id)
+    return binascii.hexlify(ret).decode('utf8')
 
 
 @log_with(log, log_exit=False)
@@ -517,14 +550,15 @@ def geturandom(length=20, hex=False):
     :param hex: convert result to hexstring
     :type hex: bool
 
-    :return: buffer of bytes
+    :return:
+    :rtype: bytes, unicode
 
     '''
     hsm = get_hsm()
     ret = hsm.random(length)
         
     if hex:
-        ret = binascii.hexlify(ret)
+        ret = binascii.hexlify(ret).decode('utf8')
     return ret
 
 # some random functions based on geturandom #################################

@@ -61,9 +61,9 @@ class SecurityModuleTestCase(MyTestCase):
         config = current_app.config
         hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE")})
 
-        cipher = hsm.encrypt("data", "iv12345678901234")
-        text = hsm.decrypt(cipher, "iv12345678901234")
-        self.assertTrue(text == "data", text)
+        cipher = hsm.encrypt(b"data", b"iv12345678901234")
+        text = hsm.decrypt(cipher, b"iv12345678901234")
+        self.assertTrue(text == b"data", text)
 
         cipher = hsm.encrypt_pin("data")
         text = hsm.decrypt_pin(cipher)

@@ -173,7 +173,7 @@ class DefaultSecurityModule(SecurityModule):
             raise HSMException("no secret file defined: PI_ENCFILE!")
 
         # We determine, if the file is encrypted.
-        with open(config.get("file")) as f:
+        with open(config.get("file"), 'rb') as f:
             cipher = f.read()
 
         if len(cipher) > 100:
@@ -227,7 +227,7 @@ class DefaultSecurityModule(SecurityModule):
 
         else:
             # Only read the key with the slot_id
-            with open(self.secFile) as f:
+            with open(self.secFile, 'rb') as f:
                 for _i in range(0, slot_id + 1):
                     secret = f.read(32)
 
@@ -290,17 +290,17 @@ class DefaultSecurityModule(SecurityModule):
         security module methods: encrypt
 
         :param data: the data that is to be encrypted
-        :type data: byte string
+        :type data: bytes
 
         :param iv: initialisation vector
-        :type iv: random bytes
+        :type iv: bytes
 
         :param slot_id: slot of the key array. The key file contains 96
             bytes, which are made up of 3 32byte keys.
         :type slot_id: int
 
         :return: encrypted data
-        :rtype:  byte string
+        :rtype:  bytes
         """
         if self.is_ready is False:
             raise HSMException('setup of security module incomplete')
@@ -308,9 +308,9 @@ class DefaultSecurityModule(SecurityModule):
         key = self._get_secret(slot_id)
         # convert input to ascii, so we can securely append bin data
         input_data = binascii.b2a_hex(data)
-        input_data += u"\x01\x02"
+        input_data += b"\x01\x02"
         padding = (16 - len(input_data) % 16) % 16
-        input_data += padding * "\0"
+        input_data += padding * b"\0"
         aes = AES.new(key, AES.MODE_CBC, iv)
 
         res = aes.encrypt(input_data)
@@ -377,16 +377,16 @@ class DefaultSecurityModule(SecurityModule):
         Decrypt the given data with the key from the key slot
 
         :param input_data: the to be decrypted data
-        :type input_data: byte string
+        :type input_data: bytes
 
         :param iv: initialisation vector (salt)
-        :type iv: random bytes
+        :type iv: bytes
 
         :param slot_id: slot of the key array
         :type slot_id: int
 
         :return: decrypted data
-        :rtype: byte string
+        :rtype: bytes
         """
         if self.is_ready is False:
             raise HSMException('setup of security module incomplete')
@@ -394,7 +394,7 @@ class DefaultSecurityModule(SecurityModule):
         key = self._get_secret(slot_id)
         aes = AES.new(key, AES.MODE_CBC, iv)
         output = aes.decrypt(input_data)
-        eof = output.rfind(u"\x01\x02")
+        eof = output.rfind(b"\x01\x02")
         if eof >= 0:
             output = output[:eof]
 
@@ -476,7 +476,7 @@ class DefaultSecurityModule(SecurityModule):
         iv = self.random(16)
         v = self.encrypt(value, iv, slot_id)
 
-        cipher_value = binascii.hexlify(iv) + ':' + binascii.hexlify(v)
+        cipher_value = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
         return cipher_value
 
     def _decrypt_value(self, crypt_value, slot_id):
@@ -494,7 +494,7 @@ class DefaultSecurityModule(SecurityModule):
         :rtype:  byte string
         """
         # split at ":"
-        pos = crypt_value.find(':')
+        pos = crypt_value.find(b':')
         bIV = crypt_value[:pos]
         bData = crypt_value[pos + 1:]
 

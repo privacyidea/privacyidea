@@ -65,7 +65,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
 from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging
@@ -279,7 +279,7 @@ def get_auth_token():
     else:
         import os
         import binascii
-        nonce = binascii.hexlify(os.urandom(20))
+        nonce = hexlify_and_unicode(os.urandom(20))
         rights = []
         menus = []
 
@@ -293,7 +293,7 @@ def get_auth_token():
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
                         "rights": rights},
-                       secret)
+                       secret).decode('utf8')
 
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)
