@@ -1923,6 +1923,37 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_called_once()
 
+    @ldap3mock.activate
+    def test_34_censored_tests(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN'}
+        success, desc = pretestresolver("ldapresolver", params)
+        self.assertTrue(success, (success, desc))
+
+        # Now we test a resolver, that is already saved in the database
+        # But the UI sends the __CENSORED__ password. The resolver password stays the same
+        params["resolver"] = "testname1"
+        params["type"] = "ldapresolver"
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Now save the resolver with a censored password
+        params["BINDPW"] = CENSORED
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Check the password in the DB. It is the originial one, not "__CENSORED__".
+        c = get_resolver_config("testname1")
+        self.assertEqual(c.get("BINDPW"), "ldaptest")
+        r = delete_resolver("testname1")
+        self.assertTrue(r)
 
 
 class BaseResolverTestCase(MyTestCase):
@@ -2025,8 +2056,29 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
 
+        params = {"resolver": "editableReso",
+                  "type": "ldapresolver",
+                  'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn","phone" : "telephoneNumber", '
+                              '"mobile" : "mobile", "email" : "mail", '
+                              '"surname" : "sn", "givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'EDITABLE': True,
+                  'CACHE_TIMEOUT': 0}
+        r = save_resolver(params)
+        self.assertTrue(r)
         reso_list = get_resolver_list(editable=True)
-        self.assertTrue(len(reso_list) == 0)
+        self.assertTrue(len(reso_list) == 1)
+        r = delete_resolver("editableReso")
+        self.assertTrue(r)
+
+        reso_list = get_resolver_list(editable=False)
+        self.assertEqual(len(reso_list), 2)
 
         reso_list = get_resolver_list(filter_resolver_type="passwdresolver")
         self.assertTrue(len(reso_list) == 2)
@@ -2226,9 +2278,8 @@ class ResolverTestCase(MyTestCase):
         })
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
-        # TODO check the data
-        ui = ResolverConfig.query.filter(
-            ResolverConfig.Key=='USERINFO').first().Value
+        reso_conf = reso_list.get("myLDAPres").get("data")
+        ui = reso_conf.get("USERINFO")
         # Check that the email is NOT contained in the UI
         self.assertTrue("email" not in ui, ui)
 
@@ -2237,6 +2288,21 @@ class ResolverTestCase(MyTestCase):
         self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "ldaptest")
         reso_list = get_resolver_list(censor=True)
         self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "__CENSORED__")
+
+    def test_15_try_to_delete_used_resolver(self):
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": "/etc/passwd",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
+        self.assertTrue(rid > 0, rid)
+        added, failed = set_realm("myrealm", [self.resolvername1])
+        self.assertEqual(added, [self.resolvername1])
+        self.assertEqual(failed, [])
+        # Trying to delete the resolver fails.
+        self.assertRaises(Exception, delete_resolver, self.resolvername1)
+        delete_realm("myrealm")
+        delete_resolver(self.resolvername1)
 
 
 class PasswordHashTestCase(MyTestCase):
