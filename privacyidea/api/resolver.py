@@ -55,21 +55,24 @@ log = logging.getLogger(__name__)
 resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 
 
-# ----------------------------------------------------------------------
-#
-#   Resolver methods
-#
-
 @resolver_blueprint.route('/', methods=['GET'])
+@resolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
-def get_resolvers():
+def get_resolvers(resolver=None):
     """
-    returns a json list of all resolver.
+    returns a json list of the specified resolvers.
+    The passwords of resolvers (e.g. Bind PW of the LDAP resolver or password of the
+    SQL resolver) will be returned as "__CENSORED__".
+    You can run a POST request to update the data and privacyIDEA will ignore the "__CENSORED__"
+    password or you can even run a testresolver.
 
+    :param resolver: the name of the resolver
+    :type resolver: str
     :param type: Only return resolvers of type (like passwdresolver..)
-    :type type: basestring
+    :type type: str
     :param editable: Set to "1" if only editable resolvers should be returned.
-    :type editable: basestring
+    :type editable: str
+    :return: a json result with the configuration of resolvers
     """
     typ = getParam(request.all_data, "type", optional)
     editable = getParam(request.all_data, "editable", optional)
@@ -77,8 +80,13 @@ def get_resolvers():
         editable = True
     elif editable == "0":
         editable = False
-    res = get_resolver_list(filter_resolver_type=typ, editable=editable)
-    g.audit_object.log({"success": True})
+
+    res = get_resolver_list(filter_resolver_name=resolver,
+                            filter_resolver_type=typ,
+                            editable=editable,
+                            censor=True)
+    g.audit_object.log({"success": True,
+                        "info": resolver})
     return send_result(res)
 
 
@@ -97,10 +105,10 @@ def set_resolver(resolver=None):
     it will produce an error.
 
     :param resolver: the name of the resolver.
-    :type resolver: basestring
+    :type resolver: str
     :param type: the type of the resolver. Valid types are passwdresolver,
     ldapresolver, sqlresolver, scimresolver
-    :type type: string
+    :type type: str
     :return: a json result with the value being the database id (>0)
 
     Additional parameters depend on the resolver type.
@@ -159,26 +167,17 @@ def delete_resolver_api(resolver=None):
     return send_result(res)
 
 
-@resolver_blueprint.route('/<resolver>', methods=['GET'])
-@log_with(log)
-def get_resolver(resolver=None):
-    """
-    This function retrieves the definition of a single resolver.
-
-    :param resolver: the name of the resolver
-    :return: a json result with the configuration of a specified resolver
-    """
-    res = get_resolver_list(filter_resolver_name=resolver)
-
-    g.audit_object.log({"success": True,
-                        "info": resolver})
-
-    return send_result(res)
-
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def test_resolver():
     """
+    Send the complete parameters of a resolver to the privacyIDEA server
+    to test, if these settings will result in a successful connection.
+    If you are testing existing resolvers, you can send the "__CENSORED__"
+    password. privacyIDEA will use the already stored password from the
+    database.
+
     :return: a json result with True, if the given values can create a
         working resolver and a description.
     """

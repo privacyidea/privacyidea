@@ -124,11 +124,13 @@ class ConfigClass(with_metaclass(Singleton, object)):
                         "Description": sysconf.Description}
                 for resolver in Resolver.query.all():
                     resolverdef = {"type": resolver.rtype,
-                                   "resolvername": resolver.name}
+                                   "resolvername": resolver.name,
+                                   "censor_keys": []}
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
                             value = decryptPassword(rconf.Value, convert_unicode=True)
+                            resolverdef["censor_keys"].append(rconf.Key)
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
