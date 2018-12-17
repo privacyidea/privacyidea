@@ -6,6 +6,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
+from .test_lib_resolver import LDAPDirectory, ldap3mock
 from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwords"
@@ -888,3 +889,42 @@ class APIConfigTestCase(MyTestCase):
             # But value returns a dictionary with the KeyID and "armor" and
             # "fingerprint"
             pass
+
+    @ldap3mock.activate
+    def test_20_multiple_test_resolvers(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN'}
+
+        resolvername = "blablaReso"
+        params["resolver"] = resolvername
+        params["type"] = "ldapresolver"
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           data=params,
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            pass
+
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            params = result.get("value").get(resolvername).get("data")
+            # the returned password is censored
+            self.assertEqual(params.get("BINDPW"), CENSORED)
+            # the intenal password is correct
+            internal_resolver_config = self.app_context.g._request_local_store.get("config_object").resolver.get(resolvername)
+            self.assertEqual(internal_resolver_config.get("data").get("BINDPW"), "ldaptest")
