@@ -61,6 +61,10 @@ resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 def get_resolvers(resolver=None):
     """
     returns a json list of the specified resolvers.
+    The passwords of resolvers (e.g. Bind PW of the LDAP resolver or password of the
+    SQL resolver) will be returned as "__CENSORED__".
+    You can run a POST request to update the data and privacyIDEA will ignore the "__CENSORED__"
+    password or you can even run a testresolver.
 
     :param resolver: the name of the resolver
     :type resolver: basestring
@@ -167,6 +171,12 @@ def delete_resolver_api(resolver=None):
 @log_with(log)
 def test_resolver():
     """
+    Send the complete parameters of a resolver to the privacyIDEA server
+    to test, if these settings will result in a successful connection.
+    If you are testing existing resolvers, you can send the "__CENSORED__"
+    password. privacyIDEA will use the already stored password from the
+    database.
+
     :return: a json result with True, if the given values can create a
         working resolver and a description.
     """
