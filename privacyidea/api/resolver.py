@@ -67,11 +67,11 @@ def get_resolvers(resolver=None):
     password or you can even run a testresolver.
 
     :param resolver: the name of the resolver
-    :type resolver: basestring
+    :type resolver: str
     :param type: Only return resolvers of type (like passwdresolver..)
-    :type type: basestring
+    :type type: str
     :param editable: Set to "1" if only editable resolvers should be returned.
-    :type editable: basestring
+    :type editable: str
     :return: a json result with the configuration of resolvers
     """
     typ = getParam(request.all_data, "type", optional)
@@ -105,10 +105,10 @@ def set_resolver(resolver=None):
     it will produce an error.
 
     :param resolver: the name of the resolver.
-    :type resolver: basestring
+    :type resolver: str
     :param type: the type of the resolver. Valid types are passwdresolver,
     ldapresolver, sqlresolver, scimresolver
-    :type type: string
+    :type type: str
     :return: a json result with the value being the database id (>0)
 
     Additional parameters depend on the resolver type.
