@@ -1055,9 +1055,9 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
 
     $scope.testSQL = function () {
 
-        ConfigFactory.testResolver($scope.params, function (data) {
-            var params = $.extend({}, $scope.params);
-            params["resolver"] = $scope.resolvername;
+        var params = $.extend({}, $scope.params);
+        params["resolver"] = $scope.resolvername;
+        ConfigFactory.testResolver(params, function (data) {
             if (data.result.value >= 0) {
                 inform.add(data.detail.description,
                     {type: "success", ttl: 10000});
