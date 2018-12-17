@@ -169,6 +169,7 @@ def delete_resolver_api(resolver=None):
 
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def test_resolver():
     """
     Send the complete parameters of a resolver to the privacyIDEA server
