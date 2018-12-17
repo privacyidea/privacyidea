@@ -387,7 +387,7 @@ def pretestresolver(resolvertype, params):
     if params.get("resolver"):
         old_config_list = get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
         old_config = old_config_list.get(params.get("resolver")) or {}
-        for key in old_config.get("censor_keys"):
+        for key in old_config.get("censor_keys", []):
             if params.get(key) == CENSORED:
                 # Overwrite with the value from the database
                 params[key] = old_config.get("data").get(key)
