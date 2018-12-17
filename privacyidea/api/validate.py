@@ -110,6 +110,10 @@ log = logging.getLogger(__name__)
 validate_blueprint = Blueprint('validate_blueprint', __name__)
 
 
+def _log_used_user(used_login, loginname, other_text):
+    return u"logged in as {0}. {1}".format(used_login, other_text) if used_login != loginname else other_text
+
+
 @validate_blueprint.before_request
 @register_blueprint.before_request
 @recover_blueprint.before_request
@@ -351,7 +355,7 @@ def check():
     else:
         result, details = check_user_pass(user, password, options=options)
 
-    g.audit_object.log({"info": details.get("message"),
+    g.audit_object.log({"info": _log_used_user(user.used_login, user.login, details.get("message")),
                         "success": result,
                         "serial": serial or details.get("serial"),
                         "tokentype": details.get("type")})
@@ -449,7 +453,7 @@ def samlcheck():
             for k, v in ui.items():
                 result_obj["attributes"][k] = v
 
-    g.audit_object.log({"info": details.get("message"),
+    g.audit_object.log({"info": _log_used_user(user.used_login, user.login, details.get("message")),
                         "success": auth,
                         "serial": details.get("serial"),
                         "tokentype": details.get("type"),
@@ -562,7 +566,7 @@ def trigger_challenge():
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
-        "info": "triggered {0!s} challenges".format(result_obj),
+        "info": _log_used_user(user.used_login, user.login, "triggered {0!s} challenges".format(result_obj))
     })
 
     return send_result(result_obj, details=details)

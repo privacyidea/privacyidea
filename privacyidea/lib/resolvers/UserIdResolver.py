@@ -63,6 +63,7 @@ class UserIdResolver(object):
 
     # If the resolver could be configured editable
     updateable = False
+    support_multiple_loginnames = False
 
     def close(self):
         """
@@ -114,7 +115,6 @@ class UserIdResolver(object):
         :rtype:  dict
         """
         return UserIdResolver.getResolverClassDescriptor()
-
 
     def getUserId(self, loginName):
         """

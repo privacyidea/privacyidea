@@ -1925,7 +1925,6 @@ class LDAPResolverTestCase(MyTestCase):
             mock_search.assert_called_once()
 
 
-
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):

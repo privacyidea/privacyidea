@@ -248,6 +248,7 @@ class IdResolver (UserIdResolver):
 
     # If the resolver could be configured editable
     updateable = True
+    support_multiple_loginnames = True
 
     def __init__(self):
         self.i_am_bound = False

@@ -87,6 +87,7 @@ class User(object):
 
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
+        self.used_login = ""
         self.realm = (realm or "").lower()
         if resolver == "**":
             resolver = ""
@@ -112,6 +113,10 @@ class User(object):
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
             self.uid = y.getUserId(self.login)
+            if y.support_multiple_loginnames:
+                # In case the used loginname was not the primary loginname!
+                self.used_login = self.login
+                self.login = y.getUsername(self.uid)
 
     def is_empty(self):
         # ignore if only resolver is set! as it makes no sense
