@@ -59,6 +59,7 @@ from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
 from privacyidea.lib.utils import is_true
+import copy
 
 CENSORED = "__CENSORED__"
 log = logging.getLogger(__name__)
@@ -195,7 +196,10 @@ def get_resolver_list(filter_resolver_type=None,
     """
     # We need to check if we need to update the config object
     config_object = update_config_object()
-    resolvers = config_object.resolver
+    if censor:
+        resolvers = copy.deepcopy(config_object.resolver)
+    else:
+        resolvers = config_object.resolver
     if filter_resolver_type:
         reduced_resolvers = {}
         for reso_name, reso in resolvers.items():
