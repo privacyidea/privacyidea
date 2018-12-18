@@ -531,4 +531,3 @@ class UtilsTestCase(MyTestCase):
         # Fails if the package does not exist
         with self.assertRaises(ImportError):
             get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
-

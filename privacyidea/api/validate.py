@@ -65,7 +65,7 @@ In case if authenitcating a serial number:
 
 """
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
@@ -108,10 +108,6 @@ import json
 log = logging.getLogger(__name__)
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
-
-
-def _log_used_user(used_login, loginname, other_text):
-    return u"logged in as {0}. {1}".format(used_login, other_text) if used_login != loginname else other_text
 
 
 @validate_blueprint.before_request
@@ -355,7 +351,7 @@ def check():
     else:
         result, details = check_user_pass(user, password, options=options)
 
-    g.audit_object.log({"info": _log_used_user(user.used_login, user.login, details.get("message")),
+    g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": result,
                         "serial": serial or details.get("serial"),
                         "tokentype": details.get("type")})
@@ -453,7 +449,7 @@ def samlcheck():
             for k, v in ui.items():
                 result_obj["attributes"][k] = v
 
-    g.audit_object.log({"info": _log_used_user(user.used_login, user.login, details.get("message")),
+    g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": auth,
                         "serial": details.get("serial"),
                         "tokentype": details.get("type"),
@@ -566,7 +562,7 @@ def trigger_challenge():
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
-        "info": _log_used_user(user.used_login, user.login, "triggered {0!s} challenges".format(result_obj))
+        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj))
     })
 
     return send_result(result_obj, details=details)
