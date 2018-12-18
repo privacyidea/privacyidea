@@ -141,7 +141,7 @@ class TanTokenClass(PaperTokenClass):
             # Get a 4 byte salt from the crypto module
             salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
-            hashed_tan = binascii.hexlify(hash(tanvalue, salt))
+            hashed_tan = hash(tanvalue, salt)
             self.add_tokeninfo("tan.tan{0!s}".format(tankey),
                                "{0}:{1}".format(salt, hashed_tan))
 
@@ -165,7 +165,7 @@ class TanTokenClass(PaperTokenClass):
         for tankey, tanvalue in tans.items():
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
-                if tan == binascii.hexlify(hash(anOtpVal,salt)):
+                if tan == hash(anOtpVal, salt):
                     self.del_tokeninfo(tankey)
                     return 1
 

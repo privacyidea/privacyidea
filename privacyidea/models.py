@@ -43,18 +43,18 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
-from .lib.crypto import (encrypt,
-                         encryptPin,
-                         decryptPin,
-                         geturandom,
-                         hash,
-                         SecretObj,
-                         get_rand_digit_str)
-
+from privacyidea.lib.crypto import (encrypt,
+                                    encryptPin,
+                                    decryptPin,
+                                    geturandom,
+                                    hash,
+                                    SecretObj,
+                                    get_rand_digit_str,
+                                    hexlify_and_unicode)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
-from privacyidea.lib.utils import is_true, convert_column_to_unicode, hexlify_and_unicode
+from privacyidea.lib.utils import is_true, convert_column_to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -340,6 +340,14 @@ class Token(MethodsMixin, db.Model):
         return secret
 
     def set_hashed_pin(self, pin):
+        """
+        Set the pin of the token in hashed format
+
+        :param pin: the pin to hash
+        :type pin: str
+        :return: the hashed pin
+        :rtype: str
+        """
         seed = geturandom(16)
         self.pin_seed = hexlify_and_unicode(seed)
         self.pin_hash = hash(pin, seed)

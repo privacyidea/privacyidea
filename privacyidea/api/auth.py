@@ -49,7 +49,7 @@ from flask import (Blueprint,
                    g)
 from .lib.utils import (send_result, get_all_params,
                         verify_auth_token)
-from ..lib.crypto import geturandom, init_hsm
+from privacyidea.lib.crypto import geturandom, init_hsm, hexlify_and_unicode
 from ..lib.error import AuthError, ERROR
 from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
@@ -65,7 +65,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
+from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging
@@ -278,7 +278,6 @@ def get_auth_token():
                                                   g.client_ip)
     else:
         import os
-        import binascii
         nonce = hexlify_and_unicode(os.urandom(20))
         rights = []
         menus = []

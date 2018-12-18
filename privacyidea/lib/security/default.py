@@ -43,11 +43,10 @@ import binascii
 import os
 
 from Crypto.Cipher import AES
-from privacyidea.lib.crypto import zerome
+from privacyidea.lib.crypto import zerome, _to_bytes, _to_unicode, hexlify_and_unicode
 from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
 from privacyidea.lib.error import HSMException
-
 
 TOKEN_KEY = 0
 CONFIG_KEY = 1
@@ -65,7 +64,9 @@ def create_key_from_password(password):
     This is used to encrypt and decrypt the enckey file.
 
     :param password:
-    :return:
+    :type password: bytes
+    :return: the generated key
+    :rtype: bytes
     """
     key = sha256(password).digest()[0:32]
     return key
@@ -144,13 +145,13 @@ class DefaultSecurityModule(SecurityModule):
     def __init__(self, config=None):
         """
         Init of the default security module. The config needs to contain the key
-        file. THe key file can be encrypted, than the config also needs to
+        file. The key file can be encrypted, then the config also needs to
         provide the information, that the key file is encrypted.
 
            {"file": "/etc/secretkey",
             "crypted": True}
 
-        If the key file is encrypted, the HSM is not immediatly ready. It will
+        If the key file is encrypted, the HSM is not immediately ready. It will
         return HSM.is_ready == False.
         Then the function "setup_module({"password": "PW to decrypt"}) needs
         to be called.
@@ -190,8 +191,7 @@ class DefaultSecurityModule(SecurityModule):
     def _get_secret(self, slot_id=0, password=None):
         """
         internal function, which reads the key from the defined
-        slot in the file. It al499
-        so caches the encryption key to the dictionary
+        slot in the file. It also caches the encryption key to the dictionary
         self.secrets.
 
         If the file is encrypted, the encryption key is decrypted with the
@@ -325,25 +325,27 @@ class DefaultSecurityModule(SecurityModule):
         """
         Encrypt the given text with the password.
         A key is derived from the password and used to encrypt the text in
-        AES MODE_CBC. The IV is returned togeather with the cipher text.
-        <IV:Ciphter>
+        AES MODE_CBC. The IV is returned together with the cipher text.
+        <IV:Cipher>
 
         :param text: The text to encrypt
+        :type text: str
         :param password: The password to derive a key from
+        :type password: str
         :return: IV and cipher text
-        :rtype: basestring
+        :rtype: str
         """
-        bkey = create_key_from_password(password)
+        bkey = create_key_from_password(_to_bytes(password))
         # convert input to ascii, so we can securely append bin data
-        input_data = binascii.b2a_hex(text)
-        input_data += u"\x01\x02"
+        input_data = binascii.hexlify(_to_bytes(text))
+        input_data += b"\x01\x02"
         padding = (16 - len(input_data) % 16) % 16
-        input_data += padding * "\0"
+        input_data += padding * b"\0"
         iv = geturandom(16)
         aes = AES.new(bkey, AES.MODE_CBC, iv)
         cipher = aes.encrypt(input_data)
-        iv_hex = binascii.hexlify(iv)
-        cipher_hex = binascii.hexlify(cipher)
+        iv_hex = hexlify_and_unicode(iv)
+        cipher_hex = hexlify_and_unicode(cipher)
         return "{0!s}:{1!s}".format(iv_hex, cipher_hex)
 
     @staticmethod
@@ -354,22 +356,23 @@ class DefaultSecurityModule(SecurityModule):
         is the first part, separated with a ":".
 
         :param data: The hexlified data
+        :type data: str
         :param password: The password, that is used to decrypt the data
+        :type password: str
         :return: The clear test
-        :rtype: basestring
+        :rtype: bytes
         """
-        bkey = create_key_from_password(password)
+        bkey = create_key_from_password(_to_bytes(password))
         # split the input data
         iv_hex, cipher_hex = data.strip().split(":")
         iv_bin = binascii.unhexlify(iv_hex)
         cipher_bin = binascii.unhexlify(cipher_hex)
         aes = AES.new(bkey, AES.MODE_CBC, iv_bin)
         output = aes.decrypt(cipher_bin)
-        eof = output.rfind(u"\x01\x02")
+        eof = output.rfind(b"\x01\x02")
         if eof >= 0:
             output = output[:eof]
-        cleartext = binascii.a2b_hex(output)
-
+        cleartext = binascii.unhexlify(output)
         return cleartext
 
     def decrypt(self, input_data, iv, slot_id=0):
@@ -399,7 +402,7 @@ class DefaultSecurityModule(SecurityModule):
             output = output[:eof]
 
         # convert output from ascii, back to bin data
-        data = binascii.a2b_hex(output)
+        data = binascii.unhexlify(output)
 
         if self.crypted is False:
             zerome(key)
@@ -413,10 +416,10 @@ class DefaultSecurityModule(SecurityModule):
 
         :param crypt_pass: the encrypted password with the leading iv,
             separated by the ':'
-        :param crypt_pass: byte string
+        :param crypt_pass: bytes
 
         :return: decrypted data
-        :rtype: byte string
+        :rtype: bytes
         """
         return self._decrypt_value(crypt_pass, CONFIG_KEY)
 
@@ -438,10 +441,10 @@ class DefaultSecurityModule(SecurityModule):
         Encrypt the given password with the CONFIG_KEY an a random IV.
 
         :param password: The password that is to be encrypted
-        :param password: byte string
+        :param password: bytes
 
         :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
+        :rtype: bytes
         """
         return self._encrypt_value(password, CONFIG_KEY)
 
@@ -485,13 +488,13 @@ class DefaultSecurityModule(SecurityModule):
         - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: byte string
+        :param crypt_value: bytes
 
         :param  slot_id: slot of the key array
         :type   slot_id: int
 
         :return: decrypted data
-        :rtype:  byte string
+        :rtype:  bytes
         """
         # split at ":"
         pos = crypt_value.find(b':')

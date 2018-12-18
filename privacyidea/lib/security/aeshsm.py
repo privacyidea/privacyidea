@@ -270,17 +270,17 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         """
         return self._decrypt_value(crypt_pin, TOKEN_KEY)
 
-    def encrypt_password(self, password):
+    def encrypt_password(self, passwd):
         """
         Encrypt the given password with the CONFIG_KEY an a random IV.
 
-        :param password: The password that is to be encrypted
-        :param password: byte string
+        :param passwd: The password that is to be encrypted
+        :type passwd: bytes
 
         :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
+        :rtype: bytes
         """
-        return self._encrypt_value(password, CONFIG_KEY)
+        return self._encrypt_value(passwd, CONFIG_KEY)
 
     def encrypt_pin(self, pin):
         """
@@ -302,18 +302,18 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         returns as string with leading iv, separated by ':'
 
         :param value: the value that is to be encrypted
-        :param value: byte string
+        :param value: bytes
 
         :param key_id: slot of the key array
         :type key_id: int
 
         :return: encrypted data with leading iv and separator ':'
-        :rtype: byte string
+        :rtype: bytes
         """
         iv = self.random(16)
         v = self.encrypt(value, iv, key_id)
 
-        return ':'.join([binascii.hexlify(x) for x in [iv, v]])
+        return b':'.join([binascii.hexlify(x) for x in [iv, v]])
 
     def _decrypt_value(self, crypt_value, key_id):
         """
@@ -321,15 +321,15 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: byte string
+        :param crypt_value: bytes
 
         :param  key_id: slot of the key array
         :type   key_id: int
 
         :return: decrypted data
-        :rtype:  byte string
+        :rtype:  bytes
         """
-        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(':')]
+        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(b':')]
 
         return self.decrypt(data, iv, key_id)
 

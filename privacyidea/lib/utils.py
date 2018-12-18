@@ -163,8 +163,12 @@ def to_unicode(s, encoding="utf-8"):
     """
     converts a value to unicode if it is of type str.
     
-    :param s: The utf-8 encoded str 
+    :param s: the str to decode
+    :type s: bytes, str
+    :param encoding: the encoding to use (default utf8)
+    :type encoding: str
     :return: unicode string
+    :rtype: str
     """
     if type(s) == str:
         s = s.decode(encoding)
@@ -1257,14 +1261,3 @@ def get_module_class(package_name, class_name, check_method=None):
         raise NameError(u"Class AttributeError: {0}.{1} "
                         u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
     return klass
-
-
-def hexlify_and_unicode(s):
-    """
-
-    :param s: string to hexlify
-    :type s: bytes
-    :return: hexlified string converted to unicode
-    :rtype: unicode
-    """
-    return binascii.hexlify(s).decode('utf8')
