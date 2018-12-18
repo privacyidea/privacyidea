@@ -2485,12 +2485,14 @@ class UserCache(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
+    used_login = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     timestamp = db.Column(db.DateTime)
 
-    def __init__(self, username, resolver, user_id, timestamp):
+    def __init__(self, username, used_login, resolver, user_id, timestamp):
         self.username = username
+        self.used_login = used_login
         self.resolver = resolver
         self.user_id = user_id
         self.timestamp = timestamp

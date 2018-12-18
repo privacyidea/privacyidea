@@ -63,7 +63,6 @@ class UserIdResolver(object):
 
     # If the resolver could be configured editable
     updateable = False
-    support_multiple_loginnames = False
 
     def close(self):
         """
@@ -274,5 +273,13 @@ class UserIdResolver(object):
         """
         Return true, if the Instance! of this resolver is configured editable.
         :return:
+        """
+        return False
+
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
         """
         return False

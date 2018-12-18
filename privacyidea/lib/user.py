@@ -113,9 +113,8 @@ class User(object):
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
             self.uid = y.getUserId(self.login)
-            if y.support_multiple_loginnames:
-                # In case the used loginname was not the primary loginname!
-                self.used_login = self.login
+            if y.has_multiple_loginnames:
+                # In this case the primary login might be another value!
                 self.login = y.getUsername(self.uid)
 
     def is_empty(self):
@@ -135,7 +134,6 @@ class User(object):
         :return: True or False
         :rtype: bool
         """
-        # TODO: Should we add a check for `uid` here?
         return isinstance(other, type(self)) and (self.login == other.login) and (
                 self.resolver == other.resolver) and (self.realm == other.realm)
 

@@ -248,7 +248,6 @@ class IdResolver (UserIdResolver):
 
     # If the resolver could be configured editable
     updateable = True
-    support_multiple_loginnames = True
 
     def __init__(self):
         self.i_am_bound = False
@@ -750,6 +749,14 @@ class IdResolver (UserIdResolver):
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
 
         return self
+
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
+        """
+        return len(self.loginname_attribute) > 1
 
     @staticmethod
     def split_uri(uri):
