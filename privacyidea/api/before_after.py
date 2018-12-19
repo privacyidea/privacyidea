@@ -141,6 +141,12 @@ def before_request():
     # from the Form data or from JSON in the request body.
     update_config_object()
     request.all_data = get_all_params(request.values, request.data)
+    if g.logged_in_user.get("role") == "user":
+        # A user is calling this API. First thing we do is restricting the user parameter.
+        # ...to restrict token view, audit view or token actions.
+        request.all_data["user"] = g.logged_in_user.get("username")
+        request.all_data["realm"] = g.logged_in_user.get("realm")
+
     try:
         request.User = get_user_from_param(request.all_data)
     except AttributeError:
@@ -173,10 +179,9 @@ def before_request():
         # In case of token endpoint we evaluate the user in the request.
         # Note: In policy-endpoint "user" is part of the policy configuration
         #  and will cause an exception
-        user = get_user_from_param(request.all_data)
-        user_loginname = user.login
-        realm = user.realm or realm
-        resolver = user.resolver
+        user_loginname = request.User.login
+        realm = request.User.realm or realm
+        resolver = request.User.resolver
 
     g.audit_object.log({"success": False,
                         "serial": serial,
@@ -191,22 +196,7 @@ def before_request():
                         "action_detail": "",
                         "info": ""})
 
-    if g.logged_in_user.get("role") == "user":
-        # A user is calling this API
-        # In case the token API is called by the user and not by the admin we
-        #  need to restrict the token view.
-        CurrentUser = get_user_from_param({"user":
-                                               g.logged_in_user.get(
-                                                   "username"),
-                                           "realm": g.logged_in_user.get(
-                                               "realm")})
-        request.all_data["user"] = CurrentUser.login
-        request.all_data["resolver"] = CurrentUser.resolver
-        request.all_data["realm"] = CurrentUser.realm
-        g.audit_object.log({"user": CurrentUser.login,
-                            "resolver": CurrentUser.resolver,
-                            "realm": CurrentUser.realm})
-    else:
+    if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
         g.audit_object.log({"administrator": g.logged_in_user.get("username")})
         # TODO: Check is there are realm specific admin policies, so that the

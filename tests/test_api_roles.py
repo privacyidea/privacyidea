@@ -369,10 +369,8 @@ class APISelfserviceTestCase(MyTestCase):
 
         # Check, who is the owner of the new token!
         tokenobject = get_tokens(serial=serial)[0]
-        self.assertTrue(tokenobject.token.user_id == "1004",
-                        tokenobject.token.user_id)
-        self.assertTrue(tokenobject.token.resolver == "resolver1",
-                        tokenobject.token.resolver == "resolver1")
+        self.assertEqual(tokenobject.token.user_id, "1004")
+        self.assertEqual(tokenobject.token.resolver, "resolver1")
 
         # user can delete his own token
         with self.app.test_request_context('/token/{0!s}'.format(serial),

@@ -326,7 +326,6 @@ def check():
     .. note:: All challenge response tokens have the same transaction_id in
        this case.
     """
-    #user = get_user_from_param(request.all_data)
     user = request.User
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
@@ -420,7 +419,7 @@ def samlcheck():
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
-    user = get_user_from_param(request.all_data)
+    user = request.User
     password = getParam(request.all_data, "pass", required)
     options = {"g": g,
                "clientip": g.client_ip}
