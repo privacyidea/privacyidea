@@ -48,11 +48,6 @@ from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
 from privacyidea.lib.error import HSMException
 
-TOKEN_KEY = 0
-CONFIG_KEY = 1
-VALUE_KEY = 2
-DEFAULT_KEY = 3
-
 from .password import PASSWORD
 
 log = logging.getLogger(__name__)
@@ -73,6 +68,16 @@ def create_key_from_password(password):
 
 
 class SecurityModule(object):
+    TOKEN_KEY = 0
+    CONFIG_KEY = 1
+    VALUE_KEY = 2
+    DEFAULT_KEY = 3
+
+    mapping = {
+        'token': TOKEN_KEY,
+        'config': CONFIG_KEY,
+        'value': VALUE_KEY
+    }
 
     is_ready = False
 
@@ -188,7 +193,7 @@ class DefaultSecurityModule(SecurityModule):
         self.secFile = config.get('file')
         self.secrets = {}
 
-    def _get_secret(self, slot_id=0, password=None):
+    def _get_secret(self, slot_id=SecurityModule.TOKEN_KEY, password=None):
         """
         internal function, which reads the key from the defined
         slot in the file. It also caches the encryption key to the dictionary
@@ -231,7 +236,7 @@ class DefaultSecurityModule(SecurityModule):
                 for _i in range(0, slot_id + 1):
                     secret = f.read(32)
 
-            if secret == "":
+            if secret == b"":
                 raise HSMException("No secret key defined for index: %s !\n"
                                    "Please extend your %s"" !"
                                    % (str(slot_id), self.secFile))
@@ -264,7 +269,7 @@ class DefaultSecurityModule(SecurityModule):
         # if we have a crypted file and a password, we take all keys
         # from the file and put them in a hash
         # After this we do not require the password anymore
-        for handle in [TOKEN_KEY, CONFIG_KEY, VALUE_KEY]:
+        for handle in [self.TOKEN_KEY, self.CONFIG_KEY, self.VALUE_KEY]:
             # fill self.secrets
             self.secrets[handle] = self._get_secret(handle, PASSWORD)
 
@@ -285,7 +290,7 @@ class DefaultSecurityModule(SecurityModule):
         """
         return os.urandom(length)
 
-    def encrypt(self, data, iv, slot_id=0):
+    def encrypt(self, data, iv, slot_id=SecurityModule.TOKEN_KEY):
         """
         security module methods: encrypt
 
@@ -375,7 +380,7 @@ class DefaultSecurityModule(SecurityModule):
         cleartext = binascii.unhexlify(output)
         return cleartext
 
-    def decrypt(self, input_data, iv, slot_id=0):
+    def decrypt(self, input_data, iv, slot_id=SecurityModule.TOKEN_KEY):
         """
         Decrypt the given data with the key from the key slot
 
@@ -421,7 +426,7 @@ class DefaultSecurityModule(SecurityModule):
         :return: decrypted data
         :rtype: bytes
         """
-        return self._decrypt_value(crypt_pass, CONFIG_KEY)
+        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
 
     def decrypt_pin(self, crypt_pin):
         """
@@ -434,7 +439,7 @@ class DefaultSecurityModule(SecurityModule):
         :return: decrypted data
         :rtype: byte string
         """
-        return self._decrypt_value(crypt_pin, TOKEN_KEY)
+        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
 
     def encrypt_password(self, password):
         """
@@ -446,7 +451,7 @@ class DefaultSecurityModule(SecurityModule):
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: bytes
         """
-        return self._encrypt_value(password, CONFIG_KEY)
+        return self._encrypt_value(password, self.CONFIG_KEY)
 
     def encrypt_pin(self, pin):
         """
@@ -458,7 +463,7 @@ class DefaultSecurityModule(SecurityModule):
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: byte string
         """
-        return self._encrypt_value(pin, TOKEN_KEY)
+        return self._encrypt_value(pin, self.TOKEN_KEY)
 
     ''' base methods for pin and password '''
     def _encrypt_value(self, value, slot_id):

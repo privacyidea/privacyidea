@@ -265,7 +265,7 @@ class Token(MethodsMixin, db.Model):
         length = len(self.key_enc)
         if length > Token.key_enc.property.columns[0].type.length:
             log.error("Key {0!s} exceeds database field {1:d}!".format(self.serial,
-                                                             length))
+                                                                       length))
         self.key_iv = hexlify_and_unicode(iv)
         self.count = 0
         if reset_failcount is True:
@@ -394,8 +394,6 @@ class Token(MethodsMixin, db.Model):
             self.set_hashed_pin(upin)
             log.debug("setPin(HASH:{0!r})".format(self.pin_hash))
         else:
-            if isinstance(pin, six.text_type):
-                upin = upin.encode('utf8')
             self.pin_hash = "@@" + encryptPin(upin)
             log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
         return self.pin_hash
@@ -436,7 +434,7 @@ class Token(MethodsMixin, db.Model):
         else:
             otp = passwd[:self.otplen]
             pin = passwd[self.otplen:]
-        return(True, pin, otp)
+        return True, pin, otp
 
     def is_pin_encrypted(self, pin=None):
         ret = False

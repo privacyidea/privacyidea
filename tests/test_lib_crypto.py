@@ -14,7 +14,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt)
+                                    encrypt, decrypt, _to_bytes, _to_unicode)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -205,6 +205,14 @@ class CryptoTestCase(MyTestCase):
         c = encrypt(s, iv)
         d = decrypt(binascii.unhexlify(c), iv)
         self.assertEqual(s, d.decode('utf8'))
+
+    def test_05_encode_decode(self):
+        b_str = b'Hello World'
+        self.assertEqual(_to_unicode(b_str), b_str.decode('utf8'))
+        u_str = u'Hello Wörld'
+        self.assertEqual(_to_unicode(u_str), u_str)
+        self.assertEqual(_to_bytes(b_str), b_str)
+        self.assertEqual(_to_bytes(u_str), u_str.encode('utf8'))
 
 
 class RandomTestCase(MyTestCase):

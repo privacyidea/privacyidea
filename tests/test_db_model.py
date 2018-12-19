@@ -1,5 +1,6 @@
 # coding: utf-8
 from mock import mock
+import os
 
 from privacyidea.models import (Token,
                                 Resolver,
@@ -153,6 +154,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(r)
         pin = t2.get_pin()
         self.assertEqual("thepin", pin)
+        t2.set_pin(u'pinwithä', hashed=False)
+        self.assertEqual(t2.get_pin(), u'pinwithä')
 
         # set the so pin
         (enc, iv) = t2.set_so_pin("topsecret")
@@ -221,7 +224,15 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t2.failcount == 0, t2)
         self.assertEqual(u'Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
 
-        # TODO set description empty
+        # key too long
+        # TODO should this throw an error? otherwise the DB would complain
+        k = os.urandom(256)
+        t2.set_otpkey(k)
+        self.assertGreater(len(t2.key_enc), Token.key_enc.property.columns[0].type.length)
+
+        # set an empty token description
+        self.assertEqual(t2.set_description(desc=None), '')
+
         # delete the token
         ret = t2.delete()
         self.assertTrue(ret)

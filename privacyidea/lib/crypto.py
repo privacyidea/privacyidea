@@ -48,7 +48,6 @@ from .error import HSMException
 import binascii
 import six
 import ctypes
-from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
@@ -92,7 +91,7 @@ class SecretObj(object):
 
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
-        enc_otp_key = encrypt(bhOtpKey, self.iv)
+        enc_otp_key = _to_bytes(encrypt(bhOtpKey, self.iv))
         return enc_otp_key == self.val
 
     def hmac_digest(self, data_input, hash_algo):
@@ -146,7 +145,7 @@ def _to_bytes(s):
     :rtype: bytes
     """
     if isinstance(s, six.text_type):
-        return s.encode('utf8')
+        s = s.encode('utf8')
     return s
 
 
@@ -154,12 +153,12 @@ def _to_unicode(s):
     """
     decode a byte string to unicode using utf8
     :param s: string to decode to utf8
-    :type s: bytes
+    :type s: bytes or str
     :return: the utf-8 decoded string s
     :rtype: str
     """
     if isinstance(s, bytes):
-        return s.decode('utf8')
+        s = s.decode('utf8')
     return s
 
 
@@ -167,11 +166,13 @@ def hexlify_and_unicode(s):
     """
 
     :param s: string to hexlify
-    :type s: bytes
+    :type s: bytes or str
     :return: hexlified string converted to unicode
-    :rtype: unicode
+    :rtype: str
     """
-    return _to_unicode(binascii.hexlify(s))
+
+    res = _to_unicode(binascii.hexlify(_to_bytes(s)))
+    return res
 
 
 @log_with(log, log_entry=False, log_exit=False)
@@ -297,7 +298,7 @@ def encryptPassword(password):
 def encryptPin(cryptPin):
     """
     :param cryptPin: the pin to encrypt
-    :type cryptPin: bytes, str, unicode
+    :type cryptPin: bytes or str
     :return: the encrypted pin
     :rtype: str
     """
@@ -383,13 +384,14 @@ def decrypt(input, iv, id=0):
     :type  input: bytes
     :param iv:    initialisation vector
     :type  iv:    bytes
-    :param id:    contains the id of which key of the keyset should be used
+    :param id:    contains the key id of the keyset which should be used
     :type  id:    int
     :return:      decrypted buffer
     :rtype: bytes
     '''
     hsm = get_hsm()
-    return hsm.decrypt(input, iv, id)
+    res = hsm.decrypt(input, iv, id)
+    return res
 
 
 @log_with(log, log_exit=False)

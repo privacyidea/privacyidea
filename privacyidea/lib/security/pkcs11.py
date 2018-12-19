@@ -163,7 +163,7 @@ class PKCS11SecurityModule(SecurityModule):  # pragma: no cover
         return self.decrypt(crypt_pin)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     module = "/usr/local/lib/opensc-pkcs11.so"
     #module = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
