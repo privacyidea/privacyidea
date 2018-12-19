@@ -209,6 +209,7 @@ def user_init(wrapped_function, self):
         result = retrieve_latest_entry(filter_conditions)
         if result:
             # Cached user exists, retrieve information and exit early
+            self.login = result.username
             self.resolver = result.resolver
             self.uid = result.user_id
             return
