@@ -677,3 +677,45 @@ def config_lost_token(wrapped_function, *args, **kwds):
 
     return wrapped_function(*args, **kwds)
 
+
+def reset_all_user_tokens(wrapped_function, *args, **kwds):
+    """
+    Resets all tokens if the corresponding policy is set.
+
+    :param token: The successful token, the tokenowner is used to find policies.
+    :param tokenobject_list: The list of all the tokens of the user
+    :param options: options dictionary containing g.
+    :return: None
+    """
+    tokenobject_list = args[0]
+    options = kwds.get("options") or {}
+    g = options.get("g")
+    allow_reset = kwds.get("allow_reset_all_tokens")
+
+    r = wrapped_function(*args, **kwds)
+
+    # A successful authentication was done
+    if r[0] and g and allow_reset:
+        clientip = options.get("clientip")
+        policy_object = g.policy_object
+        token_owner = tokenobject_list[0].user
+        reset_all = policy_object.get_policies(
+            action=ACTION.RESETALLTOKENS,
+            scope=SCOPE.AUTH,
+            realm=token_owner.login if token_owner else None,
+            resolver=token_owner.resolver if token_owner else None,
+            user=token_owner.realm if token_owner else None,
+            client=clientip, active=True,
+            audit_data=g.audit_object.audit_data)
+        if reset_all:
+            log.debug("Reset failcounter of all tokens of {0!s}".format(
+                token_owner))
+            for tok_obj_reset in tokenobject_list:
+                try:
+                    tok_obj_reset.reset()
+                except Exception:
+                    log.debug(
+                        "registration token does not exist anymore and "
+                        "cannot be reset.")
+
+    return r

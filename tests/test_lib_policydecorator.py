@@ -19,7 +19,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               login_mode, config_lost_token,
                                               challenge_response_allowed,
                                               auth_user_timelimit, auth_cache,
-                                              auth_lastauth)
+                                              auth_lastauth, reset_all_user_tokens)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -27,6 +27,7 @@ from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.radiusserver import add_radius
+from flask import g
 import datetime
 from . import radiusmock
 import binascii
@@ -55,6 +56,11 @@ class LibPolicyTestCase(MyTestCase):
     @staticmethod
     def fake_check_otp(dummy, pin, user=None, options=None):
         return pin == "FAKE"
+
+    @staticmethod
+    def fake_check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True,
+                              result=False):
+        return result, "some text"
 
     def test_01_otppin(self):
         my_user = User("cornelius", realm="r1")
@@ -779,3 +785,41 @@ class LibPolicyTestCase(MyTestCase):
         self.assertFalse(r)
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_15_reset_all_failcounters(self):
+        self.setUp_user_realms()
+
+        set_policy("reset_all", scope=SCOPE.AUTH,
+                   action=ACTION.RESETALLTOKENS)
+
+        user = User(login="cornelius", realm=self.realm1)
+        pin1 = "pin1"
+        pin2 = "pin2"
+        token1 = init_token({"serial": pin1, "pin": pin1,
+                             "type": "spass"}, user=user)
+        token2 = init_token({"serial": pin2, "pin": pin2,
+                             "type": "spass"}, user=user)
+
+        token1.inc_failcount()
+        token2.inc_failcount()
+        token2.inc_failcount()
+        self.assertEqual(token1.token.failcount, 1)
+        self.assertEqual(token2.token.failcount, 2)
+
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+
+        r = reset_all_user_tokens(self.fake_check_token_list,
+                                  [token1, token2],
+                                  "pw", None,
+                                  options=options,
+                                  allow_reset_all_tokens=True,
+                                  result=True)
+        self.assertTrue(r)
+
+        self.assertEqual(token1.token.failcount, 0)
+        self.assertEqual(token2.token.failcount, 0)
+
+        # Clean up
+        remove_token(pin1)
+        remove_token(pin2)
