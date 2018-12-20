@@ -1987,7 +1987,7 @@ def check_user_pass(user, passw, options=None):
 
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
-def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True):
+def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
     this takes a list of token objects and tries to find the matching token
     for the given passw. It also tests,
@@ -2002,8 +2002,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     :param passw: the provided passw (mostly pin+otp)
     :param user: the identified use - as class object
     :param options: additional parameters, which are passed to the token
-    :param allow_reset_all_tokens: If set to false, the policy reset_all_user_tokens does not have
-        any effect. It is used by the decorator.
+    :param allow_reset_all_tokens: If set to True, the policy reset_all_user_tokens is evaluated to
+        reset all user tokens accordingly. Note: This parameter is used in the decorator.
 
     :return: tuple of success and optional response
     :rtype: (bool, dict)
