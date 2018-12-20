@@ -1924,7 +1924,8 @@ def check_serial_pass(serial, passw, options=None):
     tokenobject = get_one_token(serial=serial)
     res, reply_dict = check_token_list([tokenobject], passw,
                                        user=tokenobject.user,
-                                       options=options)
+                                       options=options,
+                                       allow_reset_all_tokens=True)
 
     return res, reply_dict
 
@@ -1978,7 +1979,8 @@ def check_user_pass(user, passw, options=None):
         tokenobject = tokenobject_list[0]
         res, reply_dict = check_token_list(tokenobject_list, passw,
                                            user=tokenobject.user,
-                                           options=options)
+                                           options=options,
+                                           allow_reset_all_tokens=True)
 
     return res, reply_dict
 

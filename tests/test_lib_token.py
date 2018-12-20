@@ -1530,7 +1530,7 @@ class TokenFailCounterTestCase(MyTestCase):
         options = {"g": g}
 
         check_token_list([token1, token2], pin1, user=user,
-                         options=options)
+                         options=options, allow_reset_all_tokens=True)
 
         self.assertEqual(token1.token.failcount, 0)
         self.assertEqual(token2.token.failcount, 0)
@@ -1547,7 +1547,8 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertEqual(token1.token.failcount, 1)
         self.assertEqual(token2.token.failcount, 2)
 
-        check_token_list([token1, token2], pin1, options=options)
+        check_token_list([token1, token2], pin1, options=options,
+                         allow_reset_all_tokens=True)
 
         self.assertEqual(token1.token.failcount, 0)
         self.assertEqual(token2.token.failcount, 0)
