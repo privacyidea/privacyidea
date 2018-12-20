@@ -703,7 +703,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
             action=ACTION.RESETALLTOKENS,
             scope=SCOPE.AUTH,
             realm=token_owner.login if token_owner else None,
-            resolver=token_owner.login if token_owner else None,
+            resolver=token_owner.resolver if token_owner else None,
             user=token_owner.realm if token_owner else None,
             client=clientip, active=True,
             audit_data=g.audit_object.audit_data)
