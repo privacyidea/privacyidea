@@ -18,4 +18,4 @@ It also contains a shortcut to the policy tab (see :ref:`policies`).
    caconnectors
    smtpserver_config
    sms_gateway_config
-   privacyidea-setup
+   privacyidea-appliance

@@ -1,19 +1,24 @@
-.. _privacyidea-setup:
+.. _privacyidea-appliance:
 
-privacyIDEA setup tool
-----------------------
+privacyIDEA Appliance
+---------------------
 
 .. index:: appliance, setup tool
 
-privacyIDEA comes with a graphical setup tool 
-to manage your token administrators and RADIUS clients.
-Thus you will get a kind of appliance experience.
-To install all necessary components read :ref:`appliance`.
+privacyIDEA offers an appliance tool to manage your token administrators, RADIUS clients and
+also setup MySQL master-master replication.
+It can be found in a Github repository [#applianceGithub]_.
+
+This tool is supposed to run on Ubuntu 16.04 LTS.
+You can find a ready install ISO at another Github reposity [#applianceISO]_.
+
+.. note:: The ready made Ubuntu package is only available with a Service Level Agreement from
+   the company NetKnights [#applianceNetKnights]_.
 
 To configure the system, login as the user root on your machine and
 run the command::
 
-   privacyidea-setup
+   pi-appliance
 
 This will bring you to this start screen.
 
@@ -114,3 +119,8 @@ The entry `View Backups` will list all the backups available.
 You can select a backup and you are asked if you want to restore the data. 
 
 .. warning:: Existing data is overwritten and will be lost.
+
+
+.. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
+.. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso
+.. [#applianceNetKnights] https://netknights.it/en/produkte/privacyidea/
