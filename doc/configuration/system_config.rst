@@ -216,3 +216,13 @@ SerialLength
 The default length of generated serial numbers is an 8 digit hex string.
 If you need another length, it can be configured in the database table ``Config``
 with the key word ``SerialLength``.
+
+No Authenitcation Counter
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Usually privacyIDEA keeps track of how often a token is used for authentication and
+how often this authentication was successful. This is a per token counter.
+This information is written to the token database as a parameter of each token.
+
+The setting "Do not use an authentication counter per token" (``no_auth_counter``)
+means that privacyIDEA does not track this information at all.
