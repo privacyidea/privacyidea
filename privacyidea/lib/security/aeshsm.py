@@ -369,7 +369,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         return key_labels
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     logging.basicConfig()
     log.setLevel(logging.INFO)
     # log.setLevel(logging.DEBUG)

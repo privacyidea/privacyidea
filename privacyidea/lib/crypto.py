@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-12-19 Paul Lettich <paul.lettich@netknights.it>
+#             Change public functions to accept and return unicode
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use HSM for iv in aes_encrypt
 #  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -34,6 +36,11 @@
 """
 contains all crypto functions.
 Security module functions are contained under lib/security/
+
+The encrypt/decrypt functions for PINs and passwords accept bytes as well
+as unicode strings. They always return a hexlified unicode string.
+The functions which encrypt/decrypt arbitrary data return bytes and let the
+calling function handle the data.
 
 This lib.cryto is tested in tests/test_lib_crypto.py
 """
@@ -381,16 +388,16 @@ def decrypt(input, iv, id=0):
     decrypt a variable from the given input with an initialiation vector
 
     :param input: buffer, which contains the crypted value
-    :type  input: bytes
+    :type  input: bytes or str
     :param iv:    initialisation vector
-    :type  iv:    bytes
+    :type  iv:    bytes or str
     :param id:    contains the key id of the keyset which should be used
     :type  id:    int
     :return:      decrypted buffer
     :rtype: bytes
     '''
     hsm = get_hsm()
-    res = hsm.decrypt(input, iv, id)
+    res = hsm.decrypt(_to_bytes(input), _to_bytes(iv), id)
     return res
 
 

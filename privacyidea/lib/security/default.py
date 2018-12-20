@@ -41,12 +41,14 @@ The contents of the file is tested in tests/test_lib_crypto.py
 import logging
 import binascii
 import os
+import six
 
 from Crypto.Cipher import AES
-from privacyidea.lib.crypto import zerome, _to_bytes, _to_unicode, hexlify_and_unicode
+from privacyidea.lib.crypto import zerome, hexlify_and_unicode
 from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.utils import is_true
 
 from .password import PASSWORD
 
@@ -185,8 +187,7 @@ class DefaultSecurityModule(SecurityModule):
         if len(cipher) > 100:
             config["crypted"] = True
 
-        if (config.get("crypted") is True or
-                    config.get('crypted', "").lower() == "true"):
+        if is_true(config.get("crypted", "")):
             self.crypted = True
             self.is_ready = False
 
@@ -212,14 +213,18 @@ class DefaultSecurityModule(SecurityModule):
         if self.crypted and slot_id in self.secrets:
             return self.secrets.get(slot_id)
 
-        secret = ''
+        secret = b''
 
         if self.crypted:
             # if the password was not provided, read it from the module
             # singleton cache
             password = password or PASSWORD
+            if not password:
+                raise HSMException("Error decrypting the encryption key. "
+                                   "No password provided!")
             # Read all keys, decrypt them and return the key for
             # the slot id
+            # TODO we assume here, that the file contains the hexlified data
             with open(self.secFile) as f:
                 cipher = f.read()
 
@@ -334,15 +339,21 @@ class DefaultSecurityModule(SecurityModule):
         <IV:Cipher>
 
         :param text: The text to encrypt
-        :type text: str
+        :type text: str or bytes
         :param password: The password to derive a key from
-        :type password: str
+        :type password: str or bytes
         :return: IV and cipher text
         :rtype: str
         """
-        bkey = create_key_from_password(_to_bytes(password))
+        # TODO rewrite this when updating the crypto library (maybe externalise the AES)
+        # TODO replace with to_bytes() when available in utils.py
+        if isinstance(password, six.text_type):
+            password = password.encode('utf8')
+        if isinstance(text, six.text_type):
+            text = text.encode('utf8')
+        bkey = create_key_from_password(password)
         # convert input to ascii, so we can securely append bin data
-        input_data = binascii.hexlify(_to_bytes(text))
+        input_data = binascii.hexlify(text)
         input_data += b"\x01\x02"
         padding = (16 - len(input_data) % 16) % 16
         input_data += padding * b"\0"
@@ -367,7 +378,10 @@ class DefaultSecurityModule(SecurityModule):
         :return: The clear test
         :rtype: bytes
         """
-        bkey = create_key_from_password(_to_bytes(password))
+        # TODO replace with to_bytes() when available in utils.py
+        if isinstance(password, six.text_type):
+            password = password.encode('utf8')
+        bkey = create_key_from_password(password)
         # split the input data
         iv_hex, cipher_hex = data.strip().split(":")
         iv_bin = binascii.unhexlify(iv_hex)

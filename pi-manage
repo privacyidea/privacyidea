@@ -405,12 +405,14 @@ def encrypt_enckey(encfile):
 
     The result can be piped to a new enckey file.
     """
+    # TODO we just print out a string here and assume, the user pipes it into a file.
+    #      Maybe we should write the file here so we know what is in there
     password = getpass()
     password2 = getpass(prompt='Confirm: ')
     if password != password2:
         import sys
         sys.exit('Error: passwords do not match.')
-    with open(encfile, "r") as f:
+    with open(encfile, "rb") as f:
         enckey = f.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     print(res)
