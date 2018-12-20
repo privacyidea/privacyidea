@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Cleaning up the before_after method
 # 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Move before and after from api/token.py and system.py
 #            to this central location
@@ -85,19 +87,6 @@ def teardown_request(exc):
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
 
-# NOTE: This can be commented in to debug SQL pooling issues
-#@token_blueprint.before_app_request
-#def log_pools():
-#    from privacyidea.lib.pooling import get_registry
-#    from privacyidea.models import db
-#    engines = {"flask-sqlalchemy": db.engine}
-#    if hasattr(get_registry(), '_engines'):
-#        engines.update(get_registry()._engines)
-#    log.info("We have {} engines".format(len(engines)))
-#    for name, engine in engines.iteritems():
-#        log.info("engine {}: {}".format(name, engine.pool.status()))
-
-
 @token_blueprint.before_request
 @audit_blueprint.before_request
 @user_blueprint.before_request
@@ -172,22 +161,15 @@ def before_request():
         tokentype = get_token_type(serial)
     else:
         tokentype = None
+
     realm = getParam(request.all_data, "realm")
-    user_loginname = ""
-    resolver = ""
-    if "token_blueprint" in request.endpoint:
-        # In case of token endpoint we evaluate the user in the request.
-        # Note: In policy-endpoint "user" is part of the policy configuration
-        #  and will cause an exception
-        user_loginname = request.User.login
-        realm = request.User.realm or realm
-        resolver = request.User.resolver
+    resolver = getParam(request.all_data, "resolver")
 
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "user": user_loginname,
-                        "realm": realm,
-                        "resolver": resolver,
+                        "user": request.User.login,
+                        "realm": request.User.realm or realm,
+                        "resolver": request.User.resolver or resolver,
                         "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
