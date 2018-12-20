@@ -1113,7 +1113,7 @@ def api_key_required(request=None, action=None):
         if not auth_token:
             auth_token = request.headers.get('Authorization')
         try:
-            r = jwt.decode(auth_token, current_app.secret_key)
+            r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
             g.logged_in_user = {"username": r.get("username", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
