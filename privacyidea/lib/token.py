@@ -95,7 +95,8 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_timelimit,
                                               auth_lastauth,
                                               auth_cache,
-                                              config_lost_token)
+                                              config_lost_token,
+                                              reset_all_user_tokens)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from dateutil.tz import tzlocal
@@ -1894,7 +1895,8 @@ def check_realm_pass(realm, passw, options=None):
                                 "this realm"
     else:
         res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           options=options)
+                                           options=options,
+                                           allow_reset_all_tokens=False)
     return res, reply_dict
 
 
@@ -1982,7 +1984,8 @@ def check_user_pass(user, passw, options=None):
 
 
 @log_with(log)
-def check_token_list(tokenobject_list, passw, user=None, options=None):
+@libpolicy(reset_all_user_tokens)
+def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True):
     """
     this takes a list of token objects and tries to find the matching token
     for the given passw. It also tests,
@@ -1997,6 +2000,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
     :param passw: the provided passw (mostly pin+otp)
     :param user: the identified use - as class object
     :param options: additional parameters, which are passed to the token
+    :param allow_reset_all_tokens: If set to false, the policy reset_all_user_tokens does not have
+        any effect. It is used by the decorator.
 
     :return: tuple of success and optional response
     :rtype: (bool, dict)
@@ -2134,30 +2139,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                 reply_dict["password_change"] = valid_token_list[
                     0].is_pin_change(password=True)
         reply_dict["message"] = ", ".join(message_list)
-
-        # Check if we should reset ALL tokens of the user.
-        g = options.get("g")
-        if g:
-            clientip = options.get("clientip")
-            policy_object = g.policy_object
-            token_owner = valid_token_list[0].user
-            reset_all = policy_object.get_policies(
-                action=ACTION.RESETALLTOKENS,
-                scope=SCOPE.AUTH,
-                realm=token_owner.login if token_owner else None,
-                user=token_owner.realm if token_owner else None,
-                client=clientip, active=True,
-                audit_data=g.audit_object.audit_data)
-            if reset_all:
-                log.debug("Reset failcounter of all tokens of {0!s}".format(
-                    token_owner))
-                for tok_obj_reset in tokenobject_list:
-                    try:
-                        tok_obj_reset.reset()
-                    except Exception:
-                        log.debug(
-                            "registration token does not exist anymore and "
-                            "cannot be reset.")
 
     elif challenge_response_token_list:
         # The RESPONSE for a previous request of a challenge response token was
