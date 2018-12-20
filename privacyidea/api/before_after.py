@@ -162,14 +162,20 @@ def before_request():
     else:
         tokentype = None
 
-    realm = getParam(request.all_data, "realm")
-    resolver = getParam(request.all_data, "resolver")
+    if request.User:
+        audit_username = request.User.login
+        audit_realm = request.User.realm
+        audit_resolver = request.User.resolver
+    else:
+        audit_realm = getParam(request.all_data, "realm")
+        audit_resolver = getParam(request.all_data, "resolver")
+        audit_username = getParam(request.all_data, "user")
 
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "user": request.User.login,
-                        "realm": request.User.realm or realm,
-                        "resolver": request.User.resolver or resolver,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
                         "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
