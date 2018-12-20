@@ -280,7 +280,7 @@ def verify_auth_token(auth_token, required_role=None):
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
     try:
-        r = jwt.decode(auth_token, current_app.secret_key)
+        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
     except jwt.DecodeError as err:
         raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
                         id=ERROR.AUTHENTICATE_DECODING_ERROR)
