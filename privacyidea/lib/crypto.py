@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-12-19 Paul Lettich <paul.lettich@netknights.it>
+#             Change public functions to accept and return unicode
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use HSM for iv in aes_encrypt
 #  2017-10-17 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -35,6 +37,11 @@
 contains all crypto functions.
 Security module functions are contained under lib/security/
 
+The encrypt/decrypt functions for PINs and passwords accept bytes as well
+as unicode strings. They always return a hexlified unicode string.
+The functions which encrypt/decrypt arbitrary data return bytes and let the
+calling function handle the data.
+
 This lib.cryto is tested in tests/test_lib_crypto.py
 """
 from __future__ import division
@@ -46,12 +53,11 @@ import string
 from .log import log_with
 from .error import HSMException
 import binascii
+import six
 import ctypes
-from Crypto.Hash import SHA as SHA1
 from Crypto.Hash import SHA256 as HashFunc
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
-import os
 import base64
 try:
     from Crypto.Signature import pkcs1_15
@@ -74,33 +80,6 @@ pver = float(int(ma) + int(mi) * 0.1)
 
 log = logging.getLogger(__name__)
 
-c_hash = {'sha1': SHA1,
-          'sha256': HashFunc}
-
-try:
-    from Crypto.Hash import SHA224
-    c_hash['sha224'] = SHA224
-except:  # pragma: no cover
-    log.warning('Your system does not support Crypto SHA224 hash algorithm')
-
-try:
-    from Crypto.Hash import SHA384
-    c_hash['sha384'] = SHA384
-except:  # pragma: no cover
-    log.warning('Your system does not support Crypto SHA384 hash algorithm')
-
-try:
-    from Crypto.Hash import SHA512
-    c_hash['sha512'] = SHA512
-except:  # pragma: no cover
-    log.warning('Your system does not support Crypto SHA512 hash algorithm')
-
-
-# constant - later taken from the env?
-CONFIG_KEY = 1
-TOKEN_KEY = 2
-VALUE_KEY = 3
-
 
 class SecretObj(object):
     def __init__(self, val, iv, preserve=True):
@@ -110,8 +89,8 @@ class SecretObj(object):
         self.preserve = preserve
 
     def getKey(self):
-        log.warn('Requesting secret key '
-                 '- verify the usage scope and zero + free ')
+        log.warning('Requesting secret key '
+                    '- verify the usage scope and zero + free ')
         return decrypt(self.val, self.iv)
 
     def getPin(self):
@@ -119,9 +98,8 @@ class SecretObj(object):
 
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
-        enc_otp_key = encrypt(bhOtpKey, self.iv)
-        otpKeyEnc = binascii.hexlify(enc_otp_key)
-        return (otpKeyEnc == self.val)
+        enc_otp_key = _to_bytes(encrypt(bhOtpKey, self.iv))
+        return enc_otp_key == self.val
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
@@ -147,13 +125,6 @@ class SecretObj(object):
         self._clearKey_(preserve=self.preserve)
         return msg_bin
 
-# This is never used. So we will remove it.
-#    def encryptPin(self):
-#        self._setupKey_()
-#        res = encryptPin(self.bkey)
-#        self._clearKey_(preserve=self.preserve)
-#        return res
-
     def _setupKey_(self):
         if self.bkey is None:
             akey = decrypt(self.val, self.iv)
@@ -171,115 +142,93 @@ class SecretObj(object):
     def __del__(self):
         self._clearKey_()
         
-# This is never used. It would be used for something like:
-# with SecretObj:
-#    ....
-#    def __enter__(self):
-#        self._clearKey_()
-#
-#    def __exit__(self, typ, value, traceback):
-#        self._clearKey_()
+
+def _to_bytes(s):
+    """
+    Convert string to bytes if it isn't already
+    :param s: string to convert
+    :type s: str, bytes, unicode
+    :return: the converted string
+    :rtype: bytes
+    """
+    if isinstance(s, six.text_type):
+        s = s.encode('utf8')
+    return s
 
 
-# def check(st):
-#     """
-#     calculate the checksum of st
-#     :param st: input string
-#     :return: the checksum code as 2 hex bytes
-#     """
-#     summ = 0
-#     arry = bytearray(st)
-#     for x in arry:
-#         summ = summ ^ x
-#     res = str(hex(summ % 256))[2:]
-#     if len(res) < 2:
-#         res = '0' * (2 - len(res)) + res
-#     return res.upper()
+def _to_unicode(s):
+    """
+    decode a byte string to unicode using utf8
+    :param s: string to decode to utf8
+    :type s: bytes or str
+    :return: the utf-8 decoded string s
+    :rtype: str
+    """
+    if isinstance(s, bytes):
+        s = s.decode('utf8')
+    return s
 
-#
-# def kdf2(sharesecret, nonce,
-#          activationcode, length,
-#          iterations=10000,
-#          digest='SHA256', macmodule=HMAC, checksum=True):
-#     '''
-#     key derivation function
-#
-#     - takes the shared secret, an activation code and a nonce to generate a
-#          new key
-#     - the last 4 btyes (8 chars) of the nonce is the salt
-#     - the last byte    (2 chars) of the activation code are the checksum
-#     - the activation code mitght contain '-' signs for grouping char blocks
-#        aabbcc-ddeeff-112233-445566
-#
-#     :param sharedsecret:    hexlified binary value
-#     :param nonce:           hexlified binary value
-#     :param activationcode:  base32 encoded value
-#
-#     '''
-#     digestmodule = c_hash.get(digest.lower(), None)
-#
-#     byte_len = 2
-#     salt_len = 8 * byte_len
-#
-#     salt = u'' + nonce[-salt_len:]
-#     bSalt = binascii.unhexlify(salt)
-#     activationcode = activationcode.replace('-', '')
-#
-#     acode = activationcode
-#     if checksum is True:
-#         acode = str(activationcode)[:-2]
-#
-#     try:
-#         bcode = base64.b32decode(acode)
-#
-#     except Exception as exx:
-#         error = "Error during decoding activationcode %r: %r" % (acode, exx)
-#         log.error(error)
-#         raise Exception(error)
-#
-#     if checksum is True:
-#         checkCode = str(activationcode[-2:])
-#         veriCode = str(check(bcode)[-2:])
-#         if checkCode != veriCode:
-#             raise Exception('[crypt:kdf2] activation code checksum error!! '
-#                             ' [%s]%s:%s' % (acode, veriCode, checkCode))
-#
-#     activ = binascii.hexlify(bcode)
-#     passphrase = u'' + sharesecret + activ + nonce[:-salt_len]
-#     #keyStream = PBKDF2(binascii.unhexlify(passphrase),
-#     #                   bSalt, iterations=iterations,
-#     #                   digestmodule=digestmodule)
-#     #key = keyStream.read(length)
-#     key = pbkdf2_sha256(binascii.unhexlify(passphrase),
-#                         salt=bSalt, rounds=iterations)
-#     return key
+
+def hexlify_and_unicode(s):
+    """
+
+    :param s: string to hexlify
+    :type s: bytes or str
+    :return: hexlified string converted to unicode
+    :rtype: str
+    """
+
+    res = _to_unicode(binascii.hexlify(_to_bytes(s)))
+    return res
 
 
 @log_with(log, log_entry=False, log_exit=False)
 def hash(val, seed, algo=None):
+    """
+
+    :param val: value to hash
+    :type val: bytes or str or unicode
+    :param seed: seed for the hash
+    :type seed: bytes, str, unicode
+    :param algo:
+    :return: the hexlified hash value calculated from hash and seed
+    :rtype: str
+    """
     log.debug('hash()')
     m = sha256()
-    m.update(val.encode('utf-8'))
-    m.update(seed)
-    return m.digest()
+    m.update(_to_bytes(val))
+    m.update(_to_bytes(seed))
+    return hexlify_and_unicode(m.digest())
 
 
-def hash_with_pepper(password, rounds=10023, salt_size=10):
+def hash_with_pepper(password):
     """
     Hash function to hash with salt and pepper. The pepper is read from
     "PI_PEPPER" from pi.cfg.
 
     Is used with admins and passwordReset
 
-    :return: Hash string
+    :param password: the password to hash
+    :type password: str
+    :return: hashed password string
+    :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(key + password, rounds=rounds,
-                                                salt_size=salt_size)
+    pw_dig = passlib.hash.pbkdf2_sha512.hash(key + password)
     return pw_dig
 
 
 def verify_with_pepper(passwordhash, password):
+    """
+    verify the password hash with the given password and pepper
+
+    :param passwordhash: the passwordhash
+    :type passwordhash: str
+    :param password: the password to verify
+    :type password: str
+    :return: whether the password matches the hash
+    :rtype: bool
+    """
     # get the password pepper
     password = password or ""
     key = get_app_config_value("PI_PEPPER", "missing")
@@ -336,10 +285,16 @@ def set_hsm_password(password):
 
 @log_with(log, log_entry=False)
 def encryptPassword(password):
-    from privacyidea.lib.utils import to_utf8
+    """
+    Encrypt given password with hsm
+    :param password: the password
+    :type password: bytes or str
+    :return: the encrypted password
+    :rtype: bytes
+    """
     hsm = get_hsm()
     try:
-        ret = hsm.encrypt_password(to_utf8(password))
+        ret = hsm.encrypt_password(_to_bytes(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = "FAILED TO ENCRYPT PASSWORD!"
@@ -348,9 +303,14 @@ def encryptPassword(password):
 
 @log_with(log, log_entry=False)
 def encryptPin(cryptPin):
+    """
+    :param cryptPin: the pin to encrypt
+    :type cryptPin: bytes or str
+    :return: the encrypted pin
+    :rtype: str
+    """
     hsm = get_hsm()
-    ret = hsm.encrypt_pin(cryptPin)
-    return ret
+    return _to_unicode(hsm.encrypt_pin(_to_bytes(cryptPin)))
 
 
 @log_with(log, log_exit=False)
@@ -363,6 +323,9 @@ def decryptPassword(cryptPass, convert_unicode=False):
     :param convert_unicode: If true, interpret the decrypted password as an UTF-8 string
                             and convert it to unicode. If an error occurs here,
                             the original bytestring is returned.
+    :type convert_unicode: bool
+    :return: the decrypted password
+    :rtype: str or bytes
     """
     # NOTE: Why do we have the ``convert_unicode`` parameter?
     # Up until now, this always returned bytestrings. However, this breaks
@@ -371,17 +334,16 @@ def decryptPassword(cryptPass, convert_unicode=False):
     # takes unicode strings!). But always returning unicode might break
     # other call sites of ``decryptPassword``. So we add the
     # keyword argument to avoid breaking compatibility.
-    from privacyidea.lib.utils import to_unicode
     hsm = get_hsm()
     try:
         ret = hsm.decrypt_password(cryptPass)
-    except Exception as exx:  # pragma: no cover
+    except Exception as exx:
         log.warning(exx)
         ret = FAILED_TO_DECRYPT_PASSWORD
     try:
         if convert_unicode:
-            ret = to_unicode(ret)
-    except Exception as exx:  # pragma: no cover
+            ret = _to_unicode(ret)
+    except Exception as exx:
         log.warning(exx)
         # just keep ``ret`` as a bytestring in that case
     return ret
@@ -389,29 +351,35 @@ def decryptPassword(cryptPass, convert_unicode=False):
 
 @log_with(log, log_exit=False)
 def decryptPin(cryptPin):
+    """
+
+    :param cryptPin: the encrypted pin
+    :type cryptPin: str, bytes, unicode
+    :return: the decrypted pin
+    :rtype: str
+    """
     hsm = get_hsm()
-    ret = hsm.decrypt_pin(cryptPin)
-    return ret
+    return _to_unicode(hsm.decrypt_pin(_to_bytes(cryptPin)))
 
 
 @log_with(log, log_entry=False)
 def encrypt(data, iv, id=0):
     '''
-    encrypt a variable from the given input with an initialiation vector
+    encrypt a variable from the given input with an initialisation vector
 
-    :param input: buffer, which contains the value
-    :type  input: buffer of bytes
-    :param iv:    initilaitation vector
-    :type  iv:    buffer (20 bytes random)
-    :param id:    contains the id of which key of the keyset should be used
-    :type  id:    int
-    :return:      encryted buffer
-
+    :param data: buffer, which contains the value
+    :type  data: bytes or str
+    :param iv:   initialisation vector
+    :type  iv:   bytes or str
+    :param id:   contains the key id of the keyset which should be used
+    :type  id:   int
+    :return:     encrypted and hexlified data
+    :rtype: str
 
     '''
     hsm = get_hsm()
-    ret = hsm.encrypt(data, iv, id)
-    return ret
+    ret = hsm.encrypt(_to_bytes(data), _to_bytes(iv), id)
+    return hexlify_and_unicode(ret)
 
 
 @log_with(log, log_exit=False)
@@ -420,17 +388,17 @@ def decrypt(input, iv, id=0):
     decrypt a variable from the given input with an initialiation vector
 
     :param input: buffer, which contains the crypted value
-    :type  input: buffer of bytes
-    :param iv:    initilaitation vector
-    :type  iv:    buffer (20 bytes random)
-    :param id:    contains the id of which key of the keyset should be used
+    :type  input: bytes or str
+    :param iv:    initialisation vector
+    :type  iv:    bytes or str
+    :param id:    contains the key id of the keyset which should be used
     :type  id:    int
-    :return:      decryted buffer
-
+    :return:      decrypted buffer
+    :rtype: bytes
     '''
     hsm = get_hsm()
-    ret = hsm.decrypt(input, iv, id)
-    return ret
+    res = hsm.decrypt(_to_bytes(input), _to_bytes(iv), id)
+    return res
 
 
 @log_with(log, log_exit=False)
@@ -439,17 +407,18 @@ def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
     Decrypts the given cipherdata with the key/iv.
 
     :param key: The encryption key
-    :type key: binary string
+    :type key: bytes
     :param iv: The initialization vector
-    :type iv: binary string
+    :type iv: bytes
     :param cipherdata: The cipher text
     :type cipherdata: binary string
     :param mode: The AES MODE
     :return: plain text in binary data
+    :rtype: bytes
     """
     aes = AES.new(key, mode, iv)
     output = aes.decrypt(cipherdata)
-    padding = ord(output[-1])
+    padding = six.indexbytes(output, len(output) - 1)
     # remove padding
     output = output[0:-padding]
     return output
@@ -463,15 +432,16 @@ def aes_encrypt(key, iv, data, mode=AES.MODE_CBC):
     :type key: binary string
     :param iv: The initialization vector
     :type iv: binary string
-    :param cipherdata: The cipher text
-    :type cipherdata: binary string
+    :param data: The cipher text
+    :type data: bytes
     :param mode: The AES MODE
     :return: plain text in binary data
+    :rtype: bytes
     """
     aes = AES.new(key, mode, iv)
     # pad data
     num_pad = aes.block_size - (len(data) % aes.block_size)
-    data = data + chr(num_pad) * num_pad
+    data = data + six.int2byte(num_pad) * num_pad
     output = aes.encrypt(data)
     return output
 
@@ -484,7 +454,9 @@ def aes_encrypt_b64(key, data):
 
     :param key: Encryption key (binary format)
     :param data: Data to encrypt
+    :type data: bytes
     :return: base64 encrypted output, containing IV
+    :rtype: bytes
     """
     iv = geturandom(16)
     encdata = aes_encrypt(key, iv, data)
@@ -517,14 +489,15 @@ def geturandom(length=20, hex=False):
     :param hex: convert result to hexstring
     :type hex: bool
 
-    :return: buffer of bytes
+    :return:
+    :rtype: bytes, unicode
 
     '''
     hsm = get_hsm()
     ret = hsm.random(length)
         
     if hex:
-        ret = binascii.hexlify(ret)
+        ret = _to_unicode(binascii.hexlify(ret))
     return ret
 
 # some random functions based on geturandom #################################
@@ -679,8 +652,8 @@ def zerome(bufferObject):
     '''
     clear a string value from memory
 
-    :param string: the string variable, which should be cleared
-    :type  string: string or key buffer
+    :param bufferObject: the string variable, which should be cleared
+    :type  bufferObject: string or key buffer
 
     :return:    - nothing -
     '''

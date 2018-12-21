@@ -49,7 +49,7 @@ from flask import (Blueprint,
                    g)
 from .lib.utils import (send_result, get_all_params,
                         verify_auth_token)
-from ..lib.crypto import geturandom, init_hsm
+from privacyidea.lib.crypto import geturandom, init_hsm, hexlify_and_unicode
 from ..lib.error import AuthError, ERROR
 from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
@@ -278,8 +278,7 @@ def get_auth_token():
                                                   g.client_ip)
     else:
         import os
-        import binascii
-        nonce = binascii.hexlify(os.urandom(20))
+        nonce = hexlify_and_unicode(os.urandom(20))
         rights = []
         menus = []
 
@@ -293,7 +292,7 @@ def get_auth_token():
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
                         "rights": rights},
-                       secret, algorithm='HS256')
+                       secret, algorithm='HS256').decode('utf8')
 
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)

@@ -26,6 +26,7 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
+import six
 import logging
 from importlib import import_module
 
@@ -162,8 +163,12 @@ def to_unicode(s, encoding="utf-8"):
     """
     converts a value to unicode if it is of type str.
     
-    :param s: The utf-8 encoded str 
+    :param s: the str to decode
+    :type s: bytes, str
+    :param encoding: the encoding to use (default utf8)
+    :type encoding: str
     :return: unicode string
+    :rtype: str
     """
     if type(s) == str:
         s = s.decode(encoding)
@@ -572,8 +577,7 @@ def reload_db(timestamp, db_ts):
 
     :return: bool
     """
-    rdb = False
-    internal_timestamp = None
+    internal_timestamp = ''
     if timestamp:
         internal_timestamp = timestamp.strftime("%s")
     rdb = False
@@ -1089,12 +1093,16 @@ def convert_column_to_unicode(value):
     """
     Helper function for models. If ``value`` is None or a unicode object, do nothing.
     Otherwise, convert it to a unicode object.
+    :param value: the string to convert
+    :type value: str
     :return: a unicode object or None
     """
-    if value is None or isinstance(value, unicode):
+    if value is None or isinstance(value, six.text_type):
         return value
+    elif isinstance(value, bytes):
+        return value.decode('utf8')
     else:
-        return unicode(value)
+        return six.text_type(value)
 
 
 def convert_timestamp_to_utc(timestamp):

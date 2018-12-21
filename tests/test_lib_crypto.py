@@ -3,17 +3,18 @@
 This test file tests the lib.crypto and lib.security.default
 """
 from mock import call
+import binascii
 
 from privacyidea.lib.error import HSMException
 from .base import MyTestCase
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
-                                    decryptPassword, urandom,
-                                    get_rand_digit_str, geturandom,
-                                    get_alphanum_str,
-                                    hash_with_pepper, verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64, get_hsm,
-                                    init_hsm, set_hsm_password)
+                                    decryptPassword, urandom, get_rand_digit_str,
+                                    geturandom, get_alphanum_str, hash_with_pepper,
+                                    verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
+                                    get_hsm, init_hsm, set_hsm_password, hash,
+                                    encrypt, decrypt, _to_bytes, _to_unicode)
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -61,17 +62,17 @@ class SecurityModuleTestCase(MyTestCase):
         config = current_app.config
         hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE")})
 
-        cipher = hsm.encrypt("data", "iv12345678901234")
-        text = hsm.decrypt(cipher, "iv12345678901234")
-        self.assertTrue(text == "data", text)
+        cipher = hsm.encrypt(b"data", b"iv12345678901234")
+        text = hsm.decrypt(cipher, b"iv12345678901234")
+        self.assertTrue(text == b"data", text)
 
-        cipher = hsm.encrypt_pin("data")
+        cipher = hsm.encrypt_pin(b"data")
         text = hsm.decrypt_pin(cipher)
-        self.assertTrue(text == "data", text)
+        self.assertTrue(text == b"data", text)
 
-        cipher = hsm.encrypt_password("data")
+        cipher = hsm.encrypt_password(b"data")
         text = hsm.decrypt_password(cipher)
-        self.assertTrue(text == "data", text)
+        self.assertTrue(text == b"data", text)
 
     def test_06_password_encrypt_decrypt(self):
         res = DefaultSecurityModule.password_encrypt("secrettext", "password1")
@@ -81,7 +82,7 @@ class SecurityModuleTestCase(MyTestCase):
             "8cac15585ed2fbab05bd2b1ea2cc44b"), res)
 
         res = DefaultSecurityModule.password_decrypt(res, "password1")
-        self.assertTrue(res == "secrettext", res)
+        self.assertTrue(res == b"secrettext", res)
 
         # encrypt and decrypt binary data like the enckey
         enckey = geturandom(96)
@@ -145,9 +146,9 @@ class CryptoTestCase(MyTestCase):
         self.assertTrue(pin == "test", (r, pin))
 
     def test_01_encrypt_decrypt_pass(self):
-        r = encryptPassword("passwörd")
+        r = encryptPassword(u"passwörd".encode('utf8'))
         pin = decryptPassword(r)
-        self.assertTrue(pin == "passwörd", (r, pin))
+        self.assertEqual(pin, u"passwörd".encode('utf8'))
 
         r = encryptPassword(u"passwörd")
         pin = decryptPassword(r, convert_unicode=True)
@@ -155,16 +156,19 @@ class CryptoTestCase(MyTestCase):
 
         r = encryptPassword(u"passwörd")
         pin = decryptPassword(r, convert_unicode=False)
-        self.assertEqual(pin, "passwörd")
+        self.assertEqual(pin, u"passwörd".encode('utf8'))
 
         # error path returns the bytestring
-        r = encryptPassword(b"\x01\x02\x03\x04")
-        self.assertEqual(decryptPassword(r, convert_unicode=True), b"\x01\x02\x03\x04")
+        bs = b"\x01\x02\x03\x04\xff"
+        r = encryptPassword(bs)
+        self.assertEqual(decryptPassword(r, convert_unicode=True), bs)
+
+        self.assertEqual(decryptPassword('test'), 'FAILED TO DECRYPT PASSWORD!')
 
     def test_02_encrypt_decrypt_eas_base64(self):
         import os
         key = os.urandom(16)
-        data = "This is so secret!"
+        data = b"This is so secret!"
         s = aes_encrypt_b64(key, data)
         d = aes_decrypt_b64(key, s)
         self.assertEqual(data, d)
@@ -178,6 +182,37 @@ class CryptoTestCase(MyTestCase):
         s = aes_encrypt_b64(key, otp_seed)
         d = aes_decrypt_b64(key, s)
         self.assertEqual(otp_seed, d)
+
+    def test_03_hash(self):
+        import os
+        val = os.urandom(16)
+        seed = os.urandom(16)
+        h1 = hash(val, seed)
+        self.assertEqual(h1, hash(val, seed))
+        seed2 = os.urandom(16)
+        self.assertNotEqual(h1, hash(val, seed2))
+
+    def test_04_encrypt_decrypt_data(self):
+        import os
+        data = os.urandom(50)
+        iv = os.urandom(16)
+        c = encrypt(data, iv)
+        # verify
+        d = decrypt(binascii.unhexlify(c), iv)
+        self.assertEqual(data, d)
+
+        s = u"Encryption Text with unicode chars: äöü"
+        c = encrypt(s, iv)
+        d = decrypt(binascii.unhexlify(c), iv)
+        self.assertEqual(s, d.decode('utf8'))
+
+    def test_05_encode_decode(self):
+        b_str = b'Hello World'
+        self.assertEqual(_to_unicode(b_str), b_str.decode('utf8'))
+        u_str = u'Hello Wörld'
+        self.assertEqual(_to_unicode(u_str), u_str)
+        self.assertEqual(_to_bytes(b_str), b_str)
+        self.assertEqual(_to_bytes(u_str), u_str.encode('utf8'))
 
 
 class RandomTestCase(MyTestCase):
@@ -231,7 +266,6 @@ class RandomTestCase(MyTestCase):
     def test_06_hash_pepper(self):
         h = hash_with_pepper("superPassword")
         self.assertTrue("$pbkdf2"in h, h)
-        self.assertTrue("$10023"in h, h)
 
         r = verify_with_pepper(h, "superPassword")
         self.assertEqual(r, True)
@@ -271,10 +305,10 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             self.assertIs(hsm.session, pkcs11.session_mock)
 
             # mock just returns \x00\x01... for random values
-            self.assertEqual(hsm.random(4), "\x00\x01\x02\x03")
+            self.assertEqual(hsm.random(4), b"\x00\x01\x02\x03")
             pkcs11.session_mock.generateRandom.assert_called_once_with(4)
 
-            password = "topSekr3t" * 16
+            password = b"topSekr3t" * 16
             crypted = hsm.encrypt_password(password)
             # to generate the IV
             pkcs11.session_mock.generateRandom.assert_called_with(16)
@@ -304,7 +338,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             ])
 
             # simulate that encryption succeeds after five tries
-            password = "topSekr3t" * 16
+            password = b"topSekr3t" * 16
             with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 5):
                 encrypted = hsm.encrypt_password(password)
                 # the session has been opened initially, and five times after that
@@ -318,7 +352,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
 
             # simulate that random generation succeeds after five tries
             with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 5):
-                self.assertEqual(hsm.random(4), "\x00\x01\x02\x03")
+                self.assertEqual(hsm.random(4), b"\x00\x01\x02\x03")
                 self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 16)
 
     def test_04_fail_encrypt(self):
@@ -338,7 +372,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             ])
 
             # simulate that encryption still fails after five tries
-            password = "topSekr3t" * 16
+            password = b"topSekr3t" * 16
             with pkcs11.simulate_failure(pkcs11.session_mock.encrypt, 6):
                 with self.assertRaises(HSMException):
                     hsm.encrypt_password(password)
@@ -361,7 +395,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             ])
 
             # encryption+decryption succeeds once
-            password = "topSekr3t" * 16
+            password = b"topSekr3t" * 16
             crypted = hsm.encrypt_password(password)
             text = hsm.decrypt_password(crypted)
             self.assertEqual(text, password)
