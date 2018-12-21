@@ -44,4 +44,7 @@ myApp.controller("tokenChallengesController", function ($scope,
     // initialize
     $scope.get();
 
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
+
 });
