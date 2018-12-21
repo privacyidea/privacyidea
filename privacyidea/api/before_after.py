@@ -138,6 +138,9 @@ def before_request():
 
     try:
         request.User = get_user_from_param(request.all_data)
+        # overwrite or set the resolver parameter in case of a logged in user
+        if g.logged_in_user.get("role") == "user":
+            request.all_data["resolver"] = request.User.resolver
     except AttributeError:
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
         # takes a list as the userobject
