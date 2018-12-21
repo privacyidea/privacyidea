@@ -29,16 +29,16 @@ class APIAuditTestCase(MyTestCase):
         # Check that an administrator is only allowed to see log entries of
         # the defined realms.
         # fill some audit entries
-        Audit(action="enroll", success=1, realm="realm1A").save()
-        Audit(action="enroll", success=1, realm="realm1A").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
+        Audit(action="enroll", success=1, realm="realm1a").save()
+        Audit(action="enroll", success=1, realm="realm1a").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
 
         # check, that we see all audit entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": "realm1A"},
+                                           data={"realm": "realm1a"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -49,7 +49,20 @@ class APIAuditTestCase(MyTestCase):
 
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": "realm2B"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = json.loads(res.data.decode('utf8'))
+            self.assertTrue(json_response.get("result").get("status"), res)
+            self.assertEqual(json_response.get("result").get("value").get(
+                "count"), 9)
+            audit_list = json_response.get("result").get("value").get("auditdata")
+            audit_actions = [a for a in audit_list if a.get("action") == "GET /audit/"]
+            self.assertEqual(len(audit_actions), 2)
+
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={"realm": "realm2b"},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -61,7 +74,7 @@ class APIAuditTestCase(MyTestCase):
 
         # set policy for audit realms
         set_policy("audit01", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
-                   realm="realm1A")
+                   realm="realm1a")
 
         # check, that we only see allowed audit realms
         with self.app.test_request_context('/audit/',
@@ -72,8 +85,10 @@ class APIAuditTestCase(MyTestCase):
             json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
-            self.assertEqual(json_response.get("result").get("value").get(
-                "count"), 2 + 1)
+            audit_list = json_response.get("result").get("value").get("auditdata")
+            audit_realms = [a for a in audit_list if a.get("realm") == "realm1a"]
+            self.assertEqual(len(audit_realms), 3)
+            self.assertEqual(json_response.get("result").get("value").get("count"), 3)
 
         # delete policy
         delete_policy("audit01")
@@ -81,16 +96,16 @@ class APIAuditTestCase(MyTestCase):
     def test_03_get_allowed_audit_realm(self):
         # Check than an internal admin is allowed to see all realms
         # A helpdesk user in "adminrealm" is only allowerd to see realm1A
-        Audit(action="enroll", success=1, realm="realm1A").save()
-        Audit(action="enroll", success=1, realm="realm1A").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
-        Audit(action="enroll", success=1, realm="realm2B").save()
+        Audit(action="enroll", success=1, realm="realm1a").save()
+        Audit(action="enroll", success=1, realm="realm1a").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
+        Audit(action="enroll", success=1, realm="realm2b").save()
 
         # check, that we see all audit entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": "realm1A"},
+                                           data={"realm": "realm1a"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -101,7 +116,7 @@ class APIAuditTestCase(MyTestCase):
 
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data={"realm": "realm2B"},
+                                           data={"realm": "realm2b"},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -114,7 +129,7 @@ class APIAuditTestCase(MyTestCase):
         # set policy: helpdesk users in adminrealm are only allowed to
         # view "realm1A".
         set_policy("audit01", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
-                   adminrealm="adminrealm", realm="realm1A")
+                   adminrealm="adminrealm", realm="realm1a")
         # Test admin is allowed to view unrestricted logs!
         set_policy("audit02", scope=SCOPE.ADMIN, action=ACTION.AUDIT,
                    user="testadmin")
@@ -155,7 +170,7 @@ class APIAuditTestCase(MyTestCase):
             self.assertEqual(count, 6)
             # All entries are in realm1A!
             for ad  in auditdata:
-                self.assertEqual(ad.get("realm"), "realm1A")
+                self.assertEqual(ad.get("realm"), "realm1a")
 
         # Now check, that the testadmin (self.at) sees all entries!
         with self.app.test_request_context('/audit/',
@@ -168,7 +183,7 @@ class APIAuditTestCase(MyTestCase):
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
             auditdata = json_response.get("result").get("value").get("auditdata")
-            self.assertEqual(count, 21)
+            self.assertEqual(count, 22)
 
         # delete policy
         delete_policy("audit01")

@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Cleaning up the before_after method
 # 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Move before and after from api/token.py and system.py
 #            to this central location
@@ -85,19 +87,6 @@ def teardown_request(exc):
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
 
-# NOTE: This can be commented in to debug SQL pooling issues
-#@token_blueprint.before_app_request
-#def log_pools():
-#    from privacyidea.lib.pooling import get_registry
-#    from privacyidea.models import db
-#    engines = {"flask-sqlalchemy": db.engine}
-#    if hasattr(get_registry(), '_engines'):
-#        engines.update(get_registry()._engines)
-#    log.info("We have {} engines".format(len(engines)))
-#    for name, engine in engines.iteritems():
-#        log.info("engine {}: {}".format(name, engine.pool.status()))
-
-
 @token_blueprint.before_request
 @audit_blueprint.before_request
 @user_blueprint.before_request
@@ -141,8 +130,17 @@ def before_request():
     # from the Form data or from JSON in the request body.
     update_config_object()
     request.all_data = get_all_params(request.values, request.data)
+    if g.logged_in_user.get("role") == "user":
+        # A user is calling this API. First thing we do is restricting the user parameter.
+        # ...to restrict token view, audit view or token actions.
+        request.all_data["user"] = g.logged_in_user.get("username")
+        request.all_data["realm"] = g.logged_in_user.get("realm")
+
     try:
         request.User = get_user_from_param(request.all_data)
+        # overwrite or set the resolver parameter in case of a logged in user
+        if g.logged_in_user.get("role") == "user":
+            request.all_data["resolver"] = request.User.resolver
     except AttributeError:
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
         # takes a list as the userobject
@@ -166,23 +164,21 @@ def before_request():
         tokentype = get_token_type(serial)
     else:
         tokentype = None
-    realm = getParam(request.all_data, "realm")
-    user_loginname = ""
-    resolver = ""
-    if "token_blueprint" in request.endpoint:
-        # In case of token endpoint we evaluate the user in the request.
-        # Note: In policy-endpoint "user" is part of the policy configuration
-        #  and will cause an exception
-        user = get_user_from_param(request.all_data)
-        user_loginname = user.login
-        realm = user.realm or realm
-        resolver = user.resolver
+
+    if request.User:
+        audit_username = request.User.login
+        audit_realm = request.User.realm
+        audit_resolver = request.User.resolver
+    else:
+        audit_realm = getParam(request.all_data, "realm")
+        audit_resolver = getParam(request.all_data, "resolver")
+        audit_username = getParam(request.all_data, "user")
 
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "user": user_loginname,
-                        "realm": realm,
-                        "resolver": resolver,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
                         "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
@@ -191,22 +187,7 @@ def before_request():
                         "action_detail": "",
                         "info": ""})
 
-    if g.logged_in_user.get("role") == "user":
-        # A user is calling this API
-        # In case the token API is called by the user and not by the admin we
-        #  need to restrict the token view.
-        CurrentUser = get_user_from_param({"user":
-                                               g.logged_in_user.get(
-                                                   "username"),
-                                           "realm": g.logged_in_user.get(
-                                               "realm")})
-        request.all_data["user"] = CurrentUser.login
-        request.all_data["resolver"] = CurrentUser.resolver
-        request.all_data["realm"] = CurrentUser.realm
-        g.audit_object.log({"user": CurrentUser.login,
-                            "resolver": CurrentUser.resolver,
-                            "realm": CurrentUser.realm})
-    else:
+    if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
         g.audit_object.log({"administrator": g.logged_in_user.get("username")})
         # TODO: Check is there are realm specific admin policies, so that the

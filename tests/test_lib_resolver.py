@@ -1955,7 +1955,6 @@ class LDAPResolverTestCase(MyTestCase):
         r = delete_resolver("testname1")
         self.assertTrue(r)
 
-
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):

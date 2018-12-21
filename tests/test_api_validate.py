@@ -17,8 +17,8 @@ from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
-from privacyidea.lib.resolver import save_resolver, get_resolver_list
-from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib import _
 
 import time
@@ -2260,6 +2260,65 @@ class ValidateAPITestCase(MyTestCase):
         self.assertEqual(int(tok.get_tokeninfo("count_auth")), 1)
         remove_token(serial)
         delete_privacyidea_config("no_auth_counter")
+
+    @ldap3mock.activate
+    def test_32_secondary_login_attribute(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # First we create an LDAP resolver
+        rid = save_resolver({"resolver": "myLDAPres",
+                             "type": "ldapresolver",
+                             'LDAPURI': 'ldap://localhost',
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn, sn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                                         '"phone" : "telephoneNumber", '
+                                         '"mobile" : "mobile"'
+                                         ', "email" : "mail", '
+                                         '"surname" : "sn", '
+                                         '"givenname" : "givenName" }',
+                             'UIDTYPE': 'DN',
+                             'CACHE_TIMEOUT': 0
+                             })
+        self.assertTrue(rid)
+        added, failed = set_realm("tr", ["myLDAPres"])
+        self.assertEqual(added, ["myLDAPres"])
+        self.assertEqual(failed, [])
+
+        params = {"type": "spass",
+                  "pin": "spass"}
+        init_token(params, User("alice", "tr"))
+
+        # Alice Cooper is in the LDAP directory, but Cooper is the secondary login name
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "Cooper",
+                                                 "realm": "tr",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # Now check the audit!
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={"action": "*check*", "user": "alice"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = json.loads(res.data)
+            self.assertTrue(json_response.get("result").get("status"), res)
+            self.assertEqual(json_response.get("result").get("value").get("count"), 1)
+            self.assertTrue("logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
+                            json_response.get("result").get("value").get("auditdata"))
+
+        self.assertTrue(delete_realm("tr"))
+        self.assertTrue(delete_resolver("myLDAPres"))
+
 
 
 class AChallengeResponse(MyTestCase):
