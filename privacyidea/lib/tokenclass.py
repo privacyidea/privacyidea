@@ -97,10 +97,12 @@ from .crypto import decryptPassword
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
 from .utils import parse_timedelta, parse_legacy_time
-from policy import ACTION
+from .policy import ACTION
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import is_true
+from privacyidea.lib import _
+from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -1474,7 +1476,9 @@ class TokenClass(object):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'please enter otp: '
+        message = get_action_values_from_options(SCOPE.AUTH,
+                                                 ACTION.CHALLENGETEXT,
+                                                 options) or _('please enter otp: ')
         data = None
         attributes = None
 
@@ -1607,9 +1611,8 @@ class TokenClass(object):
             last_success_auth = parse_date_string(date_s)
             if not last_success_auth.tzinfo:
                 # the date string has no timezone, default timezone is UTC
-                # We need to reparse
-                last_success_auth = parse_date_string(date_s,
-                                                      tzinfos=tzutc)
+                # We need to set the timezone manually
+                last_success_auth = last_success_auth.replace(tzinfo=tzutc())
             # The last auth is to far in the past
             if last_success_auth + tdelta < datetime.datetime.now(tzlocal()):
                 res = False
@@ -1643,4 +1646,38 @@ class TokenClass(object):
         key = server_component[:-len(client_component)] + client_component
         return key
 
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
 
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        # The OTPKey is at the second column
+        key = l[1].strip()
+        if len(key) == 64:
+            hashlib = "sha256"
+        elif len(key) == 128:
+            hashlib = "sha512"
+        elif len(key) == 56:
+            hashlib = "sha224"
+        elif len(key) == 96:
+            hashlib = "sha384"
+        else:
+            hashlib = "sha1"
+
+        params = {"serial": l[0].strip(),
+                  "hashlib": hashlib,
+                  "otpkey": key,
+                  "type": l[2].strip()}
+
+        # get OTP len
+        if len(l) >= 4:
+            params["otplen"] = l[3].strip()
+        else:
+            params["otplen"] = 6
+
+        return params

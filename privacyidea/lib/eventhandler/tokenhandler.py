@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-06-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add dynamic email
+#  2018-04-14 Paul Lettich <paul.lettich@netknights.it>
+#             Add "delete tokeninfo" action
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow setting time with timedelta
 #  2017-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -41,7 +45,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo,
-                                   set_failcounter)
+                                   set_failcounter, delete_tokeninfo)
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
@@ -49,6 +53,7 @@ from privacyidea.lib import _
 import json
 import logging
 import datetime
+import yaml
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 
@@ -70,13 +75,14 @@ class ACTION_TYPE(object):
     SET_COUNTWINDOW = "set countwindow"
     SET_TOKENINFO = "set tokeninfo"
     SET_FAILCOUNTER = "set failcounter"
+    DELETE_TOKENINFO = "delete tokeninfo"
 
 
 class VALIDITY(object):
     """
     Allowed validity options
     """
-    START= "valid from"
+    START = "valid from"
     END = "valid till"
 
 
@@ -93,6 +99,14 @@ class TokenEventHandler(BaseEventHandler):
     description = "This event handler can trigger new actions on tokens."
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible
@@ -100,7 +114,7 @@ class TokenEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        realm_list = get_realms().keys()
+        realm_list = list(get_realms())
         actions = {ACTION_TYPE.SET_TOKENREALM:
                        {"realm":
                             {"type": "str",
@@ -143,6 +157,17 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleValue": "sms",
                             "description": _("Dynamically read the mobile number "
                                              "from the user store.")
+                        },
+                        "dynamic_email": {
+                            "type": "bool",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "email",
+                            "description": _("Dynamically read the email address "
+                                             "from the user store.")
+                        },
+                        "additional_params": {
+                            "type": "str",
+                            "description": _("A dictionary of additional init parameters.")
                         },
                         "motppin": {
                             "type": "str",
@@ -211,6 +236,14 @@ class TokenEventHandler(BaseEventHandler):
                                 "description": _("Set the above key the this "
                                                  "value.")
                             }
+                       },
+                   ACTION_TYPE.DELETE_TOKENINFO:
+                       {"key":
+                            {
+                                "type": "str",
+                                "required": True,
+                                "description": _("Delete this tokeninfo key.")
+                            }
                        }
                    }
         return actions
@@ -229,7 +262,7 @@ class TokenEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        content = json.loads(response.data)
+        content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
@@ -244,7 +277,8 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_VALIDITY,
                               ACTION_TYPE.SET_COUNTWINDOW,
                               ACTION_TYPE.SET_TOKENINFO,
-                              ACTION_TYPE.SET_FAILCOUNTER]:
+                              ACTION_TYPE.SET_FAILCOUNTER,
+                              ACTION_TYPE.DELETE_TOKENINFO]:
             if serial:
                 log.info("{0!s} for token {1!s}".format(action, serial))
                 if action.lower() == ACTION_TYPE.SET_TOKENREALM:
@@ -299,6 +333,8 @@ class TokenEventHandler(BaseEventHandler):
                                       realm=realm,
                                       ua_browser=request.user_agent.browser,
                                       ua_string=request.user_agent.string))
+                elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
+                    delete_tokeninfo(serial, handler_options.get("key"))
                 elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                     start_date = handler_options.get(VALIDITY.START)
                     end_date = handler_options.get(VALIDITY.END)
@@ -330,23 +366,29 @@ class TokenEventHandler(BaseEventHandler):
             if is_true(handler_options.get("user")):
                 user = self._get_tokenowner(request)
                 tokentype = handler_options.get("tokentype")
-                # Some tokentypes need additional parameters or otherwise
-                # will fail to enroll.
-                # TODO: Other tokentypes will require additional parameters
+                # Some tokentypes need additional parameters
+                if handler_options.get("additional_params"):
+                    add_params = yaml.safe_load(handler_options.get("additional_params"))
+                    if type(add_params) == dict:
+                        init_param.update(add_params)
+
                 if tokentype == "sms":
                     if handler_options.get("dynamic_phone"):
                         init_param["dynamic_phone"] = 1
                     else:
                         init_param['phone'] = user.get_user_phone(
-                            phone_type='mobile')
+                            phone_type='mobile', index=0)
                         if not init_param['phone']:
                             log.warning("Enrolling SMS token. But the user "
                                         "{0!r} has no mobile number!".format(user))
                 elif tokentype == "email":
-                    init_param['email'] = user.info.get("email", "")
-                    if not init_param['email']:
-                        log.warning("Enrolling EMail token. But the user {0!s}"
-                                    "has no email address!".format(user))
+                    if handler_options.get("dynamic_email"):
+                        init_param["dynamic_email"] = 1
+                    else:
+                        init_param['email'] = user.info.get("email", "")
+                        if not init_param['email']:
+                            log.warning("Enrolling EMail token. But the user {0!s}"
+                                        "has no email address!".format(user))
                 elif tokentype == "motp":
                     init_param['motppin'] = handler_options.get("motppin")
 
@@ -354,4 +396,3 @@ class TokenEventHandler(BaseEventHandler):
             log.info("New token {0!s} enrolled.".format(t.token.serial))
 
         return ret
-

@@ -53,34 +53,10 @@ storage.
 import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import parse_timedelta
+from privacyidea.lib.utils import parse_timedelta, get_module_class
 
 
-@log_with(log)
-def getAuditClass(packageName, className):
-    """
-    helper method to load the Audit class from a given
-    package in literal:
-
-    example:
-
-        getAuditClass("privacyidea.lib.auditmodules.sqlaudit", "Audit")
-
-    check:
-        checks, if the log method exists
-        if not an error is thrown
-
-    """
-    mod = __import__(packageName, globals(), locals(), [className])
-    klass = getattr(mod, className)
-    log.debug("klass: {0!s}".format(klass))
-    if not hasattr(klass, "log"):  # pragma: no cover
-        raise NameError("Audit AttributeError: " + packageName + "." +
-                        className + " instance has no attribute 'log'")
-    return klass
-
-
-@log_with(log)
+@log_with(log, log_entry=False)
 def getAudit(config):
     """
     This wrapper function creates a new audit object based on the config
@@ -95,7 +71,7 @@ def getAudit(config):
     :return: Audit Object
     """
     audit_module = config.get("PI_AUDIT_MODULE")
-    audit = getAuditClass(audit_module, "Audit")(config)
+    audit = get_module_class(audit_module, "Audit", "log")(config)
     return audit
 
 

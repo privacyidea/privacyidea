@@ -75,7 +75,7 @@ __version__ = "0.1"
 from privacyidea.lib.user import get_user_list, User
 from privacyidea.lib.token import get_tokens, remove_token, unassign_token
 from privacyidea.app import create_app
-from flask.ext.script import Manager
+from flask_script import Manager
 import datetime
 import re
 

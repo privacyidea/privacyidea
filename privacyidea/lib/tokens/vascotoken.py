@@ -157,9 +157,13 @@ class VascoTokenClass(TokenClass):
                 # wrong OTP value, no log message
                 pass
             elif result == 201:
-                log.warning("A previous OTP value was used again!")
+                log.warning("VASCO token failed to authenticate, code replay attempt, previous OTP value was used again!")
             elif result == 202:
                 log.warning("Token-internal fail counter reached its maximum!")
+            elif result == -202:
+                log.warning("VASCO token failed to authenticate, response too small, user did not type his complete OTP!")
+            elif result == -205:
+                log.warning("VASCO token failed to authenticate, response not decimal!")
             else:
                 log.warning("VASCO token failed to authenticate, result: {!r}".format(result))
             return -1

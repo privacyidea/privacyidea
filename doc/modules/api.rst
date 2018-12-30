@@ -23,9 +23,17 @@ Now you can take a look at the several REST endpoints.
    api/token
    api/user
    api/policy
+   api/event
    api/machineresolver
    api/machines
+   api/privacyideaserver
+   api/caconnector
+   api/recover
+   api/register
+   api/monitoring
+   api/periodictask
    api/application
    api/ttype
    api/smtpserver
-
+   api/smsgateway
+   api/subscriptions

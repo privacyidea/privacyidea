@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-23-09 Paul Lettich <paul.lettich@netknights.it>
+#             Add decrease and reset counter actions
 #  2018-02-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Initial writup
+#             Initial writeup
 #
 # License:  AGPLv3
 # (c) 2018. Cornelius Kölbel
@@ -20,13 +22,14 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """This is the event handler module for increasing database counters.
+__doc__ = """This is the event handler module for
+increasing/decreasing/resetting database counters.
 These counters can be used by rrdtool to monitor values and print time series of
 certain parameters.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
-from privacyidea.lib.counter import increase
+from privacyidea.lib.counter import increase, decrease, reset
 import logging
 import traceback
 
@@ -44,6 +47,14 @@ class CounterEventHandler(BaseEventHandler):
     description = "This event handler increases arbitrary counters in the database."
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
+
+    @property
     def actions(cls):
         """
         This method returns a dictionary of allowed actions and possible
@@ -51,12 +62,24 @@ class CounterEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        actions = {"increase_counter":
-                        {"counter_name": {
-                            "type": "str",
-                            "description": _("The identifier/key of the counter.")}
-                        }
-        }
+        actions = {"increase_counter": {
+            "counter_name": {
+                "type": "str",
+                "description": _("The identifier/key of the counter.")}
+            },
+            "decrease_counter": {
+                "counter_name": {
+                    "type": "str",
+                    "description": _("The identifier/key of the counter.")},
+                'allow_negative_values': {
+                    "type": "bool",
+                    "description": _("Don't stop counter if it reaches zero.")}
+            },
+            "reset_counter": {
+                "counter_name": {
+                    "type": "str",
+                    "description": _("The identifier/key of the counter.")}
+        }}
         return actions
 
     def do(self, action, options=None):
@@ -73,12 +96,19 @@ class CounterEventHandler(BaseEventHandler):
         #g = options.get("g")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
+        counter_name = handler_options.get("counter_name")
 
         if action == "increase_counter":
-            counter_name = handler_options.get("counter_name")
             r = increase(counter_name)
             log.debug(u"Increased the counter {0!s} to {1!s}.".format(counter_name,
                                                                       r))
+        elif action == "decrease_counter":
+            allow_negative = handler_options.get("allow_negative_values")
+            r = decrease(counter_name, allow_negative)
+            log.debug(u"Decreased the counter {0!s} to {1!s}.".format(counter_name,
+                                                                      r))
+        elif action == "reset_counter":
+            reset(counter_name)
+            log.debug(u"Reset the counter {0!s} to 0.".format(counter_name))
 
         return ret
-

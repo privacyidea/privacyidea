@@ -2,6 +2,8 @@
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
+#  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add censored password functionality
 #  2017-12-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add configurable multi-value-attributes
 #             with the help of Nomen Nescio
@@ -58,7 +60,7 @@ import logging
 import yaml
 import functools
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
@@ -82,6 +84,8 @@ from privacyidea.lib.utils import to_utf8, to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
+from operator import itemgetter
+from six import string_types
 
 CACHE = {}
 
@@ -188,28 +192,48 @@ def cache(func):
     """
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
-        # If it does not exist, create the node for this instance
-        resolver_id = self.getResolverId()
-        if not resolver_id in CACHE:
-            CACHE[resolver_id] = {"getUserId": {},
-                                  "getUserInfo": {},
-                                  "_getDN": {}}
+        # Only run the code, in case we have a configured cache!
+        if self.cache_timeout > 0:
+            # If it does not exist, create the node for this instance
+            resolver_id = self.getResolverId()
+            now = datetime.datetime.now()
+            tdelta = datetime.timedelta(seconds=self.cache_timeout)
+            if not resolver_id in CACHE:
+                CACHE[resolver_id] = {"getUserId": {},
+                                      "getUserInfo": {},
+                                      "_getDN": {}}
+            else:
+                # Clean up the cache in the current resolver and the current function
+                _to_be_deleted = []
+                try:
+                    for user, cached_result in CACHE[resolver_id].get(func.func_name).items():
+                        if now > cached_result.get("timestamp") + tdelta:
+                            _to_be_deleted.append(user)
+                except RuntimeError:
+                    # This might happen if thread A evicts an expired
+                    # cache entry while thread B looks for expired cache entries
+                    pass
+                for user in _to_be_deleted:
+                    try:
+                        del CACHE[resolver_id][func.func_name][user]
+                    except KeyError:
+                        pass
+                del _to_be_deleted
 
-        # get the portion of the cache for this very LDAP resolver
-        r_cache = CACHE.get(resolver_id).get(func.func_name)
-        if args[0] in r_cache and \
-                        datetime.datetime.now() < r_cache[args[0]][
-                    "timestamp"] + \
-                        datetime.timedelta(seconds=self.cache_timeout):
-            log.debug("Reading {0!r} from cache for {1!r}".format(args[0],
-                                                              func.func_name))
-            return r_cache[args[0]]["value"]
+            # get the portion of the cache for this very LDAP resolver
+            r_cache = CACHE.get(resolver_id).get(func.func_name)
+            entry = r_cache.get(args[0])
+            if entry and now < entry.get("timestamp") + tdelta:
+                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.func_name))
+                return entry.get("value")
 
         f_result = func(self, *args, **kwds)
-        # now we cache the result
-        CACHE[resolver_id][func.func_name][args[0]] = {
-            "value": f_result,
-            "timestamp": datetime.datetime.now()}
+
+        if self.cache_timeout > 0:
+            # now we cache the result
+            CACHE[resolver_id][func.func_name][args[0]] = {
+                "value": f_result,
+                "timestamp": now}
 
         return f_result
 
@@ -404,7 +428,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
-                          attributes=self.userinfo.values())
+                          attributes=list(self.userinfo.values()))
             r = self.l.response
             r = self._trim_result(r)
             if len(r) > 1:  # pragma: no cover
@@ -454,7 +478,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=to_utf8(userId),
                           search_scope=self.scope,
                           search_filter=u"(&" + self.searchfilter + u")",
-                          attributes=self.userinfo.values())
+                          attributes=list(self.userinfo.values()))
         else:
             search_userId = to_unicode(self._trim_user_id(userId))
             filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
@@ -463,7 +487,7 @@ class IdResolver (UserIdResolver):
             self.l.search(search_base=self.basedn,
                               search_scope=self.scope,
                               search_filter=filter,
-                              attributes=self.userinfo.values())
+                              attributes=list(self.userinfo.values()))
 
         r = self.l.response
         r = self._trim_result(r)
@@ -489,7 +513,11 @@ class IdResolver (UserIdResolver):
             for map_k, map_v in self.userinfo.items():
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
-                        ret[map_k] = ldap_v[0]
+                        # An objectGUID should be no list, since it is unique
+                        if isinstance(ldap_v, string_types):
+                            ret[map_k] = ldap_v.strip("{").strip("}")
+                        else:
+                            raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
                     elif type(ldap_v) == list and map_k not in self.multivalueattributes:
                         # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
@@ -529,18 +557,34 @@ class IdResolver (UserIdResolver):
         if len(self.loginname_attribute) > 1:
             loginname_filter = u""
             for l_attribute in self.loginname_attribute:
-                loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
-                                                          login_name)
+                # Special case if we have a guid
+                try:
+                    if l_attribute.lower() == "objectguid":
+                        search_login_name = trim_objectGUID(login_name)
+                    else:
+                        search_login_name = login_name
+                    loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
+                                                              search_login_name)
+                except ValueError:
+                    # This happens if we have a self.loginname_attribute like ["sAMAccountName","objectGUID"],
+                    # the user logs in with his sAMAccountName, which can
+                    # not be transformed to a UUID
+                    log.debug(u"Can not transform {0!s} to a objectGUID.".format(login_name))
+
             loginname_filter = u"|" + loginname_filter
         else:
+            if self.loginname_attribute[0].lower() == "objectguid":
+                search_login_name = trim_objectGUID(login_name)
+            else:
+                search_login_name = login_name
             loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
-                                                   login_name)
+                                                   search_login_name)
 
         log.debug("login name filter: {!r}".format(loginname_filter))
         filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
 
         # create search attributes
-        attributes = self.userinfo.values()
+        attributes = list(self.userinfo.values())
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
@@ -569,7 +613,7 @@ class IdResolver (UserIdResolver):
         """
         ret = []
         self._bind()
-        attributes = self.userinfo.values()
+        attributes = list(self.userinfo.values())
         ad_timestamp = get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
@@ -624,7 +668,8 @@ class IdResolver (UserIdResolver):
         and the name of the resolver.
         """
         s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
-                                          self.searchfilter, self.userinfo)
+                                           self.searchfilter,
+                                           sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
         return r
 
@@ -674,7 +719,7 @@ class IdResolver (UserIdResolver):
         self.timeout = float(config.get("TIMEOUT", 5))
         self.cache_timeout = int(config.get("CACHE_TIMEOUT", 120))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
-        self.loginname_attribute = config.get("LOGINNAMEATTRIBUTE","").split(",")
+        self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE","").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         userinfo = config.get("USERINFO", "{}")
         self.userinfo = yaml.safe_load(userinfo)
@@ -706,6 +751,14 @@ class IdResolver (UserIdResolver):
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
 
         return self
+
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
+        """
+        return len(self.loginname_attribute) > 1
 
     @staticmethod
     def split_uri(uri):
@@ -828,12 +881,9 @@ class IdResolver (UserIdResolver):
         """
         This function lets you test the to be saved LDAP connection.
 
-        
-
         :param param: A dictionary with all necessary parameter to test
                         the connection.
         :type param: dict
-
         :return: Tuple of success and a description
         :rtype: (bool, string)
 
@@ -879,7 +929,7 @@ class IdResolver (UserIdResolver):
             if not l.bind():
                 raise Exception("Wrong credentials")
             # create searchattributes
-            attributes = yaml.safe_load(param["USERINFO"]).values()
+            attributes = list(yaml.safe_load(param["USERINFO"]).values())
             if uidtype.lower() != "dn":
                 attributes.append(str(uidtype))
             # search for users...
@@ -906,17 +956,18 @@ class IdResolver (UserIdResolver):
                     log.debug("{0!s}".format(traceback.format_exc()))
 
             if uidtype_count < count:  # pragma: no cover
-                desc = _("Your LDAP config found %i user objects, but only %i "
-                         "with the specified uidtype" % (count, uidtype_count))
+                desc = _("Your LDAP config found {0!s} user objects, but only {1!s} "
+                         "with the specified uidtype").format(count, uidtype_count)
             else:
-                desc = _("Your LDAP config seems to be OK, %i user objects "
-                         "found.") % count
+                desc = _("Your LDAP config seems to be OK, {0!s} user objects "
+                         "found.").format(count)
 
             l.unbind()
             success = True
 
         except Exception as e:
             desc = "{0!r}".format(e)
+            log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, desc
 
@@ -989,7 +1040,7 @@ class IdResolver (UserIdResolver):
         :return: dict with attribute name as keys and values
         """
         ldap_attributes = {}
-        for fieldname, value in attributes.iteritems():
+        for fieldname, value in attributes.items():
             if self.map.get(fieldname):
                 if fieldname == "password":
                     # Variable value may be either a string or a list
@@ -1023,8 +1074,7 @@ class IdResolver (UserIdResolver):
         sha_hash.update(salt)
 
         # Create a base64 encoded string
-        digest_b64 = '{0}{1}'.format(sha_hash.digest(),
-                salt).encode('base64').strip()
+        digest_b64 = binascii.b2a_base64(sha_hash.digest() + salt).strip()
 
         # Tag it with SSHA
         tagged_digest = '{{SSHA}}{}'.format(digest_b64)
@@ -1044,7 +1094,7 @@ class IdResolver (UserIdResolver):
         modify_changes = {}
         uinfo = self.getUserInfo(uid)
 
-        for fieldname, value in attributes.iteritems():
+        for fieldname, value in attributes.items():
             if value:
                 if fieldname in uinfo:
                     modify_changes[fieldname] = [MODIFY_REPLACE, [value]]

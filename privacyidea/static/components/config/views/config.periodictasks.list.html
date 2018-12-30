@@ -1,0 +1,61 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-responsive table-striped">
+        <thead>
+        <tr>
+            <th translate>Order</th>
+            <th translate>Active</th>
+            <!--<th translate>Id</th>-->
+            <th translate>Description</th>
+            <th translate>Interval</th>
+            <th translate>Taskmodule</th>
+            <th translate>Nodes</th>
+            <th translate>Options</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="ptask in periodictasks">
+            <td>
+                <input type="number" ng-model="ptask.ordering"
+                       class="form-control" min="0"
+                       ng-change="orderChanged(ptask)" />
+            </td>
+            <td>
+                <span ng-show="ptask.active"
+                      class="glyphicon glyphicon-ok"
+                      ng-click="disablePeriodicTask(ptask.id)">
+                </span>
+                <span ng-hide="ptask.active"
+                      class="glyphicon glyphicon-minus"
+                      ng-click="enablePeriodicTask(ptask.id)">
+                </span>
+            </td>
+            <td>
+                <a ui-sref="config.periodictasks.details({ptaskid: ptask.id})">
+                    {{ ptask.name }}
+                </a>
+            </td>
+            <td>
+                {{ ptask.interval }}
+            </td>
+            <td>
+                {{ ptask.taskmodule }}
+            </td>
+            <td>
+                {{ ptask.nodes }}
+            </td>
+            <td>
+                {{ ptask.options | json }}
+            </td>
+            <td>
+                <button class="btn btn-danger"
+                        ng-show="checkRight('periodictask_write')"
+                        ng-click="delPeriodicTask(ptask.id)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete</span>
+                </button>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>

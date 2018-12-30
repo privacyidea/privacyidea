@@ -4,17 +4,19 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, ACTION, MAIN_MENU,
-                                    delete_all_policies)
+                                    delete_all_policies,
+                                    get_action_values_from_options)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 import datetime
 PWFILE = "tests/testdata/passwords"
@@ -323,6 +325,18 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("hotp" in ttypes)
         self.assertFalse("spass" in ttypes)
 
+        type_policies = P.get_action_values("tokentype", scope=SCOPE.AUTHZ)
+        self.assertTrue("motp" in type_policies.keys())
+        self.assertTrue("totp" in type_policies.keys())
+        self.assertTrue("hotp" in type_policies.keys())
+        self.assertFalse("spass" in type_policies.keys())
+
+        # motp is defined in policy "tt2"
+        self.assertEqual(type_policies.get("motp"), ["tt2"])
+        # totp and hotp is defined in policy "tt1"
+        self.assertEqual(type_policies.get("hotp"), ["tt1"])
+        self.assertEqual(type_policies.get("totp"), ["tt1"])
+
     def test_13_get_allowed_serials(self):
         set_policy(name="st1", scope=SCOPE.AUTHZ, action="serial=OATH")
         set_policy(name="st2", scope=SCOPE.AUTHZ, action="serial=mOTP ")
@@ -332,6 +346,10 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("OATH" in ttypes)
         self.assertTrue("mOTP" in ttypes)
         self.assertFalse("TOTP" in ttypes)
+
+        serial_policies = P.get_action_values("serial", scope=SCOPE.AUTHZ)
+        self.assertEqual(serial_policies.get("OATH"), ["st1"])
+        self.assertEqual(serial_policies.get("mOTP"), ["st2"])
 
     def test_14_fail_unique_policies(self):
         # create policies with two different texts
@@ -495,7 +513,7 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
         rights = P.ui_get_rights(SCOPE.USER, "realm2", "user")
         # there was still another policy...
-        self.assertEqual(rights, ["enable", "disable"])
+        self.assertEqual(set(rights), {"enable", "disable"})
 
         delete_policy("tokenEnroll")
         delete_policy("userpol")
@@ -711,3 +729,142 @@ class PolicyTestCase(MyTestCase):
 
         p = P.get_policies(action="enroll", user=u'nönäscii')
         self.assertEqual(len(p), 1)
+
+        delete_policy(name="polnonascii")
+
+    def test_23_priorities(self):
+        # create three policies with three different texts and different priorities
+        set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext=text 1", priority=4)
+        set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext=text 2", priority=1)
+        set_policy(name="email3", scope=SCOPE.AUTH, action="emailtext=text 3", priority=77)
+
+        # this chooses email2, because it has the highest priority
+        P = PolicyClass()
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True).keys(),
+                         ["text 2"])
+
+        delete_policy("email2")
+        P.reload_from_db()
+
+        # with email2 gone, this chooses email1
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True).keys(),
+                         ["text 1"])
+
+        # if we now add another policy with priority 77, we get no conflict
+        # because email1 is chosen
+        set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=77)
+        P.reload_from_db()
+
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True).keys(),
+                         ["text 1"])
+
+        # but we get a conflict if we change the priority of email4 to 4
+        set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=4)
+        P.reload_from_db()
+
+        with self.assertRaises(PolicyError) as cm:
+            P.get_action_values(
+                action="emailtext", scope=SCOPE.AUTH,
+                unique=True, allow_white_space_in_action=True)
+        self.assertIn("policies with conflicting actions", str(cm.exception))
+
+        pols = P.get_policies(action="emailtext", scope=SCOPE.AUTH)
+        self.assertEqual(len(pols), 3)
+        with self.assertRaises(PolicyError) as cm:
+            P.check_for_conflicts(pols, "emailtext")
+
+        P.check_for_conflicts([], "emailtext")
+        P.check_for_conflicts([pols[0]], "emailtext")
+
+        # we can also change the priority
+        set_policy(name="email4", priority=3)
+        P.reload_from_db()
+
+        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                             unique=True, allow_white_space_in_action=True).keys(),
+                         ["text 4"])
+
+        # now we have
+        # email1, priority=4
+        # email3, priority=77
+        # email4, priority=3
+
+        # export, delete all, re-import
+        exported = export_policies(P.get_policies())
+        self.assertIn("priority = 4", exported)
+        self.assertIn("priority = 77", exported)
+        delete_all_policies()
+        import_policies(exported)
+
+        pols = P.get_policies(action="emailtext", scope=SCOPE.AUTH)
+        self.assertEqual(len(pols), 3)
+        # this sorts by priority
+        self.assertEqual([p['name'] for p in pols],
+                         ['email4', 'email1', 'email3'])
+
+        # priority must be at least 1
+        with self.assertRaises(ParameterError):
+            set_policy(name="email4", scope=SCOPE.AUTH, priority=0)
+        with self.assertRaises(ParameterError):
+            set_policy(name="email4", scope=SCOPE.AUTH, priority=-5)
+
+        delete_policy("email1")
+        delete_policy("email3")
+        delete_policy("email4")
+
+    def test_23_priorities_equal_actions(self):
+        # create two policies with the same action values
+        set_policy(name="email1", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
+        set_policy(name="email2", scope=SCOPE.AUTH, action="emailtext='text 1'", priority=1)
+
+        # this reduces the action values to unique values
+        P = PolicyClass()
+        self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext").keys(),
+                         ["text 1"])
+        # this is allowed if the policies agree
+        self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True).keys(),
+                         ["text 1"])
+
+        set_policy(name="email2", action="emailtext='text 2'")
+        P.reload_from_db()
+        with self.assertRaises(PolicyError):
+            P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True)
+
+        delete_policy("email1")
+        delete_policy("email2")
+
+    def test_24_challenge_text(self):
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        options = {"g": g,
+                   "user": User("cornelius", self.realm1)}
+
+        set_policy("chaltext", scope=SCOPE.AUTH, action="{0!s}=Wo du wolle?".format(ACTION.CHALLENGETEXT))
+        g.policy_object = PolicyClass()
+
+        val = get_action_values_from_options(SCOPE.AUTH, ACTION.CHALLENGETEXT, options)
+        self.assertEqual(val, u"Wo du wolle?")
+
+        delete_policy("chaltext")
+
+    def test_25_get_action_values(self):
+        # We test action values with different priority and values!
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        set_policy("act3", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN), priority=3)
+
+        # Now we should get the userstore action value. Both policies act1 and act2 have the unique value
+        # with prioritoy 1
+        P = PolicyClass()
+        audit_data = {}
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, unique=True, audit_data=audit_data)
+
+        self.assertEqual(r, {"userstore": ["act1", "act2"]})
+
+        # The audit_data contains act1 and act2
+        self.assertTrue("act1" in audit_data.get("policies"))
+        self.assertTrue("act2" in audit_data.get("policies"))
+        self.assertTrue("act3" not in audit_data.get("policies"))

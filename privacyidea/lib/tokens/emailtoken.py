@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#  2018-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Let the client choose to get a HTTP 500 Error code if
+#             SMS fails.
 #  2018-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add dynamic email address. Dynamically read from user source.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -69,7 +72,7 @@ from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import (SCOPE, ACTION, get_action_values_from_options)
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -169,6 +172,11 @@ class EmailTokenClass(HotpTokenClass):
                        'desc': _('If set, a new EMail OTP will be sent '
                                  'after successful authentication with '
                                  'one EMail OTP.')},
+                   ACTION.CHALLENGETEXT: {
+                       'type': 'str',
+                       'desc': _('Use an alternate challenge text for telling the '
+                                 'user to enter the code from the eMail.')
+                   }
                }
            }
         }
@@ -230,6 +238,8 @@ class EmailTokenClass(HotpTokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
+                You can pass exception=1 to raise an exception, if
+                the SMS could not be sent. Otherwise the message is contained in the response.
         :return: tuple of (bool, message and data)
                  bool, if submit was successful
                  message is submitted to the user
@@ -239,7 +249,10 @@ class EmailTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = "Enter the OTP from the Email:"
+        return_message = get_action_values_from_options(SCOPE.AUTH,
+                                                        "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                             ACTION.CHALLENGETEXT),
+                                                        options) or _("Enter the OTP from the Email:")
         attributes = {'state': transactionid}
         validity = int(get_from_config("email.validtime", 120))
 
@@ -252,7 +265,7 @@ class EmailTokenClass(HotpTokenClass):
             # out would cancel the checking of the other tokens
             try:
                 message_template, mimetype = self._get_email_text_or_subject(options)
-                subject_template, _ = self._get_email_text_or_subject(options,
+                subject_template, _n = self._get_email_text_or_subject(options,
                                                                    EMAILACTION.EMAILSUBJECT,
                                                                    "Your OTP")
 
@@ -276,6 +289,8 @@ class EmailTokenClass(HotpTokenClass):
                 log.warning(info)
                 log.debug(u"{0!s}".format(traceback.format_exc(e)))
                 return_message = info
+                if is_true(options.get("exception")):
+                    raise Exception(info)
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
@@ -345,10 +360,11 @@ class EmailTokenClass(HotpTokenClass):
                                   user=username,
                                   client=clientip,
                                   unique=True,
-                                  allow_white_space_in_action=True)
+                                  allow_white_space_in_action=True,
+                                  audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
-                message = messages[0]
+                message = list(messages)[0]
 
         message = message.format(challenge=options.get("challenge"))
         if message.startswith("file:"):
@@ -390,7 +406,8 @@ class EmailTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip, active=True)
+                             client=clientip, active=True,
+                             audit_data=g.audit_object.audit_data)
             autosms = len(autoemailpol) >= 1
 
         return autosms

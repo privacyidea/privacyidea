@@ -4,16 +4,18 @@ This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
 from .base import MyTestCase
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib import _
 import re
 import binascii
 import hashlib
-from urlparse import urlparse
-from urllib import urlencode
+from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlencode
 import json
 from flask import Request, g
 from werkzeug.test import EnvironBuilder
@@ -349,9 +351,40 @@ class OcraTokenTestCase(MyTestCase):
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], "Please answer the challenge")
 
+        # answer the challenge wrongly
+        r = token.verify_response(passw="00065298", challenge=challengeQH40)
+        self.assertTrue(r < 0, r)
+
         # answer the challenge
         r = token.verify_response(passw="90065298", challenge=challengeQH40)
         self.assertTrue(r > 0, r)
+
+        # create another challenge
+        displayTAN_challenge = "83507112  ~320,00~1399458665_G6HNVF"
+        challengeQH40 = binascii.hexlify(hashlib.sha1(
+            displayTAN_challenge).digest())
+        r = token.create_challenge(options={"challenge": challengeQH40})
+        self.assertEqual(r[0], True)
+        self.assertEqual(r[1], "Please answer the challenge")
+        transaction_id = r[2]
+
+        # answer the challenge wrongly using check_challenge_response
+        r = token.check_challenge_response(passw="00065298", options={
+            "transaction_id": transaction_id
+        })
+        self.assertEqual(r, -1)
+
+        # assert there is still one challenge
+        self.assertEqual(len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 1)
+
+        # answer the challenge correctly using check_challenge_response
+        r = token.check_challenge_response(passw="90065298", options={
+            "transaction_id": transaction_id
+        })
+        self.assertTrue(r > 0, r)
+
+        # assert there is no challenge anymore
+        self.assertEqual(len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 0)
 
 
 class TiQRTokenTestCase(MyTestCase):
@@ -395,7 +428,7 @@ class TiQRTokenTestCase(MyTestCase):
         # Check create_challenge
         r = token.create_challenge()
         self.assertEqual(r[0], True)
-        self.assertEqual(r[1], "Please scan the QR Code")
+        self.assertEqual(r[1], _("Please scan the QR Code"))
         self.assertTrue("img" in r[3], r[3])
         self.assertTrue("value" in r[3], r[3])
 
@@ -468,8 +501,8 @@ class TiQRTokenTestCase(MyTestCase):
                                                "pass": pin})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
             transaction_id = detail.get("transaction_id")
@@ -501,6 +534,11 @@ class TiQRTokenTestCase(MyTestCase):
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "INVALID_RESPONSE")
+
+        # Check that the OTP status is still incorrect
+        r = token.check_challenge_response(options={"transaction_id":
+                                                    transaction_id})
+        self.assertEqual(r, -1)
 
         # Send the correct response
         req.all_data = {"response": response,

@@ -98,7 +98,7 @@ def single_page_application():
         except AttributeError as ex:
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
-            realms = ",".join(get_realms().keys())
+            realms = ",".join(get_realms())
         if realms:
             realms = "," + realms
 
@@ -118,9 +118,9 @@ def single_page_application():
         action=ACTION.CUSTOM_MENU,
         scope=SCOPE.WEBUI,
         client=client_ip, unique=True)
-    if len(customization_menu_file) and customization_menu_file[0] \
+    if len(customization_menu_file) and list(customization_menu_file)[0] \
             and sub_state not in [1, 2]:
-        customization_menu_file = customization_menu_file[0]
+        customization_menu_file = list(customization_menu_file)[0]
     else:
         customization_menu_file = "templates/menu.html"
     customization_baseline_file = policy_object.get_action_values(
@@ -128,9 +128,9 @@ def single_page_application():
         action=ACTION.CUSTOM_BASELINE,
         scope=SCOPE.WEBUI,
         client=client_ip, unique=True)
-    if len(customization_baseline_file) and customization_baseline_file[0] \
+    if len(customization_baseline_file) and list(customization_baseline_file)[0] \
             and sub_state not in [1, 2]:
-        customization_baseline_file = customization_baseline_file[0]
+        customization_baseline_file = list(customization_baseline_file)[0]
     else:
         customization_baseline_file = "templates/baseline.html"
 

@@ -474,7 +474,12 @@ OATHCSV = '''
         # a serial without an OTP key will not create a token
         serialX
         '''
-
+OATHCSV_USER = """# version:2
+user1, resolver1, realm1, tok1, 1212, hotp
+# the following line will be ignored, since it has an empty serial
+user2, resolver2, realm2, , 3434, hotp
+user3, resolver3, realm3, tok3, 1212, totp
+"""
 
 # Encrypted Hallo
 HALLO_PAYLOAD = """-----BEGIN PGP MESSAGE-----
@@ -523,6 +528,15 @@ class ImportOTPTestCase(MyTestCase):
         self.assertTrue("tok2" in tokens, tokens)
         self.assertTrue("tok3" in tokens, tokens)
         self.assertTrue("tok4" in tokens, tokens)
+
+    def test_00_import_oath_user(self):
+        tokens = parseOATHcsv(OATHCSV_USER)
+        self.assertEqual(len(tokens), 2)
+        self.assertTrue("tok1" in tokens)
+        self.assertTrue("tok3" in tokens)
+        self.assertEqual(tokens.get("tok1").get("user").get("username"), "user1")
+        self.assertEqual(tokens.get("tok1").get("user").get("resolver"), "resolver1")
+        self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
     def test_01_import_aladdin_xml(self):
         tokens = parseSafeNetXML(ALADDINXML)
@@ -586,20 +600,23 @@ class ImportOTPTestCase(MyTestCase):
         t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456",
                          "description": "something <with> xml!"})
         t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
-        tlist = [t1, t2, t3]
+        t4 = init_token({"serial": "t4", "type": "pw", "otpkey": "lässig",
+                         "description": "password token"})
+        tlist = [t1, t2, t3, t4]
         # export the tokens
         psk, token_num, soup = export_pskc(tlist)
         # Only 2 tokens exported, the spass token does not get exported!
-        self.assertEqual(token_num, 2)
+        self.assertEqual(token_num, 3)
         self.assertEqual(len(psk), 32)
         export = "{0!s}".format(soup)
         # remote the tokens
         remove_token("t1")
         remove_token("t2")
         remove_token("t3")
+        remove_token("t4")
         # import the tokens again
         tokens = parsePSKCdata(export, preshared_key_hex=psk)
-        self.assertEqual(len(tokens), 2)
+        self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
         # unicode does not get exported
@@ -607,6 +624,8 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("t2").get("type"), "totp")
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
+        # password token
+        self.assertEqual(tokens.get("t4").get("otpkey"), "lässig")
 
 
 class GPGTestCase(MyTestCase):

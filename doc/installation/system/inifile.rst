@@ -34,7 +34,7 @@ The file should contain the following contents::
    # This is used to sign the audit log
    PI_AUDIT_KEY_PRIVATE = '/home/cornelius/src/privacyidea/private.pem'
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
-   # PI_AUDIT_MODUL = <python audit module>
+   # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
@@ -78,8 +78,23 @@ You can set ``PI_UI_DEACTIVATED = True`` to deactivate the privacyIDEA UI.
 This can be interesting if you are only using the command line client or your
 own UI and you do not want to present the UI to the user or the outside world.
 
-.. note:: The API calls are all still accessable, i.e. privacyIDEA is
+.. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
+
+
+.. _engine-registry:
+
+Engine Registry Class
+---------------------
+
+The ``PI_ENGINE_REGISTRY_CLASS`` option controls the pooling of database connections
+opened by SQL resolvers and the SQL audit module. If it is set to ``"null"``,
+SQL connections are not pooled at all and new connections are opened for every request.
+If it is set to ``"shared"``, connections are pooled on a per-process basis, i.e.
+every wsgi process manages one connection pool for each SQL resolver and the SQL audit module.
+Every request then checks out connections from this shared pool, which reduces
+the overall number of open SQL connections. If the option is left unspecified,
+its value defaults to ``"null"``.
 
 Audit parameters
 ----------------
@@ -99,6 +114,45 @@ server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
 of the database fields.
 
 In certain cases when you experiencing problems you may use the parameters
-``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``.
+``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
+effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
+
+If you by any reason want to avoid signing audit entries you can
+set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
+audit entries will not be signed and also the signature of audit entries will not be
+verified. Audit entries will appears with *signature* *fail*.
+
+.. _monitoring_modules:
+
+Monitoring parameters
+---------------------
+
+``PI_MONITORING_MODULE`` lets you specify an alternative statistics monitoring module.
+The monitoring module takes care of writing values with timestamps to a store.
+This is used e.g. by the :ref:`eventcounter` and :ref:`taskmodule_simplestats`.
+
+The first available monitoring module is ``privacyidea.lib.monitoringmodules.sqlstats``.
+It accepts the following additional parameters:
+
+``PI_MONITORING_SQL_URI`` can hold an alternative SQL connect string. If not specified the
+normal ``SQLALCHEMY_DATABASE_URI`` is used.
+
+``PI_MONITORING_POOL_SIZE`` (default 20) and ``PI_MONITORING_POOL_RECYCLE`` (default 600) let
+you configure pooling. It uses the settings from the above mentioned
+``PI_ENGINE_REGISTRY_CLASS``.
+
+.. note:: A SQL database is probably not the best database to store time series.
+   Other monitoring modules will follow.
 
 
+privacyIDEA Nodes
+-----------------
+
+privacyIDEA can run in a redundant setup. For statistics and monitoring purposes you
+can give these different nodes, dedicated names.
+
+``PI_NODE`` is a string with the name of this very node. ``PI_NODES`` is a list of
+all available nodes in the cluster.
+
+If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
+If this is also not set, the node name is returned as "localnode".

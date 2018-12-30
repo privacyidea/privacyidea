@@ -36,6 +36,38 @@ all further API calls.
 
    *An action is bound to the event* token_init.
 
+Pre and Post Handling
+---------------------
+
+.. index:: Pre Handling, Post Handling
+
+Added in Version 2.23.
+
+With most event handlers you can decide if you want the action to be taken before the actual event or
+after the actual event. I.e. if all conditions would trigger certain actions the action is either triggered
+before (*pre*) the API request is processed or after (*post*) the request is processed.
+
+Up to version 2.22 all actions where triggered after the request.
+In this case additional information from the response is available. E.g. if a user successfully authenticated the
+event will know the serial number of the token, which the user used to authenticate.
+
+If the action is triggered before the API request is processed, the event can not know if the authentication request
+will be successful or which serial number a token would have.
+However, triggering the action *before* the API request is processed can have some interesting other advantages:
+
+Example for Pre Handling
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The administrator can define an event definition that would trigger on the event ``validate/check`` in case the
+the authenticating user does not have any token assigned.
+
+The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with
+*dynamic_email* for this very user.
+
+When the API request ``validate/check`` is now processed, the user actually now has an email token and can authenticate
+via challenge response with this very email token without an administrator ever enrolling or assigning a token for this
+user.
+
 .. _handlermodules:
 
 Handler Modules and Actions
@@ -212,7 +244,7 @@ than 5 hours in the past.
 **detail_error_message**
 
 This condition checks a regular expression against the ``detail`` section in
-the HTTP response. The field ``detail->error->message`` is evaluated.
+the API response. The field ``detail->error->message`` is evaluated.
 
 Error messages can be manyfold. In case of authentication you could get error
 messages like:
@@ -229,7 +261,7 @@ With ``token/init`` you could get:
 **detail_message**
 
 This condition checks a regular expression against the ``detail`` section in
-the HTTP response. The field ``detail->message`` is evaluated.
+the API response. The field ``detail->message`` is evaluated.
 
 Those messages can be manyfold like:
 
@@ -242,6 +274,18 @@ Those messages can be manyfold like:
 
 ..note:: The field ``detail->message`` is available in case of status ``True``,
    like an authentication request that was handled successfully but failed.
+
+
+Managing Events
+---------------
+
+Using the command ``pi-manage events`` you can list, delete, enable and disable events.
+You can also export the complete event definitions to a file or import the event definitions from a file again.
+During import you can specify if you want to remove all existing events or if you want to add the events from the file
+to the existing events in the database.
+
+.. note:: Events are identified by an *id*! Due to database restrictions the id is ignored during import.
+   So importing an event with the same name will create a second event with the same name but another id.
 
 
 Available Handler Modules

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2018-08-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow creation of HSM keys
 # 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Allow cleaning up different actions with different
 #            retention times.
@@ -55,15 +57,19 @@ from subprocess import call, Popen, PIPE
 from getpass import getpass
 import gnupg
 import yaml
+import contextlib
 
 import flask
 
+from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
                                   delete_db_admin)
 from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
+from privacyidea.lib.event import (delete_event, enable_event,
+                                   set_event, EventConfiguration)
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -78,6 +84,9 @@ from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.utils import parse_timedelta
+from privacyidea.lib.crypto import create_hsm_object
 from Crypto.PublicKey import RSA
 import jwt
 import ast
@@ -93,16 +102,37 @@ backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
+event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
+audit_manager = Manager(usage="Manage Audit log")
+hsm_manager = Manager(usage="Manage HSM")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
 manager.add_command('realm', realm_manager)
 manager.add_command('resolver', resolver_manager)
 manager.add_command('policy', policy_manager)
+manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
+manager.add_command('audit', audit_manager)
+manager.add_command('hsm', hsm_manager)
+
+
+@hsm_manager.command
+def create_keys():
+    """
+    Create new encryption keys on the HSM. Be sure to first setup the HSM module, the PKCS11
+    module and the slot/password for the given HSM in your pi.cfg.
+    Set the variables PI_HSM_MODULE, PI_HSM_MODULE_MODULE, PI_HSM_MODULE_SLOT, PI_HSM_MODULE_PASSWORD.
+    """
+    hsm_object = create_hsm_object(app.config)
+    r = hsm_object.create_keys()
+    print("Please add the following to your pi.cfg:")
+    print("PI_HSM_MODULE_KEY_LABEL_TOKEN = '{0}'".format(r.get("token")))
+    print("PI_HSM_MODULE_KEY_LABEL_CONFIG = '{0}'".format(r.get("config")))
+    print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("value")))
 
 
 @ca_manager.command
@@ -268,11 +298,11 @@ def _write_mysql_defaults(filename, username, password):
     :param password: The password to connect to the database
     :return:
     """
-    f = open(filename, "w")
-    f.write("""[client]
+    with open(filename, "w") as f:
+        f.write("""[client]
 user={0!s}
 password={1!s}""".format(username, password))
-    f.close()
+
     os.chmod(filename, 0600)
     # set correct owner, if possible
     if os.geteuid() == 0:
@@ -315,14 +345,13 @@ def restore(backup_file):
 
     call(["tar", "-zxf", backup_file, "-C", "/"])
     print(60*"=")
-    f = open(config_file, "r")
-    # Determine the SQLAlchemy URI
-    for line in f:
-        if re.search("^SQLALCHEMY_DATABASE_URI", line):
-            key, value = line.split("=", 1)
-            # Strip whitespaces, and ' "
-            sqluri = value.strip().strip("'").strip('"')
-    f.close()
+    with open(config_file, "r") as f:
+        # Determine the SQLAlchemy URI
+        for line in f:
+            if re.search("^SQLALCHEMY_DATABASE_URI", line):
+                key, value = line.split("=", 1)
+                # Strip whitespaces, and ' "
+                sqluri = value.strip().strip("'").strip('"')
 
     if sqluri is None:
         print("No SQLALCHEMY_DATABASE_URI found in {0!s}".format(config_file))
@@ -376,14 +405,15 @@ def encrypt_enckey(encfile):
 
     The result can be piped to a new enckey file.
     """
+    # TODO we just print out a string here and assume, the user pipes it into a file.
+    #      Maybe we should write the file here so we know what is in there
     password = getpass()
     password2 = getpass(prompt='Confirm: ')
     if password != password2:
         import sys
         sys.exit('Error: passwords do not match.')
-    f = open(encfile)
-    enckey = f.read()
-    f.close()
+    with open(encfile, "rb") as f:
+        enckey = f.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     print(res)
 
@@ -399,9 +429,9 @@ def create_enckey():
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    f = open(filename, "w")
-    f.write(DefaultSecurityModule.random(96))
-    f.close()
+    with open(filename, "w") as f:
+        f.write(DefaultSecurityModule.random(96))
+
     print("Encryption key written to %s" % filename)
     os.chmod(filename, 0400)
     print("The file permission of %s was set to 400!" % filename)
@@ -442,13 +472,12 @@ def create_audit_keys(keysize=2048):
     new_key = RSA.generate(keysize, e=65537)
     public_key = new_key.publickey().exportKey("PEM")
     private_key = new_key.exportKey("PEM")
-    f = open(filename, "w")
-    f.write(private_key)
-    f.close()
+    with open(filename, "w") as f:
+        f.write(private_key)
 
-    f = open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w")
-    f.write(public_key)
-    f.close()
+    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w") as f:
+        f.write(public_key)
+
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
     os.chmod(filename, 0400)
@@ -509,6 +538,7 @@ class CommandOutsideRequestContext(Command):
     def __call__(self, app=None, *args, **kwargs):
         return self.run(*args, **kwargs)
 
+
 def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
@@ -532,15 +562,27 @@ except TypeError:
 
 
 @manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
-                                        "old entries are deleted.")
+                                                "old entries are deleted.")
 @manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
 @manager.option('--age', help="Delete audit entries older than these number "
                               "of days.")
 @manager.option('--config', help="Read config from the specified yaml file.")
 @manager.option('--dryrun', help="Do not actually delete, only show "
                                  "what would be done.", action="store_true")
+@manager.option('--chunksize', help="Delete entries in chunks of the given size "
+                                    "to avoid deadlocks")
+@audit_manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
+                                                "old entries are deleted.")
+@audit_manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
+@audit_manager.option('--age', help="Delete audit entries older than these number "
+                              "of days.")
+@audit_manager.option('--config', help="Read config from the specified yaml file.")
+@audit_manager.option('--dryrun', help="Do not actually delete, only show "
+                                 "what would be done.", action="store_true")
+@audit_manager.option('--chunksize', help="Delete entries in chunks of the given size "
+                                          "to avoid deadlocks")
 def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
-                 dryrun=False):
+                 dryrun=False, chunksize=None):
     """
     Clean the SQL audit log.
 
@@ -564,12 +606,13 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
     lowwatermark = int(lowwatermark or 5000)
+    if chunksize is not None:
+        chunksize = int(chunksize)
 
     default_module = "privacyidea.lib.auditmodules.sqlaudit"
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
     audit_db_uri = app.config.get("PI_AUDIT_SQL_URI", token_db_uri)
     audit_module = app.config.get("PI_AUDIT_MODULE", default_module)
-    actions = []
     if audit_module != default_module:
         raise Exception("We only rotate SQL audit module. You are using %s" %
                         audit_module)
@@ -628,19 +671,17 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
             print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
         else:
             print("Cleaning up {0!s} entries.".format(len(delete_list)))
-            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
-            session.commit()
-
+            delete_matching_rows(session, LogEntry.__table__, LogEntry.id.in_(delete_list), chunksize)
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
-        sqlquery = session.query(LogEntry.date).filter(LogEntry.date < now)
+        criterion = LogEntry.date < now
         if dryrun:
-            r = len(sqlquery.all())
+            r = LogEntry.query.filter(criterion).count()
+            print("Would delete {0!s} entries.".format(r))
         else:
-            r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
-            session.commit()
-        print("{0!s} entries deleted.".format(r))
+            r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
+            print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
         for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
@@ -653,13 +694,41 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
             cut_id = last_id - lowwatermark
             # delete all entries less than cut_id
             print("Deleting entries smaller than %i" % cut_id)
-            sqlquery = session.query(LogEntry.id).filter(LogEntry.id < cut_id)
+            criterion = LogEntry.id < cut_id
             if dryrun:
-                r = len(sqlquery.all())
+                r = LogEntry.query.filter(criterion).count()
             else:
-                r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
-                session.commit()
+                r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
             print("{0!s} entries deleted.".format(r))
+
+
+@contextlib.contextmanager
+def smartopen(filename):
+    if filename and filename != '-':
+        fh = open(filename, 'w')
+    else:
+        fh = sys.stdout
+
+    try:
+        yield fh
+    finally:
+        if fh is not sys.stdout:
+            fh.close()
+
+
+@audit_manager.option('--timelimit', '-t', help="Limit the dumped audit entries to a certain "
+                                                "period (i.e. '5d' or '3h' for the entries from "
+                                                "the last five days or three hours. By default "
+                                                "all audit entries will be dumped.")
+@audit_manager.option('--filename', '-f', help="Name of the 'csv' file to dump the audit entries "
+                                               "into. By default write to stdout.", default='-')
+def dump(filename, timelimit=None):
+    """Dump the audit log in csv format."""
+    audit = getAudit(app.config)
+    tl = parse_timedelta(timelimit) if timelimit else None
+    with smartopen(filename) as fh:
+        for line in audit.csv_generator(timelimit=tl):
+            fh.write(line)
 
 
 @resolver_manager.command
@@ -676,9 +745,9 @@ def create(name, rtype, filename):
     """
     from privacyidea.lib.resolver import save_resolver
 
-    f = open(filename, 'r')
-    contents = f.read()
-    f.close()
+    with open(filename, 'r') as f:
+        contents = f.read()
+
     params = ast.literal_eval(contents)
     params["resolver"] = name
     params["type"] = rtype
@@ -758,15 +827,28 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-@resolver_manager.command
-def list():
+@resolver_manager.option('-v', help="Verbose output - also print the configuration of the resolvers.",
+                         dest="verbose", action="store_true")
+def list(verbose):
     """
-    list the available resolvers and the type
+    list the available resolvers and the type.
     """
     from privacyidea.lib.resolver import get_resolver_list
     resolver_list = get_resolver_list()
-    for name, resolver in resolver_list.iteritems():
-        print("%16s - (%s)" % (name, resolver.get("type")))
+
+    if not verbose:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+    else:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+            print("."*32)
+            data = resolver.get("data", {})
+            for k, v in data.iteritems():
+                if k.lower() in ["bindpw", "password"]:
+                    v = "xxxxx"
+                print("{0!s:>24}: {1!r}".format(k, v))
+            print("")
 
 
 @realm_manager.command
@@ -792,6 +874,94 @@ def create(name, resolver):
     """
     from privacyidea.lib.realm import set_realm
     set_realm(name, [resolver])
+
+# Event interface
+
+@event_manager.command
+def list():
+    """
+    List events
+    """
+    E = EventConfiguration()
+    events = E.events
+    print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
+    print(90*"=")
+    for event in events:
+        print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
+                                                 event.get("name")[0:30],
+                                         event.get("handlermodule"),
+                                         event.get("action"),event.get("id"),))
+
+@event_manager.command
+def enable(eid):
+    """
+    enable en event by ID
+    """
+    r = enable_event(eid)
+    print(r)
+
+@event_manager.command
+def disable(eid):
+    """
+    disable an event by ID
+    """
+    r = enable_event(eid, enable=False)
+    print(r)
+
+
+@event_manager.command
+def delete(eid):
+    """
+    delete an event by ID
+    """
+    r = delete_event(eid)
+    print(r)
+
+@event_manager.command
+def e_export(filename=None):
+    """
+    Export all events to a file
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    E = EventConfiguration()
+    events = E.events
+    event_str = pp.pformat(events)
+    if filename:
+        with open(filename, "w") as f:
+            f.write(event_str)
+    else:
+        print(event_str)
+
+@event_manager.command
+def e_import(filename, cleanup=False):
+    """
+    Import the events from a file.
+    If 'cleanup' is specified the existing events are deleted before the
+    events from the file are imported.
+    """
+    if cleanup:
+        print("Cleanup old events.")
+        E = EventConfiguration()
+        events = E.events
+        for event in events:
+            name = event.get("name")
+            r = delete_event(event.get("id"))
+            print("Deleted event '{0!s}' with result {1!s}".format(name, r))
+
+    with open(filename, 'r') as f:
+        contents = f.read()
+
+    events = ast.literal_eval(contents)
+    for event in events:
+        name = event.get("name")
+        r = set_event(name, event.get("event"), event.get("handlermodule"),
+                      event.get("action"),
+                      conditions=event.get("conditions"),
+                      ordering=event.get("ordering"),
+                      options=event.get("options"),
+                      active=event.get("active"))
+        print("Added event '{0!s}' with result {1!s}".format(name, r))
 
 
 # Policy interface
@@ -840,7 +1010,7 @@ def delete(name):
 @policy_manager.command
 def p_export(filename=None):
     """
-    Export all policies to a file as a JSON format, list of dictionaries.
+    Export all policies to a file.
     If the filename is omitted, the policies are written to stdout.    
     """
     import pprint
@@ -849,9 +1019,8 @@ def p_export(filename=None):
     policies = P.get_policies()
     pol_str = pp.pformat(policies)
     if filename:
-        f = open(filename, 'w')
-        f.write(pol_str)
-        f.close()
+        with open(filename, 'w') as f:
+            f.write(pol_str)
     else:
         print(pol_str)
 
@@ -872,9 +1041,8 @@ def p_import(filename, cleanup=False):
             r = delete_policy(name)
             print("Deleted policy {0!s} with result {1!s}".format(name, r))
 
-    f = open(filename, 'r')
-    contents = f.read()
-    f.close()
+    with open(filename, 'r') as f:
+        contents = f.read()
     policies = ast.literal_eval(contents)
     for policy in policies:
         name = policy.get("name")
@@ -906,9 +1074,8 @@ def create(name, scope, action, filename=None):
     """
     if filename:
         try:
-            f = open(filename, 'r')
-            contents = f.read()
-            f.close()
+            with open(filename, 'r') as f:
+                contents = f.read()
 
             params = ast.literal_eval(contents)
 

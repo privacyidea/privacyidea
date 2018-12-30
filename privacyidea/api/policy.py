@@ -184,13 +184,15 @@ def set_policy_api(name=None):
     active = getParam(param, "active", optional)
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
+    priority = int(getParam(param, "priority", optional, default=1))
 
     g.audit_object.log({'action_detail': name,
                         'info': u"{0!s}".format(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
-                     check_all_resolvers=check_all_resolvers or False)
+                     check_all_resolvers=check_all_resolvers or False,
+                     priority=priority)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret
@@ -516,14 +518,13 @@ def get_policy_defs(scope=None):
         action types. The top level key is the scope.
     :rtype: dict
     """
-    pol = {}
     static_pol = get_static_policy_definitions()
     dynamic_pol = get_dynamic_policy_definitions()
 
     # combine static and dynamic policies
-    keys = static_pol.keys() + dynamic_pol.keys()
-    pol = {k: dict(static_pol.get(k, {}).items()
-                   + dynamic_pol.get(k, {}).items()) for k in keys}
+    keys = list(static_pol) + list(dynamic_pol)
+    pol = {k: dict(list(static_pol.get(k, {}).items())
+                   + list(dynamic_pol.get(k, {}).items())) for k in keys}
 
     if scope:
         pol = pol.get(scope)

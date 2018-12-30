@@ -17,11 +17,11 @@ class AuthCacheTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
-    password = "secret123456"
+    password = u"secret123456"
     username = "hans"
     realm = "realm"
     resolver = "resolver"
-    pw_hash = binascii.hexlify(hashlib.sha256(password).digest())
+    pw_hash = binascii.hexlify(hashlib.sha256(password.encode('utf8')).digest())
 
     def test_01_write_update_delete_cache(self):
         teststart = datetime.datetime.utcnow()

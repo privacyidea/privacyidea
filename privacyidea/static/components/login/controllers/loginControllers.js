@@ -39,6 +39,7 @@ angular.module("privacyideaApp")
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
+    $scope.getRightsValue = AuthFactory.getRightsValue;
     $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
@@ -228,21 +229,21 @@ angular.module("privacyideaApp")
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     var attributes = multi_challenge[i].attributes;
-                    if (attributes === null || attributes.hideResponseInput === false) {
+                    if (attributes === null || attributes.hideResponseInput !== true) {
                         $scope.hideResponseInput = false;
                     }
                     if (attributes !== null) {
-                        if (attributes.u2fSignRequest !== null) {
+                        if (attributes.u2fSignRequest) {
                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
-                        if (attributes.img !== null) {
+                        if (attributes.img) {
                             $scope.image = attributes.img;
                             if ($scope.image.indexOf("data:image") === -1) {
                                 // In case of an Image link, we prepend the instanceUrl
                                 $scope.image = $scope.instanceUrl + "/" + $scope.image;
                             }
                         }
-                        if (attributes.poll !== null) {
+                        if (attributes.poll) {
                             $scope.polling = attributes.poll;
                         }
                     }
@@ -255,7 +256,7 @@ angular.module("privacyideaApp")
                     PollingAuthFactory.start($scope.check_authentication);
                 }
                 // In case of u2f we do:
-                if ($scope.u2fSignRequests) {
+                if ($scope.u2fSignRequests.length > 0) {
                     $scope.u2f_first_error = error;
                     U2fFactory.sign_request(error, $scope.u2fSignRequests,
                         $scope.login.username,
@@ -283,8 +284,8 @@ angular.module("privacyideaApp")
                         // But this can also be due to a problem like
                         // "HSM not ready".
                         $scope.transactionid = "";
-                        inform.add(gettextCatalog.getString("Authentication failed. ")
-                            + error.result.error.message,
+                        var errmsg = gettextCatalog.getString("Authentication failed.");
+                        inform.add(errmsg + " " + error.result.error.message,
                             {type: "danger", ttl: 10000});
                 }
             }
@@ -334,6 +335,8 @@ angular.module("privacyideaApp")
             $scope.backend_log_level = data.result.value.log_level;
             $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
+            var lang = gettextCatalog.getCurrentLanguage();
+            $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/support-link-" + data.result.value.role;
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;
             $scope.token_wizard_2nd = data.result.value.token_wizard_2nd;
@@ -343,6 +346,8 @@ angular.module("privacyideaApp")
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
             $scope.hide_welcome = data.result.value.hide_welcome;
+            $scope.hide_buttons = data.result.value.hide_buttons;
+            $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
@@ -379,6 +384,7 @@ angular.module("privacyideaApp")
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
         $scope.welcomeStep = 0;
+        $scope.privacyideaSupportLink = $rootScope.publicLink;
         $state.go("login");
         Idle.unwatch();
         // Jump to top when the policy is saved
@@ -388,7 +394,7 @@ angular.module("privacyideaApp")
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
         if ($scope.welcomeStep === 4) {
-            $('#dialogWelcome').modal().hide();
+            $('#dialogWelcome').modal("hide");
             // Hack, since we can not close the modal and thus the body
             // keeps the modal-open and thus has no scroll-bars
             $("body").removeClass("modal-open");

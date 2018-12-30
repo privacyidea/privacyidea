@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Generate the encryption key for PSKC export
 #             in the HSM
@@ -51,6 +53,7 @@ import base64
 import cgi
 from privacyidea.lib.utils import modhex_decode
 from privacyidea.lib.utils import modhex_encode
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from Crypto.Cipher import AES
@@ -105,6 +108,7 @@ def parseOATHcsv(csv):
 
         serial, key, [hotp,totp], [6,8], [30|60],
         serial, key, ocra, [ocra-suite]
+        serial, key, tan, tan1 tan2 tan3 tan4
 
     It imports sha1 hotp or totp token.
     I can also import ocra token.
@@ -123,56 +127,55 @@ def parseOATHcsv(csv):
         }
     '''
     TOKENS = {}
+    version = 0
 
     csv_array = csv.split('\n')
 
-    log.debug("the file contains {0:d} tokens.".format(len(csv_array)))
+    m = re.match("^#\s*version:\s*(\d+)", csv_array[0])
+    if m:
+        version = m.group(1)
+        log.debug("the file is version {0}.".format(version))
+
+    log.debug("the file contains {0:d} lines.".format(len(csv_array)))
     for line in csv_array:
+        # Do not parse comment lines
+        if line.startswith("#"):
+            continue
+
         l = line.split(',')
-        serial = ""
-        key = ""
-        ttype = "hotp"
-        seconds = 30
-        otplen = 6
-        hashlib = "sha1"
-        ocrasuite = ""
+        # Do not parse emtpy lines, it could be [] or ['']
+        if len(l) <= 1:
+            continue
+
+        # Import the user
+        user = {}
+        if version == "2":
+            # extract the user from the first three columns
+            user["username"] = l.pop(0).strip()
+            user["resolver"] = l.pop(0).strip()
+            user["realm"] = l.pop(0).strip()
+
+        # check for empty serial
         serial = l[0].strip()
-
-        # check for empty line
-        if len(serial) > 0 and not serial.startswith('#'):
-            if len(l) >= 2:
-                key = l[1].strip()
-
-                if len(key) == 32:
-                    hashlib = "sha256"
-            else:
+        if len(serial) > 0:
+            if len(l) < 2:
                 log.error("the line {0!s} did not contain a hotp key".format(line))
                 continue
 
             # ttype
-            if len(l) >= 3:
-                ttype = l[2].strip().lower()
+            if len(l) == 2:
+                # No tokentype, take the default "hotp"
+                l.append("hotp")
 
-            # otplen or ocrasuite
-            if len(l) >= 4:
-                if ttype != "ocra":
-                    otplen = int(l[3].strip())
-                elif ttype == "ocra":
-                    ocrasuite = l[3].strip()
+            ttype = l[2].strip().lower()
 
-            # timeStep
-            if len(l) >= 5:
-                seconds = int(l[4].strip())
+            tok_class = get_token_class(ttype)
+            params = tok_class.get_import_csv(l)
+            log.debug("read the line {0!s}".format(params))
 
-            log.debug("read the line |{0!s}|{1!s}|{2!s}|{3:d} {4!s}|{5:d}|".format(serial, key, ttype, otplen, ocrasuite, seconds))
+            params["user"] = user
+            TOKENS[serial] = params
 
-            TOKENS[serial] = {'type': ttype,
-                              'otpkey': key,
-                              'timeStep': seconds,
-                              'otplen': otplen,
-                              'hashlib': hashlib,
-                              'ocrasuite': ocrasuite
-                              }
     return TOKENS
 
 
@@ -496,7 +499,10 @@ def parsePSKCdata(xml_data,
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
                 secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
-                token["otpkey"] = binascii.hexlify(secret)
+                if token["type"].lower() in ["hotp", "totp"]:
+                    token["otpkey"] = binascii.hexlify(secret)
+                else:
+                    token["otpkey"] = secret
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
@@ -623,7 +629,10 @@ def export_pskc(tokenobj_list, psk=None):
             timedrift = 0
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
-            encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+            if tokenobj.type.lower() in ["totp", "hotp"]:
+                encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+            else:
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
         except TypeError:
             # Some keys might be odd string length
             continue

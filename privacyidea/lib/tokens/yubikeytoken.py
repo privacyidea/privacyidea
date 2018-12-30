@@ -450,7 +450,7 @@ h={h}
                                     prefix))
             return res, opt
 
-        (res, opt) = check_token_list(token_list, passw)
+        (res, opt) = check_token_list(token_list, passw, allow_reset_all_tokens=True)
         return res, opt
 
     @log_with(log)

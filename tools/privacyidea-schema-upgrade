@@ -1,0 +1,22 @@
+#!/bin/sh
+
+MIGRATION_PATH=$1
+FIRST_VERSION="4f32a4e1bf33"
+SKIP_STAMP=$2
+
+if [ -z "$MIGRATION_PATH" ]; then
+	echo "Please specify the path with the migration files."
+	exit 1
+fi
+
+# check if we do not have DB versioning, yet.
+if [ -z "$(pi-manage db current -d $MIGRATION_PATH | grep "(head)$")" ]; then
+    if [ "$SKIP_STAMP" != "--skipstamp" ]; then
+        # Set the version to the first PI 2.0 version
+        echo "++ Stamping DB to $FIRST_VERSION"
+        pi-manage db stamp $FIRST_VERSION -d $MIGRATION_PATH > /dev/null
+    fi
+fi
+# Upgrade the database
+echo "++ Upgrading DB schema."
+pi-manage db upgrade -d $MIGRATION_PATH > /dev/null

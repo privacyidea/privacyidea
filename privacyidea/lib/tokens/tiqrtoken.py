@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #  http://www.privacyidea.org
+#  2018-04-16 Friedrich Weber <friedrich.weber@netknights.it>
+#             Fix validation of challenge responses
 #  2015-09-01 Initial writeup.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
 #
@@ -74,7 +76,7 @@ the token in challenge response.
 This code is tested in tests/test_lib_tokens_tiqr.
 """
 
-import urllib
+from six.moves.urllib.parse import quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
@@ -365,7 +367,7 @@ class TiqrTokenClass(OcraTokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
-        message = 'Please scan the QR Code'
+        message = _('Please scan the QR Code')
 
         # Get ValidityTime=120s. Maybe there is a TIQRChallengeValidityTime...
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
@@ -395,7 +397,7 @@ class TiqrTokenClass(OcraTokenClass):
         db_challenge.save()
 
         # Encode the user to UTF-8 and quote the result
-        encoded_user_identifier = urllib.quote_plus(user_identifier.encode('utf-8'))
+        encoded_user_identifier = quote_plus(user_identifier.encode('utf-8'))
         authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(
                                               encoded_user_identifier,
                                               service_identifier,
@@ -407,3 +409,49 @@ class TiqrTokenClass(OcraTokenClass):
                       "hideResponseInput": True}
 
         return True, message, db_challenge.transaction_id, attributes
+
+    @check_token_locked
+    def check_challenge_response(self, user=None, passw=None, options=None):
+        """
+        This function checks, if the challenge for the given transaction_id
+        was marked as answered correctly.
+        For this we check the otp_status of the challenge with the
+        transaction_id in the database.
+
+        We do not care about the password
+
+        :param user: the requesting user
+        :type user: User object
+        :param passw: the password (pin+otp)
+        :type passw: string
+        :param options: additional arguments from the request, which could
+                        be token specific. Usually "transaction_id"
+        :type options: dict
+        :return: return otp_counter. If -1, challenge does not match
+        :rtype: int
+        """
+        options = options or {}
+        otp_counter = -1
+
+        # fetch the transaction_id
+        transaction_id = options.get('transaction_id')
+        if transaction_id is None:
+            transaction_id = options.get('state')
+
+        # get the challenges for this transaction ID
+        if transaction_id is not None:
+            challengeobject_list = get_challenges(serial=self.token.serial,
+                                                  transaction_id=transaction_id)
+
+            for challengeobject in challengeobject_list:
+                # check if we are still in time.
+                if challengeobject.is_valid():
+                    _, status = challengeobject.get_otp_status()
+                    if status is True:
+                        # create a positive response
+                        otp_counter = 1
+                        # delete the challenge
+                        challengeobject.delete()
+                        break
+
+        return otp_counter

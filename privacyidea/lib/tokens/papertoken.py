@@ -123,7 +123,7 @@ class PaperTokenClass(HotpTokenClass):
         if "otpkey" not in param:
             param["genkey"] = 1
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
-        papertoken_count = int(param.get("papertoken_count") or DEFAULT_COUNT)
+        papertoken_count = int(param.get("papertoken_count", DEFAULT_COUNT))
         # Now we calculate all the OTP values and add them to the
         # init_details. Thus they will be returned by token/init.
         otps = self.get_multi_otp(count=papertoken_count)

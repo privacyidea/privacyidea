@@ -83,10 +83,13 @@ adapt_pi_cfg() {
 }
 
 create_database() {
+    printf "[mariadb]\ninnodb_large_prefix=on\ninnodb_file_format=Barracuda\n" > /etc/mysql/conf.d/pi-maxkeylengthfix.cnf
+    invoke-rc.d mysql restart
+
 	# create the MYSQL database
 	if [ !$(grep "^SQLALCHEMY_DATABASE_URI" /etc/privacyidea/pi.cfg || true) ]; then
-	    USER="debian-sys-maint"
-	    PASSWORD=$(grep "^password" /etc/mysql/debian.cnf | sort -u | cut -d " " -f3)
+	    USER=$(grep "^user" /etc/mysql/debian.cnf | sort -u | awk '{print $3}')
+	    PASSWORD=$(grep "^password" /etc/mysql/debian.cnf | sort -u | awk '{print $3}')
 	    NPW="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c12)"
 	    mysql -u $USER --password=$PASSWORD -e "create database pi;" || true
 	    mysql -u $USER --password=$PASSWORD -e "grant all privileges on pi.* to 'pi'@'localhost' identified by '$NPW';"
@@ -107,10 +110,8 @@ enable_apache() {
 }
 
 update_db() {
-	# Set the version to the first PI 2.0 version
-	pi-manage db stamp 4f32a4e1bf33 -d /usr/lib/privacyidea/migrations > /dev/null
 	# Upgrade the database
-	pi-manage db upgrade -d /usr/lib/privacyidea/migrations > /dev/null
+	privacyidea-schema-upgrade /usr/lib/privacyidea/migrations > /dev/null
 }
 
 create_gpg() {

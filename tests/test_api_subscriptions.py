@@ -16,7 +16,7 @@ class APISubscriptionsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertTrue(value >= 1, result)
 
@@ -27,7 +27,7 @@ class APISubscriptionsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)
             self.assertEqual(value[0].get("application"), "demo_application")
@@ -39,7 +39,7 @@ class APISubscriptionsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)
             self.assertEqual(value[0].get("application"),
@@ -52,7 +52,7 @@ class APISubscriptionsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(value, 1)
 
@@ -62,7 +62,7 @@ class APISubscriptionsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             value = result.get("value")
             self.assertEqual(len(value), 0)
 

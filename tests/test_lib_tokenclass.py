@@ -3,7 +3,6 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
@@ -13,12 +12,15 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
+from privacyidea.lib.crypto import geturandom
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
+import binascii
 
+PWFILE = "tests/testdata/passwords"
 
 class TokenBaseTestCase(MyTestCase):
     '''
@@ -483,7 +485,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        token.add_init_details("otpkey", "secretkey")
+        token.add_init_details("otpkey", binascii.hexlify("secretkey"))
         detail = token.get_init_detail()
         self.assertTrue("otpkey" in detail, detail)
 
@@ -619,7 +621,6 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token_data = token.get_as_dict()
 
-        print(token_data)
         self.assertTrue("info" in token_data)
         self.assertTrue(token_data.get("user_id") == "2000")
         self.assertTrue(token_data.get("tokentype") == "newtype")
@@ -860,3 +861,22 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(token_obj.get_failcount(), 0)
 
         token_obj.delete_token()
+
+    def test_41_import_csv(self):
+        # sha1
+        r = TokenClass.get_import_csv(["ser1", geturandom(20, True), "hotp", "6"])
+        self.assertEqual(r["hashlib"], "sha1")
+        # sha224
+        r = TokenClass.get_import_csv(["ser1", geturandom(28, True), "hotp", "6"])
+        self.assertEqual(r["hashlib"], "sha224")
+        # sha256
+        r = TokenClass.get_import_csv(["ser1", geturandom(32, True), "hotp", "8"])
+        self.assertEqual(r["hashlib"], "sha256")
+        # sha384
+        r = TokenClass.get_import_csv(["ser1", geturandom(48, True), "totp", " 8 "])
+        self.assertEqual(r["hashlib"], "sha384")
+        self.assertEqual(r["type"], "totp")
+        self.assertEqual(r["otplen"], "8")
+        # sha512
+        r = TokenClass.get_import_csv(["ser1", geturandom(64, True), "totp", "8"])
+        self.assertEqual(r["hashlib"], "sha512")

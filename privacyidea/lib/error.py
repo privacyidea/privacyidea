@@ -33,6 +33,29 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class ERROR:
+    SUBSCRIPTION = 101
+    TOKENADMIN = 301
+    CONFIGADMIN = 302
+    POLICY = 303
+    VALIDATE = 401
+    REGISTRATION = 402
+    AUTHENTICATE = 403
+    AUTHENTICATE_WRONG_CREDENTIALS = 4031
+    AUTHENTICATE_MISSING_USERNAME = 4032
+    AUTHENTICATE_AUTH_HEADER = 4033
+    AUTHENTICATE_DECODING_ERROR = 4304
+    AUTHENTICATE_TOKEN_EXPIRED = 4305
+    AUTHENTICATE_MISSING_RIGHT = 4306
+    CA = 503
+    RESOURCE_NOT_FOUND = 601
+    HSM = 707
+    SELFSERVICE = 807
+    SERVER = 903
+    USER = 904
+    PARAMETER = 905
+
+
 class privacyIDEAError(Exception):
 
     def __init__(self, description=u"privacyIDEAError!", id=10):
@@ -70,13 +93,12 @@ class privacyIDEAError(Exception):
         return ret
 
 
-class SubscriptionError(Exception):
-    def __init__(self, description=None, application=None,
-                 id=101):
+class SubscriptionError(privacyIDEAError):
+    def __init__(self, description=None, application=None, id=ERROR.SUBSCRIPTION):
         self.id = id
         self.message = description
         self.application = application
-        Exception.__init__(self, description)
+        privacyIDEAError.__init__(self, description, id=self.id)
 
     def __str__(self):
         return self.__repr__()
@@ -87,85 +109,69 @@ class SubscriptionError(Exception):
         return ret
 
 
-class BaseError(Exception):
-    def __init__(self, error, description, status=400, headers=None):
-        Exception.__init__(self)
-        self.error = error
-        self.description = description
-        self.status_code = status
-        self.headers = headers
-        
-    def to_dict(self):
-        return {"status_code": self.status_code,
-                "error": self.error,
-                "description": self.description}
-        
-    def __repr__(self):
-        ret = '{0!s}(error={1!r}, description={2!r}, id={3:d})'.format(type(self).__name__,
-                                                       self.error,
-                                                       self.description,
-                                                       self.status_code)
-        return ret
-
-
-class AuthError(BaseError):
-    def __init__(self, error, description, status=401, headers=None,
-                 details=None):
+class AuthError(privacyIDEAError):
+    def __init__(self, description, id=ERROR.AUTHENTICATE, details=None):
         self.details = details
-        BaseError.__init__(self, error, description, status, headers)
-        
+        privacyIDEAError.__init__(self, description=description, id=id)
+
+
+class ResourceNotFoundError(privacyIDEAError):
+    def __init__(self, description, id=ERROR.RESOURCE_NOT_FOUND):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
 
 class PolicyError(privacyIDEAError):
-    def __init__(self, description, id=403):
+    def __init__(self, description, id=ERROR.POLICY):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ValidateError(privacyIDEAError):
-    def __init__(self, description="validation error!", id=10):
+    def __init__(self, description="validation error!", id=ERROR.VALIDATE):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class RegistrationError(privacyIDEAError):
-    def __init__(self, description="registraion error!", id=10):
+    def __init__(self, description="registraion error!", id=ERROR.REGISTRATION):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class TokenAdminError(privacyIDEAError):
-    def __init__(self, description="token admin error!", id=10):
+    def __init__(self, description="token admin error!", id=ERROR.TOKENADMIN):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ConfigAdminError(privacyIDEAError):
-    def __init__(self, description="config admin error!", id=10):
+    def __init__(self, description="config admin error!", id=ERROR.CONFIGADMIN):
         privacyIDEAError.__init__(self, description=description, id=id)
 
+
 class CAError(privacyIDEAError):
-    def __init__(self, description="CA error!", id=503):
+    def __init__(self, description="CA error!", id=ERROR.CA):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class UserError(privacyIDEAError):
-    def __init__(self, description="user error!", id=905):
+    def __init__(self, description="user error!", id=ERROR.USER):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ServerError(privacyIDEAError):
-    def __init__(self, description="server error!", id=905):
+    def __init__(self, description="server error!", id=ERROR.SERVER):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class HSMException(privacyIDEAError):
-    def __init__(self, description="hsm error!", id=707):
+    def __init__(self, description="hsm error!", id=ERROR.HSM):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class SelfserviceException(privacyIDEAError):
-    def __init__(self, description="selfservice error!", id=807):
+    def __init__(self, description="selfservice error!", id=ERROR.SELFSERVICE):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ParameterError(privacyIDEAError):
     USER_OR_SERIAL = _('You either need to provide user or serial')
 
-    def __init__(self, description="unspecified parameter error!", id=905):
+    def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
         privacyIDEAError.__init__(self, description=description, id=id)

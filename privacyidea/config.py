@@ -18,6 +18,7 @@ class Config(object):
     PI_LOGLEVEL = 9
     CACHE_TYPE = "simple"
     PI_EXTERNAL_LINKS = True
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     # PI_GNUPG_HOME = "gpg"
     # PI_LOGO = "otherlogo.png"
     # PI_AUDIT_SQL_URI = sqlite://
@@ -48,6 +49,9 @@ class TestingConfig(Config):
     PI_GNUPG_HOME = "tests/testdata/gpg"
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
+    PI_NODE = "Node1"
+    PI_NODES = ["Node2"]
+    PI_ENGINE_REGISTRY_CLASS = "null"
 
 
 class ProductionConfig(Config):

@@ -5,6 +5,9 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2018-06-06 Michael Becker <michael.becker@hs-niederrhein.de>
+#             Add get_setting_type to make hotp.hashlib public and
+#             therefore recognised in token enrollment with role user.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Set Yubikeys to be hardware tokenkind
 #  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -43,6 +46,7 @@ This code is tested in tests/test_lib_tokens_hotp
 
 import time
 import binascii
+import base64
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
@@ -214,10 +218,18 @@ class HotpTokenClass(TokenClass):
             twostep_parameters = self._get_twostep_parameters()
             extra_data.update(twostep_parameters)
             response_detail.update(twostep_parameters)
+        imageurl = params.get("appimageurl")
+        if imageurl:
+            extra_data.update({"image": imageurl})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:
+            if user is not None:                               
                 try:
+                    key_bin = binascii.unhexlify(otpkey)
+                    # also strip the padding =, as it will get problems with the google app.
+                    value_b32 = base64.b32encode(key_bin).strip('=')
+                    value_b32_str = "{0!s}".format(value_b32)
+                    response_detail["otpkey"]["value_b32"] = value_b32_str
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
@@ -255,7 +267,7 @@ class HotpTokenClass(TokenClass):
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
-                    
+
         return response_detail
 
     def _get_twostep_parameters(self):
@@ -645,6 +657,11 @@ class HotpTokenClass(TokenClass):
 
         return ret, error, otp_dict
 
+    @staticmethod
+    def get_setting_type(key):
+        settings = {"hotp.hashlib": "public"}
+        return settings.get(key, "")
+
     @classmethod
     def get_default_settings(cls, params, logged_in_user=None,
                              policy_object=None, client_ip=None):
@@ -678,7 +695,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = list(hashlib_pol)[0]
 
             otplen_pol = policy_object.get_action_values(
                 action="hotp_otplen",
@@ -688,7 +705,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if otplen_pol:
-                ret["otplen"] = otplen_pol[0]
+                ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 

@@ -30,20 +30,25 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import binascii
+import re
 
-from UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
 from base64 import (b64decode,
                     b64encode)
 import hashlib
 from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256)
+                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string, to_utf8)
+from passlib.hash import bcrypt
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -126,17 +131,19 @@ class IdResolver (UserIdResolver):
         :return: list of filter conditions
         """
         if where:
-            # this might result in errors if the
-            # administrator enters nonsense
-            (w_column, w_cond, w_value) = where.split()
-            if w_cond.lower() == "like":
-                conditions.append(getattr(table, w_column).like(w_value))
-            elif w_cond == "==":
-                conditions.append(getattr(table, w_column) == w_value)
-            elif w_cond == ">":
-                conditions.append(getattr(table, w_column) > w_value)
-            elif w_cond == "<":
-                conditions.append(getattr(table, w_column) < w_value)
+            parts = re.split(' and ', where, flags=re.IGNORECASE)
+            for part in parts:
+                # this might result in errors if the
+                # administrator enters nonsense
+                (w_column, w_cond, w_value) = part.split()
+                if w_cond.lower() == "like":
+                    conditions.append(getattr(table, w_column).like(w_value))
+                elif w_cond == "==":
+                    conditions.append(getattr(table, w_column) == w_value)
+                elif w_cond == ">":
+                    conditions.append(getattr(table, w_column) > w_value)
+                elif w_cond == "<":
+                    conditions.append(getattr(table, w_column) < w_value)
 
         return conditions
 
@@ -148,6 +155,7 @@ class IdResolver (UserIdResolver):
         -         false if password does not match
 
         """
+
         res = False
         userinfo = self.getUserInfo(uid)
         if isinstance(password, unicode):
@@ -173,6 +181,14 @@ class IdResolver (UserIdResolver):
         elif len(userinfo.get("password")) == 64:
             # OTRS sha256 password
             res = otrs_sha256(database_pw, password)
+        elif database_pw[:3] in ["$1$", "$6$"]:
+            res = check_crypt(database_pw, password)
+        elif database_pw[:4] in ["$2a$", "$2b$", "$2y$"]:
+            # Do bcrypt hashing
+            res = bcrypt.verify(password, database_pw)
+        elif database_pw[:6] in ["1|$2a$", "1|$2b$", "1|$2y$"]:
+            # Do bcrypt hashing with some owncloud format
+            res = bcrypt.verify(password, database_pw[2:])
 
         return res
 
@@ -197,7 +213,7 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
 
             for r in result:
-                if userinfo.keys():  # pragma: no cover
+                if userinfo:  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(userId))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover
@@ -316,7 +332,14 @@ class IdResolver (UserIdResolver):
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
         """
-        return "sql." + self.resolverId
+        # Take the following parts, join them with the NULL byte and return
+        # the hexlified SHA-1 digest
+        id_parts = (to_utf8(self.connect_string),
+                    str(self.pool_size),
+                    str(self.pool_recycle),
+                    str(self.pool_timeout))
+        resolver_id = binascii.hexlify(hashlib.sha1("\x00".join(id_parts)).digest())
+        return "sql." + resolver_id
 
     @staticmethod
     def getResolverClassType():
@@ -343,7 +366,7 @@ class IdResolver (UserIdResolver):
         self.password = config.get('Password', "")
         self.table = config.get('Table', "")
         self._editable = config.get("Editable", False)
-        self.password_hash_type = config.get("Password_Hash_Type")
+        self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
         usermap = config.get('Map', {})
         self.map = yaml.safe_load(usermap)
         self.reverse_map = dict([[v, k] for k, v in self.map.items()])
@@ -352,6 +375,9 @@ class IdResolver (UserIdResolver):
         self.conParams = config.get('conParams', "")
         self.pool_size = int(config.get('poolSize') or 5)
         self.pool_timeout = int(config.get('poolTimeout') or 10)
+        # recycle SQL connections after 2 hours by default
+        # (necessary for MySQL servers, which terminate idle connections after some hours)
+        self.pool_recycle = int(config.get('poolRecycle') or 7200)
 
         # create the connectstring like
         params = {'Port': self.port,
@@ -362,32 +388,41 @@ class IdResolver (UserIdResolver):
                   'Server': self.server,
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
-        log.info("using the connect string {0!s}".format(self.connect_string))
-        try:
-            log.debug("using pool_size={0!s} and pool_timeout={1!s}".format(
-                      self.pool_size, self.pool_timeout))
-            self.engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False,
-                                        pool_size=self.pool_size,
-                                        pool_timeout=self.pool_timeout)
-        except TypeError:
-            # The DB Engine/Poolclass might not support the pool_size.
-            log.debug("connecting without pool_size.")
-            self.engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False)
-        # create a configured "Session" class
-        Session = sessionmaker(bind=self.engine)
 
-        # create a Session
+        # get an engine from the engine registry, using self.getResolverId() as the key,
+        # which involves the connect string and the pool settings.
+        self.engine = get_engine(self.getResolverId(), self._create_engine)
+        # We use ``scoped_session`` to be sure that the SQLSoup object
+        # also uses ``self.session``.
+        Session = scoped_session(sessionmaker(bind=self.engine))
+        # Session should be closed on teardown
         self.session = Session()
+        register_finalizer(self.session.close)
         self.session._model_changes = {}
-        self.db = SQLSoup(self.engine)
+        self.db = SQLSoup(self.engine, session=Session)
         self.db.session._model_changes = {}
         self.TABLE = self.db.entity(self.table)
 
         return self
+
+    def _create_engine(self):
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
+        try:
+            log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
+                self.pool_size, self.pool_timeout, self.pool_recycle))
+            engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False,
+                                        pool_size=self.pool_size,
+                                        pool_recycle=self.pool_recycle,
+                                        pool_timeout=self.pool_timeout)
+        except TypeError:
+            # The DB Engine/Poolclass might not support the pool_size.
+            log.debug("connecting without pool_size.")
+            engine = create_engine(self.connect_string,
+                                        encoding=self.encoding,
+                                        convert_unicode=False)
+        return engine
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -406,6 +441,9 @@ class IdResolver (UserIdResolver):
                                 'Map': 'string',
                                 'Where': 'string',
                                 'Editable': 'int',
+                                'poolTimeout': 'int',
+                                'poolSize': 'int',
+                                'poolRecycle': 'int',
                                 'Encoding': 'string',
                                 'conParams': 'string'}
         return {typ: descriptor}
@@ -426,12 +464,12 @@ class IdResolver (UserIdResolver):
         password = ""
         conParams = ""
         if param.get("Port"):
-            port = ":{0!s}".format(param.get("Port"))
+            port = u":{0!s}".format(param.get("Port"))
         if param.get("Password"):
-            password = ":{0!s}".format(param.get("Password"))
+            password = u":{0!s}".format(param.get("Password"))
         if param.get("conParams"):
-            conParams = "?{0!s}".format(param.get("conParams"))
-        connect_string = "{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
+            conParams = u"?{0!s}".format(param.get("conParams"))
+        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
                                                    param.get("User", ""),
                                                    password,
                                                    "@" if (param.get("User")
@@ -444,7 +482,6 @@ class IdResolver (UserIdResolver):
         # SQLAlchemy does not like a unicode connect string!
         if param.get("Driver").lower() == "sqlite":
             connect_string = str(connect_string)
-        log.debug("SQL connectstring: {0!r}".format(connect_string))
         return connect_string
 
     @classmethod
@@ -455,7 +492,6 @@ class IdResolver (UserIdResolver):
         :param param: A dictionary with all necessary parameter
                         to test the connection.
         :type param: dict
-
         :return: Tuple of success and a description
         :rtype: (bool, string)
 
@@ -468,11 +504,12 @@ class IdResolver (UserIdResolver):
         desc = None
 
         connect_string = cls._create_connect_string(param)
-        log.info("using the connect string {0!s}".format(connect_string))
+        log.info(u"using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
-        session = sessionmaker(bind=engine)()
-        db = SQLSoup(engine)
+        Session = scoped_session(sessionmaker(bind=engine))
+        session = Session()
+        db = SQLSoup(engine, session=Session)
         try:
             TABLE = db.entity(param.get("Table"))
             conditions = cls._append_where_filter([], TABLE,
@@ -484,6 +521,13 @@ class IdResolver (UserIdResolver):
             desc = "Found {0:d} users.".format(num)
         except Exception as exx:
             desc = "failed to retrieve users: {0!s}".format(exx)
+        finally:
+            # We do not want any leftover DB connection, so we first need to close
+            # the session such that the DB connection gets returned to the pool (it
+            # is still open at that point!) and then dispose the engine such that the
+            # checked-in connection gets closed.
+            session.close()
+            engine.dispose()
 
         return num, desc
 
@@ -500,37 +544,31 @@ class IdResolver (UserIdResolver):
         determine the way how to create the UID.
         """
         attributes = attributes or {}
-        if "password" in attributes and self.password_hash_type:
-            attributes["password"] = hash_password(attributes["password"],
-                                                   self.password_hash_type)
-
-        kwargs = self._attributes_to_db_columns(attributes)
+        kwargs = self.prepare_attributes_for_db(attributes)
         log.debug("Insert new user with attributes {0!s}".format(kwargs))
         r = self.TABLE.insert(**kwargs)
         self.db.commit()
         # Return the UID of the new object
         return getattr(r, self.map.get("userid"))
 
-    def _attributes_to_db_columns(self, attributes):
+    def prepare_attributes_for_db(self, attributes):
         """
-        takes the attributes and maps them to the DB columns
-        :param attributes:
-        :return: dict with column name as keys and values
+        Given a dictionary of attributes, return a dictionary
+        mapping columns to values.
+        If the attributes contain a password, hash the password according to the
+        configured password hash type.
+
+        :param attributes: attributes dictionary
+        :return: dictionary with column name as keys
         """
+        attributes = attributes.copy()
+        if "password" in attributes:
+            attributes["password"] = hash_password(attributes["password"],
+                                                   self.password_hash_type)
         columns = {}
-        for fieldname in attributes.keys():
-            if self.map.get(fieldname):
-                if fieldname == "password":
-                    password = attributes.get(fieldname)
-                    # Create a {SSHA256} password
-                    salt = geturandom(16)
-                    hr = hashlib.sha256(password)
-                    hr.update(salt)
-                    hash_bin = hr.digest()
-                    hash_b64 = b64encode(hash_bin + salt)
-                    columns[self.map.get(fieldname)] = "{SSHA256}" + hash_b64
-                else:
-                    columns[self.map.get(fieldname)] = attributes.get(fieldname)
+        for fieldname in attributes:
+            if fieldname in self.map:
+                columns[self.map[fieldname]] = attributes[fieldname]
         return columns
 
     def delete_user(self, uid):
@@ -577,7 +615,7 @@ class IdResolver (UserIdResolver):
         :return: True in case of success
         """
         attributes = attributes or {}
-        params = self._attributes_to_db_columns(attributes)
+        params = self.prepare_attributes_for_db(attributes)
         kwargs = {self.map.get("userid"): uid}
         r = self.TABLE.filter_by(**kwargs).update(params)
         self.db.commit()

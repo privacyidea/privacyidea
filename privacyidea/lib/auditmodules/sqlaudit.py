@@ -41,24 +41,18 @@ token database.
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.utils import censor_connect_string
+from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.utils import truncate_comma_list
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
+from six import string_types
 
 
 log = logging.getLogger(__name__)
-try:
-    import matplotlib
-    MATPLOT_READY = True
-    matplotlib.use('Agg')
-    # We need to set the matplotlib backend before importing pandas with pyplot
-    from pandas import DataFrame
-    PANDAS_READY = True
-    # matplotlib is needed to plot
-except Exception as exx:
-    log.warning(exx)
-    PANDAS_READY = False
 
 metadata = MetaData()
 
@@ -66,57 +60,91 @@ from privacyidea.models import audit_column_length as column_length
 from privacyidea.models import AUDIT_TABLE_NAME as TABLE_NAME
 from privacyidea.models import Audit as LogEntry
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
     to an SQL database table.
-    It requires the configuration parameters.
-    PI_AUDIT_SQL_URI
+    It requires the configuration parameters in pi.cfg:
+    * PI_AUDIT_KEY_PUBLIC
+    * PI_AUDIT_KEY_PRIVATE
+
+    If you want to host the SQL Audit database in another DB than the
+    token DB, you can use:
+    * PI_AUDIT_SQL_URI
+
+    It also takes the optional parameters:
+    * PI_AUDIT_POOL_SIZE
+    * PI_AUDIT_POOL_RECYCLE
+    * PI_AUDIT_SQL_TRUNCATE
+    * PI_AUDIT_NO_SIGN
+
+    You can use PI_AUDIT_NO_SIGN = True to avoid signing of the audit log.
     """
     
     def __init__(self, config=None):
         self.name = "sqlaudit"
         self.config = config or {}
         self.audit_data = {}
+        self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
-        self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
-                       self.config.get("PI_AUDIT_KEY_PRIVATE"))
-        
+        if self.sign_data:
+            self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
+                           self.config.get("PI_AUDIT_KEY_PRIVATE"))
+
+        # We can use "sqlaudit" as the key because the SQLAudit connection
+        # string is fixed for a running privacyIDEA instance.
+        # In other words, we will not run into any problems with changing connect strings.
+        self.engine = get_engine(self.name, self._create_engine)
+        # create a configured "Session" class. ``scoped_session`` is not
+        # necessary because we do not share session objects among threads.
+        # We use it anyway as a safety measure.
+        Session = scoped_session(sessionmaker(bind=self.engine))
+        self.session = Session()
+        # Ensure that the connection gets returned to the pool when the request has
+        # been handled. This may close an already-closed session, but this is not a problem.
+        register_finalizer(self.session.close)
+        self.session._model_changes = {}
+
+    def _create_engine(self):
+        """
+        :return: a new SQLAlchemy engine connecting to the database specified in PI_AUDIT_SQL_URI.
+        """
         # an Engine, which the Session will use for connection
         # resources
         connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
             "SQLALCHEMY_DATABASE_URI"))
-        log.debug("using the connect string {0!s}".format(connect_string))
+        log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         try:
             pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
-            self.engine = create_engine(
+            engine = create_engine(
                 connect_string,
                 pool_size=pool_size,
                 pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
-            log.debug("Using SQL pool_size of {0!s}".format(pool_size))
+            log.debug("Using SQL pool size of {}".format(pool_size))
         except TypeError:
             # SQLite does not support pool_size
-            self.engine = create_engine(connect_string)
+            engine = create_engine(connect_string)
             log.debug("Using no SQL pool_size.")
-
-        # create a configured "Session" class
-        Session = sessionmaker(bind=self.engine)
-
-        # create a Session
-        self.session = Session()
-        self.session._model_changes = {}
+        return engine
 
     def _truncate_data(self):
         """
         Truncate self.audit_data according to the column_length.
         :return: None
         """
-        for column, l in column_length.iteritems():
+        for column, l in column_length.items():
             if column in self.audit_data:
-                self.audit_data[column] = self.audit_data[column][:l]
+                data = self.audit_data[column]
+                if isinstance(data, string_types):
+                    if column == "policies":
+                        # The policies column is shortend per comma entry
+                        data = truncate_comma_list(data, l)
+                    else:
+                        data = data[:l]
+                self.audit_data[column] = data
 
     @staticmethod
     def _create_filter(param, timelimit=None):
@@ -184,32 +212,13 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    def log(self, param):
-        """
-        Add new log details in param to the internal log data self.audit_data.
-
-        :param param: Log data that is to be added
-        :type param: dict
-        :return: None
-        """
-        for k, v in param.items():
-            self.audit_data[k] = v
-
-    def add_to_log(self, param):
-        """
-        Add new text to an existing log entry
-        :param param:
-        :return:
-        """
-        for k, v in param.items():
-            self.audit_data[k] += v
-
     def finalize_log(self):
         """
         This method is used to log the data.
         It should hash the data and do a hash chain and sign the data
         """
         try:
+            self.audit_data["policies"] = ",".join(self.audit_data.get("policies",[]))
             if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
                 self._truncate_data()
             le = LogEntry(action=self.audit_data.get("action"),
@@ -225,12 +234,13 @@ class Audit(AuditBase):
                           privacyidea_server=self.audit_data.get("privacyidea_server"),
                           client=self.audit_data.get("client", ""),
                           loglevel=self.audit_data.get("log_level"),
-                          clearance_level=self.audit_data.get("clearance_level")
+                          clearance_level=self.audit_data.get("clearance_level"),
+                          policies=self.audit_data.get("policies")
                           )
             self.session.add(le)
             self.session.commit()
             # Add the signature
-            if self.sign_object:
+            if self.sign_data and self.sign_object:
                 s = self._log_to_string(le)
                 sign = self.sign_object.sign(s)
                 le.signature = sign
@@ -304,25 +314,27 @@ class Audit(AuditBase):
         
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
+
+        :param le: LogEntry object containing the data
+        :type le: LogEntry
+        :rtype str
         """
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s,"\
-            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
-                                                  le.date,
-                                                  le.action,
-                                                  le.success,
-                                                  le.serial,
-                                                  le.token_type,
-                                                  le.user,
-                                                  le.realm,
-                                                  le.administrator,
-                                                  le.action_detail,
-                                                  le.info,
-                                                  le.privacyidea_server,
-                                                  le.client,
-                                                  le.loglevel,
-                                                  le.clearance_level)
-        if type(s) == unicode:
-            s = s.encode("utf-8")
+        s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
+            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+                                                   le.date,
+                                                   le.action,
+                                                   le.success,
+                                                   le.serial,
+                                                   le.token_type,
+                                                   le.user,
+                                                   le.realm,
+                                                   le.administrator,
+                                                   le.action_detail,
+                                                   le.info,
+                                                   le.privacyidea_server,
+                                                   le.client,
+                                                   le.loglevel,
+                                                   le.clearance_level)
         return s
 
     @staticmethod
@@ -344,14 +356,15 @@ class Audit(AuditBase):
                     'privacyidea_server': LogEntry.privacyidea_server,
                     'client': LogEntry.client,
                     'loglevel': LogEntry.loglevel,
+                    'policies': LogEntry.policies,
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
 
     def csv_generator(self, param=None, user=None, timelimit=None):
         """
         Returns the audit log as csv file.
-        :param config: The current flask app configuration
-        :type config: dict
+        :param timelimit: Limit the number of dumped entries by time
+        :type timelimit: datetime.timedelta
         :param param: The request parameters
         :type param: dict
         :param user: The user, who issued the request
@@ -363,7 +376,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            audit_list = audit_dict.values()
+            audit_list = list(audit_dict.values())
             string_list = [u"'{0!s}'".format(x) for x in audit_list]
             yield ",".join(string_list)+"\n"
 
@@ -406,12 +419,12 @@ class Audit(AuditBase):
                                       page=page, sortorder=sortorder,
                                       timelimit=timelimit)
         try:
-            le = auditIter.next()
+            le = next(auditIter)
             while le:
                 # Fill the list
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
-                le = auditIter.next()
-        except StopIteration:
+                le = next(auditIter)
+        except StopIteration as _e:
             log.debug("Interation stopped.")
 
         return paging_object
@@ -457,37 +470,6 @@ class Audit(AuditBase):
         else:
             return iter(logentries)
 
-    def get_dataframe(self,
-                      start_time=datetime.datetime.now()
-                                 -datetime.timedelta(days=7),
-                      end_time=datetime.datetime.now()):
-        """
-        The Audit module can handle its data the best. This function is used
-        to return a pandas.dataframe with all audit data in the given time
-        frame.
-
-        This dataframe then can be used for extracting statistics.
-
-        :param start_time: The start time of the data
-        :type start_time: datetime
-        :param end_time: The end time of the data
-        :type end_time: datetime
-        :return: Audit data
-        :rtype: dataframe
-        """
-        if not PANDAS_READY:
-            log.warning("If you want to use statistics, you need to install "
-                        "python-pandas.")
-            return None
-
-        q = self.session.query(LogEntry)\
-            .filter(LogEntry.date > start_time,
-                    LogEntry.date < end_time)
-        rows = q.all()
-        rows = [r.__dict__ for r in rows]
-        df = DataFrame(rows)
-        return df
-
     def clear(self):
         """
         Deletes all entries in the database table.
@@ -498,8 +480,11 @@ class Audit(AuditBase):
         self.session.commit()
     
     def audit_entry_to_dict(self, audit_entry):
-        sig = self.sign_object.verify(self._log_to_string(audit_entry),
-                                      audit_entry.signature)
+        sig = None
+        if self.sign_data:
+            sig = self.sign_object.verify(self._log_to_string(audit_entry),
+                                          audit_entry.signature)
+
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
         audit_dict = {'number': audit_entry.id,
@@ -517,6 +502,7 @@ class Audit(AuditBase):
                       'action_detail': audit_entry.action_detail,
                       'info': audit_entry.info,
                       'privacyidea_server': audit_entry.privacyidea_server,
+                      'policies': audit_entry.policies,
                       'client': audit_entry.client,
                       'log_level': audit_entry.loglevel,
                       'clearance_level': audit_entry.clearance_level

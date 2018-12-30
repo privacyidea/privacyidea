@@ -24,8 +24,9 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from ...lib.error import (ParameterError,
-                          AuthError)
+                          AuthError, ERROR)
 from ...lib.log import log_with
+from privacyidea.lib import _
 import time
 import threading
 import pkg_resources
@@ -66,7 +67,7 @@ def get_version():
     return "privacyIDEA {0!s}".format(version)
 
 
-def getParam(param, key, optional=True, default=None):
+def getParam(param, key, optional=True, default=None, allow_empty=True):
     """
     returns a parameter from the request parameters.
     
@@ -79,6 +80,9 @@ def getParam(param, key, optional=True, default=None):
     :type optional: bool
     :param default: The value to assign to the parameter, if it is not
                     contained in the param.
+    :param allow_empty: Set to False is the parameter is a string and is
+        not allowed to be empty
+    :type allow_empty: bool
     
     :return: the value (literal) of the parameter if exists or nothing
              in case the parameter is optional, otherwise throw an exception
@@ -91,6 +95,9 @@ def getParam(param, key, optional=True, default=None):
         ret = default
     elif not optional:
         raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
+
+    if not allow_empty and ret == "":
+        raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
 
     return ret
 
@@ -270,24 +277,21 @@ def verify_auth_token(auth_token, required_role=None):
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
-        raise AuthError("Authentication failure",
-                        "missing Authorization header",
-                        status=401)
+        raise AuthError(_("Authentication failure. Missing Authorization header."),
+                        id=ERROR.AUTHENTICATE_AUTH_HEADER)
     try:
-        r = jwt.decode(auth_token, current_app.secret_key)
+        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
     except jwt.DecodeError as err:
-        raise AuthError("Authentication failure",
-                        "error during decoding your token: {0!s}".format(err),
-                        status=401)
+        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
     except jwt.ExpiredSignature as err:
-        raise AuthError("Authentication failure",
-                        "Your token has expired: {0!s}".format(err),
-                        status=401)
+        raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                        id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
-        raise AuthError("Authentication failure",
-                        "You do not have the necessary role (%s) to access "
-                        "this resource!" % required_role,
-                        status=401)
+        raise AuthError(_("Authentication failure. "
+                        "You do not have the necessary role ({0!s}) to access "
+                        "this resource!").format(required_role),
+                        id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r

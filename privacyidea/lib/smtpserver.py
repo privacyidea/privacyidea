@@ -20,6 +20,7 @@
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
+from privacyidea.lib.utils import fetch_one_resource
 import logging
 from privacyidea.lib.log import log_with
 from time import gmtime, strftime
@@ -244,15 +245,9 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
 @log_with(log)
 def delete_smtpserver(identifier):
     """
-    Delete the given server from the database
+    Delete the given server from the database.
+    Raise a ResourceNotFoundError if it couldn't be found.
     :param identifier: The identifier/name of the server
     :return: The ID of the database entry, that was deleted
     """
-    ret = -1
-    smtp = SMTPServerDB.query.filter(SMTPServerDB.identifier ==
-                                     identifier).first()
-    if smtp:
-        smtp.delete()
-        ret = smtp.id
-    return ret
-
+    return fetch_one_resource(SMTPServerDB, identifier=identifier).delete()

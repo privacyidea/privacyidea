@@ -61,6 +61,7 @@ myApp.constant("machineUrl", backendUrl + instance + "/machine");
 myApp.constant("applicationUrl", backendUrl + instance + "/application");
 myApp.constant("realmUrl", backendUrl + instance + "/realm");
 myApp.constant("eventUrl", backendUrl + instance + "/event");
+myApp.constant("periodicTaskUrl", backendUrl + instance + "/periodictask");
 myApp.constant("smsgatewayUrl", backendUrl + instance + "/smsgateway");
 myApp.constant("defaultRealmUrl", backendUrl + instance + "/defaultrealm");
 myApp.constant("validateUrl", backendUrl + instance + "/validate");
@@ -95,6 +96,9 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             //debug: console.log("Setting language to " + nlang);
             gettextCatalog.setCurrentLanguage(nlang);
             gettextCatalog.debug = true;
+
+            $rootScope.publicLink = "https://netknights.it/" + gettextCatalog.getCurrentLanguage() + "/support-link-public";
+            $rootScope.privacyideaSupportLink = $rootScope.publicLink;
         }
     ]
 );

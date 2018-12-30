@@ -5,6 +5,9 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2018-10-31   Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Let the client choose to get a HTTP 500 Error code if
+#               SMS fails.
 #  2018-02-16   Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Allow to use a dynamic_phone
 #  2016-06-20   Cornelius Kölbel <cornelius.koelbel@netkngihts.it>
@@ -51,7 +54,7 @@ from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance)
@@ -62,7 +65,8 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
 import logging
-from privacyidea.lib.policydecorators import challenge_response_allowed
+
+
 log = logging.getLogger(__name__)
 
 keylen = {'sha1': 20,
@@ -204,6 +208,11 @@ class SmsTokenClass(HotpTokenClass):
                             'desc': _('If set, a new SMS OTP will be sent '
                                       'after successful authentication with '
                                       'one SMS OTP.')},
+                       ACTION.CHALLENGETEXT: {
+                           'type': 'str',
+                           'desc': _('Use an alternate challenge text for telling the '
+                                     'user to enter the code from the SMS.')
+                       }
                    }
                },
         }
@@ -261,6 +270,8 @@ class SmsTokenClass(HotpTokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
+                You can pass exception=1 to raise an exception, if
+                the SMS could not be sent. Otherwise the message is contained in the response.
         :return: tuple of (bool, message and data)
                  bool, if submit was successful
                  message is submitted to the user
@@ -269,9 +280,11 @@ class SmsTokenClass(HotpTokenClass):
                     output
         """
         success = False
-        sms = ""
         options = options or {}
-        return_message = "Enter the OTP from the SMS:"
+        return_message = get_action_values_from_options(SCOPE.AUTH,
+                                                        "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                             ACTION.CHALLENGETEXT),
+                                                        options) or _("Enter the OTP from the SMS:")
         attributes = {'state': transactionid}
         validity = self._get_sms_timeout()
 
@@ -301,6 +314,8 @@ class SmsTokenClass(HotpTokenClass):
                 log.warning(info)
                 log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
+                if is_true(options.get("exception")):
+                    raise Exception(info)
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
@@ -469,10 +484,11 @@ class SmsTokenClass(HotpTokenClass):
                                   user=username,
                                   client=clientip,
                                   unique=True,
-                                  allow_white_space_in_action=True)
+                                  allow_white_space_in_action=True,
+                                  audit_data=g.audit_object.audit_data)
 
             if len(messages) == 1:
-                message = messages[0]
+                message = list(messages)[0]
 
         # Replace the {challenge}:
         message = message.format(challenge=options.get("challenge"))
@@ -504,7 +520,8 @@ class SmsTokenClass(HotpTokenClass):
                              scope=SCOPE.AUTH,
                              realm=realm,
                              user=username,
-                             client=clientip, active=True)
+                             client=clientip, active=True,
+                             audit_data=g.audit_object.audit_data)
             autosms = len(autosmspol) >= 1
 
         return autosms

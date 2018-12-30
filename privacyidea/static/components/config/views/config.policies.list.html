@@ -2,6 +2,7 @@
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
+            <th translate>Priority</th>
             <th translate>Active</th>
             <th translate>Policy Name</th>
             <th translate>Scope</th>
@@ -14,6 +15,11 @@
         </thead>
         <tbody>
         <tr ng-repeat="policy in policies">
+            <td>
+                <input type="number" ng-model="policy.priority"
+                       class="form-control" min="1"
+                       ng-change="priorityChanged(policy)" />
+            </td>
             <td>
                 <span ng-show="policy.active"
                       class="glyphicon glyphicon-ok"

@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2018-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Cleaning up the before_after method
 # 2015-12-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Move before and after from api/token.py and system.py
 #            to this central location
@@ -34,8 +36,9 @@ from privacyidea.lib.audit import getAudit
 from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
+from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required)
-from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib.token import get_token_type
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
@@ -51,6 +54,7 @@ from .token import token_blueprint
 from .system import system_blueprint
 from .smtpserver import smtpserver_blueprint
 from .radiusserver import radiusserver_blueprint
+from .periodictask import periodictask_blueprint
 from .privacyideaserver import privacyideaserver_blueprint
 from .recover import recover_blueprint
 from .register import register_blueprint
@@ -58,14 +62,29 @@ from .event import eventhandling_blueprint
 from .smsgateway import smsgateway_blueprint
 from .clienttype import client_blueprint
 from .subscriptions import subscriptions_blueprint
+from .monitoring import monitoring_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
                          AuthError, UserError,
-                         PolicyError)
+                         PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
+
+
+# ``before_app_request`` and ``teardown_app_request`` register the functions
+# at the application, so it's sufficient to call them only for one blueprint.
+# The decorated functions are called before and after *every* request.
+@token_blueprint.before_app_request
+def log_begin_request():
+    log.debug(u"Begin handling of request {!r}".format(request.full_path))
+
+
+@token_blueprint.teardown_app_request
+def teardown_request(exc):
+    call_finalizers()
+    log.debug(u"End handling of request {!r}".format(request.full_path))
 
 
 @token_blueprint.before_request
@@ -89,9 +108,11 @@ def before_user_request():
 @application_blueprint.before_request
 @smtpserver_blueprint.before_request
 @eventhandling_blueprint.before_request
+@periodictask_blueprint.before_request
 @smsgateway_blueprint.before_request
 @client_blueprint.before_request
 @subscriptions_blueprint.before_request
+@monitoring_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -107,10 +128,19 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    g.config_object = ConfigClass()
+    update_config_object()
     request.all_data = get_all_params(request.values, request.data)
+    if g.logged_in_user.get("role") == "user":
+        # A user is calling this API. First thing we do is restricting the user parameter.
+        # ...to restrict token view, audit view or token actions.
+        request.all_data["user"] = g.logged_in_user.get("username")
+        request.all_data["realm"] = g.logged_in_user.get("realm")
+
     try:
         request.User = get_user_from_param(request.all_data)
+        # overwrite or set the resolver parameter in case of a logged in user
+        if g.logged_in_user.get("role") == "user":
+            request.all_data["resolver"] = request.User.resolver
     except AttributeError:
         # Some endpoints do not need users OR e.g. the setPolicy endpoint
         # takes a list as the userobject
@@ -130,27 +160,25 @@ def before_request():
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and "**" not in serial:
+    if serial:
         tokentype = get_token_type(serial)
     else:
         tokentype = None
-    realm = getParam(request.all_data, "realm")
-    user_loginname = ""
-    resolver = ""
-    if "token_blueprint" in request.endpoint:
-        # In case of token endpoint we evaluate the user in the request.
-        # Note: In policy-endpoint "user" is part of the policy configuration
-        #  and will cause an exception
-        user = get_user_from_param(request.all_data)
-        user_loginname = user.login
-        realm = user.realm or realm
-        resolver = user.resolver
+
+    if request.User:
+        audit_username = request.User.login
+        audit_realm = request.User.realm
+        audit_resolver = request.User.resolver
+    else:
+        audit_realm = getParam(request.all_data, "realm")
+        audit_resolver = getParam(request.all_data, "resolver")
+        audit_username = getParam(request.all_data, "user")
 
     g.audit_object.log({"success": False,
                         "serial": serial,
-                        "user": user_loginname,
-                        "realm": realm,
-                        "resolver": resolver,
+                        "user": audit_username,
+                        "realm": audit_realm,
+                        "resolver": audit_resolver,
                         "token_type": tokentype,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
@@ -159,22 +187,7 @@ def before_request():
                         "action_detail": "",
                         "info": ""})
 
-    if g.logged_in_user.get("role") == "user":
-        # A user is calling this API
-        # In case the token API is called by the user and not by the admin we
-        #  need to restrict the token view.
-        CurrentUser = get_user_from_param({"user":
-                                               g.logged_in_user.get(
-                                                   "username"),
-                                           "realm": g.logged_in_user.get(
-                                               "realm")})
-        request.all_data["user"] = CurrentUser.login
-        request.all_data["resolver"] = CurrentUser.resolver
-        request.all_data["realm"] = CurrentUser.realm
-        g.audit_object.log({"user": CurrentUser.login,
-                            "resolver": CurrentUser.resolver,
-                            "realm": CurrentUser.realm})
-    else:
+    if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
         g.audit_object.log({"administrator": g.logged_in_user.get("username")})
         # TODO: Check is there are realm specific admin policies, so that the
@@ -198,9 +211,11 @@ def before_request():
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
 @radiusserver_blueprint.after_request
+@periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
+@monitoring_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -228,14 +243,15 @@ def after_request(response):
 @application_blueprint.app_errorhandler(AuthError)
 @smtpserver_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
+@monitoring_blueprint.app_errorhandler(AuthError)
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
-        g.audit_object.log({"info": error.description})
+        g.audit_object.log({"info": error.message})
         g.audit_object.finalize_log()
-    return send_error(error.description,
-                      error_code=-401,
-                      details=error.details), error.status_code
+    return send_error(error.message,
+                      error_code=error.id,
+                      details=error.details), 401
 
 
 @system_blueprint.errorhandler(PolicyError)
@@ -251,12 +267,38 @@ def auth_error(error):
 @register_blueprint.app_errorhandler(PolicyError)
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
+@monitoring_blueprint.app_errorhandler(PolicyError)
 @postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
         g.audit_object.finalize_log()
-    return send_error(error.message), error.id
+    return send_error(error.message, error_code=error.id), 403
+
+
+@system_blueprint.app_errorhandler(ResourceNotFoundError)
+@realm_blueprint.app_errorhandler(ResourceNotFoundError)
+@defaultrealm_blueprint.app_errorhandler(ResourceNotFoundError)
+@resolver_blueprint.app_errorhandler(ResourceNotFoundError)
+@policy_blueprint.app_errorhandler(ResourceNotFoundError)
+@user_blueprint.app_errorhandler(ResourceNotFoundError)
+@token_blueprint.app_errorhandler(ResourceNotFoundError)
+@audit_blueprint.app_errorhandler(ResourceNotFoundError)
+@application_blueprint.app_errorhandler(ResourceNotFoundError)
+@smtpserver_blueprint.app_errorhandler(ResourceNotFoundError)
+@register_blueprint.app_errorhandler(ResourceNotFoundError)
+@recover_blueprint.app_errorhandler(ResourceNotFoundError)
+@subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
+@postrequest(sign_response, request=request)
+def resource_not_found_error(error):
+    """
+    This function is called when an ResourceNotFoundError occurs.
+    It sends a 404.
+    """
+    if "audit_object" in g:
+        g.audit_object.log({"info": error.message})
+        g.audit_object.finalize_log()
+    return send_error(error.message, error_code=error.id), 404
 
 
 @system_blueprint.app_errorhandler(privacyIDEAError)
@@ -272,6 +314,7 @@ def policy_error(error):
 @register_blueprint.app_errorhandler(privacyIDEAError)
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
+@monitoring_blueprint.app_errorhandler(privacyIDEAError)
 @postrequest(sign_response, request=request)
 def privacyidea_error(error):
     """
@@ -298,6 +341,7 @@ def privacyidea_error(error):
 @register_blueprint.app_errorhandler(500)
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
+@monitoring_blueprint.app_errorhandler(500)
 @postrequest(sign_response, request=request)
 def internal_error(error):
     """

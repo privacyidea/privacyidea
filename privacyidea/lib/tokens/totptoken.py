@@ -34,7 +34,7 @@ This file contains the definition of the TOTP token class
 It depends on the DB model, and the lib.tokenclass.
 TOTP is defined in https://tools.ietf.org/html/rfc6238
 """
-
+from __future__ import division
 import logging
 import time
 import math
@@ -656,7 +656,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = list(hashlib_pol)[0]
 
             timestep_pol = policy_object.get_action_values(
                 action="totp_timestep",
@@ -666,7 +666,7 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if timestep_pol:
-                ret["timeStep"] = timestep_pol[0]
+                ret["timeStep"] = list(timestep_pol)[0]
 
             otplen_pol = policy_object.get_action_values(
                 action="totp_otplen",
@@ -676,6 +676,25 @@ class TotpTokenClass(HotpTokenClass):
                 client=client_ip,
                 unique=True)
             if otplen_pol:
-                ret["otplen"] = otplen_pol[0]
+                ret["otplen"] = list(otplen_pol)[0]
 
         return ret
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # timeStep
+        if len(l) >= 5:
+            params["timeStep"] = int(l[4].strip())
+        else:
+            params["timeStep"] = 30
+
+        return params

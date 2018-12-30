@@ -11,6 +11,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         x509name_to_string)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib import _
 import binascii
 from hashlib import sha256
 from OpenSSL import crypto
@@ -171,7 +172,8 @@ class U2FTokenTestCase(MyTestCase):
         # create challenge
         res, message, t_id, response = token.create_challenge()
         self.assertTrue(res)
-        self.assertTrue("Please confirm with your U2F token" in message)
+        expected_text = _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861")
+        self.assertEqual(message, expected_text)
         self.assertEqual(len(t_id), 20)
         u2f_sign_request = response.get("u2fSignRequest")
         version = u2f_sign_request.get("version")

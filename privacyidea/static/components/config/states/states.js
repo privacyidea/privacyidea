@@ -236,5 +236,20 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     templateUrl: configpath + "config.events.list.html",
                     controller: "eventController"
                 })
+                .state('config.periodictasks', {
+                    url: "/periodictasks",
+                    templateUrl: configpath + "config.periodictasks.html",
+                    controller: "periodicTaskController"
+                })
+                .state('config.periodictasks.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.periodictasks.list.html",
+                    controller: "periodicTaskController"
+                })
+                .state('config.periodictasks.details', {
+                    url: "/details/{ptaskid:.*}",
+                    templateUrl: configpath + "config.periodictasks.details.html",
+                    controller: "periodicTaskDetailController"
+                })
             ;
         }]);

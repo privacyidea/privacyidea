@@ -17,7 +17,7 @@
 # built documents.
 #
 # The short X.Y version.
-version = '2.22dev2'
+version = '2.23.3'
 # The full version, including alpha/beta/rc tags.
 #release = '2.16dev5'
 release = version
@@ -68,7 +68,7 @@ sys.path.insert(0, os.path.abspath('../privacyidea'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath', 'sphinx.ext.viewcode', 
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 
               'sphinxcontrib.autohttp.flask']
 http_index_ignore_prefixes = ['/token']
 

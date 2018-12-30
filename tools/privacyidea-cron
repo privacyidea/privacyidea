@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# 2018-06-29 Friedrich Weber <friedrich.weber@netknights.it>
+#            Implement periodic task runner
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+from __future__ import print_function
+
+__doc__ = """
+This script is meant to be invoked periodically by the system cron daemon.
+It runs periodic tasks that are specified in the database.
+"""
+__version__ = "0.1"
+
+import sys
+import warnings
+import json
+from datetime import datetime
+
+import dateutil
+from flask_script import Manager
+
+from privacyidea.app import create_app
+from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, \
+    get_periodic_task_by_name, \
+    execute_task, get_periodic_tasks
+
+warnings.simplefilter("ignore")
+
+app = create_app(config_name='production', silent=True)
+manager = Manager(app)
+
+
+def print_stdout(*args, **kwargs):
+    """
+    Print to stdout, except if "cron mode" has been activated.
+    """
+    if not app.config.get("cron_mode", False):
+        print(*args, **kwargs)
+
+
+def print_stderr(*args, **kwargs):
+    """
+    Print to stderr.
+    """
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def get_node_name(node):
+    """
+    Determine the node name. If no node name is given, read it from the app config.
+    :param node: node name given by the user (can be None)
+    :return:
+    """
+    if node is not None:
+        return node
+    else:
+        return get_privacyidea_node()
+
+
+def run_task_on_node(ptask, node):
+    """
+    Run a periodic task (given as a dictionary) on the given node.
+    In case of success, write the last successful run to the database. Catch any exceptions.
+    :param ptask: task as a dictionary
+    :param node: Node name
+    """
+    try:
+        print_stdout(u"Running {!r} ...".format(ptask["name"]), end="")
+        result = execute_task(ptask["taskmodule"], ptask["options"])
+    except Exception as e:
+        print_stderr(u'Caught exception when running {!r}: {!r}'.format(ptask["name"], e))
+        result = False
+    if result:
+        current_time = datetime.now(dateutil.tz.tzlocal())
+        print_stdout(u'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(
+            ptask["name"], node))
+        set_periodic_task_last_run(ptask["id"], node, current_time)
+    else:
+        print_stderr(u'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node))
+        print_stderr(u'This unsuccessful run is not recorded in the database.')
+    return result
+
+
+@manager.option("-n", "--node",
+                help="Override the node name (read from privacyIDEA config by default)",
+                dest="node_string")
+@manager.option("-t", "--task",
+                help="Run the specified task",
+                required=True,
+                dest="task_name")
+def run_manually(node_string, task_name):
+    """
+    Manually run a periodic task.
+    BEWARE: This does not check whether the task is active, or whether it should
+    run on the given node at all.
+    """
+    node = get_node_name(node_string)
+    ptask = get_periodic_task_by_name(task_name)
+    run_task_on_node(ptask, node)
+
+
+@manager.command
+def list():
+    """
+    Show a list of available tasks that could be run.
+    """
+    line_format = (u'{active!s:7.7} {id:3} {name:16.16}\t{interval:16.16}\t{taskmodule:16}'
+                   u'\t{node_list:20}\t{options_json}')
+    heading = line_format.format(
+        active=u"Active",
+        id=u"ID",
+        name=u"Name",
+        interval=u"Interval",
+        taskmodule=u"Task Module",
+        node_list=u"Nodes",
+        options_json=u"Options",
+    )
+    print_stdout(heading)
+    print_stdout(u"=" * 120)
+    for ptask in get_periodic_tasks():
+        print_stdout(line_format.format(node_list=u', '.join(ptask["nodes"]),
+                                 options_json=json.dumps(ptask["options"]),
+                                 **ptask))
+
+
+@manager.option("-d", "--dryrun",
+                action="store_true",
+                help="Do not run any tasks, only show what would be done")
+@manager.option("-n", "--node",
+                help="Override the node name (read from privacyIDEA config by default)",
+                dest="node_string")
+@manager.option("-c", "--cron",
+                dest="cron_mode",
+                action="store_true",
+                help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr")
+def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
+    """
+    Execute all periodic tasks that are scheduled to run.
+    """
+    app.config['cron_mode'] = cron_mode
+    node = get_node_name(node_string)
+    current_time = datetime.now(dateutil.tz.tzlocal())
+    scheduled_tasks = get_scheduled_periodic_tasks(node, current_time)
+    if scheduled_tasks:
+        print_stdout(u"The following tasks are scheduled to run on node {!s}:".format(node))
+        print_stdout()
+        for ptask in scheduled_tasks:
+            print_stdout(u"  {name} ({interval!r}, {taskmodule})".format(**ptask))
+
+        print_stdout()
+        if not dryrun:
+            results = []
+            for ptask in scheduled_tasks:
+                result = run_task_on_node(ptask, node)
+                results.append(result)
+            if all(results):
+                print_stdout(u"All scheduled tasks executed successfully.")
+            else:
+                print_stderr(u"Some tasks exited with errors.")
+                sys.exit(1)
+        else:
+            print_stdout(u"Not running any tasks because --dryrun was passed.")
+    else:
+        print_stdout(u"There are no tasks scheduled on node {!s}.".format(node))
+
+
+if __name__ == '__main__':
+    manager.run()

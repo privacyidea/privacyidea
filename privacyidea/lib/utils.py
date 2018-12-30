@@ -26,21 +26,25 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
+import six
 import logging
+from importlib import import_module
+
 log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
-import StringIO
-import urllib
+import sqlalchemy
+from six.moves.urllib.parse import urlunparse, urlparse, urlencode
+from io import BytesIO
 from privacyidea.lib.crypto import urandom, geturandom
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
 from datetime import timedelta, datetime
 from datetime import time as dt_time
 from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
+from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import crypt
@@ -65,6 +69,7 @@ else:  # pragma: no cover
 
 ENCODING = "utf-8"
 
+BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -158,8 +163,12 @@ def to_unicode(s, encoding="utf-8"):
     """
     converts a value to unicode if it is of type str.
     
-    :param s: The utf-8 encoded str 
+    :param s: the str to decode
+    :type s: bytes, str
+    :param encoding: the encoding to use (default utf8)
+    :type encoding: str
     :return: unicode string
+    :rtype: str
     """
     if type(s) == str:
         s = s.decode(encoding)
@@ -182,7 +191,7 @@ def generate_otpkey(key_size=20):
 def create_png(data, alt=None):
     img = qrcode.make(data)
 
-    output = StringIO.StringIO()
+    output = BytesIO()
     img.save(output)
     o_data = output.getvalue()
     output.close()
@@ -211,13 +220,13 @@ def create_img(data, width=0, alt=None, raw=False):
         o_data = create_png(data, alt=alt)
     else:
         o_data = data
-    data_uri = o_data.encode("base64").replace("\n", "")
+    data_uri = binascii.b2a_base64(o_data).replace(b"\n", b"")
 
     if width != 0:
         width_str = " width={0:d} ".format((int(width)))
 
     if alt is not None:
-        val = urllib.urlencode({'alt': alt})
+        val = urlencode({'alt': alt})
         alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
     ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
@@ -249,21 +258,19 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 def modhex_encode(s):
     return ''.join(
-        [hex2ModDict[c] for c in s.encode('hex')]
+        [hex2ModDict[c] for c in binascii.hexlify(s).decode('utf8')]
     )
 # end def modhex_encode
 
 
 def modhex_decode(m):
-    return ''.join(
-        [mod2HexDict[c] for c in m]
-    ).decode('hex')
+    return binascii.unhexlify(''.join([mod2HexDict[c] for c in m]))
 # end def modhex_decode
 
 
 def checksum(msg):
     crc = 0xffff
-    for i in range(0, len(msg) / 2):
+    for i in range(0, len(msg) // 2):
         b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
@@ -380,33 +387,6 @@ def get_data_from_params(params, exclude_params, config_description, module,
                         unicode(params)))
 
     return data, types, desc
-
-
-def parse_timedelta(delta):
-    """
-    This parses a string that contains a time delta for the last_auth policy
-    in the format like
-    1m (minute), 1h, 1d, 1y.
-
-    :param delta: The time delta
-    :type delta: basestring
-    :return: timedelta
-    """
-    delta = delta.strip().replace(" ", "")
-    time_specifier = delta[-1].lower()
-    if time_specifier not in ["m", "h", "d", "y"]:
-        raise Exception("Invalid time specifier")
-    time = int(delta[:-1])
-    if time_specifier == "h":
-        td = timedelta(hours=time)
-    elif time_specifier == "d":
-        td = timedelta(days=time)
-    elif time_specifier == "y":
-        td = timedelta(days=time*365)
-    else:
-        td = timedelta(minutes=time)
-
-    return td
 
 
 def parse_timelimit(limit):
@@ -597,8 +577,7 @@ def reload_db(timestamp, db_ts):
 
     :return: bool
     """
-    rdb = False
-    internal_timestamp = None
+    internal_timestamp = ''
     if timestamp:
         internal_timestamp = timestamp.strftime("%s")
     rdb = False
@@ -779,10 +758,10 @@ def parse_legacy_time(ts, return_date=False):
         return d.strftime(DATE_FORMAT)
 
 
-def parse_time_delta(s):
+def parse_timedelta(s):
     """
     parses a string like +5d or -30m and returns a timedelta.
-    Allowed identifiers are s, m, h, d.
+    Allowed identifiers are s, m, h, d, y.
     
     :param s: a string like +30m or -5d
     :return: timedelta 
@@ -791,7 +770,7 @@ def parse_time_delta(s):
     minutes = 0
     hours = 0
     days = 0
-    m = re.match("([+-])(\d+)([smhd])$", s)
+    m = re.match("\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
         raise Exception("Unsupported timedelta")
@@ -806,6 +785,8 @@ def parse_time_delta(s):
         hours = count
     elif m.group(3) == "d":
         days = count
+    elif m.group(3) == "y":
+        days = 365 * count
 
     td = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
     return td
@@ -834,7 +815,7 @@ def parse_time_offset_from_now(s):
         s2 = m.group(2)
         s3 = m.group(3)
         s = s1 + s3
-        td = parse_time_delta(s2)
+        td = parse_timedelta(s2)
 
     return s, td
 
@@ -874,11 +855,19 @@ def hash_password(password, hashtype):
         return "{SSHA512}" + pw
     elif hashtype == "OTRS":
         password = hashlib.sha256(password).hexdigest()
+    elif hashtype == "MD5CRYPT":
+        salt = geturandom(8, True)
+        password = crypt.crypt(password, "$1$" + salt + "$")
+    elif hashtype == "SHA512CRYPT":
+        salt = geturandom(8, True)
+        password = crypt.crypt(password, "$6$" + salt + "$")
     else:
         raise Exception("Unsupported password hashtype. Use PHPASS, SHA, "
                         "SSHA, SSHA256, SSHA512, OTRS.")
     return password
 
+def check_crypt(pw_hash, password):
+    return crypt.crypt(password, pw_hash) == pw_hash
 
 def check_ssha(pw_hash, password, hashfunc, length):
     pw_hash_bin = b64decode(pw_hash.split("}")[1])
@@ -1009,7 +998,7 @@ class PasswordHash(object):
         itoa64 = \
             './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         outp = '$2a$'
-        outp += chr(ord('0') + self.iteration_count_log2 / 10)
+        outp += chr(ord('0') + self.iteration_count_log2 // 10)
         outp += chr(ord('0') + self.iteration_count_log2 % 10)
         outp += '$'
         cur = 0
@@ -1098,3 +1087,177 @@ def parse_int(s, default=0):
         pass
 
     return i
+
+
+def convert_column_to_unicode(value):
+    """
+    Helper function for models. If ``value`` is None or a unicode object, do nothing.
+    Otherwise, convert it to a unicode object.
+    :param value: the string to convert
+    :type value: str
+    :return: a unicode object or None
+    """
+    if value is None or isinstance(value, six.text_type):
+        return value
+    elif isinstance(value, bytes):
+        return value.decode('utf8')
+    else:
+        return six.text_type(value)
+
+
+def convert_timestamp_to_utc(timestamp):
+    """
+    Convert a timezone-aware datetime object to a naive UTC datetime.
+    :param timestamp: datetime object that should be converted
+    :type timestamp: timezone-aware datetime object
+    :return: timezone-naive datetime object
+    """
+    return timestamp.astimezone(tzutc()).replace(tzinfo=None)
+
+
+def censor_connect_string(connect_string):
+    """
+    Take a SQLAlchemy connect string and return a sanitized version
+    that can be written to the log without disclosing the password.
+    The password is replaced with "xxxx".
+    In case any error occurs, return "<error when censoring connect string>"
+    """
+    try:
+        parsed = urlparse(connect_string)
+        if parsed.password is not None:
+            # We need to censor the ``netloc`` attribute: user:pass@host
+            _, host = parsed.netloc.rsplit("@", 1)
+            new_netloc = u'{}:{}@{}'.format(parsed.username, 'xxxx', host)
+            # Convert the URL to six components. netloc is component #1.
+            splitted = list(parsed)
+            splitted[1] = new_netloc
+            return urlunparse(splitted)
+        return connect_string
+    except Exception:
+        return "<error when censoring connect string>"
+
+
+def fetch_one_resource(table, **query):
+    """
+    Given an SQLAlchemy table and query keywords, fetch exactly one result and return it.
+    If no results is found, this raises a ``ResourceNotFoundError``.
+    If more than one result is found, this raises SQLAlchemy's ``MultipleResultsFound``
+    """
+    try:
+        return table.query.filter_by(**query).one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        raise ResourceNotFoundError(u"The requested {!s} could not be found.".format(table.__name__))
+
+
+def truncate_comma_list(data, max_len):
+    """
+    This function takes a string with a comma separated list and
+    shortens the longest entries this way, that the final string has a maximum
+    length of max_len
+
+    Shorted entries are marked with a "+" at the end.
+
+    :param data: A comma separated list
+    :type data: basestring
+    :return: shortened string
+    """
+    data = data.split(",")
+    # if there are more entries than the maximum length, we do an early exit
+    if len(data) >= max_len:
+        r = ",".join(data)[:max_len]
+        # Also mark this string
+        r = u"{0!s}+".format(r[:-1])
+        return r
+
+    while len(",".join(data)) > max_len:
+        new_data = []
+        longest = max(data, key=len)
+        for d in data:
+            if d == longest:
+                # Shorten the longest and mark with "+"
+                d = u"{0!s}+".format(d[:-2])
+            new_data.append(d)
+        data = new_data
+    return ",".join(data)
+
+
+def check_pin_policy(pin, policy):
+    """
+    The policy to check a PIN can contain of "c", "n" and "s".
+    "cn" means, that the PIN should contain a character and a number.
+    "+cn" means, that the PIN should contain elements from the group of characters and numbers
+    "-ns" means, that the PIN must not contain numbers or special characters
+
+    :param pin: The PIN to check
+    :param policy: The policy that describes the allowed contents of the PIN.
+    :return: Tuple of True or False and a description
+    """
+    chars = {"c": "[a-zA-Z]",
+             "n": "[0-9]",
+             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
+    exclusion = False
+    grouping = False
+    ret = True
+    comment = []
+
+    if not policy:
+        return False, "No policy given."
+
+    if policy[0] == "+":
+        # grouping
+        necessary = []
+        for char in policy[1:]:
+            necessary.append(chars.get(char))
+        necessary = "|".join(necessary)
+        if not re.search(necessary, pin):
+            ret = False
+            comment.append("Missing character in PIN: {0!s}".format(necessary))
+
+    elif policy[0] == "-":
+        # exclusion
+        not_allowed = []
+        for char in policy[1:]:
+            not_allowed.append(chars.get(char))
+        not_allowed = "|".join(not_allowed)
+        if re.search(not_allowed, pin):
+            ret = False
+            comment.append("Not allowed character in PIN!")
+
+    else:
+        for c in chars:
+            if c in policy and not re.search(chars[c], pin):
+                ret = False
+                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+
+    return ret, ",".join(comment)
+
+
+def get_module_class(package_name, class_name, check_method=None):
+    """
+    helper method to load the Module class from a given
+    package in literal.
+
+    :param package_name: literal of the Module
+    :param class_name: Name of the class in the module
+    :param check_method: Name of the method to check, if this would be the right class
+
+    example:
+
+        get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+
+        get_module_class("privacyidea.lib.monitoringmodules.sqlstats", "Monitoring")
+
+    check:
+        checks, if the method exists
+        if not an error is thrown
+
+    """
+    mod = import_module(package_name)
+    if not hasattr(mod, class_name):
+        raise ImportError(u"{0} has no attribute {1}".format(package_name, class_name))
+    klass = getattr(mod, class_name)
+    log.debug("klass: {0!s}".format(klass))
+    if check_method and not hasattr(klass, check_method):
+        raise NameError(u"Class AttributeError: {0}.{1} "
+                        u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
+    return klass

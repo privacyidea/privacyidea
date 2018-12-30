@@ -37,6 +37,14 @@ backup) and run the command:
 
    privacyidea-pip-update
 
+The following parameters are allowed:
+
+``-f`` or ``--force`` skips the safety question, if you really want to update.
+
+``-s`` or ``--skipstamp`` skips the version stamping during schema update.
+
+``-n`` or ``--noshema`` completely skips the schema update and only updates the code.
+
 
 Manual upgrade
 ..............
@@ -52,8 +60,7 @@ Usually you will need to upgrade/migrate the database:
 
 .. code-block:: bash
 
-   pi-manage db stamp 4f32a4e1bf33 -d /opt/privacyidea/lib/privacyidea/migrations
-   pi-manage db upgrade -d /opt/privacyidea/lib/privacyidea/migrations
+   privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations
 
 Now you need to restart your webserver for the new code to take effect.
 

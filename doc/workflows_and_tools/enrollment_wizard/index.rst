@@ -44,3 +44,19 @@ wizard in your html templates defined in these files:
    your needs the best by defining a variable PI_CUSTOMIZATION in the file
    pi.cfg. This way you can put all modifications in one place apart from the
    original code.
+
+Example
+~~~~~~~
+
+Your privacyIDEA system is running in the URL sub path ``/pi``.
+The files could be addressed via a path component ``mydesign`` (in this case ``pi/mydesign``).
+Thus the WebUI will look for the files in the URL path ``/pi/mydesign/views/includes/``.
+
+So you set in ``pi.cfg``:
+
+    PI_CUSTOMIZATION = "/mydesign"
+
+Your customized files are located in ``/etc/privacyidea/customize/views/includes/``.
+In the Apache webserver you need to map ``/pi/mydesign`` to ``/etc/privacyidea/customize``:
+
+    Alias /pi/mydesign /etc/privacyidea/customize

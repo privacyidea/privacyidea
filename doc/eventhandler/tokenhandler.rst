@@ -53,7 +53,23 @@ If all conditions are matched a new token will be enrolled. This new token
 can be assigned to a user, which was identified in the request.
 
 The administrator can specify the **tokentype** and the **realms** of the new
- token.
+token. By default the generation of the token will use the parameter ``genkey``, to
+generate the otp key. (see :ref:`rest_token`).
+
+The action ``enroll`` also can take the options **dynamic_phone** (in case of tokentype SMS) and
+**dynamic_email** (in case of tokentype email). Then these tokens are created with a dynamic
+loadable phone number or email address, that is read from the user store on each authentication request.
+
+Finally the administrator can specify the option **additional_params**. This needs to be a dictionary
+with parameters, that get passed to the init request. You can specify all parameters, that
+would be used in a ``/token/init`` request:
+
+   {"totp.hashlib": "sha256", "type": "totp", "genkey": 0, "otpkey": "31323334"}
+
+would create a TOTP token, that uses the SHA256 hashing algorithm instead of SHA1.
+``genkey: 0`` overrides the default behaviour of generating an OTP secret. Instead the
+fixed OTP secret "31323334" (``otpkey``) is used.
+
 
 set description
 ...............

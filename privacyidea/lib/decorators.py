@@ -84,10 +84,15 @@ class check_user_or_serial_in_request(object):
     def __call__(self, func):
         @functools.wraps(func)
         def check_user_or_serial_in_request_wrapper(*args, **kwds):
-            user = self.request.all_data.get("user")
-            serial = self.request.all_data.get("serial")
+            user = self.request.all_data.get("user", "").strip()
+            serial = self.request.all_data.get("serial", "").strip()
             if not serial and not user:
                 raise ParameterError(_("You need to specify a serial or a user."))
+            if "*" in serial:
+                raise ParameterError(_("Invalid serial number."))
+            if "%" in user:
+                raise ParameterError(_("Invalid user."))
+
             f_result = func(*args, **kwds)
             return f_result
 
@@ -97,7 +102,7 @@ class check_user_or_serial_in_request(object):
 def check_copy_serials(func):
     """
     Decorator to check if the serial_from and serial_to exist.
-    If the serials are not unique, we raise an error
+    If the serials are not unique or do not exist, we raise an error
     """
     from privacyidea.lib.token import get_tokens
     @functools.wraps(func)

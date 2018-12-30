@@ -47,12 +47,14 @@ from privacyidea.api.machine import machine_blueprint
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.smtpserver import smtpserver_blueprint
 from privacyidea.api.radiusserver import radiusserver_blueprint
+from privacyidea.api.periodictask import periodictask_blueprint
 from privacyidea.api.privacyideaserver import privacyideaserver_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.event import eventhandling_blueprint
 from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
+from privacyidea.api.monitoring import monitoring_blueprint
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
@@ -158,12 +160,14 @@ def create_app(config_name="development",
     app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
     app.register_blueprint(recover_blueprint, url_prefix='/recover')
     app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
+    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
     app.register_blueprint(privacyideaserver_blueprint,
                            url_prefix='/privacyideaserver')
     app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
     app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
     app.register_blueprint(client_blueprint, url_prefix='/client')
     app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
+    app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     db.init_app(app)
     migrate = Migrate(app, db)
 
@@ -205,6 +209,10 @@ def create_app(config_name="development",
 
     @babel.localeselector
     def get_locale():
+        # if we are not in the request context, return None to use the default
+        # locale
+        if not request:
+            return None
         # otherwise try to guess the language from the user accept
         # header the browser transmits.  We support de/fr/en in this
         # example.  The best match wins.
@@ -213,5 +221,3 @@ def create_app(config_name="development",
 
     return app
 
-# This is used for heroku
-heroku_app = create_app(config_name="heroku", silent=True)

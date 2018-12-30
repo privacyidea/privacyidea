@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 #  http://www.privacyidea.org
+#  2018-04-16 Friedrich Weber <friedrich.weber@netknights.it>
+#             Fix validation of challenge responses
 #  2017-08-29 Cornelis Kölbel <cornelius.koelbel@netknights.it>
 #             Initial implementation of OCRA base token
 #
@@ -250,46 +252,38 @@ class OcraTokenClass(TokenClass):
         return r
 
     @check_token_locked
-    def check_challenge_response(self, user=None, passw=None, options=None):
+    def check_otp(self, otpval, counter=None, window=None, options=None):
         """
-        This function checks, if the challenge for the given transaction_id
-        was marked as answered correctly.
-        For this we check the otp_status of the challenge with the
-        transaction_id in the database.
+        This function is invoked by ``TokenClass.check_challenge_response``
+        and checks if the given password matches the expected response
+        for the given challenge.
 
-        We do not care about the password
-
-        :param user: the requesting user
-        :type user: User object
-        :param passw: the password (pin+otp)
-        :type passw: string
-        :param options: additional arguments from the request, which could
-                        be token specific. Usually "transaction_id"
-        :type options: dict
-        :return: return otp_counter. If -1, challenge does not match
-        :rtype: int
+        :param otpval: the password (pin + otp)
+        :param counter: ignored
+        :param window: ignored
+        :param options: dictionary that *must* contain "challenge"
+        :return: >=0 if the challenge matches, -1 otherwise
         """
-        options = options or {}
-        otp_counter = -1
+        return self.verify_response(otpval, options['challenge'])
 
-        # fetch the transaction_id
-        transaction_id = options.get('transaction_id')
-        if transaction_id is None:
-            transaction_id = options.get('state')
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
 
-        # get the challenges for this transaction ID
-        if transaction_id is not None:
-            challengeobject_list = get_challenges(serial=self.token.serial,
-                                                  transaction_id=transaction_id)
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
 
-            for challengeobject in challengeobject_list:
-                # check if we are still in time.
-                if challengeobject.is_valid():
-                    if self.verify_response(passw, challengeobject.challenge):
-                        # create a positive response
-                        otp_counter = 1
-                        # delete the challenge
-                        challengeobject.delete()
-                        break
+        # Delete the otplen, if it exists. The fourth column is the ocrasuite!
+        if "otplen" in params:
+            del params["otplen"]
 
-        return otp_counter
+        # ocrasuite
+        if len(l) >= 4:
+            params["ocrasuite"] = l[3].strip()
+
+        return params

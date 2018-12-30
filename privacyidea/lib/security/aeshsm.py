@@ -24,6 +24,8 @@ import binascii
 import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
+from privacyidea.lib.crypto import get_alphanum_str
+from six import int2byte
 
 __doc__ = """
 This is a PKCS11 Security module that encrypts and decrypts the data on a
@@ -32,17 +34,7 @@ HSM that is connected via PKCS11. This alternate version relies on AES keys.
 
 log = logging.getLogger(__name__)
 
-TOKEN_KEY = 0
-CONFIG_KEY = 1
-VALUE_KEY = 2
-
 MAX_RETRIES = 5
-
-mapping = {
-    'token':  TOKEN_KEY,
-    'config': CONFIG_KEY,
-    'value':  VALUE_KEY
-}
 
 try:
     import PyKCS11
@@ -52,7 +44,7 @@ except ImportError:
 
 
 def int_list_to_bytestring(int_list):  # pragma: no cover
-    return "".join([chr(i) for i in int_list])
+    return b"".join([int2byte(i) for i in int_list])
 
 
 class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
@@ -75,6 +67,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         config = config or {}
         self.name = "HSM"
         self.config = config
+        # Initially, we might be missing a password
         self.is_ready = False
 
         if "module" not in config:
@@ -83,7 +76,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         label_prefix = config.get("key_label", "privacyidea")
         self.key_labels = {}
-        for k in ['token', 'config', 'value']:
+        for k in self.mapping:
             l = config.get(("key_label_{0!s}".format(k)))
             l = ('{0!s}_{1!s}'.format(label_prefix, k)) if l is None else l
             self.key_labels[k] = l
@@ -96,14 +89,23 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         log.debug("Setting a password: {0!s}".format(bool(self.password)))
         self.module = config.get("module")
         log.debug("Setting the modules: {0!s}".format(self.module))
+        self.max_retries = config.get("max_retries", MAX_RETRIES)
+        log.debug("Setting max retries: {0!s}".format(self.max_retries))
         self.session = None
         self.key_handles = {}
 
-        self.pkcs11 = PyKCS11.PyKCS11Lib()
-        self.pkcs11.load(self.module)
         self.initialize_hsm()
 
     def initialize_hsm(self):
+        """
+        Initialize the HSM:
+        * initialize PKCS11 library
+        * login to HSM
+        * get session
+        :return:
+        """
+        self.pkcs11 = PyKCS11.PyKCS11Lib()
+        self.pkcs11.load(self.module)
         self.pkcs11.lib.C_Initialize()
         if self.password:
             self._login()
@@ -126,12 +128,10 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             self.password = str(params.get("password"))
         else:
             raise HSMException("missing password")
-        return self._login()
+        self._login()
+        return self.is_ready
 
     def _login(self):
-        if self.is_ready:
-            return True
-
         slotlist = self.pkcs11.getSlotList()
         if not len(slotlist):
             raise HSMException("No HSM connected")
@@ -147,65 +147,89 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
         self.session.login(self.password)
 
-        for k in ['token', 'config', 'value']:
+        for k in self.mapping:
             label = self.key_labels[k]
             objs = self.session.findObjects([(PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
                                              (PyKCS11.CKA_LABEL, label)])
             log.debug("Loading '{}' key with label '{}'".format(k, label))
-            self.key_handles[mapping[k]] = objs[0]
+            if objs:
+                self.key_handles[self.mapping[k]] = objs[0]
 
         # self.session.logout()
-        self.is_ready = True
         log.debug("Successfully setup the security module.")
-
-        return self.is_ready
+        self.is_ready = True
 
     def random(self, length):
         """
         Return a random bytestring
         :param length: length of the random bytestring
-        :return:
+        :rtype bytes
         """
-        r_integers = self.session.generateRandom(length)
+        retries = 0
+        while True:
+            try:
+                r_integers = self.session.generateRandom(length)
+                break
+            except PyKCS11.PyKCS11Error as exx:
+                log.warning(u"Generate Random failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory, session and handles
+                self.pkcs11.lib.C_Finalize()
+                self.initialize_hsm()
+                retries += 1
+                if retries > self.max_retries:
+                    raise HSMException("Failed to generate random number after multiple retries.")
+
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
 
-    def encrypt(self, data, iv, key_id=TOKEN_KEY):
+    def encrypt(self, data, iv, key_id=SecurityModule.TOKEN_KEY):
+        """
+
+        :rtype: bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.encrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Encryption failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory,session and handles
+                self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
-                if retries > MAX_RETRIES:
+                if retries > self.max_retries:
                     raise HSMException("Failed to encrypt after multiple retries.")
 
         return int_list_to_bytestring(r)
 
-    def decrypt(self, data, iv, key_id=TOKEN_KEY):
+    def decrypt(self, data, iv, key_id=SecurityModule.TOKEN_KEY):
+        """
+
+        :rtype bytes
+        """
         if len(data) == 0:
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
-        k = self.key_handles[key_id]
         retries = 0
         while True:
             try:
+                k = self.key_handles[key_id]
                 r = self.session.decrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Decryption failed: {0!s}".format(exx))
+                # If something goes wrong in this process, we free memory, session and handlers
+                self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
-                if retries > MAX_RETRIES:
+                if retries > self.max_retries:
                     raise HSMException("Failed to decrypt after multiple retries.")
 
         return int_list_to_bytestring(r)
@@ -221,7 +245,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: decrypted data
         :rtype: byte string
         """
-        return self._decrypt_value(crypt_pass, CONFIG_KEY)
+        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
 
     def decrypt_pin(self, crypt_pin):
         """
@@ -234,19 +258,19 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: decrypted data
         :rtype: byte string
         """
-        return self._decrypt_value(crypt_pin, TOKEN_KEY)
+        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
 
-    def encrypt_password(self, password):
+    def encrypt_password(self, passwd):
         """
         Encrypt the given password with the CONFIG_KEY an a random IV.
 
-        :param password: The password that is to be encrypted
-        :param password: byte string
+        :param passwd: The password that is to be encrypted
+        :type passwd: bytes
 
         :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
+        :rtype: bytes
         """
-        return self._encrypt_value(password, CONFIG_KEY)
+        return self._encrypt_value(passwd, self.CONFIG_KEY)
 
     def encrypt_pin(self, pin):
         """
@@ -258,7 +282,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: byte string
         """
-        return self._encrypt_value(pin, TOKEN_KEY)
+        return self._encrypt_value(pin, self.TOKEN_KEY)
 
     ''' base methods for pin and password '''
     def _encrypt_value(self, value, key_id):
@@ -268,18 +292,18 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         returns as string with leading iv, separated by ':'
 
         :param value: the value that is to be encrypted
-        :param value: byte string
+        :param value: bytes
 
         :param key_id: slot of the key array
         :type key_id: int
 
         :return: encrypted data with leading iv and separator ':'
-        :rtype: byte string
+        :rtype: bytes
         """
         iv = self.random(16)
         v = self.encrypt(value, iv, key_id)
 
-        return ':'.join([binascii.hexlify(x) for x in [iv, v]])
+        return b':'.join([binascii.hexlify(x) for x in [iv, v]])
 
     def _decrypt_value(self, crypt_value, key_id):
         """
@@ -287,20 +311,65 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: byte string
+        :param crypt_value: bytes
 
         :param  key_id: slot of the key array
         :type   key_id: int
 
         :return: decrypted data
-        :rtype:  byte string
+        :rtype:  bytes
         """
-        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(':')]
+        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(b':')]
 
         return self.decrypt(data, iv, key_id)
 
+    def create_keys(self):
+        """
+        Connect to the HSM and create the encryption keys.
+        The HSM connection should already be configured in pi.cfg.
 
-if __name__ == "__main__":
+        We will create new keys with new key labels
+        :return: a dictionary of the created key labels
+        """
+        # We need a new read/write session
+        session = self.pkcs11.openSession(self.slot,
+                                          PyKCS11.CKF_SERIAL_SESSION | PyKCS11.CKF_RW_SESSION)
+        # We need to logout, otherwise we get CKR_USER_ALREADY_LOGGED_IN
+        session.logout()
+        session.login(self.password)
+
+        key_labels = {"token": "",
+                      "config": "",
+                      "value": ""}
+
+        for kl in key_labels.keys():
+            label = "{0!s}_{1!s}".format(kl, get_alphanum_str())
+            aesTemplate = [
+                (PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
+                (PyKCS11.CKA_KEY_TYPE, PyKCS11.CKK_AES),
+                (PyKCS11.CKA_VALUE_LEN, 32),
+                (PyKCS11.CKA_LABEL, label),
+                (PyKCS11.CKA_ID, label),
+                (PyKCS11.CKA_TOKEN, PyKCS11.CK_TRUE),
+                (PyKCS11.CKA_PRIVATE, True),
+                (PyKCS11.CKA_SENSITIVE, True),
+                (PyKCS11.CKA_ENCRYPT, True),
+                (PyKCS11.CKA_DECRYPT, True),
+                (PyKCS11.CKA_TOKEN, True),
+                (PyKCS11.CKA_WRAP, True),
+                (PyKCS11.CKA_UNWRAP, True),
+                (PyKCS11.CKA_EXTRACTABLE, False)
+            ]
+            aesKey = session.generateKey(aesTemplate)
+            key_labels[kl] = label
+
+        session.logout()
+        session.closeSession()
+
+        return key_labels
+
+
+if __name__ == "__main__":  # pragma: no cover
     logging.basicConfig()
     log.setLevel(logging.INFO)
     # log.setLevel(logging.DEBUG)

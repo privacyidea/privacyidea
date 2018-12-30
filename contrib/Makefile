@@ -7,8 +7,8 @@ VERSION2=1.3.0
 URL2=https://pypi.python.org/packages/source/P/PyJWT/PyJWT-$(VERSION2).tar.gz
 
 CONTRIB3=python-ldap3
-VERSION3=2.1.1
-URL3=https://pypi.python.org/packages/f8/15/f8a33118b8e909e3953e5d9db6459693754ea42ae2aa481f4cab12e68c67/ldap3-$(VERSION3).tar.gz
+VERSION3=2.5
+URL3=https://files.pythonhosted.org/packages/bf/5b/4848db7aa210a27793d7fc218c7deb588a5f2b23f5359a0537285ee1ee60/ldap3-2.5.tar.gz
 
 CONTRIB4=python-flask-sqlalchemy
 VERSION4=2.1
@@ -26,6 +26,14 @@ URL6=https://pypi.python.org/packages/source/p/pymysql_sa/pymysql_sa-$(VERSION6)
 CONTRIB7=PyKCS
 VERSION7=1.3.2
 URL7=https://pypi.python.org/packages/source/p/pykcs11/PyKCS11-$(VERSION7).tar.gz
+
+CONTRIB8=pyasn1
+VERSION8=0.4.2
+URL8=https://files.pythonhosted.org/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz
+
+CONTRIB9=python-croniter
+VERSION9=0.3.24
+URL9=https://files.pythonhosted.org/packages/27/69/2426b76c3647d8cc959e88aadecfb7ad96cf2c40c0ea784b6bf43a844c73/croniter-0.3.24.tar.gz
 
 ME=Cornelius Kölbel <cornelius@privacyidea.org>
 
@@ -45,6 +53,8 @@ ubuntu:
 	make ldap3
 	make flask-sqlalchemy
 	make pymysql
+	make pyasn1
+	make croniter
 
 ldap3:
 	mkdir -p $(CONTRIB3)
@@ -56,6 +66,25 @@ ldap3:
 	(cd $(CONTRIB3)/deb_dist/ldap3-$(VERSION3); debuild -b)
 	(cp $(CONTRIB3)/deb_dist/* DEBUILD || true)
 
+pyasn1:
+	mkdir -p $(CONTRIB8)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB8); curl $(URL8) -o pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8); py2dsc -m '$(ME)' pyasn1-$(VERSION8).tar.gz)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); dch -v $(VERSION8)-1$(series)1 --distribution $(series) -M "build for privacyidea")
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -sa -S)
+	(cd $(CONTRIB8)/deb_dist/pyasn1-$(VERSION8); debuild -b)
+	(cp $(CONTRIB8)/deb_dist/* DEBUILD || true)
+
+croniter:
+	mkdir -p $(CONTRIB9)
+	mkdir -p DEBUILD
+	(cd $(CONTRIB9); curl $(URL9) -o croniter-$(VERSION9).tar.gz)
+	(cd $(CONTRIB9); py2dsc -m '$(ME)' croniter-$(VERSION9).tar.gz)
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); dch -v $(VERSION9)-1$(series)1 --distribution $(series) -M "build for privacyidea")
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); debuild -sa -S)
+	(cd $(CONTRIB9)/deb_dist/croniter-$(VERSION9); debuild -b)
+	(cp $(CONTRIB9)/deb_dist/* DEBUILD || true)
 
 pyjwt:
 	mkdir -p $(CONTRIB2)
@@ -131,6 +160,8 @@ ppa-dev:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev pyasn1_${VERSION8}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea-dev croniter_${VERSION9}-1${series}1_source.changes || true)
 
 ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-cache_${VERSION1}-1${series}1_source.changes || true)
@@ -138,6 +169,8 @@ ppa:
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea ldap3_${VERSION3}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea flask-sqlalchemy_${VERSION4}-1${series}1_source.changes || true)
 	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pymysql_${VERSION5}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea pyasn1_${VERSION8}-1${series}1_source.changes || true)
+	(cd DEBUILD; dput -f ppa:privacyidea/privacyidea croniter_${VERSION9}-1${series}1_source.changes || true)
 
 	
 
@@ -149,5 +182,7 @@ clean:
 	rm -fr $(CONTRIB5)
 	rm -fr $(CONTRIB6)
 	rm -fr $(CONTRIB7)
+	rm -fr $(CONTRIB8)
+	rm -fr $(CONTRIB9)
 	rm -fr pymysql_sa
 	rm -fr DEBUILD

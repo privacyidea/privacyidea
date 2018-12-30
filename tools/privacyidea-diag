@@ -1,0 +1,133 @@
+#!/bin/bash
+#
+# 2018-07-31 Cornelius Koelbel <cornelius.koelbel@netknights.it>
+#
+# Copyright (c) 2018, Cornelius Koelbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+if [ "$1" == "" ]; then
+	echo
+	echo "Please specify the pi.cfg file!"
+	echo
+	exit 1
+else
+	PICFG=$1
+fi
+
+tempfile=`mktemp --suff=.diag`
+
+log() {
+	echo $1 >> $tempfile
+}
+
+get_os() {
+	log
+	log "SECTION: Linux Distribution"
+	log "==========================="
+	cat /etc/*-release >> $tempfile
+}
+
+get_pi_cfg() {
+	log
+	log "SECTION: pi.cfg file"
+	log "===================="
+	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' $PICFG >> $tempfile
+}
+
+
+upload_info() {
+	echo
+	echo "Please upload the diagnostics file $tempfile to your support team."
+	echo
+}
+
+pi_versions() {
+	log
+	log "SECTION: privacyIDEA Versions"
+	log "============================="
+	log "Installed packages"
+	log "------------------"
+	FileName=$(mktemp)
+	# In case it is Ubuntu
+	dpkg -l | sort >> $FileName
+	# In case it is CentOS/RHEL
+	rpm -qa | sort >> $FileName
+	# save all installed packages
+	cat $FileName >> $tempfile	
+	rm -f $FileName
+	log "Is this a pip installation?"
+	log "---------------------------"
+	log "The contents of /opt/:"
+	ls -l /opt >> $tempfile
+	log "Can we do a pip freeze?"
+	pip freeze >> $tempfile
+}
+
+pi_config() {
+	log
+	log "SECTION: privacyIDEA Configuration"
+	log "=================================="
+	log "Resolvers"
+	log "---------"
+	pi-manage resolver list -v >> $tempfile
+	log "Realms"
+	log "------"
+	pi-manage realm list >> $tempfile
+	log "Events"
+	log "------"
+	pi-manage event e_export >> $tempfile
+	log "Policies"
+	log "--------"
+	pi-manage policy p_export >> $tempfile
+}
+
+
+pi_logfile() {
+	log
+	log "SECTION: privacyIDEA Logfile"
+	log "============================"
+	R=$( grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | tr -d "\'\"" )
+	cat $R >> $tempfile
+}
+
+pi_auditlog() {
+    log
+    log "SECTION: privacyIDEA Auditlog"
+    log "============================="
+    pi-manage audit dump -f - -t 2d >> $tempfile
+}
+
+get_os
+get_pi_cfg
+pi_versions
+pi_config
+pi_logfile
+pi_auditlog
+upload_info

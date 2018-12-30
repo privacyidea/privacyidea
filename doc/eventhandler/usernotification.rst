@@ -49,7 +49,7 @@ Both actions **sendmail** and **sendsms** take several common options.
 
   * optional
 
-Here the administartor can specify the body of the email, that is sent.
+Here the administrator can specify the body of the email, that is sent.
 The body may contain the following tags
 
   * {admin} name of the logged in user.
@@ -73,6 +73,10 @@ The body may contain the following tags
   * {client_ip} the client IP of the client, which issued the original request.
   * {ua_browser} the user agent of the client, which issued the original request.
   * {ua_string} the complete user agent string (including version number), which issued the original request.
+
+**subject**
+
+The subject can take the same tags as the body, except for the ``{googleurl_img}``.
 
 **mimetype**
 

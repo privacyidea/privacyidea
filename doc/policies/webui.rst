@@ -270,3 +270,13 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
    effect. But you can specify different menus for different client IP addresses.
 
 (Since privacyIDEA 2.21)
+
+hide_buttons
+~~~~~~~~~~~~
+
+type: bool
+
+Buttons for actions that a user is not allowed to perform, are hidden instead of
+being disabled.
+
+(Since privacyIDEA 2.24)

@@ -83,8 +83,10 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
 
     $scope.getEvent = function () {
         ConfigFactory.getEvent($scope.eventid, function(event) {
-            //debug: console.log("Fetching single event " + $scope.eventid);
-            // first we need to fetch the action-list:
+            // get available positions for this module first, so we can set the select box
+            $scope.form.handlermodule = event.result.value[0].handlermodule;
+            $scope.getHandlerPositions();
+            // Now fetch the action list
             ConfigFactory.getHandlerActions(event.result.value[0].handlermodule,
                 function(actions){
                     $scope.handlerOptions = actions.result.value;
@@ -152,6 +154,9 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
             //debug: console.log("getting handlermodules");
             $scope.handlermodules = data.result.value;
             //debug: console.log($scope.handlermodules );
+            if ($scope.eventid) {
+               $scope.getEvent();
+            }
         });
     };
 
@@ -208,6 +213,13 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
             });
     };
 
+    $scope.getHandlerPositions = function() {
+        ConfigFactory.getHandlerPositions($scope.form.handlermodule,
+            function (positions) {
+                $scope.handlerPositions = positions.result.value;
+            });
+    };
+
     $scope.getHandlerConditions = function () {
         //debug: console.log("getting handler conditions for " + $scope.form.handlermodule);
         ConfigFactory.getHandlerConditions($scope.form.handlermodule,
@@ -237,6 +249,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.handlerModuleChanged = function () {
         $scope.getHandlerActions();
         $scope.getHandlerConditions();
+        $scope.getHandlerPositions();
     };
 
     $scope.actionChanged = function () {
@@ -245,8 +258,5 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
 
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
-    if ($scope.eventid) {
-        $scope.getEvent();
-    }
 
 });

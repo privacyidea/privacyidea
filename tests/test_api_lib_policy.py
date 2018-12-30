@@ -3,6 +3,7 @@ This test file tests the api.lib.policy.py
 
 The api.lib.policy.py depends on lib.policy and on flask!
 """
+from __future__ import print_function
 import json
 
 from .base import (MyTestCase, PWFILE)
@@ -23,7 +24,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm,
-                                           u2ftoken_verify_cert)
+                                           u2ftoken_verify_cert,
+                                           tantoken_count)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -36,8 +38,9 @@ from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
+from privacyidea.lib.tokens.tantoken import TANACTION
 
-from flask import Response, Request, g, current_app
+from flask import Response, Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError, RegistrationError
 from privacyidea.lib.machineresolver import save_resolver
@@ -294,6 +297,23 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
+        # Now, the token that already exists and is reenrolled must not trigger an exception
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW002"}
+        self.assertTrue(check_max_token_user(req))
+
+        # Now we set another policy for the user max_token = 12.
+        # This way, the user should be allowed to enroll tokens again, since there
+        # are two policies matching for the user and the maximum is 12.
+        set_policy(name="pol_max_12",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 12))
+        g.policy_object = PolicyClass()
+        # new check_max_token_user should not raise an error!
+        self.assertTrue(check_max_token_user(req))
+        delete_policy("pol_max_12")
+        g.policy_object = PolicyClass()
 
         # The check for a token, that has no username in it, must not
         # succeed. I.e. in the realm new tokens must be enrollable.
@@ -399,6 +419,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
         req.all_data = {"realm": "somerealm"}
+        req.User = None
         self.assertRaises(PolicyError, set_realm, req)
 
         # finally delete policy
@@ -890,7 +911,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [REMOTE_USER.ACTIVE])
+        self.assertTrue(r)
 
         # Login for the REMOTE_USER is not allowed.
         # Only allowed for user "super", but REMOTE_USER=admin
@@ -901,7 +922,14 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
-        self.assertEqual(r, [])
+        self.assertFalse(r)
+
+        # The remote_user "super" is allowed to login:
+        env["REMOTE_USER"] = "super"
+        req = Request(env)
+        g.policy_object = PolicyClass()
+        r = is_remote_user_allowed(req)
+        self.assertTrue(r)
 
         delete_policy("ruser")
 
@@ -1131,6 +1159,31 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("paperpol")
 
+    def test_19_tantoken_count(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        set_policy(name="tanpol",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=10".format(TANACTION.TANTOKEN_COUNT))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {}
+        req.User = User()
+        tantoken_count(req)
+        # Check if the tantoken count is set
+        self.assertEqual(req.all_data.get("tantoken_count"), "10")
+
+        # finally delete policy
+        delete_policy("tanpol")
+
     def test_20_allowed_audit_realm(self):
         g.logged_in_user = {"username": "admin1",
                             "role": "admin"}
@@ -1236,7 +1289,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "PISP0000AB00",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1283,7 +1336,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "id": 1,
                "detail": {"message": "matching 2 tokens",
                           "type": "undetermined"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1319,7 +1372,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "PISP0001",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does match
         set_policy(name="pol1",
@@ -1377,7 +1430,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the tokentype
         set_policy(name="pol1",
@@ -1422,7 +1475,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the detail on success
         set_policy(name="pol2",
@@ -1453,7 +1506,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set a policy, that does not allow the detail on success
         set_policy(name="pol2",
@@ -1474,7 +1527,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = no_detail_on_fail(req, resp)
         jresult = json.loads(new_response.data)
@@ -1503,7 +1556,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "HOTP123456",
                           "type": "hotp"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         g.policy_object = PolicyClass()
 
@@ -1573,7 +1626,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": False},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set the autoassign policy
         # to "any_pin"
@@ -1633,7 +1686,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": False},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # Set the autoassign policy
         # to "userstore"
@@ -1699,7 +1752,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "version": "privacyIDEA test",
                "detail": {"serial": serial},
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = offline_info(req, resp)
         jresult = json.loads(new_response.data)
@@ -1729,7 +1782,6 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
-        delete_policy("pol2")
 
     def test_07_sign_response(self):
         builder = EnvironBuilder(method='POST',
@@ -1748,7 +1800,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                           "value": True},
                "version": "privacyIDEA test",
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
         from privacyidea.lib.crypto import Sign
         g.sign_object = Sign("tests/testdata/private.pem",
                              "tests/testdata/public.pem")
@@ -1756,7 +1808,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         new_response = sign_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")
-        self.assertEqual(jresult.get("signature"), "7220461805369685253863294214862525311437731987121534735993146952136348520396812489782945679627890785973634896605293523175424850299832912878523161817380029213546063467888018205435416020286712762804412024065559270543774578319469096483246637875013247101135063221604113204491121777932147776087110152414627230087278622508771143940031542890514380486863296102037208395371717795767683973979032142677315402422403254992482761563612174177151960004042109847122772813717599078313600692433727690239340230353616318691769042290314664126975201679642739717702497638318611217001361093950139025744740660953017413716736691777322916588328")
+        self.assertEqual(jresult.get("signature"), "11355158914966210201410734667484298031497086510917116878993822963793177737963323849914979806826759273431791474575057946263651613906587629736481370983420295626001055840803201448376203681672140726404056349423937599480275853513810616624349811159346536182220806878464577429106150903913526744093300868582898892977164229848617413618851794501457802670374543399415905458325601994002527427083792164898293507308423780001137468154518279116138010266341425663850327379848131113626641510715557748879427991785684858504631545256553961505159377600982900016536629720752767147086708626971940835730555782551222922985302674756190839458609")
 
     def test_08_get_webui_settings(self):
         # Test that a machine definition will return offline hashes
@@ -1796,7 +1848,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "version": "privacyIDEA test",
                "detail": {"serial": serial},
                "id": 1}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         new_response = get_webui_settings(req, resp)
         jresult = json.loads(new_response.data)
@@ -1892,7 +1944,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "changePIN1",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         # the token itself
         token = init_token({"serial": "changePIN1",
@@ -1919,7 +1971,7 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "detail": {"message": "matching 1 tokens",
                           "serial": "changePIN2",
                           "type": "spass"}}
-        resp = Response(json.dumps(res))
+        resp = jsonify(res)
 
         token = init_token({"type": "spass",
                             "serial": "changePIN2"}, tokenrealms=[self.realm1])

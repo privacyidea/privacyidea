@@ -72,6 +72,23 @@ def get_eventhandling(eventid=None):
     return send_result(res)
 
 
+@eventhandling_blueprint.route('/positions/<handlermodule>', methods=["GET"])
+@log_with(log)
+def get_module_positions(handlermodule=None):
+    """
+    Return the list of positions a handlermodule provides.
+
+    :param handlermodule: Identifier of the handler module like
+        "UserNotification"
+    :return: list oft actions
+    """
+    ret = []
+    h_obj = get_handler_object(handlermodule)
+    if h_obj:
+        ret = h_obj.allowed_positions
+    return send_result(ret)
+
+
 @eventhandling_blueprint.route('/actions/<handlermodule>', methods=["GET"])
 @log_with(log)
 def get_module_actions(handlermodule=None):
@@ -119,7 +136,8 @@ def set_eventhandling():
     :param event: A comma seperated list of events
     :param handlermodule: A handlermodule
     :param action: The action to perform
-    :param ordering: N/A
+    :param ordering: An integer number
+    :param position: "pre" or "post"
     :param conditions: Conditions, when the event will trigger
     :param options.: A list of possible options.
     """
@@ -133,17 +151,19 @@ def set_eventhandling():
     handlermodule = getParam(param, "handlermodule", optional=False)
     action = getParam(param, "action", optional=False)
     ordering = getParam(param, "ordering", optional=True, default=0)
+    position = getParam(param, "position", optional=True, default="post")
     conditions = getParam(param, "conditions", optional=True, default={})
     if type(conditions) is not dict:
         conditions = json.loads(conditions)
     options = {}
-    for k, v in param.iteritems():
+    for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
 
     res = set_event(name, event, handlermodule=handlermodule,
                     action=action, conditions=conditions,
-                    ordering=ordering, id=eid, options=options, active=active)
+                    ordering=ordering, id=eid, options=options, active=active,
+                    position=position)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

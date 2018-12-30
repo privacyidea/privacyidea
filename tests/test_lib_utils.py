@@ -4,16 +4,19 @@ This tests the file lib.utils
 """
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit, parse_timedelta,
+from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
-                                   parse_time_delta, to_unicode,
+                                   parse_timedelta, to_unicode,
                                    hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int)
+                                   check_sha, otrs_sha256, parse_int, check_crypt,
+                                   convert_column_to_unicode, censor_connect_string,
+                                   truncate_comma_list, check_pin_policy,
+                                   get_module_class)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -228,7 +231,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+        self.assertEqual(d, datetime(2017, 4, 27, 12, 0,
                                      tzinfo=tzoffset(None, 7200)))
 
         d = parse_date("2016/04/03")
@@ -329,19 +332,21 @@ class UtilsTestCase(MyTestCase):
             ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
 
     def test_13_parse_time_offset_from_now(self):
-        td = parse_time_delta("+5s")
+        td = parse_timedelta("+5s")
         self.assertEqual(td, timedelta(seconds=5))
-        td = parse_time_delta("-12m")
+        td = parse_timedelta("-12m")
         self.assertEqual(td, timedelta(minutes=-12))
-        td = parse_time_delta("+123h")
+        td = parse_timedelta("+123h")
         self.assertEqual(td, timedelta(hours=123))
-        td = parse_time_delta("+2d")
+        td = parse_timedelta("+2d")
         self.assertEqual(td, timedelta(days=2))
 
-        # Does not start with plus or minus
-        self.assertRaises(Exception, parse_time_delta, "12d")
+        # It is allowed to start without a +/- which would mean a +
+        td = parse_timedelta("12d")
+        self.assertEqual(td, timedelta(days=12))
+
         # Does not contains numbers
-        self.assertRaises(Exception, parse_time_delta, "+twod")
+        self.assertRaises(Exception, parse_timedelta, "+twod")
 
         s, td = parse_time_offset_from_now("Hello {now}+5d with 5 days.")
         self.assertEqual(s, "Hello {now} with 5 days.")
@@ -394,6 +399,16 @@ class UtilsTestCase(MyTestCase):
         p_hash = hash_password("passw0rd", "ssha512")
         self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
         self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
+        
+        # MD5Crypt
+        p_hash = hash_password("passw0rd", "md5crypt")
+        self.assertTrue(check_crypt(p_hash, "passw0rd"))
+        self.assertFalse(check_crypt(p_hash, "password"))
+        
+        # SHA512Crypt
+        p_hash = hash_password("passw0rd", "sha512crypt")
+        self.assertTrue(check_crypt(p_hash, "passw0rd"))
+        self.assertFalse(check_crypt(p_hash, "password"))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
@@ -410,3 +425,109 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(r, 18)
         r = parse_int("123")
         self.assertEqual(r, 123)
+
+    def test_17_convert_column_to_unicode(self):
+        self.assertEqual(convert_column_to_unicode(None), None)
+        self.assertEqual(convert_column_to_unicode(True), "True")
+        self.assertEqual(convert_column_to_unicode(False), "False")
+        self.assertEqual(convert_column_to_unicode(b"yes"), u"yes")
+        self.assertEqual(convert_column_to_unicode(u"yes"), u"yes")
+
+    def test_18_censor_connect_string(self):
+        self.assertEqual(censor_connect_string("sqlite:////home/foo/privacyidea/privacyidea/data.sqlite"),
+                         "sqlite:////home/foo/privacyidea/privacyidea/data.sqlite")
+        self.assertEqual(censor_connect_string("mysql://pi@localhost/pi"),
+                         "mysql://pi@localhost/pi")
+        self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
+                         "mysql://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string("psql+odbc://pi@localhost/pi"),
+                         "psql+odbc://pi@localhost/pi")
+        self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
+                         "psql+odbc://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
+                         "mysql://pi:xxxx@localhost/pi")
+        self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
+                         u"mysql://knöbel:xxxx@localhost/pi")
+
+    def test_19_truncate_comma_list(self):
+        r = truncate_comma_list("123456,234567,345678", 19)
+        self.assertEqual(len(r), 19)
+        self.assertEqual(r, "1234+,234567,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 18)
+        self.assertEqual(len(r), 18)
+        self.assertEqual(r, "1234+,2345+,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 16)
+        self.assertEqual(len(r), 16)
+        self.assertEqual(r, "123+,2345+,3456+")
+
+        # There are more entries than the max_len. We will not be able
+        # to shorten all entries, so we simply take the beginning of the string.
+        r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
+        self.assertEqual(len(r), 4)
+        self.assertEqual(r, "12,+")
+
+    def test_20_pin_policy(self):
+        r, c = check_pin_policy("1234", "n")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("abc", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [0-9]", c)
+
+        r, c = check_pin_policy("123", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [a-zA-Z]", c)
+
+        r, c = check_pin_policy("123", "ncs")
+        self.assertFalse(r)
+        self.assertTrue("Missing character in PIN: [a-zA-Z]" in c, c)
+        self.assertTrue("Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]" in c, c)
+
+        r, c = check_pin_policy("1234", "")
+        self.assertFalse(r)
+        self.assertEqual(c, "No policy given.")
+
+        # check for either number or character
+        r, c = check_pin_policy("1234", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("@@@@", "+cn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+
+        # check for exclusion
+        # No special character
+        r, c = check_pin_policy("1234", "-s")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234", "-sn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Not allowed character in PIN!")
+
+        r, c = check_pin_policy("1234@@@@", "-c")
+        self.assertTrue(r)
+
+    def test_21_get_module_class(self):
+        r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+        from privacyidea.lib.auditmodules.sqlaudit import Audit
+        self.assertEqual(r, Audit)
+
+        # Fails to return the class, if the method does not exist
+        self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
+                          "this_method_does_not_exist")
+
+        # Fails if the class does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.sqlaudit", "DoesNotExist")
+
+        # Fails if the package does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")

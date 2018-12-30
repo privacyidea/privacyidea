@@ -6,10 +6,11 @@ from privacyidea.lib.policy import SCOPE, ACTION, set_policy
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 import json
 from privacyidea.lib.smtpserver import add_smtpserver
-import smtpmock
+from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode
 from privacyidea.lib.user import User
+from privacyidea.lib.error import ERROR
 
 
 class RegisterTestCase(MyTestCase):
@@ -81,9 +82,10 @@ class RegisterTestCase(MyTestCase):
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
+            self.assertEqual(data.get("result").get("error").get("code"), ERROR.REGISTRATION)
             self.assertEqual(data.get("result").get("error").get("message"),
-                         u'ERR10: No SMTP server configuration specified!')
+                         u'ERR402: No SMTP server configuration specified!')
 
         # Set SMTP config and policy
         add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
@@ -117,7 +119,7 @@ class RegisterTestCase(MyTestCase):
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
     @smtpmock.activate
@@ -132,7 +134,7 @@ class RegisterTestCase(MyTestCase):
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
     @smtpmock.activate
@@ -153,7 +155,7 @@ class RegisterTestCase(MyTestCase):
                                                  "password": new_password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
 
         # send an invalid recoverycode
@@ -165,7 +167,7 @@ class RegisterTestCase(MyTestCase):
                                                  "password": new_password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), False)
 
         # test the new password

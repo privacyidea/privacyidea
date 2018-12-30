@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use tags in email subject.
 #  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add additional tags for notification: date, time, client_ip,
 #             ua_string, ua_browser
@@ -40,12 +42,12 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import get_db_admins, get_db_admin
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib import _
-from flask import current_app
 import json
 import logging
 import datetime
@@ -86,6 +88,14 @@ class UserNotificationEventHandler(BaseEventHandler):
     identifier = "UserNotification"
     description = "This eventhandler notifies the user about actions on his " \
                   "tokens"
+
+    @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        :return: list of allowed positions
+        """
+        return ["post", "pre"]
 
     @property
     def actions(cls):
@@ -137,8 +147,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                            NOTIFY_TYPE.EMAIL]},
                                 "To "+NOTIFY_TYPE.ADMIN_REALM: {
                                     "type": "str",
-                                    "value": current_app.config.get(
-                                        "SUPERUSER_REALM", []),
+                                    "value": get_app_config_value("SUPERUSER_REALM", []),
                                     "visibleIf": "To",
                                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
                                 "To "+NOTIFY_TYPE.INTERNAL_ADMIN: {
@@ -191,7 +200,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         g = options.get("g")
         request = options.get("request")
         response = options.get("response")
-        content = json.loads(response.data)
+        content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         notify_type = handler_options.get("To", NOTIFY_TYPE.TOKENOWNER)
@@ -269,6 +278,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         if recipient:
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
+            subject = handler_options.get("subject") or \
+                      "An action was performed on your token."
             serial = request.all_data.get("serial") or \
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
@@ -288,38 +299,36 @@ class UserNotificationEventHandler(BaseEventHandler):
 
             time = datetime.datetime.now().strftime("%H:%M:%S")
             date = datetime.datetime.now().strftime("%Y-%m-%d")
-            body = body.format(
-                admin=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                action=request.path,
-                serial=serial,
-                url=request.url_root,
-                user=tokenowner.info.get("givenname"),
-                surname=tokenowner.info.get("surname"),
-                givenname=recipient.get("givenname"),
-                username=tokenowner.login,
-                userrealm=tokenowner.realm,
-                tokentype=tokentype,
-                registrationcode=registrationcode,
-                recipient_givenname=recipient.get("givenname"),
-                recipient_surname=recipient.get("surname"),
-                googleurl_img=googleurl_img,
-                googleurl_value=googleurl_value,
-                time=time,
-                date=date,
-                client_ip=g.client_ip,
-                ua_browser=request.user_agent.browser,
-                ua_string=request.user_agent.string
-            )
-
+            tags = dict(admin=logged_in_user.get("username"),
+                        realm=logged_in_user.get("realm"),
+                        action=request.path,
+                        serial=serial,
+                        url=request.url_root,
+                        user=tokenowner.info.get("givenname"),
+                        surname=tokenowner.info.get("surname"),
+                        givenname=recipient.get("givenname"),
+                        username=tokenowner.login,
+                        userrealm=tokenowner.realm,
+                        tokentype=tokentype,
+                        registrationcode=registrationcode,
+                        recipient_givenname=recipient.get("givenname"),
+                        recipient_surname=recipient.get("surname"),
+                        googleurl_value=googleurl_value,
+                        time=time,
+                        date=date,
+                        client_ip=g.client_ip,
+                        ua_browser=request.user_agent.browser,
+                        ua_string=request.user_agent.string)
+            body = body.format(googleurl_img=googleurl_img,
+                               **tags)
+            subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
-                subject = handler_options.get("subject") or \
-                          "An action was performed on your token."
+
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,

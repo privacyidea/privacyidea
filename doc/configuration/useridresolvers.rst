@@ -173,6 +173,10 @@ order to improve performance. This checkbox is deactivated by default
 and should only be activated after having ensured that schema information
 are unnecessary.
 
+The ``CACHE_TIMEOUT`` configures a short living per process cache for LDAP users.
+The cache is not shared between different Python processes, if you are running more processes
+in Apache or Nginx. You can set this to ``0`` to deactivate this cache.
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
@@ -293,6 +297,14 @@ The ``poolSize`` and ``poolTimeout`` determine the pooling behaviour. The
 ``poolSize`` (default 5) determine how many connections are kept open in the
 pool. The ``poolTimeout`` (default 10) specifies how long the application
 waits to get a connection from the pool.
+
+.. note:: The pooling parameters only have effect if the ``PI_ENGINE_REGISTRY_CLASS``
+   config option is set to ``"shared"`` (see :ref:`engine-registry`).
+   If you then have several SQL resolvers with the same connection and pooling settings,
+   they will use the same shared connection pool.
+   If you change the connection settings of an existing connection, the connection pool
+   for the old connection settings will persist until the respective connections
+   are closed by the SQL server or the web server is restarted.
 
 .. note:: The ``Additional connection parameters``
    refer to the SQLAlchemy connection but are not used at the moment.

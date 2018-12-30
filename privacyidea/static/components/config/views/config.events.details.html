@@ -62,8 +62,21 @@
             <select class="form-control"
                     id="handlermodule"
                     ng-model="form.handlermodule" required
-                    ng-options="module for module in handlermodules"
+                    ng-options="handlermodule as handlermodule for handlermodule in handlermodules"
                     ng-change="handlerModuleChanged()"
+                    >
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="position" class="col-sm-3 control-label" translate>
+            Position</label>
+        <div class="col-sm-6">
+            <select class="form-control"
+                    id="position"
+                    ng-model="form.position" required
+                    ng-options="position as position for position in handlerPositions"
                     >
             </select>
         </div>

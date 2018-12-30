@@ -5,14 +5,15 @@ lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
 
-import smtpmock
+from . import smtpmock
 import responses
+import os
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
-from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
@@ -32,7 +33,8 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -96,9 +98,10 @@ class EventHandlerLibTestCase(MyTestCase):
         # return a destinct eventid
         r = event_config.get_event(events[0].get("id"))
         self.assertEqual(r[0].get("id"), events[0].get("id"))
+        self.assertEqual(r[0].get("position"), "post")
 
         # We can not enable an event, that does not exist.
-        self.assertRaises(ParameterError, enable_event, 1234567, True)
+        self.assertRaises(ResourceNotFoundError, enable_event, 1234567, True)
 
         # Cleanup
         r = delete_event(n_eid)
@@ -426,7 +429,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
 class CounterEventTestCase(MyTestCase):
 
-    def test_01_increase_counter(self):
+    def test_01_event_counter(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin",
@@ -464,6 +467,20 @@ class CounterEventTestCase(MyTestCase):
         counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
         self.assertEqual(counter.counter_value, 2)
 
+        if 'decrease_counter' in t_handler.actions:
+            t_handler.do("decrease_counter", options=options)
+            t_handler.do("decrease_counter", options=options)
+            t_handler.do("decrease_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, 0)
+            options['handler_def']['options']['allow_negative_values'] = True
+            t_handler.do("decrease_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, -1)
+            t_handler.do("reset_counter", options=options)
+            counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
+            self.assertEqual(counter.counter_value, 0)
+
 
 class ScriptEventTestCase(MyTestCase):
 
@@ -495,20 +512,65 @@ class ScriptEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {
-                       "options":{
+                       "options": {
                            "user": "1",
                            "realm": "1",
                            "serial": "1",
                            "logged_in_user": "1",
-                           "logged_in_role": "1",}
+                           "logged_in_role": "1"}
                    }
                    }
 
         script_name = "ls.sh"
-        t_handler = ScriptEventHandler()
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
-        remove_token("SPASS01")
+
+    def test_02_failscript(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "background": SCRIPT_WAIT,
+                           "raise_error": True,
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }
+                   }
+
+        script_name = "fail.sh"
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
+        self.assertRaises(Exception, t_handler.do, script_name, options=options)
 
 
 class FederationEventTestCase(MyTestCase):
@@ -749,6 +811,14 @@ class FederationEventTestCase(MyTestCase):
 class TokenEventTestCase(MyTestCase):
 
     def test_01_set_tokenrealm(self):
+        # check actions
+        actions = TokenEventHandler().actions
+        self.assertTrue("set tokeninfo" in actions, actions)
+
+        # check positions
+        pos = TokenEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post", "pre"}, pos)
+
         # setup realms
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -921,7 +991,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # Now the initiailized token will be set in realm2
+        # Now the initialized token will be set in realm2
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1058,7 +1128,69 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(tokentype="sms")[0]
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
-        self.assertEqual(t.get_tokeninfo("dynamic_phone"), "1")
+        self.assertTrue(is_true(t.get_tokeninfo("dynamic_phone")))
+        remove_token(t.token.serial)
+
+        # Enroll a dynamic email token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1",
+                                        "dynamic_email": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertTrue(is_true(t.get_tokeninfo("dynamic_email")))
+        remove_token(t.token.serial)
+
+        # Enroll an email token to a user, who has no email address
+        user_obj_no_email = User("shadow", self.realm1)
+        req.User = user_obj_no_email
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj_no_email)
+        self.assertEqual(t.get_tokeninfo("email"), "")
+        remove_token(t.token.serial)
+
+        # Enroll a totp token with genkey
+        req.User = user_obj
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "totp",
+                                        "user": "1",
+                                        "additional_params": "{'totp.hashlib': 'sha256'}"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="totp")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
         remove_token(t.token.serial)
 
     def test_06_set_description(self):
@@ -1166,7 +1298,7 @@ class TokenEventTestCase(MyTestCase):
                    "response": resp,
                    "handler_def": {"options": {VALIDITY.START: "+10m",
                                                VALIDITY.END: "+10d"}
-                   }
+                                   }
                    }
 
         t_handler = TokenEventHandler()
@@ -1234,7 +1366,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_09_set_tokeninfo(self):
+    def test_09_set_delete_tokeninfo(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -1301,6 +1433,37 @@ class TokenEventTestCase(MyTestCase):
         tw = t[0].get_tokeninfo("pastText")
         self.assertTrue(tw.startswith("it was 20"))
         self.assertTrue(tw.endswith("0..."))
+        ti0 = t[0].get_tokeninfo()
+
+        # Delete non existing token
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": "SomeNonExistingKey"}
+                                   }
+                   }
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        # Check if the token info was deleted
+        t = get_tokens(serial="SPASS01")
+        ti1 = t[0].get_tokeninfo()
+        self.assertEqual(ti0, ti1)
+
+        # Delete token info "pastText"
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"key": "pastText"}
+                                   }
+                   }
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
+        self.assertTrue(res)
+        # Check if the token info was deleted
+        t = get_tokens(serial="SPASS01")
+        tw = t[0].get_tokeninfo("pastText", "key not found")
+        self.assertEqual(tw, "key not found")
 
         remove_token("SPASS01")
 
@@ -2217,7 +2380,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # create notification handler
         eid = set_event("This definition sends emails", "token_unassign",
-                        "UserNotification", "sendmail")
+                        "UserNotification", "sendmail", position="post")
         self.assertTrue(eid)
 
         # delete the user
@@ -2232,8 +2395,8 @@ class UserNotificationTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            self.assertTrue(result.get("value") is True, result)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEqual(result.get("value"), 1)
 
         # Cleanup
         delete_event(eid)

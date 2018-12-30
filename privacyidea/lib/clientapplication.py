@@ -27,7 +27,7 @@ The code is tested in tests/test_lib_clientapplication.py.
 
 import logging
 import datetime
-from log import log_with
+from .log import log_with
 from ..models import ClientApplication, Subscription
 from netaddr import IPAddress
 

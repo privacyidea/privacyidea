@@ -45,6 +45,7 @@ import logging
 
 import traceback
 import binascii
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam, ParameterError
@@ -149,7 +150,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         :return: bool
         """
-        local_check = 1 == int(self.get_tokeninfo("radius.local_checkpin"))
+        local_check = is_true(self.get_tokeninfo("radius.local_checkpin"))
         log.debug("local checking pin? {0!r}".format(local_check))
 
         return local_check
@@ -273,9 +274,8 @@ class RadiusTokenClass(RemoteTokenClass):
                          "access to user %s." % (r_server, radius_user))
                 otp_count = 0
             else:
-                log.warning("Radiusserver %s"
-                            "rejected access to user %s." %
-                            (r_server, radius_user))
+                log.warning("Radiusserver %s rejected "
+                            "access to user %s." % (r_server, radius_user))
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: {0!r}".format((ex)))

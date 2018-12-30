@@ -134,4 +134,21 @@ Each policy can contain the following attributes:
      Thus you can get effects you did not plan. So think at least *twice* before
      using time restricted policies.
 
+**priority**
 
+  (added in privacyIDEA 2.23)
+
+  The priority field of policies contains a positive number and defaults to 1.
+  In case of policy conflicts, policies with a lower priority number take precedence.
+
+  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy`:
+  Assume there are two passthru policies ``pol1`` and ``pol2`` that
+  define different action values, e.g. ``pol1`` defines ``passthru=userstore``
+  and ``pol2`` defines ``passthru=radius1``.
+  If multiple policies match for an incoming authentication request, the priority
+  value is used to determine the policy that should take precedence: Assuming ``pol1``
+  has a priority of 3 and ``pol2`` has a priority of 2, privacyIDEA
+  will honor only the ``pol2`` policy and authenticate the user against the RADIUS server ``radius1``.
+
+  Policy conflicts can still occur if multiple policies with the same priority
+  specify different values for the same action.

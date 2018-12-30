@@ -9,3 +9,6 @@ deploy/privacyidea/NetKnights.pem		etc/privacyidea/
 
 # apache config
 deploy/apache/sites-available/privacyidea.conf	etc/apache2/sites-available/
+
+# Crontab
+deploy/crontab/privacyidea			etc/cron.d/

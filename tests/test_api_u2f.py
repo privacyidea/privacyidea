@@ -9,6 +9,8 @@ from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
 from privacyidea.models import Challenge
+from privacyidea.lib.error import ERROR
+from privacyidea.lib import _
 
 
 PWFILE = "tests/testdata/passwords"
@@ -54,7 +56,7 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            response = json.loads(res.data)
+            response = json.loads(res.data.decode('utf8'))
             result = response.get("result")
             details = response.get("detail")
             self.assertEqual(result.get("value"), True)
@@ -80,7 +82,7 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            response = json.loads(res.data)
+            response = json.loads(res.data.decode('utf8'))
             result = response.get("result")
             details = response.get("detail")
             self.assertEqual(result.get("value"), True)
@@ -99,13 +101,13 @@ class APIU2fTestCase(MyTestCase):
                                                  "pass": "u2f"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), False)
             transaction_id = detail.get("transaction_id")
             self.assertEqual(len(transaction_id), len('01350277175811850842'))
-            self.assertTrue("Please confirm with your U2F token" in
-                            detail.get("message"), detail.get("message"))
+            self.assertEqual(detail.get("message"), detail.get("message"),
+                            _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861"))
             attributes = detail.get("attributes")
             u2f_sign_request = attributes.get("u2fSignRequest")
             self.assertTrue("appId" in u2f_sign_request)
@@ -143,8 +145,8 @@ class APIU2fTestCase(MyTestCase):
                                                      signature_data_url}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), False)
 
@@ -153,7 +155,7 @@ class APIU2fTestCase(MyTestCase):
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertTrue("trustedFacets" in data)
 
         set_policy(name="facet1", scope=SCOPE.AUTH,
@@ -163,7 +165,7 @@ class APIU2fTestCase(MyTestCase):
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertTrue("trustedFacets" in data)
             facets = data["trustedFacets"][0]
             ids = facets["ids"]
@@ -199,8 +201,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -214,8 +216,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -242,8 +244,8 @@ class APIU2fTestCase(MyTestCase):
                                                      signature_data}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -278,8 +280,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -293,8 +295,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -321,8 +323,9 @@ class APIU2fTestCase(MyTestCase):
                                                      signature_data}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), False)
+            self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
             self.assertEqual(result.get("error").get("message"),
                              u'The U2F device is not allowed to authenticate due to policy restriction.')
 
@@ -357,8 +360,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -375,8 +378,8 @@ class APIU2fTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("message"),
                              u'The U2F device is not allowed to be registered '

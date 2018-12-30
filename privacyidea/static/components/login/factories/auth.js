@@ -19,7 +19,7 @@
  *
  */
 angular.module("privacyideaAuth", [])
-    .factory("AuthFactory", function () {
+    .factory("AuthFactory", function (inform, $state) {
         /*
         Each service - just like this service factory - is a singleton.
         Here we just store the username of the authenticated user and his
@@ -35,6 +35,19 @@ angular.module("privacyideaAuth", [])
                 user.role = role;
                 user.rights = rights;
                 user.menus = menus;
+            },
+            authError: function(error) {
+                var authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
+                inform.add(error.result.error.message, {type: "danger", ttl: 10000});
+                if (authErrorCodes.indexOf(error.result.error.code) >= 0) {
+                    if ($state.current.controller === "registerController" ) {
+                        $state.go('register');
+                    } else if ($state.current.controller === "recoveryController") {
+                        $state.go('recovery');
+                    } else {
+                        $state.go('login');
+                    }
+                }
             },
             dropUser: function () {
                     user = {};
@@ -55,6 +68,20 @@ angular.module("privacyideaAuth", [])
                 // check if the action is contained in user.rights
                 var res = (user.rights.indexOf(action) >= 0);
                 ////debug: console.log("checking right: " + action + ": " + res);
+                return res;
+            },
+            getRightsValue: function (action) {
+                // return the value of an action like otp_pin_minlength
+                var res = false;
+                user.rights.forEach(function(entry){
+                    if (entry.indexOf("=") >= 0) {
+                        // this is a value action
+                        var components = entry.split("=");
+                        if (components[0] === action) {
+                            res = components[1];
+                        }
+                    }
+                });
                 return res;
             },
             checkMainMenu: function (menu) {

@@ -88,6 +88,15 @@ class BaseEventHandler(object):
         pass
 
     @property
+    def allowed_positions(cls):
+        """
+        This returns the allowed positions of the event handler definition.
+        This can be "post" or "pre" or both.
+        :return: list of allowed positions
+        """
+        return ["post"]
+
+    @property
     def actions(cls):
         """
         This method returns a list of available actions, that are provided
@@ -113,7 +122,7 @@ class BaseEventHandler(object):
             "realm": {
                 "type": "str",
                 "desc": _("The user realm, for which this event should apply."),
-                "value": realms.keys()
+                "value": list(realms)
             },
             "tokenrealm": {
                 "type": "multi",
@@ -259,11 +268,22 @@ class BaseEventHandler(object):
         try:
             ui = user.info
         except UserError as exx:
-            if exx.id == 905:
+            if exx.id in [904, 905]:
+                # 904: User can not be found - maybe we got here due to PassOnNoUser
+                # 905: This would be a parameter error - why is this here?
                 user = User()
             else:
                 raise exx
         return user
+
+    @staticmethod
+    def _get_response_content(response):
+        if response:
+            content = json.loads(response.data)
+        else:
+            # In Pre-Handling we have no response and no content
+            content = {}
+        return content
 
     def check_condition(self, options):
         """
@@ -275,13 +295,12 @@ class BaseEventHandler(object):
         request = options.get("request")
         response = options.get("response")
         e_handler_def = options.get("handler_def")
-        if not response or not e_handler_def:
-            # options is missing a response and the handler definition
-            # We are probably in test mode.
+        if not e_handler_def:
+            # options is the handler definition
             return True
-        # conditions can be correspnding to the property conditions
+        # conditions can be corresponding to the property conditions
         conditions = e_handler_def.get("conditions")
-        content = json.loads(response.data)
+        content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
         serial = request.all_data.get("serial") or \
