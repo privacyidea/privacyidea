@@ -47,7 +47,7 @@ pymysql-sa==1.0
 pyOpenSSL==18.0.0
 pyparsing==2.2.0
 pyrad==2.1
-pytest==3.6.0
+pytest==3.6.1
 pytest-cov==2.5.1
 pytest-runner==4.2
 python-dateutil==2.7.3
