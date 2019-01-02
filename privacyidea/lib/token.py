@@ -2014,18 +2014,18 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["attributes"] = attributes
                 challenge_info["serial"] = token_obj.token.serial
                 # If exist, add next pin and next password change
-                next_pin = token_list[0].get_tokeninfo(
+                next_pin = token_obj.get_tokeninfo(
                         "next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
                     challenge_info["pin_change"] = \
-                        token_list[0].is_pin_change()
-                next_passw = token_list[0].get_tokeninfo(
+                        token_obj.is_pin_change()
+                next_passw = token_obj.get_tokeninfo(
                         "next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
                     challenge_info["password_change"] = \
-                        token_list[0].is_pin_change(
+                        token_obj.is_pin_change(
                             password=True)
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
