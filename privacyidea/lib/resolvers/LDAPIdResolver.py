@@ -752,6 +752,14 @@ class IdResolver (UserIdResolver):
 
         return self
 
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
+        """
+        return len(self.loginname_attribute) > 1
+
     @staticmethod
     def split_uri(uri):
         """

@@ -87,6 +87,7 @@ class User(object):
 
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
+        self.used_login = self.login
         self.realm = (realm or "").lower()
         if resolver == "**":
             resolver = ""
@@ -112,6 +113,9 @@ class User(object):
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
             self.uid = y.getUserId(self.login)
+            if y.has_multiple_loginnames:
+                # In this case the primary login might be another value!
+                self.login = y.getUsername(self.uid)
 
     def is_empty(self):
         # ignore if only resolver is set! as it makes no sense
@@ -130,7 +134,6 @@ class User(object):
         :return: True or False
         :rtype: bool
         """
-        # TODO: Should we add a check for `uid` here?
         return isinstance(other, type(self)) and (self.login == other.login) and (
                 self.resolver == other.resolver) and (self.realm == other.realm)
 
@@ -710,3 +713,15 @@ def get_username(userid, resolvername):
             username = y.getUsername(userid)
     return username
 
+
+def log_used_user(user, other_text=""):
+    """
+    This creates a log message combined of a user and another text.
+    The user information is only added, if user.login != user.used_login
+
+    :param user: A user to log
+    :type user:  User object
+    :param other_text: Some additional text
+    :return: str
+    """
+    return u"logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text

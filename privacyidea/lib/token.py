@@ -1328,7 +1328,7 @@ def set_pin_so(serial, so_pin, user=None):
     :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param so_pin: The Security Officer PIN
-    :type so_ping: basestring
+    :type so_pin: basestring
     :return: The number of SO PINs set. (usually 1)
     :rtype: int
     """

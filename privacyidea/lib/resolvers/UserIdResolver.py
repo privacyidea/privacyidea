@@ -115,7 +115,6 @@ class UserIdResolver(object):
         """
         return UserIdResolver.getResolverClassDescriptor()
 
-
     def getUserId(self, loginName):
         """
         The loginname is resolved to a user_id.
@@ -274,5 +273,13 @@ class UserIdResolver(object):
         """
         Return true, if the Instance! of this resolver is configured editable.
         :return:
+        """
+        return False
+
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
         """
         return False

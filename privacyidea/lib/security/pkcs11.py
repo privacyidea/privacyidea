@@ -163,7 +163,7 @@ class PKCS11SecurityModule(SecurityModule):  # pragma: no cover
         return self.decrypt(crypt_pin)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     module = "/usr/local/lib/opensc-pkcs11.so"
     #module = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
@@ -175,25 +175,25 @@ if __name__ == "__main__":
     cleartext = "Hello there!"
     cipher = p.encrypt(cleartext)
     text = p.decrypt(cipher)
-    print text
+    print(text)
     assert(text == cleartext)
 
     cleartext = "Hello, this is a really long text and so and and so on..."
     cipher = p.encrypt(cleartext)
     text = p.decrypt(cipher)
-    print text
+    print(text)
     assert (text == cleartext)
 
     # password
     password = "topSekr3t"
     crypted = p.encrypt_password(password)
     text = p.decrypt_password(crypted)
-    print text
+    print(text)
     assert(text == password)
 
     # pin
     password = "topSekr3t"
     crypted = p.encrypt_pin(password)
     text = p.decrypt_pin(crypted)
-    print text
+    print(text)
     assert (text == password)

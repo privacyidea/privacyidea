@@ -80,7 +80,7 @@ class UserCacheTestCase(MyTestCase):
         uid = "1"
 
         expiration_delta = get_cache_time()
-        r = UserCache(username, resolver, uid, datetime.now()).save()
+        r = UserCache(username, username, resolver, uid, datetime.now()).save()
         u_name = get_username(uid, resolver)
         self.assertEqual(u_name, username)
 
@@ -112,7 +112,7 @@ class UserCacheTestCase(MyTestCase):
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -151,7 +151,7 @@ class UserCacheTestCase(MyTestCase):
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -177,8 +177,8 @@ class UserCacheTestCase(MyTestCase):
 
     def test_04_delete_cache(self):
         now = datetime.now()
-        UserCache("hans1", "resolver1", "uid1", now).save()
-        UserCache("hans2", "resolver2", "uid2", now).save()
+        UserCache("hans1", "hans1", "resolver1", "uid1", now).save()
+        UserCache("hans2", "hans1", "resolver2", "uid2", now).save()
 
         r = UserCache.query.filter(UserCache.username == "hans1").first()
         self.assertTrue(r)
@@ -202,8 +202,8 @@ class UserCacheTestCase(MyTestCase):
     def test_05_multiple_entries(self):
         # two consistent entries
         now = datetime.now()
-        UserCache("hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
-        UserCache("hans1", "resolver1", "uid1", now).save()
+        UserCache("hans1", "hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
+        UserCache("hans1", "hans1", "resolver1", "uid1", now).save()
 
         r = UserCache.query.filter(UserCache.username == "hans1", UserCache.resolver == "resolver1")
         self.assertEquals(r.count(), 2)
@@ -214,8 +214,8 @@ class UserCacheTestCase(MyTestCase):
         r = delete_user_cache()
 
         # two inconsistent entries: most recent entry (ordered by datetime) wins
-        UserCache("hans2", "resolver1", "uid1", now).save()
-        UserCache("hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
+        UserCache("hans2", "hans2", "resolver1", "uid1", now).save()
+        UserCache("hans1", "hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
 
         r = UserCache.query.filter(UserCache.user_id == "uid1", UserCache.resolver == "resolver1")
         self.assertEquals(r.count(), 2)
@@ -242,7 +242,8 @@ class UserCacheTestCase(MyTestCase):
 
         # testing `User()`, but this time we add an already-expired entry to the cache
         self.assertEquals(UserCache.query.count(), 0)
-        UserCache(self.username, self.resolvername1, 'fake_uid', datetime.now() - timedelta(weeks=50)).save()
+        UserCache(self.username, self.username,
+                  self.resolvername1, 'fake_uid', datetime.now() - timedelta(weeks=50)).save()
         # cache contains an expired entry, uid is read from the resolver (we can verify
         # that the cache entry is indeed not queried as it contains 'fake_uid' instead of the correct uid)
         user = User(self.username, self.realm1, self.resolvername1)
@@ -260,9 +261,9 @@ class UserCacheTestCase(MyTestCase):
         self.assertEquals(UserCache.query.count(), 0)
         # initially populate the cache with three entries
         timestamp = datetime.now()
-        UserCache("hans1", self.resolvername1, "uid1", timestamp).save()
-        UserCache("hans2", self.resolvername1, "uid2", timestamp - timedelta(weeks=50)).save()
-        UserCache("hans3", "resolver2", "uid2", timestamp).save()
+        UserCache("hans1", "hans1", self.resolvername1, "uid1", timestamp).save()
+        UserCache("hans2", "hans2", self.resolvername1, "uid2", timestamp - timedelta(weeks=50)).save()
+        UserCache("hans3", "hans3", "resolver2", "uid2", timestamp).save()
         self.assertEquals(UserCache.query.count(), 3)
 
     def test_07_invalidate_save_resolver(self):
@@ -364,8 +365,8 @@ class UserCacheTestCase(MyTestCase):
         self.assertTrue(r >= 0)
         # populate the cache with artificial, somewhat "old", but still relevant data
         timestamp = datetime.now() - timedelta(seconds=300)
-        UserCache("hans1", "resolver1", "uid1", timestamp).save()
-        UserCache("hans2", "resolver1", "uid2", timestamp).save()
+        UserCache("hans1", "hans1", "resolver1", "uid1", timestamp).save()
+        UserCache("hans2", "hans2", "resolver1", "uid2", timestamp).save()
         # check that the cache is indeed queried
         self.assertEqual(get_username("uid1", "resolver1"), "hans1")
         self.assertEqual(User("hans2", "realm1", "resolver1").uid, "uid2")
@@ -388,7 +389,7 @@ class UserCacheTestCase(MyTestCase):
                 User("hans2", "realm1", "resolver1")
             self.assertEqual(get_username("uid3", "resolver1"), "")
             # We add another, "current" entry
-            UserCache("hans4", "resolver1", "uid4", datetime.now()).save()
+            UserCache("hans4", "hans4", "resolver1", "uid4", datetime.now()).save()
             self.assertEqual(UserCache.query.count(), 3)
             # we now remove old entries, only the newest remains
             delete_user_cache(expired=True)
@@ -452,6 +453,23 @@ class UserCacheTestCase(MyTestCase):
         delete_realm(self.sql_realm)
         delete_resolver('reso_a')
         delete_resolver('reso_b')
+
+    def test_13_cache_username(self):
+
+        self.counter = 0
+
+        def get_username(uid, resolver):
+            self.counter += 1
+            return "user1"
+
+        r = cache_username(get_username, "uid1", "reso1")
+        self.assertEqual(r, "user1")
+        self.assertEqual(self.counter, 1)
+
+        # The second call does not increase the counter, since the result is fetched from the cache
+        r = cache_username(get_username, "uid1", "reso1")
+        self.assertEqual(r, "user1")
+        self.assertEqual(self.counter, 1)
 
     def test_99_unset_config(self):
         # Test early exit!

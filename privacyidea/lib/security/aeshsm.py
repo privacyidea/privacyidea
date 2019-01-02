@@ -34,17 +34,7 @@ HSM that is connected via PKCS11. This alternate version relies on AES keys.
 
 log = logging.getLogger(__name__)
 
-TOKEN_KEY = 0
-CONFIG_KEY = 1
-VALUE_KEY = 2
-
 MAX_RETRIES = 5
-
-mapping = {
-    'token':  TOKEN_KEY,
-    'config': CONFIG_KEY,
-    'value':  VALUE_KEY
-}
 
 try:
     import PyKCS11
@@ -86,7 +76,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         label_prefix = config.get("key_label", "privacyidea")
         self.key_labels = {}
-        for k in ['token', 'config', 'value']:
+        for k in self.mapping:
             l = config.get(("key_label_{0!s}".format(k)))
             l = ('{0!s}_{1!s}'.format(label_prefix, k)) if l is None else l
             self.key_labels[k] = l
@@ -157,13 +147,13 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
         self.session.login(self.password)
 
-        for k in ['token', 'config', 'value']:
+        for k in self.mapping:
             label = self.key_labels[k]
             objs = self.session.findObjects([(PyKCS11.CKA_CLASS, PyKCS11.CKO_SECRET_KEY),
                                              (PyKCS11.CKA_LABEL, label)])
             log.debug("Loading '{}' key with label '{}'".format(k, label))
-            if objs != []:
-                self.key_handles[mapping[k]] = objs[0]
+            if objs:
+                self.key_handles[self.mapping[k]] = objs[0]
 
         # self.session.logout()
         log.debug("Successfully setup the security module.")
@@ -192,7 +182,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
 
-    def encrypt(self, data, iv, key_id=TOKEN_KEY):
+    def encrypt(self, data, iv, key_id=SecurityModule.TOKEN_KEY):
         """
 
         :rtype: bytes
@@ -218,7 +208,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         return int_list_to_bytestring(r)
 
-    def decrypt(self, data, iv, key_id=TOKEN_KEY):
+    def decrypt(self, data, iv, key_id=SecurityModule.TOKEN_KEY):
         """
 
         :rtype bytes
@@ -255,7 +245,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: decrypted data
         :rtype: byte string
         """
-        return self._decrypt_value(crypt_pass, CONFIG_KEY)
+        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
 
     def decrypt_pin(self, crypt_pin):
         """
@@ -268,19 +258,19 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: decrypted data
         :rtype: byte string
         """
-        return self._decrypt_value(crypt_pin, TOKEN_KEY)
+        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
 
-    def encrypt_password(self, password):
+    def encrypt_password(self, passwd):
         """
         Encrypt the given password with the CONFIG_KEY an a random IV.
 
-        :param password: The password that is to be encrypted
-        :param password: byte string
+        :param passwd: The password that is to be encrypted
+        :type passwd: bytes
 
         :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
+        :rtype: bytes
         """
-        return self._encrypt_value(password, CONFIG_KEY)
+        return self._encrypt_value(passwd, self.CONFIG_KEY)
 
     def encrypt_pin(self, pin):
         """
@@ -292,7 +282,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: byte string
         """
-        return self._encrypt_value(pin, TOKEN_KEY)
+        return self._encrypt_value(pin, self.TOKEN_KEY)
 
     ''' base methods for pin and password '''
     def _encrypt_value(self, value, key_id):
@@ -302,18 +292,18 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         returns as string with leading iv, separated by ':'
 
         :param value: the value that is to be encrypted
-        :param value: byte string
+        :param value: bytes
 
         :param key_id: slot of the key array
         :type key_id: int
 
         :return: encrypted data with leading iv and separator ':'
-        :rtype: byte string
+        :rtype: bytes
         """
         iv = self.random(16)
         v = self.encrypt(value, iv, key_id)
 
-        return ':'.join([binascii.hexlify(x) for x in [iv, v]])
+        return b':'.join([binascii.hexlify(x) for x in [iv, v]])
 
     def _decrypt_value(self, crypt_value, key_id):
         """
@@ -321,15 +311,15 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: byte string
+        :param crypt_value: bytes
 
         :param  key_id: slot of the key array
         :type   key_id: int
 
         :return: decrypted data
-        :rtype:  byte string
+        :rtype:  bytes
         """
-        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(':')]
+        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(b':')]
 
         return self.decrypt(data, iv, key_id)
 
@@ -342,7 +332,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :return: a dictionary of the created key labels
         """
         # We need a new read/write session
-        session = self.pkcs11.openSession(self.slot, PyKCS11.CKF_SERIAL_SESSION | PyKCS11.CKF_RW_SESSION)
+        session = self.pkcs11.openSession(self.slot,
+                                          PyKCS11.CKF_SERIAL_SESSION | PyKCS11.CKF_RW_SESSION)
         # We need to logout, otherwise we get CKR_USER_ALREADY_LOGGED_IN
         session.logout()
         session.login(self.password)
@@ -378,7 +369,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         return key_labels
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     logging.basicConfig()
     log.setLevel(logging.INFO)
     # log.setLevel(logging.DEBUG)

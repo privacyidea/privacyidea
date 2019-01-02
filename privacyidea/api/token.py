@@ -249,7 +249,7 @@ def init():
     #    log.debug("setting tokenrealm %s" % res['realms'])
     #    tokenrealm = res['realms']
 
-    user = get_user_from_param(param)
+    user = request.User
     tokenobject = init_token(param,
                              user,
                              tokenrealms=tokenrealms)
@@ -353,7 +353,7 @@ def list_api():
     :rtype: json
     """
     param = request.all_data
-    user = get_user_from_param(param, optional)
+    user = request.User
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
@@ -444,7 +444,7 @@ def unassign_api():
     :return: In case of success it returns the number of unassigned tokens in "value".
     :rtype: JSON object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
 
@@ -474,7 +474,7 @@ def revoke_api(serial=None):
         tokens in "value".
     :rtype: JSON object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
@@ -502,7 +502,7 @@ def enable_api(serial=None):
         tokens in "value".
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
@@ -532,7 +532,7 @@ def disable_api(serial=None):
         tokens in "value".
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
@@ -559,7 +559,7 @@ def delete_api(serial):
     """
     # If the API is called by a user, we pass the User Object to the function
     g.audit_object.log({"serial": serial})
-    user = get_user_from_param(request.all_data)
+    user = request.User
     res = remove_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -580,7 +580,7 @@ def reset_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
@@ -605,7 +605,7 @@ def resync_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -647,7 +647,7 @@ def setpin_api(serial=None):
     userpin = getParam(request.all_data, "userpin")
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
-    user = get_user_from_param(request.all_data)
+    user = request.User
     encrypt_pin = getParam(request.all_data, "encryptpin")
 
     res = 0
@@ -703,7 +703,7 @@ def set_api(serial=None):
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
-    user = get_user_from_param(request.all_data)
+    user = request.User
 
     description = getParam(request.all_data, "description")
     count_window = getParam(request.all_data, "count_window")
@@ -974,7 +974,7 @@ def lost_api(serial=None):
     """
     # check if a user is given, that the user matches the token owner.
     g.audit_object.log({"serial": serial})
-    userobj = get_user_from_param(request.all_data)
+    userobj = request.User
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
