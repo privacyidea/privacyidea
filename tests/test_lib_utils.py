@@ -16,7 +16,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_sha, otrs_sha256, parse_int, check_crypt,
                                    convert_column_to_unicode, censor_connect_string,
                                    truncate_comma_list, check_pin_policy,
-                                   get_module_class)
+                                   get_module_class, decode_base32check)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -531,3 +531,21 @@ class UtilsTestCase(MyTestCase):
         # Fails if the package does not exist
         with self.assertRaises(ImportError):
             get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
+
+    def test_22_decodebase32check(self):
+        real_client_componet = "TIXQW4ydvn2aos4cj6ta"
+        real_payload = "03ab74074b824fa6"
+
+        payload1 = decode_base32check(real_client_componet)
+        self.assertEqual(payload1, real_payload)
+
+        # change the client component in the last character!
+        client_component = "TIXQW4ydvn2aos4cj6tb"
+        payload2 = decode_base32check(client_component)
+        # Although the last character of the client component was changed,
+        # the payload is still the same.
+        self.assertEqual(payload2, real_payload)
+
+        # change the client component in between
+        client_component = "TIXQW4ydvn2aos4cj6ba"
+        self.assertRaises(Exception, decode_base32check, client_component)
