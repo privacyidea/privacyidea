@@ -2008,7 +2008,6 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
             message_list.append(message)
-            reply_dict["message"] = ", ".join(message_list)
             if r_chal:
                 challenge_info = {}
                 challenge_info["transaction_id"] = transaction_id
@@ -2028,9 +2027,10 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                     challenge_info["password_change"] = \
                         token_list[0].is_pin_change(
                             password=True)
-                for k, v in challenge_info.items():
-                    reply_dict[k] = v
+                reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
+    if message_list:
+        reply_dict["message"] = ", ".join(message_list)
     # TODO: These two lines are deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["messages"] = message_list
     reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
