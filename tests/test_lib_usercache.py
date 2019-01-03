@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib.usercache
 
@@ -8,7 +9,10 @@ from contextlib import contextmanager
 from mock import patch
 
 from privacyidea.lib.error import UserError
+from tests import ldap3mock
+from tests.test_mock_ldap3 import LDAPDirectory
 from .base import MyTestCase
+from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_object)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
@@ -486,3 +490,98 @@ class UserCacheTestCase(MyTestCase):
             mock_retrieve.return_value = None
             get_username('some-userid', 'resolver1')
             self.assertEqual(mock_retrieve.call_count, 0)
+
+
+class TestUserCacheMultipleLoginAttributes(MyTestCase):
+    ldap_realm = "ldaprealm"
+    ldap_resolver = "ldap1"
+    ldap_parameters = {'LDAPURI': 'ldap://localhost',
+                       'LDAPBASE': 'o=test',
+                       'BINDDN': 'cn=manager,ou=example,o=test',
+                       'BINDPW': 'ldaptest',
+                       'LOGINNAMEATTRIBUTE': 'cn, email',
+                       'LDAPSEARCHFILTER': '(cn=*)',
+                       'USERINFO': '{"phone" : "telephoneNumber", '
+                                   '"mobile" : "mobile"'
+                                   ', "email" : "email", '
+                                   '"surname" : "sn", '
+                                   '"givenname" : "givenName" }',
+                       'UIDTYPE': 'DN',
+                       'CACHE_TIMEOUT': 0,
+                       'resolver': ldap_resolver,
+                       'type': 'ldapresolver',
+                       }
+
+    def _create_ldap_realm(self):
+        rid = save_resolver(self.ldap_parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.ldap_realm, [self.ldap_resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+    def _delete_ldap_realm(self):
+        delete_realm(self.ldap_realm)
+        delete_resolver(self.ldap_resolver)
+
+    @classmethod
+    def setUpClass(cls):
+        MyTestCase.setUpClass()
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+
+    @classmethod
+    def tearDownClass(cls):
+        set_privacyidea_config(EXPIRATION_SECONDS, 0)
+        MyTestCase.tearDownClass()
+
+    @ldap3mock.activate
+    def test_01_secondary_login_attribute(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        self._create_ldap_realm()
+        # Populate the user cache, check its contents
+        user1 = User('alice', self.ldap_realm)
+        self.assertEquals(user1.resolver, self.ldap_resolver)
+        self.assertEquals(user1.uid, "cn=alice,ou=example,o=test")
+        self.assertEquals(user1.login, "alice")
+        self.assertEquals(user1.used_login, "alice")
+        entry = UserCache.query.one()
+        self.assertEquals(entry.user_id, user1.uid)
+        self.assertEquals(entry.used_login, "alice")
+        self.assertEquals(entry.username, "alice")
+        self.assertEquals(entry.resolver, self.ldap_resolver)
+        # query again, user cache does not change
+        user2 = User('alice', self.ldap_realm)
+        self.assertEquals(user2.resolver, self.ldap_resolver)
+        self.assertEquals(user2.uid, "cn=alice,ou=example,o=test")
+        self.assertEquals(user2.login, "alice")
+        self.assertEquals(user2.used_login, "alice")
+        self.assertEquals(UserCache.query.count(), 1)
+        # use secondary login attribute, usercache has a new entry with secondary login attribute
+        user3 = User('alice@test.com', self.ldap_realm)
+        self.assertEquals(user3.resolver, self.ldap_resolver)
+        self.assertEquals(user3.uid, "cn=alice,ou=example,o=test")
+        self.assertEquals(user3.login, "alice")
+        self.assertEquals(user3.used_login, "alice@test.com")
+        entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
+        self.assertEquals(len(entries), 2)
+        entry = entries[-1]
+        self.assertEquals(entry.user_id, user1.uid)
+        self.assertEquals(entry.used_login, "alice@test.com")
+        self.assertEquals(entry.username, "alice")
+        self.assertEquals(entry.resolver, self.ldap_resolver)
+        # use secondary login attribute again, login name is fetched correctly
+        user4 = User('alice@test.com', self.ldap_realm)
+        self.assertEquals(user4.resolver, self.ldap_resolver)
+        self.assertEquals(user4.uid, "cn=alice,ou=example,o=test")
+        self.assertEquals(user4.login, "alice")
+        self.assertEquals(user4.used_login, "alice@test.com")
+        # still only two entries in the cache
+        entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
+        self.assertEquals(len(entries), 2)
+        # get the primary login name
+        login_name = get_username("cn=alice,ou=example,o=test", self.ldap_resolver)
+        self.assertEquals(login_name, "alice")
+        # still only two entries in the cache
+        entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
+        self.assertEquals(len(entries), 2)
+        self._delete_ldap_realm()
