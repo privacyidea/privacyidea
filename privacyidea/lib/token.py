@@ -318,7 +318,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None, psize=None, page=1):
+               maxfail=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -364,14 +364,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
-    :param psize: The number of returned tokens can be restricted by using the parameter psize.
-        Pagination then is used.
-    :type psize: int
-    :param page: If pagination is used, this is the page to get
-    :type page: int
-
     :return: A list of tokenclasses (lib.tokenclass).
-        In case of pagination a tuple of count, prev, next, token_list
     :rtype: list
     """
     token_list = []
@@ -393,25 +386,6 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
-    elif psize:
-        # We return a paginated list of token objects.
-        pagination = sql_query.paginate(page, per_page=psize,
-                                        error_out=False)
-        count = pagination.total
-        prev = None
-        if pagination.has_prev:
-            prev = page - 1
-        next = None
-        if pagination.has_next:
-            next = page + 1
-        for token in pagination.items:
-            tokenobject = create_tokenclass_object(token)
-            if isinstance(tokenobject, TokenClass):
-                # A database token, that has a non existing type, will
-                # return None, and not a TokenClass. We do not want to
-                # add None to our list
-                token_list.append(tokenobject)
-        ret = count, prev, next, token_list
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():

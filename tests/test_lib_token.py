@@ -186,19 +186,6 @@ class TokenTestCase(MyTestCase):
         tokenobject_list = get_tokens(serial_wildcard="*")
         self.assertEqual(len(tokenobject_list), 4)
 
-        # test pagination
-        count, prev, next, tokenobject_list = get_tokens(serial_wildcard="*", psize=2, page=1)
-        self.assertEqual(count, 4)
-        self.assertEqual(prev, None)
-        self.assertEqual(next, 2)
-        self.assertEqual(len(tokenobject_list), 2)
-
-        count, prev, next, tokenobject_list = get_tokens(serial_wildcard="*", psize=2, page=2)
-        self.assertEqual(count, 4)
-        self.assertEqual(prev, 1)
-        self.assertEqual(next, None)
-        self.assertEqual(len(tokenobject_list), 2)
-
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
         self.assertTrue(ttype == "hotp", ttype)
