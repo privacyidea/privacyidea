@@ -251,11 +251,16 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     if active is not None:
         filter_active = active.lower() == "true"
 
-    generator = get_tokens_paginated_generator(tokentype=tokentype,
-                                                active=filter_active,
-                                                assigned=filter_assigned,
-                                                psize=chunksize)
-    for tokenobj_list in generator:
+    if chunksize is not None:
+        iterable = get_tokens_paginated_generator(tokentype=tokentype,
+                                                  active=filter_active,
+                                                  assigned=filter_assigned,
+                                                  psize=chunksize)
+    else:
+        iterable = [get_tokens(tokentype=tokentype,
+                               active=filter_active,
+                               assigned=filter_assigned)]
+    for tokenobj_list in iterable:
         filtered_list = []
         sys.stderr.write("++ Creating token object list.\n")
         tok_count = 0
@@ -377,7 +382,7 @@ def export_user_data(token_list):
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
-@manager.option('--chunksize', default=1000,
+@manager.option('--chunksize', default=None,
                 help='Read tokens from the database in smaller chunks to perform operations.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
@@ -392,7 +397,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
             ))
             sys.exit(1)
-    chunksize = int(chunksize)
+    if chunksize is not None:
+        chunksize = int(chunksize)
     filter = build_tokenvalue_filter(tokeninfo_key,
                                      tokeninfo_value,
                                      tokeninfo_value_greater_than,
@@ -402,7 +408,10 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     generator = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                     filter, orphaned, tokentype, serial,
                     description, chunksize)
-    sys.stderr.write("+ Reading tokens in chunk from database...\n")
+    if chunksize is not None:
+        sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
+    else:
+        sys.stderr.write("+ Reading tokens from database...\n")
     for tlist in generator:
         sys.stderr.write("+ Tokens read. Starting action.\n")
         if not action:
