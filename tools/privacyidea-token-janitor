@@ -100,7 +100,7 @@ Actions:
 
 """.format("|".join(ALLOWED_ACTIONS))
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token, import_token)
+                                   unassign_token, import_token, get_tokens_paginated_generator)
 from privacyidea.app import create_app
 from flask_script import Manager
 import re
@@ -242,9 +242,7 @@ def build_tokenvalue_filter(key,
 
 
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                   tokeninfo_value_filter, orphaned, tokentype, serial, description, psize, page):
-    tlist = []
-    filter_tokentype = None
+                   tokeninfo_value_filter, orphaned, tokentype, serial, description, chunksize):
     filter_active = None
     filter_assigned = None
 
@@ -253,48 +251,48 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
     if active is not None:
         filter_active = active.lower() == "true"
 
-    count, prev, next, tokenobj_list = get_tokens(tokentype=tokentype,
-                                                  active=filter_active,
-                                                  assigned=filter_assigned,
-                                                  page=page,
-                                                  psize=psize)
+    generator = get_tokens_paginated_generator(tokentype=tokentype,
+                                                active=filter_active,
+                                                assigned=filter_assigned,
+                                                psize=chunksize)
+    for tokenobj_list in generator:
+        filtered_list = []
+        sys.stderr.write("++ Creating token object list.\n")
+        tok_count = 0
+        tok_found = 0
+        for token_obj in tokenobj_list:
+            sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+            sys.stderr.flush()
+            tok_count += 1
+            if last_auth and token_obj.check_last_auth_newer(last_auth):
+                continue
+            if serial and not re.search(serial, token_obj.token.serial):
+                continue
+            if description and not re.search(description,
+                                             token_obj.token.description):
+                continue
+            if tokeninfo_value_filter and tokeninfo_key:
+                value = token_obj.get_tokeninfo(tokeninfo_key)
+                # if the tokeninfo key is not even set, it does not match the filter
+                if value is None:
+                    continue
+                # suppose not all comparator functions return True
+                # => at least one comparator function returns False
+                # => at least one user-supplied criterion does not match
+                # => the token object does not match the user-supplied criteria
+                if not all(comparator(value) for comparator in tokeninfo_value_filter):
+                    continue
+            if orphaned and not token_obj.is_orphaned():
+                continue
 
-    sys.stderr.write("++ Creating token object list.\n")
-    tok_count = 0
-    tok_found = 0
-    for token_obj in tokenobj_list:
-        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+            tok_found += 1
+            # if everything matched, we append the token object
+            filtered_list.append(token_obj)
+
+        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
+        sys.stderr.write("++ Token object list created.\n")
         sys.stderr.flush()
-        tok_count += 1
-        if last_auth and token_obj.check_last_auth_newer(last_auth):
-            continue
-        if serial and not re.search(serial, token_obj.token.serial):
-            continue
-        if description and not re.search(description,
-                                         token_obj.token.description):
-            continue
-        if tokeninfo_value_filter and tokeninfo_key:
-            value = token_obj.get_tokeninfo(tokeninfo_key)
-            # if the tokeninfo key is not even set, it does not match the filter
-            if value is None:
-                continue
-            # suppose not all comparator functions return True
-            # => at least one comparator function returns False
-            # => at least one user-supplied criterion does not match
-            # => the token object does not match the user-supplied criteria
-            if not all(comparator(value) for comparator in tokeninfo_value_filter):
-                continue
-        if orphaned and not token_obj.is_orphaned():
-            continue
-
-        tok_found += 1
-        # if everything matched, we append the token object
-        tlist.append(token_obj)
-
-    sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
-    sys.stderr.write("++ Token object list created.\n")
-    sys.stderr.flush()
-    return count, prev, next, tlist
+        yield filtered_list
 
 
 def export_token_data(token_list):
@@ -394,20 +392,18 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
             ))
             sys.exit(1)
+    chunksize = int(chunksize)
     filter = build_tokenvalue_filter(tokeninfo_key,
                                      tokeninfo_value,
                                      tokeninfo_value_greater_than,
                                      tokeninfo_value_less_than,
                                      tokeninfo_value_after,
                                      tokeninfo_value_before)
-
-    next = 1
-    chunksize = int(chunksize)
-    while next:
-        sys.stderr.write("+ Reading tokens in chunk from database...\n")
-        _, _, next, tlist = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                                                    filter, orphaned, tokentype, serial,
-                                                    description, chunksize, next)
+    generator = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
+                    filter, orphaned, tokentype, serial,
+                    description, chunksize)
+    sys.stderr.write("+ Reading tokens in chunk from database...\n")
+    for tlist in generator:
         sys.stderr.write("+ Tokens read. Starting action.\n")
         if not action:
             if not csv:

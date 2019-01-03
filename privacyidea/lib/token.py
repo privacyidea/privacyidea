@@ -273,6 +273,46 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     return sql_query
 
 
+def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, user=None,
+                                   serial_wildcard=None, active=None, resolver=None, rollout_state=None,
+                                   revoked=None, locked=None, tokeninfo=None, maxfail=None, psize=1000):
+    """
+    Fetch chunks of ``psize`` tokens that match the filter criteria from the database and generate
+    lists of token objects.
+    See ``get_tokens`` for information on the arguments.
+
+    Note that individual lists may contain less than ``psize`` elements if
+    a token entry has an invalid type.
+
+    :param psize: Maximum size of chunks that are fetched from the database
+    :return: This is a generator that generates non-empty lists of token objects.
+    """
+    main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+                                         assigned=assigned, user=user,
+                                         serial_wildcard=serial_wildcard,
+                                         active=active, resolver=resolver,
+                                         rollout_state=rollout_state,
+                                         revoked=revoked, locked=locked,
+                                         tokeninfo=tokeninfo, maxfail=maxfail).order_by(Token.id)
+    # Fetch the first ``psize`` tokens
+    sql_query = main_sql_query.limit(psize)
+    while True:
+        entries = sql_query.all()
+        if entries:
+            token_objects = []
+            for token in entries:
+                token_obj = create_tokenclass_object(token)
+                if isinstance(token_obj, TokenClass):
+                    token_objects.append(token_obj)
+            yield token_objects
+            if len(entries) < psize:
+                break
+            # Fetch the next ``psize`` tokens, starting with the ID *after* the ID of the last returned token.
+            # ``token`` is defined because we have ensured that ``entries`` has at least one entry.
+            sql_query = main_sql_query.filter(Token.id > token.id).limit(psize)
+        else:
+            break
+
 @log_with(log)
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
