@@ -2218,7 +2218,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
-                else:
+                else:  # pragma: no cover
+                    # usually check_challenge response would return "False" in case of inactive tokens
                     reply_dict["message"] = "Challenge matches, but token is inactive."
                     log.info("Received a valid response to a "
                              "challenge for inactive token {0!s}".format(tokenobject.token.serial))
