@@ -4,16 +4,15 @@ This file contains the tests for the job queue modules.
 In particular, this tests
 lib/queue/*.py
 """
-from flask import current_app
 from huey import RedisHuey
-from mock import MagicMock, mock
+import mock
 from privacyidea.lib.queue.huey_queue import HueyPromise
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, NullQueue, wrap_job, HueyQueue
 from privacyidea.lib.queue.base import QueueError
 from privacyidea.lib.queue.promise import ImmediatePromise
-from .base import MyTestCase
+from .base import OverrideConfigTestCase
 
 
 class TestSender(object):
@@ -34,22 +33,6 @@ def my_add(a, b):
 def my_send_mail(message):
     SENDER.send_mail(message)
     return 1337
-
-
-class OverrideConfigTestCase(MyTestCase):
-    """
-    helper class that allows to modify the app config processed by ``create_app``.
-    This can be useful if config values need to be adjusted *for app creation*.
-    For that, just override the inner ``Config`` class.
-    """
-    class Config(TestingConfig):
-        pass
-
-    @classmethod
-    def setUpClass(cls):
-        """ override privacyidea.config.config["testing"] with the inner config class """
-        with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
-            MyTestCase.setUpClass()
 
 
 class NullQueueTestCase(OverrideConfigTestCase):
