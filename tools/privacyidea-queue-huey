@@ -46,13 +46,32 @@ import sys
 import copy
 import logging
 from flask import _app_ctx_stack
-from huey.consumer_options import ConsumerConfig
+from huey.consumer_options import ConsumerConfig, option
 from huey.consumer_options import OptionParserHandler
 
 from privacyidea.app import create_app, PI_LOGGING_CONFIG
 from privacyidea.lib.queue import get_job_queue, HueyQueue
 
 DEFAULT_LOGFILE = "privacyidea-queue.log"
+
+
+class CustomOptionParserHandler(OptionParserHandler):
+    def get_logging_options(self):
+        """
+        overrides parent method: only supplies ``-l``, not ``-v`` or ``-q``.
+        """
+        return (
+            # -l
+            option('logfile', metavar='FILE'),
+        )
+
+    def get_option_parser(self):
+        """
+        overrides parent method: modifies the usage string to not include ``path.to.huey_instance``.
+        """
+        parser = OptionParserHandler.get_option_parser(self)
+        parser.set_usage('Usage: %prog [options]')
+        return parser
 
 
 def make_push_app_context(app):
@@ -94,7 +113,7 @@ def consumer_main():
         if not isinstance(queue, HueyQueue):
             raise NotImplementedError("{!r} is not a HueyQueue".format(queue))
 
-    parser_handler = OptionParserHandler()
+    parser_handler = CustomOptionParserHandler()
     parser = parser_handler.get_option_parser()
     options, args = parser.parse_args()
 
@@ -109,9 +128,9 @@ def consumer_main():
         # If PI_LOGCONFIG points to an existing file, the user is responsible for configuring
         # huey logging in the logconfig file. In this case, we do nothing, because logging
         # has already been set up by ``create_app``.
-        # But we ensure that the user hasn't passed ``-v``, ``-q`` or ``-l``
-        if config.logfile is not None or config.verbose is not None:
-            sys.stderr.write("-v, -q and -l are unsupported if PI_LOGCONFIG is used. Exiting.\n")
+        # But we ensure that the user hasn't passed ``-l``
+        if config.logfile is not None:
+            sys.stderr.write("-l is unsupported if PI_LOGCONFIG is used. Exiting.\n")
             sys.exit(1)
         print(u"Using logging configuration from {!r}".format(log_config_file))
     else:
@@ -120,11 +139,7 @@ def consumer_main():
             logfile = config.logfile
         else:
             logfile = DEFAULT_LOGFILE
-        # We determine the loglevel as follows: ``-v`` or ``-q`` take priority, then we look at PI_LOGLEVEL.
-        if config.verbose is not None:
-            loglevel = config.loglevel
-        else:
-            loglevel = app.config.get("PI_LOGLEVEL", logging.INFO)
+        loglevel = app.config.get("PI_LOGLEVEL", logging.INFO)
         log_config = make_logging_config(logfile, loglevel)
         logging.config.dictConfig(log_config)
         print(u"Logging to {!r}".format(logfile))
