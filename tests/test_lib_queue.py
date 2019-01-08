@@ -78,6 +78,15 @@ class NullQueueTestCase(OverrideConfigTestCase):
             self.assertTrue(result)
 
 
+class InvalidQueueTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        PI_JOB_QUEUE_CLASS = "unknown"
+
+    def test_01_app_job_queue(self):
+        queue = get_job_queue()
+        self.assertIsInstance(queue, NullQueue)
+
+
 class HueyQueueTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
         PI_JOB_QUEUE_CLASS = "huey"

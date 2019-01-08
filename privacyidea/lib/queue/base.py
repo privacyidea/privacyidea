@@ -26,8 +26,8 @@ class BaseQueue(object):
     def __init__(self, options):
         self.options = options
 
-    def add_job(self, name, func, fire_and_forget=False):
+    def add_job(self, name, func, fire_and_forget=False):  # pragma: no cover
         raise NotImplementedError()
 
-    def enqueue(self, name, args, kwargs):
+    def enqueue(self, name, args, kwargs):  # pragma: no cover
         raise NotImplementedError()

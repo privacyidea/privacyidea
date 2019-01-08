@@ -23,7 +23,7 @@ class Promise(object):
         pass
 
     def get(self):
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
 
 class ImmediatePromise(Promise):

@@ -28,7 +28,7 @@ QUEUE_CLASSES = {
 try:
     from privacyidea.lib.queue.huey_queue import HueyQueue
     QUEUE_CLASSES["huey"] = HueyQueue
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     pass
 
 #: A singleton is fine here, because it is only used at
