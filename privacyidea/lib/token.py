@@ -1998,6 +1998,57 @@ def check_user_pass(user, passw, options=None):
     return res, reply_dict
 
 
+def create_challenges_from_tokens(token_list, reply_dict, options=None):
+    """
+    Get a list of active tokens and create challenges for these tokens.
+    The reply_dict is modified accordingly. The transaction_id and
+    the messages are added to the reply_dict.
+
+    :param token_list: The list of the token objects, that can do challenge response
+    :param reply_dict: The dictionary that is passed to the API response
+    :param options: Additional options. Passed from the upper layer
+    :return: None
+    """
+    options = options or {}
+    reply_dict["multi_challenge"] = []
+    transaction_id = None
+    message_list = []
+    for token_obj in token_list:
+        # Check if the max auth is succeeded
+        if token_obj.check_all(message_list):
+            r_chal, message, transaction_id, attributes = \
+                token_obj.create_challenge(
+                    transactionid=transaction_id, options=options)
+            # Add the reply to the response
+            message_list.append(message)
+            if r_chal:
+                challenge_info = {}
+                challenge_info["transaction_id"] = transaction_id
+                challenge_info["attributes"] = attributes
+                challenge_info["serial"] = token_obj.token.serial
+                # If exist, add next pin and next password change
+                next_pin = token_obj.get_tokeninfo(
+                        "next_pin_change")
+                if next_pin:
+                    challenge_info["next_pin_change"] = next_pin
+                    challenge_info["pin_change"] = \
+                        token_obj.is_pin_change()
+                next_passw = token_obj.get_tokeninfo(
+                        "next_password_change")
+                if next_passw:
+                    challenge_info["next_password_change"] = next_passw
+                    challenge_info["password_change"] = \
+                        token_obj.is_pin_change(
+                            password=True)
+                reply_dict.update(challenge_info)
+                reply_dict["multi_challenge"].append(challenge_info)
+    if message_list:
+        reply_dict["message"] = ", ".join(message_list)
+    # TODO: These two lines are deprecated: Add the information for the old administrative triggerchallenge
+    reply_dict["messages"] = message_list
+    reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
+
+
 @log_with(log)
 def check_token_list(tokenobject_list, passw, user=None, options=None):
     """
@@ -2197,7 +2248,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
                     tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
-                else:
+                else:  # pragma: no cover
+                    # usually check_challenge response would return "False" in case of inactive tokens
                     reply_dict["message"] = "Challenge matches, but token is inactive."
                     log.info("Received a valid response to a "
                              "challenge for inactive token {0!s}".format(tokenobject.token.serial))
@@ -2209,40 +2261,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None):
         if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
-            reply_dict["multi_challenge"] = []
-            transaction_id = None
-            message_list = []
-            for token_obj in active_challenge_token:
-                # Check if the max auth is succeeded
-                if token_obj.check_all(message_list):
-                    r_chal, message, transaction_id, attributes = \
-                        token_obj.create_challenge(
-                            transactionid=transaction_id, options=options)
-                    # Add the reply to the response
-                    message_list.append(message)
-                    reply_dict["message"] = ", ".join(message_list)
-                    if r_chal:
-                        challenge_info = {}
-                        challenge_info["transaction_id"] = transaction_id
-                        challenge_info["attributes"] = attributes
-                        challenge_info["serial"] = token_obj.token.serial
-                        # If exist, add next pin and next password change
-                        next_pin = challenge_request_token_list[0].get_tokeninfo(
-                                "next_pin_change")
-                        if next_pin:
-                            challenge_info["next_pin_change"] = next_pin
-                            challenge_info["pin_change"] = \
-                                challenge_request_token_list[0].is_pin_change()
-                        next_passw = challenge_request_token_list[0].get_tokeninfo(
-                                "next_password_change")
-                        if next_passw:
-                            challenge_info["next_password_change"] = next_passw
-                            challenge_info["password_change"] = \
-                                challenge_request_token_list[0].is_pin_change(
-                                    password=True)
-                        for k, v in challenge_info.items():
-                            reply_dict[k] = v
-                        reply_dict["multi_challenge"].append(challenge_info)
+            create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.

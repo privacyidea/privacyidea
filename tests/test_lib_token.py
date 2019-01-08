@@ -787,9 +787,50 @@ class TokenTestCase(MyTestCase):
         # enable the token again
         hotp_tokenobject.enable(True)
 
+        # Set HOTP as challenge response
+        set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+
+        hotp_tokenobject.add_tokeninfo("next_pin_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+        hotp_tokenobject.add_tokeninfo("next_password_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+
+        # Now the HOTP is a valid C/R token
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertTrue("multi_challenge" in reply)
+        transaction_id = reply.get("transaction_id")
+        res, reply = check_token_list(tokenobject_list, "481090", options={"transaction_id": transaction_id})
+        self.assertTrue(res)
+
+        # Create a challenge, but deactivate the token in the meantime:
+        hotp_tokenobject.token.counter = 9
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertTrue("multi_challenge" in reply)
+        transaction_id = reply.get("transaction_id")
+        # deactivate token
+        hotp_tokenobject.enable(False)
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "481090", options={"transaction_id": transaction_id})
+        self.assertFalse(res)
+
+        # Have a challenge response token, but it is disabled.
+        hotp_tokenobject.token.counter = 9
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertFalse("multi_challenge" in reply)
+        self.assertEqual(reply.get("message"), "No active challenge response token found")
+
+        hotp_tokenobject.enable()
+        hotp_tokenobject.save()
+        delete_policy("check_token_list_CR")
+
     def test_35_check_serial_pass(self):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
         hotp_tokenobject.set_pin("hotppin")
+        hotp_tokenobject.token.count = 10
         hotp_tokenobject.save()
 
         r, reply = check_serial_pass("XXXXXXXXX", "password")
