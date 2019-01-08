@@ -273,12 +273,52 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     return sql_query
 
 
+def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, user=None,
+                                   serial_wildcard=None, active=None, resolver=None, rollout_state=None,
+                                   revoked=None, locked=None, tokeninfo=None, maxfail=None, psize=1000):
+    """
+    Fetch chunks of ``psize`` tokens that match the filter criteria from the database and generate
+    lists of token objects.
+    See ``get_tokens`` for information on the arguments.
+
+    Note that individual lists may contain less than ``psize`` elements if
+    a token entry has an invalid type.
+
+    :param psize: Maximum size of chunks that are fetched from the database
+    :return: This is a generator that generates non-empty lists of token objects.
+    """
+    main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+                                         assigned=assigned, user=user,
+                                         serial_wildcard=serial_wildcard,
+                                         active=active, resolver=resolver,
+                                         rollout_state=rollout_state,
+                                         revoked=revoked, locked=locked,
+                                         tokeninfo=tokeninfo, maxfail=maxfail).order_by(Token.id)
+    # Fetch the first ``psize`` tokens
+    sql_query = main_sql_query.limit(psize)
+    while True:
+        entries = sql_query.all()
+        if entries:
+            token_objects = []
+            for token in entries:
+                token_obj = create_tokenclass_object(token)
+                if isinstance(token_obj, TokenClass):
+                    token_objects.append(token_obj)
+            yield token_objects
+            if len(entries) < psize:
+                break
+            # Fetch the next ``psize`` tokens, starting with the ID *after* the ID of the last returned token.
+            # ``token`` is defined because we have ensured that ``entries`` has at least one entry.
+            sql_query = main_sql_query.filter(Token.id > token.id).limit(psize)
+        else:
+            break
+
 @log_with(log)
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None, psize=None, page=1):
+               maxfail=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -324,14 +364,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
-    :param psize: The number of returned tokens can be restricted by using the parameter psize.
-        Pagination then is used.
-    :type psize: int
-    :param page: If pagination is used, this is the page to get
-    :type page: int
-
     :return: A list of tokenclasses (lib.tokenclass).
-        In case of pagination a tuple of count, prev, next, token_list
     :rtype: list
     """
     token_list = []
@@ -353,25 +386,6 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
-    elif psize:
-        # We return a paginated list of token objects.
-        pagination = sql_query.paginate(page, per_page=psize,
-                                        error_out=False)
-        count = pagination.total
-        prev = None
-        if pagination.has_prev:
-            prev = page - 1
-        next = None
-        if pagination.has_next:
-            next = page + 1
-        for token in pagination.items:
-            tokenobject = create_tokenclass_object(token)
-            if isinstance(tokenobject, TokenClass):
-                # A database token, that has a non existing type, will
-                # return None, and not a TokenClass. We do not want to
-                # add None to our list
-                token_list.append(tokenobject)
-        ret = count, prev, next, token_list
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():
