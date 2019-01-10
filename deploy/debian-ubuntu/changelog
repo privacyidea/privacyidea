@@ -1,3 +1,10 @@
+python-privacyidea (2.23.4~dev1-1trusty) trusty; urgency=medium
+
+  Fixes: 
+  * Make triggerchallenge HTTP response consistent
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 10 Jan 2019 15:15:00 +0200
+
 python-privacyidea (2.23.3-1trusty) trusty; urgency=medium
 
   Fixes:
