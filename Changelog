@@ -2,6 +2,7 @@ Version 2.23.4, 2019-01-xx
 
   Fixes:
   * Make triggerchallenge HTTP response consistent
+  * Add tokentype and message to response of triggerchallenges
 
 Version 2.23.3, 2018-10-26
 
