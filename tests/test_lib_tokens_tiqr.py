@@ -8,6 +8,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
+from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
@@ -399,9 +400,7 @@ class TiQRTokenTestCase(MyTestCase):
         pin = "test"
         token = init_token({"type": "tiqr",
                             "pin": pin,
-                            "serial": "TIQR1",
-                            "user": user,
-                            "realm": self.realm1})
+                            "serial": "TIQR1"}, User(user, self.realm1))
         self.assertEqual(token.type, "tiqr")
 
         prefix = TiqrTokenClass.get_class_prefix()
@@ -435,9 +434,7 @@ class TiQRTokenTestCase(MyTestCase):
     def _test_api_endpoint(self, user, expected_netloc):
         pin = "tiqr"
         token = init_token({"type": "tiqr",
-                            "pin": pin,
-                            "user": user,
-                            "realm": self.realm1})
+                            "pin": pin}, User(user, self.realm1))
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
         # 'tiqrenroll://None?action=metadata&session=b81ecdf74118dcf6fa1cd41d3d4b2fec56c9107f&serial=TiQR000163CB

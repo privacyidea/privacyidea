@@ -90,7 +90,7 @@ from .config import (get_from_config, get_prepend_pin)
 from .utils import create_img
 from .user import (User,
                    get_username)
-from ..models import (TokenRealm, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from .crypto import encryptPassword
 from .crypto import decryptPassword
@@ -190,9 +190,9 @@ class TokenClass(object):
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
-        self.token.resolver = resolvername
-        self.token.resolver_type = resolvertype
-        self.token.user_id = uid
+        r = TokenOwner(token_id=self.token.id,
+                       user_id=uid, resolver=resolvername,
+                       resolver_type=resolvertype, realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 
@@ -205,30 +205,25 @@ class TokenClass(object):
         :return: The owner of the token
         :rtype: User object
         """
-        user_object = None
-        realmname = ""
-        if self.token.user_id and self.token.resolver:
-            username = get_username(self.token.user_id, self.token.resolver)
-            rlist = self.token.realm_list
-            # FIXME: What if the token has more than one realm assigned?
-            if len(rlist) == 1:
-                realmname = rlist[0].realm.name
-            if username and realmname:
-                user_object = User(login=username,
-                                   resolver=self.token.resolver,
-                                   realm=realmname)
+        user_object = User()
+        tokenowner = self.token.owners.first()
+        if tokenowner:
+            username = get_username(tokenowner.user_id, tokenowner.resolver)
+            user_object = User(login=username,
+                               resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name)
         return user_object
 
     def is_orphaned(self):
         """
-        Return True is the token is orphaned. 
+        Return True if the token is orphaned.
         
         An orphaned token means, that it has a user assigned, but the user 
         does not exist in the user store (anymore)
         :return: True / False
         """
         orphaned = False
-        if self.token.user_id:
+        if self.token.owners.first():
             try:
                 if not self.user or not self.user.login:
                     # The token is assigned, but the username does not resolve
@@ -252,20 +247,6 @@ class TokenClass(object):
         user_displayname = u"{0!s} {1!s}".format(user_info.get("givenname", "."),
                                       user_info.get("surname", "."))
         return user_identifier, user_displayname
-
-    @check_token_locked
-    def set_user_identifiers(self, uid, resolvername, resolvertype):
-        """
-        (was setUid)
-        Set the user attributes of a token
-        :param uid: The user id in the user source
-        :param resolvername: The name of the resolver
-        :param resolvertype: The type of the resolver
-        :return: None
-        """
-        self.token.resolver = resolvername
-        self.token.resolver_type = resolvertype
-        self.token.user_id = uid
 
     @check_token_locked
     def reset(self):
@@ -661,7 +642,8 @@ class TokenClass(object):
         return self.token.maxfail
 
     def get_user_id(self):
-        return self.token.user_id
+        tokenowner = self.token.owners.first()
+        return "" if not tokenowner else tokenowner.user_id
 
     def set_realms(self, realms, add=False):
         """

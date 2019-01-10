@@ -102,23 +102,16 @@ class EmailTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "email", token.type)
 
-        token.set_user(User(login="cornelius",
-                            realm=self.realm1))
-        self.assertTrue(token.token.resolver_type == "passwdresolver",
-                        token.token.resolver_type)
-        self.assertTrue(token.token.resolver == self.resolvername1,
-                        token.token.resolver)
-        self.assertTrue(token.token.user_id == "1000",
-                        token.token.user_id)
+        token.set_user(User(login="cornelius", realm=self.realm1))
+        self.assertEqual(token.token.owners.first().resolver_type, "passwdresolver")
+        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
         self.assertTrue(user_object.resolver == self.resolvername1,
                         user_object)
-
-        token.set_user_identifiers(2000, self.resolvername1, "passwdresolver")
-        self.assertTrue(int(token.token.user_id) == 2000, token.token.user_id)
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

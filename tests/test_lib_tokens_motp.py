@@ -98,12 +98,9 @@ class MotpTokenTestCase(MyTestCase):
         token.set_user(User(login="cornelius",
                             realm=self.realm1))
         token.save()
-        self.assertTrue(token.token.resolver_type == "passwdresolver",
-                        token.token.resolver_type)
-        self.assertTrue(token.token.resolver == self.resolvername1,
-                        token.token.resolver)
-        self.assertTrue(token.token.user_id == "1000",
-                        token.token.user_id)
+        self.assertEqual(token.token.owners.first().resolver_type, "passwdresolver")
+        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",

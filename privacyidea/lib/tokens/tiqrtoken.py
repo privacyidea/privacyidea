@@ -189,16 +189,14 @@ class TiqrTokenClass(OcraTokenClass):
         # We should only initialize such a token, when the user is
         # immediately given in the init process, since the token on the
         # smartphone needs to contain a userId.
-        user_object = get_user_from_param(param, required)
-        self.set_user(user_object)
+        if not self.user:
+            # The user and realms should have already been set in init_token()
+            raise ParameterError("Missing parameter: {0!r}".format("user"), id=905)
 
         ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
         OCRASuite(ocrasuite)
         self.add_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
-        # We have to set the realms here, since the token DB object does not
-        # have an ID before TokenClass.update.
-        self.set_realms([user_object.realm])
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):

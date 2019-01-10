@@ -337,7 +337,7 @@ class AValidateOfflineTestCase(MyTestCase):
         self.assertTrue(token.token.serial == self.serials[0], token)
         token.set_user(User("cornelius", self.realm1))
         token.set_pin("pin")
-        self.assertTrue(token.token.user_id == "1000", token.token.user_id)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
     def test_01_validate_offline(self):
         pass
@@ -519,14 +519,13 @@ class ValidateAPITestCase(MyTestCase):
         self.assertTrue(token.token.serial == self.serials[0], token)
         token.set_user(User("cornelius", self.realm1))
         token.set_pin("pin")
-        self.assertTrue(token.token.user_id == "1000", token.token.user_id)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
     def test_02_validate_check(self):
         # is the token still assigned?
         tokenbject_list = get_tokens(serial=self.serials[0])
         tokenobject = tokenbject_list[0]
-        self.assertTrue(tokenobject.token.user_id == "1000",
-                        tokenobject.token.user_id)
+        self.assertEqual(tokenobject.token.owners.first().user_id, "1000")
 
         """                  Truncated
            Count    Hexadecimal    Decimal        HOTP

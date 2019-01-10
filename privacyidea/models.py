@@ -148,11 +148,11 @@ class Token(MethodsMixin, db.Model):
                        default=u'')  # encrypt
     so_pin_iv = db.Column(db.Unicode(32),
                           default=u'')  # encrypt
-    resolver = db.Column(db.Unicode(120), default=u'',
-                         index=True)
-    resolver_type = db.Column(db.Unicode(120), default=u'')
-    user_id = db.Column(db.Unicode(320),
-                        default=u'', index=True)
+    #resolver = db.Column(db.Unicode(120), default=u'',
+    #                     index=True)
+    #resolver_type = db.Column(db.Unicode(120), default=u'')
+    #user_id = db.Column(db.Unicode(320),
+    #                    default=u'', index=True)
     pin_seed = db.Column(db.Unicode(32),
                          default=u'')
     otplen = db.Column(db.Integer(),
@@ -185,7 +185,8 @@ class Token(MethodsMixin, db.Model):
     info = db.relationship('TokenInfo',
                            lazy='dynamic',
                            backref='info')
-        
+    owners = db.relationship('TokenOwner', lazy='dynamic', backref='owners')
+
     def __init__(self, serial, tokentype=u"",
                  isactive=True, otplen=6,
                  otpkey=u"",
@@ -204,25 +205,27 @@ class Token(MethodsMixin, db.Model):
         self.otplen = otplen
         self.pin_seed = u""
         self.set_otpkey(otpkey)
-        self.resolver = None
-        self.resolver_type = None
-        self.user_id = None
-            
+
         # also create the user assignment
         if userid and resolver and realm:
-            # get type of resolver
-            res_type = Resolver.query.filter_by(name=resolver).first().rtype
-            self.resolver = resolver
-            self.resolver_type = res_type
-            self.user_id = userid
-            # We can not create the tokenrealm-connection, yet
+            # We can not create the tokenrealm-connection and owner-connection, yet
             # since we need to token_id.
             token_id = self.save()
             realm_id = Realm.query.filter_by(name=realm).first().id
             tr = TokenRealm(realm_id=realm_id, token_id=token_id)
             if tr:
                 db.session.add(tr)
+
+            # get type of resolver
+            res_type = Resolver.query.filter_by(name=resolver).first().rtype
+            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, resolver_type=res_type,
+                            realm_id=realm_id)
+            if to:
+                db.session.add(to)
+
+            if tr or to:
                 db.session.commit()
+
             
     @log_with(log)
     def delete(self):
@@ -482,14 +485,13 @@ class Token(MethodsMixin, db.Model):
         if key is None:
             return self.get_vars(save=save)
 
-        if hasattr(self, key):
-            return getattr(self, key)
-        else:
-            return fallback
-    
+        td = self.get_vars(save=save)
+        return td.get(key, fallback)
+
     @log_with(log)
     def get_vars(self, save=False):
         log.debug('get_vars()')
+        tokenowner = self.owners.first()
 
         ret = {}
         ret['id'] = self.id
@@ -498,9 +500,9 @@ class Token(MethodsMixin, db.Model):
         ret['tokentype'] = self.tokentype
         ret['info'] = self.get_info()
 
-        ret['resolver'] = self.resolver
-        ret['resolver_type'] = self.resolver_type
-        ret['user_id'] = self.user_id
+        ret['resolver'] = u"" if not tokenowner else tokenowner.resolver
+        ret['resolver_type'] = u"" if not tokenowner else tokenowner.resolver_type
+        ret['user_id'] = u"" if not tokenowner else tokenowner.user_id
         ret['otplen'] = self.otplen
 
         ret['maxfail'] = self.maxfail
@@ -1050,9 +1052,69 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                                  .first().id
 
 
+class TokenOwner(MethodsMixin, db.Model):
+    """
+    This tables stores the owner of a token.
+    A token can be assigned to several users.
+    """
+    __tablename__ = 'tokenowner'
+    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True,
+                   nullable=True)
+    token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
+    token = db.relationship('Token', lazy='joined', backref='token_list')
+    resolver = db.Column(db.Unicode(120), default=u'', index=True)
+    resolver_type = db.Column(db.Unicode(120), default=u'')
+    user_id = db.Column(db.Unicode(320), default=u'', index=True)
+    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
+    realm = db.relationship('Realm', lazy='joined', backref='realm_list')
+
+    def __init__(self, token_id=0, serial=None, user_id=None, resolver=None, resolver_type=None, realm_id=0, realmname=None):
+        """
+        Create a new token assignment to a user.
+
+        :param token_id: The database ID of the token
+        :param serial:  The alternate serial number of the token
+        :param resolver: The identifying name of the resolver
+        :param resolver_type: The type of the resolver
+        :param realm_id: The database ID of the realm
+        :param realmname: The alternate name of realm
+        """
+        if realm_id:
+            self.realm_id = realm_id
+        elif realmname:
+            r = Realm.query.filter_by(name=realmname).first()
+            self.realm_id = r.id
+        if token_id:
+            self.token_id = token_id
+        elif serial:
+            r = Token.query.filter_by(serial=serial).first()
+            self.token_id = r.id
+        self.resolver = resolver
+        self.resolver_type = resolver_type
+        self. user_id = user_id
+
+    def save(self, persistent=True):
+        to = TokenOwner.query.filter_by(token_id=self.token_id,
+                                        user_id=self.user_id,
+                                        realm_id=self.realm_id,
+                                        resolver=self.resolver).first()
+        if to is None:
+            # This very assignment does not exist, yet:
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            ret = to.id
+            # There is nothing to update
+
+        if persistent:
+            db.session.commit()
+        return ret
+
+
 class TokenRealm(MethodsMixin, db.Model):
     """
-    This table stored to wich realms a token is assigned. A token is in the
+    This table stores to which realms a token is assigned. A token is in the
     realm of the user it is assigned to. But a token can also be put into
     many additional realms.
     """

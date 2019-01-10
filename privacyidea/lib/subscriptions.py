@@ -82,10 +82,9 @@ def get_users_with_active_tokens():
     :return: Number of users
     :rtype: int
     """
-    from privacyidea.models import Token
-    sql_query = Token.query.with_entities(Token.resolver,
-                                          Token.user_id).filter(Token.active == True,
-                                                                Token.user_id != "").distinct()
+    from privacyidea.models import Token, TokenOwner
+    sql_query = TokenOwner.query.with_entities(TokenOwner.resolver, TokenOwner.user_id)
+    sql_query = sql_query.filter(Token.active == True).distinct()
     return sql_query.count()
 
 
