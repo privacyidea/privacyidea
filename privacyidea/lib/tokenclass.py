@@ -1298,19 +1298,6 @@ class TokenClass(object):
 
         return response_detail
 
-    def get_QRimage_data(self, response_detail):
-        """
-        FIXME: Do we really use this?
-        """
-        url = None
-        hparam = {}
-
-        if response_detail is not None and 'googleurl' in response_detail:
-            url = response_detail.get('googleurl')
-            hparam['alt'] = url
-
-        return url, hparam
-
     # challenge interfaces starts here
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):

@@ -393,11 +393,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue("img" in otpkey, otpkey)
         self.assertTrue("googleurl" in detail, detail)
         # some other stuff.
-        r = token.get_QRimage_data({"googleurl": detail.get("googleurl").get(
-            "value")})
-        self.assertTrue('otpauth://hotp/SE123456?secret=CERDGRCVMZ3YRGIA'
-                        '&counter=1' in r[0], r[0])
-        self.assertRaises(Exception, token.set_init_details, "unvalid value")
+        self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())

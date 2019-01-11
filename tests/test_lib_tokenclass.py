@@ -493,8 +493,6 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue("otpkey" not in token.token.get_info(),
                         token.token.get_info())
 
-        token.get_QRimage_data({"googleurl": "hotp://"})
-        self.assertRaises(Exception, token.set_init_details, "unvalid value")
         token.set_init_details({"detail1": "value1"})
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())
