@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2019-01-14   Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Allow different SMS gateways via "sms.identifier"
 #  2018-10-31   Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Let the client choose to get a HTTP 500 Error code if
 #               SMS fails.
@@ -375,7 +377,8 @@ class SmsTokenClass(HotpTokenClass):
         log.debug("sending SMS to phone number {0!s} ".format(phone))
 
         # First we try to get the new SMS gateway config style
-        sms_gateway_identifier = get_from_config("sms.identifier")
+        # The token specific identifier has priority over the system wide identifier
+        sms_gateway_identifier = self.get_tokeninfo("sms.identifier") or get_from_config("sms.identifier")
 
         if sms_gateway_identifier:
             # New style
