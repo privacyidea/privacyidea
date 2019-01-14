@@ -9,7 +9,6 @@
     <a ui-sref="config.tokens({tokentype:'sms'})">SMS Token Config</a>!
 </div>
 
-
 <div class="form-group">
     <input type="checkbox" ng-model="form.dynamic_phone"
            name="dynamic_phone" id="dynamic_phone">
@@ -29,11 +28,20 @@
         </button>
     </div>
 </div>
+
 <div class="form-group">
     <label for="description" translate>Description</label>
     <input type="text" class="form-control"
             placeholder="{{ 'Some nice words...'|translate }}"
             ng-model="form.description" />
 </div>
+
+<div class="form-group">
+    <label for="identifier" translate>A token specific SMS gateway</label>
+    <input type="text" class="form-control" ng-model="form['sms.identifier']" name="identifier"/>
+    <p class="help" translate>If this token should not use the system wide SMS gateway but an individual SMS gateway,
+        you can select the gateway here.</p>
+</div>
+
 
 
