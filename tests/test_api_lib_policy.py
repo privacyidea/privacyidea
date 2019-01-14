@@ -25,7 +25,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
-                                           tantoken_count)
+                                           tantoken_count, sms_identifiers)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -39,6 +39,7 @@ from privacyidea.lib.token import (init_token, get_tokens, remove_token,
 from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.smstoken import SMSACTION
 
 from flask import Response, Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -1265,6 +1266,52 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         # finally delete policy
         delete_policy("polu2f1")
+
+    def test_01_sms_identifier(self):
+        # every admin is allowed to enroll sms token with gw1 or gw2
+        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSACTION.GATEWAYS))
+        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
+
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SMS1234"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"sms.identifier": "gw1"}
+        g.policy_object = PolicyClass()
+        r = sms_identifiers(req)
+        self.assertTrue(r)
+
+        delete_policy("sms1")
+        delete_policy("sms2")
+        g.policy_object = PolicyClass()
+        # No policy set, the request will fail
+        self.assertRaises(PolicyError, sms_identifiers, req)
+
+        # Users are allowed to choose gw4
+        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
+
+        g.logged_in_user = {"username": "hans",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SMS1234"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"sms.identifier": "gw4"}
+        g.policy_object = PolicyClass()
+        r = sms_identifiers(req)
+        self.assertTrue(r)
+
+        # Now the user tries gw1
+        req.all_data = {"sms.identifier": "gw1"}
+        self.assertRaises(PolicyError, sms_identifiers, req)
+
+        delete_policy("sms1")
 
 
 class PostPolicyDecoratorTestCase(MyTestCase):

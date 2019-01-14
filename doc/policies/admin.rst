@@ -471,3 +471,14 @@ type: bool
 The administrator is allowed to export a complete system documentation
 including resolvers and realm.
 The documentation is created as restructured text.
+
+sms_gateways
+~~~~~~~~~~~~
+
+type: string
+
+Usually an SMS tokens sends the SMS via the SMS gateway that is system wide defined in the token settings.
+This policy takes a blank separated list of configured SMS gateways.
+It allows the administrator to define an individual SMS gateway during token enrollment.
+
+New in version 3.0.

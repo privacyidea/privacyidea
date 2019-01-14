@@ -300,6 +300,53 @@ def check_otp_pin(request=None, action=None):
     return True
 
 
+def sms_identifiers(request=None, action=None):
+    """
+    This is a token specific wrapper for smsm token for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ADMIN or scope=SCOPE.USER
+    action=SMSACTION.GATEWAYS the sms.identifier is only allowed to be set to the listed gateways.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    sms_identifier = request.all_data.get("sms.identifier")
+    if sms_identifier:
+        from privacyidea.lib.tokens.smstoken import SMSACTION
+        role = g.logged_in_user.get("role")
+        if role == ROLE.USER:
+            scope = SCOPE.USER
+            username = g.logged_in_user.get("username")
+            realm = g.logged_in_user.get("realm")
+            adminrealm = None
+        else:
+            scope = SCOPE.ADMIN
+            username = g.logged_in_user.get("username")
+            realm = getParam(request.all_data, "realm")
+            adminrealm = g.logged_in_user.get("realm")
+
+        policy_object = g.policy_object
+        pols = policy_object.get_action_values(
+            action=SMSACTION.GATEWAYS,
+            scope=scope,
+            user=username,
+            realm=realm,
+            adminrealm=adminrealm,
+            client=g.client_ip,
+            unique=False,
+            audit_data=g.audit_object.audit_data)
+        gateway_identifiers = []
+
+        for p in pols:
+            gateway_identifiers.append(p)
+        if sms_identifier not in gateway_identifiers:
+            log.warning("{0!s} not in {1!s}".format(sms_identifier, gateway_identifiers))
+            raise PolicyError("The requested sms.identifier is not allowed to be enrolled.")
+
+    return True
+
+
 def papertoken_count(request=None, action=None):
     """
     This is a token specific wrapper for paper token for the endpoint
