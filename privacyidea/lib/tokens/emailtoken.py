@@ -270,9 +270,14 @@ class EmailTokenClass(HotpTokenClass):
                                                                    "Your OTP")
 
                 # Create the challenge in the database
+                if is_true(get_from_config("email.concurrent_challenges")):
+                    data = self.get_otp()[2]
+                else:
+                    data = None
                 db_challenge = Challenge(self.token.serial,
                                          transaction_id=transactionid,
                                          challenge=options.get("challenge"),
+                                         data=data,
                                          session=options.get("session"),
                                          validitytime=validity)
                 db_challenge.save()
@@ -313,6 +318,10 @@ class EmailTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        if ret < 0 and is_true(get_from_config("email.concurrent_challenges")):
+            if options.get("data") == anOtpVal:
+                # We authenticate from the saved challenge
+                ret = 1
         if ret >= 0 and self._get_auto_email(options):
             message, mimetype = self._get_email_text_or_subject(options)
             subject, _ = self._get_email_text_or_subject(options,
