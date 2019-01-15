@@ -276,7 +276,7 @@ class EmailTokenClass(HotpTokenClass):
                     data = None
                 db_challenge = Challenge(self.token.serial,
                                          transaction_id=transactionid,
-                                         challenge=self.get_tokentype(),
+                                         challenge=options.get("challenge"),
                                          data=data,
                                          session=options.get("session"),
                                          validitytime=validity)
