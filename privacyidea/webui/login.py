@@ -72,7 +72,10 @@ def single_page_application():
     external_links = current_app.config.get("PI_EXTERNAL_LINKS", True)
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
-    browser_lang = request.accept_languages.best_match(["en", "de"])
+    try:
+        browser_lang = request.accept_languages.best_match(["en", "de", "de-DE"]).split("-")[0]
+    except Exception:
+        browser_lang = None
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
