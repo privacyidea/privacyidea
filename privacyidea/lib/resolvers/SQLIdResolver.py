@@ -108,8 +108,7 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no 
         return h64.encode_bytes(result).decode("ascii")[:self.checksum_size]
 
 
-class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHandler):
-    # pragma: no cover
+class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHandler):  # pragma: no cover
     """helper for ldap_salted_sha256/512"""
     setting_kwds = ("salt", "salt_size")
     checksum_chars = uh.PADDED_BASE64_CHARS

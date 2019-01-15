@@ -17,6 +17,7 @@ import mock
 import responses
 import datetime
 import uuid
+import pytest
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
@@ -143,7 +144,7 @@ class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
     """
-    num_users = 12
+    num_users = 13
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -238,37 +239,39 @@ class SQLResolverTestCase(MyTestCase):
         # SHA256 of "dunno"
         # 772cb52221f19104310cd2f549f5131fbfd34e0f4de7590c87b1d73175812607
 
-        self.assertTrue(y.checkPass(3, "dunno"))
+        self.assertTrue(y.checkPass('3', "dunno"))
         '''
         SHA1 base64 encoded of "dunno"
         Lg8DuLoXOwvPkMABDprnaTp0JOA=
         '''
-        self.assertTrue(y.checkPass(2, "dunno"))
+        self.assertTrue(y.checkPass('2', "dunno"))
 
-        self.assertTrue(y.checkPass(1, "dunno"))
+        self.assertTrue(y.checkPass('1', "dunno"))
 
-        self.assertTrue(y.checkPass(4, "dunno"))
+        self.assertTrue(y.checkPass('4', "dunno"))
 
-        self.assertTrue(y.checkPass(5, "dunno"))
+        self.assertTrue(y.checkPass('5', "dunno"))
 
         '''
         >>> PH = PasswordHash()
         >>> PH.hash_password("testpassword")
         '$P$Bz4R6lzp6VWCL0SCeTozqKHNV8DM.Q/'
         '''
-        self.assertTrue(y.checkPass(6, "testpassword"))
+        self.assertTrue(y.checkPass('6', "testpassword"))
 
-        self.assertTrue(y.checkPass(8, "dunno"))
+        self.assertTrue(y.checkPass('8', "dunno"))
 
-        self.assertTrue(y.checkPass(9, "dunno"))
+        self.assertTrue(y.checkPass('9', "dunno"))
 
         # bcrypt hashes
-        self.assertTrue(y.checkPass(10, "test"))
-        self.assertFalse(y.checkPass(10, "testw"))
-        self.assertTrue(y.checkPass(11, "test"))
-        self.assertFalse(y.checkPass(11, "testw"))
-        self.assertTrue(y.checkPass(12, "dunno"))
-        self.assertFalse(y.checkPass(12, "dunno2"))
+        self.assertTrue(y.checkPass('10', "test"))
+        self.assertFalse(y.checkPass('10', "testw"))
+        self.assertTrue(y.checkPass('11', "test"))
+        self.assertFalse(y.checkPass('11', "testw"))
+        self.assertTrue(y.checkPass('12', "dunno"))
+        self.assertFalse(y.checkPass('12', "dunno2"))
+        # unknown password hash type
+        self.assertFalse(y.checkPass('13', "dunno2"))
 
     def test_03_testconnection(self):
         y = SQLResolver()
@@ -284,7 +287,7 @@ class SQLResolverTestCase(MyTestCase):
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
         # check that we actually store SSHA256
@@ -292,7 +295,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
@@ -359,7 +362,7 @@ class SQLResolverTestCase(MyTestCase):
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
         # check that we actually store SSHA256 at first
@@ -446,6 +449,13 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(y.checkPass(uid, "test"))
 
         # TODO: check unknown hash type
+        parameters["Password_Hash_Type"] = "UNKNOWN"
+        y.loadConfig(parameters)
+        with pytest.raises(Exception) as e:
+            self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                                "password": "test9"}))
+        self.assertTrue(e.value.args[0].startswith("Unsupported password hashtype 'UNKNOWN'."),
+                        e.value)
 
         # set hash type to default
         parameters.pop("Password_Hash_Type")
