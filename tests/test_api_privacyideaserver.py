@@ -3,7 +3,11 @@ from .base import MyTestCase
 import json
 import responses
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class PrivacyIDEAServerTestCase(MyTestCase):
     """
     test the api.privacyideaserver endpoints

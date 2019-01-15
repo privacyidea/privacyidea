@@ -3,9 +3,12 @@ from .base import MyTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
-from flask import current_app
+
+import pytest
+xfail = pytest.mark.xfail
 
 
+@xfail('sys.version_info.major > 2')
 class APIMonitoringTestCase(MyTestCase):
 
     def test_01_get_stats(self):

@@ -15,7 +15,11 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.policy import ACTION, SCOPE, set_policy
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class RecoveryTestCase(MyTestCase):
     serial1 = "ser1"
 

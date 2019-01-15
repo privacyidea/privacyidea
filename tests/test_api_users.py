@@ -5,9 +5,13 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from six.moves.urllib.parse import urlencode
 
+import pytest
+xfail = pytest.mark.xfail
+
 PWFILE = "tests/testdata/passwd"
 
 
+@xfail('sys.version_info.major > 2')
 class APIUsersTestCase(MyTestCase):
 
     parameters = {'Driver': 'sqlite',

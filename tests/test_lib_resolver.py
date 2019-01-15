@@ -8,7 +8,6 @@ lib.resolvers.ldapresolver
 
 The lib.resolver.py only depends on the database model.
 """
-PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
@@ -33,6 +32,10 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 
+import pytest
+xfail = pytest.mark.xfail
+
+PWFILE = "tests/testdata/passwords"
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -140,6 +143,7 @@ LDAPDirectory_curly_objectGUID = [{"dn": 'cn=bob,ou=example,o=test',
                        ]
 
 
+@xfail('sys.version_info.major > 2')
 class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
@@ -455,6 +459,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue("failed to retrieve" in result[1], result)
 
 
+@xfail('sys.version_info.major > 2')
 class SCIMResolverTestCase(MyTestCase):
     """
     Test the SCIM Resolver
@@ -659,6 +664,7 @@ class SCIMResolverTestCase(MyTestCase):
                           access_token="")
 
 
+@xfail('sys.version_info.major > 2')
 class LDAPResolverTestCase(MyTestCase):
     """
     Test the LDAP resolver
@@ -1955,6 +1961,7 @@ class LDAPResolverTestCase(MyTestCase):
         r = delete_resolver("testname1")
         self.assertTrue(r)
 
+@xfail('sys.version_info.major > 2')
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):
@@ -1973,6 +1980,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(r[1], "Not implemented")
 
 
+@xfail('sys.version_info.major > 2')
 class ResolverTestCase(MyTestCase):
     """
     Test the Passwdresolver
@@ -2304,6 +2312,7 @@ class ResolverTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
 
+@xfail('sys.version_info.major > 2')
 class PasswordHashTestCase(MyTestCase):
     """
     Test the password hashing in the SQL database

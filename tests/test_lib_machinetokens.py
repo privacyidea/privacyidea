@@ -1,8 +1,6 @@
 """
 This test file tests the lib/machine.py for attaching and detaching tokens
 """
-
-HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machine import (attach_token, detach_token, add_option,
                                      delete_option, list_machine_tokens,
@@ -10,6 +8,10 @@ from privacyidea.lib.machine import (attach_token, detach_token, add_option,
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.machineresolver import save_resolver
 
+import pytest
+xfail = pytest.mark.xfail
+
+HOSTSFILE = "tests/testdata/hosts"
 
 sshkey = "ssh-rsa " \
          "AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFijMsQyCv" \
@@ -27,6 +29,7 @@ sshkey = "ssh-rsa " \
          "NetKnights GmbH"
 
 
+@xfail('sys.version_info.major > 2')
 class MachineTokenTestCase(MyTestCase):
     """
     Test the attaching of tokens to machines

@@ -10,7 +10,11 @@ import responses
 import json
 from privacyidea.lib.config import set_privacyidea_config
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class RemoteTokenTestCase(MyTestCase):
 
     otppin = "topsecret"

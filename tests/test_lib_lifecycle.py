@@ -7,7 +7,11 @@ from mock import mock
 from privacyidea.lib.lifecycle import register_finalizer, call_finalizers
 from .base import MyTestCase
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class LifecycleTestCase(MyTestCase):
     def test_01_register_finalizer(self):
         finalizer1 = mock.MagicMock()

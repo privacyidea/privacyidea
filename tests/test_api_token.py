@@ -15,6 +15,9 @@ from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_co
 from dateutil.tz import tzlocal
 from privacyidea.lib import _
 
+import pytest
+xfail = pytest.mark.xfail
+
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE_GPG = "tests/testdata/import.oath.asc"
@@ -84,6 +87,8 @@ oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
 XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 -----END CERTIFICATE REQUEST-----"""
 
+
+@xfail('sys.version_info.major > 2')
 class APITokenTestCase(MyTestCase):
 
     def _create_temp_token(self, serial):
@@ -1537,6 +1542,7 @@ class APITokenTestCase(MyTestCase):
         remove_token("goog1")
         delete_policy("imgurl")
 
+@xfail('sys.version_info.major > 2')
 class API00TokenPerformance(MyTestCase):
 
     token_count = 21

@@ -11,7 +11,11 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE,
 from privacyidea.lib.token import init_token
 from privacyidea.lib import _
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class ChallengeTestCase(MyTestCase):
     """
     Test the lib.challenge on an interface level

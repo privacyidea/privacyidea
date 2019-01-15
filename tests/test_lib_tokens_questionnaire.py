@@ -10,7 +10,11 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.models import Token
 import json
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class QuestionnaireTokenTestCase(MyTestCase):
     serial1 = "QUST1234"
     pin = "test"

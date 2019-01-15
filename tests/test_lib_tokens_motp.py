@@ -10,8 +10,14 @@ from privacyidea.models import Token
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
+
+import pytest
+xfail = pytest.mark.xfail
+
 PWFILE = "tests/testdata/passwords"
 
+
+@xfail('sys.version_info.major > 2')
 class MotpTokenTestCase(MyTestCase):
 
     otppin = "topsecret"

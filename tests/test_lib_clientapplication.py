@@ -6,7 +6,11 @@ from datetime import datetime
 from privacyidea.lib.clientapplication import (get_clientapplication,
                                                save_clientapplication)
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class ClientApplicationTestCase(MyTestCase):
     """
     Test the ClientApplication functions

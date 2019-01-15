@@ -7,7 +7,11 @@ from privacyidea.models import (Resolver,
                                 db)
 from .base import MyTestCase
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class ResolverModelTestCase(MyTestCase):
     '''
     Test the resolver on the database level
@@ -29,6 +33,7 @@ class ResolverModelTestCase(MyTestCase):
         self.assertTrue(r1.rtype=="passwdresolver", r1.rtype)
 
 
+@xfail('sys.version_info.major > 2')
 class APIResolverTestCase(MyTestCase):
     '''
     Test the resolver on the API level

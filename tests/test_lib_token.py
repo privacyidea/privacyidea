@@ -61,11 +61,15 @@ from privacyidea.lib.error import (TokenAdminError, ParameterError,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from dateutil.tz import tzlocal
 
+import pytest
+xfail = pytest.mark.xfail
+
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKE2 = "31323334353637383930313233343536373839AA"
 
 
+@xfail('sys.version_info.major > 2')
 class TokenTestCase(MyTestCase):
     """
     Test the lib.token on an interface level
@@ -1476,6 +1480,7 @@ class TokenTestCase(MyTestCase):
         self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
 
 
+@xfail('sys.version_info.major > 2')
 class TokenFailCounterTestCase(MyTestCase):
     """
     Test the lib.token on an interface level

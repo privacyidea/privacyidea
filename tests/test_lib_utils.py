@@ -23,7 +23,11 @@ from dateutil.tz import tzlocal, tzoffset
 from privacyidea.lib.tokenclass import DATE_FORMAT
 import hashlib
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class UtilsTestCase(MyTestCase):
 
     def test_01_timelimit(self):

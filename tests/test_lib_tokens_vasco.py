@@ -14,6 +14,10 @@ from privacyidea.lib.tokens.vascotoken import VascoTokenClass
 from privacyidea.models import Token
 from tests.base import MyTestCase
 
+import pytest
+xfail = pytest.mark.xfail
+
+
 def mock_verification(replacement):
     def decorator(f):
         @functools.wraps(f)
@@ -50,6 +54,7 @@ def mock_missing_dll(f):
             return f(*args, **kwargs)
     return wrapper
 
+@xfail('sys.version_info.major > 2')
 class VascoTokenTest(MyTestCase):
     otppin = "topsecret"
     serial1 = "ser1"

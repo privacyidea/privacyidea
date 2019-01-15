@@ -9,7 +9,11 @@ from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
 import six
 
+import pytest
+xfail = pytest.mark.xfail
 
+
+@xfail('sys.version_info.major > 2')
 class SSHTokenTestCase(MyTestCase):
 
     otppin = "topsecret"

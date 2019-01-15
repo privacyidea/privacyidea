@@ -12,6 +12,8 @@ from privacyidea.models import Challenge
 from privacyidea.lib.error import ERROR
 from privacyidea.lib import _
 
+import pytest
+xfail = pytest.mark.xfail
 
 PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
@@ -22,6 +24,7 @@ OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 OTPVALUES2 = ["551536", "703671", "316522", "413789"]
 
 
+@xfail('sys.version_info.major > 2')
 class APIU2fTestCase(MyTestCase):
 
     serial = "U2F001"
