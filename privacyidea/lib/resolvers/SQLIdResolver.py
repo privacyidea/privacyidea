@@ -4,6 +4,8 @@
 #  License:  AGPLv3
 #  contact:  cornelius@privacyidea.org
 #
+#  2019-47-14 Paul Lettich <paul.lettich@netknights.it>
+#             Remove hash calculation and switch to passlib
 #  2016-07-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add sha512 PHP hash as suggested by Rick Romero
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -55,7 +57,7 @@ import passlib.exc as exc
 from passlib.registry import register_crypt_handler
 
 
-class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):
+class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
     """This class implements the PHPass Portable Hash (Drupal version), and follows the
     :ref:`password-hash-api`.
     """
@@ -107,6 +109,7 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):
 
 
 class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHandler):
+    # pragma: no cover
     """helper for ldap_salted_sha256/512"""
     setting_kwds = ("salt", "salt_size")
     checksum_chars = uh.PADDED_BASE64_CHARS

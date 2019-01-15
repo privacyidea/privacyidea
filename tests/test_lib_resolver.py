@@ -466,7 +466,7 @@ class SQLResolverTestCase(MyTestCase):
                           "mobile": "12345"})
         self.assertTrue(y.checkPass(uid, u"foo"))
         self.assertFalse(y.checkPass(uid, u"bar"))
-        # check that we actually store MD5CRYPT now
+        # check that we actually store SSHA265 now since it is the default
         stored_password = y.TABLE.filter_by(username="hans").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
