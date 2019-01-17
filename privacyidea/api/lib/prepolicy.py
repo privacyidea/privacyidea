@@ -302,8 +302,8 @@ def check_otp_pin(request=None, action=None):
 
 def sms_identifiers(request=None, action=None):
     """
-    This is a token specific wrapper for smsm token for the endpoint
-    /token/init
+    This is a token specific wrapper for sms tokens
+    to be used with the endpoint /token/init.
     According to the policy scope=SCOPE.ADMIN or scope=SCOPE.USER
     action=SMSACTION.GATEWAYS the sms.identifier is only allowed to be set to the listed gateways.
 

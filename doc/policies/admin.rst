@@ -477,8 +477,8 @@ sms_gateways
 
 type: string
 
-Usually an SMS tokens sends the SMS via the SMS gateway that is system wide defined in the token settings.
-This policy takes a blank separated list of configured SMS gateways.
+Usually an SMS token sends the SMS via the SMS gateway that is system wide defined in the token settings.
+This policy takes a blank-separated list of configured SMS gateways.
 It allows the administrator to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
