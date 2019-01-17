@@ -32,7 +32,7 @@ import radiusmock
 import binascii
 import hashlib
 from privacyidea.models import AuthCache
-from privacyidea.lib.authcache import delete_from_cache
+from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from datetime import timedelta
 
 
@@ -523,7 +523,6 @@ class LibPolicyTestCase(MyTestCase):
         username = "cornelius"
         realm = "myrealm"
         resolver = "reso001"
-        pw_hash = binascii.hexlify(hashlib.sha256(password).digest())
 
         r = save_resolver({"resolver": "reso001",
                            "type": "passwdresolver",
@@ -545,7 +544,7 @@ class LibPolicyTestCase(MyTestCase):
 
         # This successfully authenticates against the authcache
         # We have an authentication, that is within the policy timeout
-        AuthCache(username, realm, resolver, pw_hash,
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=3),
                   last_auth=datetime.datetime.utcnow() - timedelta(minutes=1)).save()
         r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
@@ -555,8 +554,8 @@ class LibPolicyTestCase(MyTestCase):
 
         # We have an authentication, that is not read from the authcache,
         # since the authcache first_auth is too old.
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=5),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=1)).save()
@@ -567,8 +566,8 @@ class LibPolicyTestCase(MyTestCase):
 
         # We have an authentication, that is not read from authcache, since
         # the last_auth is too old = 10 minutes.
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=1),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=10)).save()
@@ -589,8 +588,8 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = P
         options = {"g": g}
 
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=2),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       hours=1)).save()
