@@ -2353,6 +2353,34 @@ class ValidateAPITestCase(MyTestCase):
         self.assertTrue(delete_realm("tr"))
         self.assertTrue(delete_resolver("myLDAPres"))
 
+    def test_33_auth_cache(self):
+        init_token({"otpkey": self.otpkey},
+                   user=User("cornelius", self.realm1))
+        set_policy(name="authcache", action="{0!s}=4m".format(ACTION.AUTH_CACHE), scope=SCOPE.AUTH)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # Authenticate again with the same OTP
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+        delete_policy("authcache")
+
 
 class AChallengeResponse(MyTestCase):
 
