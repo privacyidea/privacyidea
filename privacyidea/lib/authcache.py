@@ -22,8 +22,7 @@
 
 from ..models import AuthCache, db
 from sqlalchemy import and_
-from hashlib import sha256
-from binascii import hexlify
+from privacyidea.lib.crypto import hash
 import datetime
 import logging
 
@@ -31,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 def _hash_password(password):
-    return hexlify(sha256(password).digest())
+    return hash(password, seed="")
 
 
 def add_to_cache(username, realm, resolver, password):
