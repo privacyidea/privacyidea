@@ -12,9 +12,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
                                    parse_timedelta, to_unicode,
-                                   hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string,
+                                   parse_int, convert_column_to_unicode, censor_connect_string,
                                    truncate_comma_list, check_pin_policy,
                                    get_module_class, decode_base32check)
 from datetime import timedelta, datetime
@@ -368,47 +366,6 @@ class UtilsTestCase(MyTestCase):
         s = u"kölbel"
         su = to_unicode(s)
         self.assertEqual(su, u"kölbel")
-
-    def test_15_hash_passwords(self):
-        p_hash = hash_password("pass0rd", "phpass")
-        PH = PasswordHash()
-        self.assertTrue(PH.check_password("pass0rd", p_hash))
-        self.assertFalse(PH.check_password("passord", p_hash))
-
-        # {SHA}
-        p_hash = hash_password("passw0rd", "sha")
-        self.assertTrue(check_sha(p_hash, "passw0rd"))
-        self.assertFalse(check_sha(p_hash, "password"))
-
-        # OTRS
-        p_hash = hash_password("passw0rd", "otrs")
-        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
-        self.assertFalse(otrs_sha256(p_hash, "password"))
-
-        # {SSHA}
-        p_hash = hash_password("passw0rd", "ssha")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
-
-        # {SSHA256}
-        p_hash = hash_password("passw0rd", "ssha256")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
-
-        # {SSHA512}
-        p_hash = hash_password("passw0rd", "ssha512")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
-        
-        # MD5Crypt
-        p_hash = hash_password("passw0rd", "md5crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-        
-        # SHA512Crypt
-        p_hash = hash_password("passw0rd", "sha512crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
