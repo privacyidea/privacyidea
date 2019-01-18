@@ -173,7 +173,12 @@ class RadiusTokenClass(TokenClass):
             if not TokenClass.check_pin(self, pin):
                 return False
 
-        res = self.check_radius(otpval, options=options, radius_state=state)
+        # challenge is still valid
+        result = options.get('radius_result')
+        if result is None:
+            res = self.check_radius(passw, options=options, radius_state=state)
+        else:
+            res = result
 
         return res == 1
 
@@ -207,7 +212,7 @@ class RadiusTokenClass(TokenClass):
                                  validitytime=validity)
         db_challenge.save()
         self.challenge_janitor()
-        return True, message[:50], db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, attributes
 
     def is_challenge_response(self, passw, user=None, options=None):
         """
@@ -231,6 +236,10 @@ class RadiusTokenClass(TokenClass):
         challenge_response = False
 
         log.debug("***[radius token: is challenge response]")
+
+        # clear the radius_result since this is the first function called in the chain
+        # this value will be utilized to ensure we do not check_radius more than once in the loop
+        options.update({'radius_result': None})
 
         # fetch the transaction_id
         transaction_id = options.get('transaction_id')
@@ -373,7 +382,12 @@ class RadiusTokenClass(TokenClass):
         # pull the radius_state if available
         state = options.get('radius_state')
         log.debug("***current challenge state: {0} ".format(state))
-        otp_counter = self.check_radius(otpval, options=options, radius_state=state)
+
+        result = options.get('radius_result')
+        if result is None:
+            otp_counter = self.check_radius(otpval, options=options, radius_state=state)
+        else:
+            otp_counter = result
 
         if otp_counter == 0:
             res = True
@@ -532,6 +546,7 @@ class RadiusTokenClass(TokenClass):
             log.error("Error contacting radius Server: {0!r}".format((ex)))
             log.info("{0!s}".format(traceback.format_exc()))
 
+        options.update({'radius_result': result})
         options.update({'radius_state': radius_state})
         options.update({'radius_message': radius_message})
         return result
