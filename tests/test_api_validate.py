@@ -4,7 +4,8 @@ import json
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.models import (Token, Challenge)
+from privacyidea.models import (Token, Challenge, AuthCache)
+from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
@@ -2352,6 +2353,69 @@ class ValidateAPITestCase(MyTestCase):
 
         self.assertTrue(delete_realm("tr"))
         self.assertTrue(delete_resolver("myLDAPres"))
+
+    def test_33_auth_cache(self):
+        init_token({"otpkey": self.otpkey},
+                   user=User("cornelius", self.realm1))
+        set_policy(name="authcache", action="{0!s}=4m".format(ACTION.AUTH_CACHE), scope=SCOPE.AUTH)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # Check that there is an entry with this OTP value in the auth_cache
+        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[1])).first()
+        self.assertTrue(bool(r))
+
+        # Authenticate again with the same OTP
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(detail.get("message"), u"Authenticated by AuthCache.")
+
+        delete_policy("authcache")
+
+        # If there is no authcache, the same value must not be used again!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[2]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # Check that there is no entry with this OTP value in the auth_cache
+        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[2])).first()
+        self.assertFalse(bool(r))
+
+        # Authenticate again with the same OTP value will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[2]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
 
 
 class AChallengeResponse(MyTestCase):
