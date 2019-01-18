@@ -158,6 +158,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     """
     options = options or {}
     g = options.get("g")
+    auth_cache_dict = None
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
@@ -194,7 +195,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
 
     # If nothing else returned, call the wrapped function
     res, reply_dict = wrapped_function(user_object, passw, options)
-    if res:
+    if auth_cache_dict and res:
         # If authentication is successful, we store the password in auth_cache
         add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw)
     return res, reply_dict
