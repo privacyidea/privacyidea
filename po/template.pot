@@ -141,7 +141,7 @@ msgid ""
 "                </p>"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+#: privacyidea/static/components/token/views/token.enroll.sms.html:40
 msgid "A token specific SMS gateway"
 msgstr ""
 
@@ -776,7 +776,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:135
 #: privacyidea/static/components/token/views/token.enroll.email.html:24
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.sms.html:39
+#: privacyidea/static/components/token/views/token.enroll.sms.html:33
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
 #: privacyidea/static/components/token/views/token.enroll.totp.html:76
 #: privacyidea/static/components/user/views/user.password.html:21
@@ -1297,7 +1297,7 @@ msgid ""
 "    same."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:15
+#: privacyidea/static/components/token/views/token.enroll.sms.html:46
 msgid ""
 "If this token should not use the system wide SMS gateway but an individual SMS gateway,\n"
 "        you can select the gateway here."
@@ -1830,7 +1830,7 @@ msgstr ""
 msgid "Phone"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:25
+#: privacyidea/static/components/token/views/token.enroll.sms.html:18
 msgid "Phone number"
 msgstr ""
 
@@ -2025,7 +2025,7 @@ msgstr ""
 msgid "Read email address dynamically from user source on each request."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:22
+#: privacyidea/static/components/token/views/token.enroll.sms.html:15
 msgid "Read number dynamically from user source on each request."
 msgstr ""
 
@@ -2464,7 +2464,7 @@ msgid "Size Limit"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:70
-#: privacyidea/static/components/token/views/token.enroll.sms.html:41
+#: privacyidea/static/components/token/views/token.enroll.sms.html:35
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
 #: privacyidea/static/components/token/views/token.enroll.totp.html:78
 msgid "Some nice words..."
@@ -2962,7 +2962,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:131
+#: privacyidea/static/app.js:122
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 

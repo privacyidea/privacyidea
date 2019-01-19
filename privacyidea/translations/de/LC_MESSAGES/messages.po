@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-12-10 00:24+0100\n"
-"PO-Revision-Date: 2018-12-10 00:27+0100\n"
+"POT-Creation-Date: 2019-01-19 23:22+0100\n"
+"PO-Revision-Date: 2019-01-19 23:23+0100\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -17,13 +17,13 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.6.0\n"
-"X-Generator: Poedit 1.8.7.1\n"
+"X-Generator: Poedit 2.0.6\n"
 
-#: api/auth.py:198
+#: api/auth.py:184
 msgid "Authentication failure. Missing Username"
 msgstr "Authentifizierungsfehler. Fehlender Benutzername"
 
-#: api/auth.py:260
+#: api/auth.py:274
 msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Logindaten."
 
@@ -51,7 +51,7 @@ msgstr "Authentifizierungsfehler. Der Token ist abgelaufen: {0!s}"
 msgid "Authentication failure. You do not have the necessary role ({0!s}) to access this resource!"
 msgstr "Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({0!s}), um auf die Resource zuzugreifen!"
 
-#: lib/decorators.py:42 lib/token.py:2026
+#: lib/decorators.py:42 lib/token.py:2105
 msgid "This action is not possible, since the token is locked"
 msgstr "Diese Aktion kann nicht durchgeführt werden, weil der Token gesperrt ist."
 
@@ -591,27 +591,27 @@ msgstr "Wenn dies angehakt ist, wird das Seed während des Rollouts als Text ang
 msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
-#: lib/token.py:2285
+#: lib/token.py:2308
 msgid "Admin is allowed to initalize {0!s} tokens."
 msgstr "Der Administrator kann %s Token ausrollen."
 
-#: lib/token.py:2293
+#: lib/token.py:2316
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "Der Benutzer darf einen %s Token ausrollen."
 
-#: lib/token.py:2324
+#: lib/token.py:2347
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2331
+#: lib/token.py:2354
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2337
+#: lib/token.py:2360
 msgid "Specifiy the required PIN contents of the {0!s} token. (c)haracters, (n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
-#: lib/tokenclass.py:1481
+#: lib/tokenclass.py:1469
 msgid "please enter otp: "
 msgstr "Bitte geben Sie einen OTP-Wert ein: "
 
@@ -664,34 +664,34 @@ msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr "Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens besitzt."
 
 #: lib/eventhandler/base.py:189
-msgid "Action is triggered, if the counter of the token equals this setting."
-msgstr "Die Aktion wird ausgeführt, wenn der Token-Counter diesem Wert entspricht."
+msgid "Action is triggered, if the counter of the token equals this setting. Can also be '>100' or '<99' for no exact match."
+msgstr "Die Aktion wird ausgelöst, wenn der OTP Zähler dem angegebenem Wert entspricht. Die Bedingung kann auch größer '>100' oder kleiner '<99' als ein definierter Grenzwert sein."
 
-#: lib/eventhandler/base.py:194
+#: lib/eventhandler/base.py:195
 msgid "Action is triggered, if the last authentication of the token is older than 7h, 10d or 1y."
 msgstr "Die Aktion wird ausgeführt, wenn die letzte Authentisierung mit diesem Token länger als 7 Stunden, 10 Tage oder 1 Jahr (7h, 10d, 1y) zurückliegt."
 
-#: lib/eventhandler/base.py:199
+#: lib/eventhandler/base.py:200
 msgid "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly 100."
 msgstr "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld 'count_auth' in Tokeninfo ist dann größer als 100, kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:205
+#: lib/eventhandler/base.py:206
 msgid "This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or exactly 100."
 msgstr "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld 'count_auth_success' in Tokeninfo ist dann größer als 100, kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:212
+#: lib/eventhandler/base.py:213
 msgid "This can be '>100', '<99', or '=100', to trigger the action, if the difference between the tokeninfo field 'count_auth' and 'count_auth_success is bigger than 100, less than 99 or exactly 100."
 msgstr "Dies kann '>100', '<99' oder '=100' sein, um eine Aktion auszulösen. Das Feld 'count_auth' und 'count_auth_success' in Tokeninfo ist dann größer als 100, kleiner als 99 oder exakt 100."
 
-#: lib/eventhandler/base.py:219
+#: lib/eventhandler/base.py:220
 msgid "This condition can check any arbitrary tokeninfo field. You need to enter something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' or '<fieldname> < <fieldvalue>'"
 msgstr "Diese Bedingung kann jedes beliebige Tokeninfo Feld überprüfen. Hier können Sie Ausdrücke wie '<Feldname> == <Feldwert>', '<Feldname> > <Feldwert>' oder '<Feldname> < <Feldwert>' eingeben."
 
-#: lib/eventhandler/base.py:226
+#: lib/eventhandler/base.py:227
 msgid "Here you can enter a regular expression. The condition only applies if the regular expression matches the detail->error->message in the response."
 msgstr "Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greift nur, wenn der reguläre Ausdruck auf das Feld detail->error->message im HTTP Response passt."
 
-#: lib/eventhandler/base.py:232
+#: lib/eventhandler/base.py:233
 msgid "Here you can enter a regular expression. The condition only applies if the regular expression matches the detail->message in the response."
 msgstr "Hier können Sie einen regulären Ausdruck eingeben. Die Bedingung greift nur, wenn der reguläre Ausdruck auf das Feld detail->message im HTTP Response passt."
 
@@ -862,11 +862,11 @@ msgstr "Der Text der SMS."
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:952
+#: lib/resolvers/LDAPIdResolver.py:959
 msgid "Your LDAP config found {0!s} user objects, but only {1!s} with the specified uidtype"
 msgstr "Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte gefunden, aber lediglich {1!s} mit dem angegebenen UID Typ."
 
-#: lib/resolvers/LDAPIdResolver.py:955
+#: lib/resolvers/LDAPIdResolver.py:962
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} Benutzerobjekte gefunden."
 
@@ -1115,27 +1115,35 @@ msgstr "Registrierung: Ein Token, der einen Registrierungs-Code erzeugt, den der
 msgid "Remote Token: Forward authentication request to another server."
 msgstr "Remote Token: Die Authentifizierungsanfrage an einen anderen privacyIDEA Server weiterleiten."
 
-#: lib/tokens/smstoken.py:192
+#: lib/tokens/smstoken.py:196
 msgid "SMS Token"
 msgstr "SMS Token"
 
-#: lib/tokens/smstoken.py:194
+#: lib/tokens/smstoken.py:198
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS: Ein Einmalpasswort per SMS an das Mobiltelefon des Benutzers senden."
 
-#: lib/tokens/smstoken.py:203
+#: lib/tokens/smstoken.py:207
 msgid "The text that will be send via SMS for an SMS token. Use <otp> and <serial> as parameters."
 msgstr "Der Text der SMS. <otp> und <serial> können als Tags verwendet werden."
 
-#: lib/tokens/smstoken.py:208
+#: lib/tokens/smstoken.py:212
 msgid "If set, a new SMS OTP will be sent after successful authentication with one SMS OTP."
 msgstr "Ein neues Einmalpasswort wird direkt gesendet, nachdem sich der Benutzer erfolgreich mit dem bisherigen Einmalpasswort aus der letzten SMS authentisiert hat."
 
-#: lib/tokens/smstoken.py:213
+#: lib/tokens/smstoken.py:217
 msgid "Use an alternate challenge text for telling the user to enter the code from the SMS."
 msgstr "Ein alternativer Challenge-Text, um den Benutzer aufzufordern, der Code aus der SMS einzugeben."
 
-#: lib/tokens/smstoken.py:287
+#: lib/tokens/smstoken.py:225
+msgid "Choose the gateways the administrator is allowed to set."
+msgstr ""
+
+#: lib/tokens/smstoken.py:233
+msgid "Choose the gateways the user is allowed to set."
+msgstr ""
+
+#: lib/tokens/smstoken.py:307
 msgid "Enter the OTP from the SMS:"
 msgstr "Bitte geben Sie das Einmalpasswort aus der SMS ein:"
 
@@ -1271,3 +1279,8 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 #~ "Der Inhalt des temporären Passworts. "
 #~ "'C': Große Buchstaben, 'c': kleine "
 #~ "Buchstaben, 'n': Ziffern, 's': Sonderzeichen."
+
+#~ msgid "Action is triggered, if the counter of the token equals this setting."
+#~ msgstr ""
+#~ "Die Aktion wird ausgeführt, wenn der "
+#~ "Token-Counter diesem Wert entspricht."

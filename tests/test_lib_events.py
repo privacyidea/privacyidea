@@ -2487,6 +2487,28 @@ class UserNotificationTestCase(MyTestCase):
         # The counter of the token is 0
         self.assertEqual(r, True)
 
+        # match if counter is >100
+        tok.token.count = 101
+        tok.token.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: ">100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
         remove_token(serial)
 
     def test_18_check_conditions_last_auth(self):
