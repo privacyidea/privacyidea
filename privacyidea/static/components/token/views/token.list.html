@@ -15,7 +15,7 @@
     <table class="table table-bordered table-striped">
         <thead>
         <tr>
-            <th>
+            <th class="pifilter">
                 <button class="btn btn-default unsorted"
                         pi-sort-by="serial"
                         translate>serial
@@ -25,7 +25,7 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th>
+            <th class="pifilter">
                 <button class="btn btn-default unsorted"
                         pi-sort-by="tokentype"
                         translate>type
@@ -42,7 +42,7 @@
                         translate>active
                 </button>
             </th>
-            <th>
+            <th class="pifilter">
                 <button pi-sort-by="description"
                         class="btn btn-default
                        unsorted"
@@ -62,7 +62,7 @@
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
-            <th ng-show="loggedInUser.role == 'admin' &&
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
                 <button pi-sort-by="resolver"
                         class="btn btn-default
@@ -74,7 +74,7 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th ng-show="loggedInUser.role == 'admin' &&
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
                 <button pi-sort-by="user_id"
                         class="btn btn-default
