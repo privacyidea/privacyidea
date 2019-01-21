@@ -244,7 +244,7 @@ msgstr ""
 "überprüfen Sie, ob Sie Ihre Subskription erneuern müssen.\n"
 "</p>"
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:13
+#: privacyidea/static/components/token/views/token.enroll.sms.html:40
 msgid "A token specific SMS gateway"
 msgstr "Ein Token-spezifisches SMS-Gateway"
 
@@ -901,7 +901,7 @@ msgstr "Benutzer löschen"
 #: privacyidea/static/components/token/views/token.details.html:135
 #: privacyidea/static/components/token/views/token.enroll.email.html:24
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.sms.html:39
+#: privacyidea/static/components/token/views/token.enroll.sms.html:33
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:17
 #: privacyidea/static/components/token/views/token.enroll.totp.html:76
 #: privacyidea/static/components/user/views/user.password.html:21
@@ -1458,7 +1458,7 @@ msgstr ""
 "Token ausrollen und dieses Passwort an den Benutzer geben. Dieses Passwort "
 "muss vom Benutzer mit der OTP PIN des alten Tokens kombiniert werden."
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:15
+#: privacyidea/static/components/token/views/token.enroll.sms.html:46
 msgid ""
 "If this token should not use the system wide SMS gateway but an individual "
 "SMS gateway,\n"
@@ -2018,7 +2018,7 @@ msgstr "Regelmäßige Aufgaben"
 msgid "Phone"
 msgstr "Telefon"
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:25
+#: privacyidea/static/components/token/views/token.enroll.sms.html:18
 msgid "Phone number"
 msgstr "Telefonnummer"
 
@@ -2226,7 +2226,7 @@ msgstr ""
 "Die Email-Adresse wird bei jeder Authentifizierung dynamisch aus der "
 "Benutzerquelle gelesen."
 
-#: privacyidea/static/components/token/views/token.enroll.sms.html:22
+#: privacyidea/static/components/token/views/token.enroll.sms.html:15
 msgid "Read number dynamically from user source on each request."
 msgstr ""
 "Die Mobilnummer wird bei jeder Authentifizierung dynamisch aus der "
@@ -2686,7 +2686,7 @@ msgid "Size Limit"
 msgstr "Größenbeschränkung"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:70
-#: privacyidea/static/components/token/views/token.enroll.sms.html:41
+#: privacyidea/static/components/token/views/token.enroll.sms.html:35
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:19
 #: privacyidea/static/components/token/views/token.enroll.totp.html:78
 msgid "Some nice words..."
@@ -3340,7 +3340,7 @@ msgstr ""
 "bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
-#: privacyidea/static/app.js:131
+#: privacyidea/static/app.js:122
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Das privacyIDEA-System scheint offline zu sein. Die API ist nicht erreichbar."
