@@ -79,7 +79,7 @@ two steps:
    Host: example.com
    Accept: application/json
 
-   type=utf
+   type=u2f
 
 This step returns a serial number.
 
@@ -92,7 +92,7 @@ This step returns a serial number.
    Host: example.com
    Accept: application/json
 
-   type=utf
+   type=u2f
    serial=U2F1234578
    clientdata=<clientdata>
    regdata=<regdata>
