@@ -280,3 +280,14 @@ Buttons for actions that a user is not allowed to perform, are hidden instead of
 being disabled.
 
 (Since privacyIDEA 2.24)
+
+login_text
+~~~~~~~~~~
+
+type: str
+
+This way the text "Please sign in" on the login dialog can be changed. Since the policy can
+also depend on the IP address of the client, you can also choose different login texts depending
+on from where a user tries to log in.
+
+(Since privacyIDEA 3.0)

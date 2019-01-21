@@ -39,13 +39,18 @@
             </translate>
         </div>
 
+
+
         <div class="container">
-            <form name="formSignin" class="form-signin" role="form" novalidate>
-                <div class="text-center">
+            <div class="text-center">
                     <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                          width="90px">
                 </div>
-                <h2 class="form-signin-heading" translate>Please sign in</h2>
+            <div class="text-center">
+                <h2 ng-hide="piLoginText" class="form-signin-heading" translate>Please sign in</h2>
+                <h2 ng-show="piLoginText" class="form-signin-heading">{{ piLoginText }}</h2>
+            </div>
+            <form name="formSignin" class="form-signin" role="form" novalidate>
                 <label for="username" class="sr-only" translate>Username</label>
                 <input name="username" id="username"
                        class="form-control round-top"

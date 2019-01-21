@@ -316,6 +316,7 @@ class ACTION(object):
     CUSTOM_BASELINE = "custom_baseline"
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
+    LOGIN_TEXT = "login_text"
 
 
 class GROUP(object):
@@ -1701,6 +1702,10 @@ def get_static_policy_definitions(scope=None):
                     'to the Web UI. Defaults to "userstore"'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
+            },
+            ACTION.LOGIN_TEXT: {
+                'type': 'str',
+                'desc': _('An alternative text to display on the WebUI login dialog instead of "Please sign in".')
             },
             ACTION.SEARCH_ON_ENTER: {
                 'type': 'bool',

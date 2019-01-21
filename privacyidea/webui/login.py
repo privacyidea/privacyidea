@@ -134,6 +134,17 @@ def single_page_application():
     else:
         customization_baseline_file = "templates/baseline.html"
 
+    login_text = policy_object.get_action_values(
+        allow_white_space_in_action=True,
+        action=ACTION.LOGIN_TEXT,
+        scope=SCOPE.WEBUI,
+        client=client_ip, unique=True
+    )
+    if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
+        login_text = list(login_text)[0]
+    else:
+        login_text = ""
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -146,5 +157,6 @@ def single_page_application():
                            customization_baseline_file=customization_baseline_file,
                            realms=realms,
                            external_links=external_links,
+                           login_text=login_text,
                            logo=logo)
 
