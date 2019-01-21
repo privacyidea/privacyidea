@@ -2,7 +2,6 @@ language: python
 sudo: false
 python:
   - 2.7
-  - 3.4
   - 3.5
   - 3.6
 # command to install dependencies
@@ -13,20 +12,21 @@ install:
   - "pip install codecov"
   - "pip install -r requirements.txt"
   - "pip install smpplib"
+
 # split the test run according to
 # http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/
 env:
   global:
-    - PYTHONHASHSEED=random
+    - PYTHONHASHSEED=random  # test for ordered dict use
   matrix:
     - TESTS=tests/
+
 matrix:
     allow_failures:
-       - python: 3.4
        - python: 3.5
-       - python: 3.6
+
 # command to run tests
-script: "nosetests -v --with-coverage --cover-package=privacyidea $TESTS"
+script: "python -b -m pytest -v --cov=privacyidea $TESTS"
 
 after_success: 
     - codecov

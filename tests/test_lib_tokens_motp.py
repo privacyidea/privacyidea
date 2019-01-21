@@ -129,7 +129,7 @@ class MotpTokenTestCase(MyTestCase):
         motpurl = detail.get("motpurl").get("value")
         self.assertTrue(motpurl == 'motp://privacyidea:mylabel?'
                         'secret=11223344556677889900', motpurl)
-        self.assertRaises(Exception, token.set_init_details, "unvalid value")
+        self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())

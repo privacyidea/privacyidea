@@ -72,4 +72,9 @@ authentication will fail.
 
 Whether the mail server should use TLS.
 
+**Concurrent Challenges**
 
+The config entry ``email.concurrent_challenges`` will save the sent OTP
+value in the challenge database. This way several challenges can be open at the same
+time. The user can answer the challenges in an arbitrary order.
+Set this to a true value.

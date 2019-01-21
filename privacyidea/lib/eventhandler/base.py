@@ -187,7 +187,8 @@ class BaseEventHandler(object):
             CONDITION.OTP_COUNTER: {
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
-                          "equals this setting.")
+                          "equals this setting. Can also be "
+                          "'>100' or '<99' for no exact match.")
             },
             CONDITION.LAST_AUTH: {
                 "type": "str",
@@ -434,8 +435,8 @@ class BaseEventHandler(object):
                     return False
 
             if CONDITION.OTP_COUNTER in conditions:
-                if token_obj.token.count != \
-                      int(conditions.get(CONDITION.OTP_COUNTER)):
+                cond = conditions.get(CONDITION.OTP_COUNTER)
+                if not compare_condition(cond, token_obj.token.count):
                     return False
 
             if CONDITION.LAST_AUTH in conditions:

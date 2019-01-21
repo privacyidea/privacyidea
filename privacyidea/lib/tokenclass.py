@@ -1298,19 +1298,6 @@ class TokenClass(object):
 
         return response_detail
 
-    def get_QRimage_data(self, response_detail):
-        """
-        FIXME: Do we really use this?
-        """
-        url = None
-        hparam = {}
-
-        if response_detail is not None and 'googleurl' in response_detail:
-            url = response_detail.get('googleurl')
-            hparam['alt'] = url
-
-        return url, hparam
-
     # challenge interfaces starts here
     @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
@@ -1432,6 +1419,7 @@ class TokenClass(object):
                     # challenge is still valid
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challengeobject.challenge
+                    options["data"] = challengeobject.data
                     # Now see if the OTP matches:
                     otp_counter = self.check_otp(passw, options=options)
                     if otp_counter >= 0:

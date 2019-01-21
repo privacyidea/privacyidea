@@ -12,11 +12,9 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
                                    parse_timedelta, to_unicode,
-                                   hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string,
+                                   parse_int, convert_column_to_unicode, censor_connect_string,
                                    truncate_comma_list, check_pin_policy,
-                                   get_module_class)
+                                   get_module_class, decode_base32check)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -369,47 +367,6 @@ class UtilsTestCase(MyTestCase):
         su = to_unicode(s)
         self.assertEqual(su, u"kölbel")
 
-    def test_15_hash_passwords(self):
-        p_hash = hash_password("pass0rd", "phpass")
-        PH = PasswordHash()
-        self.assertTrue(PH.check_password("pass0rd", p_hash))
-        self.assertFalse(PH.check_password("passord", p_hash))
-
-        # {SHA}
-        p_hash = hash_password("passw0rd", "sha")
-        self.assertTrue(check_sha(p_hash, "passw0rd"))
-        self.assertFalse(check_sha(p_hash, "password"))
-
-        # OTRS
-        p_hash = hash_password("passw0rd", "otrs")
-        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
-        self.assertFalse(otrs_sha256(p_hash, "password"))
-
-        # {SSHA}
-        p_hash = hash_password("passw0rd", "ssha")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
-
-        # {SSHA256}
-        p_hash = hash_password("passw0rd", "ssha256")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
-
-        # {SSHA512}
-        p_hash = hash_password("passw0rd", "ssha512")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
-        
-        # MD5Crypt
-        p_hash = hash_password("passw0rd", "md5crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-        
-        # SHA512Crypt
-        p_hash = hash_password("passw0rd", "sha512crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
         self.assertEqual(r, 12)
@@ -531,3 +488,21 @@ class UtilsTestCase(MyTestCase):
         # Fails if the package does not exist
         with self.assertRaises(ImportError):
             get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
+
+    def test_22_decodebase32check(self):
+        real_client_componet = "TIXQW4ydvn2aos4cj6ta"
+        real_payload = "03ab74074b824fa6"
+
+        payload1 = decode_base32check(real_client_componet)
+        self.assertEqual(payload1, real_payload)
+
+        # change the client component in the last character!
+        client_component = "TIXQW4ydvn2aos4cj6tb"
+        payload2 = decode_base32check(client_component)
+        # Although the last character of the client component was changed,
+        # the payload is still the same.
+        self.assertEqual(payload2, real_payload)
+
+        # change the client component in between
+        client_component = "TIXQW4ydvn2aos4cj6ba"
+        self.assertRaises(Exception, decode_base32check, client_component)

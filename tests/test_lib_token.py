@@ -53,7 +53,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens_paginate,
                                    set_validity_period_end,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
-                                   import_token, get_one_token, get_tokens_from_serial_or_user)
+                                   import_token, get_one_token, get_tokens_from_serial_or_user,
+                                   get_tokens_paginated_generator)
 
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -184,19 +185,6 @@ class TokenTestCase(MyTestCase):
         # get all tokens
         tokenobject_list = get_tokens(serial_wildcard="*")
         self.assertEqual(len(tokenobject_list), 4)
-
-        # test pagination
-        count, prev, next, tokenobject_list = get_tokens(serial_wildcard="*", psize=2, page=1)
-        self.assertEqual(count, 4)
-        self.assertEqual(prev, None)
-        self.assertEqual(next, 2)
-        self.assertEqual(len(tokenobject_list), 2)
-
-        count, prev, next, tokenobject_list = get_tokens(serial_wildcard="*", psize=2, page=2)
-        self.assertEqual(count, 4)
-        self.assertEqual(prev, 1)
-        self.assertEqual(next, None)
-        self.assertEqual(len(tokenobject_list), 2)
 
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
@@ -788,9 +776,50 @@ class TokenTestCase(MyTestCase):
         # enable the token again
         hotp_tokenobject.enable(True)
 
+        # Set HOTP as challenge response
+        set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+
+        hotp_tokenobject.add_tokeninfo("next_pin_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+        hotp_tokenobject.add_tokeninfo("next_password_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+
+        # Now the HOTP is a valid C/R token
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertTrue("multi_challenge" in reply)
+        transaction_id = reply.get("transaction_id")
+        res, reply = check_token_list(tokenobject_list, "481090", options={"transaction_id": transaction_id})
+        self.assertTrue(res)
+
+        # Create a challenge, but deactivate the token in the meantime:
+        hotp_tokenobject.token.counter = 9
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertTrue("multi_challenge" in reply)
+        transaction_id = reply.get("transaction_id")
+        # deactivate token
+        hotp_tokenobject.enable(False)
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "481090", options={"transaction_id": transaction_id})
+        self.assertFalse(res)
+
+        # Have a challenge response token, but it is disabled.
+        hotp_tokenobject.token.counter = 9
+        hotp_tokenobject.save()
+        res, reply = check_token_list(tokenobject_list, "hotppin")
+        self.assertFalse(res)
+        self.assertFalse("multi_challenge" in reply)
+        self.assertEqual(reply.get("message"), "No active challenge response token found")
+
+        hotp_tokenobject.enable()
+        hotp_tokenobject.save()
+        delete_policy("check_token_list_CR")
+
     def test_35_check_serial_pass(self):
         hotp_tokenobject = get_tokens(serial="hotptoken")[0]
         hotp_tokenobject.set_pin("hotppin")
+        hotp_tokenobject.token.count = 10
         hotp_tokenobject.save()
 
         with self.assertRaises(ResourceNotFoundError):
@@ -1398,6 +1427,54 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             get_tokens_from_serial_or_user(serial="S1", user=shadow)
         unassign_token(serial=None, user=user)
+
+    def test_55_get_tokens_paginated_generator(self):
+        def flatten_tokens(l):
+            return [token.token.id for l2 in l for token in l2]
+
+        # serial72 token has invalid type. Check behavior and remove it.
+        self.assertEquals(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
+        Token.query.filter_by(serial="serial72").delete()
+
+        all_matching_tokens = get_tokens(serial_wildcard="S*")
+        lists1 = list(get_tokens_paginated_generator(serial_wildcard="S*"))
+        self.assertEquals(len(lists1), 1)
+        self.assertEquals(len(lists1[0]), 6)
+        lists2 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=2))
+        self.assertEquals(len(lists2), 3)
+        self.assertEquals(len(lists2[0]), 2)
+        self.assertEquals(len(lists2[1]), 2)
+        self.assertEquals(len(lists2[2]), 2)
+        lists3 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=3))
+        self.assertEquals(len(lists3), 2)
+        self.assertEquals(len(lists3[0]), 3)
+        self.assertEquals(len(lists3[1]), 3)
+        lists4 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=4))
+        self.assertEquals(len(lists4), 2)
+        self.assertEquals(len(lists4[0]), 4)
+        self.assertEquals(len(lists4[1]), 2)
+        lists5 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=6))
+        self.assertEquals(len(lists5), 1)
+        self.assertEquals(len(lists5[0]), 6)
+        self.assertEquals(set([t.token.id for t in all_matching_tokens]), set(flatten_tokens(lists1)))
+        self.assertEquals(flatten_tokens(lists1), flatten_tokens(lists2))
+        self.assertEquals(flatten_tokens(lists2), flatten_tokens(lists3))
+        self.assertEquals(flatten_tokens(lists3), flatten_tokens(lists4))
+        self.assertEquals(flatten_tokens(lists4), flatten_tokens(lists5))
+
+        lists6 = list(get_tokens_paginated_generator(serial_wildcard="*DOESNOTEXIST*"))
+        self.assertEquals(lists6, [])
+
+    def test_56_get_tokens_paginated_generator_removal(self):
+        all_serials = set(t.token.serial for t in get_tokens(serial_wildcard="S*"))
+        # Test proper behavior if a matching token is deleted while paginating
+        gen = get_tokens_paginated_generator(serial_wildcard="S*", psize=3)
+        list1 = next(gen)
+        remove_token(list1[0].token.serial)
+        list2 = next(gen)
+        # Check that we did not miss any tokens
+        self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
+
 
 class TokenFailCounterTestCase(MyTestCase):
     """

@@ -104,7 +104,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         TokenFactory.enable(serial, $scope.get);
     };
 
-
     if ($location.path() === "/token/list") {
         $scope.get();
     }
@@ -122,9 +121,16 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     if ($scope.pin_change) {
         $location.path("/pinchange");
     }
-
+    
     // listen to the reload broadcast
-    $scope.$on("piReload", $scope.get);
+    $scope.$on("piReload", function() {
+        /* Due to the parameter "live_search" in the get function
+        we can not bind the get-function to piReload below. This
+        will break in Chrome, would work in Firefox.
+        So we need this wrapper function
+        */
+        $scope.get();
+    });
 
 });
 
