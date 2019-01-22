@@ -264,16 +264,10 @@ class BaseEventHandler(object):
                 log.info("Could not determine tokenowner for {0!s}. Maybe the "
                          "user does not exist anymore.".format(serial))
                 log.debug(exx)
-        # We now check, if the user exists at all!
-        try:
-            ui = user.info
-        except UserError as exx:
-            if exx.id in [904, 905]:
-                # 904: User can not be found - maybe we got here due to PassOnNoUser
-                # 905: This would be a parameter error - why is this here?
-                user = User()
-            else:
-                raise exx
+        # If the user does not exist, we set an empty user
+        if not user.exist():
+            user = User()
+
         return user
 
     @staticmethod
