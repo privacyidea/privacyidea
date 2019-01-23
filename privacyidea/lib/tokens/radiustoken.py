@@ -47,6 +47,7 @@ import traceback
 import binascii
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.api.lib.utils import getParam, ParameterError
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
@@ -73,7 +74,6 @@ class RadiusTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"radius")
         self.mode = ['authenticate', 'challenge']
-        log.debug('***[radius token: init]')
 
     @staticmethod
     def get_class_type():
@@ -114,6 +114,7 @@ class RadiusTokenClass(TokenClass):
 
         return ret
 
+    @log_with(log)
     def update(self, param):
         # New value
         radius_identifier = getParam(param, "radius.identifier")
@@ -136,7 +137,7 @@ class RadiusTokenClass(TokenClass):
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
-        TokenClass.update(self, param)
+        self.update(self, param)
         val = getParam(param, "radius.local_checkpin", optional) or 0
         self.add_tokeninfo("radius.local_checkpin", val)
 
@@ -144,8 +145,7 @@ class RadiusTokenClass(TokenClass):
         self.add_tokeninfo("radius.user", val)
         self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
-        log.debug('***[radius token: update]')
-
+    @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
@@ -160,17 +160,16 @@ class RadiusTokenClass(TokenClass):
 
         :return: true or false
         """
+        options = options or {}
         otp_counter = -1
         otpval = passw
         state = options.get('radius_state')
-
-        log.debug("***[radius token: is challenge request]")
 
         # should we check the pin locally?
         if self.check_pin_local:
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
-            if not TokenClass.check_pin(self, pin):
+            if not self.check_pin(self, pin):
                 return False
 
         # challenge is still valid
@@ -202,9 +201,6 @@ class RadiusTokenClass(TokenClass):
         attributes = {'state': transactionid}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
-        log.debug("***[radius token: create challenge]")
-        log.debug("***loaded challenge {0}".format(state))
-
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
                                  data=state,
@@ -214,6 +210,7 @@ class RadiusTokenClass(TokenClass):
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, attributes
 
+    @log_with(log)
     def is_challenge_response(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that is the response to
@@ -234,8 +231,6 @@ class RadiusTokenClass(TokenClass):
         options = options or {}
         otpval = passw
         challenge_response = False
-
-        log.debug("***[radius token: is challenge response]")
 
         # clear the radius_result since this is the first function called in the chain
         # this value will be utilized to ensure we do not check_radius more than once in the loop
@@ -259,16 +254,16 @@ class RadiusTokenClass(TokenClass):
                     # we need to check against radius before continuing
                     # this causes a bit of an issue since we will know
                     # if the challenge is successful before we try
-                    log.debug("***[radius token: challenge response state check] {0}".format(state))
                     res = self.check_radius(otpval, options=options, radius_state=state)
                     if res != 1:  # we are not getting challenged again so we can stop the chain
                         challenge_response = True
                     else:
-                        challengeobject.delete()  # a new challenge will be created
+                        challengeobject.delete()
                         self.challenge_janitor()
 
         return challenge_response
 
+    @log_with(log)
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
         """
@@ -290,8 +285,6 @@ class RadiusTokenClass(TokenClass):
         options = options or {}
         otp_counter = -1
 
-        log.debug("***[radius token: check challenge response]")
-
         # fetch the transaction_id
         transaction_id = options.get('transaction_id')
         if transaction_id is None:
@@ -305,7 +298,6 @@ class RadiusTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     state = challengeobject.data
-                    log.debug('***challenge object state {0}'.format(state))
 
                     # challenge is still valid
                     otp_counter = self.check_radius(passw, options=options, radius_state=state)
@@ -329,8 +321,8 @@ class RadiusTokenClass(TokenClass):
 
         :return: bool
         """
-        local_check = 1 == int(self.get_tokeninfo("radius.local_checkpin"))
-        log.info("local checking pin? {0!r}".format(local_check))
+        local_check = is_true(self.get_tokeninfo("radius.local_checkpin"))
+        log.debug("local checking pin? {0!r}".format(local_check))
 
         return local_check
 
@@ -344,7 +336,7 @@ class RadiusTokenClass(TokenClass):
         pin = ""
         otpval = passw
         if self.check_pin_local:
-            (res, pin, otpval) = TokenClass.split_pin_pass(self, passw)
+            (res, pin, otpval) = self.split_pin_pass(self, passw)
 
         return res, pin, otpval
 
@@ -364,25 +356,22 @@ class RadiusTokenClass(TokenClass):
         :return: tuple of (success, otp_count - 0 or -1, reply)
 
         """
+        options = options or {}
         res = False
         otp_counter = -1
         reply = None
         otpval = passw
-
-        log.debug("***[radius token: authenticate]")
 
         # should we check the pin localy?
         if self.check_pin_local:
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
 
-            if not TokenClass.check_pin(self, pin):
+            if not self.check_pin(self, pin):
                 return False, otp_counter, {'message': "Wrong PIN"}
 
-        # pull the radius_state if available
+        # attempt to retreive saved state/result
         state = options.get('radius_state')
-        log.debug("***current challenge state: {0} ".format(state))
-
         result = options.get('radius_result')
         if result is None:
             otp_counter = self.check_radius(otpval, options=options, radius_state=state)
@@ -393,14 +382,9 @@ class RadiusTokenClass(TokenClass):
             res = True
             reply = {'message': 'matching 1 tokens',
                      'serial': self.get_serial(),
-                     'type': self.get_tokentype(),
-                     'challenge': False}
-        elif otp_counter == 1:  # challenge required
-            res = False
-            reply = {'message': 'matching 1 tokens, challenge required',
-                     'serial': self.get_serial(),
-                     'type': self.get_tokentype(),
-                     'challenge': True}
+                     'type': self.get_tokentype()}
+        elif otp_counter == 1:  # challenge required but not handled (error state)
+            reply = {'message': 'unexpected challenge required'}
         else:
             reply = {'message': 'remote side denied access'}
 
@@ -409,7 +393,6 @@ class RadiusTokenClass(TokenClass):
     @log_with(log)
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
-        log.debug("***[radius token: check otp]")
         res = self.check_radius(otpval, options=options)
         return res != -1
 
@@ -428,8 +411,6 @@ class RadiusTokenClass(TokenClass):
         result = -1
         radius_message = None
         options = options or {}
-
-        log.debug("***[radius token: check radius]")
 
         # check to see if a previous check was already a success or failure
         authstate = options.get('radius_state')
@@ -469,7 +450,7 @@ class RadiusTokenClass(TokenClass):
             radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
-        log.info("checking OTP len:{0!s} on radius server: {1!s}, user: {2!r}".format(len(otpval), radius_server,
+        log.debug("checking OTP len:{0!s} on radius server: {1!s}, user: {2!r}".format(len(otpval), radius_server,
                                                                                       radius_user))
 
         try:
@@ -491,7 +472,7 @@ class RadiusTokenClass(TokenClass):
                                                     "dictionary")
             log.info("NAS Identifier: %r, "
                      "Dictionary: %r" % (nas_identifier, radius_dictionary))
-            log.info("constructing client object "
+            log.debug("constructing client object "
                      "with server: %r, port: %r, secret: %r" %
                      (r_server, r_authport, radius_secret))
 
@@ -537,8 +518,8 @@ class RadiusTokenClass(TokenClass):
             else:
                 radius_state = '<REJECTED>'
                 radius_message = 'RADIUS authentication failed'
-                log.debug('***response code %d' % response.code)
-                log.warning("Radiusserver %s "
+                log.debug('radius response code %d' % response.code)
+                log.info("Radiusserver %s "
                             "rejected access to user %s." %
                             (r_server, radius_user))
 
