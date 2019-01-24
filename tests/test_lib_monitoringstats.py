@@ -21,7 +21,7 @@ class TokenModelTestCase(MyTestCase):
         # Assert naive datetime
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).first().timestamp.tzinfo, None)
 
-        # Now we write a new value, but with the paramter to delete old values
+        # Now we write a new value, but with the parameter to delete old values
         write_stats(key1, 14, reset_values=True)
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
 

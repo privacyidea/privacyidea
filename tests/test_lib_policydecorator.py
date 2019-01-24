@@ -7,7 +7,7 @@ PWFILE2 = "tests/testdata/passwords"
 DICT_FILE = "tests/testdata/dictionary"
 
 
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
@@ -19,7 +19,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               login_mode, config_lost_token,
                                               challenge_response_allowed,
                                               auth_user_timelimit, auth_cache,
-                                              auth_lastauth)
+                                              auth_lastauth, reset_all_user_tokens)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -27,12 +27,13 @@ from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
 from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.radiusserver import add_radius
+from flask import g
 import datetime
-import radiusmock
+from . import radiusmock
 import binascii
 import hashlib
 from privacyidea.models import AuthCache
-from privacyidea.lib.authcache import delete_from_cache
+from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from datetime import timedelta
 
 
@@ -56,6 +57,11 @@ class LibPolicyTestCase(MyTestCase):
     def fake_check_otp(dummy, pin, user=None, options=None):
         return pin == "FAKE"
 
+    @staticmethod
+    def fake_check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True,
+                              result=False):
+        return result, "some text"
+
     def test_01_otppin(self):
         my_user = User("cornelius", realm="r1")
         set_policy(name="pol1",
@@ -64,6 +70,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # NONE with empty PIN -> success
@@ -89,6 +96,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         r = auth_otppin(self.fake_check_otp, None,
@@ -119,6 +127,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Wrong password
@@ -142,6 +151,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g,
                    "serial": "T001"}
 
@@ -180,6 +190,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSNOUSER)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                         options=options)
@@ -205,6 +216,7 @@ class LibPolicyTestCase(MyTestCase):
                    realm=self.realm1)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                       options=options)
@@ -230,6 +242,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSNOTOKEN)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_has_no_token(check_user_pass, user, passw,
                                       options=options)
@@ -258,6 +271,7 @@ class LibPolicyTestCase(MyTestCase):
                    action=ACTION.PASSTHRU)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -271,6 +285,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=userstore".format(ACTION.PASSTHRU))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -288,6 +303,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertTrue(r > 0)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -327,6 +343,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # No policy, the function is called with check_otp=False
@@ -339,6 +356,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set, the function is called with check_otp=True
@@ -352,6 +370,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set. Trying to login raises a policy error
@@ -381,6 +400,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # No policy, the function is called with default values
@@ -395,6 +415,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # Policy is set, the function is called with check_otp=True
@@ -423,6 +444,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=hotp motp".format(ACTION.CHALLENGERESPONSE))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = token.is_challenge_request(pin, user=user, options=options)
         self.assertEqual(rv, True)
@@ -449,6 +471,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=1d".format(ACTION.LASTAUTH))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         rv = auth_lastauth(fake_auth, user, pin, options)
@@ -493,6 +516,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # user in reso001 fails with empty PIN, since the policy does not
@@ -523,7 +547,6 @@ class LibPolicyTestCase(MyTestCase):
         username = "cornelius"
         realm = "myrealm"
         resolver = "reso001"
-        pw_hash = binascii.hexlify(hashlib.sha256(password).digest())
 
         r = save_resolver({"resolver": "reso001",
                            "type": "passwdresolver",
@@ -541,11 +564,12 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # This successfully authenticates against the authcache
         # We have an authentication, that is within the policy timeout
-        AuthCache(username, realm, resolver, pw_hash,
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=3),
                   last_auth=datetime.datetime.utcnow() - timedelta(minutes=1)).save()
         r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
@@ -555,8 +579,8 @@ class LibPolicyTestCase(MyTestCase):
 
         # We have an authentication, that is not read from the authcache,
         # since the authcache first_auth is too old.
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=5),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=1)).save()
@@ -567,8 +591,8 @@ class LibPolicyTestCase(MyTestCase):
 
         # We have an authentication, that is not read from authcache, since
         # the last_auth is too old = 10 minutes.
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=1),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=10)).save()
@@ -587,10 +611,11 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
-        delete_from_cache(username, realm, resolver, pw_hash)
-        AuthCache(username, realm, resolver, pw_hash,
+        delete_from_cache(username, realm, resolver, password)
+        AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=2),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       hours=1)).save()
@@ -625,6 +650,7 @@ class LibPolicyTestCase(MyTestCase):
                    action="{0!s}=userstore".format(ACTION.PASSTHRU))
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
         rv = auth_user_passthru(check_user_pass, user, passw,
                                 options=options)
@@ -642,6 +668,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertTrue(r > 0)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # They will conflict, because they use the same priority
@@ -714,6 +741,7 @@ class LibPolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         # error because of conflicting policies
@@ -756,3 +784,41 @@ class LibPolicyTestCase(MyTestCase):
         self.assertFalse(r)
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_15_reset_all_failcounters(self):
+        self.setUp_user_realms()
+
+        set_policy("reset_all", scope=SCOPE.AUTH,
+                   action=ACTION.RESETALLTOKENS)
+
+        user = User(login="cornelius", realm=self.realm1)
+        pin1 = "pin1"
+        pin2 = "pin2"
+        token1 = init_token({"serial": pin1, "pin": pin1,
+                             "type": "spass"}, user=user)
+        token2 = init_token({"serial": pin2, "pin": pin2,
+                             "type": "spass"}, user=user)
+
+        token1.inc_failcount()
+        token2.inc_failcount()
+        token2.inc_failcount()
+        self.assertEqual(token1.token.failcount, 1)
+        self.assertEqual(token2.token.failcount, 2)
+
+        g.policy_object = PolicyClass()
+        options = {"g": g}
+
+        r = reset_all_user_tokens(self.fake_check_token_list,
+                                  [token1, token2],
+                                  "pw", None,
+                                  options=options,
+                                  allow_reset_all_tokens=True,
+                                  result=True)
+        self.assertTrue(r)
+
+        self.assertEqual(token1.token.failcount, 0)
+        self.assertEqual(token2.token.failcount, 0)
+
+        # Clean up
+        remove_token(pin1)
+        remove_token(pin2)

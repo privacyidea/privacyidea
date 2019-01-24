@@ -180,8 +180,8 @@ class BaseApplicationTestCase(MyTestCase):
 
     def test_04_get_application_types(self):
         apps = get_application_types()
-        self.assertTrue("luks" in apps.keys())
-        self.assertTrue("ssh" in apps.keys())
+        self.assertTrue("luks" in apps)
+        self.assertTrue("ssh" in apps)
         self.assertEqual(apps["ssh"]["options"]["optional"], ["user"])
         self.assertEqual(apps["luks"]["options"]["optional"], ["slot",
                                                                "partition"])

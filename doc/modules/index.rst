@@ -45,6 +45,7 @@ If possible, policies are checked with policy decorators.
    lib
    useridresolvers
    audit
+   monitoring
    machineresolvers
    pinhandler
 

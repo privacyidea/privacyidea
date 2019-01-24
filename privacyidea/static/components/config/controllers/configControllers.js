@@ -677,6 +677,7 @@ myApp.controller("configController", function ($scope, $location,
             //debug: console.log(data);
             $scope.params = data.result.value;
             $scope.params.PrependPin = $scope.isChecked($scope.params.PrependPin);
+            $scope.params.no_auth_counter = $scope.isChecked($scope.params.no_auth_counter);
             $scope.params['PrependPin.type'] = "public";
             $scope.params.splitAtSign = $scope.isChecked($scope.params.splitAtSign);
             $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);
@@ -931,6 +932,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.testResolver = function (size_limit) {
         var params = $.extend({}, $scope.params);
         params["SIZELIMIT"] = size_limit;
+        params["resolver"] = $scope.resolvername;
         ConfigFactory.testResolver(params, function (data) {
             if (data.result.value === true) {
                 inform.add(data.detail.description,
@@ -1052,8 +1054,10 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     };
 
     $scope.testSQL = function () {
-        ConfigFactory.testResolver($scope.params, function (data) {
-            //debug: console.log(data.result);
+
+        var params = $.extend({}, $scope.params);
+        params["resolver"] = $scope.resolvername;
+        ConfigFactory.testResolver(params, function (data) {
             if (data.result.value >= 0) {
                 inform.add(data.detail.description,
                     {type: "success", ttl: 10000});

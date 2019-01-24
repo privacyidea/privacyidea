@@ -30,6 +30,7 @@ from pyrad.client import Client
 from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
+from privacyidea.lib.utils import fetch_one_resource
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
@@ -239,15 +240,10 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
 @log_with(log)
 def delete_radius(identifier):
     """
-    Delete the given server from the database
+    Delete the given server from the database.
+    If no such entry could be found, a ResourceNotFoundError is raised.
     :param identifier: The identifier/name of the server
     :return: The ID of the database entry, that was deleted
     """
-    ret = -1
-    radius = RADIUSServerDB.query.filter(RADIUSServerDB.identifier ==
-                                         identifier).first()
-    if radius:
-        radius.delete()
-        ret = radius.id
-    return ret
+    return fetch_one_resource(RADIUSServerDB, identifier=identifier).delete()
 

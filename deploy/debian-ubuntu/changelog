@@ -1,3 +1,77 @@
+python-privacyidea (3.0~dev1-1trusty) trusty; urgency=medium
+
+  A lot of stuff...
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 21 Nov 2018 15:00:00 +0200
+
+python-privacyidea (2.23.3-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Performance: avoid using wildcard serials in functions like 
+    get_tokens, get_realms_of_token and copy_token
+  * Performance: avoid reload of static configuration
+  * Performance: Clean up LDAP cache, so that it will not grow to big and 
+    further LDAP cache usage optimization (#1246)
+  * Performance: Make signing the audit log configurable (#1262)
+  * Performance: Make the auth counter per token configurable (#1262)
+  * Performance: Fix HSM auto recovery after an HSM failure and make
+    MAX_RETRIES configurable (#1278)
+  * Fix the double get requests of challenges in the UI
+  * Auditlog now honors the admin realm in the policies (#1244)
+  * Fix description of realm dropdown policy (#1245)
+  * Allow token janitor to use chunk sizes
+  * Allow Audit rotation to be performed in chunks to avoid deadlocks.
+  * Improve documentation about required and optinal parameters in
+    the SQL Audit module.
+  * Cast userid to string to avoid casts problems with PostgreSQL
+  * Update pyopenssl dependency.
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 26 Oct 2018 15:00:00 +0200
+
+python-privacyidea (2.23.3~dev4-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Allow SQL audit signing to be deactivated
+  * Allow token auth counter to be deactivated
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 27 Sep 2018 17:00:00 +0200
+
+python-privacyidea (2.23.3~dev3-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Remove double "get" of Token challenges in UI
+  * Avoid reload of static configuration (#1523)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 19 Sep 2018 19:30:00 +0200
+
+python-privacyidea (2.23.3~dev2-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Fix performance issue with wildcard serials #1225
+  * Make auditlog honor the admin realms #1244
+  * Fix description of realm dropdown #1245 
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Tue, 18 Sep 2018 17:00:00 +0200
+
+python-privacyidea (2.23.2-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Fix problem with empty username (#1227)
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 07 Sep 2018 12:00:00 +0200
+
+python-privacyidea (2.23.1-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Fix PassOnNoUser in combination with event handler (#1206)
+  * Fix loading of Event handler detail view (#1210)
+  * Fix Challenge-Response login at Web UI (#1216)
+  * Fix triggerchallenge to only use active tokens (#1217)
+  * Write all installed package to diagnostics file and
+    also write the resolver config in privacyidea-diag
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Thu, 06 Sep 2018 10:00:00 +0200
+
 python-privacyidea (2.23-1trusty) trusty; urgency=medium
 
   Features:

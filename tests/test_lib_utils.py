@@ -12,9 +12,9 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    int_to_hex, compare_value_value,
                                    parse_time_offset_from_now,
                                    parse_timedelta, to_unicode,
-                                   hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string)
+                                   parse_int, convert_column_to_unicode, censor_connect_string,
+                                   truncate_comma_list, check_pin_policy,
+                                   get_module_class, decode_base32check)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
@@ -229,7 +229,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+        self.assertEqual(d, datetime(2017, 4, 27, 12, 0,
                                      tzinfo=tzoffset(None, 7200)))
 
         d = parse_date("2016/04/03")
@@ -367,47 +367,6 @@ class UtilsTestCase(MyTestCase):
         su = to_unicode(s)
         self.assertEqual(su, u"kölbel")
 
-    def test_15_hash_passwords(self):
-        p_hash = hash_password("pass0rd", "phpass")
-        PH = PasswordHash()
-        self.assertTrue(PH.check_password("pass0rd", p_hash))
-        self.assertFalse(PH.check_password("passord", p_hash))
-
-        # {SHA}
-        p_hash = hash_password("passw0rd", "sha")
-        self.assertTrue(check_sha(p_hash, "passw0rd"))
-        self.assertFalse(check_sha(p_hash, "password"))
-
-        # OTRS
-        p_hash = hash_password("passw0rd", "otrs")
-        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
-        self.assertFalse(otrs_sha256(p_hash, "password"))
-
-        # {SSHA}
-        p_hash = hash_password("passw0rd", "ssha")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
-
-        # {SSHA256}
-        p_hash = hash_password("passw0rd", "ssha256")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
-
-        # {SSHA512}
-        p_hash = hash_password("passw0rd", "ssha512")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
-        
-        # MD5Crypt
-        p_hash = hash_password("passw0rd", "md5crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-        
-        # SHA512Crypt
-        p_hash = hash_password("passw0rd", "sha512crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
         self.assertEqual(r, 12)
@@ -446,3 +405,104 @@ class UtilsTestCase(MyTestCase):
                          "mysql://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
                          u"mysql://knöbel:xxxx@localhost/pi")
+
+    def test_19_truncate_comma_list(self):
+        r = truncate_comma_list("123456,234567,345678", 19)
+        self.assertEqual(len(r), 19)
+        self.assertEqual(r, "1234+,234567,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 18)
+        self.assertEqual(len(r), 18)
+        self.assertEqual(r, "1234+,2345+,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 16)
+        self.assertEqual(len(r), 16)
+        self.assertEqual(r, "123+,2345+,3456+")
+
+        # There are more entries than the max_len. We will not be able
+        # to shorten all entries, so we simply take the beginning of the string.
+        r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
+        self.assertEqual(len(r), 4)
+        self.assertEqual(r, "12,+")
+
+    def test_20_pin_policy(self):
+        r, c = check_pin_policy("1234", "n")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("abc", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [0-9]", c)
+
+        r, c = check_pin_policy("123", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [a-zA-Z]", c)
+
+        r, c = check_pin_policy("123", "ncs")
+        self.assertFalse(r)
+        self.assertTrue("Missing character in PIN: [a-zA-Z]" in c, c)
+        self.assertTrue("Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]" in c, c)
+
+        r, c = check_pin_policy("1234", "")
+        self.assertFalse(r)
+        self.assertEqual(c, "No policy given.")
+
+        # check for either number or character
+        r, c = check_pin_policy("1234", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("@@@@", "+cn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+
+        # check for exclusion
+        # No special character
+        r, c = check_pin_policy("1234", "-s")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234", "-sn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Not allowed character in PIN!")
+
+        r, c = check_pin_policy("1234@@@@", "-c")
+        self.assertTrue(r)
+
+    def test_21_get_module_class(self):
+        r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+        from privacyidea.lib.auditmodules.sqlaudit import Audit
+        self.assertEqual(r, Audit)
+
+        # Fails to return the class, if the method does not exist
+        self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
+                          "this_method_does_not_exist")
+
+        # Fails if the class does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.sqlaudit", "DoesNotExist")
+
+        # Fails if the package does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
+
+    def test_22_decodebase32check(self):
+        real_client_componet = "TIXQW4ydvn2aos4cj6ta"
+        real_payload = "03ab74074b824fa6"
+
+        payload1 = decode_base32check(real_client_componet)
+        self.assertEqual(payload1, real_payload)
+
+        # change the client component in the last character!
+        client_component = "TIXQW4ydvn2aos4cj6tb"
+        payload2 = decode_base32check(client_component)
+        # Although the last character of the client component was changed,
+        # the payload is still the same.
+        self.assertEqual(payload2, real_payload)
+
+        # change the client component in between
+        client_component = "TIXQW4ydvn2aos4cj6ba"
+        self.assertRaises(Exception, decode_base32check, client_component)

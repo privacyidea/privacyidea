@@ -34,6 +34,7 @@ from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 MachineResolver, get_token_id,
                                 get_machineresolver_id,
                                 get_machinetoken_id)
+from privacyidea.lib.utils import fetch_one_resource
 from netaddr import IPAddress
 from sqlalchemy import and_
 import logging
@@ -327,11 +328,10 @@ def list_token_machines(serial):
     :return: returns a list of machines and apps
     """
     res = []
-    db_token = Token.query.filter(Token.serial == serial).first()
+    db_token = fetch_one_resource(Token, serial=serial)
 
     for machine in db_token.machine_list:
-        MR = MachineResolver.query.filter(MachineResolver.id ==
-                                          machine.machineresolver_id).first()
+        MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
         resolver_name = MR.name
 
         option_list = machine.option_list

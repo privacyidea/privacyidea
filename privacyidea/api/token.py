@@ -89,7 +89,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            tantoken_count,
                                            u2ftoken_allowed, u2ftoken_verify_cert,
                                            twostep_enrollment_activation,
-                                           twostep_enrollment_parameters)
+                                           twostep_enrollment_parameters,
+                                           sms_identifiers)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -126,6 +127,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
 @prepolicy(papertoken_count, request)
+@prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
 @prepolicy(u2ftoken_verify_cert, request)
@@ -249,7 +251,7 @@ def init():
     #    log.debug("setting tokenrealm %s" % res['realms'])
     #    tokenrealm = res['realms']
 
-    user = get_user_from_param(param)
+    user = request.User
     tokenobject = init_token(param,
                              user,
                              tokenrealms=tokenrealms)
@@ -353,7 +355,7 @@ def list_api():
     :rtype: json
     """
     param = request.all_data
-    user = get_user_from_param(param, optional)
+    user = request.User
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
@@ -422,7 +424,11 @@ def assign_api():
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     pin = getParam(request.all_data, "pin")
     encrypt_pin = getParam(request.all_data, "encryptpin")
-    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin)
+    if g.logged_in_user.get("role") == "user":
+        err_message = "Token already assigned to another user."
+    else:
+        err_message = None
+    res = assign_token(serial, user, pin=pin, encrypt_pin=encrypt_pin, err_message=err_message)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -437,11 +443,13 @@ def unassign_api():
     You can either provide "serial" as an argument to unassign this very
     token or you can provide user and realm, to unassign all tokens of a user.
 
-    :return: In case of success it returns "value": True.
-    :rtype: json object
+    :return: In case of success it returns the number of unassigned tokens in "value".
+    :rtype: JSON object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     serial = getParam(request.all_data, "serial", optional)
+    g.audit_object.log({"serial": serial})
+
     res = unassign_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -468,13 +476,13 @@ def revoke_api(serial=None):
         tokens in "value".
     :rtype: JSON object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
 
     res = revoke_token(serial, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -496,13 +504,13 @@ def enable_api(serial=None):
         tokens in "value".
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=True, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -526,13 +534,13 @@ def disable_api(serial=None):
         tokens in "value".
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
 
     res = enable_token(serial, enable=False, user=user)
-    g.audit_object.log({"success": res > 0})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -541,13 +549,11 @@ def disable_api(serial=None):
 @prepolicy(check_base_action, request, action=ACTION.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
-def delete_api(serial=None):
+def delete_api(serial):
     """
-    Delete a token by its serial number or delete all tokens of a user.
+    Delete a token by its serial number.
 
     :jsonparam serial: The serial number of a single token.
-    :jsonparam user: The username of the user, whose tokens should be deleted.
-    :jsonparam realm: The realm of the user.
 
     :return: In case of success it return the number of deleted tokens in
         "value"
@@ -555,7 +561,7 @@ def delete_api(serial=None):
     """
     # If the API is called by a user, we pass the User Object to the function
     g.audit_object.log({"serial": serial})
-    user = get_user_from_param(request.all_data)
+    user = request.User
     res = remove_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -576,7 +582,7 @@ def reset_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     g.audit_object.log({"serial": serial})
@@ -601,7 +607,7 @@ def resync_api(serial=None):
     :return: In case of success it returns "value"=True
     :rtype: json object
     """
-    user = get_user_from_param(request.all_data, optional)
+    user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
@@ -643,7 +649,7 @@ def setpin_api(serial=None):
     userpin = getParam(request.all_data, "userpin")
     sopin = getParam(request.all_data, "sopin")
     otppin = getParam(request.all_data, "otppin")
-    user = get_user_from_param(request.all_data)
+    user = request.User
     encrypt_pin = getParam(request.all_data, "encryptpin")
 
     res = 0
@@ -699,7 +705,7 @@ def set_api(serial=None):
     if not serial:
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
-    user = get_user_from_param(request.all_data)
+    user = request.User
 
     description = getParam(request.all_data, "description")
     count_window = getParam(request.all_data, "count_window")
@@ -795,9 +801,9 @@ def tokenrealm_api(serial=None):
         realm_list = [r.strip() for r in realms.split(",")]
     g.audit_object.log({"serial": serial})
 
-    res = set_realms(serial, realms=realm_list)
+    set_realms(serial, realms=realm_list)
     g.audit_object.log({"success": True})
-    return send_result(res == 1)
+    return send_result(True)
 
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])
@@ -897,7 +903,7 @@ def loadtokens_api(filename=None):
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
-                        'serial': ', '.join(TOKENS.keys())})
+                        'serial': ', '.join(TOKENS)})
     # logTokenNum()
 
     return send_result(len(TOKENS))
@@ -970,7 +976,7 @@ def lost_api(serial=None):
     """
     # check if a user is given, that the user matches the token owner.
     g.audit_object.log({"serial": serial})
-    userobj = get_user_from_param(request.all_data)
+    userobj = request.User
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
@@ -1023,11 +1029,11 @@ def get_serial_by_otp_api(otp=None):
     if assigned_param:
         assigned = True
 
-    count = get_tokens(tokentype=ttype, serial="*{0!s}*".format(
+    count = get_tokens(tokentype=ttype, serial_wildcard="*{0!s}*".format(
             serial_substr), assigned=assigned, count=True)
     if not count_only:
         tokenobj_list = get_tokens(tokentype=ttype,
-                                   serial="*{0!s}*".format(serial_substr),
+                                   serial_wildcard="*{0!s}*".format(serial_substr),
                                    assigned=assigned)
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 

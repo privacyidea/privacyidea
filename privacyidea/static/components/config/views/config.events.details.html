@@ -62,7 +62,7 @@
             <select class="form-control"
                     id="handlermodule"
                     ng-model="form.handlermodule" required
-                    ng-options="module for module in handlermodules"
+                    ng-options="handlermodule as handlermodule for handlermodule in handlermodules"
                     ng-change="handlerModuleChanged()"
                     >
             </select>

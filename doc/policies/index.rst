@@ -141,7 +141,7 @@ Each policy can contain the following attributes:
   The priority field of policies contains a positive number and defaults to 1.
   In case of policy conflicts, policies with a lower priority number take precedence.
 
-  It can be used to resolve policy conflicts. An example is the :ref:`passthru-policy`:
+  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy`:
   Assume there are two passthru policies ``pol1`` and ``pol2`` that
   define different action values, e.g. ``pol1`` defines ``passthru=userstore``
   and ``pol2`` defines ``passthru=radius1``.

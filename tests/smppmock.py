@@ -35,7 +35,10 @@ except ImportError:
 import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
-from smpplib.client import ConnectionError
+if six.PY2:
+    from smpplib.client import ConnectionError
+else:
+    from smpplib.exceptions import ConnectionError
 
 
 Call = namedtuple('Call', ['request', 'response'])

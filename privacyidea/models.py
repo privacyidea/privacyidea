@@ -36,24 +36,25 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import binascii
+import six
 import logging
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
-from .lib.crypto import (encrypt,
-                         encryptPin,
-                         decryptPin,
-                         geturandom,
-                         hash,
-                         SecretObj,
-                         get_rand_digit_str)
-
+from privacyidea.lib.crypto import (encrypt,
+                                    encryptPin,
+                                    decryptPin,
+                                    geturandom,
+                                    hash,
+                                    SecretObj,
+                                    get_rand_digit_str,
+                                    hexlify_and_unicode)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
-from .lib.utils import is_true, convert_column_to_unicode
+from privacyidea.lib.utils import is_true, convert_column_to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -248,8 +249,9 @@ class Token(MethodsMixin, db.Model):
         Also avoids running into errors, if the data is a None Type.
 
         :param data: a string from the database
-        :type data: usually a string
+        :type data: str
         :return: a stripped string
+        :rtype: str
         """
         if data:
             data = data.strip()
@@ -259,13 +261,12 @@ class Token(MethodsMixin, db.Model):
     @log_with(log)
     def set_otpkey(self, otpkey, reset_failcount=True):
         iv = geturandom(16)
-        enc_otp_key = encrypt(otpkey, iv)
-        self.key_enc = unicode(binascii.hexlify(enc_otp_key))
+        self.key_enc = encrypt(otpkey, iv)
         length = len(self.key_enc)
         if length > Token.key_enc.property.columns[0].type.length:
             log.error("Key {0!s} exceeds database field {1:d}!".format(self.serial,
-                                                             length))
-        self.key_iv = unicode(binascii.hexlify(iv))
+                                                                       length))
+        self.key_iv = hexlify_and_unicode(iv)
         self.count = 0
         if reset_failcount is True:
             self.failcount = 0
@@ -315,9 +316,8 @@ class Token(MethodsMixin, db.Model):
     @log_with(log)
     def set_user_pin(self, userPin):
         iv = geturandom(16)
-        enc_userPin = encrypt(userPin, iv)
-        self.user_pin = unicode(binascii.hexlify(enc_userPin))
-        self.user_pin_iv = unicode(binascii.hexlify(iv))
+        self.user_pin = encrypt(userPin, iv)
+        self.user_pin_iv = hexlify_and_unicode(iv)
 
     @log_with(log)
     def get_otpkey(self):
@@ -340,9 +340,17 @@ class Token(MethodsMixin, db.Model):
         return secret
 
     def set_hashed_pin(self, pin):
+        """
+        Set the pin of the token in hashed format
+
+        :param pin: the pin to hash
+        :type pin: str
+        :return: the hashed pin
+        :rtype: str
+        """
         seed = geturandom(16)
-        self.pin_seed = unicode(binascii.hexlify(seed))
-        self.pin_hash = unicode(binascii.hexlify(hash(pin, seed)))
+        self.pin_seed = hexlify_and_unicode(seed)
+        self.pin_hash = hash(pin, seed)
         return self.pin_hash
 
     def get_hashed_pin(self, pin):
@@ -351,15 +359,18 @@ class Token(MethodsMixin, db.Model):
         Fix for working with MS SQL servers
         MS SQL servers sometimes return a '<space>' when the
         column is empty: ''
+
+        :param pin: the pin to hash
+        :type pin: str
+        :return: hashed pin with current pin_seed
+        :rtype: str
         """
         seed_str = self._fix_spaces(self.pin_seed)
         seed = binascii.unhexlify(seed_str)
         hPin = hash(pin, seed)
-        log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(
-            binascii.hexlify(hPin),
-            pin,
-            self.pin_seed))
-        return binascii.hexlify(hPin)
+        log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(hPin, pin,
+                                                                self.pin_seed))
+        return hPin
     
     def check_hashed_pin(self, pin):
         hp = self.get_hashed_pin(pin)
@@ -369,7 +380,7 @@ class Token(MethodsMixin, db.Model):
     def set_description(self, desc):
         if desc is None:
             desc = ""
-        self.description = unicode(desc)
+        self.description = convert_column_to_unicode(desc)
         return self.description
 
     def set_pin(self, pin, hashed=True):
@@ -382,7 +393,7 @@ class Token(MethodsMixin, db.Model):
         if hashed is True:
             self.set_hashed_pin(upin)
             log.debug("setPin(HASH:{0!r})".format(self.pin_hash))
-        elif hashed is False:
+        else:
             self.pin_hash = "@@" + encryptPin(upin)
             log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
         return self.pin_hash
@@ -423,13 +434,13 @@ class Token(MethodsMixin, db.Model):
         else:
             otp = passwd[:self.otplen]
             pin = passwd[self.otplen:]
-        return(True, pin, otp)
+        return True, pin, otp
 
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
             pin = self.pin_hash
-        if (pin.startswith("@@") is True):
+        if pin.startswith("@@"):
             ret = True
         return ret
 
@@ -447,10 +458,9 @@ class Token(MethodsMixin, db.Model):
         :rtype : None
         """
         iv = geturandom(16)
-        enc_soPin = encrypt(soPin, iv)
-        self.so_pin = unicode(binascii.hexlify(enc_soPin))
-        self.so_pin_iv = unicode(binascii.hexlify(iv))
-        return (self.so_pin, self.so_pin_iv)
+        self.so_pin = encrypt(soPin, iv)
+        self.so_pin_iv = hexlify_and_unicode(iv)
+        return self.so_pin, self.so_pin_iv
 
     def __unicode__(self):
         return self.serial
@@ -719,6 +729,7 @@ class Admin(db.Model):
         db.session.commit()
 
 
+@six.python_2_unicode_compatible
 class Config(TimestampMethodsMixin, db.Model):
     """
     The config table holds all the system configuration in key value pairs.
@@ -737,13 +748,13 @@ class Config(TimestampMethodsMixin, db.Model):
 
     @log_with(log)
     def __init__(self, Key, Value, Type=u'', Description=u''):
-        self.Key = unicode(Key)
+        self.Key = convert_column_to_unicode(Key)
         self.Value = convert_column_to_unicode(Value)
-        self.Type = unicode(Type)
-        self.Description = unicode(Description)
+        self.Type = convert_column_to_unicode(Type)
+        self.Description = convert_column_to_unicode(Description)
 
-    def __unicode__(self):
-        return "<{0!s} ({1!s})>".format(self.Key, self.Type)
+    def __str__(self):
+        return u"<{0!s} ({1!s})>".format(self.Key, self.Type)
 
     def save(self):
         db.session.add(self)
@@ -963,10 +974,10 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                        .filter_by(name=resolver)\
                                        .first()\
                                        .id
-        self.Key = unicode(Key)
+        self.Key = convert_column_to_unicode(Key)
         self.Value = convert_column_to_unicode(Value)
-        self.Type = unicode(Type)
-        self.Description = unicode(Description)
+        self.Type = convert_column_to_unicode(Type)
+        self.Description = convert_column_to_unicode(Description)
 
     def save(self):
         c = ResolverConfig.query.filter_by(resolver_id=self.resolver_id,
@@ -1133,6 +1144,7 @@ class PasswordReset(MethodsMixin, db.Model):
                                         timedelta(seconds=expiration_seconds)
 
 
+@six.python_2_unicode_compatible
 class Challenge(MethodsMixin, db.Model):
     """
     Table for handling of the generic challenges.
@@ -1191,7 +1203,7 @@ class Challenge(MethodsMixin, db.Model):
         if type(data) in [dict, list]:
             self.data = dumps(data)
         else:
-            self.data = unicode(data)
+            self.data = convert_column_to_unicode(data)
 
     def get_data(self):
         data = {}
@@ -1205,10 +1217,10 @@ class Challenge(MethodsMixin, db.Model):
         return self.session
 
     def set_session(self, session):
-        self.session = unicode(session)
+        self.session = convert_column_to_unicode(session)
 
     def set_challenge(self, challenge):
-        self.challenge = unicode(challenge)
+        self.challenge = convert_column_to_unicode(challenge)
     
     def get_challenge(self):
         return self.challenge
@@ -1256,11 +1268,9 @@ class Challenge(MethodsMixin, db.Model):
         descr['expiration'] = self.expiration
         return descr
 
-    def __unicode__(self):
+    def __str__(self):
         descr = self.get()
-        return "{0!s}".format(unicode(descr))
-
-    __str__ = __unicode__
+        return u"{0!s}".format(descr)
 
 
 def cleanup_challenges():
@@ -1312,7 +1322,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                  active=True, scope="", action="", realm="", adminrealm="",
                  resolver="", user="", client="", time="", condition=0, priority=1,
                  check_all_resolvers=False):
-        if type(active) in [str, unicode]:
+        if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
         self.action = action
@@ -1605,16 +1615,16 @@ class EventHandler(MethodsMixin, db.Model):
         self.save()
         # add the options to the event handler
         options = options or {}
-        for k, v in options.iteritems():
+        for k, v in options.items():
             EventHandlerOption(eventhandler_id=self.id, Key=k, Value=v).save()
         conditions = conditions or {}
-        for k, v in conditions.iteritems():
+        for k, v in conditions.items():
             EventHandlerCondition(eventhandler_id=self.id, Key=k, Value=v).save()
         # Delete event handler conditions, that ar not used anymore.
         ev_conditions = EventHandlerCondition.query.filter_by(
             eventhandler_id=self.id).all()
         for cond in ev_conditions:
-            if cond.Key not in conditions.keys():
+            if cond.Key not in conditions:
                 EventHandlerCondition.query.filter_by(
                     eventhandler_id=self.id, Key=cond.Key).delete()
                 db.session.commit()
@@ -1966,7 +1976,7 @@ class SMSGateway(MethodsMixin, db.Model):
                     SMSGatewayOption.query.filter_by(gateway_id=self.id,
                                                      Key=option).delete()
         # add the options to the SMS Gateway
-        for k, v in options.iteritems():
+        for k, v in options.items():
             SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
 
     def save(self):
@@ -2408,7 +2418,8 @@ audit_column_length = {"signature": 620,
                        "privacyidea_server": 255,
                        "client": 50,
                        "loglevel": 12,
-                       "clearance_level": 12}
+                       "clearance_level": 12,
+                       "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 
@@ -2439,6 +2450,7 @@ class Audit(MethodsMixin, db.Model):
     loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.String(audit_column_length.get(
         "clearance_level")))
+    policies = db.Column(db.String(audit_column_length.get("policies")))
 
     def __init__(self,
                  action="",
@@ -2454,7 +2466,8 @@ class Audit(MethodsMixin, db.Model):
                  privacyidea_server="",
                  client="",
                  loglevel="default",
-                 clearance_level="default"
+                 clearance_level="default",
+                 policies=""
                  ):
         self.signature = ""
         self.date = datetime.now()
@@ -2472,6 +2485,7 @@ class Audit(MethodsMixin, db.Model):
         self.client = convert_column_to_unicode(client)
         self.loglevel = convert_column_to_unicode(loglevel)
         self.clearance_level = convert_column_to_unicode(clearance_level)
+        self.policies = convert_column_to_unicode(policies)
 
 
 ### User Cache
@@ -2481,12 +2495,14 @@ class UserCache(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
+    used_login = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     timestamp = db.Column(db.DateTime)
 
-    def __init__(self, username, resolver, user_id, timestamp):
+    def __init__(self, username, used_login, resolver, user_id, timestamp):
         self.username = username
+        self.used_login = used_login
         self.resolver = resolver
         self.user_id = user_id
         self.timestamp = timestamp
@@ -2565,7 +2581,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.save()
         # add the options to the periodic task
         options = options or {}
-        for k, v in options.iteritems():
+        for k, v in options.items():
             PeriodicTaskOption(periodictask_id=self.id, key=k, value=v)
         # remove all leftover options
         all_options = PeriodicTaskOption.query.filter_by(periodictask_id=self.id).all()
@@ -2656,7 +2672,7 @@ class PeriodicTaskOption(db.Model):
     id = db.Column(db.Integer, Sequence("periodictaskopt_seq"),
                    primary_key=True)
     periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    key = db.Column(db.Unicode(256), nullable=False)
+    key = db.Column(db.Unicode(255), nullable=False)
     value = db.Column(db.Unicode(2000), default=u'')
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
@@ -2700,7 +2716,7 @@ class PeriodicTaskLastRun(db.Model):
     id = db.Column(db.Integer, Sequence("periodictasklastrun_seq"),
                    primary_key=True)
     periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    node = db.Column(db.Unicode(256), nullable=False)
+    node = db.Column(db.Unicode(255), nullable=False)
     timestamp = db.Column(db.DateTime(False), nullable=False)
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
@@ -2782,4 +2798,4 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.timestamp = timestamp
         self.stats_key = key
         self.stats_value = value
-        self.save()
+        #self.save()

@@ -70,12 +70,12 @@ def byotp(otp=None, type=None, serial="", window=10, unassigned=False,
     print
     if not assigned and not unassigned:
         assigned=None
-    count = get_tokens(tokentype=type, serial="*{0!s}*".format(
+    count = get_tokens(tokentype=type, serial_wildcard="*{0!s}*".format(
             serial), assigned=assigned, count=True)
     print("Searching in {0!s} tokens.".format(count))
 
     tokenobj_list = get_tokens(tokentype=type,
-                               serial="*{0!s}*".format(serial),
+                               serial_wildcard="*{0!s}*".format(serial),
                                assigned=assigned)
     serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
     if serial:

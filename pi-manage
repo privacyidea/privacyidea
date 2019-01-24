@@ -61,6 +61,7 @@ import contextlib
 
 import flask
 
+from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.auth import (create_db_admin, list_db_admin,
@@ -404,12 +405,14 @@ def encrypt_enckey(encfile):
 
     The result can be piped to a new enckey file.
     """
+    # TODO we just print out a string here and assume, the user pipes it into a file.
+    #      Maybe we should write the file here so we know what is in there
     password = getpass()
     password2 = getpass(prompt='Confirm: ')
     if password != password2:
         import sys
         sys.exit('Error: passwords do not match.')
-    with open(encfile, "r") as f:
+    with open(encfile, "rb") as f:
         enckey = f.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     print(res)
@@ -566,6 +569,8 @@ except TypeError:
 @manager.option('--config', help="Read config from the specified yaml file.")
 @manager.option('--dryrun', help="Do not actually delete, only show "
                                  "what would be done.", action="store_true")
+@manager.option('--chunksize', help="Delete entries in chunks of the given size "
+                                    "to avoid deadlocks")
 @audit_manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
                                                 "old entries are deleted.")
 @audit_manager.option('--lowwatermark', '--lw', help="Keep this number of entries.")
@@ -574,8 +579,10 @@ except TypeError:
 @audit_manager.option('--config', help="Read config from the specified yaml file.")
 @audit_manager.option('--dryrun', help="Do not actually delete, only show "
                                  "what would be done.", action="store_true")
+@audit_manager.option('--chunksize', help="Delete entries in chunks of the given size "
+                                          "to avoid deadlocks")
 def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
-                 dryrun=False):
+                 dryrun=False, chunksize=None):
     """
     Clean the SQL audit log.
 
@@ -599,6 +606,8 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     metadata = MetaData()
     highwatermark = int(highwatermark or 10000)
     lowwatermark = int(lowwatermark or 5000)
+    if chunksize is not None:
+        chunksize = int(chunksize)
 
     default_module = "privacyidea.lib.auditmodules.sqlaudit"
     token_db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
@@ -662,19 +671,17 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
             print("If you only would let me I would clean up {0!s} entries!".format(len(delete_list)))
         else:
             print("Cleaning up {0!s} entries.".format(len(delete_list)))
-            engine.execute(LogEntry.__table__.delete().where(LogEntry.id.in_(delete_list)))
-            session.commit()
-
+            delete_matching_rows(session, LogEntry.__table__, LogEntry.id.in_(delete_list), chunksize)
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         print("Deleting entries older than {0!s}".format(now))
-        sqlquery = session.query(LogEntry.date).filter(LogEntry.date < now)
+        criterion = LogEntry.date < now
         if dryrun:
-            r = len(sqlquery.all())
+            r = LogEntry.query.filter(criterion).count()
+            print("Would delete {0!s} entries.".format(r))
         else:
-            r = session.query(LogEntry.date).filter(LogEntry.date < now).delete()
-            session.commit()
-        print("{0!s} entries deleted.".format(r))
+            r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
+            print("{0!s} entries deleted.".format(r))
     else:
         count = session.query(LogEntry.id).count()
         for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
@@ -687,12 +694,11 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
             cut_id = last_id - lowwatermark
             # delete all entries less than cut_id
             print("Deleting entries smaller than %i" % cut_id)
-            sqlquery = session.query(LogEntry.id).filter(LogEntry.id < cut_id)
+            criterion = LogEntry.id < cut_id
             if dryrun:
-                r = len(sqlquery.all())
+                r = LogEntry.query.filter(criterion).count()
             else:
-                r = session.query(LogEntry.id).filter(LogEntry.id < cut_id).delete()
-                session.commit()
+                r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
             print("{0!s} entries deleted.".format(r))
 
 
@@ -821,15 +827,28 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-@resolver_manager.command
-def list():
+@resolver_manager.option('-v', help="Verbose output - also print the configuration of the resolvers.",
+                         dest="verbose", action="store_true")
+def list(verbose):
     """
-    list the available resolvers and the type
+    list the available resolvers and the type.
     """
     from privacyidea.lib.resolver import get_resolver_list
     resolver_list = get_resolver_list()
-    for name, resolver in resolver_list.iteritems():
-        print("%16s - (%s)" % (name, resolver.get("type")))
+
+    if not verbose:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+    else:
+        for name, resolver in resolver_list.iteritems():
+            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+            print("."*32)
+            data = resolver.get("data", {})
+            for k, v in data.iteritems():
+                if k.lower() in ["bindpw", "password"]:
+                    v = "xxxxx"
+                print("{0!s:>24}: {1!r}".format(k, v))
+            print("")
 
 
 @realm_manager.command

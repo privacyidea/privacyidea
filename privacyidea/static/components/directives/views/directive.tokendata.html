@@ -23,9 +23,10 @@
             ng-click="callbackCancel(); editFlag = false;"
             translate>Cancel
     </button>
-    <button ng-hide="editFlag"
+    <button ng-hide="editFlag || (setRight == 'false' && hideButtons == 'true')"
             class="btn btn-primary"
             ng-click="editFlag = true;"
+            ng-disabled="setRight == 'false'"
             translate>Edit
     </button>
     </div>

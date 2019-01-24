@@ -7,14 +7,15 @@ lib/task/base.py
 
 from privacyidea.lib.task.base import BaseTask
 from .base import MyTestCase
+import six
 
 
 class BaseTaskTestCase(MyTestCase):
     def test_01_base_functions(self):
-        task = BaseTask()
+        task = BaseTask({})
 
         self.assertEqual(task.identifier, "BaseTask")
-        self.assertIsInstance(task.description, basestring)
+        self.assertIsInstance(task.description, six.string_types)
         self.assertEqual(task.options, {})
 
         result1 = task.do()

@@ -36,10 +36,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -51,9 +51,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(detail['2step_salt'], 8)
             self.assertEqual(detail['2step_output'], 20)
 
-        client_component = "VRYSECRT"
+        client_component = b"VRYSECRT"
         checksum = hashlib.sha1(client_component).digest()[:4]
-        base32check_client_component = base64.b32encode(checksum + client_component).strip("=")
+        base32check_client_component = base64.b32encode(checksum + client_component).strip(b"=")
 
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
@@ -66,7 +66,7 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
                           result.get("error").get("message"))
 
@@ -76,12 +76,12 @@ class TwoStepInitTestCase(MyTestCase):
                                            data={"type": "hotp",
                                                  "2stepinit": "1",
                                                  "serial": serial,
-                                                 "otpkey": "A" + base32check_client_component[1:],
+                                                 "otpkey": b"A" + base32check_client_component[1:],
                                                  "otpkeyformat": "base32check"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertIn('Malformed base32check data: Incorrect checksum',
                           result.get("error").get("message"))
 
@@ -93,7 +93,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -109,10 +109,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
             self.assertNotIn('2step', detail)
@@ -126,7 +126,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -166,10 +166,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -185,13 +185,13 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
                          u'matching 1 tokens, Token is disabled')
 
-        client_component = "wrongsize" # 9 bytes
+        client_component = b"wrongsize" # 9 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Supply a client secret of incorrect size
@@ -204,10 +204,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertFalse(result.get("status"))
 
-        client_component = "correctsize" # 11 bytes
+        client_component = b"correctsize" # 11 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Now doing the correct 2nd step
@@ -223,10 +223,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -239,7 +239,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -278,15 +278,15 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
 
-        client_component = "wrongsize0" # 10 bytes
+        client_component = b"wrongsize0" # 10 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Supply a client secret of incorrect size
@@ -299,10 +299,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertFalse(result.get("status"))
 
-        client_component = "correctsizeABCDE" # 16 bytes
+        client_component = b"correctsizeABCDE" # 16 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Now doing the correct 2nd step
@@ -318,10 +318,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -334,7 +334,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -371,10 +371,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey_bin = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -388,7 +388,7 @@ class TwoStepInitTestCase(MyTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -408,10 +408,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -423,9 +423,9 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertEqual(detail['2step_salt'], 8)
             self.assertEqual(detail['2step_output'], 20)
 
-        client_component = "VRYSECRT"
+        client_component = b"VRYSECRT"
         checksum = hashlib.sha1(client_component).digest()[:4]
-        base32check_client_component = base64.b32encode(checksum + client_component).strip("=")
+        base32check_client_component = base64.b32encode(checksum + client_component).strip(b"=")
 
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
@@ -438,7 +438,7 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
                           result.get("error").get("message"))
 
@@ -448,24 +448,24 @@ class TwoStepInitTestCase(MyTestCase):
                                            data={"type": "totp",
                                                  "2stepinit": "1",
                                                  "serial": serial,
-                                                 "otpkey": "A" + base32check_client_component[1:],
+                                                 "otpkey": b"A" + base32check_client_component[1:],
                                                  "otpkeyformat": "base32check"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertIn('Malformed base32check data: Incorrect checksum',
                           result.get("error").get("message"))
 
         # Authentication does not work yet!
-        wrong_otp_value = HmacOtp().generate(key=server_component, counter=int(time.time()/30))
+        wrong_otp_value = HmacOtp().generate(key=server_component, counter=int(time.time() // 30))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -481,24 +481,24 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
             self.assertNotIn('2step', detail)
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp().generate(key=otpkey_bin, counter=int(time.time()/30))
+        otp_value = HmacOtp().generate(key=otpkey_bin, counter=int(time.time() // 30))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -541,10 +541,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -553,20 +553,22 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertIn('2step_salt=11', google_url)
             self.assertIn('2step_output=64', google_url)
         # Authentication does not work yet!
-        wrong_otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=server_component, counter=int(time.time() / 60))
+        wrong_otp_value = HmacOtp(digits=8,
+                                  hashfunc=hashlib.sha512).generate(key=server_component,
+                                                                    counter=int(time.time() // 60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
                          u'matching 1 tokens, Token is disabled')
 
-        client_component = "wrongsize" # 9 bytes
+        client_component = b"wrongsize" # 9 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Supply a client secret of incorrect size
@@ -579,10 +581,10 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertFalse(result.get("status"))
 
-        client_component = "correctsize" # 11 bytes
+        client_component = b"correctsize" # 11 bytes
         hex_client_component = binascii.hexlify(client_component)
 
         # Now doing the correct 2nd step
@@ -598,23 +600,25 @@ class TwoStepInitTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
         # Now try to authenticate
         otpkey_bin = binascii.unhexlify(otpkey)
-        otp_value = HmacOtp(digits=8, hashfunc=hashlib.sha512).generate(key=otpkey_bin, counter=int(time.time()/60))
+        otp_value = HmacOtp(digits=8,
+                            hashfunc=hashlib.sha512).generate(key=otpkey_bin,
+                                                              counter=int(time.time() // 60))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": serial,
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 

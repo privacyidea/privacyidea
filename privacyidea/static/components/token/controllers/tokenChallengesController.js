@@ -34,8 +34,6 @@ myApp.controller("tokenChallengesController", function ($scope,
         $scope.get();
     };
 
-    $scope.get();
-
     $scope.return_to = function () {
         // After deleting the token, we return here.
         // history.back();
@@ -45,5 +43,8 @@ myApp.controller("tokenChallengesController", function ($scope,
 
     // initialize
     $scope.get();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.get);
 
 });

@@ -36,7 +36,6 @@ The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
-import string
 import logging
 log = logging.getLogger(__name__)
 
@@ -78,11 +77,11 @@ class SmtpSMSProvider(ISMSProvider):
                 raise SMSError(-1, "Incomplete SMS config.")
 
             log.debug("submitting message {0!r} to {1!s}".format(body, phone))
-            recipient = string.replace(recipient, PHONE_TAG, phone)
-            subject = string.replace(subject, PHONE_TAG, phone)
-            subject = string.replace(subject, MSG_TAG, message)
-            body = string.replace(body, PHONE_TAG, phone)
-            body = string.replace(body, MSG_TAG, message)
+            recipient = recipient.replace(PHONE_TAG, phone)
+            subject = subject.replace(PHONE_TAG, phone)
+            subject = subject.replace(MSG_TAG, message)
+            body = body.replace(PHONE_TAG, phone)
+            body = body.replace(MSG_TAG, message)
 
         if identifier:
             r = send_email_identifier(identifier, recipient, subject, body)

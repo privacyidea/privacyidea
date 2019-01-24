@@ -42,12 +42,12 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
 from privacyidea.lib.auth import get_db_admins, get_db_admin
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib import _
-from flask import current_app
 import json
 import logging
 import datetime
@@ -147,8 +147,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                            NOTIFY_TYPE.EMAIL]},
                                 "To "+NOTIFY_TYPE.ADMIN_REALM: {
                                     "type": "str",
-                                    "value": current_app.config.get(
-                                        "SUPERUSER_REALM", []),
+                                    "value": get_app_config_value("SUPERUSER_REALM", []),
                                     "visibleIf": "To",
                                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
                                 "To "+NOTIFY_TYPE.INTERNAL_ADMIN: {

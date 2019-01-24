@@ -8,6 +8,7 @@ from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.token import init_token
 from .base import MyTestCase
 from privacyidea.lib.monitoringstats import get_values
+from flask import current_app
 
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 
@@ -29,7 +30,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
         self.setUp_user_realms()
 
         # create a simple statistics class
-        sst = SimpleStatsTask()
+        sst = SimpleStatsTask(current_app.config)
         # and set all parameters to 'true'
         params = {}
         for o in sst.options.keys():

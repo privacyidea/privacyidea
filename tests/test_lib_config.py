@@ -19,8 +19,8 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_types,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
-                                    get_privacyidea_node, get_privacyidea_nodes
-                                    )
+                                    get_privacyidea_node, get_privacyidea_nodes,
+                                    this, get_config_object, update_config_object)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -79,16 +79,11 @@ class ConfigTestCase(MyTestCase):
 
         self.assertTrue(module in mlist, mlist)
 
-        # At the beginning the resolver classes are not cached.
-        self.assertFalse("pi_resolver_classes" in current_app.config,
-                                current_app.config)
         r = get_resolver_classes()
         self.assertTrue(PWResolver in r, r)
-        # Now the resolver classes are cached
-        self.assertTrue("pi_resolver_classes" in current_app.config,
-                                current_app.config)
-        r = get_resolver_classes()
-        self.assertTrue(PWResolver in r, r)
+        # resolver classes must be available here
+        self.assertTrue("pi_resolver_classes" in this.config, this.config)
+        self.assertTrue("pi_resolver_types" in this.config, this.config)
 
         # Class dict
         (classes, types) = get_resolver_class_dict()
@@ -102,15 +97,9 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(types.get('privacyidea.lib.resolvers.PasswdIdResolver'
                         '.IdResolver') == "passwdresolver", types)
 
-        # At the start the resolvers are not stored in the current_app.config
-        self.assertFalse("pi_resolver_types" in current_app.config,
-                         current_app.config)
+        # With calling 'get_resolver_classes()' the resolver types will also be cached
+        self.assertTrue("pi_resolver_types" in this.config, this.config)
         # When the resolvers are determined, they are stored
-        types = get_resolver_types()
-        self.assertTrue("passwdresolver" in types, types)
-        # Now the resolver types are contained.
-        self.assertTrue("pi_resolver_types" in current_app.config,
-                         current_app.config)
         types = get_resolver_types()
         self.assertTrue("passwdresolver" in types, types)
 
@@ -154,22 +143,10 @@ class ConfigTestCase(MyTestCase):
         types = get_token_types()
         self.assertTrue("totp" in types, types)
         self.assertTrue("hotp" in types, types)
-        # Now the resolver types are contained.
-        self.assertTrue("pi_token_types" in current_app.config,
-                        current_app.config)
-        types = get_token_types()
-        self.assertTrue("totp" in types, types)
-        self.assertTrue("hotp" in types, types)
 
-        # At the beginning the token classes are not cached.
-        self.assertFalse("pi_token_classes" in current_app.config,
-                         current_app.config)
-        r = get_token_classes()
-        self.assertTrue(TotpTokenClass in r, r)
-        self.assertTrue(HotpTokenClass in r, r)
-        # Now the token classes are cached
-        self.assertTrue("pi_token_classes" in current_app.config,
-                        current_app.config)
+        # token classes are cached with calling 'get_token_types()'
+        self.assertTrue("pi_token_classes" in this.config, this.config)
+        self.assertTrue("pi_token_types" in this.config, this.config)
         r = get_token_classes()
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
@@ -199,9 +176,9 @@ class ConfigTestCase(MyTestCase):
 
     def test_05_machine_resolvers(self):
         (classes, types) = get_machine_resolver_class_dict()
-        self.assertTrue("hosts" in types.values(), types.values())
+        self.assertTrue("hosts" in types.values(), list(types.values()))
         self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
-                        in classes.keys(), classes)
+                        in classes, classes)
 
     def test_06_public_and_admin(self):
         # This tests the new public available config
@@ -236,3 +213,12 @@ class ConfigTestCase(MyTestCase):
         nodes = get_privacyidea_nodes()
         self.assertTrue("Node1" in nodes)
         self.assertTrue("Node2" in nodes)
+
+    def test_08_config_object(self):
+        set_privacyidea_config(key="k1", value="v1")
+        self.assertEqual(get_config_object().get_config("k1"), "v1")
+        set_privacyidea_config(key="k1", value="v2")
+        # not updated yet
+        self.assertEqual(get_config_object().get_config("k1"), "v1")
+        # updated now
+        self.assertEqual(update_config_object().get_config("k1"), "v2")

@@ -47,7 +47,7 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 import re
 import logging
 log = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ class HttpSMSProvider(ISMSProvider):
             http_proxy = self.smsgateway.option_dict.get('HTTP_PROXY')
             https_proxy = self.smsgateway.option_dict.get('HTTPS_PROXY')
             timeout = self.smsgateway.option_dict.get("TIMEOUT") or 3
-            for k, v in self.smsgateway.option_dict.iteritems():
+            for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)

@@ -64,7 +64,7 @@ def get_caconnector_api(name=None):
 @admin_required
 def save_caconnector_api(name=None):
     """
-    returns a json list of the available applications
+    Create a new CA connector
     """
     param = request.all_data
     param["caconnector"] = name
@@ -80,7 +80,7 @@ def save_caconnector_api(name=None):
 @admin_required
 def delete_caconnector_api(name=None):
     """
-    returns a json list of the available applications
+    Delete a specific CA connector
     """
     g.audit_object.log({"detail": u"{0!s}".format(name)})
     res = delete_caconnector(name)

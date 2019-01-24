@@ -1,3 +1,40 @@
+Version 2.23.3, 2018-10-26
+
+  Fixes:
+  * Performance: avoid using wildcard serials in functions like 
+    get_tokens, get_realms_of_token and copy_token
+  * Performance: avoid reload of static configuration
+  * Performance: Clean up LDAP cache, so that it will not grow to big and 
+    further LDAP cache usage optimization (#1246)
+  * Performance: Make signing the audit log configurable (#1262)
+  * Performance: Make the auth counter per token configurable (#1262)
+  * Performance: Fix HSM auto recovery after an HSM failure and make
+    MAX_RETRIES configurable (#1278)
+  * Fix the double get requests of challenges in the UI
+  * Auditlog now honors the admin realm in the policies (#1244)
+  * Fix description of realm dropdown policy (#1245)
+  * Allow token janitor to use chunk sizes
+  * Allow Audit rotation to be performed in chunks to avoid deadlocks.
+  * Improve documentation about required and optional parameters in
+    the SQL Audit module.
+  * Cast userid to string to avoid casts problems with PostgreSQL
+  * Update pyopenssl dependency.
+
+Version 2.23.2, 2018-09-07
+
+  Fixes:
+  * Fix problem with empty username (#1227)
+
+Version 2.23.1, 2018-09-06
+
+  Fixes:
+  * Fix PassOnNoUser in combination with event handler (#1206)
+  * Fix loading of Event handler detail view (#1210)
+  * Fix Challenge-Response login at Web UI (#1216)
+  * Fix triggerchallenge to only use active tokens (#1217)
+  * Write all installed package to diagnostics file and
+    also write the resolver config in privacyidea-diag
+
 Version 2.23, 2018-08-29
 
   Features:

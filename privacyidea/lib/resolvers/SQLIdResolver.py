@@ -4,6 +4,8 @@
 #  License:  AGPLv3
 #  contact:  cornelius@privacyidea.org
 #
+#  2019-47-14 Paul Lettich <paul.lettich@netknights.it>
+#             Remove hash calculation and switch to passlib
 #  2016-07-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add sha512 PHP hash as suggested by Rick Romero
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -33,22 +35,163 @@ import yaml
 import binascii
 import re
 
-from UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
-from base64 import (b64decode,
-                    b64encode)
 import hashlib
-from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.utils import (is_true, hash_password, PasswordHash,
-                                   check_sha, check_ssha, otrs_sha256, check_crypt, censor_connect_string, to_utf8)
-from passlib.hash import bcrypt
+from privacyidea.lib.utils import (is_true, censor_connect_string, to_utf8)
+from passlib.context import CryptContext
+from base64 import b64decode, b64encode
+from passlib.utils.binary import h64
+from passlib.utils.compat import uascii_to_str, u
+from passlib.utils.compat import unicode as pl_unicode
+from passlib.utils import to_unicode
+import passlib.utils.handlers as uh
+import passlib.exc as exc
+from passlib.registry import register_crypt_handler
+
+
+class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
+    """This class implements the PHPass Portable Hash (Drupal version), and follows the
+    :ref:`password-hash-api`.
+    """
+    name = "phpass_drupal"
+    setting_kwds = ("salt", "rounds")
+    checksum_chars = uh.HASH64_CHARS
+    checksum_size = 43
+
+    min_salt_size = max_salt_size = 8
+    salt_chars = uh.HASH64_CHARS
+
+    default_rounds = 19
+    min_rounds = 7
+    max_rounds = 30
+    rounds_cost = "log2"
+
+    ident = u'$S$'
+
+    @classmethod
+    def from_string(cls, hash):
+        hash = to_unicode(hash, "ascii", "hash")
+        ident, data = hash[0:3], hash[3:]
+        if ident != cls.ident:
+            raise exc.InvalidHashError()
+        rounds, salt, chk = data[0], data[1:9], data[9:]
+        return cls(
+            rounds=h64.decode_int6(rounds.encode("ascii")),
+            salt=salt,
+            checksum=chk or None,
+        )
+
+    def to_string(self):
+        hash = u"%s%s%s%s" % (self.ident,
+                              h64.encode_int6(self.rounds).decode("ascii"),
+                              self.salt,
+                              self.checksum or u'')
+        return uascii_to_str(hash)
+
+    def _calc_checksum(self, secret):
+        if isinstance(secret, pl_unicode):
+            secret = secret.encode("utf-8")
+        real_rounds = 1 << self.rounds
+        result = hashlib.sha512(self.salt.encode("ascii") + secret).digest()
+        r = 0
+        while r < real_rounds:
+            result = hashlib.sha512(result + secret).digest()
+            r += 1
+        return h64.encode_bytes(result).decode("ascii")[:self.checksum_size]
+
+
+class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHandler):  # pragma: no cover
+    """helper for ldap_salted_sha256/512"""
+    setting_kwds = ("salt", "salt_size")
+    checksum_chars = uh.PADDED_BASE64_CHARS
+
+    ident = None
+    _hash_func = None
+    _hash_regex = None
+    min_salt_size = 4
+    default_salt_size = 4
+    max_salt_size = 16
+
+    @classmethod
+    def from_string(cls, hash):
+        hash = to_unicode(hash, "ascii", "hash")
+        m = cls._hash_regex.match(hash)
+        if not m:
+            raise uh.exc.InvalidHashError(cls)
+        try:
+            data = b64decode(m.group("tmp").encode("ascii"))
+        except TypeError:
+            raise uh.exc.MalformedHashError(cls)
+        cs = cls.checksum_size
+        assert cs
+        return cls(checksum=data[:cs], salt=data[cs:])
+
+    def to_string(self):
+        data = self.checksum + self.salt
+        hash = self.ident + b64encode(data).decode("ascii")
+        return uascii_to_str(hash)
+
+    def _calc_checksum(self, secret):
+        if isinstance(secret, pl_unicode):
+            secret = secret.encode("utf-8")
+        return self._hash_func(secret + self.salt).digest()
+
+
+class ldap_salted_sha256(_SaltedBase64DigestHelper):
+    name = 'ldap_salted_sha256'
+    ident = u'{SSHA256}'
+    checksum_size = 32
+    max_salt_size = 32
+    _hash_func = hashlib.sha256
+    _hash_regex = re.compile(u(r"^\{SSHA256\}(?P<tmp>[+/a-zA-Z0-9]{48,}={0,2})$"))
+
+
+class ldap_salted_sha512(_SaltedBase64DigestHelper):
+    name = 'ldap_salted_sha512'
+    ident = u'{SSHA512}'
+    checksum_size = 64
+    max_salt_size = 64
+    _hash_func = hashlib.sha512
+    _hash_regex = re.compile(u(r"^\{SSHA512\}(?P<tmp>[+/a-zA-Z0-9]{88,}={0,2})$"))
+
+
+register_crypt_handler(phpass_drupal)
+register_crypt_handler(ldap_salted_sha256)
+register_crypt_handler(ldap_salted_sha512)
+
+# The list of supported password hash types for verification (passlib handler)
+pw_ctx = CryptContext(schemes=['phpass',
+                               'phpass_drupal',
+                               'ldap_salted_sha1',
+                               'ldap_salted_sha256',
+                               'ldap_salted_sha512',
+                               'ldap_sha1',
+                               'md5_crypt',
+                               'bcrypt',
+                               'sha512_crypt',
+                               'sha256_crypt',
+                               'hex_sha256',
+                               ])
+
+# List of supported password hash types for hash generation (name to passlib handler id)
+hash_type_dict = {"PHPASS": 'phpass',
+                  "SHA": 'ldap_sha1',
+                  "SSHA": 'ldap_salted_sha1',
+                  "SSHA256": 'ldap_salted_sha256',
+                  "SSHA512": 'ldap_salted_sha512',
+                  "OTRS": 'hex_sha256',
+                  "SHA256CRYPT": 'sha256_crypt',
+                  "SHA512CRYPT": 'sha512_crypt',
+                  "MD5CRYPT": 'md5_crypt',
+                  }
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -150,45 +293,33 @@ class IdResolver (UserIdResolver):
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
-        If ``password`` is a unicode object, it is converted to the database encoding first.
-        - returns true in case of success
-        -         false if password does not match
 
+        :param uid: uid of the user for which the password should be checked
+        :type uid: str
+        :param password: the password to check
+        :type password: str
+        :return: True if password matches the saved password hash, False otherwise
+        :rtype: bool
         """
 
         res = False
         userinfo = self.getUserInfo(uid)
-        if isinstance(password, unicode):
-            password = password.encode(self.encoding)
 
         database_pw = userinfo.get("password", "XXXXXXX")
-        if database_pw[:2] in ["$P", "$S"]:
-            # We have a phpass (wordpress) password
-            PH = PasswordHash()
-            res = PH.check_password(password, userinfo.get("password"))
-        # check salted hashed passwords
-#        elif database_pw[:2] == "$6":
-#            res = sha512_crypt.verify(password, userinfo.get("password"))
-        elif database_pw[:6].upper() == "{SSHA}":
-            res = check_ssha(database_pw, password, hashlib.sha1, 20)
-        elif database_pw[:9].upper() == "{SSHA256}":
-            res = check_ssha(database_pw, password, hashlib.sha256, 32)
-        elif database_pw[:9].upper() == "{SSHA512}":
-            res = check_ssha(database_pw, password, hashlib.sha512, 64)
-        # check for hashed password.
-        elif userinfo.get("password", "XXXXX")[:5].upper() == "{SHA}":
-            res = check_sha(database_pw, password)
-        elif len(userinfo.get("password")) == 64:
-            # OTRS sha256 password
-            res = otrs_sha256(database_pw, password)
-        elif database_pw[:3] in ["$1$", "$6$"]:
-            res = check_crypt(database_pw, password)
-        elif database_pw[:4] in ["$2a$", "$2b$", "$2y$"]:
-            # Do bcrypt hashing
-            res = bcrypt.verify(password, database_pw)
-        elif database_pw[:6] in ["1|$2a$", "1|$2b$", "1|$2y$"]:
-            # Do bcrypt hashing with some owncloud format
-            res = bcrypt.verify(password, database_pw[2:])
+
+        # remove owncloud hash format identifier (currently only version 1)
+        database_pw = re.sub(r'^1\|', '', database_pw)
+
+        # translate lower case hash identifier to uppercase
+        database_pw = re.sub(r'^{([a-z0-9]+)}',
+                             lambda match: '{{{}}}'.format(match.group(1).upper()),
+                             database_pw)
+
+        try:
+            res = pw_ctx.verify(password, database_pw)
+        except ValueError as _e:
+            # if the hash could not be identified / verified, just return False
+            pass
 
         return res
 
@@ -213,7 +344,7 @@ class IdResolver (UserIdResolver):
             result = self.session.query(self.TABLE).filter(filter_condition)
 
             for r in result:
-                if userinfo.keys():  # pragma: no cover
+                if userinfo:  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(userId))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover
@@ -406,7 +537,8 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info(u"using the connect string {0!s}".format(censor_connect_string(self.connect_string)))
+        log.info(u"using the connect string "
+                 u"{0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
                 self.pool_size, self.pool_timeout, self.pool_recycle))
@@ -492,7 +624,6 @@ class IdResolver (UserIdResolver):
         :param param: A dictionary with all necessary parameter
                         to test the connection.
         :type param: dict
-
         :return: Tuple of success and a description
         :rtype: (bool, string)
 
@@ -631,3 +762,24 @@ class IdResolver (UserIdResolver):
         # Depending on the database this might look different
         # Usually this is "1"
         return is_true(self._editable)
+
+
+def hash_password(password, hashtype):
+    """
+    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+
+    :param password: The password in plain text
+    :type password: str
+    :param hashtype: One of the hash types as string
+    :type hashtype: str
+    :return: The hashed password
+    :rtype: str
+    """
+    hashtype = hashtype.upper()
+    try:
+        password = pw_ctx.handler(hash_type_dict[hashtype]).hash(password)
+    except KeyError as _e:  # pragma: no cover
+        raise Exception("Unsupported password hashtype '{0!s}'. "
+                        "Use one of {1!s}.".format(hashtype, hash_type_dict.keys()))
+
+    return password

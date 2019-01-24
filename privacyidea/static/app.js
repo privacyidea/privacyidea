@@ -85,17 +85,11 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             // to active whenever 'contacts.list' or one of its decendents is active.
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
-            //debug: console.log("Browser language "+browserLanguage);
-            // remove everythin after the - like en-US -> en
-            var nlang = browserLanguage.replace('/-\*$/', '');
-            if (["de"].indexOf(nlang) === -1) {
-                // if language is not contained in translations,
-                // we use default to "en"
-                nlang = "en";
-            }
-            //debug: console.log("Setting language to " + nlang);
-            gettextCatalog.setCurrentLanguage(nlang);
+            gettextCatalog.setCurrentLanguage(browserLanguage);
             gettextCatalog.debug = true;
+
+            $rootScope.publicLink = "https://netknights.it/" + gettextCatalog.getCurrentLanguage() + "/support-link-public";
+            $rootScope.privacyideaSupportLink = $rootScope.publicLink;
         }
     ]
 );
