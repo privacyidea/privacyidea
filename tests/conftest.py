@@ -48,7 +48,6 @@ if sys.version_info[0] > 2:
         'test_lib_policy.py',
         'test_lib_pooling.py',
         'test_lib_recovery.py',
-        'test_lib_resolver.py',
         'test_lib_smsprovider.py',
         'test_lib_subscriptions.py',
         'test_lib_task_simplestats.py',
