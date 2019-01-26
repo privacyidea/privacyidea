@@ -46,7 +46,9 @@ import os
 import logging
 import crypt
 import codecs
+import six
 
+from privacyidea.lib.utils import to_bytes
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
@@ -194,8 +196,9 @@ class IdResolver (UserIdResolver):
         :rtype: bool
         """
         log.info("checking password for user uid {0!s}".format(uid))
-        if isinstance(password, unicode):
-            password = password.encode(ENCODING)
+        if six.PY2:
+            # crypt needs bytes in python 2
+            password = to_bytes(password)
         cryptedpasswd = self.passDict[uid]
         log.debug("We found the crypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
@@ -363,12 +366,6 @@ class IdResolver (UserIdResolver):
         """
         ret = False
         e = s = ""
-
-        if type(cString) == unicode:
-            cString = cString.encode(ENCODING)
-
-        if type(cPattern) == unicode:
-            cPattern = cPattern.encode(ENCODING)
 
         string = cString.lower()
         pattern = cPattern.lower()

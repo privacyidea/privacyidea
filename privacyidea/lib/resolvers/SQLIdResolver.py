@@ -413,7 +413,7 @@ class IdResolver (UserIdResolver):
             try:
                 raw_value = r.get(self.map.get(key))
                 if raw_value:
-                    if type(raw_value) == str:
+                    if isinstance(raw_value, bytes):
                         val = raw_value.decode(self.encoding)
                     else:
                         val = raw_value
@@ -462,15 +462,19 @@ class IdResolver (UserIdResolver):
         Returns the resolver Id
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
+
+        :return: identifier of the resolver
+        :rtype: str
         """
         # Take the following parts, join them with the NULL byte and return
         # the hexlified SHA-1 digest
-        id_parts = (to_utf8(self.connect_string),
+        id_parts = (self.connect_string,
                     str(self.pool_size),
                     str(self.pool_recycle),
                     str(self.pool_timeout))
-        resolver_id = binascii.hexlify(hashlib.sha1("\x00".join(id_parts)).digest())
-        return "sql." + resolver_id
+        id_str = "\x00".join(id_parts)
+        resolver_id = binascii.hexlify(hashlib.sha1(id_str.encode('utf8')).digest())
+        return "sql." + resolver_id.decode('utf8')
 
     @staticmethod
     def getResolverClassType():
@@ -612,8 +616,8 @@ class IdResolver (UserIdResolver):
                                                    param.get("Database", ""),
                                                    conParams)
         # SQLAlchemy does not like a unicode connect string!
-        if param.get("Driver").lower() == "sqlite":
-            connect_string = str(connect_string)
+#        if param.get("Driver").lower() == "sqlite":
+#            connect_string = str(connect_string)
         return connect_string
 
     @classmethod

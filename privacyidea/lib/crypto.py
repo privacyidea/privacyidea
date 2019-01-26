@@ -336,7 +336,7 @@ def decryptPassword(cryptPass, convert_unicode=False):
     # keyword argument to avoid breaking compatibility.
     hsm = get_hsm()
     try:
-        ret = hsm.decrypt_password(cryptPass)
+        ret = hsm.decrypt_password(_to_bytes(cryptPass))
     except Exception as exx:
         log.warning(exx)
         ret = FAILED_TO_DECRYPT_PASSWORD

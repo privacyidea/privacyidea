@@ -27,10 +27,8 @@ This is the library with base functions for privacyIDEA.
 This module is tested in tests/test_lib_utils.py
 """
 import six
-import logging
+import logging; log = logging.getLogger(__name__)
 from importlib import import_module
-
-log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
@@ -157,18 +155,54 @@ def to_utf8(password):
 
 def to_unicode(s, encoding="utf-8"):
     """
-    converts a value to unicode if it is of type str.
+    Converts the string s to unicode if it is of type bytes.
     
-    :param s: the str to decode
-    :type s: bytes, str
+    :param s: the string to convert
+    :type s: bytes or str
     :param encoding: the encoding to use (default utf8)
     :type encoding: str
     :return: unicode string
     :rtype: str
     """
-    if type(s) == str:
-        s = s.decode(encoding)
+    if isinstance(s, six.text_type):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(encoding)
+    # TODO: warning? Exception?
     return s
+
+
+def to_bytes(s):
+    """
+    Converts the string s to a unicode encoded byte string
+
+    :param s: string to convert
+    :type s: str or bytes
+    :return: the converted byte string
+    :rtype: bytes
+    """
+    if isinstance(s, bytes):
+        return s
+    elif isinstance(s, six.text_type):
+        return s.encode('utf8')
+    # TODO: warning? Exception?
+    return s
+
+
+def to_byte_string(value):
+    """
+    Convert the given value to a byte string. If it is not a string type,
+    convert it to a string first.
+
+    :param value: the value to convert
+    :type value: str or bytes or int
+    :return: byte string representing the value
+    :rtype: bytes
+    """
+    if not isinstance(value, (bytes, six.string_types)):
+        value = str(value)
+    value = to_bytes(value)
+    return value
 
 
 def generate_otpkey(key_size=20):
@@ -379,8 +413,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data!"
+                        " {0!s}".format(params))
 
     return data, types, desc
 

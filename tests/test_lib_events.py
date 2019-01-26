@@ -751,7 +751,7 @@ class FederationEventTestCase(MyTestCase):
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
         # No Response data, since this method is not supported
-        self.assertEqual(options.get("response").data, "")
+        self.assertEqual(options.get("response").data, b"")
 
     @responses.activate
     def test_02_forward_admin_request(self):
