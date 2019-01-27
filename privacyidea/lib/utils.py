@@ -576,21 +576,25 @@ def get_client_ip(request, proxy_settings):
     :return:
     """
     client_ip = request.remote_addr
-    # We only do the mapping for authentication requests!
+
+    # Set the possible mapped IP to X-Forwarded-For
+    mapped_ip = request.access_route[0] if request.access_route else None
+
+    # We only do the client-param mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
                     request.blueprint in ["validate_blueprint", "ttype_blueprint",
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
-        mapped_ip = request.all_data.get("client") or \
-                    (request.access_route[0] if request.access_route else None)
-        if mapped_ip:
-            if proxy_settings and check_proxy(client_ip, mapped_ip,
-                                              proxy_settings):
-                client_ip = mapped_ip
-            elif mapped_ip != client_ip:
-                log.warning("Proxy {client_ip} not allowed to set IP to "
-                            "{mapped_ip}.".format(client_ip=client_ip,
-                                                  mapped_ip=mapped_ip))
+        mapped_ip = request.all_data.get("client") or mapped_ip
+
+    if mapped_ip:
+        if proxy_settings and check_proxy(client_ip, mapped_ip,
+                                          proxy_settings):
+            client_ip = mapped_ip
+        elif mapped_ip != client_ip:
+            log.warning("Proxy {client_ip} not allowed to set IP to "
+                        "{mapped_ip}.".format(client_ip=client_ip,
+                                              mapped_ip=mapped_ip))
 
     return client_ip
 
