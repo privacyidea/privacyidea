@@ -158,6 +158,7 @@ from configobj import ConfigObj
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from operator import itemgetter
+import six
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
@@ -169,7 +170,8 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import check_time_in_range, reload_db, fetch_one_resource
+from privacyidea.lib.utils import (check_time_in_range, reload_db,
+                                   fetch_one_resource, is_true)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -836,6 +838,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
+            filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.get_policies(scope=role, client=client,
@@ -844,10 +847,11 @@ class PolicyClass(with_metaclass(Singleton, object)):
                                              active=True,
                                              action="enroll"+tokentype.upper(),
                                              adminrealm=admin_realm)
-                if not typepols:
+                if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
-                    del(enroll_types[tokentype])
+                    filtered_enroll_types[tokentype] = enroll_types[tokentype]
+            enroll_types = filtered_enroll_types
 
         return enroll_types
 
@@ -885,14 +889,12 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID od the the policy
     :rtype: int
     """
-    if type(active) in [str, unicode]:
-        active = active.lower() == "true"
-    if type(priority) in [str, unicode]:
+    active = is_true(active)
+    if isinstance(priority, six.string_types):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
-    if type(check_all_resolvers) in [str, unicode]:
-        check_all_resolvers = check_all_resolvers.lower() == "true"
+    check_all_resolvers = is_true(check_all_resolvers)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
