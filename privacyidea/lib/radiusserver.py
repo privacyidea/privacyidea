@@ -30,7 +30,7 @@ from pyrad.client import Client
 from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
-from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils import fetch_one_resource, to_bytes
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
@@ -96,7 +96,7 @@ class RADIUSServer(object):
 
         srv = Client(server=config.server,
                      authport=config.port,
-                     secret=decryptPassword(config.secret),
+                     secret=to_bytes(decryptPassword(config.secret)),
                      dict=Dictionary(r_dict))
 
         # Set retries and timeout of the client
