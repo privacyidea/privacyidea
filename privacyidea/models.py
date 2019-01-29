@@ -1525,7 +1525,7 @@ class MachineTokenOptions(db.Model):
                                                             machinetoken_id))
         self.machinetoken_id = machinetoken_id
         self.mt_key = key
-        self.mt_value = unicode(value)
+        self.mt_value = value
 
         # if the combination machinetoken_id / mt_key already exist,
         # we need to update
