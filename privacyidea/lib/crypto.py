@@ -287,10 +287,15 @@ def set_hsm_password(password):
 def encryptPassword(password):
     """
     Encrypt given password with hsm
+
+    This function returns a unicode string with a
+    hexlified contents of the IV and the encrypted data separated by a
+    colon like u"4956:44415441"
+
     :param password: the password
     :type password: bytes or str
-    :return: the encrypted password
-    :rtype: bytes
+    :return: the encrypted password, hexlified
+    :rtype: str
     """
     hsm = get_hsm()
     try:
@@ -314,38 +319,21 @@ def encryptPin(cryptPin):
 
 
 @log_with(log, log_exit=False)
-def decryptPassword(cryptPass, convert_unicode=False):
+def decryptPassword(cryptPass):
     """
     Decrypt the encrypted password ``cryptPass`` and return it.
     If an error occurs during decryption, return FAILED_TO_DECRYPT_PASSWORD.
 
-    :param cryptPass: bytestring
-    :param convert_unicode: If true, interpret the decrypted password as an UTF-8 string
-                            and convert it to unicode. If an error occurs here,
-                            the original bytestring is returned.
-    :type convert_unicode: bool
+    :param cryptPass: str
     :return: the decrypted password
-    :rtype: str or bytes
+    :rtype: str
     """
-    # NOTE: Why do we have the ``convert_unicode`` parameter?
-    # Up until now, this always returned bytestrings. However, this breaks
-    # LDAP and SQL resolvers, which expect this to return an unicode string
-    # (and this makes more sense, because ``encryptPassword`` also
-    # takes unicode strings!). But always returning unicode might break
-    # other call sites of ``decryptPassword``. So we add the
-    # keyword argument to avoid breaking compatibility.
     hsm = get_hsm()
     try:
-        ret = hsm.decrypt_password(_to_bytes(cryptPass))
+        ret = hsm.decrypt_password(cryptPass)
     except Exception as exx:
         log.warning(exx)
         ret = FAILED_TO_DECRYPT_PASSWORD
-    try:
-        if convert_unicode:
-            ret = _to_unicode(ret)
-    except Exception as exx:
-        log.warning(exx)
-        # just keep ``ret`` as a bytestring in that case
     return ret
 
 
@@ -359,7 +347,7 @@ def decryptPin(cryptPin):
     :rtype: str
     """
     hsm = get_hsm()
-    return _to_unicode(hsm.decrypt_pin(_to_bytes(cryptPin)))
+    return hsm.decrypt_pin(cryptPin)
 
 
 @log_with(log, log_entry=False)

@@ -23,9 +23,11 @@ This is a PKCS11 Security module that encrypts and decrypts the data on a Smartc
 import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.security.password import PASSWORD
+from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.error import HSMException
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
+import binascii
 log = logging.getLogger(__name__)
 
 try:
@@ -149,18 +151,6 @@ class PKCS11SecurityModule(SecurityModule):  # pragma: no cover
         text = int_list_to_bytestring(text)
         self.session.logout()
         return text
-
-    def encrypt_password(self, clear_pass):
-        return self.encrypt(clear_pass)
-
-    def encrypt_pin(self, clear_pin):
-        return self.encrypt(clear_pin)
-
-    def decrypt_password(self, crypt_pass):
-        return self.decrypt(crypt_pass)
-
-    def decrypt_pin(self, crypt_pin):
-        return self.decrypt(crypt_pin)
 
 
 if __name__ == "__main__":  # pragma: no cover
