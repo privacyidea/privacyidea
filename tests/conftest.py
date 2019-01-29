@@ -26,7 +26,6 @@ if sys.version_info[0] > 2:
         'test_lib_caconnector.py',
         'test_lib_challenges.py',
         'test_lib_importotp.py',
-        'test_lib_machines.py',
         'test_lib_machinetokens.py',
         'test_lib_recovery.py',
         'test_lib_smsprovider.py',
