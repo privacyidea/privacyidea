@@ -43,11 +43,11 @@ This module is tested in tests/test_lib_passwordreset.py
 
 log = logging.getLogger(__name__)
 
-BODY = """Someone requested to reset the password within privacyIDEA.
+BODY = u"""Someone requested to reset the password within privacyIDEA.
 
 To reset your user password please visit the link
 
-%s/reset/%s@%s/%s
+{0!s}/reset/{1!s}@{2!s}/{3!s}
 """
 
 
@@ -86,9 +86,9 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
         # send email
         r = send_email_identifier(identifier, user_email,
                                   "Your password reset",
-                                  BODY % (base_url,
-                                          user.login, user.realm,
-                                          recoverycode))
+                                  BODY.format(base_url,
+                                              user.login, user.realm,
+                                              recoverycode))
         if not r:
             raise privacyIDEAError("Failed to send email. {0!s}".format(r))
     else:
@@ -106,7 +106,7 @@ def check_recoverycode(user, recoverycode):
     :param user: User, who wants to reset his password.
     :type user: User object
     :param recoverycode: The recovery code
-    :type recoverycode: basestring
+    :type recoverycode: str
     :return: True is code was correct
     """
     recoverycode_valid = False
@@ -121,7 +121,7 @@ def check_recoverycode(user, recoverycode):
     for pwr in sql_query:
         if verify_with_pepper(pwr.recoverycode, recoverycode):
             recoverycode_valid = True
-            log.debug("Found valid recoverycode for user {0!r}".format(user))
+            log.debug(u"Found valid recoverycode for user {0!r}".format(user))
             # Delete the recovery code, so that it can only be used once!
             r = pwr.delete()
             log.debug("{0!s} used password recoverycode deleted.".format(r))
