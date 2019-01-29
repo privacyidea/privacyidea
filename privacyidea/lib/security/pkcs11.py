@@ -23,11 +23,10 @@ This is a PKCS11 Security module that encrypts and decrypts the data on a Smartc
 import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.security.password import PASSWORD
-from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.error import HSMException
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
-import binascii
+
 log = logging.getLogger(__name__)
 
 try:

@@ -119,7 +119,7 @@ class SecurityModule(object):
 
         :param crypt_pass: the encrypted password with the leading iv,
             separated by the ':', hexlified
-        :param crypt_pass: str
+        :type crypt_pass: str
 
         :return: decrypted data
         :rtype: str
@@ -132,7 +132,7 @@ class SecurityModule(object):
 
         :param crypt_pin: the encrypted pin with the leading iv,
             separated by the ':'
-        :param crypt_pin: byte string
+        :type crypt_pin: str
 
         :return: decrypted data
         :rtype: str
@@ -148,7 +148,7 @@ class SecurityModule(object):
         colon like u"4956:44415441"
 
         :param password: The password that is to be encrypted
-        :param password: bytes
+        :type password: str
 
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: str
@@ -164,7 +164,7 @@ class SecurityModule(object):
         colon like u"4956:44415441"
 
         :param pin: the pin that should be encrypted
-        :param pin: str
+        :type pin: str
 
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: str
@@ -179,7 +179,7 @@ class SecurityModule(object):
         returns as string with leading iv, separated by ':'
 
         :param value: the value that is to be encrypted
-        :param value: str
+        :type value: str
 
         :param slot_id: slot of the key array
         :type slot_id: int
@@ -199,13 +199,13 @@ class SecurityModule(object):
         - used one slot id to encrypt a string with leading iv, separated by ':'
 
         :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: str
+        :type crypt_value: str
 
-        :param  slot_id: slot of the key array
-        :type   slot_id: int
+        :param slot_id: slot of the key array
+        :type slot_id: int
 
         :return: decrypted data
-        :rtype:  bytes
+        :rtype: str
         """
         # split at ":"
         pos = crypt_value.find(':')
