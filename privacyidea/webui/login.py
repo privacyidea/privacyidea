@@ -38,6 +38,8 @@ from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.config import get_from_config, SYSCONF
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -81,8 +83,8 @@ def single_page_application():
     # Depending on displaying the realm dropdown, we fill realms or not.
     policy_object = PolicyClass()
     realms = ""
-    client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    client_ip = get_client_ip(request,
+                              get_from_config(SYSCONF.OVERRIDECLIENT))
     realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
                                                 scope=SCOPE.WEBUI,
                                                 client=client_ip,

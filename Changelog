@@ -1,3 +1,11 @@
+Version 3.0, 2019-03-xx
+
+  Changes:
+  * When logging in to the webui the client IP is only determined by
+    X-Forwarded-For if the orinigal (REMOTE_ADDR) is allowed to overwrite the client ip.
+    (Side effect of #1392)
+
+
 Version 2.23.3, 2018-10-26
 
   Fixes:

@@ -48,3 +48,12 @@ class LoginUITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue("/static/mytemplates/nonexist_base.html" in res.data)
             self.assertTrue("/static/mytemplates/nonexist_menu.html" in res.data)
+
+    def test_05_custom_login_text(self):
+        set_policy("logtext", scope=SCOPE.WEBUI,
+                   action="{0!s}=Go for it!".format(ACTION.LOGIN_TEXT))
+        with self.app.test_request_context('/',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue("Go for it!" in res.data)
