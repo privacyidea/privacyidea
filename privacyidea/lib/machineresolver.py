@@ -112,7 +112,7 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
-            value = encryptPassword(value)
+            value = binascii.hexlify(encryptPassword(value))
         MachineResolverConfig(resolver_id=resolver_id,
                               Key=key,
                               Value=value,
@@ -152,7 +152,8 @@ def get_resolver_list(filter_resolver_type=None,
         for conf in reso.rconfig:
             value = conf.Value
             if conf.Type == "password":
-                value = decryptPassword(value)
+                value = decryptPassword(binascii.unhexlify(value))
+                value = value.decode("utf-8")
             data[conf.Key] = value
         r["data"] = data
         Resolvers[reso.name] = r

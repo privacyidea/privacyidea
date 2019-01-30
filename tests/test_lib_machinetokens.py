@@ -74,7 +74,7 @@ class MachineTokenTestCase(MyTestCase):
 
         r = add_option(serial=self.serial, application="luks",
                        hostname="gandalf", options={"option1": "value1",
-                                                    "option2": u"valü2"})
+                                                    "option2": "value2"})
         self.assertEqual(r, 2)
 
         # The options are accessible via the Token!!!
