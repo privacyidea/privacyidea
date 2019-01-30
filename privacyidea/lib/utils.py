@@ -335,8 +335,9 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except (TypeError, binascii.Error):
-        # in Python 3 b32decode throws a binascii.Error when the padding is wrong
+    except (TypeError, binascii.Error, OverflowError):
+        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
+        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:

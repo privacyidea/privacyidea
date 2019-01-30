@@ -1671,7 +1671,7 @@ def set_description(serial, description, user=None):
     :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param description: The description for the token
-    :type description: int
+    :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
     :return: number of modified tokens
