@@ -10,7 +10,7 @@ from io import StringIO
 from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from OpenSSL import crypto
-from privacyidea.lib.utils import int_to_hex
+from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
@@ -199,7 +199,7 @@ class LocalCATestCase(MyTestCase):
         r = cacon.create_crl()
         self.assertEqual(r, "crl.pem")
         # Check if the serial number is contained in the CRL!
-        filename = cwd + "/" + WORKINGDIR + "/crl.pem"
+        filename = os.path.join(cwd, WORKINGDIR, "crl.pem")
         f = open(filename)
         buff = f.read()
         f.close()
@@ -207,7 +207,7 @@ class LocalCATestCase(MyTestCase):
         revoked_certs = crl.get_revoked()
         found_revoked_cert = False
         for revoked_cert in revoked_certs:
-            s = revoked_cert.get_serial()
+            s = to_unicode(revoked_cert.get_serial())
             if s == serial_hex:
                 found_revoked_cert = True
                 break
@@ -272,7 +272,7 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue("template3" in templates)
         cert = cacon.sign_request(SPKAC, options={"spkac": 1,
                                                   "template": "webserver"})
-        expires = cert.get_notAfter()
+        expires = to_unicode(cert.get_notAfter())
         import datetime
         dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
         ddiff = dt - datetime.datetime.now()

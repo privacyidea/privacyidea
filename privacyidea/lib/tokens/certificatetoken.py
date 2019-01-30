@@ -32,6 +32,8 @@ The code is tested in test_lib_tokens_certificate.py.
 """
 
 import logging
+
+from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
@@ -217,8 +219,8 @@ class CertificateTokenClass(TokenClass):
             # req.get_subject().organizationName = 'xxx'
             req.set_pubkey(key)
             req.sign(key, "sha256")
-            x509object = cacon.sign_request(crypto.dump_certificate_request(
-                crypto.FILETYPE_PEM, req), options={"template": template_name})
+            csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
+            x509object = cacon.sign_request(csr, options={"template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
             # Save the private key to the encrypted key field of the token
