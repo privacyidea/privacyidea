@@ -607,10 +607,11 @@ class HotpTokenClass(TokenClass):
         otpval = hmac2Otp.generate(inc_counter=False)
 
         pin = self.token.get_pin()
-        combined = "{0!s}{1!s}".format(otpval, pin)
 
         if get_from_config("PrependPin") == "True":
-            combined = "{0!s}{1!s}".format(pin, otpval)
+            combined = u"{0!s}{1!s}".format(pin, otpval)
+        else:
+            combined = u"{0!s}{1!s}".format(otpval, pin)
 
         return 1, pin, otpval, combined
 

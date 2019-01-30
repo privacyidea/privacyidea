@@ -35,7 +35,7 @@ import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
 from io import BytesIO
-from privacyidea.lib.crypto import urandom, geturandom
+from privacyidea.lib.crypto import urandom, geturandom, hexlify_and_unicode
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
@@ -212,10 +212,10 @@ def generate_otpkey(key_size=20):
     :param key_size: The size of the key to generate
     :type key_size: int
     :return: hexlified key
-    :rtype: string
+    :rtype: str
     """
     log.debug("generating key of size {0!s}".format(key_size))
-    return binascii.hexlify(geturandom(key_size))
+    return hexlify_and_unicode(geturandom(key_size))
 
 
 def create_png(data, alt=None):
@@ -319,10 +319,11 @@ def decode_base32check(encoded_data, always_upper=True):
 
     Raise a ParameterError if the encoded payload is malformed.
     :param encoded_data: The base32 encoded data.
-    :type encoded_data: basestring
+    :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
     :type always_upper: bool
     :return: hex-encoded payload
+    :rtype: str
     """
     # First, add the padding to have a multiple of 8 bytes
     if always_upper:
@@ -334,7 +335,8 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except TypeError:
+    except (TypeError, binascii.Error):
+        # in Python 3 b32decode throws a binascii.Error when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -343,7 +345,7 @@ def decode_base32check(encoded_data, always_upper=True):
     payload_hash = hashlib.sha1(payload).digest()
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
-    return binascii.hexlify(payload)
+    return hexlify_and_unicode(payload)
 
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):

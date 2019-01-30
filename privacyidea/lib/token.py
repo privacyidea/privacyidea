@@ -63,12 +63,13 @@ This is the middleware/glue between the HTTP API and the database
 import traceback
 import string
 import datetime
-import binascii
 import os
 import logging
 from six import string_types
 
 from sqlalchemy import (and_, func)
+
+from privacyidea.lib.crypto import hexlify_and_unicode
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -892,8 +893,8 @@ def gen_serial(tokentype=None, prefix=None):
         num_str = '{:04d}'.format(_tokennum)
         h_len = serial_len - len(num_str)
         if h_len > 0:
-            h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
-        return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
+            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
+        return u"{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
     if not tokentype:
         tokentype = 'PIUN'
