@@ -63,12 +63,13 @@ This is the middleware/glue between the HTTP API and the database
 import traceback
 import string
 import datetime
-import binascii
 import os
 import logging
 from six import string_types
 
 from sqlalchemy import (and_, func)
+
+from privacyidea.lib.crypto import hexlify_and_unicode
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -881,9 +882,11 @@ def gen_serial(tokentype=None, prefix=None):
     generate a serial for a given tokentype
 
     :param tokentype: the token type prefix is done by a lookup on the tokens
+    :type tokentype: str
     :param prefix: A prefix to the serial number
+    :type prefix: str
     :return: serial number
-    :rtype: string
+    :rtype: str
     """
     serial_len = int(get_from_config("SerialLength") or 8)
 
@@ -892,7 +895,7 @@ def gen_serial(tokentype=None, prefix=None):
         num_str = '{:04d}'.format(_tokennum)
         h_len = serial_len - len(num_str)
         if h_len > 0:
-            h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
+            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
     if not tokentype:
@@ -901,14 +904,14 @@ def gen_serial(tokentype=None, prefix=None):
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
 
     # now search the number of tokens of tokenytype in the token database
-    tokennum = Token.query.filter(Token.tokentype == u'' + tokentype).count()
+    tokennum = Token.query.filter(Token.tokentype == tokentype).count()
 
     # Now create the serial
     serial = _gen_serial(prefix, tokennum)
 
     # now test if serial already exists
     while True:
-        numtokens = Token.query.filter(Token.serial == u'' + serial).count()
+        numtokens = Token.query.filter(Token.serial == serial).count()
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
@@ -1670,7 +1673,7 @@ def set_description(serial, description, user=None):
     :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param description: The description for the token
-    :type description: int
+    :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
     :return: number of modified tokens
