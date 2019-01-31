@@ -636,7 +636,7 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -740,7 +740,7 @@ class HOTPTokenTestCase(MyTestCase):
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # too short
         self.assertRaises(ParameterError, token.update, {
-            "otpkey": binascii.hexlify("="*8)
+            "otpkey": binascii.hexlify(b"="*8)
         })
         # generate a 12-byte client component
         client_component = b'abcdefghijkl'
@@ -786,12 +786,12 @@ class HOTPTokenTestCase(MyTestCase):
             "Incorrect checksum",
             token.update,
             {
-                "otpkey": base64.b32encode("\x37" + checksum[1:] + client_component).strip("="),
+                "otpkey": base64.b32encode(b"\x37" + checksum[1:] + client_component).strip(b"="),
                 "otpkeyformat": "base32check",
             })
         # construct a secret
         token.update({
-            "otpkey": base64.b32encode(checksum + client_component).strip("="),
+            "otpkey": base64.b32encode(checksum + client_component).strip(b"="),
             "otpkeyformat": "base32check",
             # the following values are ignored
             "2step_serversize": "23",

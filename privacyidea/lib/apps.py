@@ -44,6 +44,7 @@ This only depends on the ConfigPolicy.
 
 import binascii
 import base64
+import six
 
 import logging
 log = logging.getLogger(__name__)
@@ -56,19 +57,25 @@ MAX_QRCODE_LEN = 180
 
 def _construct_extra_parameters(extra_data):
     """
-    Given a dictionary of extra key-value pairs (all unicode strings),
+    Given a dictionary of extra key-value pairs (all str),
     return a string that may be appended to a google authenticator / oathtoken URL.
-    Keys and values are converted to strings and urlquoted. Unicodes are converted to UTF-8.
-    :return: a string (may be empty if ``extra_data`` is empty
+    Values that are non-strings will be converted to str.
+    Keys and values are converted to UTF-8 and urlquoted.
+    :return: a string (may be empty if ``extra_data`` is empty)
     """
     extra_data_list = []
     for key, value in extra_data.items():
-        if isinstance(key, unicode):
+        # ``value`` might not be a str, in which case we will convert it.
+        if not isinstance(value, six.text_type):
+            value = str(value)
+        # We ensure ``key`` and ``value`` are bytes on Python 2 and 3.
+        if isinstance(key, six.text_type):
             key = key.encode('utf-8')
-        if isinstance(value, unicode):
+        if isinstance(value, six.text_type):
             value = value.encode('utf-8')
-        extra_data_list.append('{key}={value}'.format(key=quote(str(key)),
-                                                      value=quote(str(value))))
+        # Thus, ``quote`` returns (ASCII) bytes on Python 2. On Python 3, it returns str.
+        extra_data_list.append('{key}={value}'.format(key=quote(key),
+                                                      value=quote(value)))
     return ('&' if extra_data_list else '') + '&'.join(extra_data_list)
 
 
@@ -126,7 +133,7 @@ def create_google_authenticator_url(key=None, user=None,
 
     key_bin = binascii.unhexlify(key)
     # also strip the padding =, as it will get problems with the google app.
-    otpkey = base64.b32encode(key_bin).strip('=')
+    otpkey = base64.b32encode(key_bin).decode('utf-8').strip('=')
 
     base_len = len("otpauth://{0!s}/?secret={1!s}&counter=1".format(tokentype, otpkey))
     allowed_label_len = MAX_QRCODE_LEN - base_len
