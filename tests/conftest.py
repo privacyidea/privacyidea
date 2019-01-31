@@ -43,7 +43,6 @@ if sys.version_info[0] > 2:
         'test_lib_tokens_vasco.py',
         'test_lib_tokens_yubico.py',
         'test_lib_tokens_yubikey.py',
-        'test_lib_usercache.py',
         'test_lib_utils.py',
         'test_mod_apache.py',
         'test_resolver_realm.py',
