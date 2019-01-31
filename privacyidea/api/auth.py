@@ -47,25 +47,23 @@ from flask import (Blueprint,
                    request,
                    current_app,
                    g)
-from .lib.utils import (send_result, get_all_params,
-                        verify_auth_token)
-from privacyidea.lib.crypto import geturandom, init_hsm, hexlify_and_unicode
-from ..lib.error import AuthError, ERROR
-from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
+from privacyidea.lib.error import AuthError, ERROR
+from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auth import check_webui_user, ROLE
-from privacyidea.lib.user import User
-from privacyidea.lib.user import split_user, log_used_user
+from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
+                                  db_admin_exist)
+from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
-from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.api.lib.utils import (send_result, get_all_params,
+                                       verify_auth_token, getParam)
+from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
 from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging

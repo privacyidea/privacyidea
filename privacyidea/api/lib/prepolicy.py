@@ -68,8 +68,9 @@ from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
-from privacyidea.lib.utils import (generate_password, get_client_ip,
+from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class)
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.clientapplication import save_clientapplication

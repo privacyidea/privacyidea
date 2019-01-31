@@ -12,14 +12,13 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
-from privacyidea.lib.crypto import geturandom, hexlify_and_unicode
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
-import binascii
 
 PWFILE = "tests/testdata/passwords"
 

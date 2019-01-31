@@ -35,8 +35,6 @@ import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
 from io import BytesIO
-from privacyidea.lib.crypto import urandom, geturandom, hexlify_and_unicode
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
 from datetime import timedelta, datetime
@@ -47,23 +45,21 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import os
+from random import SystemRandom
 
-try:
-    import bcrypt
-    _bcrypt_hashpw = bcrypt.hashpw
-except ImportError:  # pragma: no cover
-    _bcrypt_hashpw = None
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
 # On App Engine, this function is not available.
 if hasattr(os, 'getpid'):
     _pid = os.getpid()
 else:  # pragma: no cover
     # Fake PID
-    _pid = urandom.randint(0, 100000)
+    _pid = SystemRandom().randint(0, 100000)
 
 ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -205,17 +201,17 @@ def to_byte_string(value):
     return value
 
 
-def generate_otpkey(key_size=20):
+def hexlify_and_unicode(s):
     """
-    generates the HMAC key of keysize. Should be 20 or 32
-    The key is returned as a hexlified string
-    :param key_size: The size of the key to generate
-    :type key_size: int
-    :return: hexlified key
+
+    :param s: string to hexlify
+    :type s: bytes or str
+    :return: hexlified string converted to unicode
     :rtype: str
     """
-    log.debug("generating key of size {0!s}".format(key_size))
-    return hexlify_and_unicode(geturandom(key_size))
+
+    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    return res
 
 
 def create_png(data, alt=None):
@@ -263,18 +259,6 @@ def create_img(data, width=0, alt=None, raw=False):
 
     return ret_img
 
-
-def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
-    """
-    Generate a random password of the specified lenght of the given characters
-
-    :param size: The length of the password
-    :param characters: The characters the password may consist of
-    :return: password
-    :rtype: basestring
-    """
-    return ''.join(urandom.choice(characters) for _x in range(size))
 
 #
 # Modhex calculations for Yubikey

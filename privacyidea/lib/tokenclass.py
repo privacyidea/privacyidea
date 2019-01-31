@@ -90,12 +90,13 @@ from .user import (User,
                    get_username)
 from ..models import (Challenge, cleanup_challenges)
 from .challenge import get_challenges
-from privacyidea.lib.crypto import encryptPassword, decryptPassword
+from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+                                    generate_otpkey)
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
-from privacyidea.lib.utils import (is_true, generate_otpkey, decode_base32check,
+from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time)
 from privacyidea.lib import _

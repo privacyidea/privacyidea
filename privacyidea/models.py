@@ -49,12 +49,12 @@ from privacyidea.lib.crypto import (encrypt,
                                     geturandom,
                                     hash,
                                     SecretObj,
-                                    get_rand_digit_str,
-                                    hexlify_and_unicode)
+                                    get_rand_digit_str)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
-from privacyidea.lib.utils import is_true, convert_column_to_unicode
+from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
+                                   hexlify_and_unicode)
 
 log = logging.getLogger(__name__)
 
