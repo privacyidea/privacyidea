@@ -44,11 +44,11 @@ import os
 import six
 
 from Crypto.Cipher import AES
-from privacyidea.lib.crypto import zerome, hexlify_and_unicode
-from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
+from privacyidea.lib.crypto import geturandom, zerome
 from privacyidea.lib.error import HSMException
-from privacyidea.lib.utils import is_true, to_unicode, to_bytes
+from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
+                                   hexlify_and_unicode)
 
 from .password import PASSWORD
 

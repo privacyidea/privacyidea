@@ -50,8 +50,6 @@ import logging
 from hashlib import sha256
 import random
 import string
-from .log import log_with
-from .error import HSMException
 import binascii
 import six
 import ctypes
@@ -66,17 +64,19 @@ except ImportError:
     # Bummer the version of PyCrypto has no PKCS1_15
     SIGN_WITH_RSA = True
 import passlib.hash
-import sys
 import traceback
 from six import PY2, text_type
-from privacyidea.lib.framework import get_app_local_store, get_app_config_value, get_app_config
+
+from privacyidea.lib.log import log_with
+from privacyidea.lib.error import HSMException
+from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
+                                       get_app_config)
+from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode
+
 if not PY2:
     long = int
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
-
-(ma, mi, _, _, _,) = sys.version_info
-pver = float(int(ma) + int(mi) * 0.1)
 
 log = logging.getLogger(__name__)
 
@@ -98,17 +98,12 @@ class SecretObj(object):
 
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
-        enc_otp_key = _to_bytes(encrypt(bhOtpKey, self.iv))
+        enc_otp_key = to_bytes(encrypt(bhOtpKey, self.iv))
         return enc_otp_key == self.val
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
-        if pver > 2.6:
-            # only for debugging
-            _hex_kex = binascii.hexlify(self.bkey)
-            h = hmac.new(self.bkey, data_input, hash_algo).digest()
-        else:
-            h = hmac.new(self.bkey, str(data_input), hash_algo).digest()
+        h = hmac.new(self.bkey, data_input, hash_algo).digest()
         self._clearKey_(preserve=self.preserve)
         return h
 
@@ -141,45 +136,6 @@ class SecretObj(object):
     # this could also disturb the garbage collector and lead to memory eat ups.
     def __del__(self):
         self._clearKey_()
-        
-
-def _to_bytes(s):
-    """
-    Convert string to bytes if it isn't already
-    :param s: string to convert
-    :type s: str, bytes, unicode
-    :return: the converted string
-    :rtype: bytes
-    """
-    if isinstance(s, six.text_type):
-        s = s.encode('utf8')
-    return s
-
-
-def _to_unicode(s):
-    """
-    decode a byte string to unicode using utf8
-    :param s: string to decode to utf8
-    :type s: bytes or str
-    :return: the utf-8 decoded string s
-    :rtype: str
-    """
-    if isinstance(s, bytes):
-        s = s.decode('utf8')
-    return s
-
-
-def hexlify_and_unicode(s):
-    """
-
-    :param s: string to hexlify
-    :type s: bytes or str
-    :return: hexlified string converted to unicode
-    :rtype: str
-    """
-
-    res = _to_unicode(binascii.hexlify(_to_bytes(s)))
-    return res
 
 
 @log_with(log, log_entry=False, log_exit=False)
@@ -196,8 +152,8 @@ def hash(val, seed, algo=None):
     """
     log.debug('hash()')
     m = sha256()
-    m.update(_to_bytes(val))
-    m.update(_to_bytes(seed))
+    m.update(to_bytes(val))
+    m.update(to_bytes(seed))
     return hexlify_and_unicode(m.digest())
 
 
@@ -299,7 +255,7 @@ def encryptPassword(password):
     """
     hsm = get_hsm()
     try:
-        ret = hsm.encrypt_password(_to_bytes(password))
+        ret = hsm.encrypt_password(to_bytes(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
         ret = "FAILED TO ENCRYPT PASSWORD!"
@@ -315,7 +271,7 @@ def encryptPin(cryptPin):
     :rtype: str
     """
     hsm = get_hsm()
-    return _to_unicode(hsm.encrypt_pin(_to_bytes(cryptPin)))
+    return to_unicode(hsm.encrypt_pin(to_bytes(cryptPin)))
 
 
 @log_with(log, log_exit=False)
@@ -366,7 +322,7 @@ def encrypt(data, iv, id=0):
 
     '''
     hsm = get_hsm()
-    ret = hsm.encrypt(_to_bytes(data), _to_bytes(iv), id)
+    ret = hsm.encrypt(to_bytes(data), to_bytes(iv), id)
     return hexlify_and_unicode(ret)
 
 
@@ -385,7 +341,7 @@ def decrypt(input, iv, id=0):
     :rtype: bytes
     '''
     hsm = get_hsm()
-    res = hsm.decrypt(_to_bytes(input), _to_bytes(iv), id)
+    res = hsm.decrypt(to_bytes(input), to_bytes(iv), id)
     return res
 
 
@@ -485,7 +441,7 @@ def geturandom(length=20, hex=False):
     ret = hsm.random(length)
         
     if hex:
-        ret = _to_unicode(binascii.hexlify(ret))
+        ret = to_unicode(binascii.hexlify(ret))
     return ret
 
 # some random functions based on geturandom #################################
@@ -768,3 +724,29 @@ def create_hsm_object(config):
         log.info("calling HSM module with parameters {0}".format(logging_params))
 
     return hsm_class(hsm_parameters)
+
+
+def generate_otpkey(key_size=20):
+    """
+    generates the HMAC key of keysize. Should be 20 or 32
+    The key is returned as a hexlified string
+    :param key_size: The size of the key to generate
+    :type key_size: int
+    :return: hexlified key
+    :rtype: str
+    """
+    log.debug("generating key of size {0!s}".format(key_size))
+    return hexlify_and_unicode(geturandom(key_size))
+
+
+def generate_password(size=6, characters=string.ascii_lowercase +
+                        string.ascii_uppercase + string.digits):
+    """
+    Generate a random password of the specified lenght of the given characters
+
+    :param size: The length of the password
+    :param characters: The characters the password may consist of
+    :return: password
+    :rtype: basestring
+    """
+    return ''.join(urandom.choice(characters) for _x in range(size))

@@ -30,7 +30,7 @@ The code is tested in test_lib_tokens_registration.py.
 import logging
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import generate_password
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 

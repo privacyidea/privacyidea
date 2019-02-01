@@ -39,7 +39,7 @@ import six
 
 from hashlib import sha1
 
-from privacyidea.lib.crypto import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.log import log_with
 
 

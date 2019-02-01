@@ -69,26 +69,24 @@ from six import string_types
 
 from sqlalchemy import (and_, func)
 
-from privacyidea.lib.crypto import hexlify_and_unicode
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password, is_true, BASE58
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo)
-from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                    get_token_types,
+                                    get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin)
 from privacyidea.lib.user import get_user_info, User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,

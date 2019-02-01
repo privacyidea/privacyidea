@@ -18,12 +18,12 @@
 #
 #
 from privacyidea.models import PasswordReset
-from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
+from privacyidea.lib.crypto import (hash_with_pepper, verify_with_pepper,
+                                    generate_password)
 import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import UserError, privacyIDEAError, ConfigAdminError
 from privacyidea.lib.smtpserver import send_email_identifier
-from privacyidea.lib.utils import generate_password
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
