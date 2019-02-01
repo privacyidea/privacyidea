@@ -786,12 +786,12 @@ class HOTPTokenTestCase(MyTestCase):
             "Incorrect checksum",
             token.update,
             {
-                "otpkey": base64.b32encode(b"\x37" + checksum[1:] + client_component).strip(b"="),
+                "otpkey": base64.b32encode(b"\x37" + checksum[1:] + client_component).strip(b"=").decode('utf-8'),
                 "otpkeyformat": "base32check",
             })
         # construct a secret
         token.update({
-            "otpkey": base64.b32encode(checksum + client_component).strip(b"="),
+            "otpkey": base64.b32encode(checksum + client_component).strip(b"=").decode('utf-8'),
             "otpkeyformat": "base32check",
             # the following values are ignored
             "2step_serversize": "23",
