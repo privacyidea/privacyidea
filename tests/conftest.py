@@ -27,7 +27,6 @@ if sys.version_info[0] > 2:
         'test_lib_importotp.py',
         'test_lib_smsprovider.py',
         'test_lib_tokens_certificate.py',
-        'test_lib_tokens_daplug.py',
         'test_lib_tokens_foureyes.py',
         'test_lib_tokens_motp.py',
         'test_lib_tokens_passwordtoken.py',
