@@ -248,13 +248,9 @@ def after_request(response):
 def auth_error(error):
     if "audit_object" in g:
         message = ''
-        description = ''
 
         if hasattr(error, 'message'):
             message = error.message
-
-        if hasattr(error, 'description'):
-            message = u'{}|{}'.format(message, error.description)
 
         if hasattr(error, 'details'):
             if error.details:
