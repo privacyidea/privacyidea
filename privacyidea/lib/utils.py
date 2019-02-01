@@ -44,17 +44,8 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
-import os
-from random import SystemRandom
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
-
-# On App Engine, this function is not available.
-if hasattr(os, 'getpid'):
-    _pid = os.getpid()
-else:  # pragma: no cover
-    # Fake PID
-    _pid = SystemRandom().randint(0, 100000)
 
 ENCODING = "utf-8"
 
