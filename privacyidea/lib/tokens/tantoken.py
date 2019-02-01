@@ -206,12 +206,15 @@ class TanTokenClass(PaperTokenClass):
         # first get the database values as dict
         token_dict = self.token.get()
 
-        tan_count = 0
-        info = token_dict.get("info", {})
-        for infokey in info.keys():
-            if infokey.startswith("tan.tan"):
-                tan_count += 1
-                del info[infokey]
-        info["tan.count"] = tan_count
+        if "info" in token_dict:
+            tan_count = 0
+            filtered_info = {}
+            for infokey, infovalue in token_dict["info"].items():
+                if infokey.startswith("tan.tan"):
+                    tan_count += 1
+                else:
+                    filtered_info[infokey] = infovalue
+            filtered_info["tan.count"] = tan_count
+            token_dict["info"] = filtered_info
 
         return token_dict
