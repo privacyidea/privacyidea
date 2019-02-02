@@ -20,7 +20,6 @@
 #
 #
 
-import binascii
 import logging
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
@@ -233,95 +232,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                     raise HSMException("Failed to decrypt after multiple retries.")
 
         return int_list_to_bytestring(r)
-
-    def decrypt_password(self, crypt_pass):
-        """
-        Decrypt the given password. The CONFIG_KEY is used to decrypt it.
-
-        :param crypt_pass: the encrypted password with the leading iv,
-            separated by the ':'
-        :param crypt_pass: byte string
-
-        :return: decrypted data
-        :rtype: byte string
-        """
-        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
-
-    def decrypt_pin(self, crypt_pin):
-        """
-        Decrypt the given encrypted PIN with the TOKEN_KEY
-
-        :param crypt_pin: the encrypted pin with the leading iv,
-            separated by the ':'
-        :param crypt_pin: byte string
-
-        :return: decrypted data
-        :rtype: byte string
-        """
-        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
-
-    def encrypt_password(self, passwd):
-        """
-        Encrypt the given password with the CONFIG_KEY an a random IV.
-
-        :param passwd: The password that is to be encrypted
-        :type passwd: bytes
-
-        :return: encrypted data - leading iv, separated by the ':'
-        :rtype: bytes
-        """
-        return self._encrypt_value(passwd, self.CONFIG_KEY)
-
-    def encrypt_pin(self, pin):
-        """
-        Encrypt the given PIN with the TOKEN_KEY and a random IV
-
-        :param pin: the to be encrypted pin
-        :param pin: byte string
-
-        :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
-        """
-        return self._encrypt_value(pin, self.TOKEN_KEY)
-
-    ''' base methods for pin and password '''
-    def _encrypt_value(self, value, key_id):
-        """
-        base method to encrypt a value
-        - uses one slot id to encrypt a string
-        returns as string with leading iv, separated by ':'
-
-        :param value: the value that is to be encrypted
-        :param value: bytes
-
-        :param key_id: slot of the key array
-        :type key_id: int
-
-        :return: encrypted data with leading iv and separator ':'
-        :rtype: bytes
-        """
-        iv = self.random(16)
-        v = self.encrypt(value, iv, key_id)
-
-        return b':'.join([binascii.hexlify(x) for x in [iv, v]])
-
-    def _decrypt_value(self, crypt_value, key_id):
-        """
-        base method to decrypt a value
-        - used one slot id to encrypt a string with leading iv, separated by ':'
-
-        :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: bytes
-
-        :param  key_id: slot of the key array
-        :type   key_id: int
-
-        :return: decrypted data
-        :rtype:  bytes
-        """
-        (iv, data) = [binascii.unhexlify(x) for x in crypt_value.split(b':')]
-
-        return self.decrypt(data, iv, key_id)
 
     def create_keys(self):
         """

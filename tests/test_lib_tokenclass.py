@@ -13,12 +13,12 @@ from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
 import datetime
 from dateutil.tz import tzlocal
-import binascii
 
 PWFILE = "tests/testdata/passwords"
 
@@ -396,7 +396,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue("radius.secret.type" in info1, info1)
 
         info = token.get_tokeninfo("radius.secret")
-        self.assertTrue(info == "secret")
+        self.assertEqual(info, "secret", info)
 
     def test_11_tokeninfo_encrypt(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -408,12 +408,12 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue("radius.secret" in info1, info1)
         self.assertTrue("radius.secret.type" in info1, info1)
         # get_tokeninfo without parameters does not decrypt!
-        self.assertTrue(info1.get("radius.secret") != "topSecret",
-                        info1.get("radius.secret"))
+        self.assertNotEqual(info1.get("radius.secret"), "topSecret",
+                            info1.get("radius.secret"))
 
         # get_tokeninfo with parameter does decrypt!
         info = token.get_tokeninfo("radius.secret")
-        self.assertTrue(info == "topSecret", info)
+        self.assertEqual(info, "topSecret", info)
 
         # THe same with set_tokeninfo
         token.set_tokeninfo({"radius.secret": "otherSecret",
@@ -485,7 +485,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
-        token.add_init_details("otpkey", binascii.hexlify("secretkey"))
+        token.add_init_details("otpkey", hexlify_and_unicode("secretkey"))
         detail = token.get_init_detail()
         self.assertTrue("otpkey" in detail, detail)
 
@@ -645,7 +645,7 @@ class TokenBaseTestCase(MyTestCase):
         token.add_tokeninfo("sshkey", data, value_type="password")
 
         sshkey = token.get_tokeninfo("sshkey")
-        self.assertTrue(sshkey == data, sshkey)
+        self.assertEqual(sshkey, data, sshkey)
 
     def test_98_revoke(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -811,7 +811,7 @@ class TokenBaseTestCase(MyTestCase):
         server_component = details.get("otpkey")[:-len(client_component)]
         expected_otpkey = server_component + client_component
 
-        self.assertEqual(db_token.get_otpkey().getKey(),
+        self.assertEqual(to_unicode(db_token.get_otpkey().getKey()),
                          expected_otpkey)
 
         token_obj.delete_token()

@@ -27,18 +27,14 @@ This is the library with base functions for privacyIDEA.
 This module is tested in tests/test_lib_utils.py
 """
 import six
-import logging
+import logging; log = logging.getLogger(__name__)
 from importlib import import_module
-
-log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
 from io import BytesIO
-from privacyidea.lib.crypto import urandom, geturandom
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
 from datetime import timedelta, datetime
@@ -48,24 +44,13 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
-import os
 
-try:
-    import bcrypt
-    _bcrypt_hashpw = bcrypt.hashpw
-except ImportError:  # pragma: no cover
-    _bcrypt_hashpw = None
-
-# On App Engine, this function is not available.
-if hasattr(os, 'getpid'):
-    _pid = os.getpid()
-else:  # pragma: no cover
-    # Fake PID
-    _pid = urandom.randint(0, 100000)
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
 ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -157,31 +142,67 @@ def to_utf8(password):
 
 def to_unicode(s, encoding="utf-8"):
     """
-    converts a value to unicode if it is of type str.
+    Converts the string s to unicode if it is of type bytes.
     
-    :param s: the str to decode
-    :type s: bytes, str
+    :param s: the string to convert
+    :type s: bytes or str
     :param encoding: the encoding to use (default utf8)
     :type encoding: str
     :return: unicode string
     :rtype: str
     """
-    if type(s) == str:
-        s = s.decode(encoding)
+    if isinstance(s, six.text_type):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(encoding)
+    # TODO: warning? Exception?
     return s
 
 
-def generate_otpkey(key_size=20):
+def to_bytes(s):
     """
-    generates the HMAC key of keysize. Should be 20 or 32
-    The key is returned as a hexlified string
-    :param key_size: The size of the key to generate
-    :type key_size: int
-    :return: hexlified key
-    :rtype: string
+    Converts the string s to a unicode encoded byte string
+
+    :param s: string to convert
+    :type s: str or bytes
+    :return: the converted byte string
+    :rtype: bytes
     """
-    log.debug("generating key of size {0!s}".format(key_size))
-    return binascii.hexlify(geturandom(key_size))
+    if isinstance(s, bytes):
+        return s
+    elif isinstance(s, six.text_type):
+        return s.encode('utf8')
+    # TODO: warning? Exception?
+    return s
+
+
+def to_byte_string(value):
+    """
+    Convert the given value to a byte string. If it is not a string type,
+    convert it to a string first.
+
+    :param value: the value to convert
+    :type value: str or bytes or int
+    :return: byte string representing the value
+    :rtype: bytes
+    """
+    if not isinstance(value, (bytes, six.string_types)):
+        value = str(value)
+    value = to_bytes(value)
+    return value
+
+
+def hexlify_and_unicode(s):
+    """
+
+    :param s: string to hexlify
+    :type s: bytes or str
+    :return: hexlified string converted to unicode
+    :rtype: str
+    """
+
+    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    return res
 
 
 def create_png(data, alt=None):
@@ -230,18 +251,6 @@ def create_img(data, width=0, alt=None, raw=False):
     return ret_img
 
 
-def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
-    """
-    Generate a random password of the specified lenght of the given characters
-
-    :param size: The length of the password
-    :param characters: The characters the password may consist of
-    :return: password
-    :rtype: basestring
-    """
-    return ''.join(urandom.choice(characters) for _x in range(size))
-
 #
 # Modhex calculations for Yubikey
 #
@@ -285,10 +294,11 @@ def decode_base32check(encoded_data, always_upper=True):
 
     Raise a ParameterError if the encoded payload is malformed.
     :param encoded_data: The base32 encoded data.
-    :type encoded_data: basestring
+    :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
     :type always_upper: bool
     :return: hex-encoded payload
+    :rtype: str
     """
     # First, add the padding to have a multiple of 8 bytes
     if always_upper:
@@ -300,7 +310,9 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except TypeError:
+    except (TypeError, binascii.Error, OverflowError):
+        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
+        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -309,7 +321,7 @@ def decode_base32check(encoded_data, always_upper=True):
     payload_hash = hashlib.sha1(payload).digest()
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
-    return binascii.hexlify(payload)
+    return hexlify_and_unicode(payload)
 
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
@@ -379,8 +391,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data!"
+                        " {0!s}".format(params))
 
     return data, types, desc
 
@@ -542,21 +554,25 @@ def get_client_ip(request, proxy_settings):
     :return:
     """
     client_ip = request.remote_addr
-    # We only do the mapping for authentication requests!
+
+    # Set the possible mapped IP to X-Forwarded-For
+    mapped_ip = request.access_route[0] if request.access_route else None
+
+    # We only do the client-param mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
                     request.blueprint in ["validate_blueprint", "ttype_blueprint",
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
-        mapped_ip = request.all_data.get("client") or \
-                    (request.access_route[0] if request.access_route else None)
-        if mapped_ip:
-            if proxy_settings and check_proxy(client_ip, mapped_ip,
-                                              proxy_settings):
-                client_ip = mapped_ip
-            elif mapped_ip != client_ip:
-                log.warning("Proxy {client_ip} not allowed to set IP to "
-                            "{mapped_ip}.".format(client_ip=client_ip,
-                                                  mapped_ip=mapped_ip))
+        mapped_ip = request.all_data.get("client") or mapped_ip
+
+    if mapped_ip:
+        if proxy_settings and check_proxy(client_ip, mapped_ip,
+                                          proxy_settings):
+            client_ip = mapped_ip
+        elif mapped_ip != client_ip:
+            log.warning("Proxy {client_ip} not allowed to set IP to "
+                        "{mapped_ip}.".format(client_ip=client_ip,
+                                              mapped_ip=mapped_ip))
 
     return client_ip
 

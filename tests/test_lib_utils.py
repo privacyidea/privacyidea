@@ -14,12 +14,12 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode, censor_connect_string,
                                    truncate_comma_list, check_pin_policy,
-                                   get_module_class, decode_base32check)
+                                   get_module_class, decode_base32check,
+                                   get_client_ip)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset
 from privacyidea.lib.tokenclass import DATE_FORMAT
-import hashlib
 
 
 class UtilsTestCase(MyTestCase):
@@ -506,3 +506,39 @@ class UtilsTestCase(MyTestCase):
         # change the client component in between
         client_component = "TIXQW4ydvn2aos4cj6ba"
         self.assertRaises(Exception, decode_base32check, client_component)
+
+    def test_23_get_client_ip(self):
+
+        class RequestMock():
+            blueprint = None
+            remote_addr = None
+            all_data = {}
+            access_route = []
+
+        r = RequestMock()
+        r.blueprint = "token_blueprint"
+        # The real client
+        direct_client = "10.0.0.1"
+        r.remote_addr = direct_client
+        # The client parameter
+        client_parameter = "192.168.2.1"
+        r.all_data = {"client": client_parameter}
+        # The X-Forwarded-For
+        client_proxy = "172.16.1.2"
+        r.access_route = [client_proxy]
+
+        proxy_settings = ""
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, direct_client)
+
+        # If there is a proxy_setting, the X-Forwarded-For will
+        # work, but not the client_parameter
+        proxy_settings = direct_client
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, client_proxy)
+
+        # If the request is a validate request, the
+        # client_parameter will overrule the X-Forwarded-For
+        r.blueprint = "validate_blueprint"
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, client_parameter)

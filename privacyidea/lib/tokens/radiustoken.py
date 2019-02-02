@@ -45,7 +45,7 @@ import logging
 
 import traceback
 import binascii
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, to_bytes
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam, ParameterError
@@ -242,7 +242,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
             srv = Client(server=r_server,
                          authport=r_authport,
-                         secret=radius_secret,
+                         secret=to_bytes(radius_secret),
                          dict=Dictionary(radius_dictionary))
 
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,

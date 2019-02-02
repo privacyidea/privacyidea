@@ -60,7 +60,6 @@ from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import create_img, is_true
-from privacyidea.lib.utils import generate_otpkey
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
@@ -607,10 +606,11 @@ class HotpTokenClass(TokenClass):
         otpval = hmac2Otp.generate(inc_counter=False)
 
         pin = self.token.get_pin()
-        combined = "{0!s}{1!s}".format(otpval, pin)
 
         if get_from_config("PrependPin") == "True":
-            combined = "{0!s}{1!s}".format(pin, otpval)
+            combined = u"{0!s}{1!s}".format(pin, otpval)
+        else:
+            combined = u"{0!s}{1!s}".format(otpval, pin)
 
         return 1, pin, otpval, combined
 
