@@ -15,7 +15,11 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('smtpserver', sa.Column('enqueue_job', sa.Boolean(), nullable=False, server_default=sa.false()))
+    try:
+        op.add_column('smtpserver', sa.Column('enqueue_job', sa.Boolean(), nullable=False, server_default=sa.false()))
+    except Exception as exx:
+        print("Could not add column 'smtpserver.enqueue_job'")
+        print(exx)
 
 
 def downgrade():
