@@ -19,6 +19,8 @@ This file contains the definition of the password token class
 """
 
 import logging
+
+from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
@@ -47,11 +49,18 @@ class PasswordTokenClass(TokenClass):
             return self.secretObject.getKey()
 
         def check_password(self, password):
+            """
+
+            :param password:
+            :type password: str
+            :return: result of password check: 0 if success, -1 if failed
+            :rtype: int
+            """
             res = -1
 
             key = self.secretObject.getKey()
 
-            if key == password:
+            if to_unicode(key) == password:
                 res = 0
 
             zerome(key)
