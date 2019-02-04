@@ -500,7 +500,6 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(res == -1, res)
 
         # simple OTPs of current time
-        # TODO: Not sure if that's what should be tested here
         ret, _, dct = token.get_multi_otp(1)
         self.assertTrue(ret)
         self.assertGreater(list(dct["otp"].keys())[0], 47251648)
