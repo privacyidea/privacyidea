@@ -9,6 +9,7 @@ import mock
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
+from privacyidea.lib.error import ServerError
 from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, wrap_job, has_job_queue
 from privacyidea.lib.queues.huey_queue import HueyQueue
 from privacyidea.lib.queues.base import QueueError, ImmediatePromise
@@ -41,7 +42,7 @@ class NoQueueTestCase(OverrideConfigTestCase):
 
     def test_01_no_job_queue(self):
         self.assertFalse(has_job_queue())
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ServerError):
             get_job_queue()
 
     def test_02_collector(self):
