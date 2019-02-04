@@ -338,7 +338,7 @@ class LocalCAConnector(BaseCAConnector):
         :rtype: str
         """
         name_components = x509_name.get_components()
-        filename = "_".join([value.decode('utf8') for (key, value) in name_components])
+        filename = "_".join([to_unicode(value) for (key, value) in name_components])
         return '.'.join([filename, file_extension])
 
     def sign_request(self, csr, options=None):
@@ -403,6 +403,7 @@ class LocalCAConnector(BaseCAConnector):
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
+        csr_filename = csr_filename.encode('ascii', 'ignore').decode('utf8')
         with open(os.path.join(csrdir, csr_filename), "w") as f:
             f.write(csr)
 
@@ -411,15 +412,15 @@ class LocalCAConnector(BaseCAConnector):
             cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
                                        days=days, config=config,
                                        extension=extension,
-                                       spkacfile=csrdir + "/" + csr_filename,
-                                       certificate=certificatedir + "/" +
-                                                   certificate_filename)
+                                       spkacfile=os.path.join(csrdir, csr_filename),
+                                       certificate=os.path.join(certificatedir,
+                                                                certificate_filename))
         else:
             cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
                                  days=days, config=config, extension=extension,
-                                 csrfile=csrdir + "/" + csr_filename,
-                                 certificate=certificatedir + "/" +
-                                             certificate_filename)
+                                 csrfile=os.path.join(csrdir, csr_filename),
+                                 certificate=os.path.join(certificatedir,
+                                                          certificate_filename))
         # run the command
         args = shlex.split(cmd)
         p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
