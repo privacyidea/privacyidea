@@ -46,7 +46,6 @@ This code is tested in tests/test_lib_tokens_hotp
 
 import time
 import binascii
-import base64
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
@@ -59,7 +58,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img, is_true
+from privacyidea.lib.utils import create_img, is_true, b32encode_and_unicode
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
@@ -226,8 +225,7 @@ class HotpTokenClass(TokenClass):
                 try:
                     key_bin = binascii.unhexlify(otpkey)
                     # also strip the padding =, as it will get problems with the google app.
-                    value_b32 = base64.b32encode(key_bin).strip('=')
-                    value_b32_str = "{0!s}".format(value_b32)
+                    value_b32_str = b32encode_and_unicode(key_bin).strip('=')
                     response_detail["otpkey"]["value_b32"] = value_b32_str
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,

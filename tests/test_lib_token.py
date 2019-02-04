@@ -13,7 +13,6 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-
 from .base import MyTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
@@ -21,6 +20,7 @@ from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.utils import b32encode_and_unicode
 import datetime
 import hashlib
 import base64
@@ -1231,7 +1231,7 @@ class TokenTestCase(MyTestCase):
                                           realm=self.realm1))
         remove_token("NEW001")
         # successful base32check encoding
-        base32check_encoding = base64.b32encode(checksum + otpkey).strip(b"=").decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
         tokenobject = init_token({"serial": "NEW002", "type": "hotp",
                                   "otpkey": base32check_encoding,
                                   "otpkeyformat": "base32check"},
@@ -1244,7 +1244,7 @@ class TokenTestCase(MyTestCase):
         remove_token("NEW002")
 
         # successful base32check encoding, but lower case
-        base32check_encoding = base64.b32encode(checksum + otpkey).strip(b"=").decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
         base32check_encoding = base32check_encoding.lower()
         tokenobject = init_token({"serial": "NEW002", "type": "hotp",
                                   "otpkey": base32check_encoding,
@@ -1258,7 +1258,7 @@ class TokenTestCase(MyTestCase):
         remove_token("NEW002")
 
         # base32check encoding with padding
-        base32check_encoding = base64.b32encode(checksum + otpkey).decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         tokenobject = init_token({"serial": "NEW003", "type": "hotp",
                                   "otpkey": base32check_encoding,
                                   "otpkeyformat": "base32check"},
@@ -1270,7 +1270,7 @@ class TokenTestCase(MyTestCase):
                          binascii.hexlify(otpkey))
         remove_token("NEW003")
         # invalid base32check encoding (incorrect checksum due to typo)
-        base32check_encoding = base64.b32encode(checksum + otpkey).decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "A" + base32check_encoding[1:]
         self.assertRaisesRegexp(ParameterError,
                                 "Incorrect checksum",
@@ -1281,7 +1281,7 @@ class TokenTestCase(MyTestCase):
                                 user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW004") # TODO: Token is created anyway?
         # invalid base32check encoding (missing four characters => incorrect checksum)
-        base32check_encoding = base64.b32encode(checksum + otpkey).decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding[:-4]
         self.assertRaisesRegexp(ParameterError,
                                 "Incorrect checksum",
@@ -1292,7 +1292,7 @@ class TokenTestCase(MyTestCase):
                                 user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW005") # TODO: Token is created anyway?
         # invalid base32check encoding (too many =)
-        base32check_encoding = base64.b32encode(checksum + otpkey).decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding + "==="
         self.assertRaisesRegexp(ParameterError,
                                 "Invalid base32",
@@ -1303,7 +1303,7 @@ class TokenTestCase(MyTestCase):
                                 user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid base32check encoding (wrong characters)
-        base32check_encoding = base64.b32encode(checksum + otpkey).decode('utf8')
+        base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "1" + base32check_encoding[1:]
         self.assertRaisesRegexp(ParameterError,
                                 "Invalid base32",
@@ -1314,7 +1314,7 @@ class TokenTestCase(MyTestCase):
                                 user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid key (too short)
-        base32check_encoding = base64.b32encode(b'Yo').decode('utf8')
+        base32check_encoding = b32encode_and_unicode(b'Yo')
         self.assertRaisesRegexp(ParameterError,
                                 "Too short",
                                 init_token,
