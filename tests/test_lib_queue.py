@@ -6,12 +6,11 @@ lib/queue/*.py
 """
 from huey import RedisHuey
 import mock
-from privacyidea.lib.queue.huey_queue import HueyPromise
 
 from privacyidea.config import TestingConfig
-from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, NullQueue, wrap_job, HueyQueue
-from privacyidea.lib.queue.base import QueueError
-from privacyidea.lib.queue.promise import ImmediatePromise
+from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, NullQueue, wrap_job
+from privacyidea.lib.queues.huey_queue import HueyQueue
+from privacyidea.lib.queues.base import QueueError, ImmediatePromise
 from .base import OverrideConfigTestCase
 
 

@@ -21,12 +21,11 @@
 #
 import functools
 import mock
+
 from privacyidea.lib.queue import get_job_queue
-
 from privacyidea.config import TestingConfig
-from privacyidea.lib.queue.promise import ImmediatePromise
+from privacyidea.lib.queues.base import BaseQueue, QueueError, ImmediatePromise
 
-from privacyidea.lib.queue.base import BaseQueue, QueueError
 from tests.base import OverrideConfigTestCase
 
 
