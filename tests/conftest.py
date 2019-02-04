@@ -35,8 +35,6 @@ if sys.version_info[0] > 2:
         'test_lib_tokens_remote.py',
         'test_lib_tokens_tiqr.py',
         'test_lib_tokens_u2f.py',
-        'test_lib_tokens_yubico.py',
-        'test_lib_tokens_yubikey.py',
         'test_mod_apache.py',
         'test_resolver_realm.py',
         'test_ui_certificate.py',
