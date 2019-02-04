@@ -6,6 +6,7 @@ Version 2.23.4, 2019-01-xx
   * Allow concurrent challenges
   * Fix accepted-language to support _only_ de-DE.
   * Avoid user resolving in event handler condition
+  * Point the support button to better landing pages
 
 Version 2.23.3, 2018-10-26
 
