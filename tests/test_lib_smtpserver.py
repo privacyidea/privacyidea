@@ -1,7 +1,7 @@
 """
 This test file tests the lib/smtpserver.py
 """
-from privacyidea.lib.queues import get_job_queue
+from privacyidea.lib.queue import get_job_queue
 
 from tests.queuemock import MockQueueTestCase
 from .base import MyTestCase
