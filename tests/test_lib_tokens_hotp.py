@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
@@ -11,6 +12,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import (Token,
                                  Config,
@@ -786,12 +788,12 @@ class HOTPTokenTestCase(MyTestCase):
             "Incorrect checksum",
             token.update,
             {
-                "otpkey": base64.b32encode(b"\x37" + checksum[1:] + client_component).strip(b"=").decode('utf-8'),
+                "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
                 "otpkeyformat": "base32check",
             })
         # construct a secret
         token.update({
-            "otpkey": base64.b32encode(checksum + client_component).strip(b"=").decode('utf-8'),
+            "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
             "otpkeyformat": "base32check",
             # the following values are ignored
             "2step_serversize": "23",
