@@ -205,6 +205,18 @@ def hexlify_and_unicode(s):
     return res
 
 
+def b32encode_and_unicode(s):
+    """
+    Base32-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base32-encoded string converted to unicode
+    :rtype: str
+    """
+    return to_unicode(base64.b32encode(to_bytes(s)))
+
+
 def create_png(data, alt=None):
     img = qrcode.make(data)
 
