@@ -7,11 +7,12 @@ lib/queue/*.py
 from huey import RedisHuey
 import mock
 
+from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
-from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, NullQueue, wrap_job
+from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, wrap_job, has_job_queue
 from privacyidea.lib.queues.huey_queue import HueyQueue
 from privacyidea.lib.queues.base import QueueError, ImmediatePromise
-from .base import OverrideConfigTestCase
+from .base import OverrideConfigTestCase, MyTestCase
 
 
 class TestSender(object):
@@ -34,61 +35,36 @@ def my_send_mail(message):
     return 1337
 
 
-class NullQueueTestCase(OverrideConfigTestCase):
+class NoQueueTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
-        PI_JOB_QUEUE_SOME_OPTION = 42
+        PI_JOB_QUEUE_CLASS = ""
 
-    def test_01_collector(self):
+    def test_01_no_job_queue(self):
+        self.assertFalse(has_job_queue())
+        with self.assertRaises(KeyError):
+            get_job_queue()
+
+    def test_02_collector(self):
         self.assertIsInstance(JOB_COLLECTOR, JobCollector)
         self.assertDictContainsSubset({
             "test.my_add": (my_add, (), {}),
             "test.my_send_mail": (my_send_mail, (), {"fire_and_forget": True})
         }, JOB_COLLECTOR.jobs)
-        with self.assertRaises(RuntimeError):
-            JOB_COLLECTOR.register_app(self.app)
-
-    def test_02_app_job_queue(self):
-        queue = get_job_queue()
-        self.assertIsInstance(queue, NullQueue)
-        self.assertEqual(queue.options, {"some_option": 42})
-        self.assertTrue({"test.my_add", "test.my_send_mail"}.issubset(set(queue.jobs)))
-        with self.assertRaises(QueueError):
-            queue.add_job("test.my_add", lambda x: x)
-
-    def test_03_enqueue_jobs(self):
-        queue = get_job_queue()
-        promise = queue.enqueue("test.my_add", (3, 4), {})
-        self.assertIsInstance(promise, ImmediatePromise)
-        self.assertEqual(promise.get(), 7)
-
-        with mock.patch.object(SENDER, 'send_mail') as mock_mail:
-            promise = queue.enqueue("test.my_send_mail", ("hi",), {})
-            mock_mail.assert_called_once_with("hi")
-            self.assertEqual(promise.get(), None) # it is a fire-and-forget job
-
-        with self.assertRaises(QueueError):
-            queue.enqueue("test.unknown", ("hi",), {})
-
-    def test_04_wrap_jobs(self):
-        wrapped = wrap_job("test.my_send_mail", True)
-        with mock.patch.object(SENDER, 'send_mail') as mock_mail:
-            result = wrapped("hi")
-            mock_mail.assert_called_once_with("hi")
-            self.assertTrue(result)
 
 
-class InvalidQueueTestCase(OverrideConfigTestCase):
-    class Config(TestingConfig):
-        PI_JOB_QUEUE_CLASS = "unknown"
+class InvalidQueueTestCase(MyTestCase):
+    def test_01_create_app_fails(self):
+        class Config(TestingConfig):
+            PI_JOB_QUEUE_CLASS = "obviously.invalid"
 
-    def test_01_app_job_queue(self):
-        queue = get_job_queue()
-        self.assertIsInstance(queue, NullQueue)
+        with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
+            with self.assertRaises(ImportError):
+                create_app("testing", "")
 
 
 class HueyQueueTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
-        PI_JOB_QUEUE_CLASS = "huey"
+        PI_JOB_QUEUE_CLASS = "privacyidea.lib.queues.huey_queue.HueyQueue"
         PI_JOB_QUEUE_NAME = "myqueuename"
         PI_JOB_QUEUE_ALWAYS_EAGER = True # avoid redis server for testing
 

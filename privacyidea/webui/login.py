@@ -24,6 +24,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.queue import has_job_queue
+
 __doc__ = """This is the starting point for the single web application.
 Other html code is dynamically loaded via angularJS and located in
 /static/views/...
@@ -141,6 +143,7 @@ def single_page_application():
                            theme=theme,
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
+                           has_job_queue=str(has_job_queue()),
                            customization=customization,
                            customization_menu_file=customization_menu_file,
                            customization_baseline_file=customization_baseline_file,

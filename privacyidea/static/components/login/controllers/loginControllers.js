@@ -60,6 +60,8 @@ angular.module("privacyideaApp")
     //debug: console.log($scope.piRealms);
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();
+    obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
+    $scope.hasJobQueue = obj.val() == "True";
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {

@@ -50,7 +50,8 @@ from huey.consumer_options import ConsumerConfig, option
 from huey.consumer_options import OptionParserHandler
 
 from privacyidea.app import create_app, PI_LOGGING_CONFIG
-from privacyidea.lib.queue import get_job_queue, HueyQueue
+from privacyidea.lib.queue import get_job_queue, has_job_queue
+from privacyidea.lib.queues.huey_queue import HueyQueue
 
 DEFAULT_LOGFILE = "privacyidea-queue.log"
 
@@ -111,7 +112,7 @@ def consumer_main():
     with app.app_context():
         queue = get_job_queue()
         if not isinstance(queue, HueyQueue):
-            raise NotImplementedError("{!r} is not a HueyQueue".format(queue))
+            raise RuntimeError("{!r} is not a HueyQueue".format(queue))
 
     parser_handler = CustomOptionParserHandler()
     parser = parser_handler.get_option_parser()

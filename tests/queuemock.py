@@ -77,13 +77,7 @@ class MockQueueTestCase(OverrideConfigTestCase):
     The ``enqueued_jobs`` attribute is reset for each test case.
     """
     class Config(TestingConfig):
-        PI_JOB_QUEUE_CLASS = "fake"
-
-    @classmethod
-    def setUpClass(cls):
-        """ override privacyidea.config.config["testing"] with the inner config class """
-        with mock.patch.dict("privacyidea.lib.queue.QUEUE_CLASSES", {"fake": FakeQueue}):
-            super(MockQueueTestCase, cls).setUpClass()
+        PI_JOB_QUEUE_CLASS = "tests.queuemock.FakeQueue"
 
     def setUp(self):
         get_job_queue().reset()

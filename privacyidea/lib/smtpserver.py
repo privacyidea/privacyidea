@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea.lib.queue import job, wrap_job
+from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
@@ -133,11 +133,12 @@ class SMTPServer(object):
 
 def send_or_enqueue_email(config, recipient, subject, body, sender=None, reply_to=None, mimetype="plain"):
     """
-    According to the value of ``config["enqueue_job"]``, send the email directly or send a job to the queue.
+    According to the value of ``config["enqueue_job"]``, send the email directly or send a job
+    to the queue (if a queue is configured).
     See ``SMTPServer.test_email`` for parameters.
     :return: True if the job is sent to the queue, return value of ``SMTPServer.test_email`` otherwise
     """
-    if config.get("enqueue_job", False):
+    if has_job_queue() and config.get("enqueue_job", False):
         send = wrap_job(SEND_EMAIL_JOB_NAME, True)
     else:
         send = SMTPServer.test_email
