@@ -187,7 +187,7 @@ class MotpTokenClass(TokenClass):
         validate the token otp against a given otpvalue
 
         :param anOtpVal: the to be verified otpvalue
-        :type anOtpVal:  string
+        :type anOtpVal:  str
         :param counter: the counter state, that should be verified
         :type counter: int
         :param window: the counter +window, which should be checked
