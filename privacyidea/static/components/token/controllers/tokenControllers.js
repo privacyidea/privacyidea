@@ -297,11 +297,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // A watch function to change the form data in case another user is selected
     $scope.$watch(function(scope) {return scope.newUser.email;},
         function(newValue, oldValue){
-            $scope.form.email = newValue;
+            if (newValue != '') {
+                $scope.form.email = newValue;
+            }
         });
     $scope.$watch(function(scope) {return scope.newUser.mobile;},
         function(newValue, oldValue){
-            $scope.form.phone = newValue;
+            if (newValue != '') {
+                $scope.form.phone = newValue;
+            }
         });
 
     // Get the realms and fill the realm dropdown box
