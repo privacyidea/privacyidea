@@ -403,7 +403,7 @@ class LocalCAConnector(BaseCAConnector):
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
-        csr_filename = csr_filename.encode('ascii', 'ignore').decode('utf8')
+        csr_filename = to_unicode(csr_filename.encode('ascii', 'ignore'))
         with open(os.path.join(csrdir, csr_filename), "w") as f:
             f.write(csr)
 
