@@ -45,7 +45,7 @@ import logging
 
 import traceback
 import binascii
-from privacyidea.lib.utils import is_true, to_bytes
+from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.api.lib.utils import getParam, ParameterError
@@ -123,14 +123,13 @@ class RadiusTokenClass(RemoteTokenClass):
             radiusServer = getParam(param, "radius.server", optional=required)
             self.add_tokeninfo("radius.server", radiusServer)
             radius_secret = getParam(param, "radius.secret", optional=required)
-            self.token.set_otpkey(binascii.hexlify(radius_secret))
+            self.token.set_otpkey(hexlify_and_unicode(radius_secret))
             system_settings = getParam(param, "radius.system_settings",
                                        default=False)
             self.add_tokeninfo("radius.system_settings", system_settings)
 
-        if not radius_identifier and not (radiusServer or radius_secret) and \
-                not system_settings:
-            raise ParameterError("Missing parameter: radius.identifier", id=905)
+            if not (radiusServer or radius_secret) and not system_settings:
+                raise ParameterError("Missing parameter: radius.identifier", id=905)
 
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
@@ -197,7 +196,7 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server_object = get_radius(radius_identifier)
             radius_server = radius_server_object.config.server
             radius_port = radius_server_object.config.port
-            radius_server = "{0!s}:{1!s}".format(radius_server, radius_port)
+            radius_server = u"{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
 
@@ -205,17 +204,19 @@ class RadiusTokenClass(RemoteTokenClass):
             # system configuration
             radius_server = get_from_config("radius.server")
             radius_secret = get_from_config("radius.secret")
-            # Is returned as unicode, so we convert it to utf-8
-            radius_secret = radius_secret.encode("utf-8")
         else:
             # individual token settings
             radius_server = self.get_tokeninfo("radius.server")
             # Read the secret
             secret = self.token.get_otpkey()
+            # TODO: can we assume that this is a printable string? Otherwise the
+            #       to_unicode() in the debug log below might fail.
             radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
-        log.debug("checking OTP len:{0!s} on radius server: {1!s}, user: {2!r}".format(len(otpval), radius_server, radius_user))
+        log.debug(u"checking OTP len:{0!s} on radius server: "
+                  u"{1!s}, user: {2!r}".format(len(otpval), radius_server,
+                                               radius_user))
 
         try:
             # pyrad does not allow to set timeout and retries.
@@ -232,13 +233,12 @@ class RadiusTokenClass(RemoteTokenClass):
                                              "privacyIDEA")
             if not radius_dictionary:
                 radius_dictionary = get_from_config("radius.dictfile",
-                                                    "/etc/privacyidea/"
-                                                    "dictionary")
-            log.debug("NAS Identifier: %r, "
-                      "Dictionary: %r" % (nas_identifier, radius_dictionary))
-            log.debug("constructing client object "
-                      "with server: %r, port: %r, secret: %r" %
-                      (r_server, r_authport, radius_secret))
+                                                    "/etc/privacyidea/dictionary")
+            log.debug(u"NAS Identifier: %r, "
+                      u"Dictionary: %r" % (nas_identifier, radius_dictionary))
+            log.debug(u"constructing client object "
+                      u"with server: %r, port: %r, secret: %r" %
+                      (r_server, r_authport, to_unicode(radius_secret)))
 
             srv = Client(server=r_server,
                          authport=r_authport,
