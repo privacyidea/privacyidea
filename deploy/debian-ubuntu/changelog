@@ -1,4 +1,4 @@
-python-privacyidea (2.23.4~dev5-1trusty) trusty; urgency=medium
+python-privacyidea (2.23.4-1trusty) trusty; urgency=medium
 
   Fixes: 
   * Make triggerchallenge HTTP response consistent
@@ -8,7 +8,7 @@ python-privacyidea (2.23.4~dev5-1trusty) trusty; urgency=medium
   * Avoid user resolving in event handler condition
   * Point the support button to better landing pages
 
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 04 Feb 2019 12:00:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 06 Feb 2019 12:00:00 +0200
 
 python-privacyidea (2.23.3-1trusty) trusty; urgency=medium
 
