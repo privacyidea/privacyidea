@@ -17,6 +17,7 @@ Apache webserver.
 All html views are contained in::
 
     static/components/<component>/views/<view>.html
+You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static>`_
 
 If you want to change the look and feel of the UI, we recommend to define
 rewrite rules in the webserver. You should create a directory like
@@ -30,6 +31,8 @@ In the Apache configuration you can add entries like::
          "/etc/privacyidea/customization/mylogin.html"
 
 and apply all required changes to the file *mylogin.html*.
+
+Activate :code:`mod_rewrite` and reload apache2
 
 .. note:: Of course - if there are functional enhancements or bug fixes in the
    original templates - your template will also not be affected by these.
