@@ -1,5 +1,5 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.models import Audit
 import datetime
@@ -12,7 +12,7 @@ PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
 POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
 
-class APIAuditTestCase(MyTestCase):
+class APIAuditTestCase(MyApiTestCase):
 
     def test_00_get_audit(self):
         with self.app.test_request_context('/audit/',

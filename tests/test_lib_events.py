@@ -2339,6 +2339,8 @@ class UserNotificationTestCase(MyTestCase):
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
+        # Create admin authentication token
+        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",

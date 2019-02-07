@@ -13,7 +13,7 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-from .base import MyTestCase
+from .base import MyTestCase, FakeAudit
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -1614,6 +1614,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertEqual(token2.token.failcount, 2)
 
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         check_token_list([token1, token2], pin1, user=user,

@@ -1,11 +1,10 @@
-import unittest
+# -*- coding: utf-8 -*-
+
 import json
-from privacyidea.app import create_app
 from privacyidea.models import (Resolver,
                                 ResolverConfig,
-                                Realm,
                                 db)
-from .base import MyTestCase
+from .base import MyTestCase, MyApiTestCase
 
 
 class ResolverModelTestCase(MyTestCase):
@@ -29,7 +28,7 @@ class ResolverModelTestCase(MyTestCase):
         self.assertTrue(r1.rtype=="passwdresolver", r1.rtype)
 
 
-class APIResolverTestCase(MyTestCase):
+class APIResolverTestCase(MyApiTestCase):
     '''
     Test the resolver on the API level
     '''
