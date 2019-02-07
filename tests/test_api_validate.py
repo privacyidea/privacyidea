@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from six.moves.urllib.parse import urlencode
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token, Challenge, AuthCache)
@@ -89,7 +89,7 @@ OTPs = ["755224",
         "399871",
         "520489"]
 
-class AuthorizationPolicyTestCase(MyTestCase):
+class AuthorizationPolicyTestCase(MyApiTestCase):
     """
     This tests the catch all resolvers and resolvers which also contain the
     user.
@@ -242,7 +242,7 @@ class AuthorizationPolicyTestCase(MyTestCase):
             self.assertTrue(result.get("value"))
 
 
-class DisplayTANTestCase(MyTestCase):
+class DisplayTANTestCase(MyApiTestCase):
 
     def test_00_run_complete_workflow(self):
         # This is a standard workflow of a display TAN token.
@@ -332,7 +332,7 @@ class DisplayTANTestCase(MyTestCase):
         remove_token("ocra1234")
 
 
-class AValidateOfflineTestCase(MyTestCase):
+class AValidateOfflineTestCase(MyApiTestCase):
     """
     Test api.validate endpoints that are responsible for offline auth.
     """
@@ -535,7 +535,7 @@ class AValidateOfflineTestCase(MyTestCase):
                              u"ERR905: Token is not an offline token or refill token is incorrect")
 
 
-class ValidateAPITestCase(MyTestCase):
+class ValidateAPITestCase(MyApiTestCase):
     """
     test the api.validate endpoints
     """
@@ -2418,14 +2418,14 @@ class ValidateAPITestCase(MyTestCase):
             self.assertFalse(result.get("value"))
 
 
-class AChallengeResponse(MyTestCase):
+class AChallengeResponse(MyApiTestCase):
 
     serial = "hotp1"
     serial_email = "email1"
     serial_sms= "sms1"
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(AChallengeResponse, self).setUp()
         self.setUp_user_realms()
 
     def setup_sms_gateway(self):
@@ -2871,10 +2871,10 @@ class AChallengeResponse(MyTestCase):
         remove_token(self.serial_sms)
 
 
-class TriggeredPoliciesTestCase(MyTestCase):
+class TriggeredPoliciesTestCase(MyApiTestCase):
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(TriggeredPoliciesTestCase, self).setUp()
         self.setUp_user_realms()
 
     def test_00_two_policies(self):

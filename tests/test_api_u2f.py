@@ -1,4 +1,4 @@
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 import binascii
 from privacyidea.lib.token import assign_token, remove_token
@@ -22,7 +22,7 @@ OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 OTPVALUES2 = ["551536", "703671", "316522", "413789"]
 
 
-class APIU2fTestCase(MyTestCase):
+class APIU2fTestCase(MyApiTestCase):
 
     serial = "U2F001"
 

@@ -1,8 +1,8 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 
-class APISmsGatewayTestCase(MyTestCase):
+class APISmsGatewayTestCase(MyApiTestCase):
 
     def test_01_crud_smsgateway(self):
 

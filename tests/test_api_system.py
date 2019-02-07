@@ -1,6 +1,6 @@
 from __future__ import print_function
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.config import (set_privacyidea_config,
@@ -14,7 +14,7 @@ POLICYFILE = "tests/testdata/policy.cfg"
 POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
 
 
-class APIConfigTestCase(MyTestCase):
+class APIConfigTestCase(MyApiTestCase):
 
     def test_00_get_empty_config(self):
         with self.app.test_request_context('/system/',

@@ -1,5 +1,5 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token)
@@ -14,7 +14,7 @@ from privacyidea.lib.error import (ParameterError, UserError)
 PWFILE = "tests/testdata/passwords"
 
 
-class TtypeAPITestCase(MyTestCase):
+class TtypeAPITestCase(MyApiTestCase):
     """
     test the api.ttype endpoints
     """

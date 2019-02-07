@@ -4,10 +4,10 @@ api/applications.py
 """
 
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 
-class APIApplicationsResolverTestCase(MyTestCase):
+class APIApplicationsResolverTestCase(MyApiTestCase):
 
     def test_get_applications(self):
         with self.app.test_request_context('/application/',

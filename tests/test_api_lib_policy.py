@@ -6,7 +6,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 from __future__ import print_function
 import json
 
-from .base import (MyTestCase, PWFILE)
+from .base import (MyApiTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
@@ -70,7 +70,7 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
          "jPw== corny@schnuck"
 
 
-class PrePolicyDecoratorTestCase(MyTestCase):
+class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_token_action(self):
         g.logged_in_user = {"username": "admin1",
@@ -1314,7 +1314,7 @@ class PrePolicyDecoratorTestCase(MyTestCase):
         delete_policy("sms1")
 
 
-class PostPolicyDecoratorTestCase(MyTestCase):
+class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_tokentype(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building

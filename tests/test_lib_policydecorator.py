@@ -806,6 +806,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(token2.token.failcount, 2)
 
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         r = reset_all_user_tokens(self.fake_check_token_list,
