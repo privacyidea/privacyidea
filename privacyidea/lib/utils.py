@@ -286,9 +286,17 @@ def modhex_decode(m):
 
 
 def checksum(msg):
+    """
+    Calculate CRC-16 (16-bit ISO 13239 1st complement) checksum.
+    (see Yubikey-Manual - Chapter 6: Implementation details)
+
+    :param msg: input byte string for crc calculation
+    :type msg: bytes
+    :return: crc16 checksum of msg
+    :rtype: int
+    """
     crc = 0xffff
-    for i in range(0, len(msg) // 2):
-        b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
+    for b in six.iterbytes(msg):
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -296,6 +304,18 @@ def checksum(msg):
             if n != 0:
                 crc = crc ^ 0x8408
     return crc
+
+
+def b64encode_and_unicode(s):
+    """
+    Base64-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base32-encoded string converted to unicode
+    :rtype: str
+    """
+    return to_unicode(base64.b64encode(to_bytes(s)))
 
 
 def decode_base32check(encoded_data, always_upper=True):
