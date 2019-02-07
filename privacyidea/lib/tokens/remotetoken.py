@@ -142,7 +142,7 @@ class RemoteTokenClass(TokenClass):
         val = getParam(param, "remote.local_checkpin", optional) or 0
         self.add_tokeninfo("remote.local_checkpin", val)
 
-        for key in ["remote.serial", "remote.user",
+        for key in ["remote.serial", "remote.user", "remote.path",
                     "remote.realm", "remote.resolver"]:
             val = getParam(param, key, optional)
             if val is not None:
@@ -224,6 +224,7 @@ class RemoteTokenClass(TokenClass):
         # in preparation of the ability to relocate privacyidea urls,
         # we introduce the remote url path
         remotePath = self.get_tokeninfo("remote.path") or ""
+        remotePath = remotePath.strip()
 
         remoteSerial = self.get_tokeninfo("remote.serial") or ""
 
