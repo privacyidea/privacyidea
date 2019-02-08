@@ -180,7 +180,8 @@ class Token(MethodsMixin, db.Model):
     info = db.relationship('TokenInfo',
                            lazy='dynamic',
                            backref='info')
-    owners = db.relationship('TokenOwner', lazy='dynamic', backref='owners')
+    # This creates an attribute "token" in the TokenOwner object
+    owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
 
     def __init__(self, serial, tokentype=u"",
                  isactive=True, otplen=6,
@@ -639,6 +640,7 @@ class TokenInfo(MethodsMixin, db.Model):
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'), index=True)
+    # This creates an attribute "info_list" in the Token object
     token = db.relationship('Token',
                             lazy='joined',
                             backref='info_list')
@@ -917,6 +919,7 @@ class Resolver(TimestampMethodsMixin, db.Model):
                      unique=True, nullable=False)
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
+    # This creates an attribute "resolver" in the ResolverConfig object
     rconfig = db.relationship('ResolverConfig',
                               lazy='joined',
                               backref='resolver')
@@ -955,6 +958,7 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
+    # This creates an attribute "config_list" in the Resolver object
     reso = db.relationship('Resolver',
                            lazy='joined',
                            backref='config_list')
@@ -1018,7 +1022,7 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                                lazy="joined",
                                foreign_keys="ResolverRealm.resolver_id",
                                backref="realm_list")
-    # this will create a "resolver list" in the realm object
+    # this will create a "resolver_list" in the realm object
     realm = db.relationship(Realm,
                             lazy="joined",
                             foreign_keys="ResolverRealm.realm_id",
@@ -1059,12 +1063,12 @@ class TokenOwner(MethodsMixin, db.Model):
     id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True,
                    nullable=True)
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
-    token = db.relationship('Token', lazy='joined', backref='token_list')
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     resolver_type = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    realm = db.relationship('Realm', lazy='joined', backref='realm_list')
+    # This creates an attribute "tokenowner" in the realm objects
+    realm = db.relationship('Realm', lazy='joined', backref='tokenowner')
 
     def __init__(self, token_id=None, serial=None, user_id=None, resolver=None, resolver_type=None, realm_id=0, realmname=None):
         """
@@ -1123,9 +1127,11 @@ class TokenRealm(MethodsMixin, db.Model):
                          db.ForeignKey('token.id'))
     realm_id = db.Column(db.Integer(),
                          db.ForeignKey('realm.id'))
+    # This creates an attribute "realm_list" in the Token object
     token = db.relationship('Token',
                             lazy='joined',
                             backref='realm_list')
+    # This creates an attribute "token_list" in the Realm object
     realm = db.relationship('Realm',
                             lazy='joined',
                             backref='token_list')
@@ -1651,9 +1657,11 @@ class EventHandler(MethodsMixin, db.Model):
     handlermodule = db.Column(db.Unicode(255), nullable=False)
     condition = db.Column(db.Unicode(1024), default=u"")
     action = db.Column(db.Unicode(1024), default=u"")
+    # This creates an attribute "eventhandler" in the EventHandlerOption object
     options = db.relationship('EventHandlerOption',
                               lazy='dynamic',
                               backref='eventhandler')
+    # This creates an attribute "eventhandler" in the EventHandlerCondition object
     conditions = db.relationship('EventHandlerCondition',
                                  lazy='dynamic',
                                  backref='eventhandler')
