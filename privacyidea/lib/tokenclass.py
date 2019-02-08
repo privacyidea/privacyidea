@@ -206,7 +206,7 @@ class TokenClass(object):
         :rtype: User object
         """
         user_object = User()
-        tokenowner = self.token.owners.first()
+        tokenowner = self.token.first_owner
         if tokenowner:
             username = get_username(tokenowner.user_id, tokenowner.resolver)
             user_object = User(login=username,
@@ -223,7 +223,7 @@ class TokenClass(object):
         :return: True / False
         """
         orphaned = False
-        if self.token.owners.first():
+        if self.token.first_owner:
             try:
                 if not self.user or not self.user.login:
                     # The token is assigned, but the username does not resolve
@@ -642,7 +642,7 @@ class TokenClass(object):
         return self.token.maxfail
 
     def get_user_id(self):
-        tokenowner = self.token.owners.first()
+        tokenowner = self.token.first_owner
         return "" if not tokenowner else tokenowner.user_id
 
     def set_realms(self, realms, add=False):

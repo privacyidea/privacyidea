@@ -740,9 +740,9 @@ def get_all_token_users():
 
     for tokenobject in tokenobject_list:
         user_info = {}
-        if tokenobject.token.owners.first():
-            user_info = get_user_info(tokenobject.token.owners.first().user_id,
-                                      tokenobject.token.owners.first().resolver)
+        if tokenobject.token.first_owner:
+            user_info = get_user_info(tokenobject.token.first_owner.user_id,
+                                      tokenobject.token.first_owner.resolver)
 
             if len(user_info) == 0:
                 user_info['username'] = u'/:no user info:/'
@@ -1780,10 +1780,10 @@ def copy_token_user(serial_from, serial_to):
     tokenobject_from = get_one_token(serial=serial_from)
     tokenobject_to = get_one_token(serial=serial_to)
     TokenOwner(token_id=tokenobject_to.token.id,
-               user_id=tokenobject_from.token.owners.first().user_id,
-               realm_id=tokenobject_from.token.owners.first().realm_id,
-               resolver_type=tokenobject_from.token.owners.first().resolver_type,
-               resolver=tokenobject_from.token.owners.first().resolver).save()
+               user_id=tokenobject_from.token.first_owner.user_id,
+               realm_id=tokenobject_from.token.first_owner.realm_id,
+               resolver_type=tokenobject_from.token.first_owner.resolver_type,
+               resolver=tokenobject_from.token.first_owner.resolver).save()
     # Also copy other assigned realms of the token.
     copy_token_realms(serial_from, serial_to)
     return True

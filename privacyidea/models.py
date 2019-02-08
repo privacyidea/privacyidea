@@ -221,6 +221,9 @@ class Token(MethodsMixin, db.Model):
             if tr or to:
                 db.session.commit()
 
+    @property
+    def first_owner(self):
+        return self.owners.first()
             
     @log_with(log)
     def delete(self):
@@ -486,7 +489,7 @@ class Token(MethodsMixin, db.Model):
     @log_with(log)
     def get_vars(self, save=False):
         log.debug('get_vars()')
-        tokenowner = self.owners.first()
+        tokenowner = self.first_owner
 
         ret = {}
         ret['id'] = self.id
