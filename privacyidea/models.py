@@ -1066,7 +1066,7 @@ class TokenOwner(MethodsMixin, db.Model):
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
     realm = db.relationship('Realm', lazy='joined', backref='realm_list')
 
-    def __init__(self, token_id=0, serial=None, user_id=None, resolver=None, resolver_type=None, realm_id=0, realmname=None):
+    def __init__(self, token_id=None, serial=None, user_id=None, resolver=None, resolver_type=None, realm_id=0, realmname=None):
         """
         Create a new token assignment to a user.
 
@@ -1082,7 +1082,7 @@ class TokenOwner(MethodsMixin, db.Model):
         elif realmname:
             r = Realm.query.filter_by(name=realmname).first()
             self.realm_id = r.id
-        if token_id:
+        if token_id is not None:
             self.token_id = token_id
         elif serial:
             r = Token.query.filter_by(serial=serial).first()
