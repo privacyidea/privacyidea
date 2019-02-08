@@ -246,7 +246,7 @@ class RadiusTokenClass(RemoteTokenClass):
                          dict=Dictionary(radius_dictionary))
 
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                       User_Name=radius_user.encode('ascii'),
+                                       User_Name=radius_user.encode('utf-8'),
                                        NAS_Identifier=nas_identifier.encode('ascii'))
 
             req["User-Password"] = req.PwCrypt(otpval)

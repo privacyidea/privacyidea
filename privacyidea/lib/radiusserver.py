@@ -106,7 +106,7 @@ class RADIUSServer(object):
             srv.retries = config.retries
 
         req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                   User_Name=user.encode('ascii'),
+                                   User_Name=user.encode('utf-8'),
                                    NAS_Identifier=nas_identifier.encode('ascii'))
 
         req["User-Password"] = req.PwCrypt(password)
