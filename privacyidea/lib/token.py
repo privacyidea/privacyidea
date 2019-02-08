@@ -2097,9 +2097,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
 
     # Remove locked tokens from tokenobject_list
     if len(tokenobject_list) > 1:
-        for tokenobject in tokenobject_list:
-            if tokenobject.is_revoked():
-                tokenobject_list.remove(tokenobject)
+        tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
 
         if len(tokenobject_list) == 0:
             # If there is no unlocked token left.
