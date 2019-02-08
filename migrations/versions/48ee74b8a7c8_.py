@@ -140,6 +140,11 @@ def upgrade():
             session.add(to)
         session.commit()
 
+        # Now we drop the columns
+        op.drop_column('token', 'user_id')
+        op.drop_column('token', 'resolver')
+        op.drop_column('token', 'resolver_type')
+
     except Exception as exx:
         print("Failed to migrate token assignment data!")
         print (exx)

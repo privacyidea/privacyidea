@@ -148,11 +148,6 @@ class Token(MethodsMixin, db.Model):
                        default=u'')  # encrypt
     so_pin_iv = db.Column(db.Unicode(32),
                           default=u'')  # encrypt
-    #resolver = db.Column(db.Unicode(120), default=u'',
-    #                     index=True)
-    #resolver_type = db.Column(db.Unicode(120), default=u'')
-    #user_id = db.Column(db.Unicode(320),
-    #                    default=u'', index=True)
     pin_seed = db.Column(db.Unicode(32),
                          default=u'')
     otplen = db.Column(db.Integer(),
