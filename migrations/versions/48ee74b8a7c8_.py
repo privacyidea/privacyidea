@@ -41,7 +41,6 @@ class TokenOwner(db.Model):
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
     token = db.relationship('Token', lazy='joined', backref='token_list')
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
-    resolver_type = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
     realm = db.relationship('Realm', lazy='joined', backref='realm_list')
@@ -70,7 +69,6 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=True),
         sa.Column('token_id', sa.Integer(), nullable=True),
         sa.Column('resolver', sa.Unicode(length=120), nullable=True),
-        sa.Column('resolver_type', sa.Unicode(length=120), nullable=True),
         sa.Column('user_id', sa.Unicode(length=320), nullable=True),
         sa.Column('realm_id', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
@@ -135,8 +133,7 @@ def upgrade():
                                              u"realms, to which the token is assigned!")
 
             to = TokenOwner(token_id=token.id, user_id=token.user_id,
-                            resolver=token.resolver, resolver_type=token.resolver_type,
-                            realm_id=realm_id)
+                            resolver=token.resolver, realm_id=realm_id)
             session.add(to)
         session.commit()
 

@@ -1782,7 +1782,6 @@ def copy_token_user(serial_from, serial_to):
     TokenOwner(token_id=tokenobject_to.token.id,
                user_id=tokenobject_from.token.first_owner.user_id,
                realm_id=tokenobject_from.token.first_owner.realm_id,
-               resolver_type=tokenobject_from.token.first_owner.resolver_type,
                resolver=tokenobject_from.token.first_owner.resolver).save()
     # Also copy other assigned realms of the token.
     copy_token_realms(serial_from, serial_to)

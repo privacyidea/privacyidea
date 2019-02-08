@@ -98,7 +98,6 @@ class MotpTokenTestCase(MyTestCase):
         token.set_user(User(login="cornelius",
                             realm=self.realm1))
         token.save()
-        self.assertEqual(token.token.owners.first().resolver_type, "passwdresolver")
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
         self.assertEqual(token.token.owners.first().user_id, "1000")
 

@@ -192,7 +192,7 @@ class TokenClass(object):
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
         r = TokenOwner(token_id=self.token.id,
                        user_id=uid, resolver=resolvername,
-                       resolver_type=resolvertype, realmname=user.realm).save()
+                       realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 

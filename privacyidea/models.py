@@ -214,8 +214,7 @@ class Token(MethodsMixin, db.Model):
 
             # get type of resolver
             res_type = Resolver.query.filter_by(name=resolver).first().rtype
-            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, resolver_type=res_type,
-                            realm_id=realm_id)
+            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
             if to:
                 db.session.add(to)
 
@@ -500,7 +499,6 @@ class Token(MethodsMixin, db.Model):
         ret['info'] = self.get_info()
 
         ret['resolver'] = u"" if not tokenowner else tokenowner.resolver
-        ret['resolver_type'] = u"" if not tokenowner else tokenowner.resolver_type
         ret['user_id'] = u"" if not tokenowner else tokenowner.user_id
         ret['otplen'] = self.otplen
 
@@ -1064,24 +1062,22 @@ class TokenOwner(MethodsMixin, db.Model):
                    nullable=True)
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
-    resolver_type = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
     # This creates an attribute "tokenowner" in the realm objects
     realm = db.relationship('Realm', lazy='joined', backref='tokenowner')
 
-    def __init__(self, token_id=None, serial=None, user_id=None, resolver=None, resolver_type=None, realm_id=0, realmname=None):
+    def __init__(self, token_id=None, serial=None, user_id=None, resolver=None, realm_id=None, realmname=None):
         """
         Create a new token assignment to a user.
 
         :param token_id: The database ID of the token
         :param serial:  The alternate serial number of the token
         :param resolver: The identifying name of the resolver
-        :param resolver_type: The type of the resolver
         :param realm_id: The database ID of the realm
         :param realmname: The alternate name of realm
         """
-        if realm_id:
+        if realm_id is not None:
             self.realm_id = realm_id
         elif realmname:
             r = Realm.query.filter_by(name=realmname).first()
@@ -1092,7 +1088,6 @@ class TokenOwner(MethodsMixin, db.Model):
             r = Token.query.filter_by(serial=serial).first()
             self.token_id = r.id
         self.resolver = resolver
-        self.resolver_type = resolver_type
         self. user_id = user_id
 
     def save(self, persistent=True):

@@ -1986,7 +1986,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # Assign a non-existing user to the token
         tok = init_token({"serial": serial, "type": "spass"})
-        r = TokenOwner(token_id=tok.token.id, resolver_type="passwdresolver", resolver=self.resolvername1,
+        r = TokenOwner(token_id=tok.token.id, resolver=self.resolvername1,
                        realmname=self.realm1, user_id="123981298").save()
         self.assertTrue(r > 0)
 

@@ -645,7 +645,6 @@ class TokenTestCase(MyTestCase):
         assert isinstance(tobject2, TokenClass)
         self.assertEqual(tobject2.token.owners.first().user_id, "1000")
         self.assertEqual(tobject2.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(tobject2.token.owners.first().resolver_type, "passwdresolver")
 
         # check if the realms where copied:
         self.assertTrue(tobject2.get_realms() == [self.realm1])

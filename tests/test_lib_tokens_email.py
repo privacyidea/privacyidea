@@ -103,7 +103,6 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.type == "email", token.type)
 
         token.set_user(User(login="cornelius", realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver_type, "passwdresolver")
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
         self.assertEqual(token.token.owners.first().user_id, "1000")
 
