@@ -750,3 +750,29 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     :rtype: basestring
     """
     return ''.join(urandom.choice(characters) for _x in range(size))
+
+
+def generate_keypair(rsa_keysize=2048):
+    """
+    This create a keypair, either RSA or ECC.
+    The HSM should be used.
+
+    # TODO: This must be much nicer...
+
+    :return: tuple of (pubkey, privkey)
+    """
+    from OpenSSL import crypto
+    from OpenSSL.crypto import _new_mem_buf, _bio_to_string
+    from OpenSSL._util import lib as _lib, ffi as _ffi
+    helper = crypto._PassphraseHelper(crypto.FILETYPE_PEM, None)
+
+    bio_pub = _new_mem_buf()  # Memory buffers to write to
+    bio_priv = _new_mem_buf()
+    keypair = crypto.PKey()
+    keypair.generate_key(crypto.TYPE_RSA, rsa_keysize)
+    rsa_pkey = crypto._lib.EVP_PKEY_get1_RSA(keypair._pkey)
+    crypto._lib.PEM_write_bio_RSAPublicKey(bio_pub, rsa_pkey)
+    crypto._lib.PEM_write_bio_RSAPrivateKey(
+            bio_priv, rsa_pkey,
+        _ffi.NULL, _ffi.NULL, 0, helper.callback, helper.callback_args)
+    return (_bio_to_string(bio_pub), _bio_to_string(bio_priv))
