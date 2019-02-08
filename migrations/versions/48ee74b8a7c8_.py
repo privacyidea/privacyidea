@@ -91,15 +91,22 @@ def upgrade():
             token_realms = TokenRealm.query.filter(TokenRealm.token_id == token.id).all()
             realm_id = None
             if not token_realms:
-                print(u"Error while migrating token assignment for token {0!s}. Missing Realm!".format(token.serial))
+                sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
+                                 u"Error while migrating token assignment. "
+                                 u"This token has no realm assignments!".format(serial=token.serial,
+                                                                                userid=token.user_id,
+                                                                                resolver=token.resolver))
             elif len(token_realms) == 1:
                 realm_id = token_realms[0].realm_id
             elif len(token_realms) > 1:
                 # If the resolver is only contained in one realm, we fetch the realms:
                 reso_realms = ResolverRealm.query.filter(ResolverRealm.resolver == token.resolver).all()
                 if not reso_realms:
-                    sys.stderr.write(u"The token is {0!s} assigned, but the assigned resolver {1!s} is not "
-                                     u"contained in any realm!".format(token.id, token.resolver))
+                    sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
+                                     u"The token is assigned, but the assigned resolver is not "
+                                     u"contained in any realm!".format(serial=token.serial,
+                                                                       userid=token.user_id,
+                                                                       resolver=token.resolver))
                 elif len(reso_realms) == 1:
                     # The resolver is only in one realm, so this is the new realm of the token!
                     realm_id = reso_realms[0].realm_id
@@ -112,15 +119,20 @@ def upgrade():
                             # The token realm, that also fits the resolver_realm is used as owner realm
                             found_realm_ids.append(realm_id)
                         if len(found_realm_ids) > 1:
-                            sys.stderr.write(u"Your realm configuration for token {0!s} is not distinct!. "
+                            sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
+                                             u"Your realm configuration for the token is not distinct!. "
                                              u"The tokenowner could be in multiple realms! "                                  
                                              u"The token is assigned to the following realms and the resolver is also "
-                                             u"contained in these realm IDs: {1!s}.".format(token.id, found_realm_ids))
+                                             u"contained in these realm IDs: {realms!s}.".format(serial=token.serial,
+                                                                                                 userid=token.user_id,
+                                                                                                 resolver=token.resolver,
+                                                                                                 realms=found_realm_ids))
                         elif len(found_realm_ids) == 1:
                             realm_id = found_realm_ids[0]
                         else:
-                            sys.stderr.write(u"Can not assign token {0!s}. The resolver is not contained in any "
-                                             u"realms, to which the token is assigned!".format(token.id))
+                            sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
+                                             u"Can not assign token. The resolver is not contained in any "
+                                             u"realms, to which the token is assigned!")
 
             to = TokenOwner(token_id=token.id, user_id=token.user_id,
                             resolver=token.resolver, resolver_type=token.resolver_type,
