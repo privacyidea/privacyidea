@@ -25,7 +25,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
-                                           tantoken_count, sms_identifiers)
+                                           tantoken_count, sms_identifiers,
+                                           pushtoken_add_config)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -1312,6 +1313,39 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError, sms_identifiers, req)
 
         delete_policy("sms1")
+
+    def test_22_push_registration_url(self):
+        from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {
+            "type": "push"}
+        # In this case we have no reqistration_url. We will raise an exception
+        self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+
+        # Set a policy for the registration URL
+        set_policy(name="push_pol",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=http://test,{1!s}=11".format(PUSH_ACTION.REGISTRATION_URL,
+                                                              PUSH_ACTION.TTL))
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual(req.all_data.get("registration_url"), "http://test")
+        self.assertEqual(req.all_data.get("ttl"), "11")
+
+        # finally delete policy
+        delete_policy("push_pol")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

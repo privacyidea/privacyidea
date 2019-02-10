@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
-from privacyidea.lib.error import ParameterError
+from .base import MyTestCase, FakeFlaskG
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
-from privacyidea.lib.tokens.pushtoken import PushTokenClass
+from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -50,7 +50,8 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234"})
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234"})
 
-        detail = token.get_init_detail()
+        detail = token.get_init_detail(params={"ttl": 10,
+                                               "registration_url": "http://test"})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
@@ -74,6 +75,21 @@ class PushTokenTestCase(MyTestCase):
     def test_02_api_enroll(self):
         self.authenticate()
 
+        # Failed enrollment due to missing policy
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertNotEqual(res.status_code,  200)
+            error = json.loads(res.data.decode("utf8")).get("result").get("error")
+            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: registration_url")
+            self.assertEqual(error.get("code"), 303)
+
+        set_policy("push1", scope=SCOPE.ENROLL,
+                   action="{0!s}=http://localhost/ttype/push".format(PUSH_ACTION.REGISTRATION_URL))
+
         # 1st step
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -81,7 +97,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "genkey": 1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.status_code,  200)
             detail = json.loads(res.data.decode('utf8')).get("detail")
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")

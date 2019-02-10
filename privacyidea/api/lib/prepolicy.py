@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-02-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add push token enrollment policy
 #  2018-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Implement remaining pin policies
 #  2018-11-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -82,6 +84,7 @@ import importlib
 # Token specific imports!
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
 optional = True
 required = False
@@ -1244,6 +1247,59 @@ def save_client_application_type(request, action):
     ua = request.user_agent
     save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
     return True
+
+
+def pushtoken_add_config(request, action):
+    """
+    This is a token specific wrapper for push token for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ENROLL,
+    action=TTL or action=REGISTRATION_URL the parameters are added to the
+    enrollment step.
+    :param request:
+    :param action:
+    :return:
+    """
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "push":
+        ttl = None
+        registration_url = None
+        user_object = request.User
+        if user_object:
+            token_user = user_object.login
+            token_realm = user_object.realm
+            token_resolver = user_object.resolver
+        else:
+            token_realm = token_resolver = token_user = None
+        # Get the TTL and the Registration URL from the configs
+        if g:
+            ttl = g.policy_object.get_action_values(
+                action=PUSH_ACTION.TTL,
+                scope=SCOPE.ENROLL,
+                realm=token_realm,
+                user=token_user,
+                resolver=token_resolver,
+                client=g.client_ip,
+                audit_data=g.audit_object.audit_data,
+                unique=True)
+            registration_url = g.policy_object.get_action_values(
+                action=PUSH_ACTION.REGISTRATION_URL,
+                scope=SCOPE.ENROLL,
+                realm=token_realm,
+                user=token_user,
+                resolver=token_resolver,
+                client=g.client_ip,
+                audit_data=g.audit_object.audit_data,
+                unique=True)
+        if len(ttl) == 1:
+            request.all_data["ttl"] = list(ttl)[0]
+        else:
+            request.all_data["ttl"] = 10
+        if len(registration_url) == 1:
+            request.all_data["registration_url"] = list(registration_url)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
+
 
 
 def u2ftoken_verify_cert(request, action):

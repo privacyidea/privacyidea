@@ -49,13 +49,17 @@ import logging
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 import binascii
 from privacyidea.lib.utils import create_img, is_true, b32encode_and_unicode
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom
 
 log = logging.getLogger(__name__)
 
+
+class PUSH_ACTION(object):
+    REGISTRATION_URL = "push_registration_url"
+    TTL = "push_time_to_live"
 
 
 @log_with(log)
@@ -176,9 +180,14 @@ class PushTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       "time_to_live": {
+                       PUSH_ACTION.TTL: {
                            'type': 'int',
                            'desc': _('How long should the second step of the enrollment be accepted (in seconds).'),
+                       },
+                       PUSH_ACTION.REGISTRATION_URL: {
+                           'type': 'str',
+                           'desc': _('The URL the Push App should contact in the second enrollment step.'
+                                     ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
                        }
                    },
                },
@@ -260,8 +269,6 @@ class PushTokenClass(TokenClass):
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
         # Add rollout state the response
         response_detail['rollout_state'] = self.token.rollout_state
-        # TODO: configure this!
-        url = "http://localhost/token/init"
 
         extra_data = {"enrollment_credential": self.get_tokeninfo("enrollment_credential")}
         imageurl = params.get("appimageurl")
@@ -269,24 +276,20 @@ class PushTokenClass(TokenClass):
             extra_data.update({"image": imageurl})
         if self.token.rollout_state == "clientwait":
             # We display this during the first enrollment step!
-            try:
-                qr_url = create_push_token_url(url=url, user=user.login,
-                                                realm=user.realm,
-                                                serial=self.get_serial(),
-                                                tokenlabel=tokenlabel,
-                                                issuer=tokenissuer,
-                                                user_obj=user,
-                                                extra_data=extra_data)
-                response_detail["pushurl"] = {"description":
-                                                    _("URL for privacyIDEA Push Token"),
-                                                "value": qr_url,
-                                                "img": create_img(qr_url,
-                                                                  width=250)
-                                                }
+            qr_url = create_push_token_url(url=params.get("registration_url"),
+                                           user=user.login,
+                                           realm=user.realm,
+                                           serial=self.get_serial(),
+                                           tokenlabel=tokenlabel,
+                                           issuer=tokenissuer,
+                                           user_obj=user,
+                                           extra_data=extra_data,
+                                           ttl=params.get("ttl"))
+            response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
+                                          "value": qr_url,
+                                          "img": create_img(qr_url, width=250)
+                                          }
 
-            except Exception as ex:  # pragma: no cover
-                log.error("{0!s}".format((traceback.format_exc())))
-                log.error('failed to set oath or google url: {0!r}'.format(ex))
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
         elif self.token.rollout_state == "enrolled":
@@ -316,6 +319,8 @@ class PushTokenClass(TokenClass):
         token_obj = toks[0]
 
         token_obj.update(request.all_data)
-        init_details = token_obj.get_init_detail(request.all_data)
+        init_detail_dict = request.all_data
+
+        init_details = token_obj.get_init_detail(init_detail_dict)
 
         return "json", prepare_result(True, details=init_details)
