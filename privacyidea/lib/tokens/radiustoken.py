@@ -209,8 +209,6 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server = self.get_tokeninfo("radius.server")
             # Read the secret
             secret = self.token.get_otpkey()
-            # TODO: can we assume that this is a printable string? Otherwise the
-            #       to_unicode() in the debug log below might fail.
             radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
@@ -254,7 +252,6 @@ class RadiusTokenClass(RemoteTokenClass):
                 req["State"] = str(options.get("transactionid"))
 
             response = srv.SendPacket(req)
-            c = response.code
             # TODO: handle the RADIUS challenge
             """
             if response.code == pyrad.packet.AccessChallenge:
@@ -282,4 +279,3 @@ class RadiusTokenClass(RemoteTokenClass):
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return otp_count
-
