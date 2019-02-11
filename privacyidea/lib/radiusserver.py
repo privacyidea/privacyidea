@@ -78,7 +78,9 @@ class RADIUSServer(object):
         :param config: The RADIUS configuration
         :type config: RADIUSServer Database Model
         :param user: the radius username
+        :type user: str
         :param password: the radius password
+        :type password: str
         :return: True or False. If any error occurs, an exception is raised.
         """
         success = False
@@ -106,9 +108,10 @@ class RADIUSServer(object):
             srv.retries = config.retries
 
         req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                   User_Name=user.encode('ascii'),
+                                   User_Name=user.encode('utf-8'),
                                    NAS_Identifier=nas_identifier.encode('ascii'))
 
+        # PwCrypt encodes unicode strings to UTF-8
         req["User-Password"] = req.PwCrypt(password)
         try:
             response = srv.SendPacket(req)
