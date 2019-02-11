@@ -188,6 +188,7 @@ def add_radius(identifier, server, secret, port=1812, description="",
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
     :param secret: The RADIUS secret
+    :type secret: str
     :param port: the radius port
     :type port: int
     :param description: Human readable description of the RADIUS server
@@ -217,6 +218,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
     :param secret: The RADIUS secret
+    :type secret: str
     :param user: the username to send
     :param password: the password to send
     :param port: the radius port

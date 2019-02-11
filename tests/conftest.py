@@ -25,7 +25,6 @@ if sys.version_info[0] > 2:
         'test_lib_smsprovider.py',
         'test_lib_tokens_foureyes.py',
         'test_lib_tokens_passwordtoken.py',
-        'test_lib_tokens_radius.py',
         'test_lib_tokens_remote.py',
         'test_lib_tokens_tiqr.py',
         'test_lib_tokens_u2f.py',
