@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 from . import smtpmock
 
 
-class SMTPServerTestCase(MyTestCase):
+class SMTPServerTestCase(MyApiTestCase):
     """
     test the api.smtpserver endpoints
     """

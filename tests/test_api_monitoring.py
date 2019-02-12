@@ -1,12 +1,12 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
 from flask import current_app
 
 
-class APIMonitoringTestCase(MyTestCase):
+class APIMonitoringTestCase(MyApiTestCase):
 
     def test_01_get_stats(self):
 

@@ -142,10 +142,7 @@ class MyTestCase(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         cls.app_context.pop()
-        
-    def setUp(self):
-        self.authenticate()
-        
+
     def authenticate(self):
         with self.app.test_request_context('/auth',
                                            data={"username": "testadmin",
@@ -173,3 +170,8 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+
+class MyApiTestCase(MyTestCase):
+    def setUp(self):
+        self.authenticate()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from six.moves.urllib.parse import urlencode
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token, Challenge, AuthCache)
@@ -89,7 +89,7 @@ OTPs = ["755224",
         "399871",
         "520489"]
 
-class AuthorizationPolicyTestCase(MyTestCase):
+class AuthorizationPolicyTestCase(MyApiTestCase):
     """
     This tests the catch all resolvers and resolvers which also contain the
     user.
@@ -242,7 +242,7 @@ class AuthorizationPolicyTestCase(MyTestCase):
             self.assertTrue(result.get("value"))
 
 
-class DisplayTANTestCase(MyTestCase):
+class DisplayTANTestCase(MyApiTestCase):
 
     def test_00_run_complete_workflow(self):
         # This is a standard workflow of a display TAN token.
@@ -332,7 +332,7 @@ class DisplayTANTestCase(MyTestCase):
         remove_token("ocra1234")
 
 
-class AValidateOfflineTestCase(MyTestCase):
+class AValidateOfflineTestCase(MyApiTestCase):
     """
     Test api.validate endpoints that are responsible for offline auth.
     """
@@ -535,7 +535,7 @@ class AValidateOfflineTestCase(MyTestCase):
                              u"ERR905: Token is not an offline token or refill token is incorrect")
 
 
-class ValidateAPITestCase(MyTestCase):
+class ValidateAPITestCase(MyApiTestCase):
     """
     test the api.validate endpoints
     """
@@ -2418,14 +2418,14 @@ class ValidateAPITestCase(MyTestCase):
             self.assertFalse(result.get("value"))
 
 
-class AChallengeResponse(MyTestCase):
+class AChallengeResponse(MyApiTestCase):
 
     serial = "hotp1"
     serial_email = "email1"
     serial_sms= "sms1"
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(AChallengeResponse, self).setUp()
         self.setUp_user_realms()
 
     def setup_sms_gateway(self):
@@ -2870,11 +2870,46 @@ class AChallengeResponse(MyTestCase):
 
         remove_token(self.serial_sms)
 
+    @responses.activate
+    def test_07_disabled_sms_token_will_not_trigger_challenge(self):
+        # Configure the SMS Gateway
+        self.setup_sms_gateway()
 
-class TriggeredPoliciesTestCase(MyTestCase):
+        # remove tokens for user cornelius
+        remove_token(user=User("cornelius", self.realm1))
+        # Enroll an SMS-Token to the user
+        init_token(user=User("cornelius", self.realm1),
+                   param={"serial": self.serial_sms,
+                          "type": "sms",
+                          "phone": "1234567",
+                          "otpkey": self.otpkey})
+        set_pin(self.serial_sms, "pin")
+        # disable the token
+        enable_token(self.serial_sms, False)
+
+        toks = get_tokens(user=User("cornelius", self.realm1))
+        self.assertEqual(len(toks), 1)
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(u"No active challenge response token found", detail.get("message"))
+
+        remove_token(self.serial_sms)
+
+
+class TriggeredPoliciesTestCase(MyApiTestCase):
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(TriggeredPoliciesTestCase, self).setUp()
         self.setUp_user_realms()
 
     def test_00_two_policies(self):

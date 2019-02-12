@@ -5,7 +5,7 @@ selfservice) on the REST API.
 implementation is contained in api/auth.py, api/token.py api/audit.py
 """
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    assign_token, unassign_token)
@@ -19,7 +19,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
 PWFILE = "tests/testdata/passwords"
 
 
-class APIAuthTestCase(MyTestCase):
+class APIAuthTestCase(MyApiTestCase):
     """
     This tests some side functionalities of the /auth API.
     """
@@ -145,7 +145,7 @@ class APIAuthTestCase(MyTestCase):
         delete_policy("realmadmin")
 
 
-class APIAuthChallengeResponse(MyTestCase):
+class APIAuthChallengeResponse(MyApiTestCase):
 
     def setUp(self):
         self.setUp_user_realms()
@@ -183,7 +183,7 @@ class APIAuthChallengeResponse(MyTestCase):
             self.assertEqual(data.get("result").get("value").get("username"), "selfservice")
 
 
-class APISelfserviceTestCase(MyTestCase):
+class APISelfserviceTestCase(MyApiTestCase):
 
     my_serial = "myToken"
     foreign_serial = "notMyToken"

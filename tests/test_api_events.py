@@ -1,10 +1,10 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 
 
-class APIEventsTestCase(MyTestCase):
+class APIEventsTestCase(MyApiTestCase):
 
     def test_01_crud_events(self):
 
