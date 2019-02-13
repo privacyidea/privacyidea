@@ -32,6 +32,7 @@ The OCRA class is tested in tests/test_lib_tokens_tiqr.py
 from privacyidea.lib.crypto import (geturandom, get_rand_digit_str,
                                     get_alphanum_str)
 from privacyidea.lib.tokens.HMAC import HmacOtp
+from privacyidea.lib.utils import to_bytes
 from hashlib import sha1, sha256, sha512
 import binascii
 import struct
@@ -204,7 +205,7 @@ class OCRA(object):
         verify a response.
 
         :param ocrasuite: The ocrasuite description
-        :type ocrasuite: basestring
+        :type ocrasuite: str
         :param security_object: A privacyIDEA security object, that can be
             used to look up the key in the database
         :type security_object: secObject as defined in privacyidea.lib.crypto
@@ -213,7 +214,7 @@ class OCRA(object):
         :return: OCRA Object
         """
         self.ocrasuite_obj = OCRASuite(ocrasuite)
-        self.ocrasuite = str(ocrasuite)
+        self.ocrasuite = ocrasuite
         self.key = key
         self.security_obj = security_object
 
@@ -233,18 +234,18 @@ class OCRA(object):
         The question is transformed internally.
 
         :param question: The question can be
-        :type question: basestring
+        :type question: str
 
         :param pin_hash: The hash of the pin
         :type pin_hash: basestring (hex)
         :param timesteps: timestemps
         :type timesteps: hex string
         :return: data_input
-        :rytpe: binary
+        :rtype: bytes
         """
         # In case the ocrasuite comes as a unicode (like from the webui) we
         # need to convert it!
-        data_input = str(self.ocrasuite) + b'\0'
+        data_input = to_bytes(self.ocrasuite) + b'\0'
         # Check for counter
         if self.ocrasuite_obj.counter == "C":
             if counter:
@@ -260,14 +261,14 @@ class OCRA(object):
             question = '{0:x}'.format(int(question))
             question += '0' * (len(question) % 2)
             question = binascii.unhexlify(question)
-            question += '\0' * (128-len(question))
+            question += b'\0' * (128-len(question))
             data_input += question
         elif self.ocrasuite_obj.challenge_type == "QA":
             question += '\0' * (128-len(question))
-            data_input += question
+            data_input += to_bytes(question)
         elif self.ocrasuite_obj.challenge_type == "QH":  # pragma: no cover
             question = binascii.unhexlify(question)
-            question += '\0' * (128-len(question))
+            question += b'\0' * (128-len(question))
             data_input += question
 
         # in case of PIN
@@ -276,7 +277,7 @@ class OCRA(object):
                 data_input += binascii.unhexlify(pin_hash)
             elif pin:
                 pin_hash = SHA_FUNC.get(self.ocrasuite_obj.signature_hash)(
-                    pin).digest()
+                    to_bytes(pin)).digest()
                 data_input += pin_hash
             else:
                 raise Exception("The ocrasuite {0!s} requires a PIN!".format(
