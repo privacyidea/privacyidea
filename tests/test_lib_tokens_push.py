@@ -9,12 +9,15 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION
+from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
                                     delete_policy)
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+
 import binascii
 import datetime
 import hashlib
@@ -50,8 +53,19 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234"})
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234"})
 
-        detail = token.get_init_detail(params={"ttl": 10,
-                                               "registration_url": "http://test"})
+        # Unknown config
+        self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
+
+        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test",
+                            FIREBASE_CONFIG.TTL: 10,
+                            FIREBASE_CONFIG.API_KEY: "1",
+                            FIREBASE_CONFIG.APP_ID: "2",
+                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                            FIREBASE_CONFIG.PROJECT_ID: "4"})
+        self.assertTrue(r > 0)
+
+        detail = token.get_init_detail(params={"firebase_config": "fb1"})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
@@ -84,11 +98,19 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertNotEqual(res.status_code,  200)
             error = json.loads(res.data.decode("utf8")).get("result").get("error")
-            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: registration_url")
+            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
+        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test",
+                            FIREBASE_CONFIG.TTL: 10,
+                            FIREBASE_CONFIG.API_KEY: "1",
+                            FIREBASE_CONFIG.APP_ID: "2",
+                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                            FIREBASE_CONFIG.PROJECT_ID: "4"})
+        self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}=http://localhost/ttype/push".format(PUSH_ACTION.REGISTRATION_URL))
+                   action="{0!s}=fb1".format(PUSH_ACTION.FIREBASE_CONFIG))
 
         # 1st step
         with self.app.test_request_context('/token/init',

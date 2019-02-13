@@ -53,13 +53,13 @@ from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 
 log = logging.getLogger(__name__)
 
 
 class PUSH_ACTION(object):
-    REGISTRATION_URL = "push_registration_url"
-    TTL = "push_time_to_live"
+    FIREBASE_CONFIG = "firebase_configuration"
 
 
 @log_with(log)
@@ -171,6 +171,7 @@ class PushTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype : s.o.
         """
+        gws = get_smsgateway(gwtype=u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider')
         res = {'type': 'push',
                'title': _('PUSH Token'),
                'description':
@@ -180,15 +181,12 @@ class PushTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       PUSH_ACTION.TTL: {
-                           'type': 'int',
-                           'desc': _('How long should the second step of the enrollment be accepted (in seconds).'),
-                       },
-                       PUSH_ACTION.REGISTRATION_URL: {
+                       PUSH_ACTION.FIREBASE_CONFIG: {
                            'type': 'str',
-                           'desc': _('The URL the Push App should contact in the second enrollment step.'
-                                     ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
-                       }
+                           'desc': _('The configuration of your Firebase application.'),
+                           'group': "PUSH",
+                           'value': [gw.identifier for gw in gws]
+                       },
                    },
                },
         }
@@ -275,8 +273,16 @@ class PushTokenClass(TokenClass):
         if imageurl:
             extra_data.update({"image": imageurl})
         if self.token.rollout_state == "clientwait":
+            # Get the values from the configured PUSH config
+            fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
+            from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+            from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+            firebase_configs = get_smsgateway(identifier=fb_identifier)
+            if len(firebase_configs) != 1:
+                raise ParameterError("Unknown Firebase configuration!")
+            fb_options = firebase_configs[0].option_dict
             # We display this during the first enrollment step!
-            qr_url = create_push_token_url(url=params.get("registration_url"),
+            qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
                                            user=user.login,
                                            realm=user.realm,
                                            serial=self.get_serial(),
@@ -284,7 +290,7 @@ class PushTokenClass(TokenClass):
                                            issuer=tokenissuer,
                                            user_obj=user,
                                            extra_data=extra_data,
-                                           ttl=params.get("ttl"))
+                                           ttl=fb_options.get(FIREBASE_CONFIG.TTL))
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
                                           "value": qr_url,
                                           "img": create_img(qr_url, width=250)

@@ -1273,8 +1273,8 @@ def pushtoken_add_config(request, action):
             token_realm = token_resolver = token_user = None
         # Get the TTL and the Registration URL from the configs
         if g:
-            ttl = g.policy_object.get_action_values(
-                action=PUSH_ACTION.TTL,
+            firebase_config = g.policy_object.get_action_values(
+                action=PUSH_ACTION.FIREBASE_CONFIG,
                 scope=SCOPE.ENROLL,
                 realm=token_realm,
                 user=token_user,
@@ -1282,23 +1282,10 @@ def pushtoken_add_config(request, action):
                 client=g.client_ip,
                 audit_data=g.audit_object.audit_data,
                 unique=True)
-            registration_url = g.policy_object.get_action_values(
-                action=PUSH_ACTION.REGISTRATION_URL,
-                scope=SCOPE.ENROLL,
-                realm=token_realm,
-                user=token_user,
-                resolver=token_resolver,
-                client=g.client_ip,
-                audit_data=g.audit_object.audit_data,
-                unique=True)
-        if len(ttl) == 1:
-            request.all_data["ttl"] = list(ttl)[0]
+        if len(firebase_config) == 1:
+            request.all_data["firebase_config"] = list(firebase_config)[0]
         else:
-            request.all_data["ttl"] = 10
-        if len(registration_url) == 1:
-            request.all_data["registration_url"] = list(registration_url)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
+            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
 
 
 
