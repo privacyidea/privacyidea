@@ -22,7 +22,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
+            self.assertTrue(res.json['result']['status'], res.json)
             
     def test_00_failed_auth(self):
         with self.app.test_request_context('/system/',
@@ -39,8 +39,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            value = result.get("value")
+            value = res.json['result']['value']
             self.assertEqual(value.get("key1"),
                              "insert",
                              "This sometimes happens when test database was "
@@ -55,7 +54,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"key3": "update"' in res.data, res.data)
+            self.assertIn('key3', res.json['result']['value'], res.json)
 
     def test_03_set_and_del_default(self):
         with self.app.test_request_context('/system/setDefault',
@@ -117,7 +116,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol1": 1' in res.data, res.data)
+            self.assertEquals(result['value']['setPolicy pol1'], 1, res.json)
 
         # Set a policy with a more complicated client which might interfere
         # with override client
@@ -136,9 +135,9 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol1": 1' in res.data, res.data)
+            result = res.json['result']
+            self.assertTrue(result["status"], result)
+            self.assertEquals(result['value']['setPolicy pol1'], 1, result)
         delete_privacyidea_config(SYSCONF.OVERRIDECLIENT)
 
         # setting policy with invalid name fails
@@ -181,8 +180,8 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             body = res.data
-            self.assertTrue('name = pol1' in body, res.data)
-            self.assertTrue("[pol1]" in body, res.data)
+            self.assertTrue(b'name = pol1' in body, res.data)
+            self.assertTrue(b"[pol1]" in body, res.data)
             
     def test_07_update_and_delete_policy(self):
         with self.app.test_request_context('/policy/pol_update_del',
@@ -817,7 +816,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue("privacyIDEA configuration documentation" in
+            self.assertTrue(b"privacyIDEA configuration documentation" in
                             res.data)
 
     def test_16_get_hsm(self):

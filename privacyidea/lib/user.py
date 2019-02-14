@@ -153,7 +153,7 @@ class User(object):
         return ret
 
     def __repr__(self):
-        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
+        ret = ("User(login='{0!s}', realm='{1!s}', resolver='{2!s}')".format(
             self.login, self.realm, self.resolver))
         return ret
 

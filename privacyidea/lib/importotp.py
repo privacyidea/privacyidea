@@ -51,7 +51,8 @@ import re
 import binascii
 import base64
 import cgi
-from privacyidea.lib.utils import modhex_decode, modhex_encode, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import (modhex_decode, modhex_encode,
+                                   hexlify_and_unicode, to_unicode, to_utf8)
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
@@ -59,7 +60,6 @@ from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
 from passlib.utils.pbkdf2 import pbkdf2
-from privacyidea.lib.utils import to_utf8
 import gnupg
 
 import logging
@@ -568,7 +568,7 @@ class GPGImport(object):
                 decrypted.status, decrypted.stderr))
             raise Exception(decrypted.stderr)
 
-        return decrypted.data
+        return to_unicode(decrypted.data)
 
 
 def export_pskc(tokenobj_list, psk=None):

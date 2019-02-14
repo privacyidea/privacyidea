@@ -49,6 +49,7 @@ from ..lib.policy import (set_policy,
                           enable_policy)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
+from privacyidea.lib.utils import to_unicode
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
@@ -395,6 +396,9 @@ def import_policy_api(filename=None):
         file_contents = policy_file.read()
     else:  # pragma: no cover
         file_contents = policy_file
+
+    # The policy file should contain readable characters
+    file_contents = to_unicode(file_contents)
 
     if file_contents == "":
         log.error("Error loading/importing policy file. file {0!s} empty!".format(
