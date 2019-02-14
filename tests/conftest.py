@@ -22,7 +22,4 @@ if sys.version_info[0] > 2:
         'test_lib_importotp.py',
         'test_lib_smsprovider.py',
         'test_mod_apache.py',
-        'test_resolver_realm.py',
-        'test_ui_certificate.py',
-        'test_ui_login.py',
     ])
