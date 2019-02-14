@@ -11,6 +11,8 @@ use to authenticate and cross of the list.
 The paper token is based on the :ref:`hotp_token`. I.e. you need to use one
 value after the other.
 
+.. _paper_token_customize:
+
 Customization
 ~~~~~~~~~~~~~
 
