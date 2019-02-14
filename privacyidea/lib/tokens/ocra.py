@@ -257,19 +257,22 @@ class OCRA(object):
                                 self.ocrasuite))
         # Check for Question
         if self.ocrasuite_obj.challenge_type == "QN":
-            # In case of QN
-            question = '{0:x}'.format(int(question))
-            question += '0' * (len(question) % 2)
-            question = binascii.unhexlify(question)
-            question += b'\0' * (128-len(question))
-            data_input += question
+            # question contains only numeric values
+            hex_q = '{0:x}'.format(int(question))
+            hex_q += '0' * (len(hex_q) % 2)
+            bin_q = binascii.unhexlify(hex_q)
+            bin_q += b'\x00' * (128-len(bin_q))
+            data_input += bin_q
         elif self.ocrasuite_obj.challenge_type == "QA":
-            question += '\0' * (128-len(question))
-            data_input += to_bytes(question)
-        elif self.ocrasuite_obj.challenge_type == "QH":  # pragma: no cover
-            question = binascii.unhexlify(question)
-            question += b'\0' * (128-len(question))
-            data_input += question
+            # question contains alphanumeric characters
+            bin_q = to_bytes(question)
+            bin_q += b'\x00' * (128-len(bin_q))
+            data_input += bin_q
+        elif self.ocrasuite_obj.challenge_type == "QH":
+            # qustion contains hex values
+            bin_q = binascii.unhexlify(question)
+            bin_q += b'\x00' * (128-len(bin_q))
+            data_input += bin_q
 
         # in case of PIN
         if self.ocrasuite_obj.signature_type == "P":
