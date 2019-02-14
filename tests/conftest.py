@@ -3,12 +3,6 @@ import sys
 collect_ignore = []
 if sys.version_info[0] > 2:
     collect_ignore.extend([
-        'test_api_2stepinit.py',
-        'test_api_applications.py',
-        'test_api_audit.py',
-        'test_api_clienttype.py',
-        'test_api_lib_policy.py',
-        'test_api_machines.py',
         'test_api_periodictask.py',
         'test_api_policy.py',
         'test_api_register.py',

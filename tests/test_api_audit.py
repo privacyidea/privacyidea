@@ -55,7 +55,7 @@ class APIAuditTestCase(MyApiTestCase):
             json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
-                "count"), 9)
+                "count"), 8)
             audit_list = json_response.get("result").get("value").get("auditdata")
             audit_actions = [a for a in audit_list if a.get("action") == "GET /audit/"]
             self.assertEqual(len(audit_actions), 2)
@@ -183,7 +183,7 @@ class APIAuditTestCase(MyApiTestCase):
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
             auditdata = json_response.get("result").get("value").get("auditdata")
-            self.assertEqual(count, 22)
+            self.assertEqual(count, 20)
 
         # delete policy
         delete_policy("audit01")
