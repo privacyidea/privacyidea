@@ -426,6 +426,46 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertEqual(r, False)
 
+    def test_06_check_for_client_ip(self):
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+
+        # Check DETAIL_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"message": "something very special happened"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24, !10.0.0.1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
 
 class CounterEventTestCase(MyTestCase):
 

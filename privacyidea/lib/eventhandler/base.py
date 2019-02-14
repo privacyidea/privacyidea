@@ -40,7 +40,8 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
-                                   parse_time_offset_from_now, is_true)
+                                   parse_time_offset_from_now, is_true,
+                                   check_ip_in_policy)
 import datetime
 from dateutil.tz import tzlocal
 import re
@@ -74,6 +75,7 @@ class CONDITION(object):
     TOKENRESOLVER = "tokenresolver"
     REALM = "realm"
     RESOLVER = "resolver"
+    CLIENT_IP = "client_ip"
 
 
 class BaseEventHandler(object):
@@ -250,6 +252,10 @@ class BaseEventHandler(object):
                 "desc": _("Here you can enter a regular expression. The "
                           "condition only applies if the regular expression "
                           "matches the detail->message in the response.")
+            },
+            CONDITION.CLIENT_IP: {
+                "type": "str",
+                "desc": _("Trigger the action, if the client IP matches.")
             }
         }
         return cond
@@ -339,6 +345,13 @@ class BaseEventHandler(object):
                 resolvers = all_realms.get(tokenrealm, {}).get("resolver")
                 tokenresolvers.extend([r.get("name") for r in resolvers])
             tokenresolvers = list(set(tokenresolvers))
+
+        if CONDITION.CLIENT_IP in conditions:
+            if g and g.client_ip:
+                ip_policy = [ip.strip() for ip in conditions.get(CONDITION.CLIENT_IP).split(",")]
+                found, excluded = check_ip_in_policy(g.client_ip, ip_policy)
+                if not found or excluded:
+                    return False
 
         if CONDITION.REALM in conditions:
             if user.realm != conditions.get(CONDITION.REALM):

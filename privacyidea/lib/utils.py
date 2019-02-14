@@ -635,6 +635,29 @@ def get_client_ip(request, proxy_settings):
     return client_ip
 
 
+def check_ip_in_policy(client_ip, policy):
+    """
+    This checks, if the given client IP is contained in a list like
+
+       ["10.0.0.2", "192.168.2.1/24", "!192.168.2.12", "-172.16.200.1"]
+
+    :param client_ip: The IP address in question
+    :param policy: A string of single IP addresses, negated IP address and subnets.
+    :return: tuple of (found, excluded)
+    """
+    client_found = False
+    client_excluded = False
+    for ipdef in policy:
+        if ipdef[0] in ['-', '!']:
+            # exclude the client?
+            if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
+                log.debug(u"the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
+                client_excluded = True
+        elif IPAddress(client_ip) in IPNetwork(ipdef):
+            client_found = True
+    return client_found, client_excluded
+
+
 def reload_db(timestamp, db_ts):
     """
     Check if the configuration database should be reloaded. This is verified
