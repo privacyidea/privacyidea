@@ -34,6 +34,7 @@ The event handler module is bound to an event together with
 from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
+from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
@@ -69,6 +70,10 @@ class CONDITION(object):
     DETAIL_MESSAGE = "detail_message"
     RESULT_VALUE = "result_value"
     RESULT_STATUS = "result_status"
+    TOKENREALM = "tokenrealm"
+    TOKENRESOLVER = "tokenresolver"
+    REALM = "realm"
+    RESOLVER = "resolver"
 
 
 class BaseEventHandler(object):
@@ -118,17 +123,29 @@ class BaseEventHandler(object):
         :return: dict
         """
         realms = get_realms()
+        resolvers = get_resolver_list()
         cond = {
-            "realm": {
+            CONDITION.REALM: {
                 "type": "str",
                 "desc": _("The user realm, for which this event should apply."),
                 "value": list(realms)
             },
-            "tokenrealm": {
+            CONDITION.RESOLVER: {
+                "type": "str",
+                "desc": _("The user resolver, for which this event should apply."),
+                "value": list(resolvers)
+            },
+            CONDITION.TOKENREALM: {
                 "type": "multi",
                 "desc": _("The token realm, for which this event should "
                           "apply."),
-                "value": [{"name": r} for r in realms.keys()]
+                "value": [{"name": r} for r in list(realms)]
+            },
+            CONDITION.TOKENRESOLVER: {
+                "type": "multi",
+                "desc": _("The token resolver, for which this event should "
+                          "apply."),
+                "value": [{"name": r} for r in list(resolvers)]
             },
             CONDITION.TOKENTYPE: {
                 "type": "multi",
@@ -301,6 +318,7 @@ class BaseEventHandler(object):
         serial = request.all_data.get("serial") or \
                  content.get("detail", {}).get("serial")
         tokenrealms = []
+        tokenresolvers = []
         tokentype = None
         token_obj = None
         if serial:
@@ -311,12 +329,23 @@ class BaseEventHandler(object):
             #  the user has only one token
             token_obj_list = get_tokens(user=user)
         if len(token_obj_list) == 1:
+            # There is a token involved, so we determine it's resolvers and realms
             token_obj = token_obj_list[0]
             tokenrealms = token_obj.get_realms()
             tokentype = token_obj.get_tokentype()
 
-        if "realm" in conditions:
-            if user.realm != conditions.get("realm"):
+            all_realms = get_realms()
+            for tokenrealm in tokenrealms:
+                resolvers = all_realms.get(tokenrealm, {}).get("resolver")
+                tokenresolvers.extend([r.get("name") for r in resolvers])
+            tokenresolvers = list(set(tokenresolvers))
+
+        if CONDITION.REALM in conditions:
+            if user.realm != conditions.get(CONDITION.REALM):
+                return False
+
+        if CONDITION.RESOLVER in conditions:
+            if user.resolver != conditions.get(CONDITION.RESOLVER):
                 return False
 
         if "logged_in_user" in conditions:
@@ -356,10 +385,19 @@ class BaseEventHandler(object):
                 if not ','.join([tok.get_serial() for tok in token_objects]):
                     return False
 
-        if "tokenrealm" in conditions and tokenrealms:
+        if CONDITION.TOKENREALM in conditions and tokenrealms:
             res = False
             for trealm in tokenrealms:
-                if trealm in conditions.get("tokenrealm").split(","):
+                if trealm in conditions.get(CONDITION.TOKENREALM).split(","):
+                    res = True
+                    break
+            if not res:
+                return False
+
+        if CONDITION.TOKENRESOLVER in conditions and tokenresolvers:
+            res = False
+            for tres in tokenresolvers:
+                if tres in conditions.get(CONDITION.TOKENRESOLVER).split(","):
                     res = True
                     break
             if not res:
