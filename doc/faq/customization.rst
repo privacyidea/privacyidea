@@ -130,3 +130,11 @@ You can add additional HTML elements above and underneath the enrollment wizard 
 Read the :ref:`enrollment_wizard` and :ref:`policy_token_wizard`
 to learn more about those code snippets.
 
+Token customization
+~~~~~~~~~~~~~~~~~~~
+
+Some tokens allow a special customization.
+
+The paper token allows you to add CSS for styling the printed output and
+add additional headers and footers. Read more about it at the
+paper token :ref:`paper_token_customize`.
