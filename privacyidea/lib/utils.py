@@ -232,6 +232,19 @@ def b64encode_and_unicode(s):
     return res
 
 
+def urlsafe_b64encode_and_unicode(s):
+    """
+    Base64-urlsafe-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    return res
+
+
 def create_png(data, alt=None):
     img = qrcode.make(data)
 

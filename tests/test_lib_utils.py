@@ -20,7 +20,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b32encode_and_unicode, to_bytes,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
-                                   modhex_decode, checksum)
+                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -592,6 +592,12 @@ class UtilsTestCase(MyTestCase):
         self.assertEquals(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
         self.assertEquals(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
         self.assertEquals(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+
+        self.assertEquals(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
+                          u'-vv8_f7_')
 
     def test_27_images(self):
         png_b64 = u'iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABgElEQVR4nO2ZQ' \
