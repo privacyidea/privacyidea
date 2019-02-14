@@ -83,7 +83,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types,
                                     get_inc_fail_count_on_false_pin)
-from privacyidea.lib.user import get_user_info, User
+from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
@@ -723,33 +723,6 @@ def get_tokenclass_info(tokentype, section=None):
         res = Tokenclass.get_class_info(section)
 
     return res
-
-
-@log_with(log)
-def get_all_token_users():
-    """
-    return a dictionary with all tokens, that are assigned to users.
-    This returns a dictionary with the key being the serial number of
-    the token and the user information as dict.
-
-    :return: dictionary of serial numbers
-    :rtype: dict
-    """
-    tokens = {}
-    tokenobject_list = get_tokens(assigned=True)
-
-    for tokenobject in tokenobject_list:
-        user_info = {}
-        if tokenobject.token.first_owner:
-            user_info = get_user_info(tokenobject.token.first_owner.user_id,
-                                      tokenobject.token.first_owner.resolver)
-
-            if len(user_info) == 0:
-                user_info['username'] = u'/:no user info:/'
-
-        tokens[tokenobject.token.serial] = user_info
-
-    return tokens
 
 
 @log_with(log)

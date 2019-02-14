@@ -32,8 +32,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_realms_of_token,
                                    token_exist, get_token_owner, is_token_owner,
                                    get_tokenclass_info,
-                                   get_tokens_in_resolver,
-                                   get_all_token_users, get_otp,
+                                   get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
                                    gen_serial, init_token, remove_token,
                                    set_realms, set_defaults, assign_token,
@@ -247,27 +246,6 @@ class TokenTestCase(MyTestCase):
         info = get_tokenclass_info("hotp")
         self.assertTrue("user" in info, info)
         self.assertTrue(info.get("type") == "hotp", info)
-
-    def test_10_get_all_token_users(self):
-        tokens = get_all_token_users()
-        self.assertTrue("hotptoken" in tokens, tokens)
-        self.assertTrue(self.serials[1] not in tokens, tokens)
-
-        # A token with a user, that does not exist in the userstore anymore
-        # the uid 1000017 does not exist
-        db_token = Token("missinguser",
-                         tokentype="hotp",
-                         userid=1000017,
-                         resolver=self.resolvername1,
-                         realm=self.realm1)
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
-        tokens = get_all_token_users()
-        self.assertTrue("missinguser" in tokens, tokens)
-        self.assertTrue(tokens.get("missinguser").get("username") == '/:no '
-                                                                     'user '
-                                                                     'info:/', tokens)
-        db_token.delete()
 
     def test_11_get_otp(self):
         otp = get_otp("hotptoken")

@@ -677,24 +677,6 @@ def get_user_list(param=None, user=None):
 
 
 @log_with(log)
-def get_user_info(userid, resolvername):
-    """
-    return the detailed information for a user in a resolver
-    
-    :param userid: The id of the user in a resolver
-    :type userid: string
-    :param resolvername: The name of the resolver
-    :return: a dict with all the userinformation
-    :rtype: dict
-    """
-    userInfo = {}
-    if userid:
-        y = get_resolver_object(resolvername)
-        userInfo = y.getUserInfo(userid)
-    return userInfo
-
-
-@log_with(log)
 @user_cache(cache_username)
 def get_username(userid, resolvername):
     """
