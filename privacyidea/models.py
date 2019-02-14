@@ -212,8 +212,6 @@ class Token(MethodsMixin, db.Model):
             if tr:
                 db.session.add(tr)
 
-            # get type of resolver
-            res_type = Resolver.query.filter_by(name=resolver).first().rtype
             to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
             if to:
                 db.session.add(to)
@@ -1058,14 +1056,13 @@ class TokenOwner(MethodsMixin, db.Model):
     A token can be assigned to several users.
     """
     __tablename__ = 'tokenowner'
-    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True)
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    # This creates an attribute "tokenowner" in the realm objects
-    realm = db.relationship('Realm', lazy='joined', backref='tokenowner')
+    # This creates an attribute "tokenowners" in the realm objects
+    realm = db.relationship('Realm', lazy='joined', backref='tokenowners')
 
     def __init__(self, token_id=None, serial=None, user_id=None, resolver=None, realm_id=None, realmname=None):
         """

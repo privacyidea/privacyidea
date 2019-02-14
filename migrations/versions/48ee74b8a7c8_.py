@@ -36,8 +36,7 @@ class Realm(db.Model):
 
 class TokenOwner(db.Model):
     __tablename__ = 'tokenowner'
-    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True,
-                   nullable=True)
+    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True)
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
     token = db.relationship('Token', lazy='joined', backref='token_list')
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
@@ -66,7 +65,7 @@ class Token(db.Model):
 def upgrade():
     try:
         op.create_table('tokenowner',
-        sa.Column('id', sa.Integer(), nullable=True),
+        sa.Column('id', sa.Integer()),
         sa.Column('token_id', sa.Integer(), nullable=True),
         sa.Column('resolver', sa.Unicode(length=120), nullable=True),
         sa.Column('user_id', sa.Unicode(length=320), nullable=True),
