@@ -92,7 +92,7 @@ class EmailTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PIEM", class_prefix)
         self.assertTrue(token.get_class_type() == "email", token)
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
 
     def test_02_set_user(self):
@@ -102,7 +102,7 @@ class EmailTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "email", token.type)
 
-        token.set_user(User(login="cornelius", realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
         self.assertEqual(token.token.owners.first().user_id, "1000")
 

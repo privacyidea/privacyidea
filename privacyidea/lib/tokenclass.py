@@ -181,7 +181,7 @@ class TokenClass(object):
         return self.token.tokentype
 
     @check_token_locked
-    def set_user(self, user, report=None):
+    def add_user(self, user, report=None):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
         
@@ -203,9 +203,9 @@ class TokenClass(object):
         If the token has no owner assigned, we return None
 
         :return: The owner of the token
-        :rtype: User object
+        :rtype: User object or None
         """
-        user_object = User()
+        user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
             username = get_username(tokenowner.user_id, tokenowner.resolver)

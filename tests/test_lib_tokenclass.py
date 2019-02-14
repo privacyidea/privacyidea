@@ -34,7 +34,7 @@ class TokenBaseTestCase(MyTestCase):
     serial1 = "SE123456"
     serial2 = "SE222222"
     
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
     
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -88,7 +88,7 @@ class TokenBaseTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "newtype", token.type)
         
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
 
         user_object = token.user

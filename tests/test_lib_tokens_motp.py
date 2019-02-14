@@ -95,7 +95,7 @@ class MotpTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial2).first()
         token = MotpTokenClass(db_token)
         token.add_init_details("otpkey", "11223344556677889900")
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
         token.save()
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)

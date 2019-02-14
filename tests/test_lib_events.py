@@ -2023,7 +2023,7 @@ class UserNotificationTestCase(MyTestCase):
         unassign_token(tok.token.serial)
         self.assertEqual(tok.token.owners.first(), None)
         # Set an existing user for the token.
-        tok.set_user(User("cornelius", "realm1"))
+        tok.add_user(User("cornelius", "realm1"))
         self.assertEqual(tok.token.owners.first().user_id, "1000")
         self.assertEqual(tok.token.owners.first().realm.name, "realm1")
 

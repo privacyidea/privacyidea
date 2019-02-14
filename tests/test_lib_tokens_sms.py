@@ -49,7 +49,7 @@ class SMSTokenTestCase(MyTestCase):
     success_body = "ID 12345"
 
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -101,7 +101,7 @@ class SMSTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PISM", class_prefix)
         self.assertTrue(token.get_class_type() == "sms", token)
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
 
     def test_02_set_user(self):
@@ -111,7 +111,7 @@ class SMSTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "sms", token.type)
 
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
         self.assertEqual(token.token.owners.first().user_id, "1000")

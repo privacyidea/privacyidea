@@ -1020,7 +1020,7 @@ def init_token(param, user=None, tokenrealms=None,
 
     # Set the user of the token
     if user is not None and user.login != "":
-        tokenobject.set_user(user)
+        tokenobject.add_user(user)
 
     upd_params = param
     tokenobject.update(upd_params)
@@ -1167,7 +1167,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
         err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
         raise TokenAdminError(err_message, id=1103)
 
-    tokenobject.set_user(user)
+    tokenobject.add_user(user)
     if pin is not None:
         tokenobject.set_pin(pin, encrypt=encrypt_pin)
 
@@ -1752,6 +1752,10 @@ def copy_token_user(serial_from, serial_to):
     """
     tokenobject_from = get_one_token(serial=serial_from)
     tokenobject_to = get_one_token(serial=serial_to)
+
+    # For backward compatibility we remove the potentially old users from the token.
+    # TODO: Later we probably want to be able to "add" new users to a token.
+    unassign_token(serial_to)
     TokenOwner(token_id=tokenobject_to.token.id,
                user_id=tokenobject_from.token.first_owner.user_id,
                realm_id=tokenobject_from.token.first_owner.realm_id,

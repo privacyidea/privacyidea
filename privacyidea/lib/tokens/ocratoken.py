@@ -131,7 +131,7 @@ class OcraTokenClass(TokenClass):
         """
         user_object = get_user_from_param(param, optional)
         if user_object:
-            self.set_user(user_object)
+            self.add_user(user_object)
 
         ocrasuite = getParam(param, "ocrasuite", default=OCRA_DEFAULT_SUITE)
         OCRASuite(ocrasuite)

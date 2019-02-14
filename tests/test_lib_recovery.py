@@ -35,7 +35,7 @@ class RecoveryTestCase(MyTestCase):
                     "mobile": "mobile"}'
     }
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_init_users(self):
         self.setUp_user_realms()

@@ -20,7 +20,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                  }
     j_questions = json.dumps(questions)
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_users(self):
         self.setUp_user_realms()

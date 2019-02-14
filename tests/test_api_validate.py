@@ -335,7 +335,7 @@ class AValidateOfflineTestCase(MyTestCase):
         db_token.save()
         token = HotpTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serials[0], token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin("pin")
         self.assertEqual(token.token.owners.first().user_id, "1000")
 
@@ -517,7 +517,7 @@ class ValidateAPITestCase(MyTestCase):
         db_token.save()
         token = HotpTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serials[0], token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin("pin")
         self.assertEqual(token.token.owners.first().user_id, "1000")
 
@@ -965,7 +965,7 @@ class ValidateAPITestCase(MyTestCase):
         db_token.update_otpkey(self.otpkey)
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin(pin)
         # Set the failcounter
         token.set_failcount(5)

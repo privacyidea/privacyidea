@@ -38,7 +38,7 @@ class HOTPTokenTestCase(MyTestCase):
     serial1 = "SE123456"
     otpkey = "3132333435363738393031323334353637383930"
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -83,7 +83,7 @@ class HOTPTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "hotp", token.type)
 
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
         self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
         self.assertEqual(token.token.owners.first().user_id, "1000")
