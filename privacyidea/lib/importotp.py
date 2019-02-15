@@ -503,7 +503,7 @@ def parsePSKCdata(xml_data,
                 elif token["type"].lower() in ["pw"]:
                     token["otpkey"] = to_unicode(secret)
                 else:
-                    token["otpkey"] = secret
+                    token["otpkey"] = to_unicode(secret)
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
@@ -615,7 +615,7 @@ def export_pskc(tokenobj_list, psk=None):
         type = tokenobj.type.lower()
         issuer = "privacyIDEA"
         try:
-            manufacturer = tokenobj.token.description.encode("ascii")
+            manufacturer = tokenobj.token.description.encode("ascii", "replace")
             manufacturer = to_unicode(manufacturer)
         except UnicodeEncodeError:
             manufacturer = "deleted during export"
@@ -636,7 +636,7 @@ def export_pskc(tokenobj_list, psk=None):
             elif tokenobj.type.lower() in ["pw"]:
                 encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
             else:
-                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
+                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
         except TypeError:
             # Some keys might be odd string length
             continue
@@ -689,6 +689,5 @@ def export_pskc(tokenobj_list, psk=None):
             log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
             tb = traceback.format_exc()
             log.debug(tb)
-            raise(e)
 
     return hexlify_and_unicode(psk), number_of_exported_tokens, soup

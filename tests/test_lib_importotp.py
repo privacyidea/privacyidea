@@ -620,8 +620,8 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
-        # unicode does not get exported
-        self.assertEqual(tokens.get("t1").get("description"), "deleted during export")
+        # unicode gets replaced
+        self.assertEqual(tokens.get("t1").get("description"), "s?me ?nic?de")
         self.assertEqual(tokens.get("t2").get("type"), "totp")
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
@@ -637,7 +637,7 @@ class GPGTestCase(MyTestCase):
         self.assertEqual(len(pubkeys), 1)
         self.assertTrue("2F25BAF8645350BB" in pubkeys)
 
-        r = GPG.decrypt(str(HALLO_PAYLOAD))
+        r = GPG.decrypt(HALLO_PAYLOAD)
         self.assertEqual(r, b"Hallo\n")
 
         self.assertRaises(Exception, GPG.decrypt, WRONG_PAYLOAD)
