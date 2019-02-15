@@ -9,6 +9,7 @@ from privacyidea.lib.tokens.tiqrtoken import TiqrTokenClass
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.token import init_token
+from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
 import re
@@ -305,7 +306,7 @@ class OCRATestCase(MyTestCase):
         self.assertRaises(Exception, ocra_object.create_data_input, question)
 
         ocrasuite = u"OCRA-1:HOTP-SHA1-8:QH40"
-        dTAN = "83507112  ~320,00~1399458665_G6HNVF"
+        dTAN = b"83507112  ~320,00~1399458665_G6HNVF"
         question = binascii.hexlify(hashlib.sha1(dTAN).digest())
         ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
         r = ocra_object.create_data_input(question)
@@ -344,8 +345,8 @@ class OcraTokenTestCase(MyTestCase):
         self.assertEqual(r, False)
 
         # Check create_challenge
-        displayTAN_challenge = "83507112  ~320,00~1399458665_G6HNVF"
-        challengeQH40 = binascii.hexlify(hashlib.sha1(
+        displayTAN_challenge = b"83507112  ~320,00~1399458665_G6HNVF"
+        challengeQH40 = hexlify_and_unicode(hashlib.sha1(
             displayTAN_challenge).digest())
         r = token.create_challenge(options={"challenge": challengeQH40})
         self.assertEqual(r[0], True)
@@ -359,10 +360,7 @@ class OcraTokenTestCase(MyTestCase):
         r = token.verify_response(passw="90065298", challenge=challengeQH40)
         self.assertTrue(r > 0, r)
 
-        # create another challenge
-        displayTAN_challenge = "83507112  ~320,00~1399458665_G6HNVF"
-        challengeQH40 = binascii.hexlify(hashlib.sha1(
-            displayTAN_challenge).digest())
+        # create another challenge using the same display TAN as above
         r = token.create_challenge(options={"challenge": challengeQH40})
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], "Please answer the challenge")

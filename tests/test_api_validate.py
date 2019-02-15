@@ -2870,6 +2870,41 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(self.serial_sms)
 
+    @responses.activate
+    def test_07_disabled_sms_token_will_not_trigger_challenge(self):
+        # Configure the SMS Gateway
+        self.setup_sms_gateway()
+
+        # remove tokens for user cornelius
+        remove_token(user=User("cornelius", self.realm1))
+        # Enroll an SMS-Token to the user
+        init_token(user=User("cornelius", self.realm1),
+                   param={"serial": self.serial_sms,
+                          "type": "sms",
+                          "phone": "1234567",
+                          "otpkey": self.otpkey})
+        set_pin(self.serial_sms, "pin")
+        # disable the token
+        enable_token(self.serial_sms, False)
+
+        toks = get_tokens(user=User("cornelius", self.realm1))
+        self.assertEqual(len(toks), 1)
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(u"No active challenge response token found", detail.get("message"))
+
+        remove_token(self.serial_sms)
+
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
 

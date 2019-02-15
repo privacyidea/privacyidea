@@ -41,9 +41,10 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError
-from privacyidea.lib.policy import (SCOPE, GROUP, ACTION, get_action_values_from_options)
-from privacyidea.lib.utils import is_true
-import base64
+from privacyidea.lib.policy import (SCOPE, GROUP, ACTION,
+                                    get_action_values_from_options)
+from privacyidea.lib.utils import (is_true, hexlify_and_unicode,
+                                   urlsafe_b64encode_and_unicode)
 import binascii
 import json
 import re
@@ -347,7 +348,7 @@ class U2fTokenClass(TokenClass):
             if not app_id:
                 raise TokenAdminError(_("You need to define the appId in the "
                                         "token config!"))
-            nonce = base64.urlsafe_b64encode(geturandom(32))
+            nonce = urlsafe_b64encode_and_unicode(geturandom(32))
             response_detail = TokenClass.get_init_detail(self, params, user)
             register_request = {"version": U2F_Version,
                                 "challenge": nonce,
@@ -424,7 +425,7 @@ class U2fTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
-                                 challenge=binascii.hexlify(challenge),
+                                 challenge=hexlify_and_unicode(challenge),
                                  data=None,
                                  session=options.get("session"),
                                  validitytime=validity)
@@ -475,14 +476,14 @@ class U2fTokenClass(TokenClass):
                 raise ValidateError("Incorrect navigator.id")
             #client_origin = clientdata_dict.get("origin")
             signaturedata = url_decode(signaturedata)
-            signaturedata_hex = binascii.hexlify(signaturedata)
+            signaturedata_hex = hexlify_and_unicode(signaturedata)
             user_presence, counter, signature = parse_response_data(
                 signaturedata_hex)
 
             user_pub_key = self.get_tokeninfo("pubKey")
             app_id = self.get_tokeninfo("appId")
             if check_response(user_pub_key, app_id, clientdata,
-                              binascii.hexlify(signature), counter,
+                              hexlify_and_unicode(signature), counter,
                               user_presence):
                 # Signature verified.
                 # check, if the counter increased!
