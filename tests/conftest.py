@@ -19,7 +19,6 @@ if sys.version_info[0] > 2:
         'test_api_token.py',
         'test_api_users.py',
         'test_api_validate.py',
-        'test_lib_importotp.py',
         'test_lib_smsprovider.py',
         'test_mod_apache.py',
     ])
