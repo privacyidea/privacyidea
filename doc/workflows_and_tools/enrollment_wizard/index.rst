@@ -34,8 +34,11 @@ Customization
 There are two dialog windows in the wizard. You can configure the text in the
 wizard in your html templates defined in these files:
 
+Before the token is enrolled you can add your custom text in these two files
    static/customize/views/includes/token.enroll.pre.top.html
    static/customize/views/includes/token.enroll.pre.bottom.html
+
+When it is enrolled and the user needs to do something (e.g. scanning the qr-code), you can modify the text here:
    static/customize/views/includes/token.enroll.post.top.html
    static/customize/views/includes/token.enroll.post.bottom.html
 

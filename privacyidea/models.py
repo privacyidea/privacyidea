@@ -49,12 +49,12 @@ from privacyidea.lib.crypto import (encrypt,
                                     geturandom,
                                     hash,
                                     SecretObj,
-                                    get_rand_digit_str,
-                                    hexlify_and_unicode)
+                                    get_rand_digit_str)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from .lib.log import log_with
-from privacyidea.lib.utils import is_true, convert_column_to_unicode
+from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
+                                   hexlify_and_unicode)
 
 log = logging.getLogger(__name__)
 
@@ -1582,8 +1582,8 @@ class MachineTokenOptions(db.Model):
                                                             value,
                                                             machinetoken_id))
         self.machinetoken_id = machinetoken_id
-        self.mt_key = key
-        self.mt_value = unicode(value)
+        self.mt_key = convert_column_to_unicode(key)
+        self.mt_value = convert_column_to_unicode(value)
 
         # if the combination machinetoken_id / mt_key already exist,
         # we need to update

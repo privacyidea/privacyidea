@@ -740,16 +740,16 @@ class PolicyTestCase(MyTestCase):
 
         # this chooses email2, because it has the highest priority
         P = PolicyClass()
-        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
-                                             unique=True, allow_white_space_in_action=True).keys(),
+        self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                                  unique=True, allow_white_space_in_action=True).keys()),
                          ["text 2"])
 
         delete_policy("email2")
         P.reload_from_db()
 
         # with email2 gone, this chooses email1
-        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
-                                             unique=True, allow_white_space_in_action=True).keys(),
+        self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                                  unique=True, allow_white_space_in_action=True).keys()),
                          ["text 1"])
 
         # if we now add another policy with priority 77, we get no conflict
@@ -757,8 +757,8 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=77)
         P.reload_from_db()
 
-        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
-                                             unique=True, allow_white_space_in_action=True).keys(),
+        self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                                  unique=True, allow_white_space_in_action=True).keys()),
                          ["text 1"])
 
         # but we get a conflict if we change the priority of email4 to 4
@@ -783,8 +783,8 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="email4", priority=3)
         P.reload_from_db()
 
-        self.assertEqual(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
-                                             unique=True, allow_white_space_in_action=True).keys(),
+        self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
+                                                  unique=True, allow_white_space_in_action=True).keys()),
                          ["text 4"])
 
         # now we have
@@ -822,10 +822,10 @@ class PolicyTestCase(MyTestCase):
 
         # this reduces the action values to unique values
         P = PolicyClass()
-        self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext").keys(),
+        self.assertEqual(list(P.get_action_values(scope=SCOPE.AUTH, action="emailtext").keys()),
                          ["text 1"])
         # this is allowed if the policies agree
-        self.assertEqual(P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True).keys(),
+        self.assertEqual(list(P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True).keys()),
                          ["text 1"])
 
         set_policy(name="email2", action="emailtext='text 2'")

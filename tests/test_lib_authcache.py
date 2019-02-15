@@ -6,11 +6,10 @@ The lib.auth_cache.py only depends on the database model.
 from .base import MyTestCase
 
 from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
-                                       update_cache_last_auth, verify_in_cache)
+                                       update_cache_last_auth, verify_in_cache,
+                                       _hash_password)
 from privacyidea.models import AuthCache
 import datetime
-import hashlib
-import binascii
 
 
 class AuthCacheTestCase(MyTestCase):
@@ -21,29 +20,27 @@ class AuthCacheTestCase(MyTestCase):
     username = "hans"
     realm = "realm"
     resolver = "resolver"
-    pw_hash = binascii.hexlify(hashlib.sha256(password.encode('utf8')).digest())
 
     def test_01_write_update_delete_cache(self):
         teststart = datetime.datetime.utcnow()
 
-        r = add_to_cache(self.username, self.realm, self.resolver,
-                         auth_hash=self.pw_hash)
+        r = add_to_cache(self.username, self.realm, self.resolver, self.password)
 
         self.assertTrue(r > 0)
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertEqual(auth.authentication, self.pw_hash)
+        self.assertEqual(auth.authentication, _hash_password(self.password))
 
         self.assertTrue(auth.first_auth > teststart)
-        self.assertEqual(auth.last_auth, None)
+        self.assertEqual(auth.last_auth, auth.first_auth)
 
         update_cache_last_auth(r)
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertTrue(auth.last_auth > teststart)
 
         r_delete = delete_from_cache(self.username, self.realm, self.resolver,
-                                     self.pw_hash)
+                                     self.password)
         self.assertEqual(r, r_delete)
 
         auth = AuthCache.query.filter(AuthCache.username ==
@@ -57,8 +54,7 @@ class AuthCacheTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Add Entry to cache
-        r = add_to_cache(self.username, self.realm, self.resolver,
-                     auth_hash=self.pw_hash)
+        r = add_to_cache(self.username, self.realm, self.resolver, self.password)
         update_cache_last_auth(r)
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         last_auth1 = auth.last_auth
@@ -78,7 +74,7 @@ class AuthCacheTestCase(MyTestCase):
 
     def test_03_delete_old_entries(self):
         # Create a VERY old authcache entry
-        AuthCache("grandpa", self.realm, self.resolver, self.pw_hash,
+        AuthCache("grandpa", self.realm, self.resolver, _hash_password(self.password),
                   first_auth=datetime.datetime.utcnow() - datetime.timedelta(
                       days=10),
                   last_auth=datetime.datetime.utcnow() - datetime.timedelta(

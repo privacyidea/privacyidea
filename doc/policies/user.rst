@@ -265,3 +265,14 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 Such a policy can also be set for the administrator. See :ref:`admin_policy_2step`.
 
 New in version 2.21
+
+sms_gateways
+~~~~~~~~~~~~
+
+type: string
+
+Usually an SMS tokens sends the SMS via the SMS gateway that is system wide defined in the token settings.
+This policy takes a blank separated list of configured SMS gateways.
+It allows the user to define an individual SMS gateway during token enrollment.
+
+New in version 3.0.

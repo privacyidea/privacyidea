@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2019-01-14   Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#               Allow different SMS gateways via "sms.identifier"
 #  2018-10-31   Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #               Let the client choose to get a HTTP 500 Error code if
 #               SMS fails.
@@ -57,7 +59,8 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
-                                                     create_sms_instance)
+                                                     create_sms_instance,
+                                                     get_smsgateway)
 from json import loads
 from privacyidea.lib import _
 
@@ -77,6 +80,7 @@ keylen = {'sha1': 20,
 class SMSACTION(object):
     SMSTEXT = "smstext"
     SMSAUTO = "smsautosend"
+    GATEWAYS = "sms_gateways"
 
 
 class SmsTokenClass(HotpTokenClass):
@@ -187,7 +191,7 @@ class SmsTokenClass(HotpTokenClass):
         :return: subsection if key exists or user defined
         :rtype : s.o.
         """
-
+        sms_gateways = [gw.identifier for gw in get_smsgateway()]
         res = {'type': 'sms',
                'title': _('SMS Token'),
                'description':
@@ -213,7 +217,23 @@ class SmsTokenClass(HotpTokenClass):
                            'desc': _('Use an alternate challenge text for telling the '
                                      'user to enter the code from the SMS.')
                        }
-                   }
+                   },
+                   SCOPE.ADMIN: {
+                       SMSACTION.GATEWAYS: {
+                           'type': 'str',
+                           'desc': u"{0!s} ({1!s})".format(
+                               _('Choose the gateways the administrator is allowed to set.'),
+                               " ".join(sms_gateways))
+                       }
+                   },
+                   SCOPE.USER: {
+                       SMSACTION.GATEWAYS: {
+                           'type': 'str',
+                           'desc': u"{0!s} ({1!s})".format(
+                               _('Choose the gateways the user is allowed to set.'),
+                               " ".join(sms_gateways))
+                       }
+                   },
                },
         }
 
@@ -301,9 +321,14 @@ class SmsTokenClass(HotpTokenClass):
                     message=message_template)
 
                 # Create the challenge in the database
+                if is_true(get_from_config("sms.concurrent_challenges")):
+                    data = self.get_otp()[2]
+                else:
+                    data = None
                 db_challenge = Challenge(self.token.serial,
                                          transaction_id=transactionid,
                                          challenge=options.get("challenge"),
+                                         data=data,
                                          session=options.get("session"),
                                          validitytime=validity)
                 db_challenge.save()
@@ -338,6 +363,10 @@ class SmsTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
+            if options.get("data") == anOtpVal:
+                # We authenticate from the saved challenge
+                ret = 1
         if ret >= 0 and self._get_auto_sms(options):
             message = self._get_sms_text(options)
             self.inc_otp_counter(ret, reset=False)
@@ -375,7 +404,8 @@ class SmsTokenClass(HotpTokenClass):
         log.debug("sending SMS to phone number {0!s} ".format(phone))
 
         # First we try to get the new SMS gateway config style
-        sms_gateway_identifier = get_from_config("sms.identifier")
+        # The token specific identifier has priority over the system wide identifier
+        sms_gateway_identifier = self.get_tokeninfo("sms.identifier") or get_from_config("sms.identifier")
 
         if sms_gateway_identifier:
             # New style

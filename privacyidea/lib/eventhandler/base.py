@@ -187,7 +187,8 @@ class BaseEventHandler(object):
             CONDITION.OTP_COUNTER: {
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
-                          "equals this setting.")
+                          "equals this setting. Can also be "
+                          "'>100' or '<99' for no exact match.")
             },
             CONDITION.LAST_AUTH: {
                 "type": "str",
@@ -264,16 +265,10 @@ class BaseEventHandler(object):
                 log.info("Could not determine tokenowner for {0!s}. Maybe the "
                          "user does not exist anymore.".format(serial))
                 log.debug(exx)
-        # We now check, if the user exists at all!
-        try:
-            ui = user.info
-        except UserError as exx:
-            if exx.id in [904, 905]:
-                # 904: User can not be found - maybe we got here due to PassOnNoUser
-                # 905: This would be a parameter error - why is this here?
-                user = User()
-            else:
-                raise exx
+        # If the user does not exist, we set an empty user
+        if not user.exist():
+            user = User()
+
         return user
 
     @staticmethod
@@ -433,8 +428,8 @@ class BaseEventHandler(object):
                     return False
 
             if CONDITION.OTP_COUNTER in conditions:
-                if token_obj.token.count != \
-                      int(conditions.get(CONDITION.OTP_COUNTER)):
+                cond = conditions.get(CONDITION.OTP_COUNTER)
+                if not compare_condition(cond, token_obj.token.count):
                     return False
 
             if CONDITION.LAST_AUTH in conditions:

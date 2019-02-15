@@ -44,11 +44,11 @@ import os
 import six
 
 from Crypto.Cipher import AES
-from privacyidea.lib.crypto import zerome, hexlify_and_unicode
-from privacyidea.lib.crypto import geturandom
 from hashlib import sha256
+from privacyidea.lib.crypto import geturandom, zerome
 from privacyidea.lib.error import HSMException
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
+                                   hexlify_and_unicode)
 
 from .password import PASSWORD
 
@@ -113,30 +113,111 @@ class SecurityModule(object):
                   "the method : %s " % (fname,))
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
-    ''' higer level methods '''
-    def encrypt_password(self, clear_pass):
-        fname = 'encrypt_password'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
-
-    def encrypt_pin(self, clear_pin):
-        fname = 'encrypt_pin'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
-
     def decrypt_password(self, crypt_pass):
-        fname = 'decrypt_password'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
+        """
+        Decrypt the given password. The CONFIG_KEY is used to decrypt it.
+
+        :param crypt_pass: the encrypted password with the leading iv,
+            separated by the ':', hexlified
+        :type crypt_pass: str
+
+        :return: decrypted data
+        :rtype: str
+        """
+        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
 
     def decrypt_pin(self, crypt_pin):
-        fname = 'decrypt_pin'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
-        raise NotImplementedError("Should have been implemented {0!s}".format(fname))
+        """
+        Decrypt the given encrypted PIN with the TOKEN_KEY
+
+        :param crypt_pin: the encrypted pin with the leading iv,
+            separated by the ':'
+        :type crypt_pin: str
+
+        :return: decrypted data
+        :rtype: str
+        """
+        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
+
+    def encrypt_password(self, password):
+        """
+        Encrypt the given password with the CONFIG_KEY and a random IV.
+
+        This function returns a unicode string with a
+        hexlified contents of the IV and the encrypted data separated by a
+        colon like u"4956:44415441"
+
+        :param password: The password that is to be encrypted
+        :type password: str
+
+        :return: encrypted data - leading iv, separated by the ':'
+        :rtype: str
+        """
+        return self._encrypt_value(password, self.CONFIG_KEY)
+
+    def encrypt_pin(self, pin):
+        """
+        Encrypt the given PIN with the TOKEN_KEY and a random IV
+
+        This function returns a unicode string with a
+        hexlified contents of the IV and the encrypted data separated by a
+        colon like u"4956:44415441"
+
+        :param pin: the pin that should be encrypted
+        :type pin: str
+
+        :return: encrypted data - leading iv, separated by the ':'
+        :rtype: str
+        """
+        return self._encrypt_value(pin, self.TOKEN_KEY)
+
+    ''' base methods for pin and password '''
+    def _encrypt_value(self, value, slot_id):
+        """
+        base method to encrypt a value
+        - uses one slot id to encrypt a string
+        returns as string with leading iv, separated by ':'
+
+        :param value: the value that is to be encrypted
+        :type value: str
+
+        :param slot_id: slot of the key array
+        :type slot_id: int
+
+        :return: encrypted data with leading iv and separator ':'
+        :rtype: str
+        """
+        iv = self.random(16)
+        v = self.encrypt(to_bytes(value), iv, slot_id)
+
+        cipher_value = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
+        return cipher_value.decode("utf-8")
+
+    def _decrypt_value(self, crypt_value, slot_id):
+        """
+        base method to decrypt a value
+        - used one slot id to encrypt a string with leading iv, separated by ':'
+
+        :param crypt_value: the the value that is to be decrypted
+        :type crypt_value: str
+
+        :param slot_id: slot of the key array
+        :type slot_id: int
+
+        :return: decrypted data
+        :rtype: str
+        """
+        # split at ":"
+        pos = crypt_value.find(':')
+        bIV = crypt_value[:pos]
+        bData = crypt_value[pos + 1:]
+
+        iv = binascii.unhexlify(bIV)
+        data = binascii.unhexlify(bData)
+
+        clear_data = self.decrypt(data, iv, slot_id)
+
+        return to_unicode(clear_data)
 
     def create_keys(self):
         """
@@ -428,101 +509,3 @@ class DefaultSecurityModule(SecurityModule):
             del key
 
         return data
-
-    def decrypt_password(self, crypt_pass):
-        """
-        Decrypt the given password. The CONFIG_KEY is used to decrypt it.
-
-        :param crypt_pass: the encrypted password with the leading iv,
-            separated by the ':'
-        :param crypt_pass: bytes
-
-        :return: decrypted data
-        :rtype: bytes
-        """
-        return self._decrypt_value(crypt_pass, self.CONFIG_KEY)
-
-    def decrypt_pin(self, crypt_pin):
-        """
-        Decrypt the given encrypted PIN with the TOKEN_KEY
-
-        :param crypt_pin: the encrypted pin with the leading iv,
-            separated by the ':'
-        :param crypt_pin: byte string
-
-        :return: decrypted data
-        :rtype: byte string
-        """
-        return self._decrypt_value(crypt_pin, self.TOKEN_KEY)
-
-    def encrypt_password(self, password):
-        """
-        Encrypt the given password with the CONFIG_KEY an a random IV.
-
-        :param password: The password that is to be encrypted
-        :param password: bytes
-
-        :return: encrypted data - leading iv, separated by the ':'
-        :rtype: bytes
-        """
-        return self._encrypt_value(password, self.CONFIG_KEY)
-
-    def encrypt_pin(self, pin):
-        """
-        Encrypt the given PIN with the TOKEN_KEY and a random IV
-
-        :param pin: the to be encrypted pin
-        :param pin: byte string
-
-        :return: encrypted data - leading iv, separated by the ':'
-        :rtype: byte string
-        """
-        return self._encrypt_value(pin, self.TOKEN_KEY)
-
-    ''' base methods for pin and password '''
-    def _encrypt_value(self, value, slot_id):
-        """
-        base method to encrypt a value
-        - uses one slot id to encrypt a string
-        returns as string with leading iv, separated by ':'
-
-        :param value: the value that is to be encrypted
-        :param value: byte string
-
-        :param slot_id: slot of the key array
-        :type slot_id: int
-
-        :return: encrypted data with leading iv and separator ':'
-        :rtype: byte string
-        """
-        iv = self.random(16)
-        v = self.encrypt(value, iv, slot_id)
-
-        cipher_value = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
-        return cipher_value
-
-    def _decrypt_value(self, crypt_value, slot_id):
-        """
-        base method to decrypt a value
-        - used one slot id to encrypt a string with leading iv, separated by ':'
-
-        :param crypt_value: the the value that is to be decrypted
-        :param crypt_value: bytes
-
-        :param  slot_id: slot of the key array
-        :type   slot_id: int
-
-        :return: decrypted data
-        :rtype:  bytes
-        """
-        # split at ":"
-        pos = crypt_value.find(b':')
-        bIV = crypt_value[:pos]
-        bData = crypt_value[pos + 1:]
-
-        iv = binascii.unhexlify(bIV)
-        data = binascii.unhexlify(bData)
-
-        clear_data = self.decrypt(data, iv, slot_id)
-
-        return clear_data

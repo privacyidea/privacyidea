@@ -110,7 +110,7 @@ class TDigipassBlob(Structure):
                 ("Blob", c_char * 224)]
 
 
-def vasco_verify(data, params, password, challenge="\0" * 16):
+def vasco_verify(data, params, password, challenge=b"\0" * 16):
     # Construct actual buffers in case the library writes to ``password`` or ``challenge``
     password_buffer = create_string_buffer(password)
     challenge_buffer = create_string_buffer(challenge)
@@ -151,6 +151,7 @@ def vasco_otp_check(otpkey, otp):
 
     :param data: the vasco_token_data, stored in LinOTP database as otpkey
     :param otp: the otp value
+    :type otp: bytes
     :return: tuple of (success and new_vasco_token_data)
     """
     kp = TKernelParams()

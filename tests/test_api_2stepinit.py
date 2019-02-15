@@ -8,11 +8,11 @@ import time
 from passlib.utils.pbkdf2 import pbkdf2
 
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.tokens.HMAC import HmacOtp
 
 
-class TwoStepInitTestCase(MyTestCase):
+class TwoStepInitTestCase(MyApiTestCase):
     """
     test the 2stepinit process.
     

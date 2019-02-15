@@ -340,11 +340,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue("img" in otpkey, otpkey)
         self.assertTrue("googleurl" in detail, detail)
         # some other stuff.
-        r = token.get_QRimage_data({"googleurl": detail.get("googleurl").get(
-            "value")})
-        self.assertEqual(r[0], 'otpauth://totp/SE123456?secret=CERDGRCVMZ3YRGIA'
-                         '&period=30&digits=6&issuer=privacyIDEA')
-        self.assertRaises(Exception, token.set_init_details, "unvalid value")
+        self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())
@@ -496,11 +492,13 @@ class TOTPTokenTestCase(MyTestCase):
         #self.assertTrue(res == 47251647, res)
         self.assertTrue(res == -1, res)
 
-        # simple get_otp of current time
-        r = token.get_otp()
-        self.assertTrue(r > 47251648, r)
-        r = token.get_otp(current_time=datetime.datetime.now())
-        self.assertTrue(r > 47251648, r)
+        # simple OTPs of current time
+        ret, _, dct = token.get_multi_otp(1)
+        self.assertTrue(ret)
+        self.assertGreater(list(dct["otp"].keys())[0], 47251648)
+        ret, _, dct = token.get_multi_otp(1, curTime=datetime.datetime.now())
+        self.assertTrue(ret)
+        self.assertGreater(list(dct["otp"].keys())[0], 47251648)
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -642,7 +640,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="totp")
         db_token.save()
         token = TotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -658,7 +656,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="totp")
         db_token.save()
         token = TotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890123456789012"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890123456789012"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -672,7 +670,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="totp")
         db_token.save()
         token = TotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha512")
         token.set_otplen(8)
         token.save()
@@ -687,7 +685,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token.save()
         token = TotpTokenClass(db_token)
         token.set_otpkey(binascii.hexlify(
-            "1234567890123456789012345678901234567890123456789012345678901234"))
+            b"1234567890123456789012345678901234567890123456789012345678901234"))
         token.set_hashlib("sha512")
         token.set_otplen(8)
         token.save()

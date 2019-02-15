@@ -63,31 +63,30 @@ This is the middleware/glue between the HTTP API and the database
 import traceback
 import string
 import datetime
-import binascii
 import os
 import logging
 from six import string_types
 
 from sqlalchemy import (and_, func)
+
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password, is_true, BASE58
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo, TokenOwner)
-from privacyidea.lib.config import get_from_config
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                    get_token_types,
+                                    get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -861,9 +860,11 @@ def gen_serial(tokentype=None, prefix=None):
     generate a serial for a given tokentype
 
     :param tokentype: the token type prefix is done by a lookup on the tokens
+    :type tokentype: str
     :param prefix: A prefix to the serial number
+    :type prefix: str
     :return: serial number
-    :rtype: string
+    :rtype: str
     """
     serial_len = int(get_from_config("SerialLength") or 8)
 
@@ -872,7 +873,7 @@ def gen_serial(tokentype=None, prefix=None):
         num_str = '{:04d}'.format(_tokennum)
         h_len = serial_len - len(num_str)
         if h_len > 0:
-            h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
+            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
     if not tokentype:
@@ -881,14 +882,14 @@ def gen_serial(tokentype=None, prefix=None):
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
 
     # now search the number of tokens of tokenytype in the token database
-    tokennum = Token.query.filter(Token.tokentype == u'' + tokentype).count()
+    tokennum = Token.query.filter(Token.tokentype == tokentype).count()
 
     # Now create the serial
     serial = _gen_serial(prefix, tokennum)
 
     # now test if serial already exists
     while True:
-        numtokens = Token.query.filter(Token.serial == u'' + serial).count()
+        numtokens = Token.query.filter(Token.serial == serial).count()
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
@@ -1651,7 +1652,7 @@ def set_description(serial, description, user=None):
     :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param description: The description for the token
-    :type description: int
+    :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
     :return: number of modified tokens
@@ -2012,6 +2013,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["attributes"] = attributes
                 challenge_info["serial"] = token_obj.token.serial
+                challenge_info["type"] = token_obj.get_tokentype()
+                challenge_info["message"] = message
                 # If exist, add next pin and next password change
                 next_pin = token_obj.get_tokeninfo(
                         "next_pin_change")
@@ -2079,9 +2082,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
 
     # Remove locked tokens from tokenobject_list
     if len(tokenobject_list) > 1:
-        for tokenobject in tokenobject_list:
-            if tokenobject.is_revoked():
-                tokenobject_list.remove(tokenobject)
+        tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
 
         if len(tokenobject_list) == 0:
             # If there is no unlocked token left.

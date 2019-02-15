@@ -751,7 +751,7 @@ class FederationEventTestCase(MyTestCase):
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
         # No Response data, since this method is not supported
-        self.assertEqual(options.get("response").data, "")
+        self.assertEqual(options.get("response").data, b"")
 
     @responses.activate
     def test_02_forward_admin_request(self):
@@ -2347,6 +2347,8 @@ class UserNotificationTestCase(MyTestCase):
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
+        # Create admin authentication token
+        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",
@@ -2494,6 +2496,28 @@ class UserNotificationTestCase(MyTestCase):
         )
         # The counter of the token is 0
         self.assertEqual(r, True)
+
+        # match if counter is >100
+        tok.token.count = 101
+        tok.token.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: ">100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
         remove_token(serial)
 

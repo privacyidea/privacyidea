@@ -1,4 +1,4 @@
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 import os
 import datetime
@@ -84,7 +84,7 @@ oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
 XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 -----END CERTIFICATE REQUEST-----"""
 
-class APITokenTestCase(MyTestCase):
+class APITokenTestCase(MyApiTestCase):
 
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
@@ -1537,7 +1537,7 @@ class APITokenTestCase(MyTestCase):
         remove_token("goog1")
         delete_policy("imgurl")
 
-class API00TokenPerformance(MyTestCase):
+class API00TokenPerformance(MyApiTestCase):
 
     token_count = 21
 

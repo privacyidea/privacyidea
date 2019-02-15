@@ -24,7 +24,6 @@ env:
 matrix:
     allow_failures:
        - python: 3.5
-       - python: 3.6
 
 # command to run tests
 script: "python -b -m pytest -v --cov=privacyidea $TESTS"
