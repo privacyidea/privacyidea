@@ -2905,6 +2905,48 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(self.serial_sms)
 
+    def test_08_challenge_text(self):
+        # We create two HOTP tokens for the user as challenge response and run a
+        # challenge response request with both tokens.
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+        # Set a policy for the footer
+        set_policy(name="pol_footer",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(ACTION.CHALLENGETEXT_FOOTER))
+        # make HOTP a challenge response token
+        set_policy(name="pol_hotp",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        init_token({"serial": "tok1",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "tok2",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(detail.get("message"),
+                             'These are your options:<ul><li>please enter otp: </li>\n</ul>.<b>Authenticate Now!</b>')
+
+        remove_token("tok1")
+        remove_token("tok2")
+        delete_policy("pol_header")
+        delete_policy("pol_footer")
+        delete_policy("pol_hotp")
+
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
 

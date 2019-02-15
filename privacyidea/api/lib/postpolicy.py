@@ -775,3 +775,63 @@ def construct_radius_response(request, response):
         return make_response('', return_code)
     else:
         return response
+
+
+def mangle_challenge_response(request, response):
+    """
+    This policy decorator is used in the AUTH scope to
+    decorate the /validate/check endpoint.
+    It can modify the contents of the response "detail"->"message"
+    to allow a better readibilty for a challenge response text.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = json.loads(response.data)
+    policy_object = g.policy_object
+    user_obj = request.User
+
+    header_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_HEADER,
+                                                 scope=SCOPE.AUTH,
+                                                 allow_white_space_in_action=True,
+                                                 client=g.client_ip,
+                                                 user=user_obj.login,
+                                                 realm=user_obj.realm,
+                                                 resolver=user_obj.resolver,
+                                                 audit_data=g.audit_object.audit_data)
+
+    footer_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_FOOTER,
+                                                 scope=SCOPE.AUTH,
+                                                 allow_white_space_in_action=True,
+                                                 client=g.client_ip,
+                                                 user=user_obj.login,
+                                                 realm=user_obj.realm,
+                                                 resolver=user_obj.resolver,
+                                                 audit_data=g.audit_object.audit_data)
+
+    if header_pol:
+        multi_challenge = content.get("detail", {}).get("multi_challenge")
+        if multi_challenge:
+            message = list(header_pol)[0]
+            footer = ""
+            if footer_pol:
+                footer = list(footer_pol)[0]
+            # We actually have challenge response
+            messages = content.get("detail", {}).get("messages") or []
+            messages = list(set(messages))
+            if message[-4:].lower() in ["<ol>", "<ul>"]:
+                for m in messages:
+                    message += u"<li>{0!s}</li>\n".format(m)
+            else:
+                message += "\n"
+                message += ", ".join(messages)
+                message += "\n"
+            # Add the footer
+            message += footer
+
+            content["detail"]["message"] = message
+            response.data = json.dumps(content)
+
+    return response
+

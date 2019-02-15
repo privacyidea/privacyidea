@@ -304,3 +304,27 @@ dependent on the clients IP address and the user agent.
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
+
+.. _policy_challenge_text:
+
+
+challenge_text, challenge_text_header, challenge_test_footer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: Challenge Text Policy
+
+Using these policies the administrator can modify the challenge texts
+of e.g. Email-Token or SMS-Token.
+
+If the *challenge_text_header* is set and if there are more matching
+challenge response tokens, then the texts of all tokens are
+concatenated together. Double challenge texts are reduced to one text only.
+
+The *challenge_text_header* and *challenge_text_footer* may contain HTML.
+If the *challenge_text_header* ends with an ``<ul>`` or ``<ol>``, then
+all the challenge texts are formatted as an ordered or unordered list.
+In this case the *challenge_text_footer* also should contain the closing
+tag.
+
+.. note:: The footer will only be used, if the header is also set.
+
