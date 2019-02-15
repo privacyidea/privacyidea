@@ -141,13 +141,13 @@ class BaseEventHandler(object):
                 "type": "multi",
                 "desc": _("The token realm, for which this event should "
                           "apply."),
-                "value": [{"name": r} for r in list(realms)]
+                "value": [{"name": r} for r in realms]
             },
             CONDITION.TOKENRESOLVER: {
                 "type": "multi",
                 "desc": _("The token resolver, for which this event should "
                           "apply."),
-                "value": [{"name": r} for r in list(resolvers)]
+                "value": [{"name": r} for r in resolvers]
             },
             CONDITION.TOKENTYPE: {
                 "type": "multi",
