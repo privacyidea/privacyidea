@@ -26,16 +26,15 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
-import logging
-log = logging.getLogger(__name__)
+import six
+import logging; log = logging.getLogger(__name__)
+from importlib import import_module
 import binascii
 import base64
 import qrcode
-import urlparse
-import StringIO
-import urllib
-from privacyidea.lib.crypto import urandom, geturandom
-from privacyidea.lib.error import ParameterError
+import sqlalchemy
+from six.moves.urllib.parse import urlunparse, urlparse, urlencode
+from io import BytesIO
 import string
 import re
 from datetime import timedelta, datetime
@@ -44,27 +43,13 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
-import crypt
 import traceback
-import os
-import time
-from base64 import (b64decode, b64encode)
 
-
-try:
-    import bcrypt
-    _bcrypt_hashpw = bcrypt.hashpw
-except ImportError:  # pragma: no cover
-    _bcrypt_hashpw = None
-
-# On App Engine, this function is not available.
-if hasattr(os, 'getpid'):
-    _pid = os.getpid()
-else:  # pragma: no cover
-    # Fake PID
-    _pid = urandom.randint(0, 100000)
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
 ENCODING = "utf-8"
+
+BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
 def check_time_in_range(time_range, check_time=None):
@@ -141,14 +126,15 @@ def to_utf8(password):
     """
     Convert a password to utf8
     :param password: A password that should be converted to utf8
-    :type password: unicode
+    :type password: str or bytes
     :return: a utf8 encoded password
+    :rtype: bytes
     """
     if password:
         try:
             # If the password exists in unicode we encode it to utf-8
-            password = password.encode(ENCODING)
-        except UnicodeDecodeError as exx:
+            password = password.encode('utf8')
+        except (UnicodeDecodeError, AttributeError) as _exx:
             # In case the password is already an encoded string, we fail to
             # encode it again...
             log.debug("Failed to convert password: {0!s}".format(type(password)))
@@ -157,33 +143,112 @@ def to_utf8(password):
 
 def to_unicode(s, encoding="utf-8"):
     """
-    converts a value to unicode if it is of type str.
+    Converts the string s to unicode if it is of type bytes.
     
-    :param s: The utf-8 encoded str 
+    :param s: the string to convert
+    :type s: bytes or str
+    :param encoding: the encoding to use (default utf8)
+    :type encoding: str
     :return: unicode string
+    :rtype: str
     """
-    if type(s) == str:
-        s = s.decode(encoding)
+    if isinstance(s, six.text_type):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(encoding)
+    # TODO: warning? Exception?
     return s
 
 
-def generate_otpkey(key_size=20):
+def to_bytes(s):
     """
-    generates the HMAC key of keysize. Should be 20 or 32
-    The key is returned as a hexlified string
-    :param key_size: The size of the key to generate
-    :type key_size: int
-    :return: hexlified key
-    :rtype: string
+    Converts the string s to a unicode encoded byte string
+
+    :param s: string to convert
+    :type s: str or bytes
+    :return: the converted byte string
+    :rtype: bytes
     """
-    log.debug("generating key of size {0!s}".format(key_size))
-    return binascii.hexlify(geturandom(key_size))
+    if isinstance(s, bytes):
+        return s
+    elif isinstance(s, six.text_type):
+        return s.encode('utf8')
+    # TODO: warning? Exception?
+    return s
+
+
+def to_byte_string(value):
+    """
+    Convert the given value to a byte string. If it is not a string type,
+    convert it to a string first.
+
+    :param value: the value to convert
+    :type value: str or bytes or int
+    :return: byte string representing the value
+    :rtype: bytes
+    """
+    if not isinstance(value, (bytes, six.string_types)):
+        value = str(value)
+    value = to_bytes(value)
+    return value
+
+
+def hexlify_and_unicode(s):
+    """
+
+    :param s: string to hexlify
+    :type s: bytes or str
+    :return: hexlified string converted to unicode
+    :rtype: str
+    """
+
+    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    return res
+
+
+def b32encode_and_unicode(s):
+    """
+    Base32-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base32-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b32encode(to_bytes(s)))
+    return res
+
+
+def b64encode_and_unicode(s):
+    """
+    Base64-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b64encode(to_bytes(s)))
+    return res
+
+
+def urlsafe_b64encode_and_unicode(s):
+    """
+    Base64-urlsafe-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    return res
 
 
 def create_png(data, alt=None):
     img = qrcode.make(data)
 
-    output = StringIO.StringIO()
+    output = BytesIO()
     img.save(output)
     o_data = output.getvalue()
     output.close()
@@ -196,14 +261,14 @@ def create_img(data, width=0, alt=None, raw=False):
     create the qr image data
 
     :param data: input data that will be munched into the qrcode
-    :type data: string
+    :type data: str
     :param width: image width in pixel
     :type width: int
     :param raw: If set to false, the data will be interpreted as text and a
         QR code will be generated.
 
     :return: image data to be used in an <img> tag
-    :rtype:  string
+    :rtype:  str
     """
     width_str = ''
     alt_str = ''
@@ -212,31 +277,18 @@ def create_img(data, width=0, alt=None, raw=False):
         o_data = create_png(data, alt=alt)
     else:
         o_data = data
-    data_uri = o_data.encode("base64").replace("\n", "")
+    data_uri = b64encode_and_unicode(o_data)
 
     if width != 0:
         width_str = " width={0:d} ".format((int(width)))
 
     if alt is not None:
-        val = urllib.urlencode({'alt': alt})
+        val = urlencode({'alt': alt})
         alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
-    ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
-
+    ret_img = u'data:image/png;base64,{0!s}'.format(data_uri)
     return ret_img
 
-
-def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
-    """
-    Generate a random password of the specified lenght of the given characters
-
-    :param size: The length of the password
-    :param characters: The characters the password may consist of
-    :return: password
-    :rtype: basestring
-    """
-    return ''.join(urandom.choice(characters) for _x in range(size))
 
 #
 # Modhex calculations for Yubikey
@@ -249,23 +301,39 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 
 def modhex_encode(s):
-    return ''.join(
-        [hex2ModDict[c] for c in s.encode('hex')]
-    )
-# end def modhex_encode
+    """
+
+    :param s: string to encode
+    :type s: bytes or str
+    :return: the encoded string
+    :rtype: str
+    """
+    return u''.join([hex2ModDict[c] for c in hexlify_and_unicode(s)])
 
 
 def modhex_decode(m):
-    return ''.join(
-        [mod2HexDict[c] for c in m]
-    ).decode('hex')
-# end def modhex_decode
+    """
+
+    :param m: string to decode
+    :type m: str
+    :return: decoded data
+    :rtype: bytes
+    """
+    return binascii.unhexlify(''.join([mod2HexDict[c] for c in m]))
 
 
 def checksum(msg):
+    """
+    Calculate CRC-16 (16-bit ISO 13239 1st complement) checksum.
+    (see Yubikey-Manual - Chapter 6: Implementation details)
+
+    :param msg: input byte string for crc calculation
+    :type msg: bytes
+    :return: crc16 checksum of msg
+    :rtype: int
+    """
     crc = 0xffff
-    for i in range(0, len(msg) / 2):
-        b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
+    for b in six.iterbytes(msg):
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -283,10 +351,11 @@ def decode_base32check(encoded_data, always_upper=True):
 
     Raise a ParameterError if the encoded payload is malformed.
     :param encoded_data: The base32 encoded data.
-    :type encoded_data: basestring
+    :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
     :type always_upper: bool
     :return: hex-encoded payload
+    :rtype: str
     """
     # First, add the padding to have a multiple of 8 bytes
     if always_upper:
@@ -298,7 +367,9 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except TypeError:
+    except (TypeError, binascii.Error, OverflowError):
+        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
+        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -307,7 +378,7 @@ def decode_base32check(encoded_data, always_upper=True):
     payload_hash = hashlib.sha1(payload).digest()
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
-    return binascii.hexlify(payload)
+    return hexlify_and_unicode(payload)
 
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
@@ -377,8 +448,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data!"
+                        " {0!s}".format(params))
 
     return data, types, desc
 
@@ -440,15 +511,16 @@ def parse_date(date_string):
     if date_string.startswith("+"):
         # We are using an offset
         delta_specifier = date_string[-1].lower()
+        if delta_specifier not in 'mhd':
+            return datetime.now(tzlocal()) + timedelta()
         delta_amount = int(date_string[1:-1])
         if delta_specifier == "m":
             td = timedelta(minutes=delta_amount)
         elif delta_specifier == "h":
             td = timedelta(hours=delta_amount)
-        elif delta_specifier == "d":
-            td = timedelta(days=delta_amount)
         else:
-            td = timedelta()
+            # delta_specifier must be "d"
+            td = timedelta(days=delta_amount)
         return datetime.now(tzlocal()) + td
 
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
@@ -458,7 +530,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match("^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -540,21 +612,25 @@ def get_client_ip(request, proxy_settings):
     :return:
     """
     client_ip = request.remote_addr
-    # We only do the mapping for authentication requests!
+
+    # Set the possible mapped IP to X-Forwarded-For
+    mapped_ip = request.access_route[0] if request.access_route else None
+
+    # We only do the client-param mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
                     request.blueprint in ["validate_blueprint", "ttype_blueprint",
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
-        mapped_ip = request.all_data.get("client") or \
-                    (request.access_route[0] if request.access_route else None)
-        if mapped_ip:
-            if proxy_settings and check_proxy(client_ip, mapped_ip,
-                                              proxy_settings):
-                client_ip = mapped_ip
-            elif mapped_ip != client_ip:
-                log.warning("Proxy {client_ip} not allowed to set IP to "
-                            "{mapped_ip}.".format(client_ip=client_ip,
-                                                  mapped_ip=mapped_ip))
+        mapped_ip = request.all_data.get("client") or mapped_ip
+
+    if mapped_ip:
+        if proxy_settings and check_proxy(client_ip, mapped_ip,
+                                          proxy_settings):
+            client_ip = mapped_ip
+        elif mapped_ip != client_ip:
+            log.warning("Proxy {client_ip} not allowed to set IP to "
+                        "{mapped_ip}.".format(client_ip=client_ip,
+                                              mapped_ip=mapped_ip))
 
     return client_ip
 
@@ -571,8 +647,7 @@ def reload_db(timestamp, db_ts):
 
     :return: bool
     """
-    rdb = False
-    internal_timestamp = None
+    internal_timestamp = ''
     if timestamp:
         internal_timestamp = timestamp.strftime("%s")
     rdb = False
@@ -765,7 +840,7 @@ def parse_timedelta(s):
     minutes = 0
     hours = 0
     days = 0
-    m = re.match("\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
+    m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
         raise Exception("Unsupported timedelta")
@@ -802,8 +877,8 @@ def parse_time_offset_from_now(s):
     :return: tuple of modified string and timedelta 
     """
     td = timedelta()
-    m1 = re.search("(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
-    m2 = re.search("(^.*{now})([+-]\d+[smhd])(.*$)", s)
+    m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
+    m2 = re.search(r"(^.*{now})([+-]\d+[smhd])(.*$)", s)
     m = m1 or m2
     if m:
         s1 = m.group(1)
@@ -813,251 +888,6 @@ def parse_time_offset_from_now(s):
         td = parse_timedelta(s2)
 
     return s, td
-
-
-def hash_password(password, hashtype):
-    """
-    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
-
-    :param password: The password in plain text 
-    :param hashtype: One of the hash types as string
-    :return: The hashed password
-    """
-    hashtype = hashtype.upper()
-    if hashtype == "PHPASS":
-        PH = PasswordHash()
-        password = PH.hash_password(password)
-    elif hashtype == "SHA":
-        password = hashlib.sha1(password).digest()
-        password = "{SHA}" + b64encode(password)
-    elif hashtype == "SSHA":
-        salt = geturandom(20)
-        hr = hashlib.sha1(password)
-        hr.update(salt)
-        pw = b64encode(hr.digest() + salt)
-        return "{SSHA}" + pw
-    elif hashtype == "SSHA256":
-        salt = geturandom(32)
-        hr = hashlib.sha256(password)
-        hr.update(salt)
-        pw = b64encode(hr.digest() + salt)
-        return "{SSHA256}" + pw
-    elif hashtype == "SSHA512":
-        salt = geturandom(64)
-        hr = hashlib.sha512(password)
-        hr.update(salt)
-        pw = b64encode(hr.digest() + salt)
-        return "{SSHA512}" + pw
-    elif hashtype == "OTRS":
-        password = hashlib.sha256(password).hexdigest()
-    elif hashtype == "MD5CRYPT":
-        salt = geturandom(8, True)
-        password = crypt.crypt(password, "$1$" + salt + "$")
-    elif hashtype == "SHA512CRYPT":
-        salt = geturandom(8, True)
-        password = crypt.crypt(password, "$6$" + salt + "$")
-    else:
-        raise Exception("Unsupported password hashtype. Use PHPASS, SHA, "
-                        "SSHA, SSHA256, SSHA512, OTRS.")
-    return password
-
-def check_crypt(pw_hash, password):
-    return crypt.crypt(password, pw_hash) == pw_hash
-
-def check_ssha(pw_hash, password, hashfunc, length):
-    pw_hash_bin = b64decode(pw_hash.split("}")[1])
-    digest = pw_hash_bin[:length]
-    salt = pw_hash_bin[length:]
-    hr = hashfunc(password)
-    hr.update(salt)
-    return digest == hr.digest()
-
-
-def check_sha(pw_hash, password):
-    b64_db_password = pw_hash[5:]
-    hr = hashlib.sha1(password).digest()
-    b64_password = b64encode(hr)
-    return b64_password == b64_db_password
-
-
-def otrs_sha256(pw_hash, password):
-    hr = hashlib.sha256(password)
-    digest = binascii.hexlify(hr.digest())
-    return pw_hash == digest
-
-
-class PasswordHash(object):
-    def __init__(self, iteration_count_log2=8, portable_hashes=True,
-                 algorithm=''):
-        alg = algorithm.lower()
-        if alg in ['blowfish', 'bcrypt'] and _bcrypt_hashpw is None:
-            raise NotImplementedError('The bcrypt module is required')
-        self.itoa64 = \
-            './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-        if not (4 <= iteration_count_log2 <= 31):
-            iteration_count_log2 = 8
-        self.iteration_count_log2 = iteration_count_log2
-        self.portable_hashes = portable_hashes
-        self.algorithm = algorithm
-        self.random_state = '{0!r}{1!r}'.format(time.time(), _pid)
-
-    def get_random_bytes(self, count):
-        outp = ''
-        try:
-            outp = geturandom(count)
-        except Exception as exx:  # pragma: no cover
-            log.debug("problem getting urandom: {0!s}".format(exx))
-        if len(outp) < count:  # pragma: no cover
-            outp = ''
-            rem = count
-            while rem > 0:
-                self.random_state = hashlib.md5(str(time.time())
-                                                + self.random_state).hexdigest()
-                outp += hashlib.md5(self.random_state).digest()
-                rem -= 1
-            outp = outp[:count]
-        return outp
-
-    def encode64(self, inp, count):
-        outp = ''
-        cur = 0
-        while cur < count:
-            value = ord(inp[cur])
-            cur += 1
-            outp += self.itoa64[value & 0x3f]
-            if cur < count:
-                value |= (ord(inp[cur]) << 8)
-            outp += self.itoa64[(value >> 6) & 0x3f]
-            if cur >= count:
-                break
-            cur += 1
-            if cur < count:
-                value |= (ord(inp[cur]) << 16)
-            outp += self.itoa64[(value >> 12) & 0x3f]
-            if cur >= count:
-                break
-            cur += 1
-            outp += self.itoa64[(value >> 18) & 0x3f]
-        return outp
-
-    def gensalt_private(self, inp):  # pragma: no cover
-        outp = '$P$'
-        outp += self.itoa64[min([self.iteration_count_log2 + 5, 30])]
-        outp += self.encode64(inp, 6)
-        return outp
-
-    def crypt_private(self, pw, setting):  # pragma: no cover
-        outp = '*0'
-        if setting.startswith(outp):
-            outp = '*1'
-        if setting[0:3] not in ['$P$', '$H$', '$S$']:
-            return outp
-        count_log2 = self.itoa64.find(setting[3])
-        if not (7 <= count_log2 <= 30):
-            return outp
-        count = 1 << count_log2
-        salt = setting[4:12]
-        if len(salt) != 8:
-            return outp
-        if not isinstance(pw, str):
-            pw = pw.encode('utf-8')
-
-        hash_func = hashlib.md5
-        encoding_len = 16
-        if setting.startswith('$S$'):
-            hash_func = hashlib.sha512
-            encoding_len = 33
-
-        hx = hash_func(salt + pw).digest()
-        while count:
-            hx = hash_func(hx + pw).digest()
-            count -= 1
-        hashed_pw = self.encode64(hx, encoding_len)
-
-        if setting.startswith('$S$'):
-            hashed_pw = hashed_pw[:-1]
-        return setting[:12] + hashed_pw
-
-    def gensalt_extended(self, inp):  # pragma: no cover
-        count_log2 = min([self.iteration_count_log2 + 8, 24])
-        count = (1 << count_log2) - 1
-        outp = '_'
-        outp += self.itoa64[count & 0x3f]
-        outp += self.itoa64[(count >> 6) & 0x3f]
-        outp += self.itoa64[(count >> 12) & 0x3f]
-        outp += self.itoa64[(count >> 18) & 0x3f]
-        outp += self.encode64(inp, 3)
-        return outp
-
-    def gensalt_blowfish(self, inp):  # pragma: no cover
-        itoa64 = \
-            './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        outp = '$2a$'
-        outp += chr(ord('0') + self.iteration_count_log2 / 10)
-        outp += chr(ord('0') + self.iteration_count_log2 % 10)
-        outp += '$'
-        cur = 0
-        while True:
-            c1 = ord(inp[cur])
-            cur += 1
-            outp += itoa64[c1 >> 2]
-            c1 = (c1 & 0x03) << 4
-            if cur >= 16:
-                outp += itoa64[c1]
-                break
-            c2 = ord(inp[cur])
-            cur += 1
-            c1 |= c2 >> 4
-            outp += itoa64[c1]
-            c1 = (c2 & 0x0f) << 2
-            c2 = ord(inp[cur])
-            cur += 1
-            c1 |= c2 >> 6
-            outp += itoa64[c1]
-            outp += itoa64[c2 & 0x3f]
-        return outp
-
-    def hash_password(self, pw):  # pragma: no cover
-        rnd = ''
-        alg = self.algorithm.lower()
-        if (not alg or alg in ['blowfish', 'bcrypt'] and not
-        self.portable_hashes):
-            if _bcrypt_hashpw is None and alg in ['blowfish', 'bcrypt']:
-                raise NotImplementedError('The bcrypt module is required')
-            else:
-                rnd = self.get_random_bytes(16)
-                salt = self.gensalt_blowfish(rnd)
-                hx = _bcrypt_hashpw(pw, salt)
-                if len(hx) == 60:
-                    return hx
-        if (not alg or alg == 'ext-des') and not self.portable_hashes:
-            if len(rnd) < 3:
-                rnd = self.get_random_bytes(3)
-            hx = crypt.crypt(pw, self.gensalt_extended(rnd))
-            if len(hx) == 20:
-                return hx
-        if len(rnd) < 6:
-            rnd = self.get_random_bytes(6)
-        hx = self.crypt_private(pw, self.gensalt_private(rnd))
-        if len(hx) == 34:
-            return hx
-        return '*'
-
-    def check_password(self, pw, stored_hash):
-        # This part is different with the original PHP
-        if stored_hash.startswith('$2a$'):
-            # bcrypt
-            if _bcrypt_hashpw is None:  # pragma: no cover
-                raise NotImplementedError('The bcrypt module is required')
-            hx = _bcrypt_hashpw(pw, stored_hash)
-        elif stored_hash.startswith('_'):
-            # ext-des
-            stored_hash = stored_hash[1:]
-            hx = crypt.crypt(pw, stored_hash)
-        else:
-            # portable hash
-            hx = self.crypt_private(pw, stored_hash)
-        return stored_hash == hx
 
 
 def parse_int(s, default=0):
@@ -1088,12 +918,16 @@ def convert_column_to_unicode(value):
     """
     Helper function for models. If ``value`` is None or a unicode object, do nothing.
     Otherwise, convert it to a unicode object.
+    :param value: the string to convert
+    :type value: str
     :return: a unicode object or None
     """
-    if value is None or isinstance(value, unicode):
+    if value is None or isinstance(value, six.text_type):
         return value
+    elif isinstance(value, bytes):
+        return value.decode('utf8')
     else:
-        return unicode(value)
+        return six.text_type(value)
 
 
 def convert_timestamp_to_utc(timestamp):
@@ -1114,7 +948,7 @@ def censor_connect_string(connect_string):
     In case any error occurs, return "<error when censoring connect string>"
     """
     try:
-        parsed = urlparse.urlparse(connect_string)
+        parsed = urlparse(connect_string)
         if parsed.password is not None:
             # We need to censor the ``netloc`` attribute: user:pass@host
             _, host = parsed.netloc.rsplit("@", 1)
@@ -1122,8 +956,133 @@ def censor_connect_string(connect_string):
             # Convert the URL to six components. netloc is component #1.
             splitted = list(parsed)
             splitted[1] = new_netloc
-            return urlparse.urlunparse(splitted)
+            return urlunparse(splitted)
         return connect_string
     except Exception:
         return "<error when censoring connect string>"
 
+
+def fetch_one_resource(table, **query):
+    """
+    Given an SQLAlchemy table and query keywords, fetch exactly one result and return it.
+    If no results is found, this raises a ``ResourceNotFoundError``.
+    If more than one result is found, this raises SQLAlchemy's ``MultipleResultsFound``
+    """
+    try:
+        return table.query.filter_by(**query).one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        raise ResourceNotFoundError(u"The requested {!s} could not be found.".format(table.__name__))
+
+
+def truncate_comma_list(data, max_len):
+    """
+    This function takes a string with a comma separated list and
+    shortens the longest entries this way, that the final string has a maximum
+    length of max_len
+
+    Shorted entries are marked with a "+" at the end.
+
+    :param data: A comma separated list
+    :type data: basestring
+    :return: shortened string
+    """
+    data = data.split(",")
+    # if there are more entries than the maximum length, we do an early exit
+    if len(data) >= max_len:
+        r = ",".join(data)[:max_len]
+        # Also mark this string
+        r = u"{0!s}+".format(r[:-1])
+        return r
+
+    while len(",".join(data)) > max_len:
+        new_data = []
+        longest = max(data, key=len)
+        for d in data:
+            if d == longest:
+                # Shorten the longest and mark with "+"
+                d = u"{0!s}+".format(d[:-2])
+            new_data.append(d)
+        data = new_data
+    return ",".join(data)
+
+
+def check_pin_policy(pin, policy):
+    """
+    The policy to check a PIN can contain of "c", "n" and "s".
+    "cn" means, that the PIN should contain a character and a number.
+    "+cn" means, that the PIN should contain elements from the group of characters and numbers
+    "-ns" means, that the PIN must not contain numbers or special characters
+
+    :param pin: The PIN to check
+    :param policy: The policy that describes the allowed contents of the PIN.
+    :return: Tuple of True or False and a description
+    """
+    chars = {"c": "[a-zA-Z]",
+             "n": "[0-9]",
+             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
+    exclusion = False
+    grouping = False
+    ret = True
+    comment = []
+
+    if not policy:
+        return False, "No policy given."
+
+    if policy[0] == "+":
+        # grouping
+        necessary = []
+        for char in policy[1:]:
+            necessary.append(chars.get(char))
+        necessary = "|".join(necessary)
+        if not re.search(necessary, pin):
+            ret = False
+            comment.append("Missing character in PIN: {0!s}".format(necessary))
+
+    elif policy[0] == "-":
+        # exclusion
+        not_allowed = []
+        for char in policy[1:]:
+            not_allowed.append(chars.get(char))
+        not_allowed = "|".join(not_allowed)
+        if re.search(not_allowed, pin):
+            ret = False
+            comment.append("Not allowed character in PIN!")
+
+    else:
+        for c in chars:
+            if c in policy and not re.search(chars[c], pin):
+                ret = False
+                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+
+    return ret, ",".join(comment)
+
+
+def get_module_class(package_name, class_name, check_method=None):
+    """
+    helper method to load the Module class from a given
+    package in literal.
+
+    :param package_name: literal of the Module
+    :param class_name: Name of the class in the module
+    :param check_method: Name of the method to check, if this would be the right class
+
+    example:
+
+        get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+
+        get_module_class("privacyidea.lib.monitoringmodules.sqlstats", "Monitoring")
+
+    check:
+        checks, if the method exists
+        if not an error is thrown
+
+    """
+    mod = import_module(package_name)
+    if not hasattr(mod, class_name):
+        raise ImportError(u"{0} has no attribute {1}".format(package_name, class_name))
+    klass = getattr(mod, class_name)
+    log.debug("klass: {0!s}".format(klass))
+    if check_method and not hasattr(klass, check_method):
+        raise NameError(u"Class AttributeError: {0}.{1} "
+                        u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
+    return klass

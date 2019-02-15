@@ -36,12 +36,11 @@ The code is tested in tests/test_lib_config
 import sys
 import logging
 import inspect
-from flask import current_app, g
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-
+from privacyidea.lib.framework import get_request_local_store, get_app_config_value
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -50,6 +49,7 @@ from .caconnectors.localca import BaseCAConnector
 from .utils import reload_db, is_true
 import importlib
 import datetime
+from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 
@@ -82,14 +82,13 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class ConfigClass(object):
+class ConfigClass(with_metaclass(Singleton, object)):
     """
     The Config_Object will contain all database configuration of system
     config, resolvers and realm.
     It will be created at the beginning of the request and is supposed to stay
     alive unchanged during the request.
     """
-    __metaclass__ = Singleton
 
     def __init__(self):
         """
@@ -109,9 +108,9 @@ class ConfigClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
+        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or \
-            self.timestamp + datetime.timedelta(seconds=current_app.config.get(
-                "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+            self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 self.config = {}
@@ -125,11 +124,13 @@ class ConfigClass(object):
                         "Description": sysconf.Description}
                 for resolver in Resolver.query.all():
                     resolverdef = {"type": resolver.rtype,
-                                   "resolvername": resolver.name}
+                                   "resolvername": resolver.name,
+                                   "censor_keys": []}
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
-                            value = decryptPassword(rconf.Value, convert_unicode=True)
+                            value = decryptPassword(rconf.Value)
+                            resolverdef["censor_keys"].append(rconf.Key)
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
@@ -172,16 +173,16 @@ class ConfigClass(object):
 
         # reduce the dictionary to only public keys!
         reduced_config = {}
-        for ckey, cvalue in self.config.iteritems():
+        for ckey, cvalue in self.config.items():
             if role == "admin" or cvalue.get("Type") == "public":
                 reduced_config[ckey] = self.config[ckey]
         if not reduced_config and role=="admin":
             reduced_config = self.config
 
-        for ckey, cvalue in reduced_config.iteritems():
+        for ckey, cvalue in reduced_config.items():
             if cvalue.get("Type") == "password":
                 # decrypt the password
-                r_config[ckey] = decryptPassword(cvalue.get("Value"), convert_unicode=True)
+                r_config[ckey] = decryptPassword(cvalue.get("Value"))
             else:
                 r_config[ckey] = cvalue.get("Value")
 
@@ -198,7 +199,7 @@ class ConfigClass(object):
                 pass
             if isinstance(r_config, int):
                 r_config = r_config > 0
-            if isinstance(r_config, basestring):
+            if isinstance(r_config, string_types):
                 r_config = is_true(r_config.lower())
 
         return r_config
@@ -219,6 +220,29 @@ def get_privacyidea_config():
     return get_from_config()
 
 
+def update_config_object():
+    """
+    Ensure that the request-local store contains a config object.
+    If it already contains one, check for updated configuration.
+    :return: a ConfigClass object
+    """
+    store = get_request_local_store()
+    config_object = store['config_object'] = ConfigClass()
+    return config_object
+
+
+def get_config_object():
+    """
+    Return the request-local config object. If it does not exist yet, create it.
+    Currently, the config object is a singleton, so it is shared among threads.
+    :return: a ConfigClass object
+    """
+    store = get_request_local_store()
+    if 'config_object' not in store:
+        store['config_object'] = update_config_object()
+    return store['config_object']
+
+
 @log_with(log)
 #@cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
@@ -235,9 +259,9 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
-    g.config_object = ConfigClass()
-    return g.config_object.get_config(key=key, default=default, role=role,
-                                      return_bool=return_bool)
+    config_object = update_config_object()
+    return config_object.get_config(key=key, default=default, role=role,
+                                    return_bool=return_bool)
 
 
 #@cache.cached(key_prefix="resolver")
@@ -252,7 +276,7 @@ def get_resolver_types():
         this.config["pi_resolver_classes"] = r_classes
         this.config["pi_resolver_types"] = r_types
 
-    return this.config["pi_resolver_types"].values()
+    return list(this.config["pi_resolver_types"].values())
 
 
 def get_caconnector_types():
@@ -279,7 +303,7 @@ def get_resolver_classes():
         this.config["pi_resolver_types"] = r_types
         this.config["pi_resolver_classes"] = r_classes
 
-    return this.config["pi_resolver_classes"].values()
+    return list(this.config["pi_resolver_classes"].values())
 
 
 #@cache.cached(key_prefix="classes")
@@ -347,15 +371,15 @@ def get_token_class(tokentype):
 def get_token_types():
     """
     Return a simple list of the type names of the tokens.
-    :return: array of tokentypes like 'hotp', 'totp'...
-    :rtype: array
+    :return: list of tokentypes like 'hotp', 'totp'...
+    :rtype: list
     """
     if "pi_token_types" not in this.config:
         (t_classes, t_types) = get_token_class_dict()
         this.config["pi_token_types"] = t_types
         this.config["pi_token_classes"] = t_classes
 
-    return this.config["pi_token_types"].values()
+    return list(this.config["pi_token_types"].values())
 
 
 #@cache.cached(key_prefix="prefix")
@@ -397,7 +421,7 @@ def get_token_classes():
         this.config["pi_token_classes"] = t_classes
         this.config["pi_token_types"] = t_types
 
-    return this.config["pi_token_classes"].values()
+    return list(this.config["pi_token_classes"].values())
 
 
 def get_machine_resolver_class_dict():
@@ -831,7 +855,6 @@ def get_prepend_pin():
     :return: True or False
     :rtype: bool
     """
-    from flask import g
     r = get_from_config(key="PrependPin", default=False, return_bool=True)
     return r
 
@@ -864,9 +887,7 @@ def get_privacyidea_node():
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
     :return: the destinct node name
     """
-    node_name = current_app.config.get("PI_NODE",
-                                       current_app.config.get("PI_AUDIT_SERVERNAME",
-                                                              "localnode"))
+    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
     return node_name
 
 
@@ -876,7 +897,8 @@ def get_privacyidea_nodes():
     :return: list of nodes
     """
     own_node_name = get_privacyidea_node()
-    nodes = current_app.config.get("PI_NODES", [])[:]
+    nodes = get_app_config_value("PI_NODES", [])[:]
     if own_node_name not in nodes:
         nodes.append(own_node_name)
     return nodes
+

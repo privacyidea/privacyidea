@@ -10,16 +10,22 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
-                                   parse_time_offset_from_now,
+                                   parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
-                                   hash_password, PasswordHash, check_ssha,
-                                   check_sha, otrs_sha256, parse_int, check_crypt,
-                                   convert_column_to_unicode, censor_connect_string)
+                                   parse_int, convert_column_to_unicode,
+                                   truncate_comma_list, check_pin_policy,
+                                   get_module_class, decode_base32check,
+                                   get_client_ip, sanity_name_check, to_utf8,
+                                   to_byte_string, hexlify_and_unicode,
+                                   b32encode_and_unicode, to_bytes,
+                                   b64encode_and_unicode, create_png, create_img,
+                                   convert_timestamp_to_utc, modhex_encode,
+                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-from dateutil.tz import tzlocal, tzoffset
+from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
-import hashlib
+import binascii
 
 
 class UtilsTestCase(MyTestCase):
@@ -178,6 +184,10 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue("defrealm" not in r)
         self.assertTrue("localsql" in r)
 
+        r = reduce_realms(realms, None)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
     def test_06_is_true(self):
         self.assertFalse(is_true(None))
         self.assertFalse(is_true(0))
@@ -204,6 +214,9 @@ class UtilsTestCase(MyTestCase):
         d = parse_date(" +12d ")
         self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) < d)
 
+        d = parse_date("+5")
+        self.assertTrue(datetime.now(tzlocal()) >= d)
+
         d = parse_date("")
         self.assertTrue(datetime.now(tzlocal()) >= d)
 
@@ -229,7 +242,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 04, 27, 12, 0,
+        self.assertEqual(d, datetime(2017, 4, 27, 12, 0,
                                      tzinfo=tzoffset(None, 7200)))
 
         d = parse_date("2016/04/03")
@@ -358,55 +371,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(s, "Hello {current_time}abc")
         self.assertEqual(td, timedelta(hours=-3))
 
-    def test_14_to_unicode(self):
-        s = "kölbel"
-        su = to_unicode(s)
-        self.assertEqual(su, u"kölbel")
-
-        s = u"kölbel"
-        su = to_unicode(s)
-        self.assertEqual(su, u"kölbel")
-
-    def test_15_hash_passwords(self):
-        p_hash = hash_password("pass0rd", "phpass")
-        PH = PasswordHash()
-        self.assertTrue(PH.check_password("pass0rd", p_hash))
-        self.assertFalse(PH.check_password("passord", p_hash))
-
-        # {SHA}
-        p_hash = hash_password("passw0rd", "sha")
-        self.assertTrue(check_sha(p_hash, "passw0rd"))
-        self.assertFalse(check_sha(p_hash, "password"))
-
-        # OTRS
-        p_hash = hash_password("passw0rd", "otrs")
-        self.assertTrue(otrs_sha256(p_hash, "passw0rd"))
-        self.assertFalse(otrs_sha256(p_hash, "password"))
-
-        # {SSHA}
-        p_hash = hash_password("passw0rd", "ssha")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha1, 20))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha1, 20))
-
-        # {SSHA256}
-        p_hash = hash_password("passw0rd", "ssha256")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha256, 32))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha256, 32))
-
-        # {SSHA512}
-        p_hash = hash_password("passw0rd", "ssha512")
-        self.assertTrue(check_ssha(p_hash, "passw0rd", hashlib.sha512, 64))
-        self.assertFalse(check_ssha(p_hash, "password", hashlib.sha512, 64))
-        
-        # MD5Crypt
-        p_hash = hash_password("passw0rd", "md5crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
-        
-        # SHA512Crypt
-        p_hash = hash_password("passw0rd", "sha512crypt")
-        self.assertTrue(check_crypt(p_hash, "passw0rd"))
-        self.assertFalse(check_crypt(p_hash, "password"))
+    def test_14_convert_timestamp_to_utc(self):
+        d = datetime.now(tz=gettz('America/New York'))
+        d_utc = convert_timestamp_to_utc(d)
+        self.assertGreater(d_utc, d.replace(tzinfo=None))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
@@ -446,3 +414,221 @@ class UtilsTestCase(MyTestCase):
                          "mysql://pi:xxxx@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
                          u"mysql://knöbel:xxxx@localhost/pi")
+
+    def test_19_truncate_comma_list(self):
+        r = truncate_comma_list("123456,234567,345678", 19)
+        self.assertEqual(len(r), 19)
+        self.assertEqual(r, "1234+,234567,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 18)
+        self.assertEqual(len(r), 18)
+        self.assertEqual(r, "1234+,2345+,345678")
+
+        r = truncate_comma_list("123456,234567,345678", 16)
+        self.assertEqual(len(r), 16)
+        self.assertEqual(r, "123+,2345+,3456+")
+
+        # There are more entries than the max_len. We will not be able
+        # to shorten all entries, so we simply take the beginning of the string.
+        r = truncate_comma_list("12,234567,3456,989,123,234,234", 4)
+        self.assertEqual(len(r), 4)
+        self.assertEqual(r, "12,+")
+
+    def test_20_pin_policy(self):
+        r, c = check_pin_policy("1234", "n")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("abc", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [0-9]", c)
+
+        r, c = check_pin_policy("123", "nc")
+        self.assertFalse(r)
+        self.assertEqual("Missing character in PIN: [a-zA-Z]", c)
+
+        r, c = check_pin_policy("123", "ncs")
+        self.assertFalse(r)
+        self.assertTrue("Missing character in PIN: [a-zA-Z]" in c, c)
+        self.assertTrue("Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]" in c, c)
+
+        r, c = check_pin_policy("1234", "")
+        self.assertFalse(r)
+        self.assertEqual(c, "No policy given.")
+
+        # check for either number or character
+        r, c = check_pin_policy("1234", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("xxxx", "+cn")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("@@@@", "+cn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+
+        # check for exclusion
+        # No special character
+        r, c = check_pin_policy("1234", "-s")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("1234", "-sn")
+        self.assertFalse(r)
+        self.assertEqual(c, "Not allowed character in PIN!")
+
+        r, c = check_pin_policy("1234@@@@", "-c")
+        self.assertTrue(r)
+
+    def test_21_get_module_class(self):
+        r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
+        from privacyidea.lib.auditmodules.sqlaudit import Audit
+        self.assertEqual(r, Audit)
+
+        # Fails to return the class, if the method does not exist
+        self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
+                          "this_method_does_not_exist")
+
+        # Fails if the class does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.sqlaudit", "DoesNotExist")
+
+        # Fails if the package does not exist
+        with self.assertRaises(ImportError):
+            get_module_class("privacyidea.lib.auditmodules.doesnotexist", "Aduit")
+
+    def test_22_decodebase32check(self):
+        real_client_componet = "TIXQW4ydvn2aos4cj6ta"
+        real_payload = "03ab74074b824fa6"
+
+        payload1 = decode_base32check(real_client_componet)
+        self.assertEqual(payload1, real_payload)
+
+        # change the client component in the last character!
+        client_component = "TIXQW4ydvn2aos4cj6tb"
+        payload2 = decode_base32check(client_component)
+        # Although the last character of the client component was changed,
+        # the payload is still the same.
+        self.assertEqual(payload2, real_payload)
+
+        # change the client component in between
+        client_component = "TIXQW4ydvn2aos4cj6ba"
+        self.assertRaises(Exception, decode_base32check, client_component)
+
+    def test_23_get_client_ip(self):
+
+        class RequestMock():
+            blueprint = None
+            remote_addr = None
+            all_data = {}
+            access_route = []
+
+        r = RequestMock()
+        r.blueprint = "token_blueprint"
+        # The real client
+        direct_client = "10.0.0.1"
+        r.remote_addr = direct_client
+        # The client parameter
+        client_parameter = "192.168.2.1"
+        r.all_data = {"client": client_parameter}
+        # The X-Forwarded-For
+        client_proxy = "172.16.1.2"
+        r.access_route = [client_proxy]
+
+        proxy_settings = ""
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, direct_client)
+
+        # If there is a proxy_setting, the X-Forwarded-For will
+        # work, but not the client_parameter
+        proxy_settings = direct_client
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, client_proxy)
+
+        # If the request is a validate request, the
+        # client_parameter will overrule the X-Forwarded-For
+        r.blueprint = "validate_blueprint"
+        ip = get_client_ip(r, proxy_settings)
+        self.assertEqual(ip, client_parameter)
+
+    def test_24_sanity_name_check(self):
+        self.assertTrue(sanity_name_check('Hello_World'))
+        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+            sanity_name_check('Hello World!')
+        self.assertTrue(sanity_name_check('Hello World', name_exp='^[A-Za-z\\ ]+$'))
+        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+            sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
+
+    def test_25_encodings(self):
+        u = u'Hello Wörld'
+        b = b'Hello World'
+        self.assertEquals(to_utf8(None), None)
+        self.assertEquals(to_utf8(u), u.encode('utf8'))
+        self.assertEquals(to_utf8(b), b)
+
+        self.assertEquals(to_unicode(u), u)
+        self.assertEquals(to_unicode(b), b.decode('utf8'))
+        self.assertEquals(to_unicode(None), None)
+        self.assertEquals(to_unicode(10), 10)
+
+        self.assertEquals(to_bytes(u), u.encode('utf8'))
+        self.assertEquals(to_bytes(b), b)
+        self.assertEquals(to_bytes(10), 10)
+
+        self.assertEquals(to_byte_string(u), u.encode('utf8'))
+        self.assertEquals(to_byte_string(b), b)
+        self.assertEquals(to_byte_string(10), b'10')
+
+    def test_26_conversions(self):
+        self.assertEquals(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
+        self.assertEquals(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
+        self.assertEquals(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
+
+        self.assertEquals(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
+        self.assertEquals(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
+        self.assertEquals(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
+
+        self.assertEquals(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEquals(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEquals(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+
+        self.assertEquals(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
+                          u'-vv8_f7_')
+
+    def test_27_images(self):
+        png_b64 = u'iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABgElEQVR4nO2ZQ' \
+                  u'Y6DMBAEaxbujpQH5CnwdPOglexjJKLeQ2xCsofdC4HA+IDAlERrGKx2Y+LvMX' \
+                  u'z9AwKnnHLKKae2TlkZLZBbrM91pl9V1yGoTpKUwOx0M0UaSZKeqffrOgSVS49' \
+                  u'LqZH1QPkMVtZ1KGq4jG9+4mGp9uXaoP1d/K2q3wcVJEVAsd6RNL5S79e1Z6r0' \
+                  u'/WAANFiXzgA3W1fXEah77R/BgobL1SA8Rw1bVf/ZFHcr2aXmfpDSNKfxfqa4V' \
+                  u'fWfTZU6E8Zi8mOQpNRI8TG3VfWfTc36XqrNTzdtq7z2y1G17wHFMH8Lkq85y1' \
+                  u'Kz2peyP5Z/1eG1X4R69jkjRvhuNVyuJvKp3tiq+j1Qjxyz7K1y8f3Wr6pr39T' \
+                  u'kJ6u7UYKZ7fE1Z3mq5phmJ1DMLYrcPL9/J6VII7oEkKclaH1dR6CsB6wPkvWU' \
+                  u'JH8LuvZI1Qw5CMgg8hmRzyOEq7nPWZCa+3uY9rWpZsi+r12O+pVjwojKTOP/a' \
+                  u'51yyimn9kL9ACOsApMnN2KuAAAAAElFTkSuQmCC'
+        self.assertEquals(b64encode_and_unicode(create_png('Hallo')), png_b64)
+        self.assertEquals(create_img('Hello', raw=True),
+                          u'data:image/png;base64,SGVsbG8=')
+        self.assertEquals(create_img('Hallo'),
+                          u'data:image/png;base64,{0!s}'.format(png_b64))
+
+    def test_28_yubikey_utils(self):
+        self.assertEquals(modhex_encode(b'\x47'), 'fi')
+        self.assertEquals(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
+        self.assertEquals(modhex_encode(binascii.unhexlify('0123456789abcdef')),
+                          'cbdefghijklnrtuv')
+        self.assertEquals(modhex_encode('Hallo'), 'fjhbhrhrhv')
+        # and the other way around
+        self.assertEquals(modhex_decode('fi'), b'\x47')
+        self.assertEquals(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
+        self.assertEquals(modhex_decode('cbdefghijklnrtuv'),
+                          binascii.unhexlify('0123456789abcdef'))
+        self.assertEquals(modhex_decode('fjhbhrhrhv'), b'Hallo')
+
+        # now test the crc function
+        self.assertEquals(checksum(b'\x01\x02\x03\x04'), 0xc66e)
+        self.assertEquals(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)

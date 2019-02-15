@@ -9,17 +9,17 @@ import mock
 from dateutil.parser import parse as parse_timestamp
 
 from privacyidea.lib.periodictask import TASK_MODULES
-from tests.base import MyTestCase
+from tests.base import MyApiTestCase
 
 
-class APIPeriodicTasksTestCase(MyTestCase):
+class APIPeriodicTasksTestCase(MyApiTestCase):
     @contextmanager
     def mock_task_module(self):
         """
         Mock a UnitTest task module, use as ``with self.mock_task_module() as module:``
         """
         taskmodule = mock.MagicMock()
-        cls = lambda: taskmodule
+        cls = lambda config: taskmodule
         with mock.patch.dict(TASK_MODULES, {"UnitTest": cls}, clear=True):
             yield taskmodule
 
@@ -34,7 +34,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
         kwargs['headers'] = headers
         with self.app.test_request_context(*args, **kwargs):
             res = self.app.full_dispatch_request()
-            return res.status_code, json.loads(res.data)
+            return res.status_code, json.loads(res.data.decode('utf8'))
 
     def test_01_crud(self):
         # no tasks yet
@@ -176,7 +176,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
         # unknown ID
         status_code, data = self.simulate_request('/periodictask/4242', method='GET')
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 404)
         self.assertFalse(data['result']['status'])
 
         # update existing task
@@ -252,7 +252,7 @@ class APIPeriodicTasksTestCase(MyTestCase):
 
         # get updated task impossible now
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 404)
         self.assertFalse(data['result']['status'], False)
 
         # only 1 task left

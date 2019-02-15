@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2018-11-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            Remove audit based statistics
  * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *     Add state for audit.log and audit.stats
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -39,10 +41,6 @@ angular.module('privacyideaApp.auditStates', ['ui.router']).config(
                 .state('audit.log', {
                     url: "/log?serial&user",
                     templateUrl: auditpath + "audit.log.html",
-                    controller: "auditController"
-                }).state('audit.stats', {
-                    url: "/stats",
-                    templateUrl: auditpath + "audit.stats.html",
                     controller: "auditController"
                 });
         }]);

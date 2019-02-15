@@ -136,7 +136,7 @@ class QuestionnaireTokenClass(TokenClass):
             raise TokenAdminError(_("You need to provide at least %s "
                                     "answers.") % num_answers)
         # Save all questions and answers and encrypt them
-        for question, answer in questions.iteritems():
+        for question, answer in questions.items():
             self.add_tokeninfo(question, answer, value_type="password")
         TokenClass.update(self, param)
 
@@ -188,7 +188,7 @@ class QuestionnaireTokenClass(TokenClass):
         # Get a random question
         questions = []
         tinfo = self.get_tokeninfo()
-        for question, answer in tinfo.iteritems():
+        for question, answer in tinfo.items():
             if question.endswith(".type") and answer == "password":
                 # This is "Question1?.type" of type "password"
                 # So this is actually a question and we add the question to

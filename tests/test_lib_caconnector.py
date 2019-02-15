@@ -4,9 +4,13 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
+import six
+import shutil
+from io import StringIO
+from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from OpenSSL import crypto
-from privacyidea.lib.utils import int_to_hex
+from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
@@ -195,7 +199,7 @@ class LocalCATestCase(MyTestCase):
         r = cacon.create_crl()
         self.assertEqual(r, "crl.pem")
         # Check if the serial number is contained in the CRL!
-        filename = cwd + "/" + WORKINGDIR + "/crl.pem"
+        filename = os.path.join(cwd, WORKINGDIR, "crl.pem")
         f = open(filename)
         buff = f.read()
         f.close()
@@ -203,7 +207,7 @@ class LocalCATestCase(MyTestCase):
         revoked_certs = crl.get_revoked()
         found_revoked_cert = False
         for revoked_cert in revoked_certs:
-            s = revoked_cert.get_serial()
+            s = to_unicode(revoked_cert.get_serial())
             if s == serial_hex:
                 found_revoked_cert = True
                 break
@@ -268,7 +272,7 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue("template3" in templates)
         cert = cacon.sign_request(SPKAC, options={"spkac": 1,
                                                   "template": "webserver"})
-        expires = cert.get_notAfter()
+        expires = to_unicode(cert.get_notAfter())
         import datetime
         dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
         ddiff = dt - datetime.datetime.now()
@@ -277,3 +281,21 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue(ddiff.days < 760, ddiff.days)
 
 
+class CreateLocalCATestCase(MyTestCase):
+    """
+    test creating a new CA using the local caconnector
+    """
+    def test_01_create_ca(self):
+        cwd = os.getcwd()
+        workdir = os.path.join(cwd, WORKINGDIR + '2')
+        if os.path.exists(workdir):
+            shutil.rmtree(workdir)
+        inputstr = six.text_type(workdir + '\n\n\n\n\n\ny\n')
+        with patch('sys.stdin', StringIO(inputstr)):
+            caconfig = LocalCAConnector.create_ca('localCA2')
+            self.assertEqual(caconfig.get("WorkingDir"), workdir)
+            cacon = LocalCAConnector('localCA2', caconfig)
+            self.assertEqual(cacon.name, 'localCA2')
+            self.assertEqual(cacon.workingdir, workdir)
+            # check if the generated files exist
+            self.assertTrue(os.path.exists(os.path.join(workdir, 'cacert.pem')))

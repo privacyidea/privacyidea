@@ -26,6 +26,7 @@ from privacyidea.lib.security.password import PASSWORD
 from privacyidea.lib.error import HSMException
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
+
 log = logging.getLogger(__name__)
 
 try:
@@ -150,20 +151,8 @@ class PKCS11SecurityModule(SecurityModule):  # pragma: no cover
         self.session.logout()
         return text
 
-    def encrypt_password(self, clear_pass):
-        return self.encrypt(clear_pass)
 
-    def encrypt_pin(self, clear_pin):
-        return self.encrypt(clear_pin)
-
-    def decrypt_password(self, crypt_pass):
-        return self.decrypt(crypt_pass)
-
-    def decrypt_pin(self, crypt_pin):
-        return self.decrypt(crypt_pin)
-
-
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
 
     module = "/usr/local/lib/opensc-pkcs11.so"
     #module = "/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so"
@@ -175,25 +164,25 @@ if __name__ == "__main__":
     cleartext = "Hello there!"
     cipher = p.encrypt(cleartext)
     text = p.decrypt(cipher)
-    print text
+    print(text)
     assert(text == cleartext)
 
     cleartext = "Hello, this is a really long text and so and and so on..."
     cipher = p.encrypt(cleartext)
     text = p.decrypt(cipher)
-    print text
+    print(text)
     assert (text == cleartext)
 
     # password
     password = "topSekr3t"
     crypted = p.encrypt_password(password)
     text = p.decrypt_password(crypted)
-    print text
+    print(text)
     assert(text == password)
 
     # pin
     password = "topSekr3t"
     crypted = p.encrypt_pin(password)
     text = p.decrypt_pin(crypted)
-    print text
+    print(text)
     assert (text == password)

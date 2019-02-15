@@ -1,12 +1,12 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, ACTION
 
 
 
 
 
-class APIPolicyTestCase(MyTestCase):
+class APIPolicyTestCase(MyApiTestCase):
     def test_00_get_policy(self):
         with self.app.test_request_context('/policy/',
                                            method='GET',
@@ -14,7 +14,7 @@ class APIPolicyTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), [])
 
     def test_01_set_policy(self):
@@ -28,7 +28,7 @@ class APIPolicyTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))
@@ -40,7 +40,7 @@ class APIPolicyTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             result = data.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)
@@ -61,7 +61,7 @@ class APIPolicyTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))
@@ -74,7 +74,7 @@ class APIPolicyTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data)
+            data = json.loads(res.data.decode('utf8'))
             result = data.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)

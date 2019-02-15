@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
@@ -11,6 +12,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import (Token,
                                  Config,
@@ -393,11 +395,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue("img" in otpkey, otpkey)
         self.assertTrue("googleurl" in detail, detail)
         # some other stuff.
-        r = token.get_QRimage_data({"googleurl": detail.get("googleurl").get(
-            "value")})
-        self.assertTrue('otpauth://hotp/SE123456?secret=CERDGRCVMZ3YRGIA'
-                        '&counter=1' in r[0], r[0])
-        self.assertRaises(Exception, token.set_init_details, "unvalid value")
+        self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())
@@ -640,7 +638,7 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -744,7 +742,7 @@ class HOTPTokenTestCase(MyTestCase):
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # too short
         self.assertRaises(ParameterError, token.update, {
-            "otpkey": binascii.hexlify("="*8)
+            "otpkey": binascii.hexlify(b"="*8)
         })
         # generate a 12-byte client component
         client_component = b'abcdefghijkl'
@@ -790,12 +788,12 @@ class HOTPTokenTestCase(MyTestCase):
             "Incorrect checksum",
             token.update,
             {
-                "otpkey": base64.b32encode("\x37" + checksum[1:] + client_component).strip("="),
+                "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
                 "otpkeyformat": "base32check",
             })
         # construct a secret
         token.update({
-            "otpkey": base64.b32encode(checksum + client_component).strip("="),
+            "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
             "otpkeyformat": "base32check",
             # the following values are ignored
             "2step_serversize": "23",

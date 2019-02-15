@@ -39,6 +39,7 @@ angular.module("privacyideaApp")
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
+    $scope.getRightsValue = AuthFactory.getRightsValue;
     $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
@@ -59,6 +60,8 @@ angular.module("privacyideaApp")
     //debug: console.log($scope.piRealms);
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();
+    obj = angular.element(document.querySelector('#LOGIN_TEXT'));
+    $scope.piLoginText= obj.val();
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {
@@ -345,6 +348,8 @@ angular.module("privacyideaApp")
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
             $scope.hide_welcome = data.result.value.hide_welcome;
+            $scope.hide_buttons = data.result.value.hide_buttons;
+            $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;

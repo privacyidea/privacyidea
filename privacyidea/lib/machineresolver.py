@@ -32,7 +32,7 @@ webservice!
 """
 
 import logging
-from log import log_with
+from .log import log_with
 from ..models import (MachineResolver,
                       MachineResolverConfig)
 from ..api.lib.utils import required
@@ -40,7 +40,7 @@ from ..api.lib.utils import getParam
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.config import get_machine_resolver_class_dict
-from privacyidea.lib.utils import (sanity_name_check, get_data_from_params)
+from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 
 
 log = logging.getLogger(__name__)
@@ -76,7 +76,8 @@ def save_resolver(params):
     # check the type
     (class_dict, type_dict) = get_machine_resolver_class_dict()
     if resolvertype not in type_dict.values():
-            raise Exception("machine resolver type : {0!s} not in {1!s}".format(resolvertype, type_dict.values()))
+        raise Exception("machine resolver type : {0!s} "
+                        "not in {1!s}".format(resolvertype, list(type_dict.values())))
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
@@ -162,20 +163,14 @@ def get_resolver_list(filter_resolver_type=None,
 def delete_resolver(resolvername):
     """
     delete a machine resolver and all related MachineResolverConfig entries
-    If there was no resolver, that could be deleted, it returns -1
+    If there was no resolver, this raises a ResourceNotFoundError.
 
     :param resolvername: the name of the to be deleted resolver
     :type resolvername: string
     :return: The Id of the resolver
     :rtype: int
     """
-    ret = -1
-
-    reso = MachineResolver.query.filter_by(name=resolvername).first()
-    if reso:
-        reso.delete()
-        ret = reso.id
-    return ret
+    return fetch_one_resource(MachineResolver, name=resolvername).delete()
 
 
 @log_with(log)

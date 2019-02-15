@@ -35,7 +35,7 @@ class WebUICertificateTestCase(MyTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             authtoken = result.get("value")
@@ -49,9 +49,9 @@ class WebUICertificateTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             # Check the form
-            self.assertTrue("privacyIDEA Certificate Request" in res.data)
-            self.assertTrue("Key strength" in res.data)
-            self.assertTrue('input type="hidden" name="authtoken"' in res.data)
+            self.assertTrue(b"privacyIDEA Certificate Request" in res.data)
+            self.assertTrue(b"Key strength" in res.data)
+            self.assertTrue(b'input type="hidden" name="authtoken"' in res.data)
 
         # Check that missing authentication will result in an error
         with self.app.test_request_context('/certificate',
@@ -81,7 +81,7 @@ class WebUICertificateTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json['result']
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
 
@@ -93,7 +93,7 @@ class WebUICertificateTestCase(MyTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json['result']
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             authtoken = result.get("value")
@@ -109,9 +109,9 @@ class WebUICertificateTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             # Check the form
-            self.assertTrue("The certificate with token serial" in res.data)
-            self.assertTrue("Certificate to Browser" in res.data)
-            self.assertTrue('data:application/x-x509-user-cert;base64' in res.data)
+            self.assertTrue(b"The certificate with token serial" in res.data)
+            self.assertTrue(b"Certificate to Browser" in res.data)
+            self.assertTrue(b'data:application/x-x509-user-cert;base64' in res.data)
 
         # Check that missing authentication will result in an error
         with self.app.test_request_context('/certificate/enroll',

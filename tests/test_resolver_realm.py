@@ -1,11 +1,10 @@
-import unittest
+# -*- coding: utf-8 -*-
+
 import json
-from privacyidea.app import create_app
 from privacyidea.models import (Resolver,
                                 ResolverConfig,
-                                Realm,
                                 db)
-from .base import MyTestCase
+from .base import MyTestCase, MyApiTestCase
 
 
 class ResolverModelTestCase(MyTestCase):
@@ -29,7 +28,7 @@ class ResolverModelTestCase(MyTestCase):
         self.assertTrue(r1.rtype=="passwdresolver", r1.rtype)
 
 
-class APIResolverTestCase(MyTestCase):
+class APIResolverTestCase(MyApiTestCase):
     '''
     Test the resolver on the API level
     '''
@@ -43,8 +42,8 @@ class APIResolverTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            self.assertTrue('"value": 1' in res.data, res.data)
+            self.assertTrue(res.json['result']['status'], res.json)
+            self.assertEquals(res.json['result']['value'], 1, res.json)
                     
         # check if the resolver was created
         with self.app.test_request_context('/resolver/',
@@ -52,8 +51,8 @@ class APIResolverTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"fileName": "/etc/passwd"' in res.data, res.data)
-            self.assertTrue('"resolvername": "r1"' in res.data, res.data)
+            self.assertTrue(b'"fileName": "/etc/passwd"' in res.data, res.data)
+            self.assertTrue(b'"resolvername": "r1"' in res.data, res.data)
             
     def test_01_create_realm(self):
         realm = u"realm1"
@@ -64,7 +63,7 @@ class APIResolverTestCase(MyTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data)
+            result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
             self.assertTrue('r1' in value["added"], res.data)
             self.assertTrue('r2' in value["failed"], res.data)

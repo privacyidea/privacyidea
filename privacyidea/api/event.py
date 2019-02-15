@@ -156,7 +156,7 @@ def set_eventhandling():
     if type(conditions) is not dict:
         conditions = json.loads(conditions)
     options = {}
-    for k, v in param.iteritems():
+    for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
 

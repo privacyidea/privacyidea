@@ -5,14 +5,15 @@ lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
 
-import smtpmock
+from . import smtpmock
 import responses
+import os
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
-from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
@@ -32,7 +33,7 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
@@ -100,7 +101,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertEqual(r[0].get("position"), "post")
 
         # We can not enable an event, that does not exist.
-        self.assertRaises(ParameterError, enable_event, 1234567, True)
+        self.assertRaises(ResourceNotFoundError, enable_event, 1234567, True)
 
         # Cleanup
         r = delete_event(n_eid)
@@ -511,20 +512,65 @@ class ScriptEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {
-                       "options":{
+                       "options": {
                            "user": "1",
                            "realm": "1",
                            "serial": "1",
                            "logged_in_user": "1",
-                           "logged_in_role": "1",}
+                           "logged_in_role": "1"}
                    }
                    }
 
         script_name = "ls.sh"
-        t_handler = ScriptEventHandler()
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
         res = t_handler.do(script_name, options=options)
         self.assertTrue(res)
-        remove_token("SPASS01")
+
+    def test_02_failscript(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "background": SCRIPT_WAIT,
+                           "raise_error": True,
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }
+                   }
+
+        script_name = "fail.sh"
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
+        self.assertRaises(Exception, t_handler.do, script_name, options=options)
 
 
 class FederationEventTestCase(MyTestCase):
@@ -705,7 +751,7 @@ class FederationEventTestCase(MyTestCase):
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
         # No Response data, since this method is not supported
-        self.assertEqual(options.get("response").data, "")
+        self.assertEqual(options.get("response").data, b"")
 
     @responses.activate
     def test_02_forward_admin_request(self):
@@ -765,6 +811,14 @@ class FederationEventTestCase(MyTestCase):
 class TokenEventTestCase(MyTestCase):
 
     def test_01_set_tokenrealm(self):
+        # check actions
+        actions = TokenEventHandler().actions
+        self.assertTrue("set tokeninfo" in actions, actions)
+
+        # check positions
+        pos = TokenEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post", "pre"}, pos)
+
         # setup realms
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -2285,6 +2339,8 @@ class UserNotificationTestCase(MyTestCase):
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
+        # Create admin authentication token
+        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",
@@ -2341,8 +2397,8 @@ class UserNotificationTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            self.assertTrue(result.get("value") is True, result)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEqual(result.get("value"), 1)
 
         # Cleanup
         delete_event(eid)
@@ -2432,6 +2488,28 @@ class UserNotificationTestCase(MyTestCase):
         )
         # The counter of the token is 0
         self.assertEqual(r, True)
+
+        # match if counter is >100
+        tok.token.count = 101
+        tok.token.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: ">100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
         remove_token(serial)
 

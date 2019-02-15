@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add App Image URL
 #  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokeninfo field policy
 #             Add add_resolver_in_result
@@ -156,23 +158,26 @@ from configobj import ConfigObj
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from operator import itemgetter
+import six
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
-from flask import current_app
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     Singleton)
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import check_time_in_range, reload_db
+from privacyidea.lib.utils import (check_time_in_range, reload_db,
+                                   fetch_one_resource, is_true)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
 import re
 import ast
+from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 
@@ -198,6 +203,7 @@ class SCOPE(object):
 class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
+    APPIMAGEURL = "appimageurl"
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
@@ -305,11 +311,14 @@ class ACTION(object):
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
+    HIDE_BUTTONS = "hide_buttons"
     HIDE_WELCOME = "hide_welcome_info"
+    SHOW_SEED = "show_seed"
     CUSTOM_MENU = "custom_menu"
     CUSTOM_BASELINE = "custom_baseline"
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
+    LOGIN_TEXT = "login_text"
 
 
 class GROUP(object):
@@ -371,7 +380,7 @@ class TIMEOUT_ACTION(object):
     LOCKSCREEN = 'lockscreen'
 
 
-class PolicyClass(object):
+class PolicyClass(with_metaclass(Singleton, object)):
 
     """
     The Policy_Object will contain all database policy entries for easy
@@ -379,7 +388,6 @@ class PolicyClass(object):
     It will be created at the beginning of the request and is supposed to stay
     alive unchanged during the request.
     """
-    __metaclass__ = Singleton
 
     def __init__(self):
         """
@@ -397,9 +405,9 @@ class PolicyClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
+        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=current_app.config.get(
-                    "PI_CHECK_RELOAD_CONFIG", 0)) < datetime.datetime.now():
+                seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
                 self.policies = []
@@ -450,7 +458,7 @@ class PolicyClass(object):
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, client=None, action=None,
                      adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True):
+                     sort_by_priority=True, audit_data=None):
         """
         Return the policies of the given filter values.
 
@@ -474,6 +482,8 @@ class PolicyClass(object):
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
+        :param audit_data: A dictionary with audit data collected during a request. This
+            method will add found policies to the dictionary.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -598,6 +608,10 @@ class PolicyClass(object):
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
+        if audit_data is not None:
+            for p in reduced_policies:
+                audit_data.setdefault("policies", []).append(p.get("name"))
+
         return reduced_policies
 
     @staticmethod
@@ -626,16 +640,17 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None):
+                          allow_white_space_in_action=False, adminrealm=None,
+                          audit_data=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
             action: tokentype
-        would return a list of the tokentypes
+        would return a dictionary of {tokentype: policyname}
 
             scope: authorization
             action: serial
-        would return a list of allowed serials
+        would return a dictionary of {serial: policyname}
 
         :param unique: if set, the function will only consider the policy with the
             highest priority and check for policy conflicts.
@@ -643,10 +658,14 @@ class PolicyClass(object):
             would allow entering text with whitespaces. These whitespaces
             must not be used to separate action values!
         :type allow_white_space_in_action: bool
-        :return: A list of action values, sorted by policy priorities.
-        :rtype: list
+        :param audit_data: This is a dictionary, that can take audit_data in the g object.
+            If set, this dictionary will be filled with the list of triggered policynames in the
+            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
+            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
+            the value of the action needs to be evaluated in a more special case.
+        :rtype: dict
         """
-        action_values = []
+        policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
                                      realm=realm, resolver=resolver, user=user,
@@ -658,6 +677,7 @@ class PolicyClass(object):
         for pol in policies:
             action_dict = pol.get("action", {})
             action_value = action_dict.get(action, "")
+            policy_name = pol.get("name")
             """
             We must distinguish actions like:
                 tokentype=totp hotp motp,
@@ -665,21 +685,30 @@ class PolicyClass(object):
                 smstext='your otp is <otp>'
             where the spaces are part of the string.
             """
+            # By saving the policynames in a dict with the values being the key,
+            # we achieve unique policy_values.
+            # Save the policynames in a list
             if action_value.startswith("'") and action_value.endswith("'"):
-                action_values.append(action_dict.get(action)[1:-1])
+                action_key = action_dict.get(action)[1:-1]
+                policy_values.setdefault(action_key, []).append(policy_name)
             elif allow_white_space_in_action:
-                action_values.append(action_dict.get(action))
+                action_key = action_dict.get(action)
+                policy_values.setdefault(action_key, []).append(policy_name)
             else:
-                action_values.extend(action_dict.get(action, "").split())
+                for action_key in action_dict.get(action, "").split():
+                    policy_values.setdefault(action_key, []).append(policy_name)
 
-        # reduce the entries to unique entries
-        action_values = list(set(action_values))
         # Check if the policies with the highest priority agree on the action values
-        if unique and len(action_values) > 1:
+        if unique and len(policy_values) > 1:
             names = [p['name'] for p in policies]
             raise PolicyError(u"There are policies with conflicting actions: {!r}".format(names))
 
-        return action_values
+        if audit_data is not None:
+            for action_value, policy_names in policy_values.items():
+                for p_name in policy_names:
+                    audit_data.setdefault("policies", []).append(p_name)
+
+        return policy_values
 
     @log_with(log)
     def ui_get_main_menus(self, logged_in_user, client=None):
@@ -727,7 +756,7 @@ class PolicyClass(object):
         """
         from privacyidea.lib.auth import ROLE
         from privacyidea.lib.token import get_dynamic_policy_definitions
-        rights = []
+        rights = set()
         userrealm = None
         adminrealm = None
         logged_in_user = {"username": username,
@@ -746,21 +775,19 @@ class PolicyClass(object):
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
-                    rights.append(action)
+                    rights.add(action)
                     # if the action has an actual non-boolean value, return it
-                    if isinstance(action_value, basestring):
-                        rights.append(u"{}={}".format(action, action_value))
+                    if isinstance(action_value, string_types):
+                        rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
         pols = self.get_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            static_rights = get_static_policy_definitions(scope).keys()
-            enroll_rights = get_dynamic_policy_definitions(scope).keys()
-            rights = static_rights + enroll_rights
-        # reduce the list
-        rights = list(set(rights))
+            rights = get_static_policy_definitions(scope)
+            rights.update(get_dynamic_policy_definitions(scope))
+        rights = list(rights)
         log.debug("returning the admin rights: {0!s}".format(rights))
         return rights
 
@@ -812,6 +839,7 @@ class PolicyClass(object):
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
+            filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.get_policies(scope=role, client=client,
@@ -820,10 +848,11 @@ class PolicyClass(object):
                                              active=True,
                                              action="enroll"+tokentype.upper(),
                                              adminrealm=admin_realm)
-                if not typepols:
+                if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
-                    del(enroll_types[tokentype])
+                    filtered_enroll_types[tokentype] = enroll_types[tokentype]
+            enroll_types = filtered_enroll_types
 
         return enroll_types
 
@@ -843,8 +872,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     If the policy with this name already exists, it updates the policy.
     It expects a dict of with the following keys:
     :param name: The name of the policy
-    :param scope: The scope of the policy. Something like "admin", "system",
-    "authentication"
+    :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
     :type active: basestring
     :param realm: A realm, for which this policy is valid
@@ -862,14 +890,12 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID od the the policy
     :rtype: int
     """
-    if type(active) in [str, unicode]:
-        active = active.lower() == "true"
-    if type(priority) in [str, unicode]:
+    active = is_true(active)
+    if isinstance(priority, six.string_types):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
-    if type(check_all_resolvers) in [str, unicode]:
-        check_all_resolvers = check_all_resolvers.lower() == "true"
+    check_all_resolvers = is_true(check_all_resolvers)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -936,7 +962,7 @@ def enable_policy(name, enable=True):
     :return: ID of the policy
     """
     if not Policy.query.filter(Policy.name == name).first():
-        raise ParameterError("The policy with name '{0!s}' does not exist".format(name))
+        raise ResourceNotFoundError(u"The policy with name '{0!s}' does not exist".format(name))
 
     # Update the policy
     p = set_policy(name=name, active=enable)
@@ -946,17 +972,14 @@ def enable_policy(name, enable=True):
 @log_with(log)
 def delete_policy(name):
     """
-    Function to delete one named policy
+    Function to delete one named policy.
+    Raise ResourceNotFoundError if there is no such policy.
 
     :param name: the name of the policy to be deleted
-    :return: the count of the deleted policies.
+    :return: the ID of the deleted policy
     :rtype: int
     """
-    res = False
-    p = Policy.query.filter_by(name=name).first()
-    if p:
-        res = p.delete()
-    return res
+    return fetch_one_resource(Policy, name=name).delete()
 
 
 @log_with(log)
@@ -970,7 +993,7 @@ def delete_all_policies():
 def export_policies(policies):
     """
     This function takes a policy list and creates an export file from it
-    
+
     :param policies: a policy definition
     :type policies: list of policy dictionaries
     :return: the contents of the file
@@ -1003,7 +1026,7 @@ def import_policies(file_contents):
     """
     policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
     res = 0
-    for policy_name, policy in policies.iteritems():
+    for policy_name, policy in policies.items():
         ret = set_policy(name=policy_name,
                          action=ast.literal_eval(policy.get("action")),
                          scope=policy.get("scope"),
@@ -1033,8 +1056,8 @@ def get_static_policy_definitions(scope=None):
     description.
     :rtype: dict
     """
-    resolvers = get_resolver_list().keys()
-    realms = get_realms().keys()
+    resolvers = list(get_resolver_list())
+    realms = list(get_realms())
     smtpconfigs = [server.config.identifier for server in get_smtpservers()]
     radiusconfigs = [radius.config.identifier for radius in
                      get_radiusservers()]
@@ -1259,12 +1282,12 @@ def get_static_policy_definitions(scope=None):
                                            'group': GROUP.SYSTEM,
                                            'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.OTPPINMAXLEN: {'type': 'int',
-                                  'value': range(0, 32),
+                                  'value': list(range(0, 32)),
                                   "desc": _("Set the maximum allowed length "
                                             "of the OTP PIN."),
                                   'group': GROUP.PIN},
             ACTION.OTPPINMINLEN: {'type': 'int',
-                                  'value': range(0, 32),
+                                  'value': list(range(0, 32)),
                                   "desc": _("Set the minimum required length "
                                             "of the OTP PIN."),
                                   'group': GROUP.PIN},
@@ -1431,12 +1454,12 @@ def get_static_policy_definitions(scope=None):
                                          "PIN during enrollment."),
                                'group': GROUP.PIN},
             ACTION.OTPPINMAXLEN: {'type': 'int',
-                                  'value': range(0, 32),
+                                  'value': list(range(0, 32)),
                                   "desc": _("Set the maximum allowed length "
                                             "of the OTP PIN."),
                                   'group': GROUP.PIN},
             ACTION.OTPPINMINLEN: {'type': 'int',
-                                  'value': range(0, 32),
+                                  'value': list(range(0, 32)),
                                   "desc": _("Set the minimum required length "
                                             "of the OTP PIN."),
                                   'group': GROUP.PIN},
@@ -1483,7 +1506,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
-                'value': range(0, 32),
+                'value': list(range(0, 32)),
                 "desc": _("Set a random OTP PIN with this length for a "
                           "token."),
                 'group': GROUP.PIN},
@@ -1523,6 +1546,12 @@ def get_static_policy_definitions(scope=None):
                           "Authenticators."),
                 'group': GROUP.TOKEN
             },
+            ACTION.APPIMAGEURL: {
+                'type': 'str',
+                'desc': _("This is the URL to the token image for smartphone apps "
+                          "like FreeOTP."),
+                'group': GROUP.TOKEN
+            },
             ACTION.AUTOASSIGN: {
                 'type': 'str',
                 'value': [AUTOASSIGNVALUE.NONE, AUTOASSIGNVALUE.USERSTORE],
@@ -1531,16 +1560,16 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.LOSTTOKENPWLEN: {
                 'type': 'int',
-                'value': range(1, 32),
+                'value': list(range(1, 32)),
                 'desc': _('The length of the password in case of '
                           'temporary token (lost token).')},
             ACTION.LOSTTOKENPWCONTENTS: {
                 'type': 'str',
                 'desc': _('The contents of the temporary password, '
-                          'described by the characters C, c, n, s.')},
+                          'described by the characters C, c, n, s, 8.')},
             ACTION.LOSTTOKENVALID: {
                 'type': 'int',
-                'value': range(1, 61),
+                'value': list(range(1, 61)),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
         },
@@ -1676,6 +1705,10 @@ def get_static_policy_definitions(scope=None):
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
             },
+            ACTION.LOGIN_TEXT: {
+                'type': 'str',
+                'desc': _('An alternative text to display on the WebUI login dialog instead of "Please sign in".')
+            },
             ACTION.SEARCH_ON_ENTER: {
                 'type': 'bool',
                 'desc': _('When searching in the user list, the search will '
@@ -1756,6 +1789,16 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this checked, the administrator will not see "
                           "the welcome dialog anymore.")
+            },
+            ACTION.HIDE_BUTTONS: {
+                'type': 'bool',
+                'desc': _("Per default disabled actions result in disabled buttons. When"
+                          " checking this action, buttons of disabled actions are hidden.")
+            },
+            ACTION.SHOW_SEED: {
+                'type': 'bool',
+                'desc': _("If this is checked, the seed "
+                          "will be displayed as text during enrollment.")
             }
         }
 
@@ -1796,7 +1839,7 @@ def get_action_values_from_options(scope, action, options):
                               unique=True,
                               allow_white_space_in_action=True)
         if len(value) >= 1:
-            return value[0]
+            return list(value)[0]
         else:
             return None
 

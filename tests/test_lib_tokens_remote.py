@@ -23,6 +23,7 @@ class RemoteTokenTestCase(MyTestCase):
                "remote.resolver": ""}
     serial2 = "use1"
     params2 = {"remote.server": "http://my.privacyidea.server",
+               "remote.path": "/mypi/validate/check",
                "remote.local_checkpin": False,
                "remote.user": "user1",
                "remote.realm": "realm1",
@@ -128,7 +129,7 @@ class RemoteTokenTestCase(MyTestCase):
         # verify SSL
         set_privacyidea_config("remote.verify_ssl_certificate", True)
         responses.add(responses.POST,
-                      "http://my.privacyidea.server/validate/check",
+                      "http://my.privacyidea.server/mypi/validate/check",
                       body=json.dumps(self.success_body),
                       content_type="application/json")
 
@@ -140,7 +141,7 @@ class RemoteTokenTestCase(MyTestCase):
     @responses.activate
     def test_07_do_request_missing_config(self):
         responses.add(responses.POST,
-                      "http://my.privacyidea.server/validate/check",
+                      "http://my.privacyidea.server/mypi/validate/check",
                       body=json.dumps(self.success_body),
                       content_type="application/json")
 
@@ -174,7 +175,7 @@ class RemoteTokenTestCase(MyTestCase):
     @responses.activate
     def test_09_authenticate_remote_pin(self):
         responses.add(responses.POST,
-                      "http://my.privacyidea.server/validate/check",
+                      "http://my.privacyidea.server/mypi/validate/check",
                       body=json.dumps(self.success_body),
                       content_type="application/json")
         db_token = Token.query.filter(Token.serial == self.serial2).first()

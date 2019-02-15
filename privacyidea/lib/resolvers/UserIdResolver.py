@@ -115,7 +115,6 @@ class UserIdResolver(object):
         """
         return UserIdResolver.getResolverClassDescriptor()
 
-
     def getUserId(self, loginName):
         """
         The loginname is resolved to a user_id.
@@ -250,8 +249,8 @@ class UserIdResolver(object):
         attributes = attributes or {}
         return None
 
-    @staticmethod
-    def testconnection(param):
+    @classmethod
+    def testconnection(cls, param):
         """
         This function lets you test if the parameters can be used to create a
         working resolver.
@@ -260,10 +259,10 @@ class UserIdResolver(object):
         In case of success it should return a text like
         "Resolver config seems OK. 123 Users found."
 
-        param param: The parameters that should be saved as the resolver
-        type param: dict
-        return: returns True in case of success and a descriptive text
-        rtype: tuple
+        :param param: The parameters that should be saved as the resolver
+        :type param: dict
+        :return: returns True in case of success and a descriptive text
+        :rtype: tuple
         """
         success = False
         desc = "Not implemented"
@@ -274,5 +273,13 @@ class UserIdResolver(object):
         """
         Return true, if the Instance! of this resolver is configured editable.
         :return:
+        """
+        return False
+
+    @property
+    def has_multiple_loginnames(self):
+        """
+        Return if this resolver has multiple loginname attributes
+        :return: bool
         """
         return False

@@ -6,6 +6,7 @@ This tests the files
 """
 
 from .base import MyTestCase
+from mock import mock
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
@@ -16,6 +17,7 @@ from privacyidea.app import create_app
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
+
 
 class AuditTestCase(MyTestCase):
     """
@@ -60,9 +62,6 @@ class AuditTestCase(MyTestCase):
         tot = self.Audit.get_total({})
         self.assertTrue(tot == 3, tot)
         audit_log = self.Audit.search({}, sortorder="desc")
-
-        print("The Log:")
-        print(audit_log)
 
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
@@ -114,23 +113,32 @@ class AuditTestCase(MyTestCase):
                         "success": False})
         self.Audit.finalize_log()
         time.sleep(2)
+        # remember the current time for later
+        current_timestamp = datetime.datetime.now()
 
         self.Audit.log({"action": "/validate/check",
                         "success": True})
         self.Audit.finalize_log()
 
-        # get 4 authentications
-        r = self.Audit.get_count({"action": "/validate/check"})
-        self.assertEqual(r, 4)
+        # freeze time at ``current_timestamp`` + 0.5s.
+        # This is necessary because when doing unit tests on a CI server,
+        # things will sometimes go slower than expected, which will
+        # cause the very last assertion to fail.
+        with mock.patch('datetime.datetime') as mock_dt:
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=0.5)
 
-        # get one failed authentication
-        r = self.Audit.get_count({"action": "/validate/check"}, success=False)
-        self.assertEqual(r, 1)
+            # get 4 authentications
+            r = self.Audit.get_count({"action": "/validate/check"})
+            self.assertEqual(r, 4)
 
-        # get one authentication during the last second
-        r = self.Audit.get_count({"action": "/validate/check"}, success=True,
-                                 timedelta=datetime.timedelta(seconds=1))
-        self.assertEqual(r, 1)
+            # get one failed authentication
+            r = self.Audit.get_count({"action": "/validate/check"}, success=False)
+            self.assertEqual(r, 1)
+
+            # get one authentication during the last second
+            r = self.Audit.get_count({"action": "/validate/check"}, success=True,
+                                     timedelta=datetime.timedelta(seconds=1))
+            self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
         res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
@@ -168,28 +176,6 @@ class AuditTestCase(MyTestCase):
             count += 1
         self.assertEqual(count, 5)
 
-    def test_05_dataframe(self):
-        self.Audit.log({"action": "action1",
-                        "serial": "s2"})
-        self.Audit.finalize_log()
-
-        # next audit entry
-        self.Audit.log({"action": "action2",
-                        "serial": "s1"})
-        self.Audit.finalize_log()
-
-        # 3rd audit entry
-        self.Audit.log({"action": "action2",
-                        "serial": "s1"})
-        self.Audit.finalize_log()
-        df = self.Audit.get_dataframe(start_time=datetime.datetime.now()
-                                      -datetime.timedelta(days=7),
-                                      end_time=datetime.datetime.now()
-                                      +datetime.timedelta(days=1))
-        series = df['serial'].value_counts()
-        self.assertEqual(series.values[0], 2)
-        self.assertEqual(series.values[1], 1)
-
     def test_06_truncate_data(self):
         long_serial = "This serial is much to long, you know it!"
         token_type = "12345678901234567890"
@@ -207,6 +193,23 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(self.Audit.audit_data.get("token_type"), None)
         self.assertEqual(self.Audit.audit_data.get("info"), True)
 
+        # check treatment of policy entries:
+        self.Audit.log({"serial": long_serial,
+                        "token_type": token_type,
+                        "policies": u"Berlin,Hamburg,München,Köln,Frankfurt am Main,"
+                                    u"Stuttgart,Düsseldorf,Dortmund,Essen,Leipzig,"
+                                    u"Bremen,Dresden,Hannover,Nürnberg,Duisburg,Bochum,"
+                                    u"Wuppertal,Bielefeld,Bonn,Münster,Karlsruhe,"
+                                    u"Mannheim,Augsburg,Wiesbaden,Gelsenkirchen,Mönchengladbach,"
+                                    u"Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
+        self.Audit._truncate_data()
+        self.assertTrue(len(self.Audit.audit_data.get("policies")) <= 255)
+        # Some cities like Stuttgart and Düsseldorf already get truncated :-)
+        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfu+,Stuttga+,Düsseld+,Dortmund,Essen,Leipzig,Bremen,"
+                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wuppert+,Bielefe+,Bonn,Münster,Karlsru+,"
+                         u"Mannheim,Augsburg,Wiesbaden,Gelsenki+,Möncheng+,Braunsch+,Kiel,Chemnitz,Aachen,Magdeburg",
+                         self.Audit.audit_data.get("policies"))
+
     def test_07_sign_non_ascii_entry(self):
         # Log a username as unicode with a non-ascii character
         self.Audit.log({"serial": "1234",
@@ -218,3 +221,18 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
+
+    def test_08_policies(self):
+        self.Audit.log({"action": "validate/check"})
+        self.Audit.add_policy(["rule1", "rule2"])
+        self.Audit.add_policy("rule3")
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule1*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")
+
+        self.Audit.add_policy(["rule4", "rule5"])
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"policies": "*rule4*"})
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule4,rule5")

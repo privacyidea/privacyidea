@@ -462,3 +462,23 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
 New in version 2.21
+
+system_documentation
+~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to export a complete system documentation
+including resolvers and realm.
+The documentation is created as restructured text.
+
+sms_gateways
+~~~~~~~~~~~~
+
+type: string
+
+Usually an SMS token sends the SMS via the SMS gateway that is system wide defined in the token settings.
+This policy takes a blank-separated list of configured SMS gateways.
+It allows the administrator to define an individual SMS gateway during token enrollment.
+
+New in version 3.0.

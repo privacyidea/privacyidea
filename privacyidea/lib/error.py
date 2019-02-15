@@ -28,6 +28,7 @@
 contains Errors and Exceptions
 """
 
+import six
 from privacyidea.lib import _
 import logging
 log = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ class ERROR:
     AUTHENTICATE_TOKEN_EXPIRED = 4305
     AUTHENTICATE_MISSING_RIGHT = 4306
     CA = 503
+    RESOURCE_NOT_FOUND = 601
     HSM = 707
     SELFSERVICE = 807
     SERVER = 903
@@ -55,6 +57,7 @@ class ERROR:
     PARAMETER = 905
 
 
+@six.python_2_unicode_compatible
 class privacyIDEAError(Exception):
 
     def __init__(self, description=u"privacyIDEAError!", id=10):
@@ -68,16 +71,10 @@ class privacyIDEAError(Exception):
     def getDescription(self):
         return self.message
 
-    def __unicode__(self):
-        pstr = u"ERR%d: %r"
-        if type(self.message) in [str, unicode]:
-            pstr = u"ERR%d: %s"
-        return pstr % (self.id, self.message)
-
     def __str__(self):
         pstr = u"ERR%d: %r"
-        if type(self.message) in [str, unicode]:
-            pstr = "ERR%d: %s"
+        if isinstance(self.message, six.string_types):
+            pstr = u"ERR%d: %s"
 
         ### if we have here unicode, we might fail with conversion error
         try:
@@ -112,7 +109,12 @@ class AuthError(privacyIDEAError):
     def __init__(self, description, id=ERROR.AUTHENTICATE, details=None):
         self.details = details
         privacyIDEAError.__init__(self, description=description, id=id)
-        
+
+
+class ResourceNotFoundError(privacyIDEAError):
+    def __init__(self, description, id=ERROR.RESOURCE_NOT_FOUND):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
 
 class PolicyError(privacyIDEAError):
     def __init__(self, description, id=ERROR.POLICY):

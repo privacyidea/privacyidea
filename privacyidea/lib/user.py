@@ -47,6 +47,7 @@ This code is tested in tests/test_lib_user.py
 
 import logging
 import traceback
+import six
 
 from .error import UserError
 from ..api.lib.utils import (getParam,
@@ -61,13 +62,11 @@ from .realm import (get_realms,
 from .config import get_from_config
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 
-
-ENCODING = 'utf-8'
-
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
+@six.python_2_unicode_compatible
 class User(object):
     """
     The user has the attributes
@@ -87,6 +86,7 @@ class User(object):
 
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
+        self.used_login = self.login
         self.realm = (realm or "").lower()
         if resolver == "**":
             resolver = ""
@@ -112,6 +112,9 @@ class User(object):
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
             self.uid = y.getUserId(self.login)
+            if y.has_multiple_loginnames:
+                # In this case the primary login might be another value!
+                self.login = y.getUsername(self.uid)
 
     def is_empty(self):
         # ignore if only resolver is set! as it makes no sense
@@ -130,17 +133,18 @@ class User(object):
         :return: True or False
         :rtype: bool
         """
-        # TODO: Should we add a check for `uid` here?
-        return (self.login == other.login) and (self.resolver ==
-                                                other.resolver) and (
-                self.realm == other.realm)
+        return isinstance(other, type(self)) and (self.login == other.login) and (
+                self.resolver == other.resolver) and (self.realm == other.realm)
 
-    def __unicode__(self):
+    def __hash__(self):
+        return hash((type(self), self.login, self.resolver, self.realm))
+
+    def __str__(self):
         ret = u"<empty user>"
         if not self.is_empty():
             login = self.login
-            if not isinstance(login, unicode):
-                login = login.decode(ENCODING)
+            if not isinstance(login, six.text_type):
+                login = login.decode('utf8')
             # Realm and resolver should always be ASCII
             conf = u''
             if self.resolver:
@@ -148,16 +152,15 @@ class User(object):
             ret = u'<{0!s}{1!s}@{2!s}>'.format(login, conf, self.realm)
         return ret
 
-    def __str__(self):
-        return unicode(self).encode('utf-8')
-
     def __repr__(self):
         ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
             self.login, self.realm, self.resolver))
         return ret
 
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.is_empty()
+
+    __nonzero__ = __bool__
     
     @log_with(log)
     def get_ordererd_resolvers(self):
@@ -278,20 +281,32 @@ class User(object):
         return userInfo
     
     @log_with(log)
-    def get_user_phone(self, phone_type='phone'):
+    def get_user_phone(self, phone_type='phone', index=None):
         """
-        Returns the phone number of a user
+        Returns the phone number or a list of phone numbers of a user.
     
         :param phone_type: The type of the phone, i.e. either mobile or
                            phone (land line)
         :type phone_type: string
+        :param index: The index of the selected phone number of list of the phones of the user.
+            If the index is given, this phone number as string is returned.
+            If the index is omitted, all phone numbers are returned.
     
         :returns: list with phone numbers of this user object
         """
         userinfo = self.info
         if phone_type in userinfo:
-            log.debug("got user phone {0!r} of type {1!r}".format(userinfo[phone_type], phone_type))
-            return userinfo[phone_type]
+            phone = userinfo[phone_type]
+            log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
+            if type(phone) == list and index is not None:
+                if len(phone) > index:
+                    return phone[index]
+                else:
+                    log.warning("userobject ({0!r}) has not that much "
+                                "phone numbers ({1!r} of {2!r}).".format(self, index, phone))
+                    return ""
+            else:
+                return phone
         else:
             log.warning("userobject ({0!r}) has no phone of type {1!r}.".format(self, phone_type))
             return ""
@@ -344,8 +359,8 @@ class User(object):
         try:
             log.info("User %r from realm %r tries to "
                      "authenticate" % (self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
+            if not isinstance(self.login, six.text_type):
+                self.login = self.login.decode('utf8')
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can verify the
             # password
@@ -409,8 +424,8 @@ class User(object):
         success = False
         try:
             log.info("User info for user {0!r}@{1!r} about to be updated.".format(self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
+            if not isinstance(self.login, six.text_type):
+                self.login = self.login.decode('utf8')
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can update the
             # user
@@ -449,8 +464,8 @@ class User(object):
         success = False
         try:
             log.info("User {0!r}@{1!r} about to be deleted.".format(self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
+            if not isinstance(self.login, six.text_type):
+                self.login = self.login.decode('utf8')
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can delete it
             if len(res) == 1:
@@ -589,16 +604,18 @@ def get_user_list(param=None, user=None):
     # as delete does not work
     for key in param:
         lval = param[key]
-        if key == "realm":
+        if key in ["realm", "resolver", "user", "username"]:
             continue
-        if key == "resolver":
-            continue
-        if key == "user":
-            # If "user" is in the param we overwrite the username
-            key = "username"
-
         searchDict[key] = lval
         log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
+
+    # update searchdict depending on existence of 'user' or 'username' in param
+    # Since 'user' takes precedence over 'username' we have to check the order
+    if 'username' in param:
+        searchDict['username'] = param['username']
+    if 'user' in param:
+        searchDict['username'] = param['user']
+    log.debug('Changed search key to username: %s.', searchDict['username'])
 
     # determine which scope we want to show
     param_resolver = getParam(param, "resolver")
@@ -692,3 +709,15 @@ def get_username(userid, resolvername):
             username = y.getUsername(userid)
     return username
 
+
+def log_used_user(user, other_text=""):
+    """
+    This creates a log message combined of a user and another text.
+    The user information is only added, if user.login != user.used_login
+
+    :param user: A user to log
+    :type user:  User object
+    :param other_text: Some additional text
+    :return: str
+    """
+    return u"logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text

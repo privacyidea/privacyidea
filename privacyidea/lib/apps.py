@@ -43,32 +43,31 @@ This only depends on the ConfigPolicy.
 """
 
 import binascii
-import base64
-
 import logging
-log = logging.getLogger(__name__)
-from urllib import quote
+
+from six.moves.urllib.parse import quote
+
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import to_byte_string, b32encode_and_unicode
 
+log = logging.getLogger(__name__)
 MAX_QRCODE_LEN = 180
 
 
 def _construct_extra_parameters(extra_data):
     """
-    Given a dictionary of extra key-value pairs (all unicode strings),
+    Given a dictionary of extra key-value pairs (all str),
     return a string that may be appended to a google authenticator / oathtoken URL.
-    Keys and values are converted to strings and urlquoted. Unicodes are converted to UTF-8.
-    :return: a string (may be empty if ``extra_data`` is empty
+    Values that are non-strings will be converted to str.
+    Keys and values are converted to UTF-8 and urlquoted.
+    :return: a string (may be empty if ``extra_data`` is empty)
     """
     extra_data_list = []
-    for key, value in extra_data.iteritems():
-        if isinstance(key, unicode):
-            key = key.encode('utf-8')
-        if isinstance(value, unicode):
-            value = value.encode('utf-8')
-        extra_data_list.append('{key}={value}'.format(key=quote(str(key)),
-                                                      value=quote(str(value))))
+    for key, value in extra_data.items():
+        encoded_key = quote(to_byte_string(key))
+        encoded_value = quote(to_byte_string(value))
+        extra_data_list.append('{key}={value}'.format(key=encoded_key, value=encoded_value))
     return ('&' if extra_data_list else '') + '&'.join(extra_data_list)
 
 
@@ -126,7 +125,7 @@ def create_google_authenticator_url(key=None, user=None,
 
     key_bin = binascii.unhexlify(key)
     # also strip the padding =, as it will get problems with the google app.
-    otpkey = base64.b32encode(key_bin).strip('=')
+    otpkey = b32encode_and_unicode(key_bin).strip('=')
 
     base_len = len("otpauth://{0!s}/?secret={1!s}&counter=1".format(tokentype, otpkey))
     allowed_label_len = MAX_QRCODE_LEN - base_len

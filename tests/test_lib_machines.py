@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib/machine.py and lib/machines/* and all
 the resolvers under it:
@@ -75,7 +76,7 @@ class MachineResolverTestCase(MyTestCase):
                                 "type.filename": "string",
                                 "desc.filename": "the filename with the "
                                                   "hosts",
-                                "pw": "secret",
+                                "pw": "secretöö",
                                 "type.pw": "password"})
         self.assertTrue(mr_obj > 0)
 
@@ -93,18 +94,18 @@ class MachineResolverTestCase(MyTestCase):
     def test_02_list_resolvers(self):
         # check if the resolver, we created is in the database
         l = get_resolver_list()
-        self.assertTrue("testresolver" in l.keys(), l.keys())
+        self.assertTrue("testresolver" in l, l)
 
         l = get_resolver_list(filter_resolver_name="testresolver")
-        self.assertTrue("testresolver" in l.keys(), l.keys())
+        self.assertTrue("testresolver" in l, l)
 
         l = get_resolver_list(filter_resolver_type="hosts")
-        self.assertTrue("testresolver" in l.keys(), l.keys())
+        self.assertTrue("testresolver" in l, l)
 
     def test_03_get_resolver_config(self):
         c = get_resolver_config("testresolver")
         self.assertEqual(c.get("filename"), HOSTSFILE)
-        self.assertEqual(c.get("pw"), "secret")
+        self.assertEqual(c.get("pw"), u"secretöö")
 
     def test_04_get_machines(self):
         # get resolver object
@@ -130,7 +131,7 @@ class MachineResolverTestCase(MyTestCase):
     def test_99_delete_resolver(self):
         delete_resolver("testresolver")
         l = get_resolver_list(filter_resolver_name="testresolver")
-        self.assertTrue("testresolver" not in l.keys(), l.keys())
+        self.assertTrue("testresolver" not in l, l)
 
 
 class BaseMachineTestCase(MyTestCase):

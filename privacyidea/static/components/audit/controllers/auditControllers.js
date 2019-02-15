@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2018-11-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ *            Remove audit based statistics
  * 2015-07-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *     Add statistics
  * 2015-01-20 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -23,14 +25,11 @@
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location, gettextCatalog) {
+                                              $location) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-    $scope.statsTime = {7: "Last Week",
-        28: "Last 4 Weeks"};
-    $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
@@ -39,15 +38,6 @@ myApp.controller("auditController", function (AuditFactory, $scope,
     if ($stateParams.user) {
         $scope.userFilter = $stateParams.user;
     }
-
-
-    // get statistics
-    $scope.getStatistics = function() {
-        AuditFactory.statistics($scope.params, function(data) {
-            $scope.stats = data.result.value;
-            //debug: console.log($scope.stats);
-        });
-    };
 
     $scope.getParams = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
@@ -59,6 +49,7 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
         $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
         $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
+        $scope.params.policies = "*" + ($scope.policiesFilter || "") + "*";
         $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
@@ -71,7 +62,18 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         $scope.getParams();
         AuditFactory.get($scope.params, function(data) {
             $scope.auditdata = data.result.value;
-            //debug: console.log($scope.auditdata);
+            // We split the policies, which come as comma separated string to an array.
+            angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
+                if ($scope.auditdata.auditdata[key].policies != null) {
+                    var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
+                    // Duplicates in a repeater are not allowed!
+                    var uniquePolnameList = [];
+                    angular.forEach(polname_list, function(pol, i){
+                        if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
+                    });
+                    $scope.auditdata.auditdata[key].policies = uniquePolnameList;
+                }
+            });
         });
     };
 
@@ -91,35 +93,18 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         });
     };
 
-    if ($location.path() === "/audit/log") {
-        $scope.getAuditList();
-    }
-
     if ($location.path() === "/audit") {
         $location.path("/audit/log");
     }
 
+    if ($location.path() === "/audit/log") {
+        $scope.getAuditList();
+    }
+
     $scope.$on("piReload", function() {
-        if ($location.path() === "/audit/stats") {
-            $scope.getStatistics();
-        } else {
+        if ($location.path() === "/audit/log") {
             $scope.getAuditList();
         }
     });
-
-    // ===========================================================
-    // ===============  Date stuff ===============================
-    // ===========================================================
-
-    $scope.openDate = function($event) {
-        $event.stopPropagation();
-        return true;
-    };
-
-    $scope.today = new Date();
-    $scope.dateOptions = {
-        formatYear: 'yy',
-        startingDay: 1
-    };
 
 });

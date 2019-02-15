@@ -135,14 +135,18 @@ class VascoTokenClass(TokenClass):
                 raise ParameterError('Expected OTP key as 496-character hex string, but length is {!s}'.format(
                     len(param['otpkey'])
                 ))
-            upd_param['otpkey'] = binascii.unhexlify(upd_param['otpkey'])
+            try:
+                upd_param['otpkey'] = binascii.unhexlify(upd_param['otpkey'])
+            except (binascii.Error, TypeError):
+                raise ParameterError('Expected OTP key as 496-character hex string, but it is malformed')
 
         TokenClass.update(self, upd_param, reset_failcount)
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         secret = self.token.get_otpkey().getKey()
-        result, new_secret = vasco_otp_check(secret, otpval)
+        # vasco_otp_check expects a bytestring, so we encode ``otpval`` to bytes (should be ASCII anyway)
+        result, new_secret = vasco_otp_check(secret, otpval.encode("utf-8"))
         # By default, setting a new OTP key resets the failcounter. In case of the VASCO token,
         # this would mean that the failcounter is reset at every authentication attempt
         # (regardless of success or failure), which must be avoided.
@@ -157,9 +161,13 @@ class VascoTokenClass(TokenClass):
                 # wrong OTP value, no log message
                 pass
             elif result == 201:
-                log.warning("A previous OTP value was used again!")
+                log.warning("VASCO token failed to authenticate, code replay attempt, previous OTP value was used again!")
             elif result == 202:
                 log.warning("Token-internal fail counter reached its maximum!")
+            elif result == -202:
+                log.warning("VASCO token failed to authenticate, response too small, user did not type his complete OTP!")
+            elif result == -205:
+                log.warning("VASCO token failed to authenticate, response not decimal!")
             else:
                 log.warning("VASCO token failed to authenticate, result: {!r}".format(result))
             return -1

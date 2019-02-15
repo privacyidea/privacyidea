@@ -10,17 +10,17 @@ The lib.resolver.py only depends on the database model.
 """
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
-import ldap3mock
+from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import mock
 import responses
 import datetime
 import uuid
+import pytest
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
-from privacyidea.lib.resolvers.SQLIdResolver import PasswordHash
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 
@@ -28,8 +28,12 @@ from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
-                                      get_resolver_object, pretestresolver)
+                                      get_resolver_object, pretestresolver,
+                                      CENSORED)
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
+from privacyidea.lib.utils import to_bytes, to_unicode
+
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -103,7 +107,13 @@ LDAPDirectory_small = [{"dn": 'cn=bob,ou=example,o=test',
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
                                 "objectGUID": objectGUIDs[1],
-                                'oid': "1"}}
+                                'oid': "1"}},
+                       {"dn": 'cn=salesman,ou=example,o=test',
+                        "attributes": {'cn': 'salesman',
+                                       'givenName': 'hans',
+                                       'sn': 'Meyer',
+                                       'mobile': ['1234', '3456'],
+                                       'objectGUID': objectGUIDs[2]}}
                        ]
 # Same as above, but with curly-braced string representation of objectGUID
 # to imitate ldap3 > 2.4.1
@@ -135,7 +145,7 @@ class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
     """
-    num_users = 11
+    num_users = 13
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -196,26 +206,30 @@ class SQLResolverTestCase(MyTestCase):
 
     def test_01_where_tests(self):
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "hans"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == hans"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname like "
-                                                              "hans"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname like hans"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertEqual(len(userlist), 1)
 
         y = SQLResolver()
-        y.loadConfig(
-            dict(self.parameters.items() + {"Where": "id > 2"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "id > 2"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertEqual(len(userlist), self.num_users - 2)
 
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "id < "
-                                                              "5"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "id < 5"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertEqual(len(userlist), 4)
 
@@ -226,44 +240,39 @@ class SQLResolverTestCase(MyTestCase):
         # SHA256 of "dunno"
         # 772cb52221f19104310cd2f549f5131fbfd34e0f4de7590c87b1d73175812607
 
-        result = y.checkPass(3, "dunno")
-        print(result)
-        assert result is True
+        self.assertTrue(y.checkPass('3', "dunno"))
         '''
         SHA1 base64 encoded of "dunno"
         Lg8DuLoXOwvPkMABDprnaTp0JOA=
         '''
-        result = y.checkPass(2, "dunno")
-        assert result is True
+        self.assertTrue(y.checkPass('2', "dunno"))
 
-        result = y.checkPass(1, "dunno")
-        assert result is True
+        self.assertTrue(y.checkPass('1', "dunno"))
 
-        result = y.checkPass(4, "dunno")
-        assert result is True
+        self.assertTrue(y.checkPass('4', "dunno"))
 
-        result = y.checkPass(5, "dunno")
-        assert result is True
+        self.assertTrue(y.checkPass('5', "dunno"))
 
         '''
         >>> PH = PasswordHash()
         >>> PH.hash_password("testpassword")
         '$P$Bz4R6lzp6VWCL0SCeTozqKHNV8DM.Q/'
         '''
-        result = y.checkPass(6, "testpassword")
-        self.assertTrue(result)
-        
-        result = y.checkPass(8, "dunno")
-        self.assertTrue(result)
-        
-        result = y.checkPass(9, "dunno")
-        self.assertTrue(result)
+        self.assertTrue(y.checkPass('6', "testpassword"))
+
+        self.assertTrue(y.checkPass('8', "dunno"))
+
+        self.assertTrue(y.checkPass('9', "dunno"))
 
         # bcrypt hashes
-        self.assertTrue(y.checkPass(10, "test"))
-        self.assertFalse(y.checkPass(10, "testw"))
-        self.assertTrue(y.checkPass(11, "test"))
-        self.assertFalse(y.checkPass(11, "testw"))
+        self.assertTrue(y.checkPass('10', "test"))
+        self.assertFalse(y.checkPass('10', "testw"))
+        self.assertTrue(y.checkPass('11', "test"))
+        self.assertFalse(y.checkPass('11', "testw"))
+        self.assertTrue(y.checkPass('12', "dunno"))
+        self.assertFalse(y.checkPass('12', "dunno2"))
+        # unknown password hash type
+        self.assertFalse(y.checkPass('13', "dunno2"))
 
     def test_03_testconnection(self):
         y = SQLResolver()
@@ -279,7 +288,7 @@ class SQLResolverTestCase(MyTestCase):
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
         # check that we actually store SSHA256
@@ -287,7 +296,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
@@ -308,42 +317,43 @@ class SQLResolverTestCase(MyTestCase):
         
     def test_06_append_where_filter(self):
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "hans and name "
-                                                              "== dampf"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == hans and name == dampf"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
         
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "hans AND name "
-                                                              "== dampf"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == hans AND name == dampf"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
         # Also allow more than one blank surrounding the "and"
         # SQLAlchemy strips the blanks in the condition
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "hans   AND name "
-                                                              "== dampf"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == hans   AND name == dampf"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
         
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "hans and name "
-                                                              "== test"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == hans and name == test"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
         
         y = SQLResolver()
-        y.loadConfig(dict(self.parameters.items() + {"Where": "givenname == "
-                                                              "chandler"}.items()))
+        d = self.parameters.copy()
+        d.update({"Where": "givenname == chandler"})
+        y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
 
-    def test_07_add_user_update_delete_ssha512(self):
+    def test_07_add_user_update_delete_hashes(self):
         y = SQLResolver()
         parameters = self.parameters.copy()
         # sha256 at first
@@ -353,33 +363,104 @@ class SQLResolverTestCase(MyTestCase):
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
-        self.assertTrue(uid > 8)
+        self.assertTrue(uid > self.num_users)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
         # check that we actually store SSHA256 at first
         stored_password = y.TABLE.filter_by(username="achmed").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
-        r = y.update_user(uid, {"username": "achmed2",
-                                "password": "test"})
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test"}))
         stored_password = y.TABLE.filter_by(username="achmed2").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
-        uname = y.getUsername(uid)
-        self.assertEqual(uname, "achmed2")
-        r = y.checkPass(uid, "test")
-        self.assertTrue(r)
+        self.assertEqual(y.getUsername(uid), "achmed2")
+        self.assertTrue(y.checkPass(uid, "test"))
 
-        # change to ssha512
+        # change to SSHA512
         y = SQLResolver()
         parameters["Password_Hash_Type"] = "SSHA512"
         y.loadConfig(parameters)
 
-        r = y.update_user(uid, {"username": "achmed2",
-                                "password": "test2"})
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test2"}))
         stored_password = y.TABLE.filter_by(username="achmed2").first().password
         self.assertTrue(stored_password.startswith("{SSHA512}"), stored_password)
         self.assertTrue(y.checkPass(uid, "test2"))
         self.assertFalse(y.checkPass(uid, "test"))
+
+        # PHPASS
+        parameters["Password_Hash_Type"] = "PHPASS"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test3"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("$P$"), stored_password)
+        self.assertTrue(y.checkPass(uid, "test3"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # SHA
+        parameters["Password_Hash_Type"] = "SHA"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test4"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("{SHA}"), stored_password)
+        self.assertTrue(y.checkPass(uid, "test4"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # SSHA
+        parameters["Password_Hash_Type"] = "SSHA"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test5"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("{SSHA}"), stored_password)
+        self.assertTrue(y.checkPass(uid, "test5"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # SHA256CRYPT
+        parameters["Password_Hash_Type"] = "SHA256CRYPT"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test6"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("$5$rounds="), stored_password)
+        self.assertTrue(y.checkPass(uid, "test6"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # SHA512CRYPT
+        parameters["Password_Hash_Type"] = "SHA512CRYPT"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test7"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("$6$rounds="), stored_password)
+        self.assertTrue(y.checkPass(uid, "test7"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # MD5CRYPT
+        parameters["Password_Hash_Type"] = "MD5CRYPT"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test8"}))
+        stored_password = y.TABLE.filter_by(username="achmed2").first().password
+        self.assertTrue(stored_password.startswith("$1$"), stored_password)
+        self.assertTrue(y.checkPass(uid, "test8"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
+        # TODO: check unknown hash type
+        parameters["Password_Hash_Type"] = "UNKNOWN"
+        y.loadConfig(parameters)
+        with pytest.raises(Exception) as e:
+            self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                                "password": "test9"}))
+        self.assertTrue(e.value.args[0].startswith("Unsupported password hashtype 'UNKNOWN'."),
+                        e.value)
+
+        # set hash type to default
+        parameters.pop("Password_Hash_Type")
+        y.loadConfig(parameters)
 
         # Now we delete the user
         y.delete_user(uid)
@@ -390,15 +471,15 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(uid)
 
         # Add a new user
-        uid = y.add_user({"username":"hans",
+        uid = y.add_user({"username": "hans",
                           "email": "hans@world.net",
                           "password": u"foo",
                           "mobile": "12345"})
         self.assertTrue(y.checkPass(uid, u"foo"))
         self.assertFalse(y.checkPass(uid, u"bar"))
-        # check that we actually store SSHA512 now
+        # check that we actually store SSHA265 now since it is the default
         stored_password = y.TABLE.filter_by(username="hans").first().password
-        self.assertTrue(stored_password.startswith("{SSHA512}"), stored_password)
+        self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
         y.delete_user(uid)
 
@@ -654,33 +735,31 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_00_testconnection(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        success, desc = \
-            pretestresolver("ldapresolver", {'LDAPURI':
-                                                 'ldap://localhost',
-                                             'LDAPBASE': 'o=test',
-                                             'BINDDN':
-                                                 'cn=manager,'
-                                                 'ou=example,'
-                                                 'o=test',
-                                             'BINDPW': 'ldaptest',
-                                             'LOGINNAMEATTRIBUTE': 'cn',
-                                             'LDAPSEARCHFILTER':
-                                                 '(cn=*)',
-                                             'USERINFO': '{ '
-                                                         '"username": "cn",'
-                                                         '"phone" '
-                                                         ': '
-                                                         '"telephoneNumber", '
-                                                         '"mobile" : "mobile"'
-                                                         ', '
-                                                         '"email" '
-                                                         ': '
-                                                         '"mail", '
-                                                         '"surname" : "sn", '
-                                                         '"givenname" : '
-                                                         '"givenName" }',
-                                             'UIDTYPE': 'DN'})
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN'}
+        success, desc = pretestresolver("ldapresolver", params)
         self.assertTrue(success, (success, desc))
+
+        # Now we test a resolver, that is already saved in the database
+        # But the UI sends the __CENSORED__ password
+        params["resolver"] = "testname1"
+        params["type"] = "ldapresolver"
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Now check the resolver again
+        params["BINDPW"] = CENSORED
+        success, desc = pretestresolver("ldapresolver", params)
+        self.assertTrue(success)
+        r = delete_resolver("testname1")
+        self.assertTrue(r)
 
     @ldap3mock.activate
     def test_01_LDAP_DN(self):
@@ -709,7 +788,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -745,8 +824,10 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        res = y.checkPass(user_id, u"bobpwééé")
+        pw = u"bobpwééé"
+        res = y.checkPass(user_id, pw)
         self.assertTrue(res)
+        self.assertTrue(y.checkPass(user_id, pw.encode('utf8')))
 
         res = y.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
@@ -777,7 +858,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("cn=bob,ou=example,o=test", user_id)
 
         rid = y.getResolverId()
-        self.assertEqual('8372b96a28ff8b4710f4aba838d5f9891ad4e381', rid)
+        self.assertEqual('2a92363e3f9da66321d9ff71b3cd0c464e990b02', rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -844,7 +925,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(len(result), len(LDAPDirectory))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -886,7 +967,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1520,12 +1601,12 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel".encode("utf-8")
+        user = u"kölbel".encode('utf8')
         user_id = y.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1537,13 +1618,13 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         uinfo = y.getUserInfo(user_id)
-        self.assertEqual(uinfo.get("username"), user)
+        self.assertEqual(to_bytes(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
-        self.assertTrue(username == "kölbel", username)
+        self.assertTrue(to_bytes(username) == user, username)
 
         res = y.checkPass(user_id, "mySecret")
         self.assertTrue(res)
@@ -1579,7 +1660,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
-        self.assertTrue(rid == "d6ce19abbc3c23e24e1cefa41cbe6f9f118613b9", rid)
+        self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
         rtype = y.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
@@ -1591,13 +1672,13 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         uinfo = y.getUserInfo(user_id)
-        self.assertEqual(uinfo.get("username"), user.encode("utf-8"))
+        self.assertEqual(to_unicode(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
-        self.assertTrue(username == user.encode("utf-8"), username)
+        self.assertTrue(to_unicode(username) == user, username)
 
         res = y.checkPass(user_id, "mySecret")
         self.assertTrue(res)
@@ -1876,7 +1957,7 @@ class LDAPResolverTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
             manager_id = y.getUserId('manager')
-        self.assertEqual(CACHE[y.getResolverId()]['getUserId'].keys(), ['manager'])
+        self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate
     def test_33_cache_disabled(self):
@@ -1912,7 +1993,37 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_called_once()
 
+    @ldap3mock.activate
+    def test_34_censored_tests(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                              '"mobile" : "mobile", "email": "mail", '
+                              '"surname" : "sn", "givenname": "givenName" }',
+                  'UIDTYPE': 'DN'}
+        success, desc = pretestresolver("ldapresolver", params)
+        self.assertTrue(success, (success, desc))
 
+        # Now we test a resolver, that is already saved in the database
+        # But the UI sends the __CENSORED__ password. The resolver password stays the same
+        params["resolver"] = "testname1"
+        params["type"] = "ldapresolver"
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Now save the resolver with a censored password
+        params["BINDPW"] = CENSORED
+        r = save_resolver(params)
+        self.assertTrue(r)
+        # Check the password in the DB. It is the originial one, not "__CENSORED__".
+        c = get_resolver_config("testname1")
+        self.assertEqual(c.get("BINDPW"), "ldaptest")
+        r = delete_resolver("testname1")
+        self.assertTrue(r)
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -2014,8 +2125,32 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 not in reso_list, reso_list)
 
+        params = {"resolver": "editableReso",
+                  "type": "ldapresolver",
+                  'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn","phone" : "telephoneNumber", '
+                              '"mobile" : "mobile", "email" : "mail", '
+                              '"surname" : "sn", "givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  'EDITABLE': True,
+                  'CACHE_TIMEOUT': 0}
+        r = save_resolver(params)
+        self.assertTrue(r)
         reso_list = get_resolver_list(editable=True)
-        self.assertTrue(len(reso_list) == 0)
+        self.assertTrue(len(reso_list) == 1)
+        r = delete_resolver("editableReso")
+        self.assertTrue(r)
+
+        reso_list = get_resolver_list(editable=False)
+        self.assertEqual(len(reso_list), 2)
+
+        reso_list = get_resolver_list(filter_resolver_type="passwdresolver")
+        self.assertTrue(len(reso_list) == 2)
 
     def test_03_get_resolver_config(self):
         reso_config = get_resolver_config(self.resolvername2)
@@ -2212,43 +2347,28 @@ class ResolverTestCase(MyTestCase):
         })
         self.assertTrue(rid > 0, rid)
         reso_list = get_resolver_list(filter_resolver_name="myLDAPres")
-        # TODO check the data
-        ui = ResolverConfig.query.filter(
-            ResolverConfig.Key=='USERINFO').first().Value
+        reso_conf = reso_list.get("myLDAPres").get("data")
+        ui = reso_conf.get("USERINFO")
         # Check that the email is NOT contained in the UI
         self.assertTrue("email" not in ui, ui)
 
-class PasswordHashTestCase(MyTestCase):
-    """
-    Test the password hashing in the SQL database
-    """
-    def test_01_get_random_bytes(self):
-        ph = PasswordHash()
-        rb = ph.get_random_bytes(10)
-        self.assertTrue(len(rb) == 10, len(rb))
-        rb = ph.get_random_bytes(100)
-        self.assertTrue(len(rb) == 100, len(rb))
-        _ph = PasswordHash(iteration_count_log2=32)
+    def test_14_censor_resolver(self):
+        reso_list = get_resolver_list()
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "ldaptest")
+        reso_list = get_resolver_list(censor=True)
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "__CENSORED__")
 
-    def test_02_checkpassword_crypt(self):
-        ph = PasswordHash()
-        r = ph.check_password("Hallo", "_xyFAfsLH.5Z.Q")
-        self.assertTrue(r)
-
-        # Drupal passwords
-        r = ph.check_password("mohsen123",
-                              "$S$D98Bg3ANTUrjVwx073djifdH1KxbyzXQaPrmbpxGOu4VXFyMClRz")
-        self.assertTrue(r)
-
-        r = ph.check_password("DevYubic",
-                              "$S$D3f83Mbqy.9SV8Ip1zo7nRauu/4HVFOXfEkfsq.8ryCdFV40DCLl")
-        self.assertTrue(r)
-
-        # blowfish crypt
-        # user http://www.passwordtool.hu/
-        r = ph.check_password("asdasdasd", "$2a$07$4MnpSZo6xAIT7PArFIcO7uc/dfkP60Nuq2KmIQH3rdjrcG9/Ef48.")
-        self.assertTrue(r)
-
-        # Wordpress password hash
-        r = ph.check_password("asdasdasd", "$P$BkFOEwjLEEQVVJqRp3wANZbH83ZnN6.")
-        self.assertTrue(r)
+    def test_15_try_to_delete_used_resolver(self):
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": "/etc/passwd",
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
+        self.assertTrue(rid > 0, rid)
+        added, failed = set_realm("myrealm", [self.resolvername1])
+        self.assertEqual(added, [self.resolvername1])
+        self.assertEqual(failed, [])
+        # Trying to delete the resolver fails.
+        self.assertRaises(Exception, delete_resolver, self.resolvername1)
+        delete_realm("myrealm")
+        delete_resolver(self.resolvername1)

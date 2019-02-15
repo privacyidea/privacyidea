@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
-#  2016-04-08 Cornelius Kölbel <cornelus@privacyidea.org>
+#  2018-12-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add censor-password functionality
+#  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             simplify repetetive unequal checks
 #
 #  Nov 27, 2014 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -43,9 +45,11 @@ webservice!
 """
 
 import logging
-from log import log_with
-from config import (get_resolver_types, get_resolver_classes)
+
+from .log import log_with
+from .config import (get_resolver_types, get_resolver_classes, update_config_object)
 from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.framework import get_request_local_store
 from ..models import (Resolver,
                       ResolverConfig)
 from ..api.lib.utils import required
@@ -54,11 +58,10 @@ from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import sanity_name_check
-from flask import g
-from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.utils import is_true
-#from privacyidea.lib.cache import cache
+import copy
 
+CENSORED = "__CENSORED__"
 log = logging.getLogger(__name__)
 
 
@@ -154,7 +157,11 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
-            value = encryptPassword(value)
+            if value == CENSORED:
+                continue
+            else:
+                value = encryptPassword(value)
+
         ResolverConfig(resolver_id=resolver_id,
                        Key=key,
                        Value=value,
@@ -171,7 +178,8 @@ def save_resolver(params):
 #@cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None,
-                      editable=None):
+                      editable=None,
+                      censor=False):
     """
     Gets the list of configured resolvers from the database
 
@@ -181,14 +189,20 @@ def get_resolver_list(filter_resolver_type=None,
     :type filter_resolver_name: basestring
     :param editable: Whether only return editable resolvers
     :type editable: bool
+    :param censor: censor sensitive data. Each resolver class decides on its own,
+        which data should be censored.
+    :type censor: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
     # We need to check if we need to update the config object
-    g.config_object = ConfigClass()
-    resolvers = g.config_object.resolver
+    config_object = update_config_object()
+    if censor:
+        resolvers = copy.deepcopy(config_object.resolver)
+    else:
+        resolvers = config_object.resolver
     if filter_resolver_type:
         reduced_resolvers = {}
-        for reso_name, reso in resolvers.iteritems():
+        for reso_name, reso in resolvers.items():
             if reso.get("type") == filter_resolver_type:
                 reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
@@ -201,18 +215,22 @@ def get_resolver_list(filter_resolver_type=None,
     if editable is not None:
         reduced_resolvers = {}
         if editable is True:
-            for reso_name, reso in resolvers.iteritems():
+            for reso_name, reso in resolvers.items():
                 check_editable = is_true(reso["data"].get("Editable")) or \
                                  is_true(reso["data"].get("EDITABLE"))
                 if check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         elif editable is False:
-            for reso_name, reso in resolvers.iteritems():
+            for reso_name, reso in resolvers.items():
                 check_editable = is_true(reso["data"].get("Editable")) or \
                                  is_true(reso["data"].get("EDITABLE"))
                 if not check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
+    if censor:
+        for reso_name, reso in resolvers.items():
+            for censor_key in reso.get("censor_keys", []):
+                reso["data"][censor_key] = CENSORED
 
     return resolvers
 
@@ -240,9 +258,10 @@ def delete_resolver(resolvername):
         reso.delete()
         ret = reso.id
     # Delete resolver object from cache
-    if 'resolver_objects' in g:
-        if g.resolver_objects.get(resolvername):
-            del(g.resolver_objects[resolvername])
+    store = get_request_local_store()
+    if 'resolver_objects' in store:
+        if resolvername in store['resolver_objects']:
+            del store['resolver_objects'][resolvername]
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
@@ -340,15 +359,17 @@ def get_resolver_object(resolvername):
         log.error("Can not find resolver with name {0!s} ".format(resolvername))
         return None
     else:
-        if 'resolver_objects' not in g:
-            g.resolver_objects = {}
-        if resolvername not in g.resolver_objects:
+        store = get_request_local_store()
+        if 'resolver_objects' not in store:
+            store['resolver_objects'] = {}
+        resolver_objects = store['resolver_objects']
+        if resolvername not in resolver_objects:
             # create the resolver instance and load the config
-            r_obj = g.resolver_objects[resolvername] = r_obj_class()
+            r_obj = resolver_objects[resolvername] = r_obj_class()
             if r_obj is not None:
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)
-        return g.resolver_objects[resolvername]
+        return resolver_objects[resolvername]
 
 @log_with(log)
 def pretestresolver(resolvertype, params):
@@ -361,6 +382,16 @@ def pretestresolver(resolvertype, params):
     :type params: dict
     :return:
     """
+    # If an already saved resolver is tested again, the password
+    # could be "__CENSORED__". In this case we use the old, saved password.
+    if params.get("resolver"):
+        old_config_list = get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
+        old_config = old_config_list.get(params.get("resolver")) or {}
+        for key in old_config.get("censor_keys", []):
+            if params.get(key) == CENSORED:
+                # Overwrite with the value from the database
+                params[key] = old_config.get("data").get(key)
+
     # determine the class by the given type
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)

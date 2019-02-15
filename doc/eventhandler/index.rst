@@ -127,7 +127,8 @@ notified.
 **otp_counter**
 
 The action is triggered, if the otp counter of a token has reached the given
-value.
+value. The value can either be an exact match or greater ('>100') or less ('<200')
+then a specified limit.
 
 The administrator can use this condition to e.g. automatically enroll a new
 paper token for the user or notify the user that nearly all OTP values of a

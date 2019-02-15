@@ -1,7 +1,7 @@
 .. _rest_monitoring:
 
-Event monitoring
-................
+Monitoring endpoints
+....................
 
 .. automodule:: privacyidea.api.monitoring
 

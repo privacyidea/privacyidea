@@ -36,12 +36,12 @@ import time
 
 from hashlib import md5
 
+from privacyidea.lib.utils import to_unicode, to_bytes
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.log import log_with
 
 
 log = logging.getLogger(__name__)
-
 
 
 class mTimeOtp(object):
@@ -79,6 +79,7 @@ class mTimeOtp(object):
         check a provided otp value
 
         :param anOtpVal: the to be tested otp value
+        :type anOtpVal: str
         :param window: the +/- window around the test time
         :param options: generic container for additional values \
                         here only used for seltest: setting the initTime
@@ -92,11 +93,10 @@ class mTimeOtp(object):
         if options is not None and type(options) == dict:
             initTime = int(options.get('initTime', 0))
 
-        if (initTime == 0):
-            otime = int(time.time() / 10)
+        if initTime == 0:
+            otime = int(time.time() // 10)
         else:
-            otime = int(initTime)
-
+            otime = initTime
 
         if self.secretObject is None:
             key = self.key
@@ -105,10 +105,9 @@ class mTimeOtp(object):
             key = self.secretObject.getKey()
             pin = self.secPin.getKey()
 
-
         for i in range(otime - window, otime + window):
-            otp = unicode(self.calcOtp(i, key, pin))
-            if unicode(anOtpVal) == otp:
+            otp = self.calcOtp(i, to_unicode(key), to_unicode(pin))
+            if anOtpVal == otp:
                 res = i
                 log.debug("otpvalue {0!r} found at: {1!r}".format(anOtpVal, res))
                 break
@@ -136,11 +135,14 @@ class mTimeOtp(object):
         calculate an otp value from counter/time, key and pin
         
         :param counter:    counter/time to be checked
+        :type counter:     int
         :param key:        the secret key
+        :type key:         str
         :param pin:        the secret pin
+        :type pin:         str
         
         :return:           the otp value
-        :rtype:            string
+        :rtype:            str
         '''
         ## ref impl from https://github.com/szimszon/motpy/blob/master/motpy
         if pin is None:
@@ -148,7 +150,6 @@ class mTimeOtp(object):
         if key is None:
             key = self.key
 
-        vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
-        motp = md5(vhash).hexdigest()[:self.digits]
-        return motp
-
+        vhash = u"{0:d}{1!s}{2!s}".format(counter, key, pin)
+        motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]
+        return to_unicode(motp)

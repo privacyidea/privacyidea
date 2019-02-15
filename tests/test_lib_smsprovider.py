@@ -22,8 +22,8 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
-import smtpmock
-import smppmock
+from . import smtpmock
+from . import smppmock
 
 
 class SMSTestCase(MyTestCase):

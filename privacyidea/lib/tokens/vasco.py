@@ -37,8 +37,7 @@ from ctypes import c_ulong
 from ctypes import c_char
 from ctypes import c_byte
 
-from flask import current_app
-
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError
 
 __all__ = ["vasco_otp_check"]
@@ -49,7 +48,7 @@ log = logging.getLogger(__name__)
 vasco_dll = None
 
 try:
-    vasco_library_path = current_app.config.get("PI_VASCO_LIBRARY")
+    vasco_library_path = get_app_config_value("PI_VASCO_LIBRARY")
     if vasco_library_path is not None: # pragma: no cover
         log.info(u"Loading VASCO library from {!s} ...".format(vasco_library_path))
         vasco_dll = CDLL(vasco_library_path)
@@ -111,7 +110,7 @@ class TDigipassBlob(Structure):
                 ("Blob", c_char * 224)]
 
 
-def vasco_verify(data, params, password, challenge="\0" * 16):
+def vasco_verify(data, params, password, challenge=b"\0" * 16):
     # Construct actual buffers in case the library writes to ``password`` or ``challenge``
     password_buffer = create_string_buffer(password)
     challenge_buffer = create_string_buffer(challenge)
@@ -129,7 +128,7 @@ def vasco_serialize(datablob):
     :param datablob: Digipass blob
     :return: bytestring
     """
-    tokendata = buffer(datablob)[:]
+    tokendata = memoryview(datablob).tobytes()
     assert len(tokendata) == 248
     return tokendata
 
@@ -152,6 +151,7 @@ def vasco_otp_check(otpkey, otp):
 
     :param data: the vasco_token_data, stored in LinOTP database as otpkey
     :param otp: the otp value
+    :type otp: bytes
     :return: tuple of (success and new_vasco_token_data)
     """
     kp = TKernelParams()

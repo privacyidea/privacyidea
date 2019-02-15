@@ -6,6 +6,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.auditmodules.base import Audit
 
 
 PWFILE = "tests/testdata/passwords"
@@ -18,8 +19,10 @@ class FakeFlaskG(object):
     audit_object = None
 
 
-class FakeAudit(object):
-    audit_data = {}
+class FakeAudit(Audit):
+
+    def __init__(self):
+        self.audit_data = {}
 
 
 class MyTestCase(unittest.TestCase):
@@ -139,10 +142,7 @@ class MyTestCase(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         cls.app_context.pop()
-        
-    def setUp(self):
-        self.authenticate()
-        
+
     def authenticate(self):
         with self.app.test_request_context('/auth',
                                            data={"username": "testadmin",
@@ -150,7 +150,7 @@ class MyTestCase(unittest.TestCase):
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             self.at = result.get("value").get("token")
 
@@ -162,7 +162,7 @@ class MyTestCase(unittest.TestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             self.at_user = result.get("value").get("token")
@@ -170,3 +170,8 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+
+class MyApiTestCase(MyTestCase):
+    def setUp(self):
+        self.authenticate()

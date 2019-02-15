@@ -58,8 +58,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img, is_true
-from privacyidea.lib.utils import generate_otpkey
+from privacyidea.lib.utils import create_img, is_true, b32encode_and_unicode
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
@@ -217,10 +216,17 @@ class HotpTokenClass(TokenClass):
             twostep_parameters = self._get_twostep_parameters()
             extra_data.update(twostep_parameters)
             response_detail.update(twostep_parameters)
+        imageurl = params.get("appimageurl")
+        if imageurl:
+            extra_data.update({"image": imageurl})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:
+            if user is not None:                               
                 try:
+                    key_bin = binascii.unhexlify(otpkey)
+                    # also strip the padding =, as it will get problems with the google app.
+                    value_b32_str = b32encode_and_unicode(key_bin).strip('=')
+                    response_detail["otpkey"]["value_b32"] = value_b32_str
                     goo_url = cr_google(key=otpkey,
                                         user=user.login,
                                         realm=user.realm,
@@ -258,7 +264,7 @@ class HotpTokenClass(TokenClass):
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
-                    
+
         return response_detail
 
     def _get_twostep_parameters(self):
@@ -598,10 +604,11 @@ class HotpTokenClass(TokenClass):
         otpval = hmac2Otp.generate(inc_counter=False)
 
         pin = self.token.get_pin()
-        combined = "{0!s}{1!s}".format(otpval, pin)
 
         if get_from_config("PrependPin") == "True":
-            combined = "{0!s}{1!s}".format(pin, otpval)
+            combined = u"{0!s}{1!s}".format(pin, otpval)
+        else:
+            combined = u"{0!s}{1!s}".format(otpval, pin)
 
         return 1, pin, otpval, combined
 
@@ -686,7 +693,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if hashlib_pol:
-                ret["hashlib"] = hashlib_pol[0]
+                ret["hashlib"] = list(hashlib_pol)[0]
 
             otplen_pol = policy_object.get_action_values(
                 action="hotp_otplen",
@@ -696,7 +703,7 @@ class HotpTokenClass(TokenClass):
                 client=client_ip,
                 unique=True)
             if otplen_pol:
-                ret["otplen"] = otplen_pol[0]
+                ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 

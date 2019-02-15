@@ -4,11 +4,12 @@ This test file tests the lib.user
 
 The lib.user.py only depends on the database model
 """
+import six
 PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
@@ -16,6 +17,8 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param)
+from . import ldap3mock
+from .test_lib_resolver import objectGUIDs, LDAPDirectory_small
 
 
 class UserTestCase(MyTestCase):
@@ -60,9 +63,12 @@ class UserTestCase(MyTestCase):
         
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        # check proper unicode() and str() handling
-        self.assertIsInstance(str(user), bytes)
-        self.assertIsInstance(unicode(user), unicode)
+        # check proper unicode() / str() handling
+        if six.PY2:
+            self.assertIsInstance(str(user), bytes)
+            self.assertIsInstance(unicode(user), unicode)
+        else:
+            self.assertIsInstance(six.text_type(user), six.text_type)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
@@ -118,7 +124,13 @@ class UserTestCase(MyTestCase):
                                            resolver=self.resolvername1,
                                            realm=self.realm1))
         self.assertTrue(len(userlist) > 10, userlist)
-        
+
+        # users with email
+        userlist = get_user_list({"realm": self.realm1,
+                                  "email": "root@testdomain.test",
+                                  "resolver": self.resolvername2})
+        self.assertTrue(len(userlist) == 0, userlist)
+
     def test_06_get_user_phone(self):
         phone = User(login="cornelius", realm=self.realm1).get_user_phone()
         self.assertTrue(phone == "+49 561 3166797", phone)
@@ -365,6 +377,51 @@ class UserTestCase(MyTestCase):
 
         # check proper unicode() and str() handling
         user_object = User(login=u"nönäscii", realm=realm)
-        self.assertEqual(unicode(user_object), u'<nönäscii.SQL1@sqlrealm>')
-        self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+        if six.PY2:
+            self.assertEqual(unicode(user_object), u'<nönäscii.SQL1@sqlrealm>')
+            self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+        else:
+            self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
+            self.assertEqual(six.text_type(user_object).encode('utf8'),
+                             b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
 
+    @ldap3mock.activate
+    def test_18_user_with_several_phones(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'o=test',
+                   'BINDDN': 'cn=manager,ou=example,o=test',
+                   'BINDPW': 'ldaptest',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(|(cn=*))',  # we use this weird search filter to get a unique resolver ID
+                   'USERINFO': '{ "username": "cn",'
+                               '"phone" : "telephoneNumber", '
+                               '"mobile" : "mobile"'
+                               ', "email" : "mail", '
+                               '"surname" : "sn", '
+                               '"givenname" : "givenName" }',
+                   'UIDTYPE': 'objectGUID',
+                   'NOREFERRALS': True,
+                   'CACHE_TIMEOUT': 0
+                   })
+        params["resolver"] = "ldapresolver"
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        (added, failed) = set_realm("ldap", ["ldapresolver"])
+        self.assertEqual(len(added), 1)
+        self.assertEqual(len(failed), 0)
+
+        u = User("salesman", "ldap")
+        # get the complete list
+        r = u.get_user_phone("mobile")
+        self.assertEqual(r, ["1234", "3456"])
+        # get the first entry
+        r = u.get_user_phone("mobile", index=0)
+        self.assertEqual(r, "1234")
+        # Index out of range
+        r = u.get_user_phone("mobile", index=2)
+        self.assertEqual(r, "")
+
+        delete_realm("ldap")
+        delete_resolver("ldapresolver")

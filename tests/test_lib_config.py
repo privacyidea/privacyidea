@@ -20,7 +20,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this)
+                                    this, get_config_object, update_config_object)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -176,9 +176,9 @@ class ConfigTestCase(MyTestCase):
 
     def test_05_machine_resolvers(self):
         (classes, types) = get_machine_resolver_class_dict()
-        self.assertTrue("hosts" in types.values(), types.values())
+        self.assertTrue("hosts" in types.values(), list(types.values()))
         self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
-                        in classes.keys(), classes)
+                        in classes, classes)
 
     def test_06_public_and_admin(self):
         # This tests the new public available config
@@ -213,3 +213,12 @@ class ConfigTestCase(MyTestCase):
         nodes = get_privacyidea_nodes()
         self.assertTrue("Node1" in nodes)
         self.assertTrue("Node2" in nodes)
+
+    def test_08_config_object(self):
+        set_privacyidea_config(key="k1", value="v1")
+        self.assertEqual(get_config_object().get_config("k1"), "v1")
+        set_privacyidea_config(key="k1", value="v2")
+        # not updated yet
+        self.assertEqual(get_config_object().get_config("k1"), "v1")
+        # updated now
+        self.assertEqual(update_config_object().get_config("k1"), "v2")

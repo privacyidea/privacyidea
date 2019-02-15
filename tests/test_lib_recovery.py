@@ -4,7 +4,7 @@ This test file tests the lib/passwordreset.py
 """
 from .base import MyTestCase
 from privacyidea.lib.smtpserver import add_smtpserver
-import smtpmock
+from . import smtpmock
 from privacyidea.lib.error import privacyIDEAError
 from privacyidea.lib.passwordreset import (create_recoverycode,
                                            check_recoverycode,
@@ -79,7 +79,7 @@ class RecoveryTestCase(MyTestCase):
         self. assertTrue(r > 0)
 
         added, failed = set_realm("register", resolvers=["register"])
-        self.assertTrue(added > 0)
+        self.assertTrue(len(added )> 0)
         self.assertEqual(len(failed), 0)
 
         # No user policy at all

@@ -46,7 +46,7 @@ from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token
+from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
@@ -167,7 +167,7 @@ def sign_response(request, response):
         if nonce:
             content["nonce"] = nonce
 
-        content["signature"] = sign_object.sign(json.dumps(content))
+        content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
         response_object.data = json.dumps(content)
     except ValueError:
         # The response.data is no JSON (but CSV or policy export)
@@ -203,7 +203,8 @@ def check_tokentype(request, response):
         user=user_object.login,
         resolver=user_object.resolver,
         realm=user_object.realm,
-        client=g.client_ip)
+        client=g.client_ip,
+        audit_data=g.audit_object.audit_data)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         # If we have tokentype policies, but
         # the tokentype is not allowed, we raise an exception
@@ -231,8 +232,9 @@ def check_serial(request, response):
     serial = content.get("detail", {}).get("serial")
     # get the serials from a policy definition
     allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
-                                                    scope=SCOPE.AUTHZ,
-                                                    client=g.client_ip)
+                                                      scope=SCOPE.AUTHZ,
+                                                      client=g.client_ip,
+                                                      audit_data=g.audit_object.audit_data)
 
     # If we can compare a serial and if we do serial matching!
     if serial and allowed_serials:
@@ -270,7 +272,8 @@ def check_tokeninfo(request, response):
                 ACTION.TOKENINFO,
                 scope=SCOPE.AUTHZ,
                 client=g.client_ip,
-                allow_white_space_in_action=True)
+                allow_white_space_in_action=True,
+                audit_data=g.audit_object.audit_data)
             for tokeninfo_pol in tokeninfos_pol:
                 try:
                     key, regex, _r = tokeninfo_pol.split("/")
@@ -314,6 +317,7 @@ def no_detail_on_success(request, response):
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
+        g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
 
@@ -342,11 +346,12 @@ def add_user_detail_to_response(request, response):
         #  details
         ui = request.User.info
         ui["password"] = ""
-        for key, value in ui.iteritems():
+        for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui
         response.data = json.dumps(content)
+        g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
     detail_pol = policy_object.get_policies(action=ACTION.ADDRESOLVERINRESPONSE,
@@ -359,6 +364,7 @@ def add_user_detail_to_response(request, response):
         content["detail"]["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
         response.data = json.dumps(content)
+        g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     return response
 
@@ -388,6 +394,7 @@ def no_detail_on_fail(request, response):
         # authentication was successful. (value=true)
         del content["detail"]
         response.data = json.dumps(content)
+        g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
 
@@ -428,9 +435,10 @@ def save_pin_change(request, response, serial=None):
         if g.logged_in_user.get("role") == ROLE.ADMIN:
             pinpol = policy_object.get_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
                                                 scope=SCOPE.ENROLL, realm=realm,
-                                                client=g.client_ip, active=True)
+                                                client=g.client_ip, active=True,
+                                                audit_data=g.audit_object.audit_data)
             if pinpol:
-                token = get_tokens(serial=serial)[0]
+                token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:
@@ -439,17 +447,18 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token = get_tokens(serial=serial)[0]
+                token = get_one_token(serial=serial)
                 token.del_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN
                 # anew.
                 pinpol = policy_object.get_action_values(
                     ACTION.CHANGE_PIN_EVERY, scope=SCOPE.ENROLL,
-                    realm=realm, client=g.client_ip, unique=True)
+                    realm=realm, client=g.client_ip, unique=True,
+                    audit_data=g.audit_object.audit_data)
                 if pinpol:
-                    token = get_tokens(serial=serial)[0]
-                    token.set_next_pin_change(diff=pinpol[0])
+                    token = get_one_token(serial=serial)
+                    token.set_next_pin_change(diff=list(pinpol)[0])
 
     # we do not modify the response!
     return response
@@ -514,34 +523,36 @@ def get_webui_settings(request, response):
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True)
+            unique=True,
+            audit_data=g.audit_object.audit_data)
         timeout_action_pol = policy_object.get_action_values(
             action=ACTION.TIMEOUT_ACTION,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True
-        )
+            unique=True,
+            audit_data=g.audit_object.audit_data)
         token_page_size_pol = policy_object.get_action_values(
             action=ACTION.TOKENPAGESIZE,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True
-        )
+            unique=True,
+            audit_data=g.audit_object.audit_data)
         user_page_size_pol = policy_object.get_action_values(
             action=ACTION.USERPAGESIZE,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True
-        )
+            unique=True,
+            audit_data=g.audit_object.audit_data)
         token_wizard_2nd = bool(role == ROLE.USER and
             policy_object.get_policies(action=ACTION.TOKENWIZARD2ND,
                                        scope=SCOPE.WEBUI,
                                        realm=realm,
                                        client=client,
-                                       active=True))
+                                       active=True,
+                                       audit_data=g.audit_object.audit_data))
         token_wizard = False
         if role == ROLE.USER:
             token_wizard_pol = policy_object.get_policies(
@@ -549,7 +560,8 @@ def get_webui_settings(request, response):
                 scope=SCOPE.WEBUI,
                 realm=realm,
                 client=client,
-                active=True
+                active=True,
+                audit_data=g.audit_object.audit_data
             )
 
             # We also need to check, if the user has not tokens assigned.
@@ -563,58 +575,80 @@ def get_webui_settings(request, response):
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         search_on_enter = policy_object.get_policies(
             action=ACTION.SEARCH_ON_ENTER,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         hide_welcome = policy_object.get_policies(
             action=ACTION.HIDE_WELCOME,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            active=True
+            active=True,
+            audit_data=g.audit_object.audit_data
         )
         hide_welcome = bool(hide_welcome)
+        hide_buttons = policy_object.get_policies(
+            action=ACTION.HIDE_BUTTONS,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True,
+        )
+        hide_buttons = bool(hide_buttons)
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
             realm=realm,
             client=client,
-            unique=True
+            unique=True,
+            audit_data=g.audit_object.audit_data
         )
+        show_seed = policy_object.get_policies(
+            action=ACTION.SHOW_SEED,
+            scope=SCOPE.WEBUI,
+            realm=realm,
+            client=client,
+            active=True,
+            audit_data=g.audit_object.audit_data
+        )
+        show_seed = bool(show_seed)
 
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
         if len(token_page_size_pol) == 1:
-            token_page_size = int(token_page_size_pol[0])
+            token_page_size = int(list(token_page_size_pol)[0])
         if len(user_page_size_pol) == 1:
-            user_page_size = int(user_page_size_pol[0])
+            user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
-            default_tokentype = default_tokentype_pol[0]
+            default_tokentype = list(default_tokentype_pol)[0]
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
-            logout_time = int(logout_time_pol[0])
+            logout_time = int(list(logout_time_pol)[0])
 
         timeout_action = DEFAULT_TIMEOUT_ACTION
         if len(timeout_action_pol) == 1:
-            timeout_action = timeout_action_pol[0]
+            timeout_action = list(timeout_action_pol)[0]
 
         policy_template_url_pol = policy_object.get_action_values(
             action=ACTION.POLICYTEMPLATEURL,
             scope=SCOPE.WEBUI,
             client=client,
-            unique=True)
+            unique=True,
+            audit_data=g.audit_object.audit_data)
 
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
         if len(policy_template_url_pol) == 1:
-            policy_template_url = policy_template_url_pol[0]
+            policy_template_url = list(policy_template_url_pol)[0]
 
         content["result"]["value"]["logout_time"] = logout_time
         content["result"]["value"]["token_page_size"] = token_page_size
@@ -627,6 +661,8 @@ def get_webui_settings(request, response):
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
         content["result"]["value"]["hide_welcome"] = hide_welcome
+        content["result"]["value"]["hide_buttons"] = hide_buttons
+        content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
         response.data = json.dumps(content)
     return response
@@ -676,7 +712,7 @@ def autoassign(request, response):
                     (res, pin, otp) = token_obj.split_pin_pass(password)
                     if res:
                         pin_check = True
-                        if autoassign_values[0] == \
+                        if list(autoassign_values)[0] == \
                                 AUTOASSIGNVALUE.USERSTORE:
                             # If the autoassign policy is set to userstore,
                             # we need to check against the userstore.
@@ -712,9 +748,12 @@ def autoassign(request, response):
                                      "info":
                                          "Token assigned via auto assignment",
                                      "serial": token_obj.token.serial})
+                                # The token was assigned by autoassign. We save the first policy name
+                                g.audit_object.add_policy(next(iter(autoassign_values.values())))
                                 break
 
     return response
+
 
 def construct_radius_response(request, response):
     """

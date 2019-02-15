@@ -30,8 +30,8 @@ The code is tested in tests/test_lib_caconnector.py.
 """
 
 import logging
-from log import log_with
-from config import (get_caconnector_types,
+from .log import log_with
+from .config import (get_caconnector_types,
                     get_caconnector_class_dict)
 from ..models import (CAConnector,
                       CAConnectorConfig)
@@ -40,7 +40,7 @@ from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
-from privacyidea.lib.utils import (sanity_name_check, get_data_from_params)
+from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -177,20 +177,14 @@ def get_caconnector_list(filter_caconnector_type=None,
 def delete_caconnector(connector_name):
     """
     delete a CA connector and all related config entries.
-    If there was no CA connector, that could be deleted, it returns -1
+    If there was no CA connector, that could be deleted, a ResourceNotFoundError is raised.
 
     :param connector_name: The name of the CA connector that is to be deleted
     :type connector_name: basestring
     :return: The Id of the resolver
     :rtype: int
     """
-    ret = -1
-
-    conn = CAConnector.query.filter_by(name=connector_name).first()
-    if conn:
-        conn.delete()
-        ret = conn.id
-    return ret
+    return fetch_one_resource(CAConnector, name=connector_name).delete()
 
 
 @log_with(log)

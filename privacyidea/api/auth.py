@@ -47,26 +47,24 @@ from flask import (Blueprint,
                    request,
                    current_app,
                    g)
-from .lib.utils import (send_result, get_all_params,
-                        verify_auth_token)
-from ..lib.crypto import geturandom, init_hsm
-from ..lib.error import AuthError, ERROR
-from ..lib.auth import verify_db_admin, db_admin_exist
 import jwt
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
+from privacyidea.lib.error import AuthError, ERROR
+from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auth import check_webui_user, ROLE
-from privacyidea.lib.user import User
-from privacyidea.lib.user import split_user
+from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
+                                  db_admin_exist)
+from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
-from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import get_client_ip
-from privacyidea.lib.config import get_from_config, SYSCONF, ConfigClass
+from privacyidea.api.lib.utils import (send_result, get_all_params,
+                                       verify_auth_token, getParam)
+from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
+from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib import _
 import logging
 
@@ -81,7 +79,7 @@ def before_request():
     """
     This is executed before the request
     """
-    g.config_object = ConfigClass()
+    update_config_object()
     request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
@@ -179,10 +177,18 @@ def get_auth_token():
     password = getParam(request.all_data, "password")
     realm = getParam(request.all_data, "realm")
     details = {}
+
+    if username is None:
+        raise AuthError(_("Authentication failure. Missing Username"),
+                        id=ERROR.AUTHENTICATE_MISSING_USERNAME)
+
     if realm:
         username = username + "@" + realm
 
-    g.audit_object.log({"user": username})
+    # Failsafe to have the user attempt in the log, whatever happens
+    # This can be overwritten later
+    g.audit_object.log({"user": username,
+                        "realm": realm})
 
     secret = current_app.secret_key
     superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
@@ -194,9 +200,6 @@ def get_auth_token():
     # "pi" = The admin or the user is authenticated against privacyIDEA
     # "remote_user" = authenticated by webserver
     authtype = "password"
-    if username is None:
-        raise AuthError(_("Authentication failure. Missing Username"),
-                        id=ERROR.AUTHENTICATE_MISSING_USERNAME)
     # Verify the password
     admin_auth = False
     user_auth = False
@@ -222,6 +225,9 @@ def get_auth_token():
         else:
             # check, if the user exists
             user_obj = User(loginname, realm)
+            g.audit_object.log({"user": user_obj.login,
+                                "realm": user_obj.realm,
+                                "info": log_used_user(user_obj)})
             if user_obj.exist():
                 user_auth = True
                 if user_obj.realm in superuser_realms:
@@ -254,7 +260,13 @@ def get_auth_token():
                                                     superuser_realms)
         if role == ROLE.ADMIN:
             g.audit_object.log({"user": "",
-                                "administrator": username})
+                                "administrator": user_obj.login,
+                                "realm": user_obj.realm,
+                                "info": log_used_user(user_obj)})
+        else:
+            g.audit_object.log({"user": user_obj.login,
+                                "realm": user_obj.realm,
+                                "info": log_used_user(user_obj)})
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"),
@@ -278,8 +290,7 @@ def get_auth_token():
                                                   g.client_ip)
     else:
         import os
-        import binascii
-        nonce = binascii.hexlify(os.urandom(20))
+        nonce = hexlify_and_unicode(os.urandom(20))
         rights = []
         menus = []
 
@@ -293,7 +304,7 @@ def get_auth_token():
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
                         "rights": rights},
-                       secret)
+                       secret, algorithm='HS256').decode('utf8')
 
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)

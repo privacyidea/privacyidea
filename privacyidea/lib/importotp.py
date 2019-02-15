@@ -51,8 +51,7 @@ import re
 import binascii
 import base64
 import cgi
-from privacyidea.lib.utils import modhex_decode
-from privacyidea.lib.utils import modhex_encode
+from privacyidea.lib.utils import modhex_decode, modhex_encode, hexlify_and_unicode, to_unicode
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
@@ -489,7 +488,7 @@ def parsePSKCdata(xml_data,
         try:
             if key.data.secret.plainvalue:
                 secret = key.data.secret.plainvalue.string
-                token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
+                token["otpkey"] = hexlify_and_unicode(base64.b64decode(secret))
             elif key.data.secret.encryptedvalue:
                 encryptionmethod = key.data.secret.encryptedvalue.encryptionmethod
                 enc_algorithm = encryptionmethod["algorithm"].split("#")[-1]
@@ -500,9 +499,11 @@ def parsePSKCdata(xml_data,
                 enc_data = enc_data.strip()
                 secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
                 if token["type"].lower() in ["hotp", "totp"]:
-                    token["otpkey"] = binascii.hexlify(secret)
+                    token["otpkey"] = hexlify_and_unicode(secret)
+                elif token["type"].lower() in ["pw"]:
+                    token["otpkey"] = to_unicode(secret)
                 else:
-                    token["otpkey"] = secret
+                    token["otpkey"] = to_unicode(secret)
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
@@ -614,7 +615,8 @@ def export_pskc(tokenobj_list, psk=None):
         type = tokenobj.type.lower()
         issuer = "privacyIDEA"
         try:
-            manufacturer = tokenobj.token.description.encode("ascii")
+            manufacturer = tokenobj.token.description.encode("ascii", "replace")
+            manufacturer = to_unicode(manufacturer)
         except UnicodeEncodeError:
             manufacturer = "deleted during export"
         serial = tokenobj.token.serial
@@ -630,9 +632,11 @@ def export_pskc(tokenobj_list, psk=None):
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
             if tokenobj.type.lower() in ["totp", "hotp"]:
-                encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, binascii.unhexlify(otpkey)))
+            elif tokenobj.type.lower() in ["pw"]:
+                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
             else:
-                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
+                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
         except TypeError:
             # Some keys might be odd string length
             continue
@@ -683,5 +687,7 @@ def export_pskc(tokenobj_list, psk=None):
             number_of_exported_tokens += 1
         except Exception as e:
             log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
+            tb = traceback.format_exc()
+            log.debug(tb)
 
-    return binascii.hexlify(psk), number_of_exported_tokens, soup
+    return hexlify_and_unicode(psk), number_of_exported_tokens, soup

@@ -30,6 +30,7 @@ from pyrad.client import Client
 from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
+from privacyidea.lib.utils import fetch_one_resource, to_bytes
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
@@ -77,7 +78,9 @@ class RADIUSServer(object):
         :param config: The RADIUS configuration
         :type config: RADIUSServer Database Model
         :param user: the radius username
+        :type user: str
         :param password: the radius password
+        :type password: str
         :return: True or False. If any error occurs, an exception is raised.
         """
         success = False
@@ -95,7 +98,7 @@ class RADIUSServer(object):
 
         srv = Client(server=config.server,
                      authport=config.port,
-                     secret=decryptPassword(config.secret),
+                     secret=to_bytes(decryptPassword(config.secret)),
                      dict=Dictionary(r_dict))
 
         # Set retries and timeout of the client
@@ -105,9 +108,10 @@ class RADIUSServer(object):
             srv.retries = config.retries
 
         req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                   User_Name=user.encode('ascii'),
+                                   User_Name=user.encode('utf-8'),
                                    NAS_Identifier=nas_identifier.encode('ascii'))
 
+        # PwCrypt encodes unicode strings to UTF-8
         req["User-Password"] = req.PwCrypt(password)
         try:
             response = srv.SendPacket(req)
@@ -187,6 +191,7 @@ def add_radius(identifier, server, secret, port=1812, description="",
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
     :param secret: The RADIUS secret
+    :type secret: str
     :param port: the radius port
     :type port: int
     :param description: Human readable description of the RADIUS server
@@ -216,6 +221,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
     :param secret: The RADIUS secret
+    :type secret: str
     :param user: the username to send
     :param password: the password to send
     :param port: the radius port
@@ -239,15 +245,10 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
 @log_with(log)
 def delete_radius(identifier):
     """
-    Delete the given server from the database
+    Delete the given server from the database.
+    If no such entry could be found, a ResourceNotFoundError is raised.
     :param identifier: The identifier/name of the server
     :return: The ID of the database entry, that was deleted
     """
-    ret = -1
-    radius = RADIUSServerDB.query.filter(RADIUSServerDB.identifier ==
-                                         identifier).first()
-    if radius:
-        radius.delete()
-        ret = radius.id
-    return ret
+    return fetch_one_resource(RADIUSServerDB, identifier=identifier).delete()
 

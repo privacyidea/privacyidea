@@ -28,21 +28,25 @@ The code is tested in tests/test_lib_subscriptions.py.
 import logging
 import datetime
 import random
-from log import log_with
+from .log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
 import functools
-from flask import current_app
+from privacyidea.lib.framework import get_app_config_value
 import os
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
+from six import PY2, string_types
 
+
+if not PY2:
+    long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
-SIGN_FORMAT = """{application}
+SIGN_FORMAT = u"""{application}
 {for_name}
 {for_address}
 {for_email}
@@ -125,10 +129,10 @@ def save_subscription(subscription):
     :type subscription: dict
     :return: True in case of success
     """
-    if type(subscription.get("date_from")) == str:
+    if isinstance(subscription.get("date_from"), string_types):
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
-    if type(subscription.get("date_till")) == str:
+    if isinstance(subscription.get("date_till"), string_types):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
 
@@ -232,14 +236,14 @@ def check_subscription(application, max_free_subscriptions=None):
         without a subscription file. If not given, the default is used.
     :return: bool
     """
-    if application.lower() in APPLICATIONS.keys():
+    if application.lower() in APPLICATIONS:
         subscriptions = get_subscription(application) or get_subscription(
             application.lower())
-        # get the number of active assigned tokens
-        active_tokens = get_tokens(assigned=True, active=True, count=True)
+        # get the number of users with active tokens
+        token_users = get_users_with_active_tokens()
         free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
         if len(subscriptions) == 0:
-            if active_tokens > free_subscriptions:
+            if token_users > free_subscriptions:
                 raise SubscriptionError(description="No subscription for your client.",
                                         application=application)
         else:
@@ -254,10 +258,10 @@ def check_subscription(application, max_free_subscriptions=None):
             else:
                 # subscription is still valid, so check the signature.
                 check_signature(subscription)
-                if active_tokens > subscription.get("num_tokens"):
+                if token_users > subscription.get("num_tokens"):
                     # subscription is exceeded
-                    raise SubscriptionError(description="Too many tokens "
-                                                        "enrolled. "
+                    raise SubscriptionError(description="Too many users "
+                                                        "with assigned tokens. "
                                                         "Subscription exceeded.",
                                             application="privacyIDEA")
 
@@ -273,10 +277,10 @@ def check_signature(subscription):
     :return: True
     """
     vendor = subscription.get("by_name").split()[0]
-    enckey = current_app.config.get("PI_ENCFILE", "/etc/privacyidea/enckey")
+    enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
-    filename = "{0!s}/{1!s}.pem".format(dirname, vendor)
+    filename = u"{0!s}/{1!s}.pem".format(dirname, vendor)
     with open(filename, "r") as file_handle:
         public = file_handle.read()
 
@@ -287,7 +291,7 @@ def check_signature(subscription):
         subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
         sign_string = SIGN_FORMAT.format(**subscription)
         RSAkey = RSA.importKey(public)
-        hashvalue = SHA256.new(sign_string).digest()
+        hashvalue = SHA256.new(sign_string.encode("utf-8")).digest()
         signature = long(subscription.get("signature") or "100")
         r = RSAkey.verify(hashvalue, (signature,))
         subscription["date_from"] = datetime.datetime.strptime(

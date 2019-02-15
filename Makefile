@@ -15,13 +15,14 @@ info:
 	@echo "make ppa          - upload to launchpad stable repo"
 	
 #VERSION=1.3~dev5
-SHORT_VERSION=2.23.4
+SHORT_VERSION=3.0~dev1
 #SHORT_VERSION=2.10~dev7
 VERSION_JESSIE=${SHORT_VERSION}
 VERSION=${SHORT_VERSION}
 LOCAL_SERIES=`lsb_release -a | grep Codename | cut -f2`
 SRCDIRS=deploy authmodules migrations doc tests tools privacyidea 
 SRCFILES=setup.py MANIFEST.in Makefile Changelog LICENSE pi-manage requirements.txt
+SIGNING_KEY=53E66E1D2CABEFCDB1D3B83E106164552E8D8149
 
 clean:
 	find . -name \*.pyc -exec rm {} \;
@@ -61,7 +62,10 @@ translate-server:
 
 pypi:
 	make doc-man
-	python setup.py sdist upload
+	rm -fr dist
+	python setup.py sdist
+	gpg --detach-sign -a --default-key ${SIGNING_KEY} dist/*.tar.gz
+	twine upload dist/*.tar.gz dist/*.tar.gz.asc
 
 epydoc:
 	#pydoctor --add-package privacyidea --make-html 

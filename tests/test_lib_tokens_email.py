@@ -1,10 +1,8 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-PWFILE = "tests/testdata/passwords"
-TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
@@ -19,8 +17,11 @@ from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib import _
 import datetime
 from dateutil.tz import tzlocal
-import smtpmock
+from . import smtpmock
 import mock
+
+PWFILE = "tests/testdata/passwords"
+TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
 
 
 class EmailTokenTestCase(MyTestCase):
@@ -399,6 +400,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098713"
@@ -421,6 +423,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
 
         r = token.check_otp("287922", options=options)
@@ -435,6 +438,7 @@ class EmailTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
+        g.audit_object = FakeAudit()
         options = {"g": g}
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098714"

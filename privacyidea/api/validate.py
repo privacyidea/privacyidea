@@ -65,7 +65,7 @@ In case if authenitcating a serial number:
 
 """
 from flask import (Blueprint, request, g, current_app)
-from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
@@ -75,7 +75,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF)
+                                    SYSCONF, update_config_object)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
@@ -89,7 +89,6 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             offline_info,
                                             add_user_detail_to_response, construct_radius_response)
 from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.config import ConfigClass
 from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
@@ -118,7 +117,7 @@ def before_request():
     """
     This is executed before the request
     """
-    g.config_object = ConfigClass()
+    update_config_object()
     request.all_data = get_all_params(request.values, request.data)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
@@ -327,7 +326,6 @@ def check():
     .. note:: All challenge response tokens have the same transaction_id in
        this case.
     """
-    #user = get_user_from_param(request.all_data)
     user = request.User
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
@@ -352,7 +350,7 @@ def check():
     else:
         result, details = check_user_pass(user, password, options=options)
 
-    g.audit_object.log({"info": details.get("message"),
+    g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": result,
                         "serial": serial or details.get("serial"),
                         "tokentype": details.get("type")})
@@ -421,7 +419,7 @@ def samlcheck():
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
-    user = get_user_from_param(request.all_data)
+    user = request.User
     password = getParam(request.all_data, "pass", required)
     options = {"g": g,
                "clientip": g.client_ip}
@@ -447,10 +445,10 @@ def samlcheck():
                                         "phone": ui.get("phone")
                                         }
             # additional attributes
-            for k, v in ui.iteritems():
+            for k, v in ui.items():
                 result_obj["attributes"][k] = v
 
-    g.audit_object.log({"info": details.get("message"),
+    g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": auth,
                         "serial": details.get("serial"),
                         "tokentype": details.get("type"),
@@ -551,7 +549,7 @@ def trigger_challenge():
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
-        "info": "triggered {0!s} challenges".format(result_obj),
+        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj))
     })
 
     return send_result(result_obj, details=details)

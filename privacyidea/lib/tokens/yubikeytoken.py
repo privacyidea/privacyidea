@@ -56,8 +56,8 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import modhex_decode
-from privacyidea.lib.utils import checksum
+from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
+                                   to_bytes, b64encode_and_unicode)
 import binascii
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.api.lib.utils import getParam
@@ -97,8 +97,8 @@ def yubico_api_signature(data, api_key):
     data_string = data_string.strip("&")
     api_key_bin = base64.b64decode(api_key)
     # generate the signature
-    h = hmac.new(api_key_bin, data_string, sha1).digest()
-    h_b64 = base64.b64encode(h)
+    h = hmac.new(api_key_bin, to_bytes(data_string), sha1).digest()
+    h_b64 = b64encode_and_unicode(h)
     return h_b64
 
 
@@ -263,15 +263,16 @@ class YubikeyTokenClass(TokenClass):
             return -4
 
         msg_bin = secret.aes_decrypt(otp_bin)
-        msg_hex = binascii.hexlify(msg_bin)
+        msg_hex = hexlify_and_unicode(msg_bin)
 
         # The checksum is a CRC-16 (16-bit ISO 13239 1st complement) that
         # occupies the last 2 bytes of the decrypted OTP value. Calculating the
         # CRC-16 checksum of the whole decrypted OTP should give a fixed
         # residual
         # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
-        log.debug("calculated checksum (61624): {0!r}".format(checksum(msg_hex)))
-        if checksum(msg_hex) != 0xf0b8:  # pragma: no cover
+        crc16 = checksum(msg_bin)
+        log.debug("calculated checksum (61624): {0!r}".format(crc16))
+        if crc16 != 0xf0b8:  # pragma: no cover
             log.warning("CRC checksum for token {0!r} failed".format(serial))
             return -3
 
@@ -450,7 +451,7 @@ h={h}
                                     prefix))
             return res, opt
 
-        (res, opt) = check_token_list(token_list, passw)
+        (res, opt) = check_token_list(token_list, passw, allow_reset_all_tokens=True)
         return res, opt
 
     @log_with(log)

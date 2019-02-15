@@ -1,10 +1,10 @@
 import json
-from .base import MyTestCase
-import smtpmock
+from .base import MyApiTestCase
+from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 
 
-class APIEventsTestCase(MyTestCase):
+class APIEventsTestCase(MyApiTestCase):
 
     def test_01_crud_events(self):
 
@@ -15,8 +15,8 @@ class APIEventsTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), [])
 
         # create an event configuration
@@ -33,8 +33,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -45,8 +45,8 @@ class APIEventsTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value")[0].get("action"), "sendmail")
             self.assertEqual(result.get("value")[0].get("conditions"),
                              {"blabla": "yes"})
@@ -67,8 +67,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -78,8 +78,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value")[0].get("action"),
                              "sendmail")
             self.assertEqual(result.get("value")[0].get("conditions"),
@@ -92,8 +92,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                result = json.loads(res.data).get("result")
-                detail = json.loads(res.data).get("detail")
+                result = json.loads(res.data.decode('utf8')).get("result")
+                detail = json.loads(res.data.decode('utf8')).get("detail")
                 self.assertEqual(result.get("value")[0].get("action"),
                                  "sendmail")
                 self.assertEqual(result.get("value")[0].get("conditions"),
@@ -107,8 +107,8 @@ class APIEventsTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
@@ -117,8 +117,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):
@@ -139,8 +139,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list event with options
@@ -150,7 +150,7 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             event_list = result.get("value")
             self.assertEqual(len(event_list), 1)
             self.assertEqual(event_list[0].get("action"), "sendmail")
@@ -166,8 +166,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
@@ -176,8 +176,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_03_available_events(self):
@@ -187,8 +187,8 @@ class APIEventsTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
@@ -199,8 +199,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertTrue("UserNotification" in result.get("value"))
 
     def test_05_get_handler_actions(self):
@@ -210,10 +210,10 @@ class APIEventsTestCase(MyTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue("sendmail" in result.get("value"))
             self.assertTrue("sendsms" in result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
 
     def test_05_get_handler_conditions(self):
         with self.app.test_request_context('/event/conditions/UserNotification',
@@ -221,10 +221,10 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue("logged_in_user" in result.get("value"))
             self.assertTrue("result_value" in result.get("value"))
-            detail = json.loads(res.data).get("detail")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
 
     def test_06_test_enable_disable(self):
         # create an event configuration
@@ -243,8 +243,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list event with options
@@ -254,7 +254,7 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             event_list = result.get("value")
             self.assertEqual(len(event_list), 1)
             self.assertEqual(event_list[0].get("active"), True)
@@ -273,7 +273,7 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             event_list = result.get("value")
             self.assertEqual(len(event_list), 1)
             self.assertEqual(event_list[0].get("active"), False)
@@ -292,7 +292,7 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             event_list = result.get("value")
             self.assertEqual(len(event_list), 1)
             self.assertEqual(event_list[0].get("active"), True)
@@ -304,8 +304,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
@@ -314,8 +314,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_07_positions(self):
@@ -326,7 +326,7 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue("post" in result.get("value"), result.get("value"))
             self.assertTrue("pre" in result.get("value"), result.get("value"))
 
@@ -345,8 +345,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -355,8 +355,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value")[0].get("position"), "post")
 
         # Update event with the position=pre
@@ -368,8 +368,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -378,8 +378,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value")[0].get("position"), "pre")
 
         # delete event
@@ -389,8 +389,8 @@ class APIEventsTestCase(MyTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
@@ -399,8 +399,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), [])
 
     @smtpmock.activate
@@ -432,8 +432,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value"), 1)
 
         self.setUp_user_realm2()
@@ -446,8 +446,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value").get("tokens"), [])
 
         # user tries to authenticate. with the pin 1234.
@@ -460,8 +460,8 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertFalse(result.get("value"))
             self.assertTrue(detail.get("serial").startswith("PIEM"))
             # This is a challenge response!
@@ -477,7 +477,7 @@ class APIEventsTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
             self.assertEqual(result.get("value").get("count"), 1)
             self.assertEqual(result.get("value").get("tokens")[0].get("tokentype"), u"email")
