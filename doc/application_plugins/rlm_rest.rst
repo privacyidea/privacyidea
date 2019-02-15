@@ -57,7 +57,7 @@ The ``authenticate`` section needs to be modified as follows::
 Assuming ``clients.conf`` has been edited accordingly, the FreeRADIUS server should already respond
 to authentication requests::
 
-   echo "User-Name=user, Password=password" | radclient -sx yourRadiusServer \
+   echo "User-Name=user, User-Password=password" | radclient -sx yourRadiusServer \
       auth topsecret
 
 
