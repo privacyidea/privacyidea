@@ -13,7 +13,6 @@ from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
-                                  get_user_info,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param)
@@ -103,11 +102,7 @@ class UserTestCase(MyTestCase):
     def test_03_get_username(self):
         username = get_username("0", self.resolvername1)
         self.assertTrue(username == "root", username)
-        
-    def test_04_get_user_info(self):
-        userinfo = get_user_info("0", self.resolvername1)
-        self.assertTrue(userinfo.get("description") == "root", userinfo)
-        
+
     def test_05_get_user_list(self):
         # all users
         userlist = get_user_list()

@@ -24,9 +24,7 @@ class TtypeAPITestCase(MyApiTestCase):
 
     def test_01_tiqr(self):
         init_token({"serial": "TIQR1",
-                    "type": "tiqr",
-                    "user": "cornelius",
-                    "realm": self.realm1})
+                    "type": "tiqr"}, User("cornelius", self.realm1))
         with self.app.test_request_context('/ttype/tiqr',
                                            method='POST',
                                            data={"action": "metadata",

@@ -893,7 +893,7 @@ class APITokenTestCase(MyApiTestCase):
         tokenobject_list = get_tokens(serial="TO001")
         token = tokenobject_list[0]
         # check the user
-        self.assertTrue(token.token.user_id == "1000", token.token)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
         # check if the TO001 has a pin
         self.assertTrue(len(token.token.pin_hash) == 64,
                         len(token.token.pin_hash))

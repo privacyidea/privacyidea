@@ -32,8 +32,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_realms_of_token,
                                    token_exist, get_token_owner, is_token_owner,
                                    get_tokenclass_info,
-                                   get_tokens_in_resolver,
-                                   get_all_token_users, get_otp,
+                                   get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
                                    gen_serial, init_token, remove_token,
                                    set_realms, set_defaults, assign_token,
@@ -229,7 +228,7 @@ class TokenTestCase(MyTestCase):
         user = get_token_owner("hotptoken")
         self.assertTrue(user.login == "cornelius", user)
         user = get_token_owner(self.serials[0])
-        self.assertTrue(user is None, user)
+        self.assertFalse(user)
         # for non existing token
         with self.assertRaises(ResourceNotFoundError):
             user = get_token_owner("does not exist")
@@ -247,27 +246,6 @@ class TokenTestCase(MyTestCase):
         info = get_tokenclass_info("hotp")
         self.assertTrue("user" in info, info)
         self.assertTrue(info.get("type") == "hotp", info)
-
-    def test_10_get_all_token_users(self):
-        tokens = get_all_token_users()
-        self.assertTrue("hotptoken" in tokens, tokens)
-        self.assertTrue(self.serials[1] not in tokens, tokens)
-
-        # A token with a user, that does not exist in the userstore anymore
-        # the uid 1000017 does not exist
-        db_token = Token("missinguser",
-                         tokentype="hotp",
-                         userid=1000017,
-                         resolver=self.resolvername1,
-                         realm=self.realm1)
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
-        tokens = get_all_token_users()
-        self.assertTrue("missinguser" in tokens, tokens)
-        self.assertTrue(tokens.get("missinguser").get("username") == '/:no '
-                                                                     'user '
-                                                                     'info:/', tokens)
-        db_token.delete()
 
     def test_11_get_otp(self):
         otp = get_otp("hotptoken")
@@ -426,8 +404,7 @@ class TokenTestCase(MyTestCase):
 
         r = assign_token(serial, user, pin="1234")
         self.assertTrue(r)
-        self.assertTrue(tokenobject.token.user_id == "1000",
-                        tokenobject.token.user_id)
+        self.assertEqual(tokenobject.token.owners.first().user_id, "1000")
 
         # token already assigned...
         self.assertRaises(TokenAdminError, assign_token, serial,
@@ -436,8 +413,7 @@ class TokenTestCase(MyTestCase):
         # unassign token
         r = unassign_token(serial)
         self.assertTrue(r)
-        self.assertTrue(tokenobject.token.user_id == "",
-                        tokenobject.token.user_id)
+        self.assertEqual(tokenobject.token.owners.first(), None)
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -635,7 +611,6 @@ class TokenTestCase(MyTestCase):
         remove_token(serial1)
         remove_token(serial2)
 
-
     def test_32_copy_token_user(self):
         serial1 = "tcopy1"
         tobject1 = init_token({"serial": serial1, "genkey": 1})
@@ -646,10 +621,8 @@ class TokenTestCase(MyTestCase):
 
         r = copy_token_user(serial1, serial2)
         assert isinstance(tobject2, TokenClass)
-        self.assertTrue(tobject2.token.user_id == "1000",
-                        tobject2.token.user_id)
-        self.assertTrue(tobject2.token.resolver == self.resolvername1)
-        self.assertTrue(tobject2.token.resolver_type == "passwdresolver")
+        self.assertEqual(tobject2.token.owners.first().user_id, "1000")
+        self.assertEqual(tobject2.token.owners.first().resolver, self.resolvername1)
 
         # check if the realms where copied:
         self.assertTrue(tobject2.get_realms() == [self.realm1])
@@ -681,9 +654,9 @@ class TokenTestCase(MyTestCase):
              'user': True, 'serial': 'lostlosttoken', 'password':
              'EC7YRgr)ss9LcE*('}
         """
-        self.assertTrue(r.get("pin") == True, r)
-        self.assertTrue(r.get("init") == True, r)
-        self.assertTrue(r.get("user") == True, r)
+        self.assertTrue(r.get("pin"), r)
+        self.assertTrue(r.get("init"), r)
+        self.assertTrue(r.get("user"), r)
         self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
         self.assertTrue(r.get("end_date") == end_date, r)
         remove_token("losttoken")

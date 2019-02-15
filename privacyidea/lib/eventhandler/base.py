@@ -410,8 +410,7 @@ class BaseEventHandler(object):
                     return False
 
             if CONDITION.TOKEN_IS_ORPHANED in conditions:
-                uid = token_obj.get_user_id()
-                orphaned = uid and not user
+                orphaned = token_obj.is_orphaned()
                 check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
                 if orphaned and check in ["True", True]:
                     res = True

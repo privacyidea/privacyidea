@@ -43,7 +43,7 @@ class TOTPTokenTestCase(MyTestCase):
     47251650    589836
     """
     
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
     
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -88,23 +88,16 @@ class TOTPTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "totp", token.type)
         
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
-        self.assertTrue(token.token.resolver_type == "passwdresolver",
-                        token.token.resolver_type)
-        self.assertTrue(token.token.resolver == self.resolvername1,
-                        token.token.resolver)
-        self.assertTrue(token.token.user_id == "1000",
-                        token.token.user_id)
+        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
         
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
         self.assertTrue(user_object.resolver == self.resolvername1,
                         user_object)
-        
-        token.set_user_identifiers(2000, self.resolvername1, "passwdresolver")
-        self.assertTrue(int(token.token.user_id) == 2000, token.token.user_id)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -152,7 +145,7 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
         
-        self.assertTrue(token.get_user_id() == token.token.user_id)
+        self.assertEqual(token.get_user_id(), token.token.owners.first().user_id)
         
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "totp",

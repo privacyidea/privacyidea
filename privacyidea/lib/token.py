@@ -79,11 +79,11 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo)
+                                MachineToken, TokenInfo, TokenOwner)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin)
-from privacyidea.lib.user import get_user_info, User
+from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
@@ -176,9 +176,9 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if assigned is not None:
         # filter if assigned or not
         if assigned is False:
-            sql_query = sql_query.filter(Token.user_id == "")
+            sql_query = sql_query.filter(Token.owners == None)
         elif assigned is True:
-            sql_query = sql_query.filter(Token.user_id != "")
+            sql_query = sql_query.filter(Token.owners)
         else:
             log.warning("assigned value not in [True, False] {0!r}".format(assigned))
 
@@ -190,23 +190,29 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
 
-    if resolver is not None and resolver.strip("*"):
+    stripped_resolver = None if resolver is None else resolver.strip("*")
+    stripped_userid = None if userid is None else userid.strip("*")
+    if stripped_userid or stripped_resolver:
+        # Join the search with the token owner
+        sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+
+    if stripped_resolver:
         # filter for given resolver
         if "*" in resolver:
             # match with "like"
-            sql_query = sql_query.filter(Token.resolver.like(resolver.replace(
+            sql_query = sql_query.filter(TokenOwner.resolver.like(resolver.replace(
                 "*", "%")))
         else:
-            sql_query = sql_query.filter(Token.resolver == resolver)
+            sql_query = sql_query.filter(TokenOwner.resolver == resolver)
 
-    if userid is not None and userid.strip("*"):
+    if stripped_userid:
         # filter for given userid
         if "*" in userid:
             # match with "like"
-            sql_query = sql_query.filter(Token.user_id.like(userid.replace(
+            sql_query = sql_query.filter(TokenOwner.user_id.like(userid.replace(
                 "*", "%")))
         else:
-            sql_query = sql_query.filter(Token.user_id == userid)
+            sql_query = sql_query.filter(TokenOwner.user_id == userid)
 
     if serial_wildcard is not None and serial_wildcard.strip("*"):
         # filter for serial
@@ -221,12 +227,14 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if user is not None and not user.is_empty():
         # filter for the rest of the user.
         if user.resolver:
-            sql_query = sql_query.filter(Token.resolver == user.resolver)
+            sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+            sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
             if type(uid) == int:
                 uid = str(uid)
-            sql_query = sql_query.filter(Token.user_id == uid)
+            sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+            sql_query = sql_query.filter(TokenOwner.user_id == uid)
 
     if active is not None:
         # Filter active or inactive tokens
@@ -717,34 +725,6 @@ def get_tokenclass_info(tokentype, section=None):
 
 
 @log_with(log)
-def get_all_token_users():
-    """
-    return a dictionary with all tokens, that are assigned to users.
-    This returns a dictionary with the key being the serial number of
-    the token and the user information as dict.
-
-    :return: dictionary of serial numbers
-    :rtype: dict
-    """
-    tokens = {}
-    tokenobject_list = get_tokens(assigned=True)
-
-    for tokenobject in tokenobject_list:
-        user_info = {}
-        if tokenobject.token.user_id and tokenobject.token.resolver:
-            user_info = get_user_info(tokenobject.token.user_id,
-                                      tokenobject.token.resolver)
-
-        if tokenobject.token.user_id and len(user_info) == 0:
-            user_info['username'] = u'/:no user info:/'
-
-        if user_info:
-            tokens[tokenobject.token.serial] = user_info
-
-    return tokens
-
-
-@log_with(log)
 def get_otp(serial, current_time=None):
     """
     This function returns the current OTP value for a given Token.
@@ -1025,7 +1005,7 @@ def init_token(param, user=None, tokenrealms=None,
     # and to the user realm
     if user and user.realm:
         realms.append(user.realm)
-    if realms:
+    if realms or user:
         # We need to save the token to the DB, otherwise the Token
         # has no id!
         db_token.save()
@@ -1041,7 +1021,7 @@ def init_token(param, user=None, tokenrealms=None,
 
     # Set the user of the token
     if user is not None and user.login != "":
-        tokenobject.set_user(user)
+        tokenobject.add_user(user)
 
     upd_params = param
     tokenobject.update(upd_params)
@@ -1105,6 +1085,8 @@ def remove_token(serial=None, user=None):
         MachineToken.query.filter(MachineToken.token_id ==
                                   tokenobject.token.id).delete()
         TokenRealm.query.filter(TokenRealm.token_id ==
+                                tokenobject.token.id).delete()
+        TokenOwner.query.filter(TokenOwner.token_id ==
                                 tokenobject.token.id).delete()
 
         tokenobject.token.delete()
@@ -1186,7 +1168,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
         err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
         raise TokenAdminError(err_message, id=1103)
 
-    tokenobject.set_user(user)
+    tokenobject.add_user(user)
     if pin is not None:
         tokenobject.set_pin(pin, encrypt=encrypt_pin)
 
@@ -1216,13 +1198,12 @@ def unassign_token(serial, user=None):
     """
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
-        tokenobject.token.user_id = ""
-        tokenobject.token.resolver = ""
-        tokenobject.token.resolver_type = ""
         tokenobject.set_pin("")
         tokenobject.set_failcount(0)
 
         try:
+            # Delete the tokenowner entry
+            TokenOwner.query.filter(TokenOwner.token_id == tokenobject.token.id).delete()
             tokenobject.save()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
@@ -1772,14 +1753,18 @@ def copy_token_user(serial_from, serial_to):
     """
     tokenobject_from = get_one_token(serial=serial_from)
     tokenobject_to = get_one_token(serial=serial_to)
-    user_id = tokenobject_from.token.user_id
-    resolver = tokenobject_from.token.resolver
-    resolver_type = tokenobject_from.token.resolver_type
-    tokenobject_to.set_user_identifiers(user_id, resolver,
-                                                resolver_type)
+
+    # For backward compatibility we remove the potentially old users from the token.
+    # TODO: Later we probably want to be able to "add" new users to a token.
+    unassign_token(serial_to)
+    TokenOwner(token_id=tokenobject_to.token.id,
+               user_id=tokenobject_from.token.first_owner.user_id,
+               realm_id=tokenobject_from.token.first_owner.realm_id,
+               resolver=tokenobject_from.token.first_owner.resolver).save()
+    # Also copy other assigned realms of the token.
     copy_token_realms(serial_from, serial_to)
-    tokenobject_to.save()
     return True
+
 
 @check_copy_serials
 def copy_token_realms(serial_from, serial_to):
