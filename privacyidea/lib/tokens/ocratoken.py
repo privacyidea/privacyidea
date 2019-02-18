@@ -206,13 +206,12 @@ class OcraTokenClass(TokenClass):
                     "addrandomchallenge")))
             attributes["original_challenge"] = challenge
             attributes["qrcode"] = create_img(challenge)
-            challenge = to_bytes(challenge)
             if options.get("hashchallenge", "").lower() == "sha256":
-                challenge = hexlify_and_unicode(hashlib.sha256(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha256(to_bytes(challenge)).digest())
             elif options.get("hashchallenge", "").lower() == "sha512":
-                challenge = hexlify_and_unicode(hashlib.sha512(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha512(to_bytes(challenge)).digest())
             elif options.get("hashchallenge"):
-                challenge = hexlify_and_unicode(hashlib.sha1(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha1(to_bytes(challenge)).digest())
 
 
         # Create the challenge in the database
