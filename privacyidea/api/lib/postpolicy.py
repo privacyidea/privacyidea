@@ -262,18 +262,17 @@ def check_tokeninfo(request, response):
     :return: A new modified response
     """
     content = json.loads(response.data)
-    policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
-    if serial:
+    tokeninfos_pol = g.policy_object.get_action_values(
+        ACTION.TOKENINFO,
+        scope=SCOPE.AUTHZ,
+        client=g.client_ip,
+        allow_white_space_in_action=True,
+        audit_data=g.audit_object.audit_data)
+    if serial and tokeninfos_pol:
         tokens = get_tokens(serial=serial)
         if len(tokens) == 1:
             token_obj = tokens[0]
-            tokeninfos_pol = policy_object.get_action_values(
-                ACTION.TOKENINFO,
-                scope=SCOPE.AUTHZ,
-                client=g.client_ip,
-                allow_white_space_in_action=True,
-                audit_data=g.audit_object.audit_data)
             for tokeninfo_pol in tokeninfos_pol:
                 try:
                     key, regex, _r = tokeninfo_pol.split("/")
