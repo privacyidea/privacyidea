@@ -12,7 +12,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.error import ServerError
 from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, wrap_job, has_job_queue
 from privacyidea.lib.queues.huey_queue import HueyQueue
-from privacyidea.lib.queues.base import QueueError, ImmediatePromise
+from privacyidea.lib.queues.base import QueueError
 from .base import OverrideConfigTestCase, MyTestCase
 
 
@@ -30,7 +30,7 @@ def my_add(a, b):
     return a + b
 
 
-@job("test.my_send_mail", fire_and_forget=True)
+@job("test.my_send_mail")
 def my_send_mail(message):
     SENDER.send_mail(message)
     return 1337
@@ -49,7 +49,7 @@ class NoQueueTestCase(OverrideConfigTestCase):
         self.assertIsInstance(JOB_COLLECTOR, JobCollector)
         self.assertDictContainsSubset({
             "test.my_add": (my_add, (), {}),
-            "test.my_send_mail": (my_send_mail, (), {"fire_and_forget": True})
+            "test.my_send_mail": (my_send_mail, (), {})
         }, JOB_COLLECTOR.jobs)
 
 
@@ -82,14 +82,11 @@ class HueyQueueTestCase(OverrideConfigTestCase):
 
     def test_03_enqueue_jobs(self):
         queue = get_job_queue()
-        promise = queue.enqueue("test.my_add", (3, 4), {})
-        self.assertIsInstance(promise, ImmediatePromise) # because of always_eager
-        self.assertEqual(promise.get(), 7)
+        queue.enqueue("test.my_add", (3, 4), {}) # No result is stored
 
         with mock.patch.object(SENDER, 'send_mail') as mock_mail:
-            promise = queue.enqueue("test.my_send_mail", ("hi",), {})
+            queue.enqueue("test.my_send_mail", ("hi",), {})
             mock_mail.assert_called_once_with("hi")
-            self.assertEqual(promise.get(), None) # it is a fire-and-forget job
 
         with self.assertRaises(QueueError):
             queue.enqueue("test.unknown", ("hi",), {})

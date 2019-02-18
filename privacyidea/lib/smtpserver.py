@@ -63,7 +63,7 @@ class SMTPServer(object):
                                      reply_to, mimetype)
 
     @staticmethod
-    @job(SEND_EMAIL_JOB_NAME, fire_and_forget=True)
+    @job(SEND_EMAIL_JOB_NAME)
     def test_email(config, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
         """

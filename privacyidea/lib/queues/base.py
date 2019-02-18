@@ -26,25 +26,9 @@ class BaseQueue(object):
     def __init__(self, options):
         self.options = options
 
-    def add_job(self, name, func, fire_and_forget=False):  # pragma: no cover
+    def add_job(self, name, func):  # pragma: no cover
         raise NotImplementedError()
 
     def enqueue(self, name, args, kwargs):  # pragma: no cover
         raise NotImplementedError()
 
-
-class Promise(object):
-    def __init__(self):
-        pass
-
-    def get(self):
-        raise NotImplementedError()  # pragma: no cover
-
-
-class ImmediatePromise(Promise):
-    def __init__(self, result):
-        Promise.__init__(self)
-        self.result = result
-
-    def get(self):
-        return self.result

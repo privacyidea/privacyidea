@@ -134,16 +134,11 @@ def wrap_job(name, result):
     """
     Wrap a job and return a function that can be used like the original function.
     The returned function will always return ``result``.
-    This is only useful for fire-and-forget jobs. Then, the returned function
-    can be used to simulate a successful execution of the job, even though
-    the job is actually executed later and asynchronously by the job queue worker.
-    In particular, this does not wait for the actual job result.
-    This may cause memory leaks for jobs that are not fire-and-forget jobs.
-    This assumes that a queue is configured! Otherwise, it will fail with a ServerError.
+    This assumes that a queue is configured! Otherwise, calling the
+    resulting function will fail with a ServerError.
     :return: a function
     """
     def caller(*args, **kwargs):
-        # We discard the promise
-        _ = get_job_queue().enqueue(name, args, kwargs)
+        get_job_queue().enqueue(name, args, kwargs)
         return result
     return caller

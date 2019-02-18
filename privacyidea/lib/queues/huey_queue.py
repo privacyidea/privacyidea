@@ -16,11 +16,11 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-import functools
+
 import logging
 from huey import RedisHuey
 
-from privacyidea.lib.queues.base import BaseQueue, QueueError, Promise, ImmediatePromise
+from privacyidea.lib.queues.base import BaseQueue, QueueError
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class HueyQueue(BaseQueue):
     def __init__(self, options):
         BaseQueue.__init__(self, options)
         # TODO: We should rethink ``store_errors=False`` -- how do we notice errors?
-        self._huey = RedisHuey(store_none=False, store_errors=False, **options)
+        self._huey = RedisHuey(result_store=False, store_none=False, store_errors=False, **options)
         self._jobs = {}
 
     @property
@@ -40,36 +40,14 @@ class HueyQueue(BaseQueue):
     def jobs(self):
         return self._jobs
 
-    def add_job(self, name, func, fire_and_forget=False):
+    def add_job(self, name, func):
         if name in self._jobs:
             raise QueueError(u"Job {!r} already exists".format(name))
-
-        @functools.wraps(func)
-        def decorated(*args, **kwargs):
-            result = func(*args, **kwargs)
-            if fire_and_forget:
-                return None
-            else:
-                return result
-        self._jobs[name] = self._huey.task(name=name)(decorated)
+        self._jobs[name] = self._huey.task(name=name)(func)
 
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:
             raise QueueError(u"Unknown job: {!r}".format(name))
         log.info(u"Sending {!r} job to the queue ...".format(name))
-        # If always_eager is True, huey will immediately return the result,
-        # which we need to wrap in an ImmediatePromise object
-        result = self._jobs[name](*args, **kwargs)
-        if self._huey.always_eager:
-            return ImmediatePromise(result)
-        else:
-            return HueyPromise(result)
-
-
-class HueyPromise(Promise):
-    def __init__(self, wrapper):
-        Promise.__init__(self)
-        self.wrapper = wrapper
-
-    def get(self):
-        return self.wrapper.get()
+        # We do not care about results
+        self._jobs[name](*args, **kwargs)
