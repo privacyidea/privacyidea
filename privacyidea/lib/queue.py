@@ -22,6 +22,7 @@ import logging
 from flask import current_app
 
 from privacyidea.lib.error import ServerError
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.utils import get_module_class
 
 log = logging.getLogger(__name__)
@@ -70,8 +71,10 @@ class JobCollector(object):
         This function should only be called once per process.
         :param app: privacyIDEA app
         """
-        if "job_queue" in app.config:
-            raise RuntimeError("App already has a job queue: {!r}".format(app.config["job_queue"]))
+        with app.app_context():
+            store = get_app_local_store()
+        if "job_queue" in store:
+            raise RuntimeError("App already has a job queue: {!r}".format(store["job_queue"]))
         package_name, class_name = app.config[JOB_QUEUE_CLASS].rsplit(".", 1)
         queue_class = get_module_class(package_name, class_name)
         # Extract configuration from app config: All options starting with PI_JOB_QUEUE_
@@ -81,7 +84,7 @@ class JobCollector(object):
                 options[k[len(JOB_QUEUE_OPTION_PREFIX):].lower()] = v
         job_queue = queue_class(options)
         log.info(u"Created a new job queue: {!r}".format(job_queue))
-        app.config["job_queue"] = job_queue
+        store["job_queue"] = job_queue
         for name, (func, args, kwargs) in self._jobs.items():
             job_queue.register_job(name, func, *args, **kwargs)
 
@@ -116,7 +119,7 @@ def has_job_queue():
     """
     Return a boolean describing whether the current app has an app queue configured.
     """
-    return "job_queue" in current_app.config
+    return "job_queue" in get_app_local_store()
 
 
 def get_job_queue():
@@ -124,8 +127,9 @@ def get_job_queue():
     Get the job queue registered with the current app. If no job queue is configured,
     raise a ServerError.
     """
-    if "job_queue" in current_app.config:
-        return current_app.config["job_queue"]
+    store = get_app_local_store()
+    if "job_queue" in store:
+        return store["job_queue"]
     else:
         raise ServerError("privacyIDEA has no job queue configured!")
 
