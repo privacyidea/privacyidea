@@ -142,6 +142,7 @@ def upgrade():
         op.drop_column('token', 'resolver_type')
 
     except Exception as exx:
+        session.rollback()
         print("Failed to migrate token assignment data!")
         print (exx)
 
