@@ -44,7 +44,7 @@ class FakeQueue(BaseQueue):
     def reset(self):
         self.enqueued_jobs = []
 
-    def add_job(self, name, func):
+    def register_job(self, name, func):
         if name in self._jobs:
             raise QueueError(u"Job {!r} already exists".format(name))
         self._jobs[name] = func

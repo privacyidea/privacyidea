@@ -23,12 +23,35 @@ class QueueError(Exception):
 
 
 class BaseQueue(object):
+    """
+    A queue object represents an external job queue and is configured with
+    a dictionary of options.
+    It allows to register jobs, which are Python functions that may
+    be executed outside of the request lifecycle. Every job is identified by
+    a unique job name.
+    It then allows to delegate (or "enqueue") an invocation of a job
+    (which is identified by its job name) to the external job queue.
+    Currently, the queue only supports fire-and-forget jobs, i.e.
+    jobs without any return value.
+    """
     def __init__(self, options):
         self.options = options
 
-    def add_job(self, name, func):  # pragma: no cover
+    def register_job(self, name, func):  # pragma: no cover
+        """
+        Add a job to the internal registry.
+        :param name: Unique job name
+        :param func: Function that should be executed by an external job queue
+        """
         raise NotImplementedError()
 
     def enqueue(self, name, args, kwargs):  # pragma: no cover
+        """
+        Schedule an invocation of a job on the external job queue.
+        :param name: Unique job name
+        :param args: Tuple of positional arguments
+        :param kwargs: Dictionary of keyword arguments
+        :return: None
+        """
         raise NotImplementedError()
 

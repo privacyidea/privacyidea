@@ -78,7 +78,7 @@ class HueyQueueTestCase(OverrideConfigTestCase):
         self.assertEqual(queue.huey.name, "myqueuename")
         self.assertFalse(queue.huey.store_none)
         with self.assertRaises(QueueError):
-            queue.add_job("test.my_add", lambda x: x)
+            queue.register_job("test.my_add", lambda x: x)
 
     def test_03_enqueue_jobs(self):
         queue = get_job_queue()

@@ -49,13 +49,13 @@ class JobCollector(object):
     def jobs(self):
         return self._jobs
 
-    def add_job(self, name, func, args, kwargs):
+    def register_job(self, name, func, args, kwargs):
         """
         Register a job with the collector.
         :param name: unique name of the job
         :param func: function of the job
-        :param args: arguments passed to the job queue's ``add_job`` method
-        :param kwargs: keyword arguments passed to the job queue's ``add_job`` method
+        :param args: arguments passed to the job queue's ``register_job`` method
+        :param kwargs: keyword arguments passed to the job queue's ``register_job`` method
         """
         if name in self._jobs:
             raise RuntimeError("Duplicate jobs: {!r}".format(name))
@@ -83,7 +83,7 @@ class JobCollector(object):
         log.info(u"Created a new job queue: {!r}".format(job_queue))
         app.config["job_queue"] = job_queue
         for name, (func, args, kwargs) in self._jobs.items():
-            job_queue.add_job(name, func, *args, **kwargs)
+            job_queue.register_job(name, func, *args, **kwargs)
 
 
 #: A singleton is fine here, because it is only used at
@@ -95,10 +95,10 @@ JOB_COLLECTOR = JobCollector()
 def job(name, *args, **kwargs):
     """
     Decorator to mark a job to be collected by the job collector.
-    All arguments are passed to ``BaseQueue.add_job``.
+    All arguments are passed to ``register_job``.
     """
     def decorator(f):
-        JOB_COLLECTOR.add_job(name, f, args, kwargs)
+        JOB_COLLECTOR.register_job(name, f, args, kwargs)
         return f
     return decorator
 
