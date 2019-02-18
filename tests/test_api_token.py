@@ -297,10 +297,14 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             error = result.get("error")
-            self.assertEqual(error.get("message"),
-                             "ERR1103: Token already assigned to user "
-                             "User(login='cornelius', realm='realm1', "
-                             "resolver='resolver1')")
+#            self.assertEqual(error.get("message"),
+#                             "ERR1103: Token already assigned to user "
+#                             "User(login='cornelius', realm='realm1', "
+#                             "resolver='resolver1')")
+            self.assertRegexpMatches(error.get('message'),
+                                     r"ERR1103: Token already assigned to user "
+                                     r"User\(login=u?'cornelius', "
+                                     r"realm=u?'realm1', resolver=u?'resolver1'\)")
 
         # Now the user tries to assign a foreign token
         with self.app.test_request_context('/auth',

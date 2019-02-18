@@ -1009,8 +1009,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP1"
         pin = "chalresp1"
@@ -1068,8 +1067,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP2"
         pin = "chalresp2"
@@ -1128,8 +1126,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP3"
         pin = "chalresp3"
@@ -1967,7 +1964,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             # HTTP 204 status code signals a successful authentication
             self.assertEqual(res.status_code, 204)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with wrong PIN
         with self.app.test_request_context('/validate/radiuscheck',
@@ -1976,7 +1973,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "wrong"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with an unknown user
         # here, we get an ordinary JSON response

@@ -632,11 +632,11 @@ def export_pskc(tokenobj_list, psk=None):
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
             if tokenobj.type.lower() in ["totp", "hotp"]:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, binascii.unhexlify(otpkey)))
+                encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
             elif tokenobj.type.lower() in ["pw"]:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
         except TypeError:
             # Some keys might be odd string length
             continue
