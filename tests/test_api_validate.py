@@ -2144,27 +2144,6 @@ class ValidateAPITestCase(MyApiTestCase):
         # Configure the SMS Gateway
         self.setup_sms_gateway()
         from privacyidea.lib.config import set_privacyidea_config
-        post_url = "http://smsgateway.com/sms_send_api.cgi"
-        success_body = "ID 12345"
-
-        identifier = "myGW"
-        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
-                          ".HttpSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options={"HTTP_METHOD": "POST",
-                                     "URL": post_url,
-                                     "RETURN_SUCCESS": "ID",
-                                     "text": "{otp}",
-                                     "phone": "{phone}"})
-        self.assertTrue(id > 0)
-        # set config sms.identifier = myGW
-        r = set_privacyidea_config("sms.identifier", identifier)
-        self.assertTrue(r in ["insert", "update"])
-        responses.add(responses.POST,
-                      post_url,
-                      body=success_body)
-
-
 
         self.setUp_user_realms()
         user = User("cornelius", self.realm1)
