@@ -2090,8 +2090,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                                     "token is locked"), id=1007)
 
     for tokenobject in tokenobject_list:
-        log.debug("Found user with loginId {0!r}: {1!r}".format(
-                  tokenobject.user, tokenobject.get_serial()))
+        if log.isEnabledFor(logging.DEBUG):
+            # Avoid a SQL query triggered by ``tokenobject.user`` in case
+            # the log level is not DEBUG
+            log.debug("Found user with loginId {0!r}: {1!r}".format(
+                      tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response
