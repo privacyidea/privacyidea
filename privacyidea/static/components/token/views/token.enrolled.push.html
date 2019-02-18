@@ -10,6 +10,8 @@
         </p>
         <img width="{{ qrCodeWidth }}"
              ng-src="{{ enrolledToken.pushurl.img }}"/>
+        <!-- TODO: Remove this -->
+        <b>{{ enrolledToken.pushurl.value }}</b>
     </div>
 
     <div class="col-sm-4 pull-right" ng-show="enrolledToken.rollout_state === 'clientwait'">

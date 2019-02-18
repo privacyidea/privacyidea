@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 
 
 class PUSH_ACTION(object):
-    FIREBASE_CONFIG = "firebase_configuration"
+    FIREBASE_CONFIG = "push_firebase_configuration"
 
 
 @log_with(log)
@@ -246,6 +246,8 @@ class PushTokenClass(TokenClass):
             # We are in step 1:
             upd_param["2stepinit"] = 1
             self.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
+            # We also store the firebase config, that was used during the enrollment.
+            self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, param.get(PUSH_ACTION.FIREBASE_CONFIG))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
 
@@ -281,6 +283,9 @@ class PushTokenClass(TokenClass):
             if len(firebase_configs) != 1:
                 raise ParameterError("Unknown Firebase configuration!")
             fb_options = firebase_configs[0].option_dict
+            for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
+                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
+                extra_data[k] = fb_options.get(k)
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
                                            user=user.login,

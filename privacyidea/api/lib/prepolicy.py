@@ -1283,7 +1283,7 @@ def pushtoken_add_config(request, action):
                 audit_data=g.audit_object.audit_data,
                 unique=True)
         if len(firebase_config) == 1:
-            request.all_data["firebase_config"] = list(firebase_config)[0]
+            request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
         else:
             raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
 

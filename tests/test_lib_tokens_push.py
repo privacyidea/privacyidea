@@ -10,6 +10,7 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
+from privacyidea.lib.token import get_tokens
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -57,7 +58,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
 
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test",
+                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                             FIREBASE_CONFIG.TTL: 10,
                             FIREBASE_CONFIG.API_KEY: "1",
                             FIREBASE_CONFIG.APP_ID: "2",
@@ -98,11 +99,11 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertNotEqual(res.status_code,  200)
             error = json.loads(res.data.decode("utf8")).get("result").get("error")
-            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: firebase_configuration")
+            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test",
+                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                             FIREBASE_CONFIG.TTL: 10,
                             FIREBASE_CONFIG.API_KEY: "1",
                             FIREBASE_CONFIG.APP_ID: "2",
@@ -170,4 +171,17 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(detail.get("rollout_state"), "enrolled")
             # Now the smartphone gets a public key from the server
             self.assertTrue(detail.get("public_key").startswith("-----BEGIN RSA PUBLIC KEY-----"))
+            pubkey = detail.get("public_key")
 
+            # Now check, what is in the token in the database
+            toks = get_tokens(serial=serial)
+            self.assertEqual(len(toks), 1)
+            token_obj = toks[0]
+            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            tokeninfo = token_obj.get_tokeninfo()
+            self.assertEqual(tokeninfo.get("public_key_smartphone"), u"pubkey")
+            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            # The private key of the server is stored in the otpkey
+            self.assertEqual(tokeninfo.get("public_key_server"), pubkey)
+            # The token should also contain the firebase config
+            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")

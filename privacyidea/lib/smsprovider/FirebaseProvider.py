@@ -34,10 +34,10 @@ log = logging.getLogger(__name__)
 class FIREBASE_CONFIG:
     REGISTRATION_URL = "registration URL"
     TTL = "time to live"
-    PROJECT_ID = "project ID"
-    PROJECT_NUMBER = "project number"
-    APP_ID = "app ID"
-    API_KEY = "API key"
+    PROJECT_ID = "projectid"
+    PROJECT_NUMBER = "projectnumber"
+    APP_ID = "appid"
+    API_KEY = "apikey"
 
 
 class FirebaseProvider(ISMSProvider):
