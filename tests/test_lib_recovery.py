@@ -35,7 +35,7 @@ class RecoveryTestCase(MyTestCase):
                     "mobile": "mobile"}'
     }
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_init_users(self):
         self.setUp_user_realms()
@@ -79,7 +79,7 @@ class RecoveryTestCase(MyTestCase):
         self. assertTrue(r > 0)
 
         added, failed = set_realm("register", resolvers=["register"])
-        self.assertTrue(added > 0)
+        self.assertTrue(len(added )> 0)
         self.assertEqual(len(failed), 0)
 
         # No user policy at all

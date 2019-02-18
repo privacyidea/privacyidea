@@ -234,7 +234,7 @@ Then stop the FreeRADIUS and run it in debug mode as user root::
 
 Now you can send requests to the RADIUS server like this::
 
-   echo 'User-Name=realm3\\cornelius, Password=test' | radclient -s \
+   echo 'User-Name=realm3\\cornelius, User-Password=test' | radclient -s \
       127.0.0.1 auth test
 
 Of course you need to replace the IP of your RADIUS server and the RADIUS

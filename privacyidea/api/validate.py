@@ -71,7 +71,7 @@ from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp)
+                                   check_otp, create_challenges_from_tokens)
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -532,7 +532,6 @@ def trigger_challenge():
     """
     user = request.User
     serial = getParam(request.all_data, "serial")
-    result_obj = 0
     details = {"messages": [],
                "transaction_ids": []}
     options = {"g": g,
@@ -540,21 +539,10 @@ def trigger_challenge():
                "user": user}
 
     token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False)
-    for token_obj in token_objs:
-        if "challenge" in token_obj.mode:
-            # If this is a challenge response token, we create a challenge
-            success, return_message, transactionid, attributes = \
-                token_obj.create_challenge(options=options)
-            if attributes:
-                details["attributes"] = attributes
-            if success:
-                result_obj += 1
-                details.get("transaction_ids").append(transactionid)
-                # This will write only the serial of the token that was processed last to the audit log
-                g.audit_object.log({
-                    "serial": token_obj.token.serial,
-                })
-            details.get("messages").append(return_message)
+    # Only use the tokens, that are allowed to do challenge response
+    chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
+    create_challenges_from_tokens(chal_resp_tokens, details, options)
+    result_obj = len(details.get("multi_challenge"))
 
     g.audit_object.log({
         "user": user.login,

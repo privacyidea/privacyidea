@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the lib/machine.py and lib/machines/* and all
 the resolvers under it:
@@ -75,7 +76,7 @@ class MachineResolverTestCase(MyTestCase):
                                 "type.filename": "string",
                                 "desc.filename": "the filename with the "
                                                   "hosts",
-                                "pw": "secret",
+                                "pw": "secretöö",
                                 "type.pw": "password"})
         self.assertTrue(mr_obj > 0)
 
@@ -104,7 +105,7 @@ class MachineResolverTestCase(MyTestCase):
     def test_03_get_resolver_config(self):
         c = get_resolver_config("testresolver")
         self.assertEqual(c.get("filename"), HOSTSFILE)
-        self.assertEqual(c.get("pw"), "secret")
+        self.assertEqual(c.get("pw"), u"secretöö")
 
     def test_04_get_machines(self):
         # get resolver object

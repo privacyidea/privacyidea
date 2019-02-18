@@ -72,7 +72,7 @@ import ssl
 import os.path
 
 import traceback
-
+from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
 from privacyidea.lib.crypto import urandom, geturandom
@@ -206,7 +206,7 @@ def cache(func):
                 # Clean up the cache in the current resolver and the current function
                 _to_be_deleted = []
                 try:
-                    for user, cached_result in CACHE[resolver_id].get(func.func_name).items():
+                    for user, cached_result in CACHE[resolver_id].get(func.__name__).items():
                         if now > cached_result.get("timestamp") + tdelta:
                             _to_be_deleted.append(user)
                 except RuntimeError:
@@ -215,23 +215,23 @@ def cache(func):
                     pass
                 for user in _to_be_deleted:
                     try:
-                        del CACHE[resolver_id][func.func_name][user]
+                        del CACHE[resolver_id][func.__name__][user]
                     except KeyError:
                         pass
                 del _to_be_deleted
 
             # get the portion of the cache for this very LDAP resolver
-            r_cache = CACHE.get(resolver_id).get(func.func_name)
+            r_cache = CACHE.get(resolver_id).get(func.__name__)
             entry = r_cache.get(args[0])
             if entry and now < entry.get("timestamp") + tdelta:
-                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.func_name))
+                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
                 return entry.get("value")
 
         f_result = func(self, *args, **kwds)
 
         if self.cache_timeout > 0:
             # now we cache the result
-            CACHE[resolver_id][func.func_name][args[0]] = {
+            CACHE[resolver_id][func.__name__][args[0]] = {
                 "value": f_result,
                 "timestamp": now}
 
@@ -275,6 +275,7 @@ class IdResolver (UserIdResolver):
         self.start_tls = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
+        self.serverpool = None
 
     def checkPass(self, uid, password):
         """
@@ -296,11 +297,12 @@ class IdResolver (UserIdResolver):
         else:
             bind_user = self._getDN(uid)
 
-        server_pool = self.get_serverpool(self.uri, self.timeout,
-                                          get_info=ldap3.NONE,
-                                          tls_context=self.tls_context,
-                                          rounds=self.serverpool_rounds,
-                                          exhaust=self.serverpool_skip)
+        if not self.serverpool:
+            self.serverpool = self.get_serverpool(self.uri, self.timeout,
+                                                  get_info=ldap3.NONE,
+                                                  tls_context=self.tls_context,
+                                                  rounds=self.serverpool_rounds,
+                                                  exhaust=self.serverpool_skip)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -310,7 +312,7 @@ class IdResolver (UserIdResolver):
             if not bind_user or len(bind_user) < 1:
                 raise Exception("No valid user. Empty bind_user.")
             l = self.create_connection(authtype=self.authtype,
-                                       server=server_pool,
+                                       server=self.serverpool,
                                        user=bind_user,
                                        password=password,
                                        receive_timeout=self.timeout,
@@ -442,13 +444,14 @@ class IdResolver (UserIdResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = self.get_serverpool(self.uri, self.timeout,
+            if not self.serverpool:
+                self.serverpool = self.get_serverpool(self.uri, self.timeout,
                                               get_info=self.get_info,
                                               tls_context=self.tls_context,
                                               rounds=self.serverpool_rounds,
                                               exhaust=self.serverpool_skip)
             self.l = self.create_connection(authtype=self.authtype,
-                                            server=server_pool,
+                                            server=self.serverpool,
                                             user=self.binddn,
                                             password=self.bindpw,
                                             receive_timeout=self.timeout,
@@ -474,8 +477,8 @@ class IdResolver (UserIdResolver):
         self._bind()
 
         if self.uidtype.lower() == "dn":
-            # encode utf8, so that also german ulauts work in the DN
-            self.l.search(search_base=to_utf8(userId),
+            # encode utf8, so that also german umlauts work in the DN
+            self.l.search(search_base=userId,
                           search_scope=self.scope,
                           search_filter=u"(&" + self.searchfilter + u")",
                           attributes=list(self.userinfo.values()))
@@ -666,12 +669,15 @@ class IdResolver (UserIdResolver):
         Returns the resolver Id
         This should be an Identifier of the resolver, preferable the type
         and the name of the resolver.
+
+        :return: the id of the resolver
+        :rtype: str
         """
         s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
                                            self.searchfilter,
                                            sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
-        return r
+        return r.decode('utf8')
 
     @staticmethod
     def getResolverClassType():
@@ -749,6 +755,9 @@ class IdResolver (UserIdResolver):
             self.tls_context = None
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        # The configuration might have changed. We reset the serverpool
+        self.serverpool = None
+        self.i_am_bound = False
 
         return self
 
@@ -1047,39 +1056,16 @@ class IdResolver (UserIdResolver):
                     # so catch the TypeError exception if we get the wrong
                     # variable type
                     try:
-                        pw_hash = self._create_ssha(value[1][0])
+                        pw_hash = ldap_salted_sha1.hash(value[1][0])
                         value[1][0] = pw_hash
                         ldap_attributes[self.map.get(fieldname)] = value
                     except TypeError as e:
-                        pw_hash = self._create_ssha(value)
+                        pw_hash = ldap_salted_sha1.hash(value)
                         ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
                     ldap_attributes[self.map.get(fieldname)] = value
 
         return ldap_attributes
-
-    @staticmethod
-    def _create_ssha(password):
-        """
-        Encodes the given password as a base64 SSHA hash
-        :param password: string to hash
-        :type password: basestring
-        :return: string encoded as a base64 SSHA hash
-        """
-
-        salt = geturandom(4)
-
-        # Hash password string and append the salt
-        sha_hash = hashlib.sha1(password)
-        sha_hash.update(salt)
-
-        # Create a base64 encoded string
-        digest_b64 = binascii.b2a_base64(sha_hash.digest() + salt).strip()
-
-        # Tag it with SSHA
-        tagged_digest = '{{SSHA}}{}'.format(digest_b64)
-
-        return tagged_digest
 
     def _create_ldap_modify_changes(self, attributes, uid):
         """

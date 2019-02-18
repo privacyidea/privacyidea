@@ -1,12 +1,12 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, ACTION
 
 
 
 
 
-class APIPolicyTestCase(MyTestCase):
+class APIPolicyTestCase(MyApiTestCase):
     def test_00_get_policy(self):
         with self.app.test_request_context('/policy/',
                                            method='GET',

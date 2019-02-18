@@ -40,6 +40,8 @@ from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.config import get_from_config, SYSCONF
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -74,7 +76,7 @@ def single_page_application():
     external_links = current_app.config.get("PI_EXTERNAL_LINKS", True)
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
-    browser_lang = request.accept_languages.best_match(["en", "de"])
+    browser_lang = request.accept_languages.best_match(["en", "de", "de-DE"], default="en").split("-")[0]
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
@@ -83,8 +85,8 @@ def single_page_application():
     # Depending on displaying the realm dropdown, we fill realms or not.
     policy_object = PolicyClass()
     realms = ""
-    client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    client_ip = get_client_ip(request,
+                              get_from_config(SYSCONF.OVERRIDECLIENT))
     realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
                                                 scope=SCOPE.WEBUI,
                                                 client=client_ip,
@@ -136,6 +138,17 @@ def single_page_application():
     else:
         customization_baseline_file = "templates/baseline.html"
 
+    login_text = policy_object.get_action_values(
+        allow_white_space_in_action=True,
+        action=ACTION.LOGIN_TEXT,
+        scope=SCOPE.WEBUI,
+        client=client_ip, unique=True
+    )
+    if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
+        login_text = list(login_text)[0]
+    else:
+        login_text = ""
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -149,5 +162,6 @@ def single_page_application():
                            customization_baseline_file=customization_baseline_file,
                            realms=realms,
                            external_links=external_links,
+                           login_text=login_text,
                            logo=logo)
 

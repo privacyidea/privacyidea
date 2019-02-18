@@ -39,15 +39,15 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import traceback
-log = logging.getLogger(__name__)
 
 from .UserIdResolver import UserIdResolver
 import yaml
 import requests
 import base64
 from six.moves.urllib.parse import urlencode
+from privacyidea.lib.utils import to_bytes, to_unicode
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class IdResolver (UserIdResolver):
@@ -242,7 +242,7 @@ class IdResolver (UserIdResolver):
             success = True
         except Exception as exx:
             log.error("Failed to retrieve users: {0!s}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc(exx)))
+            log.debug("{0!s}".format(traceback.format_exc()))
             desc = "failed to retrieve users: {0!s}".format(exx)
             
         return success, desc
@@ -295,7 +295,7 @@ class IdResolver (UserIdResolver):
     @staticmethod
     def get_access_token(server=None, client=None, secret=None):
 
-        auth = base64.encodestring(client + ':' + secret)
+        auth = to_unicode(base64.b64encode(to_bytes(client + ':' + secret)))
 
         url = "{0!s}/oauth/token?grant_type=client_credentials".format(server)
         resp = requests.get(url,

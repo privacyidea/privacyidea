@@ -43,9 +43,9 @@ from .mOTP import mTimeOtp
 from privacyidea.lib.apps import create_motp_url
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, is_true
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import generate_otpkey, is_true
+from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.decorators import check_token_locked
 import traceback
 import logging
@@ -187,7 +187,7 @@ class MotpTokenClass(TokenClass):
         validate the token otp against a given otpvalue
 
         :param anOtpVal: the to be verified otpvalue
-        :type anOtpVal:  string
+        :type anOtpVal:  str
         :param counter: the counter state, that should be verified
         :type counter: int
         :param window: the counter +window, which should be checked

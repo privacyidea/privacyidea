@@ -40,16 +40,14 @@ from __future__ import (
     absolute_import, division, unicode_literals
 )
 
-DIRECTORY = "tests/testdata/tmp_directory"
-import six
+from passlib.hash import ldap_salted_sha1
 from ast import literal_eval
 import uuid
 from ldap3.utils.conv import escape_bytes
-import hashlib
 import ldap3
 import re
 import pyparsing
-import codecs
+import six
 
 try:
     from six import cStringIO as BufferIO
@@ -59,6 +57,9 @@ except ImportError:
 import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
+from privacyidea.lib.utils import to_bytes
+
+DIRECTORY = "tests/testdata/tmp_directory"
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -67,6 +68,7 @@ def wrapper%(signature)s:
     with ldap3mock:
         return func%(funcargs)s
 """
+
 
 def _convert_objectGUID(item):
     item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
@@ -357,9 +359,7 @@ class Connection(object):
         for entry in candidates:
             dn = entry.get("dn")
 
-            if not attribute in entry.get("attributes") \
-                or not dn.endswith(search_base):
-
+            if attribute not in entry.get("attributes") or not dn.endswith(search_base):
                 continue
 
             values_from_directory = entry.get("attributes").get(attribute)
@@ -390,7 +390,7 @@ class Connection(object):
                 else:
                     # The value, which we compare is unicode, so we convert
                     # the values_from_directory to unicode rather than str.
-                    if type(values_from_directory) == str:
+                    if isinstance(values_from_directory, bytes):
                         values_from_directory = values_from_directory.decode(
                             "utf-8")
                     elif type(values_from_directory) == int:
@@ -660,7 +660,7 @@ class Connection(object):
         self.result = dict()
 
         try:
-            if type(search_filter) == str:
+            if isinstance(search_filter, bytes):
                 # We need to convert to unicode otherwise pyparsing will not
                 # find the u"ö"
                 search_filter = search_filter.decode("utf-8")
@@ -733,24 +733,6 @@ class Ldap3Mock(object):
 
         return "FakeServerObject"
 
-    @staticmethod
-    def _check_password(user_supplied_pw, reference_pw):
-        # Strip the label from the string
-        label_removed = reference_pw[6:]
-
-        # Decode base64 and strip salt
-        digest_salt = codecs.decode(label_removed, 'base64')
-        reference_pw_sha = digest_salt[:20]
-        # Strip off the salt for use encoding the user supplied password
-        salt = digest_salt[20:]
-
-        # Encode the user supplied password so we can compare the two
-        user_supplied_sha = hashlib.sha1(user_supplied_pw)
-        user_supplied_sha.update(salt)
-
-        return user_supplied_sha.digest() == reference_pw_sha
-
-
     def _on_Connection(self, server, user, password,
                        auto_bind=None, client_strategy=None,
                        authentication=None, check_names=None,
@@ -777,15 +759,10 @@ class Ldap3Mock(object):
             if entry.get("dn") == user:
                 pw = entry.get("attributes").get("userPassword")
                 # password can be unicode
-                try:
-                    password = password.encode("utf-8")
-                except UnicodeDecodeError:
-                    # already encoded.
-                    pass
-                if pw == password:
+                if to_bytes(pw) == to_bytes(password):
                     correct_password = True
                 elif pw.startswith('{SSHA}'):
-                    correct_password = self._check_password(password, pw)
+                    correct_password = ldap_salted_sha1.verify(password, pw)
                 else:
                     correct_password = False
         self.con_obj = Connection(self.directory)

@@ -18,59 +18,59 @@
     <translate>{{ auditdata.count }} entries found.</translate>
 
     <div class="table-responsive">
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped" id="tableauditlog">
             <thead>
             <tr>
                 <th translate>number</th>
-                <th><translate>date</translate>
+                <th class="pifilter"><translate>date</translate>
                     <pi-filter ng-model="dateFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>action</translate>
+                <th class="pifilter"><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>success</translate>
+                <th class="pifilter"><translate>success</translate>
                     <pi-filter ng-model="successFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>action detail</translate>
+                <th class="pifilter"><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>serial</translate>
+                <th class="pifilter"><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
                                ng-change="getAuditList()"></pi-filter>
                 </th>
-                <th><translate>token type</translate>
+                <th class="pifilter"><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>administrator</translate>
+                <th class="pifilter"><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>user</translate>
+                <th class="pifilter"><translate>user</translate>
                     <pi-filter ng-model="userFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>realm</translate>
+                <th class="pifilter"><translate>realm</translate>
                     <pi-filter ng-model="realmFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>resolver</translate>
+                <th class="pifilter"><translate>resolver</translate>
                     <pi-filter ng-model="resolverFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>policies</translate>
+                <th class="pifilter"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>client</translate>
+                <th class="pifilter"><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th><translate>info</translate>
+                <th class="pifilter"><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
                                ng-change="getAuditList()">
                 </th>
@@ -78,7 +78,7 @@
                 <th translate>missing_line</th>
                 <th translate>clearance</th>
                 <th translate>log level</th>
-                <th><translate>privacyidea server</translate>
+                <th class="pifilter"><translate>privacyidea server</translate>
                     <pi-filter ng-model="serverFilter"
                                ng-change="getAuditList()">
                 </th>

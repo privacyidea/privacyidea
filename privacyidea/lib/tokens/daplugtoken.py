@@ -26,6 +26,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.crypto import hexlify_and_unicode
+
 __doc__ = """
 This is the token module for the daplug token. It behaves like HOTP,
 but uses another OTP format/mapping.
@@ -38,6 +40,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib import _
 optional = True
 required = False
@@ -55,15 +58,19 @@ MAPPING = {"b": "0",
            "i": "7",
            "j": "8",
            "k": "9"}
-         
-         
+
+REVERSE_MAPPING = {v: k for k, v in MAPPING.items()}
+
+
 def _daplug2digit(daplug_otp):
     hex_otp = ""
     for i in daplug_otp:
         digit = MAPPING.get(i)
         hex_otp += digit
-    otp = binascii.unhexlify(hex_otp)
+    # we know the result is a string of digits
+    otp = to_unicode(binascii.unhexlify(hex_otp))
     return otp
+
 
 def _digi2daplug(normal_otp):
     """
@@ -71,13 +78,13 @@ def _digi2daplug(normal_otp):
 
     This function is only used for testing purposes
     :param normal_otp:
+    :type normal_otp: bytes or str
     :return:
     """
     daplug_otp = ""
-    hex_otp = binascii.hexlify(normal_otp)
-    REVERSE_MAP = {v: k for k,v in MAPPING.items()}
+    hex_otp = hexlify_and_unicode(to_bytes(normal_otp))
     for i in hex_otp:
-        daplug_otp += REVERSE_MAP.get(i)
+        daplug_otp += REVERSE_MAPPING.get(i)
     return daplug_otp
          
 class DaplugTokenClass(HotpTokenClass):

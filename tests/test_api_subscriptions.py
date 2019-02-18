@@ -1,10 +1,10 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 SUB_FILE = "tests/testdata/test.sub"
 
 
-class APISubscriptionsTestCase(MyTestCase):
+class APISubscriptionsTestCase(MyApiTestCase):
 
     def test_01_crud_subscription(self):
         # Load Subscription file

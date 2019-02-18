@@ -62,6 +62,8 @@ angular.module("privacyideaApp")
     $scope.piLogo = obj.val();
     obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
     $scope.hasJobQueue = obj.val() == "True";
+    obj = angular.element(document.querySelector('#LOGIN_TEXT'));
+    $scope.piLoginText= obj.val();
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {

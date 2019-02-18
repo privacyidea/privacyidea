@@ -9,10 +9,10 @@ import mock
 from dateutil.parser import parse as parse_timestamp
 
 from privacyidea.lib.periodictask import TASK_MODULES
-from tests.base import MyTestCase
+from tests.base import MyApiTestCase
 
 
-class APIPeriodicTasksTestCase(MyTestCase):
+class APIPeriodicTasksTestCase(MyApiTestCase):
     @contextmanager
     def mock_task_module(self):
         """

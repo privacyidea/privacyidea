@@ -82,7 +82,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import generate_otpkey
+from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
 from privacyidea.lib.token import get_tokens
@@ -93,7 +93,6 @@ from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _
-from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
 
@@ -189,16 +188,14 @@ class TiqrTokenClass(OcraTokenClass):
         # We should only initialize such a token, when the user is
         # immediately given in the init process, since the token on the
         # smartphone needs to contain a userId.
-        user_object = get_user_from_param(param, required)
-        self.set_user(user_object)
+        if not self.user:
+            # The user and realms should have already been set in init_token()
+            raise ParameterError("Missing parameter: {0!r}".format("user"), id=905)
 
         ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
         OCRASuite(ocrasuite)
         self.add_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
-        # We have to set the realms here, since the token DB object does not
-        # have an ID before TokenClass.update.
-        self.set_realms([user_object.realm])
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):

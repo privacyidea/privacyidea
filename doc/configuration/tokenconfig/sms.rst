@@ -49,3 +49,13 @@ SMS OTP token but also for the event notifications. (See
 For configuring SMS Gateways read :ref:`sms_gateway_config`.
 I this token configuration you can select on defined gateway to send SMS for
 authentication.
+
+Configuration Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Concurrent Challenges**
+
+The config entry ``sms.concurrent_challenges`` will save the sent OTP
+value in the challenge database. This way several challenges can be open at the same
+time. The user can answer the challenges in an arbitrary order.
+Set this to a true value.

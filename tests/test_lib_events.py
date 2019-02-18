@@ -15,7 +15,7 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
-from privacyidea.models import EventCounter
+from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
@@ -751,7 +751,7 @@ class FederationEventTestCase(MyTestCase):
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
         # No Response data, since this method is not supported
-        self.assertEqual(options.get("response").data, "")
+        self.assertEqual(options.get("response").data, b"")
 
     @responses.activate
     def test_02_forward_admin_request(self):
@@ -1986,10 +1986,11 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
+        # Assign a non-existing user to the token
         tok = init_token({"serial": serial, "type": "spass"})
-        tok.token.resolver = self.resolvername1
-        tok.token.resolver_type = "passwd"
-        tok.token.user_id = "123981298"
+        r = TokenOwner(token_id=tok.token.id, resolver=self.resolvername1,
+                       realmname=self.realm1, user_id="123981298").save()
+        self.assertTrue(r > 0)
 
         env = builder.get_environ()
         req = Request(env)
@@ -2020,7 +2021,14 @@ class UserNotificationTestCase(MyTestCase):
         # Token is orphaned, but we check for non-orphaned tokens.
         self.assertEqual(r, False)
 
-        tok.set_user(User("cornelius", "realm1"))
+        # Unassign any user from this token - we need to do this, since the token can have more users.
+        unassign_token(tok.token.serial)
+        self.assertEqual(tok.token.owners.first(), None)
+        # Set an existing user for the token.
+        tok.add_user(User("cornelius", "realm1"))
+        self.assertEqual(tok.token.owners.first().user_id, "1000")
+        self.assertEqual(tok.token.owners.first().realm.name, "realm1")
+
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {
@@ -2341,6 +2349,8 @@ class UserNotificationTestCase(MyTestCase):
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
+        # Create admin authentication token
+        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",
@@ -2488,6 +2498,28 @@ class UserNotificationTestCase(MyTestCase):
         )
         # The counter of the token is 0
         self.assertEqual(r, True)
+
+        # match if counter is >100
+        tok.token.count = 101
+        tok.token.save()
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: ">100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "<100"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
         remove_token(serial)
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 import responses
 
 
-class PrivacyIDEAServerTestCase(MyTestCase):
+class PrivacyIDEAServerTestCase(MyApiTestCase):
     """
     test the api.privacyideaserver endpoints
     """

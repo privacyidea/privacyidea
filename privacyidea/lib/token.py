@@ -63,31 +63,30 @@ This is the middleware/glue between the HTTP API and the database
 import traceback
 import string
 import datetime
-import binascii
 import os
 import logging
 from six import string_types
 
 from sqlalchemy import (and_, func)
+
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import generate_password, is_true, BASE58
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo)
-from privacyidea.lib.config import get_from_config
+                                MachineToken, TokenInfo, TokenOwner)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                    get_token_types,
+                                    get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin)
-from privacyidea.lib.user import get_user_info, User
+from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_user_does_not_exist,
                                               auth_user_has_no_token,
@@ -177,9 +176,9 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if assigned is not None:
         # filter if assigned or not
         if assigned is False:
-            sql_query = sql_query.filter(Token.user_id == "")
+            sql_query = sql_query.filter(Token.owners == None)
         elif assigned is True:
-            sql_query = sql_query.filter(Token.user_id != "")
+            sql_query = sql_query.filter(Token.owners)
         else:
             log.warning("assigned value not in [True, False] {0!r}".format(assigned))
 
@@ -191,23 +190,29 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
 
-    if resolver is not None and resolver.strip("*"):
+    stripped_resolver = None if resolver is None else resolver.strip("*")
+    stripped_userid = None if userid is None else userid.strip("*")
+    if stripped_userid or stripped_resolver:
+        # Join the search with the token owner
+        sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+
+    if stripped_resolver:
         # filter for given resolver
         if "*" in resolver:
             # match with "like"
-            sql_query = sql_query.filter(Token.resolver.like(resolver.replace(
+            sql_query = sql_query.filter(TokenOwner.resolver.like(resolver.replace(
                 "*", "%")))
         else:
-            sql_query = sql_query.filter(Token.resolver == resolver)
+            sql_query = sql_query.filter(TokenOwner.resolver == resolver)
 
-    if userid is not None and userid.strip("*"):
+    if stripped_userid:
         # filter for given userid
         if "*" in userid:
             # match with "like"
-            sql_query = sql_query.filter(Token.user_id.like(userid.replace(
+            sql_query = sql_query.filter(TokenOwner.user_id.like(userid.replace(
                 "*", "%")))
         else:
-            sql_query = sql_query.filter(Token.user_id == userid)
+            sql_query = sql_query.filter(TokenOwner.user_id == userid)
 
     if serial_wildcard is not None and serial_wildcard.strip("*"):
         # filter for serial
@@ -222,12 +227,14 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if user is not None and not user.is_empty():
         # filter for the rest of the user.
         if user.resolver:
-            sql_query = sql_query.filter(Token.resolver == user.resolver)
+            sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+            sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
             if type(uid) == int:
                 uid = str(uid)
-            sql_query = sql_query.filter(Token.user_id == uid)
+            sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
+            sql_query = sql_query.filter(TokenOwner.user_id == uid)
 
     if active is not None:
         # Filter active or inactive tokens
@@ -273,12 +280,52 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     return sql_query
 
 
+def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, user=None,
+                                   serial_wildcard=None, active=None, resolver=None, rollout_state=None,
+                                   revoked=None, locked=None, tokeninfo=None, maxfail=None, psize=1000):
+    """
+    Fetch chunks of ``psize`` tokens that match the filter criteria from the database and generate
+    lists of token objects.
+    See ``get_tokens`` for information on the arguments.
+
+    Note that individual lists may contain less than ``psize`` elements if
+    a token entry has an invalid type.
+
+    :param psize: Maximum size of chunks that are fetched from the database
+    :return: This is a generator that generates non-empty lists of token objects.
+    """
+    main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
+                                         assigned=assigned, user=user,
+                                         serial_wildcard=serial_wildcard,
+                                         active=active, resolver=resolver,
+                                         rollout_state=rollout_state,
+                                         revoked=revoked, locked=locked,
+                                         tokeninfo=tokeninfo, maxfail=maxfail).order_by(Token.id)
+    # Fetch the first ``psize`` tokens
+    sql_query = main_sql_query.limit(psize)
+    while True:
+        entries = sql_query.all()
+        if entries:
+            token_objects = []
+            for token in entries:
+                token_obj = create_tokenclass_object(token)
+                if isinstance(token_obj, TokenClass):
+                    token_objects.append(token_obj)
+            yield token_objects
+            if len(entries) < psize:
+                break
+            # Fetch the next ``psize`` tokens, starting with the ID *after* the ID of the last returned token.
+            # ``token`` is defined because we have ensured that ``entries`` has at least one entry.
+            sql_query = main_sql_query.filter(Token.id > token.id).limit(psize)
+        else:
+            break
+
 @log_with(log)
 #@cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
                serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
-               maxfail=None, psize=None, page=1):
+               maxfail=None):
     """
     (was getTokensOfType)
     This function returns a list of token objects of a
@@ -324,14 +371,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     :type tokeninfo: dict
     :param maxfail: If only tokens should be returned, which failcounter
         reached maxfail
-    :param psize: The number of returned tokens can be restricted by using the parameter psize.
-        Pagination then is used.
-    :type psize: int
-    :param page: If pagination is used, this is the page to get
-    :type page: int
-
     :return: A list of tokenclasses (lib.tokenclass).
-        In case of pagination a tuple of count, prev, next, token_list
     :rtype: list
     """
     token_list = []
@@ -353,25 +393,6 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     # Decide, what we are supposed to return
     if count is True:
         ret = sql_query.count()
-    elif psize:
-        # We return a paginated list of token objects.
-        pagination = sql_query.paginate(page, per_page=psize,
-                                        error_out=False)
-        count = pagination.total
-        prev = None
-        if pagination.has_prev:
-            prev = page - 1
-        next = None
-        if pagination.has_next:
-            next = page + 1
-        for token in pagination.items:
-            tokenobject = create_tokenclass_object(token)
-            if isinstance(tokenobject, TokenClass):
-                # A database token, that has a non existing type, will
-                # return None, and not a TokenClass. We do not want to
-                # add None to our list
-                token_list.append(tokenobject)
-        ret = count, prev, next, token_list
     else:
         # Return a simple, flat list of tokenobjects
         for token in sql_query.all():
@@ -704,34 +725,6 @@ def get_tokenclass_info(tokentype, section=None):
 
 
 @log_with(log)
-def get_all_token_users():
-    """
-    return a dictionary with all tokens, that are assigned to users.
-    This returns a dictionary with the key being the serial number of
-    the token and the user information as dict.
-
-    :return: dictionary of serial numbers
-    :rtype: dict
-    """
-    tokens = {}
-    tokenobject_list = get_tokens(assigned=True)
-
-    for tokenobject in tokenobject_list:
-        user_info = {}
-        if tokenobject.token.user_id and tokenobject.token.resolver:
-            user_info = get_user_info(tokenobject.token.user_id,
-                                      tokenobject.token.resolver)
-
-        if tokenobject.token.user_id and len(user_info) == 0:
-            user_info['username'] = u'/:no user info:/'
-
-        if user_info:
-            tokens[tokenobject.token.serial] = user_info
-
-    return tokens
-
-
-@log_with(log)
 def get_otp(serial, current_time=None):
     """
     This function returns the current OTP value for a given Token.
@@ -867,9 +860,11 @@ def gen_serial(tokentype=None, prefix=None):
     generate a serial for a given tokentype
 
     :param tokentype: the token type prefix is done by a lookup on the tokens
+    :type tokentype: str
     :param prefix: A prefix to the serial number
+    :type prefix: str
     :return: serial number
-    :rtype: string
+    :rtype: str
     """
     serial_len = int(get_from_config("SerialLength") or 8)
 
@@ -878,7 +873,7 @@ def gen_serial(tokentype=None, prefix=None):
         num_str = '{:04d}'.format(_tokennum)
         h_len = serial_len - len(num_str)
         if h_len > 0:
-            h_serial = binascii.hexlify(os.urandom(h_len)).upper()[0:h_len]
+            h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
         return "{0!s}{1!s}{2!s}".format(_prefix, num_str, h_serial)
 
     if not tokentype:
@@ -887,14 +882,14 @@ def gen_serial(tokentype=None, prefix=None):
         prefix = get_token_prefix(tokentype.lower(), tokentype.upper())
 
     # now search the number of tokens of tokenytype in the token database
-    tokennum = Token.query.filter(Token.tokentype == u'' + tokentype).count()
+    tokennum = Token.query.filter(Token.tokentype == tokentype).count()
 
     # Now create the serial
     serial = _gen_serial(prefix, tokennum)
 
     # now test if serial already exists
     while True:
-        numtokens = Token.query.filter(Token.serial == u'' + serial).count()
+        numtokens = Token.query.filter(Token.serial == serial).count()
         if numtokens == 0:
             # ok, there is no such token, so we're done
             break
@@ -1010,7 +1005,7 @@ def init_token(param, user=None, tokenrealms=None,
     # and to the user realm
     if user and user.realm:
         realms.append(user.realm)
-    if realms:
+    if realms or user:
         # We need to save the token to the DB, otherwise the Token
         # has no id!
         db_token.save()
@@ -1026,7 +1021,7 @@ def init_token(param, user=None, tokenrealms=None,
 
     # Set the user of the token
     if user is not None and user.login != "":
-        tokenobject.set_user(user)
+        tokenobject.add_user(user)
 
     upd_params = param
     tokenobject.update(upd_params)
@@ -1090,6 +1085,8 @@ def remove_token(serial=None, user=None):
         MachineToken.query.filter(MachineToken.token_id ==
                                   tokenobject.token.id).delete()
         TokenRealm.query.filter(TokenRealm.token_id ==
+                                tokenobject.token.id).delete()
+        TokenOwner.query.filter(TokenOwner.token_id ==
                                 tokenobject.token.id).delete()
 
         tokenobject.token.delete()
@@ -1171,7 +1168,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
         err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
         raise TokenAdminError(err_message, id=1103)
 
-    tokenobject.set_user(user)
+    tokenobject.add_user(user)
     if pin is not None:
         tokenobject.set_pin(pin, encrypt=encrypt_pin)
 
@@ -1201,13 +1198,12 @@ def unassign_token(serial, user=None):
     """
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
-        tokenobject.token.user_id = ""
-        tokenobject.token.resolver = ""
-        tokenobject.token.resolver_type = ""
         tokenobject.set_pin("")
         tokenobject.set_failcount(0)
 
         try:
+            # Delete the tokenowner entry
+            TokenOwner.query.filter(TokenOwner.token_id == tokenobject.token.id).delete()
             tokenobject.save()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
@@ -1656,7 +1652,7 @@ def set_description(serial, description, user=None):
     :param serial: The serial number of the token (exact)
     :type serial: basestring
     :param description: The description for the token
-    :type description: int
+    :type description: str
     :param user: The owner of the tokens, which should be modified
     :type user: User object
     :return: number of modified tokens
@@ -1757,14 +1753,18 @@ def copy_token_user(serial_from, serial_to):
     """
     tokenobject_from = get_one_token(serial=serial_from)
     tokenobject_to = get_one_token(serial=serial_to)
-    user_id = tokenobject_from.token.user_id
-    resolver = tokenobject_from.token.resolver
-    resolver_type = tokenobject_from.token.resolver_type
-    tokenobject_to.set_user_identifiers(user_id, resolver,
-                                                resolver_type)
+
+    # For backward compatibility we remove the potentially old users from the token.
+    # TODO: Later we probably want to be able to "add" new users to a token.
+    unassign_token(serial_to)
+    TokenOwner(token_id=tokenobject_to.token.id,
+               user_id=tokenobject_from.token.first_owner.user_id,
+               realm_id=tokenobject_from.token.first_owner.realm_id,
+               resolver=tokenobject_from.token.first_owner.resolver).save()
+    # Also copy other assigned realms of the token.
     copy_token_realms(serial_from, serial_to)
-    tokenobject_to.save()
     return True
+
 
 @check_copy_serials
 def copy_token_realms(serial_from, serial_to):
@@ -1985,6 +1985,59 @@ def check_user_pass(user, passw, options=None):
     return res, reply_dict
 
 
+def create_challenges_from_tokens(token_list, reply_dict, options=None):
+    """
+    Get a list of active tokens and create challenges for these tokens.
+    The reply_dict is modified accordingly. The transaction_id and
+    the messages are added to the reply_dict.
+
+    :param token_list: The list of the token objects, that can do challenge response
+    :param reply_dict: The dictionary that is passed to the API response
+    :param options: Additional options. Passed from the upper layer
+    :return: None
+    """
+    options = options or {}
+    reply_dict["multi_challenge"] = []
+    transaction_id = None
+    message_list = []
+    for token_obj in token_list:
+        # Check if the max auth is succeeded
+        if token_obj.check_all(message_list):
+            r_chal, message, transaction_id, attributes = \
+                token_obj.create_challenge(
+                    transactionid=transaction_id, options=options)
+            # Add the reply to the response
+            message_list.append(message)
+            if r_chal:
+                challenge_info = {}
+                challenge_info["transaction_id"] = transaction_id
+                challenge_info["attributes"] = attributes
+                challenge_info["serial"] = token_obj.token.serial
+                challenge_info["type"] = token_obj.get_tokentype()
+                challenge_info["message"] = message
+                # If exist, add next pin and next password change
+                next_pin = token_obj.get_tokeninfo(
+                        "next_pin_change")
+                if next_pin:
+                    challenge_info["next_pin_change"] = next_pin
+                    challenge_info["pin_change"] = \
+                        token_obj.is_pin_change()
+                next_passw = token_obj.get_tokeninfo(
+                        "next_password_change")
+                if next_passw:
+                    challenge_info["next_password_change"] = next_passw
+                    challenge_info["password_change"] = \
+                        token_obj.is_pin_change(
+                            password=True)
+                reply_dict.update(challenge_info)
+                reply_dict["multi_challenge"].append(challenge_info)
+    if message_list:
+        reply_dict["message"] = ", ".join(message_list)
+    # TODO: These two lines are deprecated: Add the information for the old administrative triggerchallenge
+    reply_dict["messages"] = message_list
+    reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
+
+
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
 def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
@@ -2029,9 +2082,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
 
     # Remove locked tokens from tokenobject_list
     if len(tokenobject_list) > 1:
-        for tokenobject in tokenobject_list:
-            if tokenobject.is_revoked():
-                tokenobject_list.remove(tokenobject)
+        tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
 
         if len(tokenobject_list) == 0:
             # If there is no unlocked token left.
@@ -2167,7 +2218,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
-                else:
+                else:  # pragma: no cover
+                    # usually check_challenge response would return "False" in case of inactive tokens
                     reply_dict["message"] = "Challenge matches, but token is inactive."
                     log.info("Received a valid response to a "
                              "challenge for inactive token {0!s}".format(tokenobject.token.serial))
@@ -2179,40 +2231,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
-            reply_dict["multi_challenge"] = []
-            transaction_id = None
-            message_list = []
-            for token_obj in active_challenge_token:
-                # Check if the max auth is succeeded
-                if token_obj.check_all(message_list):
-                    r_chal, message, transaction_id, attributes = \
-                        token_obj.create_challenge(
-                            transactionid=transaction_id, options=options)
-                    # Add the reply to the response
-                    message_list.append(message)
-                    reply_dict["message"] = ", ".join(message_list)
-                    if r_chal:
-                        challenge_info = {}
-                        challenge_info["transaction_id"] = transaction_id
-                        challenge_info["attributes"] = attributes
-                        challenge_info["serial"] = token_obj.token.serial
-                        # If exist, add next pin and next password change
-                        next_pin = challenge_request_token_list[0].get_tokeninfo(
-                                "next_pin_change")
-                        if next_pin:
-                            challenge_info["next_pin_change"] = next_pin
-                            challenge_info["pin_change"] = \
-                                challenge_request_token_list[0].is_pin_change()
-                        next_passw = challenge_request_token_list[0].get_tokeninfo(
-                                "next_password_change")
-                        if next_passw:
-                            challenge_info["next_password_change"] = next_passw
-                            challenge_info["password_change"] = \
-                                challenge_request_token_list[0].is_pin_change(
-                                    password=True)
-                        for k, v in challenge_info.items():
-                            reply_dict[k] = v
-                        reply_dict["multi_challenge"].append(challenge_info)
+            create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.

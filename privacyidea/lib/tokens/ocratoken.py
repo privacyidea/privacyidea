@@ -27,26 +27,21 @@ importing a CSV or PSKC file.
 This code is tested in tests/test_lib_tokens_tiqr.
 """
 
+import logging
+import hashlib
+import binascii
+
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import generate_otpkey
-from privacyidea.lib.utils import create_img
-import logging
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.utils import create_img, hexlify_and_unicode
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _
-from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import get_alphanum_str
-import hashlib
-import binascii
 
 OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-8:QH40"
 
@@ -131,7 +126,7 @@ class OcraTokenClass(TokenClass):
         """
         user_object = get_user_from_param(param, optional)
         if user_object:
-            self.set_user(user_object)
+            self.add_user(user_object)
 
         ocrasuite = getParam(param, "ocrasuite", default=OCRA_DEFAULT_SUITE)
         OCRASuite(ocrasuite)
@@ -213,11 +208,11 @@ class OcraTokenClass(TokenClass):
             attributes["original_challenge"] = challenge
             attributes["qrcode"] = create_img(challenge)
             if options.get("hashchallenge", "").lower() == "sha256":
-                challenge = binascii.hexlify(hashlib.sha256(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha256(challenge).digest())
             elif options.get("hashchallenge", "").lower() == "sha512":
-                challenge = binascii.hexlify(hashlib.sha512(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha512(challenge).digest())
             elif options.get("hashchallenge"):
-                challenge = binascii.hexlify(hashlib.sha1(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha1(challenge).digest())
 
 
         # Create the challenge in the database

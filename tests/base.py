@@ -145,10 +145,7 @@ class MyTestCase(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         cls.app_context.pop()
-        
-    def setUp(self):
-        self.authenticate()
-        
+
     def authenticate(self):
         with self.app.test_request_context('/auth',
                                            data={"username": "testadmin",
@@ -193,3 +190,7 @@ class OverrideConfigTestCase(MyTestCase):
         with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
             MyTestCase.setUpClass()
 
+
+class MyApiTestCase(MyTestCase):
+    def setUp(self):
+        self.authenticate()

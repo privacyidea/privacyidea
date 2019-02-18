@@ -155,7 +155,7 @@ Starting with privacyIDEA 2.19, there are two ways to integrate FreeRADIUS:
 
 With either setup, you can test the RADIUS setup using a command like this::
 
-   echo "User-Name=user, Password=password" | radclient -sx yourRadiusServer \
+   echo "User-Name=user, User-Password=password" | radclient -sx yourRadiusServer \
       auth topsecret
 
 .. note:: Do not forget to configure the ``clients.conf`` accordingly.

@@ -5,7 +5,7 @@ to fetch machine information and to attach token to machines
 import passlib
 
 from privacyidea.lib.user import User
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.machine import attach_token
@@ -30,7 +30,7 @@ SSHKEY = "ssh-rsa " \
 OTPKEY = "3132333435363738393031323334353637383930"
 
 
-class APIMachinesTestCase(MyTestCase):
+class APIMachinesTestCase(MyApiTestCase):
 
     serial2 = "ser1"
     serial3 = "UBOM12345"

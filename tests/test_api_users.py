@@ -1,5 +1,5 @@
 # coding: utf-8
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -8,7 +8,7 @@ from six.moves.urllib.parse import urlencode
 PWFILE = "tests/testdata/passwd"
 
 
-class APIUsersTestCase(MyTestCase):
+class APIUsersTestCase(MyApiTestCase):
 
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',

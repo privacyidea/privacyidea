@@ -1,3 +1,20 @@
+Version 3.0, 2019-03-xx
+
+  Changes:
+  * When logging in to the webui the client IP is only determined by
+    X-Forwarded-For if the original (REMOTE_ADDR) is allowed to overwrite the client ip.
+    (Side effect of #1392)
+
+Version 2.23.4, 2019-02-06
+
+  Fixes:
+  * Make triggerchallenge HTTP response consistent
+  * Add tokentype and message to response of triggerchallenges
+  * Allow concurrent challenges
+  * Fix accepted-language to support _only_ de-DE.
+  * Avoid user resolving in event handler condition
+  * Point the support button to better landing pages
+
 Version 2.23.3, 2018-10-26
 
   Fixes:

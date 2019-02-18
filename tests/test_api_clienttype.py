@@ -1,9 +1,9 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.clientapplication import save_clientapplication
 
 
-class APIClienttypeTestCase(MyTestCase):
+class APIClienttypeTestCase(MyApiTestCase):
 
     def test_00_get_client(self):
         save_clientapplication("1.2.3.4", "PAM")

@@ -104,7 +104,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         TokenFactory.enable(serial, $scope.get);
     };
 
-
     if ($location.path() === "/token/list") {
         $scope.get();
     }
@@ -122,9 +121,16 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     if ($scope.pin_change) {
         $location.path("/pinchange");
     }
-
+    
     // listen to the reload broadcast
-    $scope.$on("piReload", $scope.get);
+    $scope.$on("piReload", function() {
+        /* Due to the parameter "live_search" in the get function
+        we can not bind the get-function to piReload below. This
+        will break in Chrome, would work in Firefox.
+        So we need this wrapper function
+        */
+        $scope.get();
+    });
 
 });
 
@@ -291,11 +297,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // A watch function to change the form data in case another user is selected
     $scope.$watch(function(scope) {return scope.newUser.email;},
         function(newValue, oldValue){
-            $scope.form.email = newValue;
+            if (newValue != '') {
+                $scope.form.email = newValue;
+            }
         });
     $scope.$watch(function(scope) {return scope.newUser.mobile;},
         function(newValue, oldValue){
-            $scope.form.phone = newValue;
+            if (newValue != '') {
+                $scope.form.phone = newValue;
+            }
         });
 
     // Get the realms and fill the realm dropdown box
