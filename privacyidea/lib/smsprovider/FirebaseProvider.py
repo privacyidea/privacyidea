@@ -31,9 +31,11 @@ import re
 import logging
 log = logging.getLogger(__name__)
 
+
 class FIREBASE_CONFIG:
     REGISTRATION_URL = "registration URL"
     TTL = "time to live"
+    JSON_CONFG = "JSON config file"
     PROJECT_ID = "projectid"
     PROJECT_NUMBER = "projectnumber"
     APP_ID = "appid"
@@ -74,16 +76,28 @@ class FirebaseProvider(ISMSProvider):
                           "description": _('How long should the second step of the enrollment be accepted (in seconds).')
                       },
                       FIREBASE_CONFIG.PROJECT_ID: {
-                          "required": True
+                          "required": True,
+                          "description": _("The project ID, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.PROJECT_NUMBER: {
-                          "required": True
+                          "required": True,
+                          "description": _(
+                              "The project number, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.APP_ID: {
-                          "required": True
+                          "required": True,
+                          "description": _(
+                              "The APP ID, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
-                          "required": True
+                          "required": True,
+                          "description": _(
+                              "The API KEY, that the client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.JSON_CONFG: {
+                          "required": True,
+                          "description": _("The filename of the JSON config file, that allows privacyIDEA to talk"
+                                           " to the Firebase REST API.")
                       }
                   }
                   }
