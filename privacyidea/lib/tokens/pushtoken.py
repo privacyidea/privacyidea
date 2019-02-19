@@ -237,9 +237,10 @@ class PushTokenClass(TokenClass):
             self.add_tokeninfo("firebase_token", upd_param.get("fbtoken"))
             # create a keypair for the server side.
             from privacyidea.lib.crypto import generate_keypair
-            pub_key, priv_key = generate_keypair()
+            pub_key, priv_key = generate_keypair(4096)
             self.add_tokeninfo("public_key_server", pub_key)
-            self.set_otpkey(priv_key)
+            # FIXME: The private key is to long on the my
+            #self.set_otpkey(priv_key)
             # TODO: Add optional additional info, that was sent by the smartphone
 
         elif "genkey" in upd_param:
@@ -304,7 +305,9 @@ class PushTokenClass(TokenClass):
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
         elif self.token.rollout_state == "enrolled":
-            response_detail["public_key"] = self.get_tokeninfo("public_key_server")
+            # in the second enrollment step we return the public key of the server to the smartphone.
+            pubkey = self.get_tokeninfo("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY").strip()
+            response_detail["public_key"] = pubkey
 
         return response_detail
 

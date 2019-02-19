@@ -149,6 +149,7 @@ myApp.controller("tokenAssignController", function ($scope, TokenFactory,
 });
 
 myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
+                                                    $timeout,
                                                     $stateParams, AuthFactory,
                                                     UserFactory, $state,
                                                     ConfigFactory, instanceUrl,
@@ -412,6 +413,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
             $scope.click_wait=true;
         }
+        if ($scope.enrolledToken.rollout_state === "clientwait") {
+            $scope.pollTokenInfo();
+        }
         $('html,body').scrollTop(0);
     };
 
@@ -425,6 +429,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
+    };
+
+    $scope.pollTokenInfo = function () {
+        TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function(data) {
+            $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
+            // Poll the data after 2.5 seconds again
+            if ($scope.enrolledToken.rollout_state === "clientwait") {
+                $timeout($scope.pollTokenInfo, 2500);
+            }
+        })
     };
 
     $scope.regenerateToken = function () {
@@ -577,7 +591,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         formatYear: 'yy',
         startingDay: 1
     };
-
 
 });
 

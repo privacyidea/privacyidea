@@ -759,6 +759,8 @@ def generate_keypair(rsa_keysize=2048):
 
     # TODO: This must be much nicer...
 
+    The public key and private keys are returned in PKCS#1 Format.
+
     :return: tuple of (pubkey, privkey)
     """
     from OpenSSL import crypto

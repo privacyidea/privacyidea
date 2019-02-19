@@ -85,7 +85,7 @@ class PushTokenTestCase(MyTestCase):
 
         detail = token.get_init_detail()
         self.assertEqual(detail.get("rollout_state"), "enrolled")
-        self.assertTrue(detail.get("public_key").startswith("-----BEGIN RSA PUBLIC KEY-----"))
+        self.assertTrue(detail.get("public_key").startswith("MII"))
 
     def test_02_api_enroll(self):
         self.authenticate()
@@ -170,7 +170,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), "enrolled")
             # Now the smartphone gets a public key from the server
-            self.assertTrue(detail.get("public_key").startswith("-----BEGIN RSA PUBLIC KEY-----"))
+            self.assertTrue(detail.get("public_key").startswith("MII"))
             pubkey = detail.get("public_key")
 
             # Now check, what is in the token in the database
@@ -182,6 +182,6 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get("public_key_smartphone"), u"pubkey")
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
             # The private key of the server is stored in the otpkey
-            self.assertEqual(tokeninfo.get("public_key_server"), pubkey)
+            self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
             # The token should also contain the firebase config
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
