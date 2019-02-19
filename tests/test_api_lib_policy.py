@@ -2095,7 +2095,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         r = mangle_challenge_response(req, resp)
         message = r.json.get("detail", {}).get("message")
-        self.assertEqual(message, "These are your options:<ul><li>enter the TOTP from your SMS</li>\n<li>enter the HOTP from your email</li>\nHappy authenticating!")
+        self.assertEqual(message, "These are your options:<ul><li>enter the HOTP from your email</li>\n<li>enter the TOTP from your SMS</li>\nHappy authenticating!")
 
         # We do no html list
         set_policy(name="pol_header",
@@ -2107,7 +2107,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         r = mangle_challenge_response(req, resp)
         message = r.json.get("detail", {}).get("message")
         self.assertTrue("<ul><li>" not in message, message)
-        self.assertEqual(message, "These are your options:\nenter the TOTP from your SMS, enter the HOTP from your email\nHappy authenticating!")
+        self.assertEqual(message, "These are your options:\nenter the HOTP from your email, enter the TOTP from your SMS\nHappy authenticating!")
 
         delete_policy("pol_header")
         delete_policy("pol_footer")

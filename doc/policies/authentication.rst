@@ -314,7 +314,8 @@ challenge_text, challenge_text_header, challenge_test_footer
 .. index:: Challenge Text Policy
 
 Using these policies the administrator can modify the challenge texts
-of e.g. Email-Token or SMS-Token.
+of e.g. Email-Token or SMS-Token. The action *challenge_text* changes the
+challenge text in general, no matter which challenge response token is used.
 
 If the *challenge_text_header* is set and if there are more matching
 challenge response tokens, then the texts of all tokens are
