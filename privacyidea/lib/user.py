@@ -142,12 +142,11 @@ class User(object):
     def __str__(self):
         ret = u"<empty user>"
         if not self.is_empty():
-            login = self.login
             # Realm and resolver should always be ASCII
             conf = u''
             if self.resolver:
                 conf = u'.{0!s}'.format(self.resolver)
-            ret = u'<{0!s}{1!s}@{2!s}>'.format(login, conf, self.realm)
+            ret = u'<{0!s}{1!s}@{2!s}>'.format(self.login, conf, self.realm)
         return ret
 
     def __repr__(self):

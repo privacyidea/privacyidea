@@ -397,10 +397,11 @@ def aes_encrypt_b64(key, data):
     This is used for PSKC.
 
     :param key: Encryption key (binary format)
+    :type key: bytes
     :param data: Data to encrypt
     :type data: bytes
-    :return: base64 encrypted output, containing IV
-    :rtype: bytes
+    :return: base64 encrypted output, containing IV and encrypted data
+    :rtype: str
     """
     iv = geturandom(16)
     encdata = aes_encrypt(key, iv, data)

@@ -557,9 +557,15 @@ class GPGImport(object):
 
     def decrypt(self, input_data):
         """
-        Decrypts the input data with one of the private keys
-        :param input_data:
-        :return:
+        Decrypts the input data with one of the private keys.
+
+        Since this functionality is only used for decrypting import lists, the
+        decrypted data is assumed to be of type text und thus converted to unicode.
+
+        :param input_data: The data to decrypt
+        :type input_data: str or bytes
+        :return: The decrypted input_data
+        :rtype: str
         """
         decrypted = self.gpg.decrypt(message=input_data)
 

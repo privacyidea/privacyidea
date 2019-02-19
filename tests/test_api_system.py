@@ -54,7 +54,8 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertIn('key3', res.json['result']['value'], res.json)
+            self.assertEquals(res.json['result']['value']['key3'], 'update',
+                              res.json)
 
     def test_03_set_and_del_default(self):
         with self.app.test_request_context('/system/setDefault',

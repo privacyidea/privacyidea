@@ -208,7 +208,7 @@ def send_csv_result(obj, data_key="tokens",
     # Do the data
     for row in obj.get(data_key, {}):
         for val in row.values():
-            if isinstance(val, six.text_type):
+            if isinstance(val, six.string_types):
                 value = val.replace("\n", " ")
             else:
                 value = val
