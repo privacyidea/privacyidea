@@ -342,7 +342,7 @@ class BaseEventHandler(object):
 
             all_realms = get_realms()
             for tokenrealm in tokenrealms:
-                resolvers = all_realms.get(tokenrealm, {}).get("resolver")
+                resolvers = all_realms.get(tokenrealm, {}).get("resolver", {})
                 tokenresolvers.extend([r.get("name") for r in resolvers])
             tokenresolvers = list(set(tokenresolvers))
 
