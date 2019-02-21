@@ -8,9 +8,10 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
-from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION
+from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION, DEFAULT_CHALLENGE_TEXT
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -86,6 +87,7 @@ class PushTokenTestCase(MyTestCase):
         detail = token.get_init_detail()
         self.assertEqual(detail.get("rollout_state"), "enrolled")
         self.assertTrue(detail.get("public_key").startswith("MII"))
+        remove_token(self.serial1)
 
     def test_02_api_enroll(self):
         self.authenticate()
@@ -178,6 +180,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
             self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), u"pubkey")
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
@@ -185,3 +188,65 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
             # The token should also contain the firebase config
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
+
+    def test_03_api_authenticate(self):
+        self.setUp_user_realms()
+
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+        transaction_id = None
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Send the first authentication request to trigger the challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "pushpin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = json.loads(res.data.decode('utf8'))
+            self.assertFalse(jsonresp.get("result").get("value"))
+            self.assertTrue(jsonresp.get("result").get("status"))
+            self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+            self.assertTrue("transaction_id" in jsonresp.get("detail"))
+            transaction_id = jsonresp.get("detail").get("transaction_id")
+            self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+        # The mobile device has not communicated with the backend, yet.
+        # The user is not authenticated!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = json.loads(res.data.decode('utf8'))
+            # Result-Value is false, the user has not answered the challenge, yet
+            self.assertFalse(jsonresp.get("result").get("value"))
+
+        # Now the smartphone communicates with the backend and the challenge in the database table
+        # is marked as answered successfully.
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challengeobject_list[0].set_otp_status(True)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "state": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = json.loads(res.data.decode('utf8'))
+            # Result-Value is false, the user has not answered the challenge, yet
+            self.assertTrue(jsonresp.get("result").get("value"))
+

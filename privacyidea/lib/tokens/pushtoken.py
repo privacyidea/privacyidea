@@ -54,9 +54,11 @@ from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 
+DEFAULT_CHALLENGE_TEXT = "Please confirm the authentication on your mobile device!"
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -233,6 +235,7 @@ class PushTokenClass(TokenClass):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
             self.del_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
+            self.token.active = True
             self.add_tokeninfo("public_key_smartphone", upd_param.get("pubkey"))
             self.add_tokeninfo("firebase_token", upd_param.get("fbtoken"))
             # create a keypair for the server side.
@@ -338,3 +341,110 @@ class PushTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(init_detail_dict)
 
         return "json", prepare_result(True, details=init_details)
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        check, if the request would start a challenge
+
+        We need to define the function again, to get rid of the
+        is_challenge_request-decorator of the base class
+
+        :param passw: password, which might be pin or pin+otp
+        :param options: dictionary of additional request parameters
+
+        :return: returns true or false
+        """
+        return self.check_pin(passw, user=user, options=options)
+
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        This method creates a challenge, which is submitted to the user.
+        The submitted challenge will be preserved in the challenge
+        database.
+
+        If no transaction id is given, the system will create a transaction
+        id and return it, so that the response can refer to this transaction.
+
+        :param transactionid: the id of this challenge
+        :param options: the request context parameters / data
+        :type options: dict
+        :return: tuple of (bool, message, transactionid, attributes)
+        :rtype: tuple
+
+        The return tuple builds up like this:
+        ``bool`` if submit was successful;
+        ``message`` which is displayed in the JSON response;
+        additional ``attributes``, which are displayed in the JSON response.
+        """
+        options = options or {}
+        message = get_action_values_from_options(SCOPE.AUTH,
+                                                 ACTION.CHALLENGETEXT,
+                                                 options) or _(DEFAULT_CHALLENGE_TEXT)
+        # TODO here we need to add some data!
+        data = None
+        attributes = None
+
+        validity = int(get_from_config('DefaultChallengeValidityTime', 120))
+        tokentype = self.get_tokentype().lower()
+        # Maybe there is a HotpChallengeValidityTime...
+        lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
+        validity = int(get_from_config(lookup_for, validity))
+
+        # Create the challenge in the database
+        db_challenge = Challenge(self.token.serial,
+                                 transaction_id=transactionid,
+                                 challenge=options.get("challenge"),
+                                 data=data,
+                                 session=options.get("session"),
+                                 validitytime=validity)
+        db_challenge.save()
+        self.challenge_janitor()
+        return True, message, db_challenge.transaction_id, attributes
+
+    @check_token_locked
+    def check_challenge_response(self, user=None, passw=None, options=None):
+        """
+        This function checks, if the challenge for the given transaction_id
+        was marked as answered correctly.
+        For this we check the otp_status of the challenge with the
+        transaction_id in the database.
+
+        We do not care about the password
+
+        :param user: the requesting user
+        :type user: User object
+        :param passw: the password (pin+otp)
+        :type passw: string
+        :param options: additional arguments from the request, which could
+                        be token specific. Usually "transaction_id"
+        :type options: dict
+        :return: return otp_counter. If -1, challenge does not match
+        :rtype: int
+        """
+        options = options or {}
+        otp_counter = -1
+
+        # fetch the transaction_id
+        transaction_id = options.get('transaction_id')
+        if transaction_id is None:
+            transaction_id = options.get('state')
+
+        # get the challenges for this transaction ID
+        if transaction_id is not None:
+            challengeobject_list = get_challenges(serial=self.token.serial,
+                                                  transaction_id=transaction_id)
+
+            for challengeobject in challengeobject_list:
+                # check if we are still in time.
+                if challengeobject.is_valid():
+                    _, status = challengeobject.get_otp_status()
+                    if status is True:
+                        # create a positive response
+                        otp_counter = 1
+                        # delete the challenge, should we really delete the challenge? The information about
+                        # Successful authentication can be fetched only once!
+                        # challengeobject.delete()
+                        break
+
+        return otp_counter
