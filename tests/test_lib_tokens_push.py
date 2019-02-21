@@ -190,13 +190,13 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
 
     def test_03_api_authenticate(self):
+        # Test the /validate/check endpoints without the smartphone endpoint /ttype/push
         self.setUp_user_realms()
 
         # get enrolled push token
         toks = get_tokens(tokentype="push")
         self.assertEqual(len(toks), 1)
         tokenobj = toks[0]
-        transaction_id = None
 
         # set PIN
         tokenobj.set_pin("pushpin")
@@ -247,6 +247,62 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             jsonresp = json.loads(res.data.decode('utf8'))
-            # Result-Value is false, the user has not answered the challenge, yet
+            # Result-Value is True, since the challenge is marked resolved in the DB
             self.assertTrue(jsonresp.get("result").get("value"))
 
+    def test_04_api_authenticate(self):
+        # Test the /validate/check endpoints and the smartphone endpoint /ttype/push
+        # for authentication
+
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Send the first authentication request to trigger the challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "pushpin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = json.loads(res.data.decode('utf8'))
+            self.assertFalse(jsonresp.get("result").get("value"))
+            self.assertTrue(jsonresp.get("result").get("status"))
+            self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+            self.assertTrue("transaction_id" in jsonresp.get("detail"))
+            transaction_id = jsonresp.get("detail").get("transaction_id")
+            self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+        # The challenge is sent to the smartphone via the Firebase service, so we do not know
+        # the challenge from the /validate/check API.
+        # So lets read the challenge from the database!
+
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0].challenge
+
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "R": "my-signed-answer"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "state": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = json.loads(res.data.decode('utf8'))
+            # Result-Value is True
+            self.assertTrue(jsonresp.get("result").get("value"))

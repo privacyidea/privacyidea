@@ -30,6 +30,8 @@ This code is tested in tests/test_lib_tokens_push
 import datetime
 import json
 import traceback
+from privacyidea.lib.crypto import geturandom
+from base64 import b32encode
 from six.moves.urllib.parse import quote
 
 from privacyidea.api.lib.utils import getParam
@@ -323,24 +325,56 @@ class PushTokenClass(TokenClass):
         The method returns
             return "json", {}
 
+        This endpoint is used for the 2nd enrollment step of the smartphone.
+        Parameters sent:
+            * serial
+            * fbtoken
+            * pubkey
+
+        This endpoint is also used, if the smartphone sends the signed response
+        to the challenge during authentication
+        Parameters sent:
+            * serial
+            * nonce (which is the challenge)
+            * R (which is the signed response)
+
+
         :param request: The Flask request
         :param g: The Flask global object g
         :return: dictionary
         """
         from privacyidea.lib.token import get_tokens
         from privacyidea.lib.utils import prepare_result
+        details = {}
         serial = getParam(request.all_data, "serial", optional=False)
-        toks = get_tokens(serial=serial, rollout_state="clientwait")
-        if len(toks) == 0:
-            raise ParameterError("No token with this serial number in the rollout state 'clientwait'.")
-        token_obj = toks[0]
 
-        token_obj.update(request.all_data)
-        init_detail_dict = request.all_data
+        if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
+            # Do the 2nd step of the enrollment
+            toks = get_tokens(serial=serial, rollout_state="clientwait")
+            if len(toks) == 0:
+                raise ParameterError("No token with this serial number in the rollout state 'clientwait'.")
+            token_obj = toks[0]
 
-        init_details = token_obj.get_init_detail(init_detail_dict)
+            token_obj.update(request.all_data)
+            init_detail_dict = request.all_data
 
-        return "json", prepare_result(True, details=init_details)
+            details = token_obj.get_init_detail(init_detail_dict)
+        elif serial and "nonce" in request.all_data and "R" in request.all_data:
+            challenge = getParam(request.all_data, "nonce")
+            R = getParam(request.all_data, "R")
+            # Do the 2nd step of the authentication
+            # TODO: Here we need to find the challenges for the serial and the nonce(challege) and
+            #       check if the response is correct. If it is, we need to set
+            correct = True
+            if correct:
+                challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+                for chal in challengeobject_list:
+                    chal.set_otp_status(True)
+            pass
+        else:
+            raise ParameterError("Missing parameters!")
+
+        return "json", prepare_result(True, details=details)
 
     @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):
@@ -381,9 +415,11 @@ class PushTokenClass(TokenClass):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _(DEFAULT_CHALLENGE_TEXT)
-        # TODO here we need to add some data!
+
         data = None
         attributes = None
+        challenge = b32encode(geturandom())
+        # TODO We need to send the challenge to the Firebase service
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -394,7 +430,7 @@ class PushTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
-                                 challenge=options.get("challenge"),
+                                 challenge=challenge,
                                  data=data,
                                  session=options.get("session"),
                                  validitytime=validity)
@@ -442,8 +478,8 @@ class PushTokenClass(TokenClass):
                     if status is True:
                         # create a positive response
                         otp_counter = 1
-                        # delete the challenge, should we really delete the challenge? The information about
-                        # Successful authentication can be fetched only once!
+                        # delete the challenge, should we really delete the challenge? If we do so, the information
+                        # about the successful authentication could be fetched only once!
                         # challengeobject.delete()
                         break
 
