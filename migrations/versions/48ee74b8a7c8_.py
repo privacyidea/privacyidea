@@ -83,7 +83,7 @@ def upgrade():
         bind = op.get_bind()
         session = orm.Session(bind=bind)
         # For each token, that has an owner, create a tokenowner entry
-        for token in session.query(Token).filter(Token.user_id):
+        for token in session.query(Token).filter(Token.user_id != "", Token.user_id.isnot(None)):
             token_realms = session.query(TokenRealm).filter(TokenRealm.token_id == token.id).all()
             realm_id = None
             if not token_realms:
