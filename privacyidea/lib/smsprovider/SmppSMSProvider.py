@@ -83,19 +83,19 @@ class SmppSMSProvider(ISMSProvider):
         client = None
         error_message = None 
         try:
-            client = smpplib.client.Client(smsc_host.encode("ascii"),
-                                           smsc_port.encode("ascii"))
+            client = smpplib.client.Client(smsc_host,
+                                           smsc_port)
             client.connect()
-            r = client.bind_transmitter(system_id=sys_id.encode("ascii"),
-                                        password=passwd.encode("ascii"))
+            r = client.bind_transmitter(system_id=sys_id,
+                                        password=passwd)
             log.debug("bind_transmitter returns {0!r}".format(r))
             r = client.send_message(source_addr_ton=s_addr_ton,
                                     source_addr_npi=s_addr_npi,
-                                    source_addr=s_addr.encode("ascii"),
+                                    source_addr=s_addr,
                                     dest_addr_ton=d_addr_ton,
                                     dest_addr_npi=d_addr_npi,
-                                    destination_addr=phone.encode("ascii"),
-                                    short_message=message.encode("ascii"))
+                                    destination_addr=phone,
+                                    short_message=message)
             log.debug("send_message returns {0!r}".format(r))
 
         except Exception as err:

@@ -172,7 +172,7 @@ class SmtpSMSTestCase(MyTestCase):
     def test_02_simple_config_success(self):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")})
         r = self.simple_provider.submit_message("123456", "Hello")
-        self.assertRaises(r)
+        self.assertTrue(r)
 
     @smtpmock.activate
     def test_03_simple_config_fail(self):
