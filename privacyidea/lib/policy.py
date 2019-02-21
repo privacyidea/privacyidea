@@ -214,6 +214,8 @@ class ACTION(object):
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
     CHALLENGETEXT = "challenge_text"
+    CHALLENGETEXT_HEADER = "challenge_text_header"
+    CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
@@ -1579,6 +1581,16 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('Use an alternate challenge text for telling the '
                           'user to enter an OTP value.')
+            },
+            ACTION.CHALLENGETEXT_HEADER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text precedes the list"
+                          " of the challenge texts.")
+            },
+            ACTION.CHALLENGETEXT_FOOTER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text follows the list"
+                          " of the challenge texts.")
             },
             ACTION.PASSTHRU: {
                 'type': 'str',

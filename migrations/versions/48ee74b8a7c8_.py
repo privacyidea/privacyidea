@@ -13,52 +13,51 @@ down_revision = 'cb6d7b7bae63'
 
 from alembic import op
 import sqlalchemy as sa
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Sequence
 from sqlalchemy import orm
 from privacyidea.models import ResolverRealm, TokenRealm
 import sys
 
+Base = declarative_base()
 
-db = SQLAlchemy()
 
-
-class Realm(db.Model):
+class Realm(Base):
     __tablename__ = 'realm'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column(db.Integer, Sequence("realm_seq"), primary_key=True,
+    id = sa.Column(sa.Integer, Sequence("realm_seq"), primary_key=True,
                    nullable=False)
-    name = db.Column(db.Unicode(255), default=u'',
+    name = sa.Column(sa.Unicode(255), default=u'',
                      unique=True, nullable=False)
-    default = db.Column(db.Boolean(), default=False)
-    option = db.Column(db.Unicode(40), default=u'')
+    default = sa.Column(sa.Boolean(), default=False)
+    option = sa.Column(sa.Unicode(40), default=u'')
 
 
-class TokenOwner(db.Model):
+class TokenOwner(Base):
     __tablename__ = 'tokenowner'
-    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True)
-    token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
-    token = db.relationship('Token', lazy='joined', backref='token_list')
-    resolver = db.Column(db.Unicode(120), default=u'', index=True)
-    user_id = db.Column(db.Unicode(320), default=u'', index=True)
-    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    realm = db.relationship('Realm', lazy='joined', backref='realm_list')
+    id = sa.Column(sa.Integer(), Sequence("tokenowner_seq"), primary_key=True)
+    token_id = sa.Column(sa.Integer(), sa.ForeignKey('token.id'))
+    token = orm.relationship('Token', lazy='joined', backref='token_list')
+    resolver = sa.Column(sa.Unicode(120), default=u'', index=True)
+    user_id = sa.Column(sa.Unicode(320), default=u'', index=True)
+    realm_id = sa.Column(sa.Integer(), sa.ForeignKey('realm.id'))
+    realm = orm.relationship('Realm', lazy='joined', backref='realm_list')
 
 
-class Token(db.Model):
+class Token(Base):
     __tablename__ = 'token'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column(db.Integer, Sequence("token_seq"),
+    id = sa.Column(sa.Integer, Sequence("token_seq"),
                    primary_key=True,
                    nullable=False)
-    serial = db.Column(db.Unicode(40), default=u'',
+    serial = sa.Column(sa.Unicode(40), default=u'',
                        unique=True,
                        nullable=False,
                        index=True)
-    resolver = db.Column(db.Unicode(120), default=u'',
+    resolver = sa.Column(sa.Unicode(120), default=u'',
                         index=True)
-    resolver_type = db.Column(db.Unicode(120), default=u'')
-    user_id = db.Column(db.Unicode(320),
+    resolver_type = sa.Column(sa.Unicode(120), default=u'')
+    user_id = sa.Column(sa.Unicode(320),
                        default=u'', index=True)
 
 
@@ -85,7 +84,7 @@ def upgrade():
         session = orm.Session(bind=bind)
         # For each token, that has an owner, create a tokenowner entry
         for token in session.query(Token).filter(Token.user_id != "", Token.user_id.isnot(None)):
-            token_realms = TokenRealm.query.filter(TokenRealm.token_id == token.id).all()
+            token_realms = session.query(TokenRealm).filter(TokenRealm.token_id == token.id).all()
             realm_id = None
             if not token_realms:
                 sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
@@ -97,7 +96,7 @@ def upgrade():
                 realm_id = token_realms[0].realm_id
             elif len(token_realms) > 1:
                 # If the resolver is only contained in one realm, we fetch the realms:
-                reso_realms = ResolverRealm.query.filter(ResolverRealm.resolver == token.resolver).all()
+                reso_realms = session.query(ResolverRealm).filter(ResolverRealm.resolver == token.resolver).all()
                 if not reso_realms:
                     sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
                                      u"The token is assigned, but the assigned resolver is not "
