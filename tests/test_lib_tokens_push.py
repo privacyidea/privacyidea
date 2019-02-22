@@ -81,12 +81,14 @@ class PushTokenTestCase(MyTestCase):
                       "pubkey": "pubkey"})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
         self.assertEqual(token.get_tokeninfo("public_key_smartphone"), "pubkey")
-        self.assertTrue(token.get_tokeninfo("public_key_server").startswith("-----BEGIN RSA PUBLIC KEY-----"),
+        self.assertTrue(token.get_tokeninfo("public_key_server").startswith("MIICC"),
                         token.get_tokeninfo("public_key_server"))
+        self.assertTrue(token.get_tokeninfo("private_key_server").startswith("MIIJK"),
+                        token.get_tokeninfo("private_key_server"))
 
         detail = token.get_init_detail()
         self.assertEqual(detail.get("rollout_state"), "enrolled")
-        self.assertTrue(detail.get("public_key").startswith("MII"))
+        self.assertTrue(detail.get("public_key").startswith("MIICC"))
         remove_token(self.serial1)
 
     def test_02_api_enroll(self):
@@ -189,7 +191,7 @@ class PushTokenTestCase(MyTestCase):
             # The token should also contain the firebase config
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
 
-    def test_03_api_authenticate(self):
+    def test_03_api_authenticate_client(self):
         # Test the /validate/check endpoints without the smartphone endpoint /ttype/push
         self.setUp_user_realms()
 
@@ -250,7 +252,7 @@ class PushTokenTestCase(MyTestCase):
             # Result-Value is True, since the challenge is marked resolved in the DB
             self.assertTrue(jsonresp.get("result").get("value"))
 
-    def test_04_api_authenticate(self):
+    def test_04_api_authenticate_smartphone(self):
         # Test the /validate/check endpoints and the smartphone endpoint /ttype/push
         # for authentication
 
@@ -291,7 +293,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
                                                  "nonce": challenge,
-                                                 "R": "my-signed-answer"}):
+                                                 "signature": "my-signed-answer"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 

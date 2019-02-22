@@ -55,16 +55,30 @@ from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
+from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.challenge import get_challenges
 
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = "Please confirm the authentication on your mobile device!"
 
+
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
 
+
+def _strip_key(key):
+    """
+    strip the headers and footers like
+    -----BEGIN PUBLIC RSA KEY-----
+    -----END PUBLIC KEY-----
+    -----BEGIN PRIVATE RSA KEY-----
+
+    :param key:
+    :return:
+    """
+    return key.strip().strip("-BEGIN END RSA PUBLIC PRIVATE KEY").strip()
 
 @log_with(log)
 def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabel",
@@ -118,7 +132,7 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
 class PushTokenClass(TokenClass):
     """
     The PUSH token uses the firebase service to send challenges to the
-    users smartphone. The user confirms on the smartphon, signes the
+    users smartphone. The user confirms on the smartphone, signes the
     challenge and sends it back to privacyIDEA.
 
     The enrollment occurs in two enrollment steps:
@@ -243,10 +257,11 @@ class PushTokenClass(TokenClass):
             # create a keypair for the server side.
             from privacyidea.lib.crypto import generate_keypair
             pub_key, priv_key = generate_keypair(4096)
+            pub_key = _strip_key(pub_key)
+            priv_key = _strip_key(priv_key)
+            pub_key = _strip_key(pub_key)
             self.add_tokeninfo("public_key_server", pub_key)
-            # FIXME: The private key is to long on the my
-            #self.set_otpkey(priv_key)
-            # TODO: Add optional additional info, that was sent by the smartphone
+            self.add_tokeninfo("private_key_server", priv_key, "password")
 
         elif "genkey" in upd_param:
             # We are in step 1:
@@ -283,8 +298,6 @@ class PushTokenClass(TokenClass):
         if self.token.rollout_state == "clientwait":
             # Get the values from the configured PUSH config
             fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
-            from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
-            from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
             firebase_configs = get_smsgateway(identifier=fb_identifier)
             if len(firebase_configs) != 1:
                 raise ParameterError("Unknown Firebase configuration!")
@@ -306,12 +319,13 @@ class PushTokenClass(TokenClass):
                                           "value": qr_url,
                                           "img": create_img(qr_url, width=250)
                                           }
+            self.add_tokeninfo(FIREBASE_CONFIG.PROJECT_ID, fb_options.get(FIREBASE_CONFIG.PROJECT_ID))
 
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
         elif self.token.rollout_state == "enrolled":
             # in the second enrollment step we return the public key of the server to the smartphone.
-            pubkey = self.get_tokeninfo("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY").strip()
+            pubkey = _strip_key(self.get_tokeninfo("public_key_server"))
             response_detail["public_key"] = pubkey
 
         return response_detail
@@ -336,7 +350,7 @@ class PushTokenClass(TokenClass):
         Parameters sent:
             * serial
             * nonce (which is the challenge)
-            * R (which is the signed response)
+            * signature (which is the signed nonce)
 
 
         :param request: The Flask request
@@ -359,9 +373,9 @@ class PushTokenClass(TokenClass):
             init_detail_dict = request.all_data
 
             details = token_obj.get_init_detail(init_detail_dict)
-        elif serial and "nonce" in request.all_data and "R" in request.all_data:
+        elif serial and "nonce" in request.all_data and "signature" in request.all_data:
             challenge = getParam(request.all_data, "nonce")
-            R = getParam(request.all_data, "R")
+            R = getParam(request.all_data, "signature")
             # Do the 2nd step of the authentication
             # TODO: Here we need to find the challenges for the serial and the nonce(challege) and
             #       check if the response is correct. If it is, we need to set
@@ -420,6 +434,16 @@ class PushTokenClass(TokenClass):
         attributes = None
         challenge = b32encode(geturandom())
         # TODO We need to send the challenge to the Firebase service
+        fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        if fb_identifier:
+            fb_gateway = create_sms_instance(fb_identifier)
+            fb_gateway.submit_message(self.get_tokeninfo("firebase_token"),
+                                      {
+                                          "nonce": challenge,  # the challenge
+                                          "question": message,
+                                          "serial": self.token.serial,
+                                          "signature": "lkjlkj"
+                                      })
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
