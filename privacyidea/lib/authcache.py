@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import binascii
 
 from ..models import AuthCache, db
 from sqlalchemy import and_
@@ -30,7 +31,7 @@ log = logging.getLogger(__name__)
 
 
 def _hash_password(password):
-    return hash(password, seed="")
+    return binascii.hexlify(hash(password, seed=""))
 
 
 def add_to_cache(username, realm, resolver, password):
