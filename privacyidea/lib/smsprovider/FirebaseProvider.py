@@ -65,9 +65,11 @@ class FirebaseProvider(ISMSProvider):
         :return: bool
         """
         res = False
+
         credentials = ServiceAccountCredentials.\
-            from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFG),
-                                   SCOPES)
+                from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFG),
+                                       SCOPES)
+
         access_token_info = credentials.get_access_token()
 
         # Should we do something with expires in?
@@ -78,8 +80,6 @@ class FirebaseProvider(ISMSProvider):
             'Authorization': u'Bearer {0!s}'.format(bearer_token),
             'Content-Type': 'application/json; UTF-8',
         }
-
-        data["URL"] = self.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
         fcm_message = {
             "message": {
                         "data": data,

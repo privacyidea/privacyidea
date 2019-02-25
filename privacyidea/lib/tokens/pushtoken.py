@@ -58,10 +58,14 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.challenge import get_challenges
+import cryptography
 
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = "Please confirm the authentication on your mobile device!"
+PRIVATE_KEY_SERVER = "private_key_server"
+PUBLIC_KEY_SERVER = "public_key_server"
+PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 
 
 class PUSH_ACTION(object):
@@ -252,16 +256,15 @@ class PushTokenClass(TokenClass):
             self.del_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
-            self.add_tokeninfo("public_key_smartphone", upd_param.get("pubkey"))
+            self.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
             self.add_tokeninfo("firebase_token", upd_param.get("fbtoken"))
             # create a keypair for the server side.
             from privacyidea.lib.crypto import generate_keypair
             pub_key, priv_key = generate_keypair(4096)
-            pub_key = _strip_key(pub_key)
-            priv_key = _strip_key(priv_key)
-            pub_key = _strip_key(pub_key)
-            self.add_tokeninfo("public_key_server", pub_key)
-            self.add_tokeninfo("private_key_server", priv_key, "password")
+            #pub_key = _strip_key(pub_key)
+            #priv_key = _strip_key(priv_key)
+            self.add_tokeninfo(PUBLIC_KEY_SERVER, pub_key)
+            self.add_tokeninfo(PRIVATE_KEY_SERVER, priv_key, "password")
 
         elif "genkey" in upd_param:
             # We are in step 1:
@@ -325,7 +328,7 @@ class PushTokenClass(TokenClass):
 
         elif self.token.rollout_state == "enrolled":
             # in the second enrollment step we return the public key of the server to the smartphone.
-            pubkey = _strip_key(self.get_tokeninfo("public_key_server"))
+            pubkey = _strip_key(self.get_tokeninfo(PUBLIC_KEY_SERVER))
             response_detail["public_key"] = pubkey
 
         return response_detail
@@ -430,24 +433,51 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _(DEFAULT_CHALLENGE_TEXT)
 
-        data = None
         attributes = None
+        data = None
         challenge = b32encode(geturandom())
-        # TODO We need to send the challenge to the Firebase service
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
+            # We send the challenge to the Firebase service
             fb_gateway = create_sms_instance(fb_identifier)
-            fb_gateway.submit_message(self.get_tokeninfo("firebase_token"),
-                                      {
-                                          "nonce": challenge,  # the challenge
-                                          "question": message,
-                                          "serial": self.token.serial,
-                                          "signature": "lkjlkj"
-                                      })
+            url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
+            # TODO: Make this configurable
+            message_on_mobile = u"Do you want to login to service ABC?"
+            # TODO: Make this configurable
+            title = "PI Authentication"
+            smartphone_data = {"nonce": challenge,
+                               "question": message_on_mobile,
+                               "serial": self.token.serial,
+                               "title": title,
+                               "url": url}
+            # Create the signature.
+            # value to string
+            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**smartphone_data)
+
+            from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.asymmetric import padding
+
+            pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
+            privkey_obj = serialization.load_pem_private_key(str(pem_privkey), None, default_backend())
+
+            signature = privkey_obj.sign(sign_string.encode("utf8"),
+                                         padding.PSS(
+                                             mgf=padding.MGF1(hashes.SHA256()),
+                                             salt_length=padding.PSS.MAX_LENGTH),
+                                         hashes.SHA256())
+            smartphone_data["signature"] = b32encode(signature)
+
+            fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+        else:
+            log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
+                        u"The message could not be sent.".format(self.token.serial,
+                                                                 PUSH_ACTION.FIREBASE_CONFIG))
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
-        # Maybe there is a HotpChallengeValidityTime...
+        # Maybe there is a PushChallengeValidityTime...
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
