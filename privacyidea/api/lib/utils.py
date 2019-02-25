@@ -33,6 +33,7 @@ import pkg_resources
 import logging
 import json
 import jwt
+import six
 from flask import (jsonify,
                    current_app,
                    Response)
@@ -207,7 +208,7 @@ def send_csv_result(obj, data_key="tokens",
     # Do the data
     for row in obj.get(data_key, {}):
         for val in row.values():
-            if type(val) in [str, unicode]:
+            if isinstance(val, six.string_types):
                 value = val.replace("\n", " ")
             else:
                 value = val

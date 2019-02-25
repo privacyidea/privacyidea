@@ -51,7 +51,8 @@ import re
 import binascii
 import base64
 import cgi
-from privacyidea.lib.utils import modhex_decode, modhex_encode, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import (modhex_decode, modhex_encode,
+                                   hexlify_and_unicode, to_unicode, to_utf8)
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
@@ -59,7 +60,6 @@ from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
 from passlib.utils.pbkdf2 import pbkdf2
-from privacyidea.lib.utils import to_utf8
 import gnupg
 
 import logging
@@ -557,9 +557,15 @@ class GPGImport(object):
 
     def decrypt(self, input_data):
         """
-        Decrypts the input data with one of the private keys
-        :param input_data:
-        :return:
+        Decrypts the input data with one of the private keys.
+
+        Since this functionality is only used for decrypting import lists, the
+        decrypted data is assumed to be of type text und thus converted to unicode.
+
+        :param input_data: The data to decrypt
+        :type input_data: str or bytes
+        :return: The decrypted input_data
+        :rtype: str
         """
         decrypted = self.gpg.decrypt(message=input_data)
 
@@ -568,7 +574,7 @@ class GPGImport(object):
                 decrypted.status, decrypted.stderr))
             raise Exception(decrypted.stderr)
 
-        return decrypted.data
+        return to_unicode(decrypted.data)
 
 
 def export_pskc(tokenobj_list, psk=None):
@@ -632,11 +638,11 @@ def export_pskc(tokenobj_list, psk=None):
         otpkey = tokenobj.token.get_otpkey().getKey()
         try:
             if tokenobj.type.lower() in ["totp", "hotp"]:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, binascii.unhexlify(otpkey)))
+                encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
             elif tokenobj.type.lower() in ["pw"]:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
-                encrypted_otpkey = to_unicode(aes_encrypt_b64(psk, otpkey))
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
         except TypeError:
             # Some keys might be odd string length
             continue

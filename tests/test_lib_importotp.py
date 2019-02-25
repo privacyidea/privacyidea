@@ -638,6 +638,6 @@ class GPGTestCase(MyTestCase):
         self.assertTrue("2F25BAF8645350BB" in pubkeys)
 
         r = GPG.decrypt(HALLO_PAYLOAD)
-        self.assertEqual(r, b"Hallo\n")
+        self.assertEqual(r, "Hallo\n")
 
         self.assertRaises(Exception, GPG.decrypt, WRONG_PAYLOAD)

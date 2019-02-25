@@ -27,9 +27,9 @@ The method is tested in test_lib_challenges
 """
 
 import logging
+import six
 from .log import log_with
 from ..models import Challenge
-from datetime import datetime
 log = logging.getLogger(__name__)
 
 
@@ -84,7 +84,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     sql_query = _create_challenge_query(serial=serial,
                                         transaction_id=transaction_id)
 
-    if type(sortby) in [str, unicode]:
+    if isinstance(sortby, six.string_types):
         # convert the string to a Challenge column
         cols = Challenge.__table__.columns
         sortby = cols.get(sortby)

@@ -1,9 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import json
 from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, ACTION
-
-
-
 
 
 class APIPolicyTestCase(MyApiTestCase):
@@ -13,9 +12,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data.decode('utf8'))
-            self.assertEqual(data.get("result").get("value"), [])
+            self.assertTrue(res.json['result']['status'], res.json)
+            self.assertEquals(res.json["result"]["value"], [], res.json)
 
     def test_01_set_policy(self):
         with self.app.test_request_context('/policy/pol1',
@@ -39,10 +37,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data.decode('utf8'))
-            result = data.get("result")
-            value = result.get("value")
+            self.assertTrue(res.json['result']['status'], res.json)
+            value = res.json['result']['value']
             self.assertEqual(len(value), 1)
             pol1 = value[0]
             self.assertEqual(pol1.get("check_all_resolvers"), True)
@@ -73,10 +69,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            data = json.loads(res.data.decode('utf8'))
-            result = data.get("result")
-            value = result.get("value")
+            self.assertTrue(res.json['result']['status'], res.json)
+            value = res.json['result']['value']
             self.assertEqual(len(value), 1)
             pol1 = value[0]
             self.assertEqual(pol1.get("check_all_resolvers"), False)

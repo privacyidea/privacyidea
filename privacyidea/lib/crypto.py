@@ -71,7 +71,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
-from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode
+from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode, b64encode_and_unicode
 
 if not PY2:
     long = int
@@ -397,14 +397,15 @@ def aes_encrypt_b64(key, data):
     This is used for PSKC.
 
     :param key: Encryption key (binary format)
+    :type key: bytes
     :param data: Data to encrypt
     :type data: bytes
-    :return: base64 encrypted output, containing IV
-    :rtype: bytes
+    :return: base64 encrypted output, containing IV and encrypted data
+    :rtype: str
     """
     iv = geturandom(16)
     encdata = aes_encrypt(key, iv, data)
-    return base64.b64encode(iv + encdata)
+    return b64encode_and_unicode(iv + encdata)
 
 
 def aes_decrypt_b64(key, data_b64):
@@ -414,6 +415,7 @@ def aes_decrypt_b64(key, data_b64):
 
     :param key: binary key
     :param data_b64: base64 encoded data (IV + encdata)
+    :type data_b64: str
     :return: encrypted data
     """
     data_bin = base64.b64decode(data_b64)
