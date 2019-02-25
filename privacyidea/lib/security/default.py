@@ -41,11 +41,9 @@ The contents of the file is tested in tests/test_lib_crypto.py
 import logging
 import binascii
 import os
-import six
 
-from Crypto.Cipher import AES
 from hashlib import sha256
-from privacyidea.lib.crypto import geturandom, zerome
+from privacyidea.lib.crypto import geturandom, zerome, aes_encrypt, aes_decrypt
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
                                    hexlify_and_unicode)
@@ -397,14 +395,12 @@ class DefaultSecurityModule(SecurityModule):
             raise HSMException('setup of security module incomplete')
 
         key = self._get_secret(slot_id)
+
         # convert input to ascii, so we can securely append bin data
         input_data = binascii.b2a_hex(data)
         input_data += b"\x01\x02"
-        padding = (16 - len(input_data) % 16) % 16
-        input_data += padding * b"\0"
-        aes = AES.new(key, AES.MODE_CBC, iv)
 
-        res = aes.encrypt(input_data)
+        res = aes_encrypt(key, iv, input_data)
 
         if self.crypted is False:
             zerome(key)
@@ -426,21 +422,13 @@ class DefaultSecurityModule(SecurityModule):
         :return: IV and cipher text
         :rtype: str
         """
-        # TODO rewrite this when updating the crypto library (maybe externalise the AES)
-        # TODO replace with to_bytes() when available in utils.py
-        if isinstance(password, six.text_type):
-            password = password.encode('utf8')
-        if isinstance(text, six.text_type):
-            text = text.encode('utf8')
-        bkey = create_key_from_password(password)
+        bkey = create_key_from_password(to_bytes(password))
+
         # convert input to ascii, so we can securely append bin data
-        input_data = binascii.hexlify(text)
+        input_data = binascii.hexlify(to_bytes(text))
         input_data += b"\x01\x02"
-        padding = (16 - len(input_data) % 16) % 16
-        input_data += padding * b"\0"
         iv = geturandom(16)
-        aes = AES.new(bkey, AES.MODE_CBC, iv)
-        cipher = aes.encrypt(input_data)
+        cipher = aes_encrypt(bkey, iv, input_data)
         iv_hex = hexlify_and_unicode(iv)
         cipher_hex = hexlify_and_unicode(cipher)
         return "{0!s}:{1!s}".format(iv_hex, cipher_hex)
@@ -459,19 +447,19 @@ class DefaultSecurityModule(SecurityModule):
         :return: The clear test
         :rtype: bytes
         """
-        # TODO replace with to_bytes() when available in utils.py
-        if isinstance(password, six.text_type):
-            password = password.encode('utf8')
-        bkey = create_key_from_password(password)
+        bkey = create_key_from_password(to_bytes(password))
         # split the input data
         iv_hex, cipher_hex = data.strip().split(":")
         iv_bin = binascii.unhexlify(iv_hex)
         cipher_bin = binascii.unhexlify(cipher_hex)
-        aes = AES.new(bkey, AES.MODE_CBC, iv_bin)
-        output = aes.decrypt(cipher_bin)
+
+        output = aes_decrypt(bkey, iv_bin, cipher_bin)
+
+        # remove end-of-data pattern
         eof = output.rfind(b"\x01\x02")
         if eof >= 0:
             output = output[:eof]
+
         cleartext = binascii.unhexlify(output)
         return cleartext
 
@@ -495,8 +483,10 @@ class DefaultSecurityModule(SecurityModule):
             raise HSMException('setup of security module incomplete')
 
         key = self._get_secret(slot_id)
-        aes = AES.new(key, AES.MODE_CBC, iv)
-        output = aes.decrypt(input_data)
+
+        output = aes_decrypt(key, iv, input_data)
+
+        # remove end-of-data pattern
         eof = output.rfind(b"\x01\x02")
         if eof >= 0:
             output = output[:eof]

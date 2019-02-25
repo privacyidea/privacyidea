@@ -28,6 +28,7 @@ The code is tested in tests/test_lib_subscriptions.py.
 import logging
 import datetime
 import random
+from hashlib import sha256
 from .log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
@@ -35,7 +36,6 @@ from privacyidea.lib.token import get_tokens
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
-from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
@@ -290,7 +290,7 @@ def check_signature(subscription):
         subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
         sign_string = SIGN_FORMAT.format(**subscription)
         RSAkey = RSA.importKey(public)
-        hashvalue = SHA256.new(sign_string.encode("utf-8")).digest()
+        hashvalue = sha256(sign_string.encode("utf-8")).digest()
         signature = long(subscription.get("signature") or "100")
         r = RSAkey.verify(hashvalue, (signature,))
         subscription["date_from"] = datetime.datetime.strptime(

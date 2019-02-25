@@ -51,12 +51,15 @@ import re
 import binascii
 import base64
 import cgi
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8)
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
-from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
 from passlib.utils.pbkdf2 import pbkdf2
@@ -70,13 +73,17 @@ def _create_static_password(key_hex):
     '''
     According to yubikey manual 5.5.5 the static-ticket is the same
     algorithm with no moving factors.
-    The msg_hex that is encoded with the AES key is
+    The msg_hex that is encoded with the AES key (mode ECB) is
     '000000000000ffffffffffffffff0f2e'
     '''
     msg_hex = "000000000000ffffffffffffffff0f2e"
     msg_bin = binascii.unhexlify(msg_hex)
-    aes = AES.new(binascii.unhexlify(key_hex), AES.MODE_ECB)
-    password_bin = aes.encrypt(msg_bin)
+
+    backend = default_backend()
+    cipher = Cipher(algorithms.AES(binascii.unhexlify(key_hex)), modes.ECB(),
+                    backend=backend)
+    encryptor = cipher.encryptor()
+    password_bin = encryptor.update(msg_bin) + encryptor.finalize()
     password = modhex_encode(password_bin)
 
     return password
