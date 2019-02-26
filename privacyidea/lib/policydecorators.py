@@ -47,7 +47,7 @@ import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta
-from privacyidea.lib.authcache import verify_in_cache
+from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 import datetime
 from dateutil.tz import tzlocal
 from privacyidea.lib.radiusserver import get_radius
@@ -149,7 +149,7 @@ def challenge_response_allowed(func):
 def auth_cache(wrapped_function, user_object, passw, options=None):
     """
     Decorate lib.token:check_user_pass. Verify, if the authentication can 
-    be found in the auth_cache. 
+    be found in the auth_cache.
     
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
@@ -159,6 +159,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     """
     options = options or {}
     g = options.get("g")
+    auth_cache = None
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
@@ -192,8 +193,12 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             if result:
                 return True, {"message": "Authenticated by AuthCache."}
 
-    # If nothing else returned, we return the wrapped function
-    return wrapped_function(user_object, passw, options)
+    # If nothing else returned, call the wrapped function
+    res, reply_dict = wrapped_function(user_object, passw, options)
+    if auth_cache and res:
+        # If authentication is successful, we store the password in auth_cache
+        add_to_cache(user_object.login, user_object.realm, user_object.resolver, passw)
+    return res, reply_dict
 
 
 def auth_user_has_no_token(wrapped_function, user_object, passw,

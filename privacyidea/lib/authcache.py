@@ -19,21 +19,26 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import binascii
 
 from ..models import AuthCache, db
 from sqlalchemy import and_
-from hashlib import sha256
-from binascii import hexlify
+from privacyidea.lib.crypto import hash
 import datetime
 import logging
 
 log = logging.getLogger(__name__)
 
 
-def add_to_cache(username, realm, resolver, auth_hash):
+def _hash_password(password):
+    return binascii.hexlify(hash(password, seed=""))
+
+
+def add_to_cache(username, realm, resolver, password):
     # Can not store timezone aware timestamps!
     first_auth = datetime.datetime.utcnow()
-    record = AuthCache(username, realm, resolver, auth_hash, first_auth)
+    auth_hash = _hash_password(password)
+    record = AuthCache(username, realm, resolver, auth_hash, first_auth, first_auth)
     log.debug('Adding record to auth cache: ({!r}, {!r}, {!r}, {!r})'.format(
         username, realm, resolver, auth_hash))
     r = record.save()
@@ -47,12 +52,12 @@ def update_cache_last_auth(cache_id):
     db.session.commit()
 
 
-def delete_from_cache(username, realm, resolver, auth_hash):
+def delete_from_cache(username, realm, resolver, password):
     r = db.session.query(AuthCache).filter(AuthCache.username == username,
                                        AuthCache.realm == realm,
                                        AuthCache.resolver == resolver,
                                        AuthCache.authentication ==
-                                       auth_hash).delete()
+                                       _hash_password(password)).delete()
     db.session.commit()
     return r
 
@@ -77,7 +82,7 @@ def verify_in_cache(username, realm, resolver, password,
     conditions.append(AuthCache.username == username)
     conditions.append(AuthCache.realm == realm)
     conditions.append(AuthCache.resolver == resolver)
-    auth_hash = hexlify(sha256(password).digest())
+    auth_hash = _hash_password(password)
     conditions.append(AuthCache.authentication == auth_hash)
 
     if first_auth:
@@ -95,7 +100,7 @@ def verify_in_cache(username, realm, resolver, password,
 
     else:
         # Delete older entries
-        delete_from_cache(username, realm, resolver, auth_hash)
+        delete_from_cache(username, realm, resolver, password)
 
     return result
 
