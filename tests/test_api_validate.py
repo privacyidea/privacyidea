@@ -2364,6 +2364,20 @@ class ValidateAPITestCase(MyApiTestCase):
 
         delete_policy("authcache")
 
+        # If there is no policy authenticating again with the same OTP fails.
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(detail.get("message"), u"wrong otp value. previous otp used again")
+
         # If there is no authcache, the same value must not be used again!
         with self.app.test_request_context('/validate/check',
                                            method='POST',
