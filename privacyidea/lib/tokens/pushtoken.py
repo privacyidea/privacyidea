@@ -31,7 +31,7 @@ import datetime
 import json
 import traceback
 from privacyidea.lib.crypto import geturandom
-from base64 import b32encode
+from base64 import b32encode, b32decode
 from six.moves.urllib.parse import quote
 
 from privacyidea.api.lib.utils import getParam
@@ -58,7 +58,11 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.challenge import get_challenges
-import cryptography
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import utils
 
 log = logging.getLogger(__name__)
 
@@ -363,6 +367,7 @@ class PushTokenClass(TokenClass):
         from privacyidea.lib.token import get_tokens
         from privacyidea.lib.utils import prepare_result
         details = {}
+        result = False
         serial = getParam(request.all_data, "serial", optional=False)
 
         if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
@@ -376,22 +381,47 @@ class PushTokenClass(TokenClass):
             init_detail_dict = request.all_data
 
             details = token_obj.get_init_detail(init_detail_dict)
+            result = True
         elif serial and "nonce" in request.all_data and "signature" in request.all_data:
             challenge = getParam(request.all_data, "nonce")
-            R = getParam(request.all_data, "signature")
+            serial = getParam(request.all_data, "serial")
+            signature = getParam(request.all_data, "signature")
+
+            # get the token_obj for the given serial:
+            toks = get_tokens(serial=serial)
+            token_obj = toks[0]
+            pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
+            if not pubkey_pem.startswith("-----"):
+                pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
             # Do the 2nd step of the authentication
-            # TODO: Here we need to find the challenges for the serial and the nonce(challege) and
-            #       check if the response is correct. If it is, we need to set
-            correct = True
-            if correct:
-                challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+            # Find valid challenges
+            challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+
+            if challengeobject_list:
+                # There are valid challenges, so we check this signature
                 for chal in challengeobject_list:
-                    chal.set_otp_status(True)
-            pass
+                    # verify the signature of the nonce
+                    pubkey_obj = serialization.load_pem_public_key(str(pubkey_pem), default_backend())
+                    chosen_hash = hashes.SHA256()
+                    hasher = hashes.Hash(chosen_hash, default_backend())
+                    sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                    hasher.update(sign_data.encode("utf8"))
+                    digest = hasher.finalize()
+                    try:
+                        pubkey_obj.verify(b32decode(signature), digest,
+                                          padding.PKCS1v15(),
+                                          utils.Prehashed(chosen_hash))
+                        # The signature was valid
+                        chal.set_otp_status(True)
+                        result = True
+                    except Exception as e:
+                        # InvalidSignature
+                        pass
+
         else:
             raise ParameterError("Missing parameters!")
 
-        return "json", prepare_result(True, details=details)
+        return "json", prepare_result(result, details=details)
 
     @log_with(log)
     def is_challenge_request(self, passw, user=None, options=None):
@@ -454,19 +484,19 @@ class PushTokenClass(TokenClass):
             # value to string
             sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**smartphone_data)
 
-            from cryptography.hazmat.primitives import serialization
-            from cryptography.hazmat.backends import default_backend
-            from cryptography.hazmat.primitives import hashes
-            from cryptography.hazmat.primitives.asymmetric import padding
-
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
             privkey_obj = serialization.load_pem_private_key(str(pem_privkey), None, default_backend())
 
-            signature = privkey_obj.sign(sign_string.encode("utf8"),
-                                         padding.PSS(
-                                             mgf=padding.MGF1(hashes.SHA256()),
-                                             salt_length=padding.PSS.MAX_LENGTH),
-                                         hashes.SHA256())
+            # Prehash the data for the signature
+            chosen_hash = hashes.SHA256()
+            hasher = hashes.Hash(chosen_hash, default_backend())
+            hasher.update(sign_string.encode("utf8"))
+            digest = hasher.finalize()
+
+            # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
+            signature = privkey_obj.sign(digest,
+                                         padding.PKCS1v15(),
+                                         utils.Prehashed(chosen_hash))
             smartphone_data["signature"] = b32encode(signature)
 
             fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
