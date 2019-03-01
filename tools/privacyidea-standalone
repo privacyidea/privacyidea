@@ -49,6 +49,7 @@ import os
 import string
 import subprocess
 from functools import wraps
+from six.moves import input
 
 import sqlalchemy
 import sys
@@ -134,17 +135,17 @@ manager.add_option('-i', '--instance', dest='instance', required=False,
                    help='Location of the privacyIDEA instance (defaults to ~/.privacyidea)')
 
 
-def read_credentials(file):
+def read_credentials(fobj):
     """
     read username and password from a file. This could be sys.stdin.
 
     The first line specifies the username, the second line specifies the password.
 
-    :param file: a Python file object
+    :param fobj: a Python file object
     :return: a tuple (user, password)
     """
-    username = file.readline().strip()
-    password = file.readline().strip()
+    username = fobj.readline().strip()
+    password = fobj.readline().strip()
     return username, password
 
 

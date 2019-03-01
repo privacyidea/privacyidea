@@ -76,7 +76,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector)
 from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
-from flask_script import Manager, Command
+from flask_script import Manager, Command, Option
 from privacyidea.app import db
 from flask_migrate import MigrateCommand
 # Wee need to import something, so that the models will be created.
@@ -163,8 +163,9 @@ def create_crl(ca, force=False):
 
 
 @ca_manager.option('name', help='The name of the new CA')
-@ca_manager.option('-t', '--type', help='The type of the new CA. The default '
-                                        'is "local"')
+@ca_manager.option('-t', '--type',
+                   help='The type of the new CA. The default is "local"',
+                   dest='catype')
 def create(name, catype='local'):
     """
     Create a new CA connector. In case of the "localca" also the directory
@@ -252,7 +253,7 @@ def create(directory="/var/lib/privacyidea/backup/",
     CONF_DIR = conf_dir
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
-    
+
     call(["mkdir", "-p", directory])
     # set correct owner, if possible
     if os.geteuid() == 0:
@@ -331,11 +332,11 @@ def restore(backup_file):
     p = Popen(["tar", "-ztf", backup_file], stdout=PIPE)
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
-        if re.search("/pi.cfg$", line):
+        if re.search(r"/pi.cfg$", line):
             config_file = "/{0!s}".format(line.strip())
-        elif re.search("\.sql", line):
+        elif re.search(r"\.sql", line):
             sqlfile = "/{0!s}".format(line.strip())
-        elif re.search("/enckey", line):
+        elif re.search(r"/enckey", line):
             enckey_contained = True
 
     if not config_file:
@@ -522,7 +523,7 @@ def dropdb(dropit=None):
 
 
 @manager.command
-def validate(user, password, realm=None, client=None):
+def validate(user, password, realm=None):
     """
     Do an authentication request
     """
@@ -844,32 +845,40 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-@resolver_manager.option('-v',
-                         help="Verbose output - also print the configuration of the resolvers.",
-                         dest="verbose", action="store_true")
-def list(verbose):
+# unfortunately it is not possible in flask_script to add a command with a
+# different name and options. So we create an appropriate command class.
+class ListResolver(Command):
     """
-    list the available resolvers and the type.
+    Command class to list the available resolvers and the type.
     """
-    from privacyidea.lib.resolver import get_resolver_list
-    resolver_list = get_resolver_list()
+    option_list = (
+        Option('-v', '--verbose',
+               help="Verbose output - also print the configuration of the resolvers.",
+               dest="verbose", action="store_true"),
+    )
 
-    if not verbose:
-        for (name, resolver) in resolver_list.items():
-            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
-    else:
-        for (name, resolver) in resolver_list.items():
-            print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
-            print("."*32)
-            data = resolver.get("data", {})
-            for (k, v) in data.items():
-                if k.lower() in ["bindpw", "password"]:
-                    v = "xxxxx"
-                print("{0!s:>24}: {1!r}".format(k, v))
-            print("")
+    def run(self, verbose=False):
+        from privacyidea.lib.resolver import get_resolver_list
+        resolver_list = get_resolver_list()
+
+        if not verbose:
+            for (name, resolver) in resolver_list.items():
+                print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+        else:
+            for (name, resolver) in resolver_list.items():
+                print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
+                print("."*32)
+                data = resolver.get("data", {})
+                for (k, v) in data.items():
+                    if k.lower() in ["bindpw", "password"]:
+                        v = "xxxxx"
+                    print("{0!s:>24}: {1!r}".format(k, v))
+                print("")
 
 
-@realm_manager.command
+resolver_manager.add_command('list', ListResolver)
+
+
 def list_realms():
     """
     list the available realms
