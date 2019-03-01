@@ -565,7 +565,7 @@ except TypeError:
 @authcache_manager.command
 def cleanup(minutes=480):
     """
-    Remove entries from the authcache which last_auth entry is older than
+    Remove entries from the authcache, where last_auth entry is older than
     the given number of minutes.
     """
     r = authcache_cleanup(int(minutes))
