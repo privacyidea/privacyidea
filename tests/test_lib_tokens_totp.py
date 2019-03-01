@@ -612,15 +612,24 @@ class TOTPTokenTestCase(MyTestCase):
         token = TotpTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "otplen": 6})
-        token.token.count = 47251400
         token.set_sync_window(1000)
-        # Successful resync
         # 705493 -> 47251649
         # 589836 -> 47251650
         # So the token might be at time 47251650,
         # but the server time is 47251600
+
+        # The server time is 2000*30 seconds further, the resync will fail
+        # 47253650 - 47251650 = 2000 ticks away
+        token.token.count = 47251400
         r = token.resync("705493", "589836",
-                         options={"initTime": 47251650 * 30})
+                         options={"initTime": 47253650 * 30})
+        self.assertFalse(r)
+        # Successful resync
+        token.token.count = 47251400
+        # The server time is 200*30 seconds further
+        # 47251850 - 47251650 = 200 ticks away
+        r = token.resync("705493", "589836",
+                         options={"initTime": 47251850 * 30})
         self.assertTrue(r is True, r)
         # resync fails
         token.token.count = 0
