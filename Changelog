@@ -1,3 +1,10 @@
+Version 2.23.5, 2019-03-04
+
+  Fixes:
+  * Fix authcache
+  * Fix correct syncwindow for manually resyncing TOTP tokens
+
+
 Version 2.23.4, 2019-02-06
 
   Fixes:
