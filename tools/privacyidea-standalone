@@ -254,7 +254,8 @@ There are two possibilities to create a resolver:
     print()
     print('Configuration is complete. You can now configure privacyIDEA in '
           'the web browser by running')
-    print("  privacyidea-standalone -i '{}' configure".format(instance_dir.encode('string-escape')))
+    print("  privacyidea-standalone -i '{}' "
+          "configure".format(instance_dir.encode('unicode-escape')))
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',
