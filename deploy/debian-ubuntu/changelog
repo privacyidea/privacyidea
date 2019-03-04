@@ -1,3 +1,12 @@
+python-privacyidea (2.23.5~dev1-1trusty) trusty; urgency=medium
+
+  Fixes:
+  * Fix authcache
+  * Fix correct syncwindow for manually resyncing TOTP tokens
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 04 Mar 2019 12:00:00 +0200
+
+
 python-privacyidea (2.23.4-1trusty) trusty; urgency=medium
 
   Fixes: 
