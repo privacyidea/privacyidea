@@ -85,6 +85,7 @@ from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.authcache import cleanup as authcache_cleanup
 from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
 from Crypto.PublicKey import RSA
@@ -106,6 +107,7 @@ event_manager = Manager(usage='Manage events')
 api_manager = Manager(usage="Manage API keys")
 ca_manager = Manager(usage="Manage Certificate Authorities")
 audit_manager = Manager(usage="Manage Audit log")
+authcache_manager = Manager(usage="Manage AuthCache")
 hsm_manager = Manager(usage="Manage HSM")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
@@ -117,6 +119,7 @@ manager.add_command('event', event_manager)
 manager.add_command('api', api_manager)
 manager.add_command('ca', ca_manager)
 manager.add_command('audit', audit_manager)
+manager.add_command('authcache', authcache_manager)
 manager.add_command('hsm', hsm_manager)
 
 
@@ -557,6 +560,16 @@ except TypeError:
     # Apparently, we are using Flask-Script 0.6.7, which does not support the API used above.
     # So we just add the `profile` command without using `CommandOutsideRequestContext`.
     profile = manager.command(profile)
+
+
+@authcache_manager.command
+def cleanup(minutes=480):
+    """
+    Remove entries from the authcache, where last_auth entry is older than
+    the given number of minutes.
+    """
+    r = authcache_cleanup(int(minutes))
+    print(u"Entries deleted: {0!s}".format(r))
 
 
 @manager.option('--highwatermark', '--hw', help="If entries exceed this value, "
