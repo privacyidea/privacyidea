@@ -613,7 +613,7 @@ def resync_api(serial=None):
     otp2 = getParam(request.all_data, "otp2", required)
 
     res = resync_token(serial, otp1, otp2, user=user)
-    g.audit_object.log({"success": True})
+    g.audit_object.log({"success": bool(res)})
     return send_result(res)
 
 
