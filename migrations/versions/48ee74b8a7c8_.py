@@ -89,9 +89,9 @@ def upgrade():
             if not token_realms:
                 sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
                                  u"Error while migrating token assignment. "
-                                 u"This token has no realm assignments!".format(serial=token.serial,
-                                                                                userid=token.user_id,
-                                                                                resolver=token.resolver))
+                                 u"This token has no realm assignments!\n".format(serial=token.serial,
+                                                                                  userid=token.user_id,
+                                                                                  resolver=token.resolver))
             elif len(token_realms) == 1:
                 realm_id = token_realms[0].realm_id
             elif len(token_realms) > 1:
@@ -133,8 +133,8 @@ def upgrade():
                                 found_realm_ids.append(token_realm.realm.id)
                                 found_realm_names.append(token_realm.realm.name)
                         if len(found_realm_ids) > 1:
-                            sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
-                                             u"Your realm configuration for the token is not distinct!. "
+                            sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, Can not assign token. "
+                                             u"Your realm configuration for the token is not distinct! "
                                              u"The tokenowner could be in multiple realms! "                                  
                                              u"The token is assigned to the following realms and the resolver is also "
                                              u"contained in these realm IDs: {realms!s}.\n".format(serial=token.serial,
