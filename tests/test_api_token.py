@@ -544,6 +544,18 @@ class APITokenTestCase(MyApiTestCase):
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is False, result)
 
+        # check that we have a failed request in the audit log
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "POST /token/resync/<serial>",
+                                                 'serial': 'Resync01',
+                                                 'success': '0'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 200, res)
+            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 0, res.json)
+
         # Successful resync with consecutive values
         with self.app.test_request_context('/token/resync',
                                             method="POST",
@@ -555,6 +567,18 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
+
+        # Check for a successful request in the audit log
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "POST /token/resync",
+                                                 'serial': 'Resync01',
+                                                 'success': '1'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 200, res)
+            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 1, res.json)
 
         # Get the OTP token and inspect the counter
         with self.app.test_request_context('/token/',
