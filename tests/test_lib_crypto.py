@@ -36,8 +36,8 @@ class SecurityModuleTestCase(MyTestCase):
 
         self.assertRaises(NotImplementedError, hsm.setup_module, {})
         self.assertRaises(NotImplementedError, hsm.random, 20)
-        self.assertRaises(NotImplementedError, hsm.encrypt, "20")
-        self.assertRaises(NotImplementedError, hsm.decrypt, "20")
+        self.assertRaises(NotImplementedError, hsm.encrypt, "20", 'abcd')
+        self.assertRaises(NotImplementedError, hsm.decrypt, "20", 'abcd')
 
     def test_01_default_security_module(self):
         config = current_app.config
@@ -45,6 +45,7 @@ class SecurityModuleTestCase(MyTestCase):
         hsm.setup_module({"file": config.get("PI_ENCFILE")})
         self.assertTrue(hsm is not None, hsm)
         self.assertTrue(hsm.secFile is not None, hsm.secFile)
+        self.assertTrue(hsm.is_ready)
 
     def test_01_no_file_in_config(self):
         self.assertRaises(Exception, DefaultSecurityModule, {})
@@ -55,6 +56,7 @@ class SecurityModuleTestCase(MyTestCase):
                                      "crypted": True})
         r = hsm.random(20)
         self.assertTrue(len(r) == 20, r)
+        self.assertFalse(hsm.is_ready)
 
     def test_05_encrypt_decrypt(self):
         config = current_app.config

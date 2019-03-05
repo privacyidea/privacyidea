@@ -51,12 +51,14 @@ import re
 import binascii
 import base64
 import cgi
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8)
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
-from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
 from passlib.utils.pbkdf2 import pbkdf2
@@ -75,8 +77,10 @@ def _create_static_password(key_hex):
     '''
     msg_hex = "000000000000ffffffffffffffff0f2e"
     msg_bin = binascii.unhexlify(msg_hex)
-    aes = AES.new(binascii.unhexlify(key_hex), AES.MODE_ECB)
-    password_bin = aes.encrypt(msg_bin)
+    cipher = Cipher(algorithms.AES(binascii.unhexlify(key_hex)),
+                    modes.ECB(), default_backend())
+    encryptor = cipher.encryptor()
+    password_bin = encryptor.update(msg_bin) + encryptor.finalize()
     password = modhex_encode(password_bin)
 
     return password
