@@ -115,13 +115,6 @@ def expire(realm=None, attribute_name=ATTRIBUTE_NAME,
     :return:
     """
     utc_now = datetime.datetime.utcnow()
-    # Active directory starts at 1.1.1601 ;-)
-    elapsed_time = utc_now - MS_AD_START
-    total_seconds = elapsed_time.total_seconds()
-    # convert this to (100 nanoseconds)
-    # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
-    multiplyer = 10 ** 7
-    total_100_nano_secs = multiplyer * total_seconds
     params = {"accountExpires": "1"}
     if realm:
         params["realm"] = realm
@@ -178,6 +171,5 @@ def expire(realm=None, attribute_name=ATTRIBUTE_NAME,
 
 
 if __name__ == '__main__':
-    print
+    print()
     manager.run()
-

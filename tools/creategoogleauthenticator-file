@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2016-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -20,7 +20,7 @@ emergency = []
 for _ in range(5):
     emergency.append(''.join(random.choice(string.digits) for _ in range(8)))
 
-print """{seed}
+print("""{seed}
 " RATE_LIMIT 3 30
 " WINDOW_SIZE 17
 " DISALLOW_REUSE
@@ -31,4 +31,4 @@ print """{seed}
 {emergency[2]}
 {emergency[3]}
 {emergency[4]}
-""".format(seed=seed, emergency=emergency)
+""".format(seed=seed, emergency=emergency))

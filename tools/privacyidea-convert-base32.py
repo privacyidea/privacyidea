@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2018-07-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -33,11 +33,11 @@ for line in content:
     secret = values[1]
     try:
         secret = binascii.hexlify(base64.b32decode(secret))
-    except TypeError:
+    except (TypeError, binascii.Error):
         sys.stderr.write("Error converting secret of serial {0}.\n".format(serial))
         continue
 
-    print("{0}, {1}".format(serial, secret), end='')
+    print("{0}, {1}".format(serial, secret.decode('utf8')), end='')
 
     if args.type:
         print(", {0}".format(args.type), end='')

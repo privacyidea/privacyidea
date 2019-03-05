@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2018-05-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -49,13 +49,17 @@ def read_counter_file(import_file):
 
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+parser.add_argument("-c", "--config",
+                    help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
                     required=True)
-parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
-                                 'counter per line split by a comma. You can specify "-" to read from stdin.',
+parser.add_argument('file',
+                    help='The CSV file with the updated counters. The file should contain one '
+                         'serial and counter per line split by a comma. '
+                         'You can specify "-" to read from stdin.',
                     type=argparse.FileType())
-parser.add_argument("-i", "--increase-only", help="Only update the token counter, if the new counter value"
-                                                  "is bigger than the existing in the database.",
+parser.add_argument("-i", "--increase-only",
+                    help="Only update the token counter, if the new counter value "
+                         "is bigger than the existing in the database.",
                     action='store_const', const=True)
 args = parser.parse_args()
 
@@ -92,7 +96,7 @@ for count in counters:
 
 privacyidea_session.commit()
 
-print
+print()
 print("{0!s:6} tokens processed.".format(processed))
 print("{0!s:6} counters updated.".format(updated))
 print("{0!s:6} tokens not found.".format(not_found))
