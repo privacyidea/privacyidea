@@ -16,7 +16,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Sequence
 from sqlalchemy import orm
-from privacyidea.models import ResolverRealm, TokenRealm
+from privacyidea.models import ResolverRealm, TokenRealm, Resolver
 import sys
 
 Base = declarative_base()
@@ -95,40 +95,60 @@ def upgrade():
             elif len(token_realms) == 1:
                 realm_id = token_realms[0].realm_id
             elif len(token_realms) > 1:
-                # If the resolver is only contained in one realm, we fetch the realms:
-                reso_realms = session.query(ResolverRealm).filter(ResolverRealm.resolver == token.resolver).all()
-                if not reso_realms:
+                # The token has more than one realm.
+                # In order to figure out the right realm, we first fetch the token's resolver
+                resolver = session.query(Resolver).filter_by(name=token.resolver).first()
+                if not resolver:
                     sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
-                                     u"The token is assigned, but the assigned resolver is not "
-                                     u"contained in any realm!".format(serial=token.serial,
-                                                                       userid=token.user_id,
-                                                                       resolver=token.resolver))
-                elif len(reso_realms) == 1:
-                    # The resolver is only in one realm, so this is the new realm of the token!
-                    realm_id = reso_realms[0].realm_id
-                elif len(reso_realms) > 1:
-                    # The resolver is contained in two realms, we have to apply more logic between the realms in which
-                    # the resolver is contained and the realms, to which the token is assigend.
-                    found_realm_ids = []
-                    for token_realm in token_realms:
-                        if token_realm.realm_id in [r.realm_id for r in reso_realms]:
-                            # The token realm, that also fits the resolver_realm is used as owner realm
-                            found_realm_ids.append(realm_id)
+                                     u"The token is assigned, but the assigned resolver can not "
+                                     u"be found!\n".format(serial=token.serial,
+                                                           userid=token.user_id,
+                                                           resolver=token.resolver))
+                else:
+                    # Then, fetch the list of ``Realm`` objects in which the token resolver is contained.
+                    resolver_realms = [r.realm for r in resolver.realm_list]
+                    if not resolver_realms:
+                        sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
+                                         u"The token is assigned, but the assigned resolver is not "
+                                         u"contained in any realm!\n".format(serial=token.serial,
+                                                                             userid=token.user_id,
+                                                                             resolver=token.resolver))
+                    elif len(resolver_realms) == 1:
+                        # The resolver is only in one realm, so this is the new realm of the token!
+                        realm_id = resolver_realms[0].id
+                    elif len(resolver_realms) > 1:
+                        # The resolver is contained in more than one realm, we have to apply more logic
+                        # between the realms in which the resolver is contained and the realms,
+                        # to which the token is assigend.
+                        # More specifically, we find all realms which are both a token realm and
+                        # a realm of the token resolver.
+                        # If there is exactly one such realm, we have found our token owner realm.
+                        # If there is more than one such realm, we cannot uniquely identify a token owner realm.
+                        # If there is no such realm, we have an inconsistent database.
+                        found_realm_ids = []
+                        found_realm_names = []
+                        for token_realm in token_realms:
+                            if token_realm.realm in resolver_realms:
+                                # The token realm, that also fits the resolver_realm is used as owner realm
+                                found_realm_ids.append(token_realm.realm.id)
+                                found_realm_names.append(token_realm.realm.name)
                         if len(found_realm_ids) > 1:
                             sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
                                              u"Your realm configuration for the token is not distinct!. "
                                              u"The tokenowner could be in multiple realms! "                                  
                                              u"The token is assigned to the following realms and the resolver is also "
-                                             u"contained in these realm IDs: {realms!s}.".format(serial=token.serial,
-                                                                                                 userid=token.user_id,
-                                                                                                 resolver=token.resolver,
-                                                                                                 realms=found_realm_ids))
+                                             u"contained in these realm IDs: {realms!s}.\n".format(serial=token.serial,
+                                                                                                   userid=token.user_id,
+                                                                                                   resolver=token.resolver,
+                                                                                                   realms=found_realm_names))
                         elif len(found_realm_ids) == 1:
                             realm_id = found_realm_ids[0]
                         else:
                             sys.stderr.write(u"{serial!s}, {userid!s}, {resolver!s}, "
                                              u"Can not assign token. The resolver is not contained in any "
-                                             u"realms, to which the token is assigned!")
+                                             u"realms, to which the token is assigned!\n".format(serial=token.serial,
+                                                                                                 userid=token.user_id,
+                                                                                                 resolver=token.resolver))
 
             to = TokenOwner(token_id=token.id, user_id=token.user_id,
                             resolver=token.resolver, realm_id=realm_id)
