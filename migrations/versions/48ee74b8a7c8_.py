@@ -149,10 +149,11 @@ def upgrade():
                                              u"realms, to which the token is assigned!\n".format(serial=token.serial,
                                                                                                  userid=token.user_id,
                                                                                                  resolver=token.resolver))
-
-            to = TokenOwner(token_id=token.id, user_id=token.user_id,
-                            resolver=token.resolver, realm_id=realm_id)
-            session.add(to)
+            # If we could not figure out a tokenowner realm, we skip the token assignment.
+            if realm_id is not None:
+                to = TokenOwner(token_id=token.id, user_id=token.user_id,
+                                resolver=token.resolver, realm_id=realm_id)
+                session.add(to)
         session.commit()
 
         # Now we drop the columns
