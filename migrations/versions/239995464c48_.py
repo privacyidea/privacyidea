@@ -21,7 +21,7 @@ def upgrade():
                                                 sa.Unicode(length=255),
                                                 nullable=True))
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if exx.orig.args[0].lower().startswith("duplicate column name"):
             print("Good. Table 'radiusserver' already exists.")
         else:
             print(exx)

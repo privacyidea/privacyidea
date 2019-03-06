@@ -19,7 +19,7 @@ def upgrade():
     try:
         op.add_column('policy', sa.Column('condition', sa.Integer(), nullable=False))
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if exx.orig.args[0].lower().startswith("duplicate column name"):
             print("Good. Column condition already exists.")
         else:
             print(exx)

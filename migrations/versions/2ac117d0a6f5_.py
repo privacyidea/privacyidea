@@ -30,7 +30,7 @@ def upgrade():
         sa.PrimaryKeyConstraint('id')
         )
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if exx.orig.args[0].lower().startswith("duplicate column name"):
             print("Good. Column smtpserver already exists.")
         else:
             print(exx)

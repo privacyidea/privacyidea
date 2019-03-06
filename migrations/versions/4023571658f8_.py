@@ -33,7 +33,7 @@ def upgrade():
         op.create_index(op.f('ix_passwordreset_username'), 'passwordreset',
                         ['username'], unique=False)
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if exx.orig.args[0].lower().startswith("duplicate column name"):
             print("Good. Table passwordreset already exists.")
         else:
             print(exx)
