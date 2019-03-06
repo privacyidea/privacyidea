@@ -71,7 +71,8 @@ def upgrade():
         sa.Column('realm_id', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
         sa.ForeignKeyConstraint(['token_id'], ['token.id'], ),
-        sa.PrimaryKeyConstraint('id')
+        sa.PrimaryKeyConstraint('id'),
+        mysql_row_format='DYNAMIC'
         )
         op.create_index(op.f('ix_tokenowner_resolver'), 'tokenowner', ['resolver'], unique=False)
         op.create_index(op.f('ix_tokenowner_user_id'), 'tokenowner', ['user_id'], unique=False)
