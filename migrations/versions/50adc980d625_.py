@@ -38,7 +38,7 @@ def upgrade():
         sa.UniqueConstraint('eventhandler_id', 'Key', name='ehoix_1')
         )
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.args[0].lower().startswith("duplicate column name"):
+        if "duplicate column name" in str(exx.orig).lower():
             print("Good. Table 'eventhandler' already exists.")
         else:
             print(exx)
