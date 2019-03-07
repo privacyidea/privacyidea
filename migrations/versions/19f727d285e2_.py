@@ -25,9 +25,9 @@ def upgrade():
         sa.UniqueConstraint('timestamp', 'stats_key', name='msix_1'),
         mysql_row_format='DYNAMIC'
         )
-    except Exception, exx:
-        print "Could not add table for monitoring stats!"
-        print exx
+    except Exception as exx:
+        print("Could not add table for monitoring stats!")
+        print(exx)
 
 
 def downgrade():
