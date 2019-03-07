@@ -20,7 +20,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, update_config_object)
+                                    this, get_config_object, invalidate_config_object)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -218,7 +218,6 @@ class ConfigTestCase(MyTestCase):
         set_privacyidea_config(key="k1", value="v1")
         self.assertEqual(get_config_object().get_config("k1"), "v1")
         set_privacyidea_config(key="k1", value="v2")
-        # not updated yet
-        self.assertEqual(get_config_object().get_config("k1"), "v1")
-        # updated now
-        self.assertEqual(update_config_object().get_config("k1"), "v2")
+        # updated already
+        invalidate_config_object()
+        self.assertEqual(get_config_object().get_config("k1"), "v2")

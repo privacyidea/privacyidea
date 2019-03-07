@@ -39,7 +39,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required)
-from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
+from privacyidea.lib.config import get_from_config, SYSCONF, invalidate_config_object
 from privacyidea.lib.token import get_token_type
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
@@ -129,7 +129,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    update_config_object()
+    invalidate_config_object()
     request.all_data = get_all_params(request.values, request.data)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.

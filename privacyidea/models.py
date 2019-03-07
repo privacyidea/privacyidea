@@ -97,6 +97,8 @@ def save_config_timestamp():
                                datetime.now().strftime("%s"),
                                Description="config timestamp. last changed.")
         db.session.add(new_timestamp)
+    from privacyidea.lib.config import invalidate_config_object
+    invalidate_config_object()
 
 
 class TimestampMethodsMixin(object):

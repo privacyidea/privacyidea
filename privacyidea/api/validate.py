@@ -75,7 +75,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF, update_config_object)
+                                    SYSCONF, invalidate_config_object)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
@@ -118,7 +118,7 @@ def before_request():
     """
     This is executed before the request
     """
-    update_config_object()
+    invalidate_config_object()
     request.all_data = get_all_params(request.values, request.data)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \

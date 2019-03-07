@@ -36,11 +36,13 @@ The code is tested in tests/test_lib_config
 import sys
 import logging
 import inspect
+import threading
+
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp)
-from privacyidea.lib.framework import get_request_local_store, get_app_config_value
+from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -82,25 +84,28 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class ConfigClass(with_metaclass(Singleton, object)):
+class SharedConfigClass(object):
     """
-    The Config_Object will contain all database configuration of system
-    config, resolvers and realm.
-    It will be created at the beginning of the request and is supposed to stay
-    alive unchanged during the request.
-    """
+    A shared config class object is shared between threads and is supposed
+    to store the current configuration with resolvers and realms, along
+    with the timestamp of the configuration.
 
+    The method ``reload_from_db()`` compares this timestamp against the
+    timestamp in the database (while taking the PI_CHECK_RELOAD_CONFIG
+    setting into account). If the database timestamp is newer, the current
+    configuration is updated.
+
+    However, app code must not access the config stored in the shared object!
+    Instead, it must use ``clone()`` or ``reload_and_clone()`` to retrieve
+    a ``LocalConfigClass`` object which holds a local configuration snapshot.
+    """
     def __init__(self):
-        """
-        Create a config object from the whole database, tables config,
-        resolver and realm.
-        """
+        self._config_lock = threading.Lock()
         self.config = {}
         self.resolver = {}
         self.realm = {}
         self.default_realm = None
         self.timestamp = None
-        self.reload_from_db()
 
     def reload_from_db(self):
         """
@@ -113,12 +118,12 @@ class ConfigClass(with_metaclass(Singleton, object)):
             self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
-                self.config = {}
-                self.resolver = {}
-                self.realm = {}
-                self.default_realm = None
+                config = {}
+                resolverconfig = {}
+                realmconfig = {}
+                default_realm = None
                 for sysconf in Config.query.all():
-                    self.config[sysconf.Key] = {
+                    config[sysconf.Key] = {
                         "Value": sysconf.Value,
                         "Type": sysconf.Type,
                         "Description": sysconf.Description}
@@ -135,11 +140,11 @@ class ConfigClass(with_metaclass(Singleton, object)):
                             value = rconf.Value
                         data[rconf.Key] = value
                     resolverdef["data"] = data
-                    self.resolver[resolver.name] = resolverdef
+                    resolverconfig[resolver.name] = resolverdef
 
                 for realm in Realm.query.all():
                     if realm.default:
-                        self.default_realm = realm.name
+                        default_realm = realm.name
                     realmdef = {"option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
@@ -147,9 +152,52 @@ class ConfigClass(with_metaclass(Singleton, object)):
                         realmdef["resolver"].append({"priority": x.priority,
                                                      "name": x.resolver.name,
                                                      "type": x.resolver.rtype})
-                    self.realm[realm.name] = realmdef
+                    realmconfig[realm.name] = realmdef
+                timestamp = datetime.datetime.now()
+                with self._config_lock:
+                    self.config = config
+                    self.resolver = resolverconfig
+                    self.realm = realmconfig
+                    self.default_realm = default_realm
+                    self.timestamp = timestamp
 
-            self.timestamp = datetime.datetime.now()
+    def clone(self):
+        """
+        :return: a ``LocalConfigClass`` object containing the current configuration state
+        """
+        with self._config_lock:
+            return LocalConfigClass(
+                self.config,
+                self.resolver,
+                self.realm,
+                self.default_realm,
+                self.timestamp
+            )
+
+    def reload_and_clone(self):
+        """
+        Check if the current configuration state is outdated (according to the
+        PI_CHECK_RELOAD_CONFIG setting), reload it if needed and return a
+        ``LocalConfigClass`` object containing the current configuration state
+        """
+        self.reload_from_db()
+        return self.clone()
+
+
+class LocalConfigClass(object):
+    """
+    The Config_Object will contain all database configuration of system
+    config, resolvers and realm.
+    It will be cloned from the shared config object at the beginning of the
+    request and is supposed to stay alive and unchanged during the request.
+    """
+
+    def __init__(self, config, resolver, realm, default_realm, timestamp):
+        self.config = config
+        self.resolver = resolver
+        self.realm = realm
+        self.default_realm = default_realm
+        self.timestamp = timestamp
 
     def get_config(self, key=None, default=None, role="admin",
                    return_bool=False):
@@ -221,26 +269,38 @@ def get_privacyidea_config():
     return get_from_config()
 
 
-def update_config_object():
+def get_shared_config_object():
     """
-    Ensure that the request-local store contains a config object.
-    If it already contains one, check for updated configuration.
-    :return: a ConfigClass object
+    :return: the application-wide ``SharedConfigClass`` object, which is created on demand.
+    """
+    store = get_app_local_store()
+    if 'shared_config_object' not in store:
+        # It might happen that two threads create SharedConfigClass() instances in parallel.
+        # However, as setting dictionary values is atomic, one of the two objects will "win",
+        # and the next request handled by the second thread will use the winning config object.
+        store['shared_config_object'] = SharedConfigClass()
+    return store['shared_config_object']
+
+
+def invalidate_config_object():
+    """
+    If the request-local store contains a config object, remove it.
+    If the request-local store contains no config object, do nothing.
     """
     store = get_request_local_store()
-    config_object = store['config_object'] = ConfigClass()
-    return config_object
+    if 'config_object' in store:
+        del store['config_object']
 
 
 def get_config_object():
     """
     Return the request-local config object. If it does not exist yet, create it.
-    Currently, the config object is a singleton, so it is shared among threads.
     :return: a ConfigClass object
     """
     store = get_request_local_store()
     if 'config_object' not in store:
-        store['config_object'] = update_config_object()
+        shared_config = get_shared_config_object()
+        store['config_object'] = shared_config.reload_and_clone()
     return store['config_object']
 
 
@@ -260,7 +320,7 @@ def get_from_config(key=None, default=None, role="admin", return_bool=False):
     :return: If key is None, then a dictionary is returned. If a certain key
         is given a string/bool is returned.
     """
-    config_object = update_config_object()
+    config_object = get_config_object()
     return config_object.get_config(key=key, default=default, role=role,
                                     return_bool=return_bool)
 
