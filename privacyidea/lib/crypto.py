@@ -55,6 +55,7 @@ import six
 import ctypes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
 from Crypto.PublicKey import RSA
 import base64
 try:
@@ -414,11 +415,10 @@ def aes_encrypt_b64(key, data):
     :rtype: str
     """
     # pad data
-    block_size = algorithms.AES.block_size // 8
-    num_pad = block_size - (len(data) % block_size)
-    data = data + six.int2byte(num_pad) * num_pad
+    padder = padding.PKCS7(algorithms.AES.block_size).padder()
+    padded_data = padder.update(data) + padder.finalize()
     iv = geturandom(16)
-    encdata = aes_cbc_encrypt(key, iv, data)
+    encdata = aes_cbc_encrypt(key, iv, padded_data)
     return b64encode_and_unicode(iv + encdata)
 
 
@@ -435,11 +435,11 @@ def aes_decrypt_b64(key, enc_data_b64):
     data_bin = base64.b64decode(enc_data_b64)
     iv = data_bin[:16]
     encdata = data_bin[16:]
-    output = aes_cbc_decrypt(key, iv, encdata)
+    padded_data = aes_cbc_decrypt(key, iv, encdata)
 
     # remove padding
-    padding = six.indexbytes(output, len(output) - 1)
-    output = output[0:-padding]
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+    output = unpadder.update(padded_data) + unpadder.finalize()
 
     return output
 

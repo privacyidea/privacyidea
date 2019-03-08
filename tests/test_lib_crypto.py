@@ -145,6 +145,14 @@ class CryptoTestCase(MyTestCase):
         pin = decryptPin(r)
         self.assertTrue(pin == "test", (r, pin))
 
+        # decrypt some pins generated with 2.23
+        pin1 = 'd2c920ad10513c8ea322b522751185a3:54f068cffb43ada1edd024087da614ec'
+        self.assertEquals(decryptPin(pin1), 'test')
+        pin2 = '223f414872122ad112eb9f17b05da0b8:123079d997cd18601414830ab7c97678'
+        self.assertEquals(decryptPin(pin2), 'test')
+        pin3 = '4af7590600286becde70b99b10493104:09e4133652c609f9697e1923cde72904'
+        self.assertEquals(decryptPin(pin3), '1234')
+
     def test_01_encrypt_decrypt_pass(self):
         r = encryptPassword(u"passwörd".encode('utf8'))
         # encryptPassword returns unicode
@@ -156,6 +164,16 @@ class CryptoTestCase(MyTestCase):
         r = encryptPassword(u"passwörd")
         pin = decryptPassword(r)
         self.assertEqual(pin, u"passwörd")
+
+        # decrypt some passwords generated with 2.23
+        pw1 = '3d1bf9db4c75469b4bb0bc7c70133181:2c27ac3839ed2213b8399d0471b17136'
+        self.assertEquals(decryptPassword(pw1), 'test123')
+        pw2 = '3a1be65a234f723fe5c6969b818582e1:08e51d1c65aa74c4988d094c40cb972c'
+        self.assertEquals(decryptPassword(pw2), 'test123')
+        pw3 = '7a4d5e2f26978394e33715bc3e8188a3:90b2782112ad7bbc5b48bd10e5c7c096cfe4ef7d9d11272595dc5b6c7f21d98a'
+        self.assertEquals(decryptPassword(pw3, ), u'passwörd')
+
+        # TODO: add checks for broken paddings/encrypted values and malformed enc_data
 
         not_valid_password = b"\x01\x02\x03\x04\xff"
         r = encryptPassword(not_valid_password)
@@ -183,6 +201,18 @@ class CryptoTestCase(MyTestCase):
         d = aes_decrypt_b64(key, s)
         self.assertEqual(otp_seed, d)
 
+        # check some data generated with 2.23
+        hex_key = 'f84c2ddb09dee2a88194d5ac2156a8e4'
+        data = b'secret data'
+        enc_data = 'WNfUSNBNZF5kaPfujW8ueUi5Afas47pQ/3FHc3VymWM='
+        d = aes_decrypt_b64(binascii.unhexlify(hex_key), enc_data)
+        self.assertEquals(data, d)
+        enc_data = 'RDDvdAJhCnw/tlYscTxv+6idHAQnQFY5VpUK8SFflYQ='
+        d = aes_decrypt_b64(binascii.unhexlify(hex_key), enc_data)
+        self.assertEquals(data, d)
+
+        # TODO: add checks for broken paddings/encrypted values and malformed enc_data
+
     def test_03_hash(self):
         import os
         val = os.urandom(16)
@@ -205,6 +235,23 @@ class CryptoTestCase(MyTestCase):
         c = encrypt(s, iv)
         d = decrypt(binascii.unhexlify(c), iv)
         self.assertEqual(s, d.decode('utf8'))
+
+        # TODO: add checks for broken paddings/encrypted values and malformed enc_data
+
+        # check some data generated with 2.23
+        s = u'passwörd'.encode('utf8')
+        iv_hex = 'cd5245a2875007d30cc049c2e7eca0c5'
+        enc_data_hex = '7ea55168952b33131077f4249cf9e52b5f2b572214ace13194c436451fe3788c'
+        self.assertEquals(s, decrypt(binascii.unhexlify(enc_data_hex),
+                                     binascii.unhexlify(iv_hex)))
+        enc_data_hex = 'fb79a04d69e832aec8ffb4bbfe031b3bd28a2840150212d8c819e' \
+                       '362b1711cc389aed70eaf27af53131ea446095da80e88c4caf791' \
+                       'c709e9581ff0a5f1e19228dc4c3c278d148951acaab9a164c1770' \
+                       '7166134f4ba6111055c65d72771c6f59c2dc150a53753f2cf4c47' \
+                       'ec02901022f02a054d1fc7678fd4f66b47967a5d222a'
+        self.assertEquals(b'\x01\x02' * 30,
+                          decrypt(binascii.unhexlify(enc_data_hex),
+                                  binascii.unhexlify(iv_hex)))
 
     def test_05_encode_decode(self):
         b_str = b'Hello World'
