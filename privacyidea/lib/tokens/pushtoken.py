@@ -66,7 +66,8 @@ from cryptography.hazmat.primitives.asymmetric import utils
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CHALLENGE_TEXT = "Please confirm the authentication on your mobile device!"
+DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
+DEFAULT_MOBILE_TEXT = _("Do you want to confirm login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
@@ -74,6 +75,8 @@ PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
+    MOBILE_TEXT = "push_text_on_mobile"
+    MOBILE_TITLE = "push_title_on_mobile"
 
 
 def _strip_key(key):
@@ -214,6 +217,18 @@ class PushTokenClass(TokenClass):
                            'value': [gw.identifier for gw in gws]
                        },
                    },
+                   SCOPE.AUTH: {
+                       PUSH_ACTION.MOBILE_TEXT: {
+                           'type': 'str',
+                           'desc': _('The question the user sees on his mobile phone.'),
+                           'group': 'PUSH'
+                       },
+                       PUSH_ACTION.MOBILE_TITLE: {
+                           'type': 'str',
+                           'desc': _('The title of the notification, the user sees on his mobile phone.'),
+                           'group': 'PUSH'
+                       }
+                   }
                },
         }
 
@@ -458,7 +473,7 @@ class PushTokenClass(TokenClass):
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
-                                                 options) or _(DEFAULT_CHALLENGE_TEXT)
+                                                 options) or DEFAULT_CHALLENGE_TEXT
 
         attributes = None
         data = None
@@ -468,10 +483,12 @@ class PushTokenClass(TokenClass):
             # We send the challenge to the Firebase service
             fb_gateway = create_sms_instance(fb_identifier)
             url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
-            # TODO: Make this configurable
-            message_on_mobile = u"Do you want to login to service ABC?"
-            # TODO: Make this configurable
-            title = "PI Authentication"
+            message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
+                                                   PUSH_ACTION.MOBILE_TITLE,
+                                                   options) or DEFAULT_MOBILE_TEXT
+            title = get_action_values_from_options(SCOPE.AUTH,
+                                                   PUSH_ACTION.MOBILE_TITLE,
+                                                   options) or "privacyIDEA"
             smartphone_data = {"nonce": challenge,
                                "question": message_on_mobile,
                                "serial": self.token.serial,
