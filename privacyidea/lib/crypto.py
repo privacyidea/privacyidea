@@ -53,20 +53,18 @@ import string
 import binascii
 import six
 import ctypes
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
-from Crypto.PublicKey import RSA
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
+
 import base64
-try:
-    from Crypto.Signature import pkcs1_15
-    SIGN_WITH_RSA = False
-except ImportError:
-    # Bummer the version of PyCrypto has no PKCS1_15
-    SIGN_WITH_RSA = True
 import passlib.hash
 import traceback
-from six import PY2, text_type
+from six import PY2
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
@@ -632,35 +630,55 @@ def zerome(bufferObject):
     return
 
 
+def _slow_rsa_verify_raw(key, sig, msg):
+    assert isinstance(sig, six.integer_types)
+    assert isinstance(msg, six.integer_types)
+    if hasattr(key, 'private_numbers'):
+        pn = key.private_numbers().public_numbers
+    elif hasattr(key, 'public_numbers'):
+        pn = key.public_numbers()
+    else:
+        raise TypeError('No public key')
+
+    # compute m**d (mod n)
+    return msg == pow(sig, pn.e, pn.n)
+
+
 class Sign(object):
     """
     Signing class that is used to sign Audit Entries and to sign API responses.
     """
-    def __init__(self, private_file, public_file):
+    sig_ver = 'rsa_sha256_pss'
+
+    def __init__(self, private_key=None, public_key=None):
         """
-        :param private_file: The privacy Key file
-        :type private_file: filename
-        :param public_file:  The public key file
-        :type public_file: filename
+        :param private_key: The private Key data in PEM format
+        :type private_key: bytes or None
+        :param public_key:  The public key data in PEM format
+        :type public_key: bytes or None
         :return: Sign Object
         """
-        self.private = ""
-        self.public = ""
-        try:
-            f = open(private_file, "r")
-            self.private = f.read()
-            f.close()
-        except Exception as e:
-            log.error("Error reading private key {0!s}: ({1!r})".format(private_file, e))
-            raise e
+        self.private = None
+        self.public = None
+        backend = default_backend()
+        if private_key:
+            try:
+                self.private = serialization.load_pem_private_key(private_key,
+                                                                  password=None,
+                                                                  backend=backend)
+            except Exception as e:
+                log.error("Error loading private key: ({0!r})".format(e))
+                log.debug(traceback.format_exc())
+                raise e
 
-        try:
-            f = open(public_file, "r")
-            self.public = f.read()
-            f.close()
-        except Exception as e:
-            log.error("Error reading public key {0!s}: ({1!r})".format(public_file, e))
-            raise e
+        if public_key:
+            try:
+                self.public = serialization.load_pem_public_key(public_key,
+                                                                backend=backend)
+            except Exception as e:
+                log.error("Error loading public key: ({0!r})".format(e))
+                log.debug(traceback.format_exc())
+                raise e
 
     def sign(self, s):
         """
@@ -668,45 +686,69 @@ class Sign(object):
 
         :param s: String to sign
         :type s: str
-        :return: The signature of the string
-        :rtype: long
+        :return: The hexlified and versioned signature of the string
+        :rtype: str
         """
-        if isinstance(s, text_type):
-            s = s.encode('utf8')
-        RSAkey = RSA.importKey(self.private)
-        if SIGN_WITH_RSA:
-            hashvalue = sha256(s).digest()
-            signature = RSAkey.sign(hashvalue, 1)
-        else:
-            hashvalue = sha256(s)
-            signature = pkcs1_15.new(RSAkey).sign(hashvalue)
-        s_signature = str(signature[0])
-        return s_signature
+        if not self.private:
+            log.info('Could not sign message {0!s}, no private key!'.format(s))
+            return ''
 
-    def verify(self, s, signature):
+        signature = self.private.sign(
+            to_bytes(s),
+            asym_padding.PSS(
+                mgf=asym_padding.MGF1(hashes.SHA256()),
+                salt_length=asym_padding.PSS.MAX_LENGTH),
+            hashes.SHA256())
+        res = ':'.join([self.sig_ver, hexlify_and_unicode(signature)])
+        return res
+
+    def verify(self, s, signature, verify_old_sigs=False):
         """
         Check the signature of the string s
 
         :param s: String to check
-        :type s: str
+        :type s: str or bytes
         :param signature: the signature to compare
-        :type signature: str
+        :type signature: str or int
+        :param verify_old_sigs: whether to check for old style signatures as well
+        :type verify_old_sigs: bool
+        :return: True if the signature is valid, false otherwise.
+        :rtype: bool
         """
-        if isinstance(s, text_type):
-            s = s.encode('utf8')
         r = False
+        if not self.public:
+            log.info('Could not verify signature for message {0!s}, '
+                     'no public key!'.format(s))
+            return r
+
+        sver = ''
         try:
-            RSAkey = RSA.importKey(self.public)
-            signature = long(signature)
-            if SIGN_WITH_RSA:
-                hashvalue = sha256(s).digest()
-                r = RSAkey.verify(hashvalue, (signature,))
+            sver, signature = six.text_type(signature).split(':')
+        except ValueError:
+            # if the signature does not contain a colon we assume an old style signature.
+            pass
+
+        try:
+            if sver == self.sig_ver:
+                self.public.verify(
+                    binascii.unhexlify(signature),
+                    to_bytes(s),
+                    asym_padding.PSS(
+                        mgf=asym_padding.MGF1(hashes.SHA256()),
+                        salt_length=asym_padding.PSS.MAX_LENGTH),
+                    hashes.SHA256())
+                r = True
             else:
-                hashvalue = sha256(s)
-                pkcs1_15.new(RSAkey).verify(hashvalue, signature)
-        except Exception as _e:  # pragma: no cover
+                if verify_old_sigs:
+                    int_s = int(binascii.hexlify(sha256(to_bytes(s)).digest()), 16)
+                    r = _slow_rsa_verify_raw(self.public, int(signature), int_s)
+                else:
+                    log.debug('Could not verify old style signature {0!s} '
+                              'for data {1:s}'.format(signature, s))
+        except Exception:
             log.error("Failed to verify signature: {0!r}".format(s))
             log.debug("{0!s}".format(traceback.format_exc()))
+
         return r
 
 
@@ -728,7 +770,6 @@ def create_hsm_object(config):
     package_name, class_name = hsm_module_name.rsplit(".", 1)
     hsm_class = get_module_class(package_name, class_name, "setup_module")
     log.info("initializing HSM class: {0!s}".format(hsm_class))
-    hsm_parameters = {}
     if class_name == "DefaultSecurityModule":
         hsm_parameters = {"file": config.get("PI_ENCFILE")}
     else:

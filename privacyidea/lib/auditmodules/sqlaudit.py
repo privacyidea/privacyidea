@@ -45,22 +45,20 @@ from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list
+from privacyidea.lib.framework import get_app_config_value
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
 import traceback
 from six import string_types
-
+from privacyidea.models import audit_column_length as column_length
+from privacyidea.models import Audit as LogEntry
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 log = logging.getLogger(__name__)
 
 metadata = MetaData()
-
-from privacyidea.models import audit_column_length as column_length
-from privacyidea.models import AUDIT_TABLE_NAME as TABLE_NAME
-from privacyidea.models import Audit as LogEntry
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
 
 
 class Audit(AuditBase):
@@ -271,7 +269,16 @@ class Audit(AuditBase):
         :type priv: string with filename
         :return: None
         """
-        self.sign_object = Sign(priv, pub)
+        try:
+            with open(priv, "rb") as privkey_file:
+                private_key = privkey_file.read()
+            with open(pub, 'rb') as pubkey_file:
+                public_key = pubkey_file.read()
+            self.sign_object = Sign(private_key, public_key)
+        except Exception as e:
+            log.error("Error reading key file: {0!r})".format(e))
+            log.debug(traceback.format_exc())
+            raise e
 
     def _check_missing(self, audit_id):
         """
@@ -481,9 +488,10 @@ class Audit(AuditBase):
     
     def audit_entry_to_dict(self, audit_entry):
         sig = None
+        verify_old_sig = get_app_config_value('PI_CHECK_OLD_SIGNATURES', False)
         if self.sign_data:
             sig = self.sign_object.verify(self._log_to_string(audit_entry),
-                                          audit_entry.signature)
+                                          audit_entry.signature, verify_old_sig)
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True

@@ -14,13 +14,14 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt)
+                                    encrypt, decrypt, Sign)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 
 from flask import current_app
+import six
 from six import text_type
 from PyKCS11 import PyKCS11Error
 
@@ -559,3 +560,68 @@ class AESHardwareSecurityModuleLibLevelPasswordTestCase(MyTestCase):
             self.assertTrue(ready)
             self.assertIs(hsm, init_hsm())
             self.assertIs(get_hsm(), hsm)
+
+
+class SignObjectTestCase(MyTestCase):
+    """ tests for the SignObject which signs/verifies using RSA """
+
+    def test_00_create_sign_object(self):
+        # test with invalid key data
+        with self.assertRaises(Exception):
+            Sign(b'This is not a private key', b'This is not a public key')
+        with self.assertRaises(Exception):
+            priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
+            Sign(private_key=priv_key,
+                 public_key=b'Still not a public key')
+        # this should work
+        priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
+        pub_key = open(current_app.config.get("PI_AUDIT_KEY_PUBLIC"), 'rb').read()
+        so = Sign(priv_key, pub_key)
+        self.assertEquals(so.sig_ver, 'rsa_sha256_pss')
+
+    def test_01_sign_and_verify_data(self):
+        priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
+        pub_key = open(current_app.config.get("PI_AUDIT_KEY_PUBLIC"), 'rb').read()
+        so = Sign(priv_key, pub_key)
+        data = 'short text'
+        sig = so.sign(data)
+        self.assertTrue(sig.startswith(so.sig_ver), sig)
+        self.assertTrue(so.verify(data, sig))
+
+        data = b'A slightly longer text, this time in binary format.'
+        sig = so.sign(data)
+        self.assertTrue(so.verify(data, sig))
+
+        # test with text larger than RSA key size
+        data = b'\x01\x02' * 5000
+        sig = so.sign(data)
+        self.assertTrue(so.verify(data, sig))
+
+        # now test a broken signature
+        data = 'short text'
+        sig = so.sign(data)
+        sig_broken = sig[:-1] + '{:x}'.format((int(sig[-1], 16) + 1) % 16)
+        self.assertFalse(so.verify(data, sig_broken))
+
+        # test with non hex string
+        sig_broken = sig[:-1] + 'x'
+        self.assertFalse(so.verify(data, sig_broken))
+
+        # now try to verify old signatures
+        # first without enabling old signatures in config
+        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010
+        data = 'short text'
+        self.assertFalse(so.verify(data, short_text_sig))
+
+        # now we enable the checking of old signatures
+        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010
+        data = 'short text'
+        self.assertTrue(so.verify(data, short_text_sig, verify_old_sigs=True))
+
+        # verify a broken old signature
+        broken_short_text_sig = short_text_sig + 1
+        self.assertFalse(so.verify(data, broken_short_text_sig, verify_old_sigs=True))
+
+        long_data_sig = 991763198885165486007338893972384496025563436289154190056285376683148093829644985815692167116166669178171916463844829424162591848106824431299796818231239278958776853940831433819576852350691126984617641483209392489383319296267416823194661791079316704545017249491961092046751201670544843607206698682190381208022128216306635574292359600514603728560982584561531193227312370683851459162828981766836503134221347324867936277484738573153562229478151744446530191383660477390958159856842222437156763388859923477183453362567547792824054461704970820770533637185477922709297916275611571003099205429044820469679520819043851809079
+        long_data = b'\x01\x02' * 5000
+        self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
