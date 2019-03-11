@@ -16,10 +16,17 @@ from privacyidea.models import (Token,
 from privacyidea.lib.policy import (SCOPE, set_policy,
                                     delete_policy)
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from base64 import b32decode
+from base64 import b32decode, b32encode
 import json
 import responses
 import mock
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+
 
 
 class myAccessTokenInfo(object):
@@ -39,6 +46,14 @@ class myCredentials(object):
 class PushTokenTestCase(MyTestCase):
 
     serial1 = "PUSH00001"
+
+    smartphone_private_key = rsa.generate_private_key(public_exponent=65537,
+                                                      key_size=4096,
+                                                      backend=default_backend())
+    smartphone_public_key = smartphone_private_key.public_key()
+    smartphone_public_key_pem = smartphone_public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -84,9 +99,9 @@ class PushTokenTestCase(MyTestCase):
         token.update({"enrollment_credential": enrollment_credential,
                       "serial": self.serial1,
                       "fbtoken": "firebasetoken",
-                      "pubkey": "pubkey"})
+                      "pubkey": self.smartphone_public_key_pem})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
-        self.assertEqual(token.get_tokeninfo("public_key_smartphone"), "pubkey")
+        self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem)
         self.assertTrue(token.get_tokeninfo("public_key_server").startswith("-----BEGIN RSA PUBLIC KEY-----\nMIICC"),
                         token.get_tokeninfo("public_key_server"))
         self.assertTrue(token.get_tokeninfo("private_key_server").startswith("-----BEGIN RSA PRIVATE KEY-----\nMIIJK"),
@@ -143,7 +158,7 @@ class PushTokenTestCase(MyTestCase):
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": "wrongserial",
-                                                 "pubkey": "pubkey",
+                                                 "pubkey": self.smartphone_public_key_pem,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -157,7 +172,7 @@ class PushTokenTestCase(MyTestCase):
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": serial,
-                                                 "pubkey": "pubkey",
+                                                 "pubkey": self.smartphone_public_key_pem,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
@@ -172,7 +187,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
                                                  "serial": serial,
-                                                 "pubkey": "pubkey",
+                                                 "pubkey": self.smartphone_public_key_pem,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -191,7 +206,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(token_obj.token.rollout_state, u"enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
-            self.assertEqual(tokeninfo.get("public_key_smartphone"), u"pubkey")
+            self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem)
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
             # The private key of the server is stored in the otpkey
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
@@ -292,17 +307,11 @@ class PushTokenTestCase(MyTestCase):
             sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**data)
             token_obj = get_tokens(serial=data.get("serial"))[0]
             pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
-            from cryptography.hazmat.primitives.serialization import load_pem_public_key
-            from cryptography.hazmat.backends import default_backend
-            from cryptography.hazmat.primitives import hashes
-            from cryptography.hazmat.primitives.asymmetric import padding
             pubkey_obj = load_pem_public_key(str(pem_pubkey), backend=default_backend())
             signature = b32decode(data.get("signature"))
             # If signature does not match it will raise InvalidSignature exception
             pubkey_obj.verify(signature, sign_string.encode("utf8"),
-                              padding.PSS(
-                                  mgf=padding.MGF1(hashes.SHA256()),
-                                  salt_length=padding.PSS.MAX_LENGTH),
+                              padding.PKCS1v15(),
                               hashes.SHA256())
             headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
             return (200, headers, json.dumps({}))
@@ -341,11 +350,18 @@ class PushTokenTestCase(MyTestCase):
                                               transaction_id=transaction_id)
         challenge = challengeobject_list[0].challenge
 
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
+        signature = self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                                     padding.PKCS1v15(),
+                                                     hashes.SHA256())
+        signature = b32encode(signature)
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
                                                  "nonce": challenge,
-                                                 "signature": "my-signed-answer"}):
+                                                 "signature": signature}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 

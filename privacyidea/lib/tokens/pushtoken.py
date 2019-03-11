@@ -402,15 +402,12 @@ class PushTokenClass(TokenClass):
                 for chal in challengeobject_list:
                     # verify the signature of the nonce
                     pubkey_obj = serialization.load_pem_public_key(str(pubkey_pem), default_backend())
-                    chosen_hash = hashes.SHA256()
-                    hasher = hashes.Hash(chosen_hash, default_backend())
                     sign_data = u"{0!s}|{1!s}".format(challenge, serial)
-                    hasher.update(sign_data.encode("utf8"))
-                    digest = hasher.finalize()
                     try:
-                        pubkey_obj.verify(b32decode(signature), digest,
+                        pubkey_obj.verify(b32decode(signature),
+                                          sign_data.encode("utf8"),
                                           padding.PKCS1v15(),
-                                          utils.Prehashed(chosen_hash))
+                                          hashes.SHA256())
                         # The signature was valid
                         chal.set_otp_status(True)
                         result = True
@@ -487,16 +484,10 @@ class PushTokenClass(TokenClass):
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
             privkey_obj = serialization.load_pem_private_key(str(pem_privkey), None, default_backend())
 
-            # Prehash the data for the signature
-            chosen_hash = hashes.SHA256()
-            hasher = hashes.Hash(chosen_hash, default_backend())
-            hasher.update(sign_string.encode("utf8"))
-            digest = hasher.finalize()
-
             # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
-            signature = privkey_obj.sign(digest,
+            signature = privkey_obj.sign(sign_string.encode("utf8"),
                                          padding.PKCS1v15(),
-                                         utils.Prehashed(chosen_hash))
+                                         hashes.SHA256())
             smartphone_data["signature"] = b32encode(signature)
 
             fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
