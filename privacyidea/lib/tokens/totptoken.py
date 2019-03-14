@@ -465,7 +465,8 @@ class TotpTokenClass(HotpTokenClass):
         oCount = self.get_otp_count()
 
         log.debug("tokenCounter: {0!r}".format(oCount))
-        log.debug("now checking window {0!s}, timeStepping {1!s}".format(self.timewindow, self.timestep))
+        sync_window = self.get_sync_window()
+        log.debug("now checking window {0!s}, timeStepping {1!s}".format(sync_window, self.timestep))
         # check 2nd value
         hmac2Otp = HmacOtp(secretHOtp,
                            counter,
@@ -473,7 +474,7 @@ class TotpTokenClass(HotpTokenClass):
                            self.get_hashlib(self.hashlib))
         log.debug("{0!s} in otpkey: {1!s} ".format(otp2, secretHOtp))
         res2 = hmac2Otp.checkOtp(otp2,
-                                 int(self.timewindow / self.timestep),
+                                 int(sync_window),
                                  symetric=True)  # TEST -remove the 10
         log.debug("res 2: {0!r}".format(res2))
         # check 1st value
@@ -483,7 +484,7 @@ class TotpTokenClass(HotpTokenClass):
                            self.get_hashlib(self.hashlib))
         log.debug("{0!s} in otpkey: {1!s} ".format(otp1, secretHOtp))
         res1 = hmac2Otp.checkOtp(otp1,
-                                 int(self.timewindow / self.timestep),
+                                 int(sync_window),
                                  symetric=True)  # TEST -remove the 10
         log.debug("res 1: {0!r}".format(res1))
 

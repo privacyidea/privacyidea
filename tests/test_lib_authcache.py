@@ -7,7 +7,8 @@ from .base import MyTestCase
 
 from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache_last_auth, verify_in_cache,
-                                       _hash_password)
+                                       _hash_password,
+                                       cleanup)
 from privacyidea.models import AuthCache
 import datetime
 
@@ -92,7 +93,23 @@ class AuthCacheTestCase(MyTestCase):
         r = AuthCache.query.filter(AuthCache.username == "grandpa").first()
         self.assertEqual(r, None)
 
+    def test_04_cleanup_authcache(self):
+        # cleanup everything!
+        r = cleanup(100000000)
+        # Create some entries:
+        AuthCache("grandpa", self.realm, self.resolver, _hash_password(self.password),
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      days=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      days=2)).save()
+        AuthCache("grandpa", self.realm, self.resolver, _hash_password(self.password),
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      minutes=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      minutes=2)).save()
 
-
-
+        # Now we delete entries, that are older than 20 minutes. Only the 2 days old
+        # should be deleted. Not the 2 minutes old.
+        r = cleanup(10)
+        self.assertEqual(1, r)
 

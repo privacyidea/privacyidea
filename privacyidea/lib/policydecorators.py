@@ -418,7 +418,6 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                     reply_dict["message"] = ("Only %s successfull "
                                              "authentications per %s"
                                              % (policy_count, tdelta))
-                    g.audit_object.add_policy(next(iter(max_success_dict.values())))
 
     return res, reply_dict
 
