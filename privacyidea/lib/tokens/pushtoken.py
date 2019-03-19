@@ -27,35 +27,25 @@ and send it back to the authentication endpoint.
 This code is tested in tests/test_lib_tokens_push
 """
 
-import datetime
-import json
-import traceback
-from privacyidea.lib.crypto import geturandom
 from base64 import b32decode
-from privacyidea.lib.utils import b32encode_and_unicode
 from six.moves.urllib.parse import quote
 
 from privacyidea.api.lib.utils import getParam
-from privacyidea.api.lib.utils import required, optional
-from privacyidea.lib.utils import is_true
-from privacyidea.lib.token import get_one_token, get_token_type
+from privacyidea.lib.token import get_one_token
 from privacyidea.lib.utils import prepare_result, to_bytes
 from privacyidea.lib.error import ResourceNotFoundError
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
-from json import loads
 from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
 import logging
-from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-import binascii
-from privacyidea.lib.utils import create_img, is_true, b32encode_and_unicode
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.utils import create_img, b32encode_and_unicode
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom
@@ -66,7 +56,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.asymmetric import utils
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +65,7 @@ PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
+
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
