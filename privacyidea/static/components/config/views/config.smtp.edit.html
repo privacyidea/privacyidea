@@ -110,6 +110,17 @@
         <label for="tls" translate>Use TLS</label>
         </div>
     </div>
+    <div class="form-group" ng-if="hasJobQueue">
+        <div class="col-sm-3 control-label"></div>
+        <div class="col-sm-9">
+        <input type="checkbox"
+               ng-model="params.enqueue_job"
+               ng-checked="isChecked(params.enqueue_job)"
+               name="enqueue_job"
+               id="enqueue_job">
+        <label for="enqueue_job" translate>Send mail from job queue</label>
+        </div>
+    </div>
 
     <div class="form-group">
         <label for="recipient" translate>Recipient for testing</label>

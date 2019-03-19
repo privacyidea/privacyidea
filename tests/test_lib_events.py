@@ -1753,7 +1753,8 @@ class UserNotificationTestCase(MyTestCase):
         audit_object.audit_data["serial"] = "123456"
         g.audit_object = audit_object
         options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "handler_def": {"conditions": {"token_locked": "True"},
+                                   "options": {"emailconfig": "myserver"}},
                    "response": resp,
                    "request": req
                    }
@@ -1830,7 +1831,8 @@ class UserNotificationTestCase(MyTestCase):
         g.audit_object = audit_object
         g.client_ip = "127.0.0.1"
         options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "handler_def": {"conditions": {"token_locked": "True"},
+                                   "options": {"emailconfig": "myserver"}},
                    "response": resp,
                    "request": req
                    }
