@@ -42,7 +42,7 @@ as unicode strings. They always return a hexlified unicode string.
 The functions which encrypt/decrypt arbitrary data return bytes and let the
 calling function handle the data.
 
-This lib.cryto is tested in tests/test_lib_crypto.py
+This lib.crypto is tested in tests/test_lib_crypto.py
 """
 from __future__ import division
 import hmac
@@ -72,6 +72,10 @@ from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
 from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 if not PY2:
     long = int
@@ -754,27 +758,25 @@ def generate_password(size=6, characters=string.ascii_lowercase +
 
 def generate_keypair(rsa_keysize=2048):
     """
-    This create a keypair, either RSA or ECC.
-    The HSM should be used.
+    This creates an RSA key pair
 
-    # TODO: This must be much nicer...
+    # TODO: The HSM should be used.
 
     The public key and private keys are returned in PKCS#1 Format.
 
     :return: tuple of (pubkey, privkey)
     """
-    from OpenSSL import crypto
-    from OpenSSL.crypto import _new_mem_buf, _bio_to_string
-    from OpenSSL._util import lib as _lib, ffi as _ffi
-    helper = crypto._PassphraseHelper(crypto.FILETYPE_PEM, None)
-
-    bio_pub = _new_mem_buf()  # Memory buffers to write to
-    bio_priv = _new_mem_buf()
-    keypair = crypto.PKey()
-    keypair.generate_key(crypto.TYPE_RSA, rsa_keysize)
-    rsa_pkey = crypto._lib.EVP_PKEY_get1_RSA(keypair._pkey)
-    crypto._lib.PEM_write_bio_RSAPublicKey(bio_pub, rsa_pkey)
-    crypto._lib.PEM_write_bio_RSAPrivateKey(
-            bio_priv, rsa_pkey,
-        _ffi.NULL, _ffi.NULL, 0, helper.callback, helper.callback_args)
-    return (_bio_to_string(bio_pub), _bio_to_string(bio_priv))
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=rsa_keysize,
+        backend=default_backend()
+        )
+    public_key = private_key.public_key()
+    pem_priv = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+    pem_pub = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.PKCS1)
+    return pem_pub, pem_priv

@@ -14,7 +14,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt)
+                                    encrypt, decrypt, generate_keypair)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -211,6 +211,12 @@ class CryptoTestCase(MyTestCase):
         self.assertEqual(to_unicode(u_str), u_str)
         self.assertEqual(to_bytes(b_str), b_str)
         self.assertEqual(to_bytes(u_str), u_str.encode('utf8'))
+
+    def test_10_generate_keypair(self):
+        keypub, keypriv = generate_keypair(rsa_keysize=4096)
+        self.assertTrue(keypub.startswith("-----BEGIN RSA PUBLIC KEY-----"), keypub)
+        self.assertTrue(keypriv.startswith("-----BEGIN RSA PRIVATE KEY-----"), keypriv)
+
 
 
 class RandomTestCase(MyTestCase):
