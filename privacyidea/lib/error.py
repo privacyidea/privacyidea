@@ -50,6 +50,7 @@ class ERROR:
     AUTHENTICATE_MISSING_RIGHT = 4306
     CA = 503
     RESOURCE_NOT_FOUND = 601
+    NO_CERTIFICATE_AVAILABLE = 602
     HSM = 707
     SELFSERVICE = 807
     SERVER = 903
@@ -170,4 +171,8 @@ class ParameterError(privacyIDEAError):
     USER_OR_SERIAL = _('You either need to provide user or serial')
 
     def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
+        privacyIDEAError.__init__(self, description=description, id=id)
+        
+class NoCertificateAvailableError(privacyIDEAError):
+    def __init__(self, description="No certificate available !", id=ERROR.NO_CERTIFICATE_AVAILABLE):
         privacyIDEAError.__init__(self, description=description, id=id)
