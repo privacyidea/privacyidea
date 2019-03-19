@@ -75,7 +75,7 @@ DEFAULT_MOBILE_TEXT = _("Do you want to confirm login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
-
+GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -204,7 +204,7 @@ class PushTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype : s.o.
         """
-        gws = get_smsgateway(gwtype=u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider')
+        gws = get_smsgateway(gwtype=GWTYPE)
         res = {'type': 'push',
                'title': _('PUSH Token'),
                'description':
@@ -325,7 +325,7 @@ class PushTokenClass(TokenClass):
         if self.token.rollout_state == "clientwait":
             # Get the values from the configured PUSH config
             fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
-            firebase_configs = get_smsgateway(identifier=fb_identifier)
+            firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
             if len(firebase_configs) != 1:
                 raise ParameterError("Unknown Firebase configuration!")
             fb_options = firebase_configs[0].option_dict
