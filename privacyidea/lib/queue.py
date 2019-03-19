@@ -75,8 +75,12 @@ class JobCollector(object):
             store = get_app_local_store()
         if "job_queue" in store:
             raise RuntimeError("App already has a job queue: {!r}".format(store["job_queue"]))
-        package_name, class_name = app.config[JOB_QUEUE_CLASS].rsplit(".", 1)
-        queue_class = get_module_class(package_name, class_name)
+        try:
+            package_name, class_name = app.config[JOB_QUEUE_CLASS].rsplit(".", 1)
+            queue_class = get_module_class(package_name, class_name)
+        except (ImportError, ValueError) as exx:
+            log.warning(u"Could not import job queue class {!r}: {!r}".format(app.config[JOB_QUEUE_CLASS], exx))
+            return
         # Extract configuration from app config: All options starting with PI_JOB_QUEUE_
         options = {}
         for k, v in app.config.items():
