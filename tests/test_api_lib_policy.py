@@ -1314,7 +1314,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("sms1")
 
-    def test_22_push_registration_url(self):
+    def test_22_push_firebase_config(self):
         from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
         g.logged_in_user = {"username": "user1",
                             "role": "user"}
@@ -1329,20 +1329,23 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
         req.all_data = {
             "type": "push"}
-        # In this case we have no reqistration_url. We will raise an exception
+        # In this case we have no firebase config. We will raise an exception
+        self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+        # if we have a non existing firebase config, we will raise an exception
+        req.all_data = {
+            "type": "push",
+            PUSH_ACTION.FIREBASE_CONFIG: "non-existing"}
         self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
 
-        # Set a policy for the registration URL
+        # Set a policy for the firebase config to use.
         set_policy(name="push_pol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=http://test,{1!s}=11".format(PUSH_ACTION.REGISTRATION_URL,
-                                                              PUSH_ACTION.TTL))
+                   action="{0!s}=some-fb-config".format(PUSH_ACTION.FIREBASE_CONFIG))
         g.policy_object = PolicyClass()
         req.all_data = {
             "type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual(req.all_data.get("registration_url"), "http://test")
-        self.assertEqual(req.all_data.get("ttl"), "11")
+        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
 
         # finally delete policy
         delete_policy("push_pol")
