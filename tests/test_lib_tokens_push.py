@@ -173,7 +173,8 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"serial": serial,
                                                  "pubkey": self.smartphone_public_key_pem,
-                                                 "fbtoken": "firebaseT"}):
+                                                 "fbtoken": "firebaseT",
+                                                 "enrollment_credential": "WRonG"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
             status = json.loads(res.data.decode('utf8')).get("result").get("status")

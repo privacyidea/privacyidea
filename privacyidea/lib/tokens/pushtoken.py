@@ -274,7 +274,8 @@ class PushTokenClass(TokenClass):
             # We are in step 2:
             if self.token.rollout_state != "clientwait":
                 raise ParameterError("Invalid state! The token you want to enroll is not in the state 'clientwait'.")
-            if upd_param.get("enrollment_credential") != self.get_tokeninfo("enrollment_credential"):
+            enrollment_credential = getParam(upd_param, "enrollment_credential", optional=False)
+            if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
             self.del_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
