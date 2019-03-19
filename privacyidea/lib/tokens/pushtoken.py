@@ -322,6 +322,8 @@ class PushTokenClass(TokenClass):
             for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
                       FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
                 extra_data[k] = fb_options.get(k)
+            # TODO this allows to upgrade our crypto
+            extra_data["v"] = 1
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
                                            user=user.login,
