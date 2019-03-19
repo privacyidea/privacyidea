@@ -397,7 +397,7 @@ class PushTokenClass(TokenClass):
             signature = getParam(request.all_data, "signature")
 
             # get the token_obj for the given serial:
-            token_obj = get_one_token(serial=serial)
+            token_obj = get_one_token(serial=serial, tokentype="push")
             pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
             if not pubkey_pem.startswith("-----"):
                 pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
