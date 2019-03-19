@@ -774,11 +774,11 @@ def generate_keypair(rsa_keysize=2048):
         backend=default_backend()
         )
     public_key = private_key.public_key()
-    pem_priv = private_key.private_bytes(
+    pem_priv = to_unicode(private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption())
-    pem_pub = public_key.public_bytes(
+        encryption_algorithm=serialization.NoEncryption()))
+    pem_pub = to_unicode(public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.PKCS1)
+        format=serialization.PublicFormat.PKCS1))
     return pem_pub, pem_priv

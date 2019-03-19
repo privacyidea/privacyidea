@@ -12,7 +12,7 @@ from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import Token
 from privacyidea.lib.policy import (SCOPE, set_policy)
-from privacyidea.lib.utils import to_bytes, b32encode_and_unicode
+from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from base64 import b32decode
 import json
@@ -48,9 +48,10 @@ class PushTokenTestCase(MyTestCase):
                                                       key_size=4096,
                                                       backend=default_backend())
     smartphone_public_key = smartphone_private_key.public_key()
-    smartphone_public_key_pem = smartphone_public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    smartphone_public_key_pem = to_unicode(
+            smartphone_public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo))
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
