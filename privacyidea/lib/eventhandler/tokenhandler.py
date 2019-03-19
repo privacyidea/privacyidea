@@ -391,6 +391,9 @@ class TokenEventHandler(BaseEventHandler):
                                         "has no email address!".format(user))
                 elif tokentype == "motp":
                     init_param['motppin'] = handler_options.get("motppin")
+                    
+                elif tokentype == "certificate":
+                    init_param['request'] = request.all_data.get("request")
 
             t = init_token(param=init_param, user=user)
             log.info("New token {0!s} enrolled.".format(t.token.serial))
