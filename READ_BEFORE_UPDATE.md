@@ -1,5 +1,22 @@
 # Update Notes
 
+## Update from 2.23 to 3.0
+
+A lot of changes will be introduced in privacyIDEA 3.0, most notably the
+Python 3 compatibility.
+
+* Package dependencies:
+  * Removed packages:
+    * matplotlib
+    * pandas
+  * Added packages:
+    * cryptography (2.4.2)
+  * Updated packages:
+    * smpplib (0.1 -> 2.0)
+    * pytest (3.6.0 -> 3.6.1)
+    * requests (2.18.4 -> 2.20.0)
+
+
 ## Update from 2.22 to 2.23
 
 * An additional dependency python-croniter was added.

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2016-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -46,6 +46,3 @@ for user in os.listdir("/home/"):
             sys.stderr.write("--- Only TOTP Token suppported at the moment!\n")
     except IOError:
         sys.stderr.write("-- Nothing for user {0}\n".format(user))
-
-
-

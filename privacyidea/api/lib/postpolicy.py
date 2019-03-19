@@ -262,32 +262,33 @@ def check_tokeninfo(request, response):
     :return: A new modified response
     """
     content = json.loads(response.data)
-    policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
+
     if serial:
-        tokens = get_tokens(serial=serial)
-        if len(tokens) == 1:
-            token_obj = tokens[0]
-            tokeninfos_pol = policy_object.get_action_values(
-                ACTION.TOKENINFO,
-                scope=SCOPE.AUTHZ,
-                client=g.client_ip,
-                allow_white_space_in_action=True,
-                audit_data=g.audit_object.audit_data)
-            for tokeninfo_pol in tokeninfos_pol:
-                try:
-                    key, regex, _r = tokeninfo_pol.split("/")
-                    value = token_obj.get_tokeninfo(key, "")
-                    if re.search(regex, value):
-                        log.debug(u"Regular expression {0!s} "
-                                  u"matches the tokeninfo field {1!s}.".format(regex, key))
-                    else:
-                        log.info(u"Tokeninfo field {0!s} with contents {1!s} "
-                                 u"does not match {2!s}".format(key, value, regex))
-                        raise PolicyError("Tokeninfo field {0!s} with contents does not"
-                                          " match regular expression.".format(key))
-                except ValueError:
-                    log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+        tokeninfos_pol = g.policy_object.get_action_values(
+            ACTION.TOKENINFO,
+            scope=SCOPE.AUTHZ,
+            client=g.client_ip,
+            allow_white_space_in_action=True,
+            audit_data=g.audit_object.audit_data)
+        if tokeninfos_pol:
+            tokens = get_tokens(serial=serial)
+            if len(tokens) == 1:
+                token_obj = tokens[0]
+                for tokeninfo_pol in tokeninfos_pol:
+                    try:
+                        key, regex, _r = tokeninfo_pol.split("/")
+                        value = token_obj.get_tokeninfo(key, "")
+                        if re.search(regex, value):
+                            log.debug(u"Regular expression {0!s} "
+                                      u"matches the tokeninfo field {1!s}.".format(regex, key))
+                        else:
+                            log.info(u"Tokeninfo field {0!s} with contents {1!s} "
+                                     u"does not match {2!s}".format(key, value, regex))
+                            raise PolicyError("Tokeninfo field {0!s} with contents does not"
+                                              " match regular expression.".format(key))
+                    except ValueError:
+                        log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
 
     return response
 
@@ -775,3 +776,69 @@ def construct_radius_response(request, response):
         return make_response('', return_code)
     else:
         return response
+
+
+def mangle_challenge_response(request, response):
+    """
+    This policy decorator is used in the AUTH scope to
+    decorate the /validate/check endpoint.
+    It can modify the contents of the response "detail"->"message"
+    to allow a better readability for a challenge response text.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    try:
+        content = json.loads(response.data)
+    except ValueError:
+        # This can happen with the validate/radiuscheck endpoint
+        return response
+    policy_object = g.policy_object
+    user_obj = request.User
+
+    header_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_HEADER,
+                                                 scope=SCOPE.AUTH,
+                                                 allow_white_space_in_action=True,
+                                                 client=g.client_ip,
+                                                 user=user_obj.login,
+                                                 realm=user_obj.realm,
+                                                 resolver=user_obj.resolver,
+                                                 audit_data=g.audit_object.audit_data,
+                                                 unique=True)
+
+    footer_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_FOOTER,
+                                                 scope=SCOPE.AUTH,
+                                                 allow_white_space_in_action=True,
+                                                 client=g.client_ip,
+                                                 user=user_obj.login,
+                                                 realm=user_obj.realm,
+                                                 resolver=user_obj.resolver,
+                                                 audit_data=g.audit_object.audit_data,
+                                                 unique=True)
+
+    if header_pol:
+        multi_challenge = content.get("detail", {}).get("multi_challenge")
+        if multi_challenge:
+            message = list(header_pol)[0]
+            footer = ""
+            if footer_pol:
+                footer = list(footer_pol)[0]
+            # We actually have challenge response
+            messages = content.get("detail", {}).get("messages") or []
+            messages = sorted(set(messages))
+            if message[-4:].lower() in ["<ol>", "<ul>"]:
+                for m in messages:
+                    message += u"<li>{0!s}</li>\n".format(m)
+            else:
+                message += "\n"
+                message += ", ".join(messages)
+                message += "\n"
+            # Add the footer
+            message += footer
+
+            content["detail"]["message"] = message
+            response.data = json.dumps(content)
+
+    return response
+

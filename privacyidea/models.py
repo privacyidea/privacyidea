@@ -1056,6 +1056,7 @@ class TokenOwner(MethodsMixin, db.Model):
     A token can be assigned to several users.
     """
     __tablename__ = 'tokenowner'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True)
     token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
     resolver = db.Column(db.Unicode(120), default=u'', index=True)

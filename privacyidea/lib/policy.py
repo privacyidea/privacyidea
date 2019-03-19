@@ -155,8 +155,6 @@ Sat, Sun.
 from .log import log_with
 from configobj import ConfigObj
 
-from netaddr import IPAddress
-from netaddr import IPNetwork
 from operator import itemgetter
 import six
 import logging
@@ -171,7 +169,7 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
-                                   fetch_one_resource, is_true)
+                                   fetch_one_resource, is_true, check_ip_in_policy)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -216,6 +214,8 @@ class ACTION(object):
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
     CHALLENGETEXT = "challenge_text"
+    CHALLENGETEXT_HEADER = "challenge_text_header"
+    CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
@@ -580,17 +580,8 @@ class PolicyClass(with_metaclass(Singleton, object)):
         if client is not None:
             new_policies = []
             for policy in reduced_policies:
-                client_found = False
-                client_excluded = False
-                for polclient in policy.get("client"):
-                    if polclient[0] in ['-', '!']:
-                        # exclude the client?
-                        if IPAddress(client) in IPNetwork(polclient[1:]):
-                            log.debug("the client %s is excluded by %s in "
-                                      "policy %s" % (client, polclient, policy))
-                            client_excluded = True
-                    elif IPAddress(client) in IPNetwork(polclient):
-                        client_found = True
+                log.debug(u"checking client ip in policy {0!s}.".format(policy))
+                client_found, client_excluded = check_ip_in_policy(client, policy.get("client"))
                 if client_found and not client_excluded:
                     # The client was contained in the defined subnets and was
                     #  not excluded
@@ -1590,6 +1581,16 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('Use an alternate challenge text for telling the '
                           'user to enter an OTP value.')
+            },
+            ACTION.CHALLENGETEXT_HEADER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text precedes the list"
+                          " of the challenge texts.")
+            },
+            ACTION.CHALLENGETEXT_FOOTER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text follows the list"
+                          " of the challenge texts.")
             },
             ACTION.PASSTHRU: {
                 'type': 'str',

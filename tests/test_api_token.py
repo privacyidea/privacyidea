@@ -228,9 +228,9 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue("info" in res.data, res.data)
-            self.assertTrue("username" in res.data, res.data)
-            self.assertTrue("user_realm" in res.data, res.data)
+            self.assertTrue(b"info" in res.data, res.data)
+            self.assertTrue(b"username" in res.data, res.data)
+            self.assertTrue(b"user_realm" in res.data, res.data)
 
     def test_03_list_tokens_in_one_realm(self):
         for serial in ["S1", "S2", "S3", "S4"]:
@@ -297,8 +297,14 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             error = result.get("error")
-            self.assertEqual(error.get("message"), "ERR1103: Token already assigned to user User(login=u'cornelius', "
-                                                   "realm=u'realm1', resolver=u'resolver1')")
+#            self.assertEqual(error.get("message"),
+#                             "ERR1103: Token already assigned to user "
+#                             "User(login='cornelius', realm='realm1', "
+#                             "resolver='resolver1')")
+            self.assertRegexpMatches(error.get('message'),
+                                     r"ERR1103: Token already assigned to user "
+                                     r"User\(login=u?'cornelius', "
+                                     r"realm=u?'realm1', resolver=u?'resolver1'\)")
 
         # Now the user tries to assign a foreign token
         with self.app.test_request_context('/auth',
@@ -538,6 +544,18 @@ class APITokenTestCase(MyApiTestCase):
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is False, result)
 
+        # check that we have a failed request in the audit log
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "POST /token/resync/<serial>",
+                                                 'serial': 'Resync01',
+                                                 'success': '0'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 200, res)
+            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 0, res.json)
+
         # Successful resync with consecutive values
         with self.app.test_request_context('/token/resync',
                                             method="POST",
@@ -549,6 +567,18 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("value") is True, result)
+
+        # Check for a successful request in the audit log
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "POST /token/resync",
+                                                 'serial': 'Resync01',
+                                                 'success': '1'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 200, res)
+            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 1, res.json)
 
         # Get the OTP token and inspect the counter
         with self.app.test_request_context('/token/',
@@ -1244,12 +1274,11 @@ class APITokenTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
-                                           data = {"genkey": 1,
-                                                   "pin": "123456"},
+                                           data={"genkey": 1,
+                                                 "pin": "123456"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
             detail = json.loads(res.data.decode('utf8')).get("detail")
 
             serial = detail.get("serial")

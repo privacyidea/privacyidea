@@ -173,5 +173,18 @@ class MyTestCase(unittest.TestCase):
 
 
 class MyApiTestCase(MyTestCase):
-    def setUp(self):
-        self.authenticate()
+    @classmethod
+    def cls_auth(cls, app):
+        with app.test_request_context('/auth', data={"username": "testadmin",
+                                                     "password": "testpw"},
+                                      method='POST'):
+            res = app.full_dispatch_request()
+            assert res.status_code == 200
+            result = res.json.get("result")
+            assert result.get("status")
+            cls.at = result.get("value").get("token")
+
+    @classmethod
+    def setUpClass(cls):
+        super(MyApiTestCase, cls).setUpClass()
+        cls.cls_auth(cls.app)

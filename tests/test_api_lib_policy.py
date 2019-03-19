@@ -34,7 +34,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             offline_info, sign_response,
                                             get_webui_settings,
                                             save_pin_change,
-                                            add_user_detail_to_response)
+                                            add_user_detail_to_response,
+                                            mangle_challenge_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -2085,3 +2086,65 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_18_challenge_text_header(self):
+        # This looks like a validate/check request, that triggers a challenge
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       "pass": "pin"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy for the header
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+        # Set a policy for the footer
+        set_policy(name="pol_footer",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=Happy authenticating!".format(ACTION.CHALLENGETEXT_FOOTER))
+        g.policy_object = PolicyClass()
+
+        req.all_data = {
+            "user": "hans",
+            "pass": "pin"}
+        req.User = User()
+
+        # We do an html list
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": False},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "enter the HOTP from your email, "
+                                     "enter the HOTP from your email, "
+                                     "enter the TOTP from your SMS",
+                          "messages": ["enter the HOTP from your email",
+                                       "enter the HOTP from your email",
+                                       "enter the TOTP from your SMS"],
+                          "multi_challenge": ["chal1", "chal2", "chal3"]}}
+        resp = jsonify(res)
+
+        r = mangle_challenge_response(req, resp)
+        message = r.json.get("detail", {}).get("message")
+        self.assertEqual(message, "These are your options:<ul><li>enter the HOTP from your email</li>\n<li>enter the TOTP from your SMS</li>\nHappy authenticating!")
+
+        # We do no html list
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:".format(ACTION.CHALLENGETEXT_HEADER))
+        g.policy_object = PolicyClass()
+        resp = jsonify(res)
+
+        r = mangle_challenge_response(req, resp)
+        message = r.json.get("detail", {}).get("message")
+        self.assertTrue("<ul><li>" not in message, message)
+        self.assertEqual(message, "These are your options:\nenter the HOTP from your email, enter the TOTP from your SMS\nHappy authenticating!")
+
+        delete_policy("pol_header")
+        delete_policy("pol_footer")

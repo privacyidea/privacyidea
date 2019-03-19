@@ -20,7 +20,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b32encode_and_unicode, to_bytes,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
-                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode)
+                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode,
+                                   check_ip_in_policy)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -632,3 +633,12 @@ class UtilsTestCase(MyTestCase):
         # now test the crc function
         self.assertEquals(checksum(b'\x01\x02\x03\x04'), 0xc66e)
         self.assertEquals(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
+
+    def test_29_check_ip(self):
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "1.1.1.1"])
+        self.assertTrue(found)
+        self.assertFalse(excluded)
+
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2"])
+        self.assertTrue(excluded)
+        self.assertTrue(found)

@@ -1009,8 +1009,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP1"
         pin = "chalresp1"
@@ -1068,8 +1067,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP2"
         pin = "chalresp2"
@@ -1128,8 +1126,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP3"
         pin = "chalresp3"
@@ -1967,7 +1964,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             # HTTP 204 status code signals a successful authentication
             self.assertEqual(res.status_code, 204)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with wrong PIN
         with self.app.test_request_context('/validate/radiuscheck',
@@ -1976,7 +1973,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "wrong"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with an unknown user
         # here, we get an ordinary JSON response
@@ -2144,27 +2141,6 @@ class ValidateAPITestCase(MyApiTestCase):
         # Configure the SMS Gateway
         self.setup_sms_gateway()
         from privacyidea.lib.config import set_privacyidea_config
-        post_url = "http://smsgateway.com/sms_send_api.cgi"
-        success_body = "ID 12345"
-
-        identifier = "myGW"
-        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
-                          ".HttpSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options={"HTTP_METHOD": "POST",
-                                     "URL": post_url,
-                                     "RETURN_SUCCESS": "ID",
-                                     "text": "{otp}",
-                                     "phone": "{phone}"})
-        self.assertTrue(id > 0)
-        # set config sms.identifier = myGW
-        r = set_privacyidea_config("sms.identifier", identifier)
-        self.assertTrue(r in ["insert", "update"])
-        responses.add(responses.POST,
-                      post_url,
-                      body=success_body)
-
-
 
         self.setUp_user_realms()
         user = User("cornelius", self.realm1)
@@ -2387,6 +2363,20 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(detail.get("message"), u"Authenticated by AuthCache.")
 
         delete_policy("authcache")
+
+        # If there is no policy authenticating again with the same OTP fails.
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(detail.get("message"), u"wrong otp value. previous otp used again")
 
         # If there is no authcache, the same value must not be used again!
         with self.app.test_request_context('/validate/check',
@@ -2903,6 +2893,48 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(u"No active challenge response token found", detail.get("message"))
 
         remove_token(self.serial_sms)
+
+    def test_08_challenge_text(self):
+        # We create two HOTP tokens for the user as challenge response and run a
+        # challenge response request with both tokens.
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+        # Set a policy for the footer
+        set_policy(name="pol_footer",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(ACTION.CHALLENGETEXT_FOOTER))
+        # make HOTP a challenge response token
+        set_policy(name="pol_hotp",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        init_token({"serial": "tok1",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "tok2",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(detail.get("message"),
+                             'These are your options:<ul><li>please enter otp: </li>\n</ul>.<b>Authenticate Now!</b>')
+
+        remove_token("tok1")
+        remove_token("tok2")
+        delete_policy("pol_header")
+        delete_policy("pol_footer")
+        delete_policy("pol_hotp")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

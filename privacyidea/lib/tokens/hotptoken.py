@@ -58,7 +58,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
-from privacyidea.lib.utils import create_img, is_true, b32encode_and_unicode
+from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
+                                   hexlify_and_unicode)
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
@@ -720,6 +721,7 @@ class HotpTokenClass(TokenClass):
         :type client_component: hex string
         :param options:
         :return: the new generated key as hex string
+        :rtype: str
         """
         # As /token/init has already been called before, self.hashlib
         # is already set.
@@ -738,7 +740,4 @@ class HotpTokenClass(TokenClass):
                         decoded_client_component,
                         rounds,
                         keysize)
-        return binascii.hexlify(secret)
-
-
-
+        return hexlify_and_unicode(secret)

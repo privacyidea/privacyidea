@@ -31,13 +31,14 @@ import json
 from datetime import datetime
 
 import dateutil
-from flask_script import Manager
+from flask_script import Manager, Command
 
 from privacyidea.app import create_app
 from privacyidea.lib.config import get_privacyidea_node
-from privacyidea.lib.periodictask import get_scheduled_periodic_tasks, set_periodic_task_last_run, \
-    get_periodic_task_by_name, \
-    execute_task, get_periodic_tasks
+from privacyidea.lib.periodictask import (get_scheduled_periodic_tasks,
+                                          execute_task, get_periodic_tasks,
+                                          get_periodic_task_by_name,
+                                          set_periodic_task_last_run)
 
 warnings.simplefilter("ignore")
 
@@ -87,11 +88,12 @@ def run_task_on_node(ptask, node):
         result = False
     if result:
         current_time = datetime.now(dateutil.tz.tzlocal())
-        print_stdout(u'Task {!r} on node {!r} exited successfully. Noting this in the database ...'.format(
-            ptask["name"], node))
+        print_stdout(u'Task {!r} on node {!r} exited successfully. Noting this '
+                     u'in the database ...'.format(ptask["name"], node))
         set_periodic_task_last_run(ptask["id"], node, current_time)
     else:
-        print_stderr(u'Task {!r} on node {!r} did not run successfully.'.format(ptask["name"], node))
+        print_stderr(u'Task {!r} on node {!r} did not run '
+                     u'successfully.'.format(ptask["name"], node))
         print_stderr(u'This unsuccessful run is not recorded in the database.')
     return result
 
@@ -114,8 +116,7 @@ def run_manually(node_string, task_name):
     run_task_on_node(ptask, node)
 
 
-@manager.command
-def list():
+def list_tasks():
     """
     Show a list of available tasks that could be run.
     """
@@ -134,8 +135,12 @@ def list():
     print_stdout(u"=" * 120)
     for ptask in get_periodic_tasks():
         print_stdout(line_format.format(node_list=u', '.join(ptask["nodes"]),
-                                 options_json=json.dumps(ptask["options"]),
-                                 **ptask))
+                                        options_json=json.dumps(ptask["options"]),
+                                        **ptask))
+
+
+# add the list_tasks() function as flask command 'list'
+manager.add_command('list', Command(list_tasks))
 
 
 @manager.option("-d", "--dryrun",

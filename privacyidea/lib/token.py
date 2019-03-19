@@ -2033,8 +2033,9 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 reply_dict["multi_challenge"].append(challenge_info)
     if message_list:
         reply_dict["message"] = ", ".join(message_list)
-    # TODO: These two lines are deprecated: Add the information for the old administrative triggerchallenge
+    # The "messages" element is needed by some decorators
     reply_dict["messages"] = message_list
+    # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
 
 
@@ -2090,8 +2091,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                                     "token is locked"), id=1007)
 
     for tokenobject in tokenobject_list:
-        log.debug("Found user with loginId {0!r}: {1!r}".format(
-                  tokenobject.user, tokenobject.get_serial()))
+        if log.isEnabledFor(logging.DEBUG):
+            # Avoid a SQL query triggered by ``tokenobject.user`` in case
+            # the log level is not DEBUG
+            log.debug("Found user with loginId {0!r}: {1!r}".format(
+                      tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response

@@ -426,6 +426,46 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertEqual(r, False)
 
+    def test_06_check_for_client_ip(self):
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+
+        # Check DETAIL_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"message": "something very special happened"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24, !10.0.0.1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
 
 class CounterEventTestCase(MyTestCase):
 
@@ -1750,6 +1790,24 @@ class UserNotificationTestCase(MyTestCase):
         # wrong realm
         self.assertEqual(r, False)
 
+        # Check condition resolver
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"resolver": "resolver1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"resolver": "resolver2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
     @smtpmock.activate
     def test_07_locked_token_wrong_pin(self):
         tok = init_token({"serial": "lock2", "type": "spass",
@@ -1839,8 +1897,26 @@ class UserNotificationTestCase(MyTestCase):
              "response": resp
              }
         )
-        # Serial matches the regexp
+        # realm matches
         self.assertEqual(r, True)
+
+        # test condition tokenresolver
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokenresolver": "resolver1,reso2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokenresolver": "reso2,reso3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
     def test_10_check_conditions_tokentype(self):
         uhandler = UserNotificationEventHandler()

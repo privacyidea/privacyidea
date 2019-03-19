@@ -44,8 +44,8 @@ class APIUsersTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue('"status": true' in res.data, res.data)
-            self.assertTrue('"value": 1' in res.data, res.data)
+            self.assertTrue(res.json['result']['status'], res.json)
+            self.assertEquals(res.json['result']['value'], 1, res.json)
         
         # create realm
         realm = u"realm1"
@@ -71,22 +71,24 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
-            self.assertTrue('"username": "cornelius"' in res.data, res.data)
-            self.assertTrue('"username": "corny"' in res.data, res.data)
+            unames = [x.get('username') for x in value]
+            self.assertIn("cornelius", unames, value)
+            self.assertIn("corny", unames, value)
 
         # get user list with search dict
         with self.app.test_request_context('/user/',
                                            query_string=urlencode({u"username":
-                                                           "cornelius"}),
+                                                                       "cornelius"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
-            self.assertTrue('"username": "cornelius"' in res.data, res.data)
-            self.assertTrue('"username": "corny"' not in res.data, res.data)
-            
+            unames = [x.get('username') for x in value]
+            self.assertIn("cornelius", unames, value)
+            self.assertNotIn("corny", unames, value)
+
         # get user with a non existing realm
         with self.app.test_request_context('/user/',
                                            query_string=urlencode({"realm":
@@ -97,8 +99,9 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8'))
             value = result.get("result").get("value")
-            self.assertTrue('"username": "cornelius"' not in res.data, res.data)
-            self.assertTrue('"username": "corny"' not in res.data, res.data)
+            unames = [x.get('username') for x in value]
+            self.assertNotIn("cornelius", unames, value)
+            self.assertNotIn("corny", unames, value)
 
     def test_02_create_update_delete_user(self):
         realm = "sqlrealm"

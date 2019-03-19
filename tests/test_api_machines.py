@@ -113,8 +113,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertGreaterEqual(result["value"]["added"], 1, result)
+            self.assertEquals(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -133,8 +134,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertEquals(result["value"]["added"], 0, result)
+            self.assertGreaterEqual(result['value']['deleted'], 1, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -155,8 +157,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertGreaterEqual(result["value"]["added"], 1, result)
+            self.assertEquals(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
