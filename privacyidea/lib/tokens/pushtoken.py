@@ -31,12 +31,16 @@ import datetime
 import json
 import traceback
 from privacyidea.lib.crypto import geturandom
-from base64 import b32encode, b32decode
+from base64 import b32decode
+from privacyidea.lib.utils import b32encode_and_unicode
 from six.moves.urllib.parse import quote
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.token import get_one_token
+from privacyidea.lib.utils import prepare_result
+from privacyidea.lib.error import ResourceNotFoundError
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
@@ -268,7 +272,7 @@ class PushTokenClass(TokenClass):
 
         if "serial" in upd_param and "fbtoken" in upd_param and "pubkey" in upd_param:
             # We are in step 2:
-            if not self.token.rollout_state == "clientwait":
+            if self.token.rollout_state != "clientwait":
                 raise ParameterError("Invalid state! The token you want to enroll is not in the state 'clientwait'.")
             if upd_param.get("enrollment_credential") != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
@@ -379,20 +383,17 @@ class PushTokenClass(TokenClass):
         :param g: The Flask global object g
         :return: dictionary
         """
-        from privacyidea.lib.token import get_tokens
-        from privacyidea.lib.utils import prepare_result
         details = {}
         result = False
         serial = getParam(request.all_data, "serial", optional=False)
 
         if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
             # Do the 2nd step of the enrollment
-            toks = get_tokens(serial=serial, rollout_state="clientwait")
-            if len(toks) == 0:
-                raise ParameterError("No token with this serial number in the rollout state 'clientwait'.")
-            token_obj = toks[0]
-
-            token_obj.update(request.all_data)
+            try:
+                token_obj = get_one_token(serial=serial, rollout_state="clientwait")
+                token_obj.update(request.all_data)
+            except ResourceNotFoundError:
+                raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
             init_detail_dict = request.all_data
 
             details = token_obj.get_init_detail(init_detail_dict)
@@ -403,8 +404,7 @@ class PushTokenClass(TokenClass):
             signature = getParam(request.all_data, "signature")
 
             # get the token_obj for the given serial:
-            toks = get_tokens(serial=serial)
-            token_obj = toks[0]
+            token_obj = get_one_token(serial=serial)
             pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
             if not pubkey_pem.startswith("-----"):
                 pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
@@ -477,7 +477,7 @@ class PushTokenClass(TokenClass):
 
         attributes = None
         data = None
-        challenge = b32encode(geturandom())
+        challenge = b32encode_and_unicode(geturandom())
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
             # We send the challenge to the Firebase service
@@ -505,7 +505,7 @@ class PushTokenClass(TokenClass):
             signature = privkey_obj.sign(sign_string.encode("utf8"),
                                          padding.PKCS1v15(),
                                          hashes.SHA256())
-            smartphone_data["signature"] = b32encode(signature)
+            smartphone_data["signature"] = b32encode_and_unicode(signature)
 
             fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
         else:

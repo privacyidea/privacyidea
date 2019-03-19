@@ -161,12 +161,12 @@ class PushTokenTestCase(MyTestCase):
                                                  "pubkey": self.smartphone_public_key_pem,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+            self.assertTrue(res.status_code == 404, res)
             status = json.loads(res.data.decode('utf8')).get("result").get("status")
             self.assertFalse(status)
             error = json.loads(res.data.decode('utf8')).get("result").get("error")
             self.assertEqual(error.get("message"),
-                             "ERR905: No token with this serial number in the rollout state 'clientwait'.")
+                             "No token with this serial number in the rollout state 'clientwait'.")
 
         # 2nd step. Fails with missing enrollment credential
         with self.app.test_request_context('/ttype/push',
