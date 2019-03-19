@@ -38,11 +38,16 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
-from privacyidea.lib.user import get_user_from_param
+#from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
 from privacyidea.lib.decorators import check_token_locked
 import base64
 from privacyidea.lib import _
+
+from privacyidea.lib.user import get_user_from_param, User, get_user_info
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.error import NoCertificateAvailableError
+import json
 
 optional = True
 required = False
@@ -334,3 +339,79 @@ class CertificateTokenClass(TokenClass):
         log.info("CRL {0!s} created.".format(crl))
 
         return revoked
+    
+    
+    @staticmethod
+    def api_endpoint(request, g):
+        """
+        Author : Tarek EL ALLAM
+        This provides a function to be plugged into the API endpoint
+        /ttype/<tokentype> which is defined in api/ttype.py
+        See :ref:`rest_ttype`.
+        Desc : 
+        Add API call in order to get the last generated certificate assigned, activated, unrevoked and unlocked.
+        
+        Example call :
+        curl -k -H "Accept: application/json" -H "Content-Type: application/json" -X GET "https://localhost/ttype/certificate?user=USERID&realm=REALMID"
+
+        Example of response OK :
+        curl -k -H "Accept: application/json" -H "Content-Type: application/json" -X GET "https://localhost/ttype/certificate?user=PC1A000400005700036&realm=domaine"
+        HTTP/1.1 200 OK
+        Server: nginx/1.14.0 (Ubuntu)
+        Date: Mon, 18 Feb 2019 09:46:27 GMT
+        Content-Type: application/json
+        Content-Length: 2018
+        Connection: keep-alive
+        Cache-Control: no-cache
+
+        {
+            "cert": "-----BEGIN CERTIFICATE-----\nMIIDpzCCAo+gAwIBAgIBQTANBgkqhkiG9w0BAQsFADBoMQswCQYDVQQGEwJGUjEM\nMAoGA1UECAwDSURGMQwwCgYDVQQHDANJTE0xDDAKBgNVBAoMA1NGUjELMAkGA1UE\nCwwCTVcxIjAgBgNVBAMMGVNUQiBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwHhcNMTkw\nMjE0MTIzOTM1WhcNMjAwMjE0MTIzOTM1WjBJMQswCQYDVQQGEwJGUjEMMAoGA1UE\nCAwDSURGMQwwCgYDVQQKDANTRlIxCzAJBgNVBAsMAk1XMREwDwYDVQQDDAhURVNU\nXzEwNDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANtnX5TgcivzRC9x\n33y89Y6gBa13jcFy7obz+76Y0SUUklPx6x1UXg4J80FIPPorPL8FeH1yjaMlALbJ\n47vGD0sQSla96zFbMPs6OGQqnp3ETqEB741mDh7DOLZaUzl7DLw2ZN1a0iI+WksY\nvsO1tch9yywk5FUEQ/BljWCl8FrNb+t4vWs+kpA2c2+5GCbZcWk0loUsrtVlQtbS\n1XNaiGv6WQfy3Cy0qQCBtdrZdNRx+WPjXvtRZzKFB4FQ1aL4gbhBbP7UR8X31AtJ\nbRyxG2aR7DqqIQ5FTymyNIdZ0D5QpdYQG7Z2N1DNT9oWPun6USDkn/+XuX9IdeLb\nRJb3HscCAwEAAaN7MHkwCQYDVR0TBAIwADAsBglghkgBhvhCAQ0EHxYdT3BlblNT\nTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUwHQYDVR0OBBYEFH9eXKUJuBdQ6rkXdFH+\nTJjkPqT7MB8GA1UdIwQYMBaAFCNXvrum6h4EKLdg0hlPZO2+C4zGMA0GCSqGSIb3\nDQEBCwUAA4IBAQAYK7BqMBenxkmfD+QgbekrCY2iWfkNqr+cEpblipvZ18uwJPmJ\nfZbxmueyuJ/0JYBJWsl4Rm8Q9OLHhx0ROoyvV5r8qZT4W0b8K3sNlUF04+noXeOe\npkp28YuQfjZQ/ikMUN5XlLDMPA+HZrQxcai4g4QFpJCUBbLl1ULU3EpxwLdF+Ai3\ncvul1R23A04gq69AGSqCkhsygzUi1HXdz5BNPAdL8gVfJzKRsYhc2v3KJ+Bot1//\n/ga5Z/sJwQIGz+m+LdSNXqIhMp0cRUDmMghLyOlWOVyjHBeWXyx1X9UfldxKE3Va\nY5/FPTR2zqmWFm3qS5Je/8akawZmT9H+dMAP\n-----END CERTIFICATE-----\n",
+            "serial": "CRT00011E30",
+            "signature": "1055021649687109905468699150589108284476743436498998736311052628038826668663181100796005981648464995262003179377231129939681564095275131015690752333812651335238597068569483954328692585380670376764836824652115323713743097231619740244159427553577016223041402114420419098182750971130349215831593670893285198783102744889920126569669344581311934112840548128283666880105473866952702040855306456277991742700909602494211970271672533550462037164487881192029662298668763737170600056539842311062573693906054927626036803833022029384629000268895265996376377754924829431670633606625702952056981956222713453527752827764551716100406"}
+
+
+        Example of bad response in case of no certificate exist :
+        HTTP/1.1 400 BAD REQUEST
+        Server: nginx/1.14.0 (Ubuntu)
+        Date: Mon, 18 Feb 2019 10:22:50 GMT
+        Content-Type: application/json
+        Content-Length: 838
+        Connection: keep-alive
+        Cache-Control: no-cache
+
+        {
+            "jsonrpc": "2.0",
+            "signature": "10370642976798687514501722542046926389563344535844981738705515955010866662602201624114840847736077669093453502248219609955846409681970149835233924252528152475296743426353539640211200444136692890529722552233121662509759201996034944809731146446904302463012171496304016316125223700900452878734674355821261642108994878161782582225346929166947602896991104114384451893346327128375373734404409705905742268902008839245778679776684023427241802325766307518935368128533279224310482750043978328675448761730445421979374600578874489083523658883077151910559392352183554445977855127578457520490691082149229697038665876086185739725548",
+            "detail": null,
+            "version": "privacyIDEA 2.23.3",
+            "result": {
+                "status": false,
+                "error": {
+                    "message": "ERR601: No certificate available !",
+                    "code": 601}
+                },
+                "time": 1550485370.55361,
+                "id": 1
+        }
+        :param request: The Flask request
+        :param g: The Flask global object g
+        :return: Flask Response or text
+        """
+        params = request.all_data
+        user = getParam(params, "user", required)
+        domaine = getParam(params, "realm", required)
+        user_object = User(login=user, realm=domaine, resolver="")
+
+        tokens = get_tokens(tokentype="certificate", assigned=True, user=user_object, active=True, count=False, revoked=False, locked=False)
+        if not tokens:
+            log.info("No certificate for this user.")
+            raise NoCertificateAvailableError()
+        else:
+            log.info("{0!s} certificate tokens found.".format(len(tokens)))
+
+        res = {
+                    "serial": tokens[len(tokens)-1].get_as_dict()["serial"],
+                    "cert": tokens[len(tokens)-1].get_as_dict()["info"]["certificate"]
+                }
+
+        return "json", res
