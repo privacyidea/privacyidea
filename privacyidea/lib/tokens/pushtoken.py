@@ -39,7 +39,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.token import get_one_token, get_token_type
-from privacyidea.lib.utils import prepare_result
+from privacyidea.lib.utils import prepare_result, to_bytes
 from privacyidea.lib.error import ResourceNotFoundError
 
 from privacyidea.lib.config import get_from_config
@@ -419,7 +419,7 @@ class PushTokenClass(TokenClass):
                 # There are valid challenges, so we check this signature
                 for chal in challengeobject_list:
                     # verify the signature of the nonce
-                    pubkey_obj = serialization.load_pem_public_key(str(pubkey_pem), default_backend())
+                    pubkey_obj = serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
                     sign_data = u"{0!s}|{1!s}".format(challenge, serial)
                     try:
                         pubkey_obj.verify(b32decode(signature),
@@ -502,7 +502,7 @@ class PushTokenClass(TokenClass):
             sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**smartphone_data)
 
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-            privkey_obj = serialization.load_pem_private_key(str(pem_privkey), None, default_backend())
+            privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey), None, default_backend())
 
             # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
             signature = privkey_obj.sign(sign_string.encode("utf8"),

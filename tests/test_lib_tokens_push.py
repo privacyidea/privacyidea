@@ -102,9 +102,9 @@ class PushTokenTestCase(MyTestCase):
                       "pubkey": self.smartphone_public_key_pem})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
         self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem)
-        self.assertTrue(token.get_tokeninfo("public_key_server").startswith("-----BEGIN RSA PUBLIC KEY-----\nMIICC"),
+        self.assertTrue(token.get_tokeninfo("public_key_server").startswith(b"-----BEGIN RSA PUBLIC KEY-----\nMIICC"),
                         token.get_tokeninfo("public_key_server"))
-        self.assertTrue(token.get_tokeninfo("private_key_server").startswith("-----BEGIN RSA PRIVATE KEY-----\nMIIJK"),
+        self.assertTrue(token.get_tokeninfo("private_key_server").startswith(b"-----BEGIN RSA PRIVATE KEY-----\nMIIJK"),
                         token.get_tokeninfo("private_key_server"))
 
         detail = token.get_init_detail()
