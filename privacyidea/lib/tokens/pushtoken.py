@@ -38,7 +38,7 @@ from six.moves.urllib.parse import quote
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_one_token, get_token_type
 from privacyidea.lib.utils import prepare_result
 from privacyidea.lib.error import ResourceNotFoundError
 
@@ -390,7 +390,9 @@ class PushTokenClass(TokenClass):
         if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
             # Do the 2nd step of the enrollment
             try:
-                token_obj = get_one_token(serial=serial, rollout_state="clientwait")
+                token_obj = get_one_token(serial=serial,
+                                          tokentype="push",
+                                          rollout_state="clientwait")
                 token_obj.update(request.all_data)
             except ResourceNotFoundError:
                 raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
