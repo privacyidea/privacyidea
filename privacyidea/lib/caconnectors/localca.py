@@ -505,7 +505,7 @@ class LocalCAConnector(BaseCAConnector):
 
         cmd = CA_REVOKE.format(cakey=self.cakey, cacert=self.cacert,
                                config=self.config.get(ATTR.OPENSSL_CNF),
-                               certificate=filename,
+                               certificate=self.config.get(ATTR.CERT_DIR)+'/'+filename,
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
