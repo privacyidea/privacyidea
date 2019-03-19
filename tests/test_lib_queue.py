@@ -54,13 +54,12 @@ class NoQueueTestCase(OverrideConfigTestCase):
 
 
 class InvalidQueueTestCase(MyTestCase):
-    def test_01_create_app_fails(self):
+    def test_01_create_app_graciously(self):
         class Config(TestingConfig):
             PI_JOB_QUEUE_CLASS = "obviously.invalid"
 
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            with self.assertRaises(ImportError):
-                create_app("testing", "")
+            app = create_app("testing", "") # we do not throw an exception
 
 
 class HueyQueueTestCase(OverrideConfigTestCase):
