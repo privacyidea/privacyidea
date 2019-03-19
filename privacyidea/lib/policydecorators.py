@@ -296,10 +296,9 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
-    if get_tokens(user=user_object, count=True) == 0 and g:
-        # We only go to passthru, if the user has no tokens!
-        clientip = options.get("clientip")
+    if g:
         policy_object = g.policy_object
+        clientip = options.get("clientip")
         pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
                                                scope=SCOPE.AUTH,
                                                realm=user_object.realm,
@@ -308,9 +307,10 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                client=clientip,
                                                active=True,
                                                sort_by_priority=True)
-        # Ensure that there are no conflicting action values within the same priority
-        policy_object.check_for_conflicts(pass_thru, "passthru")
-        if pass_thru:
+        # We only go to passthru, if the user has no tokens!
+        if pass_thru and get_tokens(user=user_object, count=True) == 0:
+            # Ensure that there are no conflicting action values within the same priority
+            policy_object.check_for_conflicts(pass_thru, "passthru")
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
             if pass_thru_action in ["userstore", True]:
