@@ -1272,16 +1272,15 @@ def pushtoken_add_config(request, action):
         else:
             token_realm = token_resolver = token_user = None
         # Get the TTL and the Registration URL from the configs
-        if g:
-            firebase_config = g.policy_object.get_action_values(
-                action=PUSH_ACTION.FIREBASE_CONFIG,
-                scope=SCOPE.ENROLL,
-                realm=token_realm,
-                user=token_user,
-                resolver=token_resolver,
-                client=g.client_ip,
-                audit_data=g.audit_object.audit_data,
-                unique=True)
+        firebase_config = g.policy_object.get_action_values(
+            action=PUSH_ACTION.FIREBASE_CONFIG,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            client=g.client_ip,
+            audit_data=g.audit_object.audit_data,
+            unique=True)
         if len(firebase_config) == 1:
             request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
         else:
