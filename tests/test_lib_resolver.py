@@ -514,6 +514,14 @@ class SQLResolverTestCase(MyTestCase):
 
         # rid1 != rid4, because the pool size has changed
         self.assertNotEqual(rid1, rid4)
+    
+    def test_08_noninteger_userid(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        y.map["userid"] = "username"
+        user = "cornelius"
+        user_info = y.getUserInfo(user)
+        self.assertEqual(user_info.get("id"), "cornelius")      
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()

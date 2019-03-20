@@ -39,6 +39,7 @@ from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
+from sqlalchemy import Integer
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -336,8 +337,7 @@ class IdResolver (UserIdResolver):
 
         try:
             conditions = []
-            column = self.map.get("userid")
-            conditions.append(getattr(self.TABLE, column).like(userId))
+            conditions.append(self._get_userid_filter(userId))
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
@@ -351,6 +351,13 @@ class IdResolver (UserIdResolver):
             log.error("Could not get the userinformation: {0!r}".format(exx))
 
         return userinfo
+    
+    def _get_userid_filter(self, userId):
+        column = getattr(self.TABLE, self.map.get("userid"))
+        if isinstance(column.type, Integer):
+            return column == userId
+        else:
+            return column.like(userId)
 
     def getUsername(self, userId):
         """
@@ -720,8 +727,7 @@ class IdResolver (UserIdResolver):
         res = True
         try:
             conditions = []
-            column = self.map.get("userid")
-            conditions.append(getattr(self.TABLE, column).like(uid))
+            conditions.append(self._get_userid_filter(uid))
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
