@@ -113,8 +113,6 @@ debianize:
 	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
 	cp LICENSE DEBUILD/privacyidea.org/debian/python-privacyidea.copyright
 	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea-all.copyright
-	cp authmodules/FreeRADIUS/copyright DEBUILD/privacyidea.org/debian/privacyidea-radius.copyright
-	cp authmodules/simpleSAMLphp/LICENSE DEBUILD/privacyidea.org/debian/privacyidea-simplesamlphp.copyright
 	(cd DEBUILD; tar -zcf python-privacyidea_${SHORT_VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
 	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION_JESSIE}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
