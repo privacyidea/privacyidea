@@ -56,6 +56,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.exceptions import InvalidSignature
+
 
 log = logging.getLogger(__name__)
 
@@ -423,8 +425,7 @@ class PushTokenClass(TokenClass):
                         # The signature was valid
                         chal.set_otp_status(True)
                         result = True
-                    except Exception as e:
-                        # InvalidSignature
+                    except InvalidSignature as e:
                         pass
 
         else:
