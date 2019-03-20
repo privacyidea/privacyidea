@@ -73,17 +73,22 @@ class PUSH_ACTION(object):
     MOBILE_TITLE = "push_title_on_mobile"
 
 
-def _strip_key(key):
+def strip_key(key):
     """
     strip the headers and footers like
     -----BEGIN PUBLIC RSA KEY-----
     -----END PUBLIC KEY-----
     -----BEGIN PRIVATE RSA KEY-----
+    as well as whitespace
 
-    :param key:
-    :return:
+    :param key: key as a string
+    :return: stripped key
     """
-    return key.strip().strip("-BEGIN END RSA PUBLIC PRIVATE KEY").strip()
+    if key.startswith("-----BEGIN"):
+        return "\n".join(key.strip().splitlines()[1:-1]).strip()
+    else:
+        return key.strip()
+
 
 @log_with(log)
 def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabel",
@@ -344,7 +349,7 @@ class PushTokenClass(TokenClass):
 
         elif self.token.rollout_state == "enrolled":
             # in the second enrollment step we return the public key of the server to the smartphone.
-            pubkey = _strip_key(self.get_tokeninfo(PUBLIC_KEY_SERVER))
+            pubkey = strip_key(self.get_tokeninfo(PUBLIC_KEY_SERVER))
             response_detail["public_key"] = pubkey
 
         return response_detail

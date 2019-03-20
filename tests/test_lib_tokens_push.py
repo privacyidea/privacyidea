@@ -5,7 +5,7 @@ FIREBASE_FILE = "tests/testdata/firebase-test.json"
 from .base import MyTestCase
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION, DEFAULT_CHALLENGE_TEXT
+from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION, DEFAULT_CHALLENGE_TEXT, strip_key
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
@@ -413,3 +413,11 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = json.loads(res.data.decode('utf8'))
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
+
+    def test_05_strip_key(self):
+        stripped_pubkey = strip_key(self.smartphone_public_key_pem)
+        self.assertIn("-BEGIN PUBLIC KEY-", self.smartphone_public_key_pem)
+        self.assertNotIn("-BEGIN PUBLIC KEY_", stripped_pubkey)
+        self.assertNotIn("-", stripped_pubkey)
+        self.assertEqual(strip_key(stripped_pubkey), stripped_pubkey)
+        self.assertEqual(strip_key("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
