@@ -304,9 +304,34 @@ dependent on the clients IP address and the user agent.
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
+.. _policy_push_text_on_mobile:
+
+push_text_on_mobile
+~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token, Firebase service
+
+type: string
+
+This is the text that should be displayed on the push notification
+during the login process with a :ref:`push_token`.
+You can choose different texts for different users or IP addresses.
+This way you could customize push notifications for different applications.
+
+.. _policy_push_title_on_mobile:
+
+push_title_on_mobile
+~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token, Firebase service
+
+type: string
+
+This is the title of the push notification that is displayed
+on the user's smartphone during the login process with
+a :ref:`push_token`.
 
 .. _policy_challenge_text:
-
 
 challenge_text, challenge_text_header, challenge_test_footer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -328,4 +353,3 @@ In this case the *challenge_text_footer* also should contain the closing
 tag.
 
 .. note:: The footer will only be used, if the header is also set.
-

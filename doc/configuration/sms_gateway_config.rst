@@ -232,5 +232,55 @@ For the other parameters contact your SMS center operator.
 .. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
 
 
+.. _firebase_provider:
+
+Firebase Provider
+~~~~~~~~~~~~~~~~~
+
+The Firebase provider was added in privacyIDEA 3.0. It sends notifications
+via the Google Firebase service and this is used for the :ref:`push_token`.
+
+**registration URL**
+
+   This is the URL of your privacyIDEA server, which the push App should
+   connect to for the second registration step.
+   This URL usually ends with ``/type/push``. Note, that the FQDN
+   of your privacyIDEA server could be different for the smartphone
+   App to connect to, than you usually use for connecting via the
+   Web interface.
+
+**time to live**
+
+   This is the time (in seconds) how long the privacyIDEA server
+   accepts the response of the second registration step.
+   The smartphone could have connection issues, so the second step
+   could take some time to happen.
+
+**JSON config file**
+
+   This is the location of the configuration file of
+   the Firebase service. It has to be located on the privacyIDEA
+   server.
+
+**projectid**
+
+   The project ID of the Firebase project, that is used to connect
+   the app to.
+
+**projectnumber***
+
+   The project number of the Firebase project, that is used to
+   connect the app to.
+
+**appid**
+
+   The app ID your app should use to connect to the Firebase service.
+
+**apikey**
+
+   The API key your app should use to connect to the Firebase service.
 
 
+You can get all the necessary values *JSON config file*,
+*project ID*, *project number*, *app ID* and *API key*
+from your Firebase console.

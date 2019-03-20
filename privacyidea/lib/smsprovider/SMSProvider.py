@@ -44,7 +44,8 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
     "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
     "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
-    "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider"]
+    "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
+    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider"]
 
 class SMSError(Exception):
     def __init__(self, error_id, description):
@@ -193,7 +194,7 @@ def delete_smsgateway_option(id, option_key):
     return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
 
 
-def get_smsgateway(identifier=None, id=None):
+def get_smsgateway(identifier=None, id=None, gwtype=None):
     """
     return a list of all SMS Gateway Configurations!
 
@@ -201,6 +202,7 @@ def get_smsgateway(identifier=None, id=None):
         this single gateway definition
     :param id: If the id is specified, we return only this single SMS gateway
         definition
+    :param gwtype: The type of the gateway to return
     :return: list of gateway definitions
     """
     res = []
@@ -211,6 +213,8 @@ def get_smsgateway(identifier=None, id=None):
             sqlquery = sqlquery.filter_by(id=id)
         except Exception:
             log.info("We can not filter for smsgateway {0!s}".format(id))
+    if gwtype:
+        sqlquery = sqlquery.filter_by(providermodule=gwtype)
     if identifier:
         sqlquery = sqlquery.filter_by(identifier=identifier)
 

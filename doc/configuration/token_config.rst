@@ -19,6 +19,9 @@ At the moment the following tokentypes are supported:
   `RFC4225 <https://tools.ietf.org/html/rfc4226>`_.
 * :ref:`totp_token` - time based One Time Password tokens based on
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
+* :ref:`push_token` - A challenge response token, that sends a
+  challenge to the user's smartphone and the user simply accepts the
+  request to login.
 * mOTP - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
 * :ref:`paper_token` - event based One Time Password tokens that get
