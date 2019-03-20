@@ -10,6 +10,7 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token
 from privacyidea.lib.policy import (SCOPE, set_policy)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
@@ -19,6 +20,7 @@ import json
 import responses
 import mock
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -100,14 +102,28 @@ class PushTokenTestCase(MyTestCase):
                       "pubkey": self.smartphone_public_key_pem})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
         self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem)
-        self.assertTrue(token.get_tokeninfo("public_key_server").startswith(u"-----BEGIN RSA PUBLIC KEY-----\nMIICC"),
+        self.assertTrue(token.get_tokeninfo("public_key_server").startswith(u"-----BEGIN RSA PUBLIC KEY-----\n"),
                         token.get_tokeninfo("public_key_server"))
-        self.assertTrue(token.get_tokeninfo("private_key_server").startswith(u"-----BEGIN RSA PRIVATE KEY-----\nMIIJK"),
+        parsed_server_pubkey = serialization.load_pem_public_key(
+            to_bytes(token.get_tokeninfo("public_key_server")),
+            default_backend())
+        self.assertIsInstance(parsed_server_pubkey, RSAPublicKey)
+        self.assertTrue(token.get_tokeninfo("private_key_server").startswith(u"-----BEGIN RSA PRIVATE KEY-----\n"),
                         token.get_tokeninfo("private_key_server"))
+        parsed_server_privkey = serialization.load_pem_private_key(
+            to_bytes(token.get_tokeninfo("private_key_server")),
+            None,
+            default_backend())
+        self.assertIsInstance(parsed_server_privkey, RSAPrivateKey)
 
         detail = token.get_init_detail()
         self.assertEqual(detail.get("rollout_state"), "enrolled")
-        self.assertTrue(detail.get("public_key").startswith("MIICC"))
+        augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
+            detail.get("public_key"))
+        parsed_stripped_server_pubkey = serialization.load_pem_public_key(
+            to_bytes(augmented_pubkey),
+            default_backend())
+        self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
 
     def test_02_api_enroll(self):
@@ -195,7 +211,12 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), "enrolled")
             # Now the smartphone gets a public key from the server
-            self.assertTrue(detail.get("public_key").startswith("MII"))
+            augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
+                detail.get("public_key"))
+            parsed_server_pubkey = serialization.load_pem_public_key(
+                to_bytes(augmented_pubkey),
+                default_backend())
+            self.assertIsInstance(parsed_server_pubkey, RSAPublicKey)
             pubkey = detail.get("public_key")
 
             # Now check, what is in the token in the database
@@ -390,10 +411,75 @@ class PushTokenTestCase(MyTestCase):
         # This is what the smartphone answers.
         # create the signature:
         sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
-        signature = self.smartphone_private_key.sign(sign_data.encode("utf-8"),
-                                                     padding.PKCS1v15(),
-                                                     hashes.SHA256())
-        signature = b32encode_and_unicode(signature)
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+        # Try an invalid signature first
+        wrong_sign_data = "{}|{}".format(challenge, tokenobj.token.serial[1:])
+        wrong_signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+        # Signed the wrong data
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": wrong_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertFalse(res.json['result']['value'])
+
+        # Correct signature, wrong challenge
+        wrong_challenge = b32encode_and_unicode(geturandom())
+        wrong_sign_data = "{}|{}".format(wrong_challenge, tokenobj.token.serial)
+        wrong_signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": wrong_challenge,
+                                                 "signature": wrong_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertFalse(res.json['result']['value'])
+
+        # Correct signature, wrong private key
+        wrong_key = rsa.generate_private_key(public_exponent=65537,
+                                             key_size=4096,
+                                             backend=default_backend())
+        wrong_sign_data = "{}|{}".format(challenge, tokenobj.token.serial)
+        wrong_signature = b32encode_and_unicode(
+            wrong_key.sign(wrong_sign_data.encode("utf-8"),
+                           padding.PKCS1v15(),
+                           hashes.SHA256()))
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": wrong_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertFalse(res.json['result']['value'])
+
+        # Result value is still false
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "state": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertFalse(res.json['result']['value'])
+
+        # Now the correct request
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
@@ -401,6 +487,8 @@ class PushTokenTestCase(MyTestCase):
                                                  "signature": signature}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
