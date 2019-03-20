@@ -212,6 +212,45 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
 
     @responses.activate
+    def test_03_api_authenticate_fail(self):
+        # This tests the failed to communicate to the firebase service
+        self.setUp_user_realms()
+
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the failing communication (status 500)
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/4/messages:send',
+                          body="""{}""",
+                          status=500,
+                          content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 400, res)
+                jsonresp = json.loads(res.data.decode('utf8'))
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
+                self.assertEqual(jsonresp.get("result").get("error").get("message"), "ERR401: Failed to submit "
+                                                                                     "message to firebase service.")               
+
+    @responses.activate
     def test_03_api_authenticate_client(self):
         # Test the /validate/check endpoints without the smartphone endpoint /ttype/push
         self.setUp_user_realms()

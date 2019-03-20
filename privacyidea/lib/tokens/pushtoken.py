@@ -465,6 +465,7 @@ class PushTokenClass(TokenClass):
         ``message`` which is displayed in the JSON response;
         additional ``attributes``, which are displayed in the JSON response.
         """
+        res = False
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
@@ -502,7 +503,10 @@ class PushTokenClass(TokenClass):
                                          hashes.SHA256())
             smartphone_data["signature"] = b32encode_and_unicode(signature)
 
-            fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+            res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+            if not res:
+                from privacyidea.lib.error import ValidateError
+                raise ValidateError("Failed to submit message to firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
