@@ -502,10 +502,9 @@ class LocalCAConnector(BaseCAConnector):
         serial = cert_obj.get_serial_number()
         serial_hex = int_to_hex(serial)
         filename = serial_hex + ".pem"
-
         cmd = CA_REVOKE.format(cakey=self.cakey, cacert=self.cacert,
                                config=self.config.get(ATTR.OPENSSL_CNF),
-                               certificate=self.config.get(ATTR.CERT_DIR)+'/'+filename,
+                               certificate="/".join(p for p in [self.config.get(ATTR.CERT_DIR), filename] if p),
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
