@@ -33,7 +33,7 @@ from six.moves.urllib.parse import quote
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.utils import prepare_result, to_bytes
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, ValidateError
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
@@ -48,7 +48,7 @@ from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.challenge import get_challenges
@@ -273,10 +273,7 @@ class PushTokenClass(TokenClass):
             self.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
             self.add_tokeninfo("firebase_token", upd_param.get("fbtoken"))
             # create a keypair for the server side.
-            from privacyidea.lib.crypto import generate_keypair
             pub_key, priv_key = generate_keypair(4096)
-            #pub_key = _strip_key(pub_key)
-            #priv_key = _strip_key(priv_key)
             self.add_tokeninfo(PUBLIC_KEY_SERVER, pub_key)
             self.add_tokeninfo(PRIVATE_KEY_SERVER, priv_key, "password")
 
@@ -505,7 +502,6 @@ class PushTokenClass(TokenClass):
 
             res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
             if not res:
-                from privacyidea.lib.error import ValidateError
                 raise ValidateError("Failed to submit message to firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
