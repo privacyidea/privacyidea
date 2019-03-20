@@ -408,6 +408,14 @@ class PushTokenTestCase(MyTestCase):
                                               transaction_id=transaction_id)
         challenge = challengeobject_list[0].challenge
 
+        # Incomplete request fails with HTTP400
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 400)
+
         # This is what the smartphone answers.
         # create the signature:
         sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
@@ -444,6 +452,17 @@ class PushTokenTestCase(MyTestCase):
                                            data={"serial": tokenobj.token.serial,
                                                  "nonce": wrong_challenge,
                                                  "signature": wrong_signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertFalse(res.json['result']['value'])
+
+        # Correct signature, empty nonce
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": "",
+                                                 "signature": signature}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'])
