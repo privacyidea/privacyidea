@@ -307,3 +307,19 @@ In the implementation in version 2.21 PBKDF2 is used. In this case the ``difficu
 specifies the number of rounds.
 
 This is new in version 2.21
+
+.. _policy_firebase_config:
+
+push_firebase_configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+For enrolling a :ref:`push token`, the administrator can select which
+Firebase configuration should be used.
+The administrator can create several connections to the Firebase service
+(see :ref:`firebase_provider`).
+This way even different Firebase configurations could be
+used depending on the user's realm or the IP address.
+
+This is new in version 3.0

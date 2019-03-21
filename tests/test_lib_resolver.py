@@ -514,6 +514,14 @@ class SQLResolverTestCase(MyTestCase):
 
         # rid1 != rid4, because the pool size has changed
         self.assertNotEqual(rid1, rid4)
+    
+    def test_08_noninteger_userid(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        y.map["userid"] = "username"
+        user = "cornelius"
+        user_info = y.getUserInfo(user)
+        self.assertEqual(user_info.get("id"), "cornelius")      
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()
@@ -1468,7 +1476,11 @@ class LDAPResolverTestCase(MyTestCase):
         # resolver but alice will be found in the other resolver.
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        # We add :789 to the LDAPURI in order to force a unused resolver ID.
+        # If we omit it, the test occasionally fails because of leftover
+        # cache entries from a resolver with the same resolver ID
+        # that was instantiated in the test_api_validate.py tests.
+        y.loadConfig({'LDAPURI': 'ldap://localhost:789',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',

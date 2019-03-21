@@ -1,3 +1,24 @@
+privacyidea-venv (2.23.5-1) jessie; urgency=medium
+
+  Fixes:
+  * Fix authcache
+  * Fix correct syncwindow for manually resyncing TOTP tokens
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Mon, 04 Mar 2019 18:00:00 +0200
+
+
+privacyidea-venv (2.23.4-1) jessie; urgency=medium
+
+  Fixes:
+  * Make triggerchallenge HTTP response consistent
+  * Add tokentype and message to response of triggerchallenge
+  * Allow concurrent challenges
+  * Fix accepted-language to support _only_ de-DE.
+  * Avoid user resolving in event handler condition
+  * Point the support button to better landing pages
+
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 06 Feb 2019 12:00:00 +0200
+
 privacyidea-venv (2.23.3-1) jessie; urgency=medium
 
   Fixes:

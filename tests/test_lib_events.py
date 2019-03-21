@@ -15,7 +15,7 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
-from privacyidea.models import EventCounter
+from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
@@ -425,6 +425,46 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertEqual(r, False)
+
+    def test_06_check_for_client_ip(self):
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+
+        # Check DETAIL_MESSAGE
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"message": "something very special happened"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": g,
+             "handler_def": {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24, !10.0.0.1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -1713,7 +1753,8 @@ class UserNotificationTestCase(MyTestCase):
         audit_object.audit_data["serial"] = "123456"
         g.audit_object = audit_object
         options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "handler_def": {"conditions": {"token_locked": "True"},
+                                   "options": {"emailconfig": "myserver"}},
                    "response": resp,
                    "request": req
                    }
@@ -1750,6 +1791,24 @@ class UserNotificationTestCase(MyTestCase):
         # wrong realm
         self.assertEqual(r, False)
 
+        # Check condition resolver
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"resolver": "resolver1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"resolver": "resolver2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
     @smtpmock.activate
     def test_07_locked_token_wrong_pin(self):
         tok = init_token({"serial": "lock2", "type": "spass",
@@ -1772,7 +1831,8 @@ class UserNotificationTestCase(MyTestCase):
         g.audit_object = audit_object
         g.client_ip = "127.0.0.1"
         options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"}},
+                   "handler_def": {"conditions": {"token_locked": "True"},
+                                   "options": {"emailconfig": "myserver"}},
                    "response": resp,
                    "request": req
                    }
@@ -1839,8 +1899,26 @@ class UserNotificationTestCase(MyTestCase):
              "response": resp
              }
         )
-        # Serial matches the regexp
+        # realm matches
         self.assertEqual(r, True)
+
+        # test condition tokenresolver
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokenresolver": "resolver1,reso2"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"tokenresolver": "reso2,reso3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
 
     def test_10_check_conditions_tokentype(self):
         uhandler = UserNotificationEventHandler()
@@ -1984,10 +2062,11 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
+        # Assign a non-existing user to the token
         tok = init_token({"serial": serial, "type": "spass"})
-        tok.token.resolver = self.resolvername1
-        tok.token.resolver_type = "passwd"
-        tok.token.user_id = "123981298"
+        r = TokenOwner(token_id=tok.token.id, resolver=self.resolvername1,
+                       realmname=self.realm1, user_id="123981298").save()
+        self.assertTrue(r > 0)
 
         env = builder.get_environ()
         req = Request(env)
@@ -2018,7 +2097,14 @@ class UserNotificationTestCase(MyTestCase):
         # Token is orphaned, but we check for non-orphaned tokens.
         self.assertEqual(r, False)
 
-        tok.set_user(User("cornelius", "realm1"))
+        # Unassign any user from this token - we need to do this, since the token can have more users.
+        unassign_token(tok.token.serial)
+        self.assertEqual(tok.token.owners.first(), None)
+        # Set an existing user for the token.
+        tok.add_user(User("cornelius", "realm1"))
+        self.assertEqual(tok.token.owners.first().user_id, "1000")
+        self.assertEqual(tok.token.owners.first().realm.name, "realm1")
+
         r = uhandler.check_condition(
             {"g": {},
              "handler_def": {
@@ -2339,6 +2425,8 @@ class UserNotificationTestCase(MyTestCase):
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
+        # Create admin authentication token
+        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",

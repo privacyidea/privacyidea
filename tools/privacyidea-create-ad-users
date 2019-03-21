@@ -1,10 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # 2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Rewrite to LDAP3
 #
-VERSION = '0.2'
+__version__ = '0.2'
 
 import sys
 from getopt import getopt, GetoptError
@@ -15,6 +15,7 @@ import getpass
 #OBJECT_CLASSES = ['top', "posixAccount", 'inetOrgPerson']
 # ObjectClass for AD
 OBJECT_CLASSES = ['top', "person", 'inetOrgPerson', "user"]
+
 
 def usage():
     print('''
@@ -51,7 +52,7 @@ def main():
         opts, args = getopt(sys.argv[1:], "f:u:b:d:", ["file="])
 
     except GetoptError:
-        print "There is an error in your parameter syntax:"
+        print("There is an error in your parameter syntax:")
         usage()
         sys.exit(1)
 

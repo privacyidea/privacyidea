@@ -1,5 +1,5 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.models import Audit
 import datetime
@@ -12,7 +12,7 @@ PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
 POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
 
-class APIAuditTestCase(MyTestCase):
+class APIAuditTestCase(MyApiTestCase):
 
     def test_00_get_audit(self):
         with self.app.test_request_context('/audit/',
@@ -55,7 +55,7 @@ class APIAuditTestCase(MyTestCase):
             json_response = json.loads(res.data.decode('utf8'))
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
-                "count"), 9)
+                "count"), 8)
             audit_list = json_response.get("result").get("value").get("auditdata")
             audit_actions = [a for a in audit_list if a.get("action") == "GET /audit/"]
             self.assertEqual(len(audit_actions), 2)
@@ -183,7 +183,7 @@ class APIAuditTestCase(MyTestCase):
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
             auditdata = json_response.get("result").get("value").get("auditdata")
-            self.assertEqual(count, 22)
+            self.assertEqual(count, 20)
 
         # delete policy
         delete_policy("audit01")

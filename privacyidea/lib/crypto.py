@@ -42,7 +42,7 @@ as unicode strings. They always return a hexlified unicode string.
 The functions which encrypt/decrypt arbitrary data return bytes and let the
 calling function handle the data.
 
-This lib.cryto is tested in tests/test_lib_crypto.py
+This lib.crypto is tested in tests/test_lib_crypto.py
 """
 from __future__ import division
 import hmac
@@ -71,7 +71,11 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
-from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode
+from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode, b64encode_and_unicode
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 if not PY2:
     long = int
@@ -397,14 +401,15 @@ def aes_encrypt_b64(key, data):
     This is used for PSKC.
 
     :param key: Encryption key (binary format)
+    :type key: bytes
     :param data: Data to encrypt
     :type data: bytes
-    :return: base64 encrypted output, containing IV
-    :rtype: bytes
+    :return: base64 encrypted output, containing IV and encrypted data
+    :rtype: str
     """
     iv = geturandom(16)
     encdata = aes_encrypt(key, iv, data)
-    return base64.b64encode(iv + encdata)
+    return b64encode_and_unicode(iv + encdata)
 
 
 def aes_decrypt_b64(key, data_b64):
@@ -414,6 +419,7 @@ def aes_decrypt_b64(key, data_b64):
 
     :param key: binary key
     :param data_b64: base64 encoded data (IV + encdata)
+    :type data_b64: str
     :return: encrypted data
     """
     data_bin = base64.b64decode(data_b64)
@@ -750,3 +756,29 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     :rtype: basestring
     """
     return ''.join(urandom.choice(characters) for _x in range(size))
+
+
+def generate_keypair(rsa_keysize=2048):
+    """
+    This creates an RSA key pair
+
+    # TODO: The HSM should be used.
+
+    The public key and private keys are returned in PKCS#1 Format.
+
+    :return: tuple of (pubkey, privkey)
+    """
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=rsa_keysize,
+        backend=default_backend()
+        )
+    public_key = private_key.public_key()
+    pem_priv = to_unicode(private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()))
+    pem_pub = to_unicode(public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.PKCS1))
+    return pem_pub, pem_priv

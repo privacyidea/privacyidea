@@ -48,7 +48,6 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib import _
-import json
 import logging
 import datetime
 

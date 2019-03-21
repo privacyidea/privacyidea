@@ -49,9 +49,9 @@ def upgrade():
         sa.UniqueConstraint('periodictask_id', 'key', name='ptoix_1'),
         mysql_row_format='DYNAMIC'
         )
-    except Exception, exx:
-        print "Could not add tables for periodic tasks!"
-        print exx
+    except Exception as exx:
+        print("Could not add tables for periodic tasks!")
+        print(exx)
 
 
 def downgrade():

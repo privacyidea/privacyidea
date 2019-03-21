@@ -1,6 +1,9 @@
 import unittest
 import json
+import mock
+
 from privacyidea.app import create_app
+from privacyidea.config import TestingConfig
 from privacyidea.models import db, save_config_timestamp
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -142,10 +145,7 @@ class MyTestCase(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         cls.app_context.pop()
-        
-    def setUp(self):
-        self.authenticate()
-        
+
     def authenticate(self):
         with self.app.test_request_context('/auth',
                                            data={"username": "testadmin",
@@ -173,3 +173,37 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+
+class OverrideConfigTestCase(MyTestCase):
+    """
+    helper class that allows to modify the app config processed by ``create_app``.
+    This can be useful if config values need to be adjusted *for app creation*.
+    For that, just override the inner ``Config`` class.
+    """
+    class Config(TestingConfig):
+        pass
+
+    @classmethod
+    def setUpClass(cls):
+        """ override privacyidea.config.config["testing"] with the inner config class """
+        with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
+            MyTestCase.setUpClass()
+
+
+class MyApiTestCase(MyTestCase):
+    @classmethod
+    def cls_auth(cls, app):
+        with app.test_request_context('/auth', data={"username": "testadmin",
+                                                     "password": "testpw"},
+                                      method='POST'):
+            res = app.full_dispatch_request()
+            assert res.status_code == 200
+            result = res.json.get("result")
+            assert result.get("status")
+            cls.at = result.get("value").get("token")
+
+    @classmethod
+    def setUpClass(cls):
+        super(MyApiTestCase, cls).setUpClass()
+        cls.cls_auth(cls.app)

@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
@@ -11,6 +12,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import (Token,
                                  Config,
@@ -38,7 +40,7 @@ class HOTPTokenTestCase(MyTestCase):
     serial1 = "SE123456"
     otpkey = "3132333435363738393031323334353637383930"
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
@@ -83,23 +85,16 @@ class HOTPTokenTestCase(MyTestCase):
                         token.token.tokentype)
         self.assertTrue(token.type == "hotp", token.type)
 
-        token.set_user(User(login="cornelius",
+        token.add_user(User(login="cornelius",
                             realm=self.realm1))
-        self.assertTrue(token.token.resolver_type == "passwdresolver",
-                        token.token.resolver_type)
-        self.assertTrue(token.token.resolver == self.resolvername1,
-                        token.token.resolver)
-        self.assertTrue(token.token.user_id == "1000",
-                        token.token.user_id)
+        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
         self.assertTrue(user_object.resolver == self.resolvername1,
                         user_object)
-
-        token.set_user_identifiers(2000, self.resolvername1, "passwdresolver")
-        self.assertTrue(int(token.token.user_id) == 2000, token.token.user_id)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -147,7 +142,7 @@ class HOTPTokenTestCase(MyTestCase):
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
 
-        self.assertTrue(token.get_user_id() == token.token.user_id)
+        self.assertEqual(token.get_user_id(), token.token.owners.first().user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "hotp",
@@ -636,7 +631,7 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify("12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -740,7 +735,7 @@ class HOTPTokenTestCase(MyTestCase):
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # too short
         self.assertRaises(ParameterError, token.update, {
-            "otpkey": binascii.hexlify("="*8)
+            "otpkey": binascii.hexlify(b"="*8)
         })
         # generate a 12-byte client component
         client_component = b'abcdefghijkl'
@@ -786,12 +781,12 @@ class HOTPTokenTestCase(MyTestCase):
             "Incorrect checksum",
             token.update,
             {
-                "otpkey": base64.b32encode("\x37" + checksum[1:] + client_component).strip("="),
+                "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
                 "otpkeyformat": "base32check",
             })
         # construct a secret
         token.update({
-            "otpkey": base64.b32encode(checksum + client_component).strip("="),
+            "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
             "otpkeyformat": "base32check",
             # the following values are ignored
             "2step_serversize": "23",

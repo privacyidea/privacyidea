@@ -142,7 +142,7 @@ class RemoteTokenClass(TokenClass):
         val = getParam(param, "remote.local_checkpin", optional) or 0
         self.add_tokeninfo("remote.local_checkpin", val)
 
-        for key in ["remote.serial", "remote.user",
+        for key in ["remote.serial", "remote.user", "remote.path",
                     "remote.realm", "remote.resolver"]:
             val = getParam(param, key, optional)
             if val is not None:
@@ -218,33 +218,24 @@ class RemoteTokenClass(TokenClass):
         :rtype: int
         """
         otp_count = -1
-        otpval = otpval.encode("utf-8")
 
         remoteServer = self.get_tokeninfo("remote.server") or ""
-        remoteServer = remoteServer.encode("utf-8")
 
         # in preparation of the ability to relocate privacyidea urls,
         # we introduce the remote url path
         remotePath = self.get_tokeninfo("remote.path") or ""
-        remotePath = remotePath.strip().encode('utf-8')
+        remotePath = remotePath.strip()
 
         remoteSerial = self.get_tokeninfo("remote.serial") or ""
-        remoteSerial = remoteSerial.encode('utf-8')
 
         remoteUser = self.get_tokeninfo("remote.user") or ""
-        remoteUser = remoteUser.encode('utf-8')
 
         remoteRealm = self.get_tokeninfo("remote.realm") or ""
-        remoteRealm = remoteRealm.encode('utf-8')
 
         remoteResolver = self.get_tokeninfo("remote.resolver") or ""
-        remoteResolver = remoteResolver.encode('utf-8')
 
         ssl_verify = get_from_config("remote.verify_ssl_certificate",
                                      False, return_bool=True) or False
-
-        if type(ssl_verify) in [str, unicode]:
-            ssl_verify = is_true(ssl_verify.lower())
 
         # here we also need to check for remote.user and so on....
         log.debug("checking OTP len:%r remotely on server: %r,"

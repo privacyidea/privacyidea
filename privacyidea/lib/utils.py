@@ -44,6 +44,9 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
+import threading
+import pkg_resources
+import time
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
@@ -126,14 +129,15 @@ def to_utf8(password):
     """
     Convert a password to utf8
     :param password: A password that should be converted to utf8
-    :type password: unicode
+    :type password: str or bytes
     :return: a utf8 encoded password
+    :rtype: bytes
     """
     if password:
         try:
             # If the password exists in unicode we encode it to utf-8
-            password = password.encode(ENCODING)
-        except UnicodeDecodeError as exx:
+            password = password.encode('utf8')
+        except (UnicodeDecodeError, AttributeError) as _exx:
             # In case the password is already an encoded string, we fail to
             # encode it again...
             log.debug("Failed to convert password: {0!s}".format(type(password)))
@@ -205,6 +209,45 @@ def hexlify_and_unicode(s):
     return res
 
 
+def b32encode_and_unicode(s):
+    """
+    Base32-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base32-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b32encode(to_bytes(s)))
+    return res
+
+
+def b64encode_and_unicode(s):
+    """
+    Base64-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b64encode(to_bytes(s)))
+    return res
+
+
+def urlsafe_b64encode_and_unicode(s):
+    """
+    Base64-urlsafe-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    return res
+
+
 def create_png(data, alt=None):
     img = qrcode.make(data)
 
@@ -221,14 +264,14 @@ def create_img(data, width=0, alt=None, raw=False):
     create the qr image data
 
     :param data: input data that will be munched into the qrcode
-    :type data: string
+    :type data: str
     :param width: image width in pixel
     :type width: int
     :param raw: If set to false, the data will be interpreted as text and a
         QR code will be generated.
 
     :return: image data to be used in an <img> tag
-    :rtype:  string
+    :rtype:  str
     """
     width_str = ''
     alt_str = ''
@@ -237,7 +280,7 @@ def create_img(data, width=0, alt=None, raw=False):
         o_data = create_png(data, alt=alt)
     else:
         o_data = data
-    data_uri = binascii.b2a_base64(o_data).replace(b"\n", b"")
+    data_uri = b64encode_and_unicode(o_data)
 
     if width != 0:
         width_str = " width={0:d} ".format((int(width)))
@@ -246,8 +289,7 @@ def create_img(data, width=0, alt=None, raw=False):
         val = urlencode({'alt': alt})
         alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
-    ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
-
+    ret_img = u'data:image/png;base64,{0!s}'.format(data_uri)
     return ret_img
 
 
@@ -262,21 +304,39 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 
 def modhex_encode(s):
-    return ''.join(
-        [hex2ModDict[c] for c in binascii.hexlify(s).decode('utf8')]
-    )
-# end def modhex_encode
+    """
+
+    :param s: string to encode
+    :type s: bytes or str
+    :return: the encoded string
+    :rtype: str
+    """
+    return u''.join([hex2ModDict[c] for c in hexlify_and_unicode(s)])
 
 
 def modhex_decode(m):
+    """
+
+    :param m: string to decode
+    :type m: str
+    :return: decoded data
+    :rtype: bytes
+    """
     return binascii.unhexlify(''.join([mod2HexDict[c] for c in m]))
-# end def modhex_decode
 
 
 def checksum(msg):
+    """
+    Calculate CRC-16 (16-bit ISO 13239 1st complement) checksum.
+    (see Yubikey-Manual - Chapter 6: Implementation details)
+
+    :param msg: input byte string for crc calculation
+    :type msg: bytes
+    :return: crc16 checksum of msg
+    :rtype: int
+    """
     crc = 0xffff
-    for i in range(0, len(msg) // 2):
-        b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
+    for b in six.iterbytes(msg):
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -454,15 +514,16 @@ def parse_date(date_string):
     if date_string.startswith("+"):
         # We are using an offset
         delta_specifier = date_string[-1].lower()
+        if delta_specifier not in 'mhd':
+            return datetime.now(tzlocal()) + timedelta()
         delta_amount = int(date_string[1:-1])
         if delta_specifier == "m":
             td = timedelta(minutes=delta_amount)
         elif delta_specifier == "h":
             td = timedelta(hours=delta_amount)
-        elif delta_specifier == "d":
-            td = timedelta(days=delta_amount)
         else:
-            td = timedelta()
+            # delta_specifier must be "d"
+            td = timedelta(days=delta_amount)
         return datetime.now(tzlocal()) + td
 
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
@@ -472,7 +533,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match("^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -575,6 +636,29 @@ def get_client_ip(request, proxy_settings):
                                               mapped_ip=mapped_ip))
 
     return client_ip
+
+
+def check_ip_in_policy(client_ip, policy):
+    """
+    This checks, if the given client IP is contained in a list like
+
+       ["10.0.0.2", "192.168.2.1/24", "!192.168.2.12", "-172.16.200.1"]
+
+    :param client_ip: The IP address in question
+    :param policy: A string of single IP addresses, negated IP address and subnets.
+    :return: tuple of (found, excluded)
+    """
+    client_found = False
+    client_excluded = False
+    for ipdef in policy:
+        if ipdef[0] in ['-', '!']:
+            # exclude the client?
+            if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
+                log.debug(u"the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
+                client_excluded = True
+        elif IPAddress(client_ip) in IPNetwork(ipdef):
+            client_found = True
+    return client_found, client_excluded
 
 
 def reload_db(timestamp, db_ts):
@@ -782,7 +866,7 @@ def parse_timedelta(s):
     minutes = 0
     hours = 0
     days = 0
-    m = re.match("\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
+    m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
         raise Exception("Unsupported timedelta")
@@ -819,8 +903,8 @@ def parse_time_offset_from_now(s):
     :return: tuple of modified string and timedelta 
     """
     td = timedelta()
-    m1 = re.search("(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
-    m2 = re.search("(^.*{now})([+-]\d+[smhd])(.*$)", s)
+    m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
+    m2 = re.search(r"(^.*{now})([+-]\d+[smhd])(.*$)", s)
     m = m1 or m2
     if m:
         s1 = m.group(1)
@@ -1028,3 +1112,53 @@ def get_module_class(package_name, class_name, check_method=None):
         raise NameError(u"Class AttributeError: {0}.{1} "
                         u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
     return klass
+
+
+def get_version_number():
+    """
+    returns the privacyidea version
+    """
+    version = "unknown"
+    try:
+        version = pkg_resources.get_distribution("privacyidea").version
+    except:
+        log.info("We are not able to determine the privacyidea version number.")
+    return version
+
+
+def get_version():
+    """
+    This returns the version, that is displayed in the WebUI and
+    self service portal.
+    """
+    version = get_version_number()
+    return "privacyIDEA {0!s}".format(version)
+
+
+def prepare_result(obj, rid=1, details=None):
+    """
+    This is used to preformat the dictionary to be sent by the API response
+
+    :param obj: simple result object like dict, sting or list
+    :type obj: dict or list or string/unicode
+    :param rid: id value, for future versions
+    :type rid: int
+    :param details: optional parameter, which allows to provide more detail
+    :type  details: None or simple type like dict, list or string/unicode
+
+    :return: json rendered sting result
+    :rtype: string
+    """
+    res = {"jsonrpc": "2.0",
+           "result": {"status": True,
+                      "value": obj},
+           "version": get_version(),
+           "versionnumber": get_version_number(),
+           "id": rid,
+           "time": time.time()}
+
+    if details is not None and len(details) > 0:
+        details["threadid"] = threading.current_thread().ident
+        res["detail"] = details
+
+    return res

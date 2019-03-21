@@ -27,12 +27,13 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
+from privacyidea.lib.utils import prepare_result, get_version
 import time
-import threading
-import pkg_resources
 import logging
 import json
 import jwt
+import threading
+import six
 from flask import (jsonify,
                    current_app,
                    Response)
@@ -44,27 +45,6 @@ SESSION_KEY_LENGTH = 32
 
 optional = True
 required = False
-
-
-def get_version_number():
-    """
-    returns the privacyidea version
-    """
-    version = "unknown"
-    try:
-        version = pkg_resources.get_distribution("privacyidea").version
-    except:
-        log.info("We are not able to determine the privacyidea version number.")
-    return version
-
-
-def get_version():
-    """
-    This returns the version, that is displayed in the WebUI and
-    self service portal.
-    """
-    version = get_version_number()
-    return "privacyIDEA {0!s}".format(version)
 
 
 def getParam(param, key, optional=True, default=None, allow_empty=True):
@@ -116,19 +96,7 @@ def send_result(obj, rid=1, details=None):
     :return: json rendered sting result
     :rtype: string
     '''
-    res = {"jsonrpc": "2.0",
-           "result": {"status": True,
-                      "value": obj},
-           "version": get_version(),
-           "versionnumber": get_version_number(),
-           "id": rid,
-           "time": time.time()}
-
-    if details is not None and len(details) > 0:
-        details["threadid"] = threading.current_thread().ident
-        res["detail"] = details
-
-    return jsonify(res)
+    return jsonify(prepare_result(obj, rid, details))
 
 
 def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
@@ -207,7 +175,7 @@ def send_csv_result(obj, data_key="tokens",
     # Do the data
     for row in obj.get(data_key, {}):
         for val in row.values():
-            if type(val) in [str, unicode]:
+            if isinstance(val, six.string_types):
                 value = val.replace("\n", " ")
             else:
                 value = val

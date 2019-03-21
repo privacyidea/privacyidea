@@ -49,6 +49,7 @@ import os
 import string
 import subprocess
 from functools import wraps
+from six.moves import input
 
 import sqlalchemy
 import sys
@@ -110,10 +111,8 @@ def require_instance(f):
     def deco(*args, **kwargs):
         config_file = os.path.join(manager.app.instance_directory, 'pi.cfg')
         if not os.path.exists(config_file):
-            raise RuntimeError(
-                "{!r} does not exist! Create a new instance using ``privacyidea-standalone create``.".format(
-                    config_file
-                ))
+            raise RuntimeError("{!r} does not exist! Create a new instance using"
+                               " ``privacyidea-standalone create``.".format(config_file))
         return f(*args, **kwargs)
     return deco
 
@@ -125,24 +124,28 @@ class Configure(Server):
     def __call__(self, *args, **kwargs):
         Server.__call__(self, *args, **kwargs)
 
+    def run(self):
+        pass
+
 
 manager = Manager(_app_factory, with_default_commands=False, description=__doc__)
 manager.add_command("configure", Configure())
-manager.add_option('-i', '--instance', dest='instance', required=False, default=os.path.expanduser('~/.privacyidea'),
+manager.add_option('-i', '--instance', dest='instance', required=False,
+                   default=os.path.expanduser('~/.privacyidea'),
                    help='Location of the privacyIDEA instance (defaults to ~/.privacyidea)')
 
 
-def read_credentials(file):
+def read_credentials(fobj):
     """
     read username and password from a file. This could be sys.stdin.
 
     The first line specifies the username, the second line specifies the password.
 
-    :param file: a Python file object
+    :param fobj: a Python file object
     :return: a tuple (user, password)
     """
-    username = file.readline().strip()
-    password = file.readline().strip()
+    username = fobj.readline().strip()
+    password = fobj.readline().strip()
     return username, password
 
 
@@ -174,13 +177,13 @@ def choice(question, choices, case_insensitive=True):
     :return: a value of ``choices``
     """
     while True:
-        answer = raw_input(question)
+        answer = input(question)
         if case_insensitive:
             answer = answer.lower()
         if answer in choices:
             return choices[answer]
         else:
-            print '{!r} is not a valid answer.'.format(answer)
+            print('{!r} is not a valid answer.'.format(answer))
 
 
 def yesno(question, default):
@@ -220,17 +223,19 @@ def create():
     invoke_pi_manage(['create_audit_keys'], pi_cfg)
     invoke_pi_manage(['createdb'], pi_cfg)
 
-    print
-    print 'Please enter a password for the new admin `super`.'
+    print()
+    print('Please enter a password for the new admin `super`.')
     invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
 
     # create users
     if yesno('Would you like to create a default resolver and realm (Y/n)? ', True):
-        print 'There are two possibilities to create a resolver:'
-        print ' 1) We can create a table in the privacyIDEA SQLite database to store the users.'
-        print '    You can add users via the privacyIDEA Web UI.'
-        print ' 2) We can create a resolver that contains the users from /etc/passwd'
-        print
+        print("""
+There are two possibilities to create a resolver:
+ 1) We can create a table in the privacyIDEA SQLite database to store the users.
+    You can add users via the privacyIDEA Web UI.
+ 2) We can create a resolver that contains the users from /etc/passwd
+""")
+        print()
         create_sql_resolver = choice('Please choose (default=1): ', {
             '1': True,
             '2': False,
@@ -241,13 +246,16 @@ def create():
         else:
             with NamedTemporaryFile(delete=False) as f:
                 f.write('{"fileName": "/etc/passwd"}')
-            invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver', f.name], pi_cfg)
+            invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver', f.name],
+                             pi_cfg)
             os.unlink(f.name)
         invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
 
-    print
-    print 'Configuration is complete. You can now configure privacyIDEA in the web browser by running'
-    print "  privacyidea-standalone -i '{}' configure".format(instance_dir.encode('string-escape'))
+    print()
+    print('Configuration is complete. You can now configure privacyIDEA in '
+          'the web browser by running')
+    print("  privacyidea-standalone -i '{}' "
+          "configure".format(instance_dir.encode('unicode-escape')))
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',
@@ -267,7 +275,7 @@ def check(show_response=False):
     exitcode = 255
     try:
         with manager.app.test_request_context('/validate/check', method='POST',
-                                      data={'user': user, 'pass': password}):
+                                              data={'user': user, 'pass': password}):
             response = manager.app.full_dispatch_request()
             data = json.loads(response.data)
             result = data['result']
@@ -276,9 +284,9 @@ def check(show_response=False):
             else:
                 exitcode = 1
             if show_response:
-                print response.data
-    except Exception, e:
-        print repr(e)
+                print(response.data)
+    except Exception as e:
+        print(repr(e))
     sys.exit(exitcode)
 
 

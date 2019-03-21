@@ -5,28 +5,28 @@
             boundary-links="true" ng-change="pageChanged()"></pagination>
 
 <div class="table-responsive">
-    <table class="table table-bordered table-striped">
+    <table class="table table-bordered table-striped" id="tableuserlist">
         <thead>
         <tr>
-            <th><translate>username</translate>
+            <th class="pifilter"><translate>username</translate>
                 <pi-filter ng-model="params.usernameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
                            ></pi-filter>
             </th>
-            <th><translate>surname</translate>
+            <th class="pifilter"><translate>surname</translate>
                 <pi-filter ng-model="params.surnameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
                 ></pi-filter>
             </th>
-            <th><translate>givenname</translate>
+            <th class="pifilter"><translate>givenname</translate>
                 <pi-filter ng-model="params.givennameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
                 ></pi-filter>
             </th>
-            <th><translate>email</translate>
+            <th class="pifilter"><translate>email</translate>
                 <pi-filter ng-model="params.emailFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"

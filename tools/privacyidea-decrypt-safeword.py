@@ -4,6 +4,7 @@
 # (c) Cornelius Kölbel
 # Info: http://www.privacyidea.org
 
+from __future__ import print_function
 import argparse
 import re
 from Crypto.Cipher import AES, DES
@@ -55,4 +56,3 @@ with open(args.file, 'r') as f:
 
 for token in all_tokens:
     print("{0!s}, {1!s}".format(token.get("serial"), token.get("seed")))
-

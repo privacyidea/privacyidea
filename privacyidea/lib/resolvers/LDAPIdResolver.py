@@ -275,6 +275,7 @@ class IdResolver (UserIdResolver):
         self.start_tls = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
+        self.serverpool = None
 
     def checkPass(self, uid, password):
         """
@@ -296,11 +297,12 @@ class IdResolver (UserIdResolver):
         else:
             bind_user = self._getDN(uid)
 
-        server_pool = self.get_serverpool(self.uri, self.timeout,
-                                          get_info=ldap3.NONE,
-                                          tls_context=self.tls_context,
-                                          rounds=self.serverpool_rounds,
-                                          exhaust=self.serverpool_skip)
+        if not self.serverpool:
+            self.serverpool = self.get_serverpool(self.uri, self.timeout,
+                                                  get_info=ldap3.NONE,
+                                                  tls_context=self.tls_context,
+                                                  rounds=self.serverpool_rounds,
+                                                  exhaust=self.serverpool_skip)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -310,7 +312,7 @@ class IdResolver (UserIdResolver):
             if not bind_user or len(bind_user) < 1:
                 raise Exception("No valid user. Empty bind_user.")
             l = self.create_connection(authtype=self.authtype,
-                                       server=server_pool,
+                                       server=self.serverpool,
                                        user=bind_user,
                                        password=password,
                                        receive_timeout=self.timeout,
@@ -442,13 +444,14 @@ class IdResolver (UserIdResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = self.get_serverpool(self.uri, self.timeout,
+            if not self.serverpool:
+                self.serverpool = self.get_serverpool(self.uri, self.timeout,
                                               get_info=self.get_info,
                                               tls_context=self.tls_context,
                                               rounds=self.serverpool_rounds,
                                               exhaust=self.serverpool_skip)
             self.l = self.create_connection(authtype=self.authtype,
-                                            server=server_pool,
+                                            server=self.serverpool,
                                             user=self.binddn,
                                             password=self.bindpw,
                                             receive_timeout=self.timeout,
@@ -752,6 +755,9 @@ class IdResolver (UserIdResolver):
             self.tls_context = None
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        # The configuration might have changed. We reset the serverpool
+        self.serverpool = None
+        self.i_am_bound = False
 
         return self
 

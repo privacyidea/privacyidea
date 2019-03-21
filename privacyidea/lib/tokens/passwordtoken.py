@@ -19,10 +19,12 @@ This file contains the definition of the password token class
 """
 
 import logging
+
 from privacyidea.lib.crypto import zerome
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.utils import to_bytes
 from privacyidea.lib import _
 
 optional = True
@@ -47,11 +49,20 @@ class PasswordTokenClass(TokenClass):
             return self.secretObject.getKey()
 
         def check_password(self, password):
+            """
+
+            :param password:
+            :type password: str
+            :return: result of password check: 0 if success, -1 if failed
+            :rtype: int
+            """
             res = -1
 
             key = self.secretObject.getKey()
-
-            if key == password:
+            # getKey() returns bytes and since we can not assume, that the
+            # password only contains printable characters, we need to compare
+            # bytes strings here. This also avoids making another copy of 'key'.
+            if key == to_bytes(password):
                 res = 0
 
             zerome(key)

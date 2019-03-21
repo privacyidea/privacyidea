@@ -1,8 +1,8 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 
-class APISmsGatewayTestCase(MyTestCase):
+class APISmsGatewayTestCase(MyApiTestCase):
 
     def test_01_crud_smsgateway(self):
 
@@ -181,7 +181,7 @@ class APISmsGatewayTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             value = json.loads(res.data.decode('utf8')).get("result").get("value")
-            self.assertEqual(len(value), 4)
+            self.assertEqual(len(value), 5)
             self.assertTrue('privacyidea.lib.smsprovider.HttpSMSProvider'
                             '.HttpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SmtpSMSProvider'

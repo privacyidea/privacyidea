@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from six.moves.urllib.parse import urlencode
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token, Challenge, AuthCache)
@@ -89,7 +89,7 @@ OTPs = ["755224",
         "399871",
         "520489"]
 
-class AuthorizationPolicyTestCase(MyTestCase):
+class AuthorizationPolicyTestCase(MyApiTestCase):
     """
     This tests the catch all resolvers and resolvers which also contain the
     user.
@@ -242,7 +242,7 @@ class AuthorizationPolicyTestCase(MyTestCase):
             self.assertTrue(result.get("value"))
 
 
-class DisplayTANTestCase(MyTestCase):
+class DisplayTANTestCase(MyApiTestCase):
 
     def test_00_run_complete_workflow(self):
         # This is a standard workflow of a display TAN token.
@@ -332,7 +332,7 @@ class DisplayTANTestCase(MyTestCase):
         remove_token("ocra1234")
 
 
-class AValidateOfflineTestCase(MyTestCase):
+class AValidateOfflineTestCase(MyApiTestCase):
     """
     Test api.validate endpoints that are responsible for offline auth.
     """
@@ -368,9 +368,9 @@ class AValidateOfflineTestCase(MyTestCase):
         db_token.save()
         token = HotpTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serials[0], token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin("pin")
-        self.assertTrue(token.token.user_id == "1000", token.token.user_id)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
     def test_01_validate_offline(self):
         pass
@@ -535,7 +535,7 @@ class AValidateOfflineTestCase(MyTestCase):
                              u"ERR905: Token is not an offline token or refill token is incorrect")
 
 
-class ValidateAPITestCase(MyTestCase):
+class ValidateAPITestCase(MyApiTestCase):
     """
     test the api.validate endpoints
     """
@@ -571,16 +571,15 @@ class ValidateAPITestCase(MyTestCase):
         db_token.save()
         token = HotpTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serials[0], token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin("pin")
-        self.assertTrue(token.token.user_id == "1000", token.token.user_id)
+        self.assertEqual(token.token.owners.first().user_id, "1000")
 
     def test_02_validate_check(self):
         # is the token still assigned?
         tokenbject_list = get_tokens(serial=self.serials[0])
         tokenobject = tokenbject_list[0]
-        self.assertTrue(tokenobject.token.user_id == "1000",
-                        tokenobject.token.user_id)
+        self.assertEqual(tokenobject.token.owners.first().user_id, "1000")
 
         """                  Truncated
            Count    Hexadecimal    Decimal        HOTP
@@ -1010,8 +1009,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP1"
         pin = "chalresp1"
@@ -1020,7 +1018,7 @@ class ValidateAPITestCase(MyTestCase):
         db_token.update_otpkey(self.otpkey)
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_user(User("cornelius", self.realm1))
+        token.add_user(User("cornelius", self.realm1))
         token.set_pin(pin)
         # Set the failcounter
         token.set_failcount(5)
@@ -1069,8 +1067,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP2"
         pin = "chalresp2"
@@ -1129,8 +1126,7 @@ class ValidateAPITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue('"setPolicy pol_chal_resp": 1' in res.data,
-                            res.data)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
         serial = "CHALRESP3"
         pin = "chalresp3"
@@ -1968,7 +1964,7 @@ class ValidateAPITestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             # HTTP 204 status code signals a successful authentication
             self.assertEqual(res.status_code, 204)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with wrong PIN
         with self.app.test_request_context('/validate/radiuscheck',
@@ -1977,7 +1973,7 @@ class ValidateAPITestCase(MyTestCase):
                                                  "pass": "wrong"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            self.assertEqual(res.data, '')
+            self.assertEqual(res.data, b'')
 
         # test authentication fails with an unknown user
         # here, we get an ordinary JSON response
@@ -2145,27 +2141,6 @@ class ValidateAPITestCase(MyTestCase):
         # Configure the SMS Gateway
         self.setup_sms_gateway()
         from privacyidea.lib.config import set_privacyidea_config
-        post_url = "http://smsgateway.com/sms_send_api.cgi"
-        success_body = "ID 12345"
-
-        identifier = "myGW"
-        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
-                          ".HttpSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options={"HTTP_METHOD": "POST",
-                                     "URL": post_url,
-                                     "RETURN_SUCCESS": "ID",
-                                     "text": "{otp}",
-                                     "phone": "{phone}"})
-        self.assertTrue(id > 0)
-        # set config sms.identifier = myGW
-        r = set_privacyidea_config("sms.identifier", identifier)
-        self.assertTrue(r in ["insert", "update"])
-        responses.add(responses.POST,
-                      post_url,
-                      body=success_body)
-
-
 
         self.setUp_user_realms()
         user = User("cornelius", self.realm1)
@@ -2389,6 +2364,20 @@ class ValidateAPITestCase(MyTestCase):
 
         delete_policy("authcache")
 
+        # If there is no policy authenticating again with the same OTP fails.
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(detail.get("message"), u"wrong otp value. previous otp used again")
+
         # If there is no authcache, the same value must not be used again!
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -2418,14 +2407,14 @@ class ValidateAPITestCase(MyTestCase):
             self.assertFalse(result.get("value"))
 
 
-class AChallengeResponse(MyTestCase):
+class AChallengeResponse(MyApiTestCase):
 
     serial = "hotp1"
     serial_email = "email1"
     serial_sms= "sms1"
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(AChallengeResponse, self).setUp()
         self.setUp_user_realms()
 
     def setup_sms_gateway(self):
@@ -2870,11 +2859,88 @@ class AChallengeResponse(MyTestCase):
 
         remove_token(self.serial_sms)
 
+    @responses.activate
+    def test_07_disabled_sms_token_will_not_trigger_challenge(self):
+        # Configure the SMS Gateway
+        self.setup_sms_gateway()
 
-class TriggeredPoliciesTestCase(MyTestCase):
+        # remove tokens for user cornelius
+        remove_token(user=User("cornelius", self.realm1))
+        # Enroll an SMS-Token to the user
+        init_token(user=User("cornelius", self.realm1),
+                   param={"serial": self.serial_sms,
+                          "type": "sms",
+                          "phone": "1234567",
+                          "otpkey": self.otpkey})
+        set_pin(self.serial_sms, "pin")
+        # disable the token
+        enable_token(self.serial_sms, False)
+
+        toks = get_tokens(user=User("cornelius", self.realm1))
+        self.assertEqual(len(toks), 1)
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(u"No active challenge response token found", detail.get("message"))
+
+        remove_token(self.serial_sms)
+
+    def test_08_challenge_text(self):
+        # We create two HOTP tokens for the user as challenge response and run a
+        # challenge response request with both tokens.
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+        # Set a policy for the footer
+        set_policy(name="pol_footer",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(ACTION.CHALLENGETEXT_FOOTER))
+        # make HOTP a challenge response token
+        set_policy(name="pol_hotp",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        init_token({"serial": "tok1",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "tok2",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # Now we try to create a challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(detail.get("message"),
+                             'These are your options:<ul><li>please enter otp: </li>\n</ul>.<b>Authenticate Now!</b>')
+
+        remove_token("tok1")
+        remove_token("tok2")
+        delete_policy("pol_header")
+        delete_policy("pol_footer")
+        delete_policy("pol_hotp")
+
+
+class TriggeredPoliciesTestCase(MyApiTestCase):
 
     def setUp(self):
-        MyTestCase.setUp(self)
+        super(TriggeredPoliciesTestCase, self).setUp()
         self.setUp_user_realms()
 
     def test_00_two_policies(self):

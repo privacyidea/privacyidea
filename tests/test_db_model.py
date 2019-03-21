@@ -119,7 +119,7 @@ class TokenModelTestCase(MyTestCase):
         t2 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
-        self.assertTrue(t2.resolver == "resolver1")
+        self.assertEqual(t2.owners.first().resolver, "resolver1")
         # check the realm list of the token
         realm_found = False
         for realm_entry in t2.realm_list:

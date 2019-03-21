@@ -29,13 +29,12 @@ This code is tested in tests/test_lib_tokens_tiqr.
 
 import logging
 import hashlib
-import binascii
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, hexlify_and_unicode, to_bytes
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
@@ -126,7 +125,7 @@ class OcraTokenClass(TokenClass):
         """
         user_object = get_user_from_param(param, optional)
         if user_object:
-            self.set_user(user_object)
+            self.add_user(user_object)
 
         ocrasuite = getParam(param, "ocrasuite", default=OCRA_DEFAULT_SUITE)
         OCRASuite(ocrasuite)
@@ -208,11 +207,11 @@ class OcraTokenClass(TokenClass):
             attributes["original_challenge"] = challenge
             attributes["qrcode"] = create_img(challenge)
             if options.get("hashchallenge", "").lower() == "sha256":
-                challenge = binascii.hexlify(hashlib.sha256(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha256(to_bytes(challenge)).digest())
             elif options.get("hashchallenge", "").lower() == "sha512":
-                challenge = binascii.hexlify(hashlib.sha512(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha512(to_bytes(challenge)).digest())
             elif options.get("hashchallenge"):
-                challenge = binascii.hexlify(hashlib.sha1(challenge).digest())
+                challenge = hexlify_and_unicode(hashlib.sha1(to_bytes(challenge)).digest())
 
 
         # Create the challenge in the database

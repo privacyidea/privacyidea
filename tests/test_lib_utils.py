@@ -10,16 +10,23 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
-                                   parse_time_offset_from_now,
+                                   parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
-                                   parse_int, convert_column_to_unicode, censor_connect_string,
+                                   parse_int, convert_column_to_unicode,
                                    truncate_comma_list, check_pin_policy,
                                    get_module_class, decode_base32check,
-                                   get_client_ip)
+                                   get_client_ip, sanity_name_check, to_utf8,
+                                   to_byte_string, hexlify_and_unicode,
+                                   b32encode_and_unicode, to_bytes,
+                                   b64encode_and_unicode, create_png, create_img,
+                                   convert_timestamp_to_utc, modhex_encode,
+                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode,
+                                   check_ip_in_policy)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
-from dateutil.tz import tzlocal, tzoffset
+from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
+import binascii
 
 
 class UtilsTestCase(MyTestCase):
@@ -178,6 +185,10 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue("defrealm" not in r)
         self.assertTrue("localsql" in r)
 
+        r = reduce_realms(realms, None)
+        self.assertTrue("defrealm" in r)
+        self.assertTrue("localsql" in r)
+
     def test_06_is_true(self):
         self.assertFalse(is_true(None))
         self.assertFalse(is_true(0))
@@ -203,6 +214,9 @@ class UtilsTestCase(MyTestCase):
 
         d = parse_date(" +12d ")
         self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) < d)
+
+        d = parse_date("+5")
+        self.assertTrue(datetime.now(tzlocal()) >= d)
 
         d = parse_date("")
         self.assertTrue(datetime.now(tzlocal()) >= d)
@@ -358,14 +372,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(s, "Hello {current_time}abc")
         self.assertEqual(td, timedelta(hours=-3))
 
-    def test_14_to_unicode(self):
-        s = "kölbel"
-        su = to_unicode(s)
-        self.assertEqual(su, u"kölbel")
-
-        s = u"kölbel"
-        su = to_unicode(s)
-        self.assertEqual(su, u"kölbel")
+    def test_14_convert_timestamp_to_utc(self):
+        d = datetime.now(tz=gettz('America/New York'))
+        d_utc = convert_timestamp_to_utc(d)
+        self.assertGreater(d_utc, d.replace(tzinfo=None))
 
     def test_16_parse_int(self):
         r = parse_int("xxx", 12)
@@ -542,3 +552,93 @@ class UtilsTestCase(MyTestCase):
         r.blueprint = "validate_blueprint"
         ip = get_client_ip(r, proxy_settings)
         self.assertEqual(ip, client_parameter)
+
+    def test_24_sanity_name_check(self):
+        self.assertTrue(sanity_name_check('Hello_World'))
+        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+            sanity_name_check('Hello World!')
+        self.assertTrue(sanity_name_check('Hello World', name_exp='^[A-Za-z\\ ]+$'))
+        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+            sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
+
+    def test_25_encodings(self):
+        u = u'Hello Wörld'
+        b = b'Hello World'
+        self.assertEquals(to_utf8(None), None)
+        self.assertEquals(to_utf8(u), u.encode('utf8'))
+        self.assertEquals(to_utf8(b), b)
+
+        self.assertEquals(to_unicode(u), u)
+        self.assertEquals(to_unicode(b), b.decode('utf8'))
+        self.assertEquals(to_unicode(None), None)
+        self.assertEquals(to_unicode(10), 10)
+
+        self.assertEquals(to_bytes(u), u.encode('utf8'))
+        self.assertEquals(to_bytes(b), b)
+        self.assertEquals(to_bytes(10), 10)
+
+        self.assertEquals(to_byte_string(u), u.encode('utf8'))
+        self.assertEquals(to_byte_string(b), b)
+        self.assertEquals(to_byte_string(10), b'10')
+
+    def test_26_conversions(self):
+        self.assertEquals(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
+        self.assertEquals(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
+        self.assertEquals(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
+
+        self.assertEquals(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
+        self.assertEquals(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
+        self.assertEquals(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
+
+        self.assertEquals(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEquals(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEquals(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+
+        self.assertEquals(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEquals(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
+                          u'-vv8_f7_')
+
+    def test_27_images(self):
+        png_b64 = u'iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABgElEQVR4nO2ZQ' \
+                  u'Y6DMBAEaxbujpQH5CnwdPOglexjJKLeQ2xCsofdC4HA+IDAlERrGKx2Y+LvMX' \
+                  u'z9AwKnnHLKKae2TlkZLZBbrM91pl9V1yGoTpKUwOx0M0UaSZKeqffrOgSVS49' \
+                  u'LqZH1QPkMVtZ1KGq4jG9+4mGp9uXaoP1d/K2q3wcVJEVAsd6RNL5S79e1Z6r0' \
+                  u'/WAANFiXzgA3W1fXEah77R/BgobL1SA8Rw1bVf/ZFHcr2aXmfpDSNKfxfqa4V' \
+                  u'fWfTZU6E8Zi8mOQpNRI8TG3VfWfTc36XqrNTzdtq7z2y1G17wHFMH8Lkq85y1' \
+                  u'Kz2peyP5Z/1eG1X4R69jkjRvhuNVyuJvKp3tiq+j1Qjxyz7K1y8f3Wr6pr39T' \
+                  u'kJ6u7UYKZ7fE1Z3mq5phmJ1DMLYrcPL9/J6VII7oEkKclaH1dR6CsB6wPkvWU' \
+                  u'JH8LuvZI1Qw5CMgg8hmRzyOEq7nPWZCa+3uY9rWpZsi+r12O+pVjwojKTOP/a' \
+                  u'51yyimn9kL9ACOsApMnN2KuAAAAAElFTkSuQmCC'
+        self.assertEquals(b64encode_and_unicode(create_png('Hallo')), png_b64)
+        self.assertEquals(create_img('Hello', raw=True),
+                          u'data:image/png;base64,SGVsbG8=')
+        self.assertEquals(create_img('Hallo'),
+                          u'data:image/png;base64,{0!s}'.format(png_b64))
+
+    def test_28_yubikey_utils(self):
+        self.assertEquals(modhex_encode(b'\x47'), 'fi')
+        self.assertEquals(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
+        self.assertEquals(modhex_encode(binascii.unhexlify('0123456789abcdef')),
+                          'cbdefghijklnrtuv')
+        self.assertEquals(modhex_encode('Hallo'), 'fjhbhrhrhv')
+        # and the other way around
+        self.assertEquals(modhex_decode('fi'), b'\x47')
+        self.assertEquals(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
+        self.assertEquals(modhex_decode('cbdefghijklnrtuv'),
+                          binascii.unhexlify('0123456789abcdef'))
+        self.assertEquals(modhex_decode('fjhbhrhrhv'), b'Hallo')
+
+        # now test the crc function
+        self.assertEquals(checksum(b'\x01\x02\x03\x04'), 0xc66e)
+        self.assertEquals(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
+
+    def test_29_check_ip(self):
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "1.1.1.1"])
+        self.assertTrue(found)
+        self.assertFalse(excluded)
+
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2"])
+        self.assertTrue(excluded)
+        self.assertTrue(found)

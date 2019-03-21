@@ -9,6 +9,10 @@ from .base import MyTestCase
 
 
 class LifecycleTestCase(MyTestCase):
+    # Create admin authentication token for each testcase
+    def setUp(self):
+        self.authenticate()
+
     def test_01_register_finalizer(self):
         finalizer1 = mock.MagicMock()
         finalizer2 = mock.MagicMock()

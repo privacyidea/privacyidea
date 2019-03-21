@@ -25,6 +25,7 @@ import logging
 import logging.config
 import sys
 from flask import Flask, request
+from privacyidea.lib import queue
 
 import privacyidea.api.before_after
 from privacyidea.api.validate import validate_blueprint
@@ -218,6 +219,8 @@ def create_app(config_name="development",
         # example.  The best match wins.
         return request.accept_languages.best_match(['de',
                                                     'fr', 'it', 'es', 'en'])
+
+    queue.register_app(app)
 
     return app
 

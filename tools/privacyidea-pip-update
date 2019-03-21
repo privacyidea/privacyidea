@@ -1,10 +1,11 @@
-#!/usr/bin/python
-from __future__ import print_function
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import pipes
 from subprocess import call, check_output
 import getopt
 import sys
 import os
+from six.moves import input
 
 # We follow the hint at https://pip.pypa.io/en/latest/user_guide/#using-pip-from-your-program to invoke pip.
 PIP_EXECUTABLE = [sys.executable, '-m', 'pip']
@@ -15,7 +16,8 @@ def usage():
 privacyidea-pip-update
 
     -f, --force      force the update
-    -s, --skipstamp  skip the stamping of the database. Use this, if you know your DB has the correct version.
+    -s, --skipstamp  skip the stamping of the database. Use this, if you know
+                     your DB has the correct version.
     -n, --noschema   do not run the schema update.
     -h, --help       show this help
     """)
@@ -30,8 +32,8 @@ def get_installed_packages():
     pip_output = check_output(PIP_EXECUTABLE + ["freeze", "--local", "--all"])
     for line in pip_output.splitlines():
         line = line.strip()
-        if "==" in line:
-            package_name = line.split("==", 1)[0]
+        if b"==" in line:
+            package_name = line.split(b"==", 1)[0]
             packages.append(package_name)
     return packages
 
@@ -85,9 +87,10 @@ def main():
         update()
     else:
         answer = False
+        res = 'n'
         while not answer:
-            res = raw_input("Do you really want to update your "
-                            "python environment and the DB schema? (y/N)")
+            res = input("Do you really want to update your "
+                        "python environment and the DB schema? (y/N)")
             answer = res.lower() in ['y', 'n', '']
 
         if res.lower() == 'y':

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2018-05-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -14,14 +14,13 @@ values of the tokens in the new privacyIDEA installation.
 
 
 import argparse
-import sys
 from sqlalchemy import create_engine
 from sqlalchemy import Table, MetaData, Column
 from sqlalchemy import Integer, Unicode, Boolean
 from sqlalchemy.sql import select
 
 metadata = MetaData()
-linotp_token_table = Table('Token',metadata,
+linotp_token_table = Table('Token', metadata,
                            Column('LinOtpTokenId', Integer(), primary_key=True, nullable=False),
                            Column(
                                'LinOtpTokenDesc', Unicode(80), default=u''),
@@ -87,7 +86,8 @@ def get_linotp_uri(config_file):
 
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config", help="LinOTP config file. We only need the SQLALCHEMY_DATABASE_URI.",
+parser.add_argument("-c", "--config",
+                    help="LinOTP config file. We only need the SQLALCHEMY_DATABASE_URI.",
                     required=True)
 args = parser.parse_args()
 

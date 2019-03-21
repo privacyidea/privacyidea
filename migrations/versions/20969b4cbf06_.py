@@ -20,7 +20,7 @@ def upgrade():
         op.add_column('token', sa.Column('revoked', sa.Boolean(),
                                          default=False))
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if "duplicate column name" in str(exx.orig).lower():
             print("Good. Column revoked already exists.")
         else:
             print(exx)
@@ -32,7 +32,7 @@ def upgrade():
         op.add_column('token', sa.Column('locked', sa.Boolean(),
                                          default=False))
     except (OperationalError, ProgrammingError)  as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if "duplicate column name" in str(exx.orig).lower():
             print("Good. Column locked already exists.")
         else:
             print(exx)
