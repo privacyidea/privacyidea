@@ -63,7 +63,6 @@ try:
 except ImportError:
     # Bummer the version of PyCrypto has no PKCS1_15
     SIGN_WITH_RSA = True
-import passlib.hash
 import traceback
 from six import PY2, text_type
 
@@ -76,6 +75,14 @@ from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode, b64
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+
+import passlib.hash
+if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
+elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
+else:
+    raise Exception("No password hashing method available")
 
 if not PY2:
     long = int
@@ -174,7 +181,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = passlib.hash.pbkdf2_sha512.hash(key + password)
+    pw_dig = hash_admin_pw(key + password)
     return pw_dig
 
 
