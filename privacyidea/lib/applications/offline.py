@@ -27,7 +27,13 @@ from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ValidateError, ParameterError
 import logging
-import passlib.hash
+import passlib
+if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
+elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
+else:
+    raise Exception("No password hashing method available")
 from privacyidea.lib.token import get_tokens
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -81,8 +87,7 @@ class MachineApplication(MachineApplicationBase):
         otps = otp_dict.get("otp")
         for key in otps.keys():
             # Return the hash of OTP PIN and OTP values
-            otps[key] = passlib.hash. \
-                pbkdf2_sha512.encrypt(otppin + otps.get(key),
+            otps[key] = hash_admin_pw(otppin + otps.get(key),
                                       rounds=rounds,
                                       salt_size=10)
         # We do not disable the token, so if all offline OTP values

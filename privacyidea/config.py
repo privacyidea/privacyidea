@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import logging
 basedir = os.path.abspath(os.path.dirname(__file__))

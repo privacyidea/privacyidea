@@ -64,7 +64,7 @@ from .UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
-from ldap3 import Server, Tls, Connection
+from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
@@ -75,7 +75,6 @@ import traceback
 from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
-from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
 import datetime
 
@@ -1056,11 +1055,11 @@ class IdResolver (UserIdResolver):
                     # so catch the TypeError exception if we get the wrong
                     # variable type
                     try:
-                        pw_hash = ldap_salted_sha1.hash(value[1][0])
+                        pw_hash = ldap_salted_sha1.encrypt(value[1][0])
                         value[1][0] = pw_hash
                         ldap_attributes[self.map.get(fieldname)] = value
                     except TypeError as e:
-                        pw_hash = ldap_salted_sha1.hash(value)
+                        pw_hash = ldap_salted_sha1.encrypt(value)
                         ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
                     ldap_attributes[self.map.get(fieldname)] = value

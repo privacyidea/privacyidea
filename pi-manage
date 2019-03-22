@@ -139,20 +139,25 @@ def create_keys():
     print("PI_HSM_MODULE_KEY_LABEL_VALUE = '{0}'".format(r.get("value")))
 
 
-def list_ca(verbose=False):
-    """
-    List the Certificate Authorities.
-    """
-    lst = get_caconnector_list()
-    for ca in lst:
-        print("{ca!s} (type {typ!s})".format(ca=ca.get("connectorname"),
-                                             typ=ca.get("type")))
-        if verbose:
-            for (k, v) in ca.get("data").items():
-                print("\t{key!s:20}: {value!s}".format(key=k, value=v))
+class ListCa(Command):
+    option_list = (Option('--verbose', '-v', dest='verbose', default=False,
+                          action='store_true',
+                          help='Verbose output - also print the ca data keys and values'),)
+
+    def run(self, verbose=False):
+        """
+        List the Certificate Authorities.
+        """
+        lst = get_caconnector_list()
+        for ca in lst:
+            print("{ca!s} (type {typ!s})".format(ca=ca.get("connectorname"),
+                                                 typ=ca.get("type")))
+            if verbose:
+                for (k, v) in ca.get("data").items():
+                    print("\t{key!s:20}: {value!s}".format(key=k, value=v))
 
 
-ca_manager.add_command('list', Command(list_ca))
+ca_manager.add_command('list', ListCa)
 
 
 @ca_manager.command
@@ -208,14 +213,15 @@ def add(username, email=None, password=None):
     print('Admin {0} was registered successfully.'.format(username))
 
 
-def list_admins():
-    """
-    List all administrators.
-    """
-    list_db_admin()
+class ListAdmins(Command):
+    def run(self):
+        """
+        List all administrators.
+        """
+        list_db_admin()
 
 
-admin_manager.add_command('list', Command(list_admins))
+admin_manager.add_command('list', ListAdmins)
 
 
 @admin_manager.command
@@ -867,7 +873,7 @@ class ListResolver(Command):
     option_list = (
         Option('-v', '--verbose',
                help="Verbose output - also print the configuration of the resolvers.",
-               dest="verbose", action="store_true"),
+               dest="verbose", action="store_true", default=False),
     )
 
     def run(self, verbose=False):
@@ -892,18 +898,19 @@ class ListResolver(Command):
 resolver_manager.add_command('list', ListResolver)
 
 
-def list_realms():
-    """
-    list the available realms
-    """
-    from privacyidea.lib.realm import get_realms
-    realm_list = get_realms()
-    for (name, realm_data) in realm_list.items():
-        resolvernames = [x.get("name") for x in realm_data.get("resolver")]
-        print("%16s: %s" % (name, resolvernames))
+class ListRealms(Command):
+    def run(self):
+        """
+        list the available realms
+        """
+        from privacyidea.lib.realm import get_realms
+        realm_list = get_realms()
+        for (name, realm_data) in realm_list.items():
+            resolvernames = [x.get("name") for x in realm_data.get("resolver")]
+            print("%16s: %s" % (name, resolvernames))
 
 
-realm_manager.add_command('list', Command(list_realms))
+realm_manager.add_command('list', ListRealms)
 
 
 @realm_manager.command
@@ -921,22 +928,25 @@ def create(name, resolver):
 # Event interface
 
 
-def list_events():
-    """
-    List events
-    """
-    conf = EventConfiguration()
-    events = conf.events
-    print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
-    print(90*"=")
-    for event in events:
-        print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
-                                                            event.get("name")[0:30],
-                                                            event.get("handlermodule"),
-                                                            event.get("action"), event.get("id"),))
+class ListEvents(Command):
+    def run(self):
+        """
+        List events
+        """
+        conf = EventConfiguration()
+        events = conf.events
+        print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name",
+                                                       "Module", "Action", "ID"))
+        print(90*"=")
+        for event in events:
+            print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
+                                                                event.get("name")[0:30],
+                                                                event.get("handlermodule"),
+                                                                event.get("action"),
+                                                                event.get("id"),))
 
 
-event_manager.add_command('list', Command(list_events))
+event_manager.add_command('list', ListEvents)
 
 
 @event_manager.command
@@ -1015,21 +1025,21 @@ def e_import(filename, cleanup=False):
 
 
 # Policy interface
+class ListPolicies(Command):
+    def run(self):
+        """
+        list the policies
+        """
+        pol_cls = PolicyClass()
+        policies = pol_cls.get_policies()
+        print("Active \t Name \t Scope")
+        print(40*"=")
+        for policy in policies:
+            print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
+                                      policy.get("scope")))
 
-def list_policies():
-    """
-    list the policies
-    """
-    pol_cls = PolicyClass()
-    policies = pol_cls.get_policies()
-    print("Active \t Name \t Scope")
-    print(40*"=")
-    for policy in policies:
-        print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
-                                  policy.get("scope")))
 
-
-policy_manager.add_command('list', Command(list_policies))
+policy_manager.add_command('list', ListPolicies)
 
 
 @policy_manager.command

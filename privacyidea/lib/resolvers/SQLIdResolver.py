@@ -49,13 +49,18 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string, to_utf8)
 from passlib.context import CryptContext
 from base64 import b64decode, b64encode
-from passlib.utils.binary import h64
 from passlib.utils.compat import uascii_to_str, u
 from passlib.utils.compat import unicode as pl_unicode
 from passlib.utils import to_unicode
 import passlib.utils.handlers as uh
 import passlib.exc as exc
 from passlib.registry import register_crypt_handler
+try:
+    # We have passlib >= v1.7
+    from passlib.utils.binary import h64
+except ImportError:
+    # We have passlib < v1.7
+    from passlib.utils import h64
 
 
 class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
@@ -787,7 +792,7 @@ def hash_password(password, hashtype):
     """
     hashtype = hashtype.upper()
     try:
-        password = pw_ctx.handler(hash_type_dict[hashtype]).hash(password)
+        password = pw_ctx.handler(hash_type_dict[hashtype]).encrypt(password)
     except KeyError as _e:  # pragma: no cover
         raise Exception("Unsupported password hashtype '{0!s}'. "
                         "Use one of {1!s}.".format(hashtype, hash_type_dict.keys()))
