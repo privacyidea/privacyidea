@@ -1,8 +1,8 @@
-python-privacyidea (3.0~dev2-1trusty) trusty; urgency=medium
+python-privacyidea (3.0~dev3-1trusty) trusty; urgency=medium
 
   * Push token in master branch 
  
- -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 22 Mar 2019 10:00:00 +0200
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Fri, 22 Mar 2019 14:00:00 +0200
 
 python-privacyidea (2.23.5-1trusty) trusty; urgency=medium
 
