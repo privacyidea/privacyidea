@@ -432,7 +432,7 @@ h={h}
                 serialnum = "UBAM" + modhex_decode(prefix)
                 for i in range(1, 3):
                     s = "{0!s}_{1!s}".format(serialnum, i)
-                    toks = get_tokens(serial=s)
+                    toks = get_tokens(serial=s, tokentype='yubikey')
                     token_list.extend(toks)
             except TypeError as exx:  # pragma: no cover
                 log.error("Failed to convert serialnumber: {0!r}".format(exx))

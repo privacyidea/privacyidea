@@ -40,7 +40,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
-from privacyidea.lib.error import ValidateError, PolicyError
+from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import (SCOPE, GROUP, ACTION,
                                     get_action_values_from_options)
 from privacyidea.lib.utils import (is_true, hexlify_and_unicode,
@@ -532,8 +532,8 @@ class U2fTokenClass(TokenClass):
 
         return ret
 
-    @staticmethod
-    def api_endpoint(request, g):
+    @classmethod
+    def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/u2f
@@ -544,7 +544,10 @@ class U2fTokenClass(TokenClass):
         :param g: The Flask global object g
         :return: Flask Response or text
         """
-        app_id = get_from_config("u2f.appId").strip("/")
+        configured_app_id = get_from_config("u2f.appId")
+        if configured_app_id is None:
+            raise ParameterError("u2f is not configured")
+        app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
         pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
