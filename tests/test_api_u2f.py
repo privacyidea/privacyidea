@@ -28,6 +28,11 @@ class APIU2fTestCase(MyApiTestCase):
 
     def test_000_setup_realms(self):
         self.setUp_user_realms()
+        # U2F is not configured yet
+        with self.app.test_request_context('/ttype/u2f',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
 
         set_privacyidea_config("u2f.appId", "http://localhost:5000")
 
