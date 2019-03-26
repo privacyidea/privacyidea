@@ -1254,7 +1254,7 @@ def pushtoken_add_config(request, action):
     This is a token specific wrapper for push token for the endpoint
     /token/init
     According to the policy scope=SCOPE.ENROLL,
-    action=SSL_VERIFY_NO or action=FIREBASE_CONFIG the parameters are added to the
+    action=SSL_VERIFY or action=FIREBASE_CONFIG the parameters are added to the
     enrollment step.
     :param request:
     :param action:
