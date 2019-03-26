@@ -42,7 +42,7 @@ as unicode strings. They always return a hexlified unicode string.
 The functions which encrypt/decrypt arbitrary data return bytes and let the
 calling function handle the data.
 
-This lib.cryto is tested in tests/test_lib_crypto.py
+This lib.crypto is tested in tests/test_lib_crypto.py
 """
 from __future__ import division
 import hmac
@@ -54,15 +54,7 @@ import binascii
 import six
 import ctypes
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
-
 import base64
-import passlib.hash
 import traceback
 from six import PY2
 
@@ -72,6 +64,22 @@ from privacyidea.lib.framework import (get_app_local_store, get_app_config_value
                                        get_app_config)
 from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
                                    b64encode_and_unicode)
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
+
+import passlib.hash
+if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
+elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
+else:
+    raise Exception("No password hashing method available")
 
 if not PY2:
     long = int
@@ -89,8 +97,8 @@ class SecretObj(object):
         self.preserve = preserve
 
     def getKey(self):
-        log.warning('Requesting secret key '
-                    '- verify the usage scope and zero + free ')
+        log.info('Requesting secret key '
+                 '- verify the usage scope and zero + free ')
         return decrypt(self.val, self.iv)
 
     def getPin(self):
@@ -172,7 +180,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = passlib.hash.pbkdf2_sha512.hash(key + password)
+    pw_dig = hash_admin_pw(key + password)
     return pw_dig
 
 
@@ -813,3 +821,29 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     :rtype: basestring
     """
     return ''.join(urandom.choice(characters) for _x in range(size))
+
+
+def generate_keypair(rsa_keysize=2048):
+    """
+    This creates an RSA key pair
+
+    # TODO: The HSM should be used.
+
+    The public key and private keys are returned in PKCS#1 Format.
+
+    :return: tuple of (pubkey, privkey)
+    """
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=rsa_keysize,
+        backend=default_backend()
+        )
+    public_key = private_key.public_key()
+    pem_priv = to_unicode(private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()))
+    pem_pub = to_unicode(public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.PKCS1))
+    return pem_pub, pem_priv

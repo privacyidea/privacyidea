@@ -2,7 +2,10 @@
 
 import unittest
 import json
+import mock
+
 from privacyidea.app import create_app
+from privacyidea.config import TestingConfig
 from privacyidea.models import db, save_config_timestamp
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -172,6 +175,22 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+
+class OverrideConfigTestCase(MyTestCase):
+    """
+    helper class that allows to modify the app config processed by ``create_app``.
+    This can be useful if config values need to be adjusted *for app creation*.
+    For that, just override the inner ``Config`` class.
+    """
+    class Config(TestingConfig):
+        pass
+
+    @classmethod
+    def setUpClass(cls):
+        """ override privacyidea.config.config["testing"] with the inner config class """
+        with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
+            MyTestCase.setUpClass()
 
 
 class MyApiTestCase(MyTestCase):

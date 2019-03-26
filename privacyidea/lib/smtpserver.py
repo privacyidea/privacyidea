@@ -17,6 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
@@ -39,6 +40,8 @@ This module is tested in tests/test_lib_smtpserver.py
 log = logging.getLogger(__name__)
 TIMEOUT = 10
 
+SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
+
 
 class SMTPServer(object):
     """
@@ -56,17 +59,18 @@ class SMTPServer(object):
 
     def send_email(self, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
-        return self.test_email(self.config, recipient, subject, body, sender,
-                               reply_to, mimetype)
+        return send_or_enqueue_email(self.config.get(), recipient, subject, body, sender,
+                                     reply_to, mimetype)
 
     @staticmethod
+    @job(SEND_EMAIL_JOB_NAME)
     def test_email(config, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
         """
-        Sends an email via the SMTP Database Object
+        Sends an email via the configuration.
 
         :param config: The email configuration
-        :type config: SMTPServer Database Model
+        :type config: dict
         :param recipient: The recipients of the email
         :type recipient: list
         :param subject: The subject of the email
@@ -84,7 +88,7 @@ class SMTPServer(object):
         """
         if type(recipient) != list:
             recipient = [recipient]
-        mail_from = sender or config.sender
+        mail_from = sender or config['sender']
         reply_to = reply_to or mail_from
         msg = MIMEText(body.encode('utf-8'), mimetype, 'utf-8')
         msg['Subject'] = subject
@@ -93,23 +97,23 @@ class SMTPServer(object):
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
 
-        mail = smtplib.SMTP(config.server, port=int(config.port),
-                            timeout=config.timeout or TIMEOUT)
+        mail = smtplib.SMTP(config['server'], port=int(config['port']),
+                            timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
-        log.debug("Saying EHLO to mailserver {0!s}".format(config.server))
+        log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
-        if config.tls:
-            log.debug("Trying to STARTTLS: {0!s}".format(config.tls))
+        if config.get('tls', False):
+            log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
-        if config.username:
-            log.debug("Doing authentication with {0!s}".format(config.username))
-            password = decryptPassword(config.password)
+        if config.get('username', ''):
+            log.debug("Doing authentication with {0!s}".format(config['username']))
+            password = decryptPassword(config['password'])
             if password == FAILED_TO_DECRYPT_PASSWORD:
-                password = config.password
-            mail.login(config.username, password)
+                password = config['password']
+            mail.login(config['username'], password)
         r = mail.sendmail(mail_from, recipient, msg.as_string())
         log.info("Mail sent: {0!s}".format(r))
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
@@ -125,6 +129,20 @@ class SMTPServer(object):
         mail.quit()
         log.debug("I am done sending your email.")
         return success
+
+
+def send_or_enqueue_email(config, recipient, subject, body, sender=None, reply_to=None, mimetype="plain"):
+    """
+    According to the value of ``config["enqueue_job"]``, send the email directly or send a job
+    to the queue (if a queue is configured).
+    See ``SMTPServer.test_email`` for parameters.
+    :return: True if the job is sent to the queue, return value of ``SMTPServer.test_email`` otherwise
+    """
+    if has_job_queue() and config.get("enqueue_job", False):
+        send = wrap_job(SEND_EMAIL_JOB_NAME, True)
+    else:
+        send = SMTPServer.test_email
+    return send(config, recipient, subject, body, sender, reply_to, mimetype)
 
 
 @log_with(log)
@@ -169,7 +187,8 @@ def send_email_data(mailserver, subject, message, mail_from,
     """
     dbserver = SMTPServerDB(identifier="emailtoken", server=mailserver,
                             sender=mail_from, username=username,
-                            password=password, port=port, tls=email_tls, timeout=timeout)
+                            password=password, port=port, tls=email_tls, timeout=timeout,
+                            enqueue_job=False)
     smtpserver = SMTPServer(dbserver)
     return smtpserver.send_email(recipient, subject, message)
 
@@ -179,16 +198,12 @@ def get_smtpserver(identifier):
     """
     This returns the SMTP Server object of the SMTP Server definition
     "identifier".
-    In case the identifier does not exist, an exception is raised.
+    In case the identifier does not exist, a ResourceNotFoundError is raised.
 
     :param identifier: The name of the SMTP server definition
     :return: A SMTP Server Object
     """
-    server_list = get_smtpservers(identifier=identifier)
-    if not server_list:
-        raise ConfigAdminError("The specified SMTP server configuration does "
-                               "not exist.")
-    return server_list[0]
+    return SMTPServer(fetch_one_resource(SMTPServerDB, identifier=identifier))
 
 
 @log_with(log)
@@ -221,7 +236,8 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                   sender="", description="", tls=False, timeout=TIMEOUT):
+                   sender="", description="", tls=False, timeout=TIMEOUT,
+                   enqueue_job=False):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -238,7 +254,8 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
     cryptedPassword = encryptPassword(password)
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
-                     description=description, tls=tls, timeout=timeout).save()
+                     description=description, tls=tls, timeout=timeout,
+                     enqueue_job=enqueue_job).save()
     return r
 
 

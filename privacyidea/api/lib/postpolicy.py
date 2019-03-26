@@ -270,32 +270,33 @@ def check_tokeninfo(request, response):
     :return: A new modified response
     """
     content = json.loads(response.data)
-    policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
+
     if serial:
-        tokens = get_tokens(serial=serial)
-        if len(tokens) == 1:
-            token_obj = tokens[0]
-            tokeninfos_pol = policy_object.get_action_values(
-                ACTION.TOKENINFO,
-                scope=SCOPE.AUTHZ,
-                client=g.client_ip,
-                allow_white_space_in_action=True,
-                audit_data=g.audit_object.audit_data)
-            for tokeninfo_pol in tokeninfos_pol:
-                try:
-                    key, regex, _r = tokeninfo_pol.split("/")
-                    value = token_obj.get_tokeninfo(key, "")
-                    if re.search(regex, value):
-                        log.debug(u"Regular expression {0!s} "
-                                  u"matches the tokeninfo field {1!s}.".format(regex, key))
-                    else:
-                        log.info(u"Tokeninfo field {0!s} with contents {1!s} "
-                                 u"does not match {2!s}".format(key, value, regex))
-                        raise PolicyError("Tokeninfo field {0!s} with contents does not"
-                                          " match regular expression.".format(key))
-                except ValueError:
-                    log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+        tokeninfos_pol = g.policy_object.get_action_values(
+            ACTION.TOKENINFO,
+            scope=SCOPE.AUTHZ,
+            client=g.client_ip,
+            allow_white_space_in_action=True,
+            audit_data=g.audit_object.audit_data)
+        if tokeninfos_pol:
+            tokens = get_tokens(serial=serial)
+            if len(tokens) == 1:
+                token_obj = tokens[0]
+                for tokeninfo_pol in tokeninfos_pol:
+                    try:
+                        key, regex, _r = tokeninfo_pol.split("/")
+                        value = token_obj.get_tokeninfo(key, "")
+                        if re.search(regex, value):
+                            log.debug(u"Regular expression {0!s} "
+                                      u"matches the tokeninfo field {1!s}.".format(regex, key))
+                        else:
+                            log.info(u"Tokeninfo field {0!s} with contents {1!s} "
+                                     u"does not match {2!s}".format(key, value, regex))
+                            raise PolicyError("Tokeninfo field {0!s} with contents does not"
+                                              " match regular expression.".format(key))
+                    except ValueError:
+                        log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
 
     return response
 

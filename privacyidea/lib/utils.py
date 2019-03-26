@@ -44,6 +44,9 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
+import threading
+import pkg_resources
+import time
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
@@ -1109,3 +1112,53 @@ def get_module_class(package_name, class_name, check_method=None):
         raise NameError(u"Class AttributeError: {0}.{1} "
                         u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
     return klass
+
+
+def get_version_number():
+    """
+    returns the privacyidea version
+    """
+    version = "unknown"
+    try:
+        version = pkg_resources.get_distribution("privacyidea").version
+    except:
+        log.info("We are not able to determine the privacyidea version number.")
+    return version
+
+
+def get_version():
+    """
+    This returns the version, that is displayed in the WebUI and
+    self service portal.
+    """
+    version = get_version_number()
+    return "privacyIDEA {0!s}".format(version)
+
+
+def prepare_result(obj, rid=1, details=None):
+    """
+    This is used to preformat the dictionary to be sent by the API response
+
+    :param obj: simple result object like dict, sting or list
+    :type obj: dict or list or string/unicode
+    :param rid: id value, for future versions
+    :type rid: int
+    :param details: optional parameter, which allows to provide more detail
+    :type  details: None or simple type like dict, list or string/unicode
+
+    :return: json rendered sting result
+    :rtype: string
+    """
+    res = {"jsonrpc": "2.0",
+           "result": {"status": True,
+                      "value": obj},
+           "version": get_version(),
+           "versionnumber": get_version_number(),
+           "id": rid,
+           "time": time.time()}
+
+    if details is not None and len(details) > 0:
+        details["threadid"] = threading.current_thread().ident
+        res["detail"] = details
+
+    return res

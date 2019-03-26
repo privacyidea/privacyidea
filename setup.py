@@ -5,7 +5,7 @@ import stat
 import sys
 
 #VERSION="2.1dev4"
-VERSION="3.0dev1"
+VERSION="3.0dev3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -51,7 +51,7 @@ install_requires = ["Flask>=0.10.1",
                     "docutils>=0.12",
                     "funcparserlib>=0.3.6",
                     "itsdangerous>=0.24",
-                    "ldap3>=2.5",
+                    "ldap3>=2.6",
                     "netaddr>=0.7.12",
                     "passlib>=1.6.2",
                     "pyasn1>=0.4.2",
@@ -65,10 +65,11 @@ install_requires = ["Flask>=0.10.1",
                     "sqlsoup>=0.9.0",
                     "ecdsa>=0.13",
                     "lxml>=3.3",
-                    "python-gnupg>=0.3.8",
+                    "python-gnupg>=0.4.4",
                     "defusedxml>=0.4.1",
                     "flask-babel>=0.9",
-                    "croniter>=0.3.8"
+                    "croniter>=0.3.8",
+                    "oauth2client>=2.0.1"
                     ]
 
 # For python 2.6 we need additional dependency importlib
@@ -137,9 +138,6 @@ setup(
                   'deploy/privacyidea/private.pem',
                   'deploy/privacyidea/public.pem']),
                 ('share/man/man1', get_man_pages("tools")),
-                ('lib/privacyidea/authmodules/FreeRADIUS',
-                 ["authmodules/FreeRADIUS/LICENSE",
-                  "authmodules/FreeRADIUS/privacyidea_radius.pm"]),
                ('lib/privacyidea/authmodules/OTRS',
                  ["authmodules/OTRS/privacyIDEA.pm"]),
                 ('lib/privacyidea/migrations',

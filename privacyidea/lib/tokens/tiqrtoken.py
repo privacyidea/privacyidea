@@ -85,7 +85,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_one_token
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
@@ -223,8 +223,8 @@ class TiqrTokenClass(OcraTokenClass):
 
         return response_detail
 
-    @staticmethod
-    def api_endpoint(request, g):
+    @classmethod
+    def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
@@ -246,10 +246,8 @@ class TiqrTokenClass(OcraTokenClass):
             serial = getParam(params, "serial", required)
             # The user identifier is displayed in the App
             # We need to set the user ID
-            tokens = get_tokens(serial=serial)
-            if not tokens:  # pragma: no cover
-                raise ParameterError("No token with serial {0!s}".format(serial))
-            user_identifier, user_displayname = tokens[0].get_user_displayname()
+            token = get_one_token(serial=serial, tokentype="tiqr")
+            user_identifier, user_displayname = token.get_user_displayname()
 
             service_identifier = get_from_config("tiqr.serviceIdentifier") or\
                                  "org.privacyidea"
@@ -300,16 +298,16 @@ class TiqrTokenClass(OcraTokenClass):
             # The secret needs to be stored in the token object.
             # We take the token "serial" and check, if it contains the "session"
             # in the tokeninfo.
-            enroll_tokens = get_tokens(serial=serial)
-            if len(enroll_tokens) == 1:
-                if enroll_tokens[0].get_tokeninfo("session") == session:
-                    # save the secret
-                    enroll_tokens[0].set_otpkey(secret)
-                    # delete the session
-                    enroll_tokens[0].del_tokeninfo("session")
-                    res = "OK"
-                else:
-                    raise ParameterError("Invalid Session")
+            enroll_token = get_one_token(serial=serial, tokentype="tiqr")
+            tokeninfo_session = enroll_token.get_tokeninfo("session")
+            if tokeninfo_session and tokeninfo_session == session:
+                # save the secret
+                enroll_token.set_otpkey(secret)
+                # delete the session
+                enroll_token.del_tokeninfo("session")
+                res = "OK"
+            else:
+                raise ParameterError("Invalid Session")
 
             return "plain", res
         elif action == API_ACTIONS.AUTHENTICATION:
@@ -328,16 +326,15 @@ class TiqrTokenClass(OcraTokenClass):
                 # Challenge is still valid (time has not passed) and no
                     # correct response was given.
                     serial = challenges[0].serial
-                    tokens = get_tokens(serial=serial)
-                    if len(tokens) == 1:
-                        # We found exactly the one token
-                        res = "INVALID_RESPONSE"
-                        r = tokens[0].verify_response(
-                            challenge=challenges[0].challenge, passw=passw)
-                        if r > 0:
-                            res = "OK"
-                            # Mark the challenge as answered successfully.
-                            challenges[0].set_otp_status(True)
+                    token = get_one_token(serial=serial, tokentype="tiqr")
+                    # We found exactly the one token
+                    res = "INVALID_RESPONSE"
+                    r = token.verify_response(
+                        challenge=challenges[0].challenge, passw=passw)
+                    if r > 0:
+                        res = "OK"
+                        # Mark the challenge as answered successfully.
+                        challenges[0].set_otp_status(True)
 
             cleanup_challenges()
 
