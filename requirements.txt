@@ -54,7 +54,7 @@ pytest==3.6.1
 pytest-cov==2.5.1
 pytest-runner==4.2
 python-dateutil==2.7.3
-python-gnupg==0.4.3
+python-gnupg==0.4.4
 pytz==2018.4
 pyusb==1.0.2
 PyYAML==3.12
