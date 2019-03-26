@@ -1853,6 +1853,21 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         sign_object = Sign(private_key=None,
                            public_key=open("tests/testdata/public.pem", 'rb').read())
 
+        # check that we don't sign if 'PI_NO_RESPONSE_SIGN' is set
+        current_app.config['PI_NO_RESPONSE_SIGN'] = True
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_NO_RESPONSE_SIGN'] = False
+
+        # set a broken signing key path. The function should return without
+        # changing the response
+        orig_key_path = current_app.config['PI_AUDIT_KEY_PRIVATE']
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = '/path/does/not/exist'
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = orig_key_path
+
+        # signing of API responses is the default
         new_response = sign_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")

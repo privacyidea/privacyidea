@@ -633,11 +633,11 @@ def zerome(bufferObject):
 def _slow_rsa_verify_raw(key, sig, msg):
     assert isinstance(sig, six.integer_types)
     assert isinstance(msg, six.integer_types)
-    if hasattr(key, 'private_numbers'):
-        pn = key.private_numbers().public_numbers
-    elif hasattr(key, 'public_numbers'):
+    if hasattr(key, 'public_numbers'):
         pn = key.public_numbers()
-    else:
+    elif hasattr(key, 'private_numbers'):  # pragma: no cover
+        pn = key.private_numbers().public_numbers
+    else:  # pragma: no cover
         raise TypeError('No public key')
 
     # compute m**d (mod n)
@@ -691,6 +691,7 @@ class Sign(object):
         """
         if not self.private:
             log.info('Could not sign message {0!s}, no private key!'.format(s))
+            # TODO: should we throw an exception in this case?
             return ''
 
         signature = self.private.sign(

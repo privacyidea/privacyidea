@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest
 import json
 from privacyidea.app import create_app

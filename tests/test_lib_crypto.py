@@ -21,7 +21,6 @@ from privacyidea.lib.security.default import (SecurityModule,
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 
 from flask import current_app
-import six
 from six import text_type
 from PyKCS11 import PyKCS11Error
 
@@ -148,11 +147,11 @@ class CryptoTestCase(MyTestCase):
 
         # decrypt some pins generated with 2.23
         pin1 = 'd2c920ad10513c8ea322b522751185a3:54f068cffb43ada1edd024087da614ec'
-        self.assertEquals(decryptPin(pin1), 'test')
+        self.assertEqual(decryptPin(pin1), 'test')
         pin2 = '223f414872122ad112eb9f17b05da0b8:123079d997cd18601414830ab7c97678'
-        self.assertEquals(decryptPin(pin2), 'test')
+        self.assertEqual(decryptPin(pin2), 'test')
         pin3 = '4af7590600286becde70b99b10493104:09e4133652c609f9697e1923cde72904'
-        self.assertEquals(decryptPin(pin3), '1234')
+        self.assertEqual(decryptPin(pin3), '1234')
 
     def test_01_encrypt_decrypt_pass(self):
         r = encryptPassword(u"passwörd".encode('utf8'))
@@ -168,11 +167,11 @@ class CryptoTestCase(MyTestCase):
 
         # decrypt some passwords generated with 2.23
         pw1 = '3d1bf9db4c75469b4bb0bc7c70133181:2c27ac3839ed2213b8399d0471b17136'
-        self.assertEquals(decryptPassword(pw1), 'test123')
+        self.assertEqual(decryptPassword(pw1), 'test123')
         pw2 = '3a1be65a234f723fe5c6969b818582e1:08e51d1c65aa74c4988d094c40cb972c'
-        self.assertEquals(decryptPassword(pw2), 'test123')
+        self.assertEqual(decryptPassword(pw2), 'test123')
         pw3 = '7a4d5e2f26978394e33715bc3e8188a3:90b2782112ad7bbc5b48bd10e5c7c096cfe4ef7d9d11272595dc5b6c7f21d98a'
-        self.assertEquals(decryptPassword(pw3, ), u'passwörd')
+        self.assertEqual(decryptPassword(pw3, ), u'passwörd')
 
         # TODO: add checks for broken paddings/encrypted values and malformed enc_data
 
@@ -207,10 +206,10 @@ class CryptoTestCase(MyTestCase):
         data = b'secret data'
         enc_data = 'WNfUSNBNZF5kaPfujW8ueUi5Afas47pQ/3FHc3VymWM='
         d = aes_decrypt_b64(binascii.unhexlify(hex_key), enc_data)
-        self.assertEquals(data, d)
+        self.assertEqual(data, d)
         enc_data = 'RDDvdAJhCnw/tlYscTxv+6idHAQnQFY5VpUK8SFflYQ='
         d = aes_decrypt_b64(binascii.unhexlify(hex_key), enc_data)
-        self.assertEquals(data, d)
+        self.assertEqual(data, d)
 
         # TODO: add checks for broken paddings/encrypted values and malformed enc_data
 
@@ -243,14 +242,14 @@ class CryptoTestCase(MyTestCase):
         s = u'passwörd'.encode('utf8')
         iv_hex = 'cd5245a2875007d30cc049c2e7eca0c5'
         enc_data_hex = '7ea55168952b33131077f4249cf9e52b5f2b572214ace13194c436451fe3788c'
-        self.assertEquals(s, decrypt(binascii.unhexlify(enc_data_hex),
+        self.assertEqual(s, decrypt(binascii.unhexlify(enc_data_hex),
                                      binascii.unhexlify(iv_hex)))
         enc_data_hex = 'fb79a04d69e832aec8ffb4bbfe031b3bd28a2840150212d8c819e' \
                        '362b1711cc389aed70eaf27af53131ea446095da80e88c4caf791' \
                        'c709e9581ff0a5f1e19228dc4c3c278d148951acaab9a164c1770' \
                        '7166134f4ba6111055c65d72771c6f59c2dc150a53753f2cf4c47' \
                        'ec02901022f02a054d1fc7678fd4f66b47967a5d222a'
-        self.assertEquals(b'\x01\x02' * 30,
+        self.assertEqual(b'\x01\x02' * 30,
                           decrypt(binascii.unhexlify(enc_data_hex),
                                   binascii.unhexlify(iv_hex)))
 
@@ -577,7 +576,15 @@ class SignObjectTestCase(MyTestCase):
         priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
         pub_key = open(current_app.config.get("PI_AUDIT_KEY_PUBLIC"), 'rb').read()
         so = Sign(priv_key, pub_key)
-        self.assertEquals(so.sig_ver, 'rsa_sha256_pss')
+        self.assertEqual(so.sig_ver, 'rsa_sha256_pss')
+
+        # test missing keys
+        so = Sign(public_key=pub_key)
+        res = so.sign('testdata')
+        self.assertEqual(res, '')
+        so = Sign(private_key=priv_key)
+        res = so.verify('testdata', 'testsig')
+        self.assertFalse(res)
 
     def test_01_sign_and_verify_data(self):
         priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()

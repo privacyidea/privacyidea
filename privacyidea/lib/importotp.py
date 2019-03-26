@@ -61,7 +61,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from bs4 import BeautifulSoup
 import traceback
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 import gnupg
 
 import logging
@@ -134,7 +134,7 @@ def parseOATHcsv(csv):
 
     csv_array = csv.split('\n')
 
-    m = re.match("^#\s*version:\s*(\d+)", csv_array[0])
+    m = re.match(r"^#\s*version:\s*(\d+)", csv_array[0])
     if m:
         version = m.group(1)
         log.debug("the file is version {0}.".format(version))
@@ -430,8 +430,8 @@ def derive_key(xml, password):
     salt = keymeth.find("salt").text.strip()
     keylength = keymeth.find("keylength").text.strip()
     rounds = keymeth.find("iterationcount").text.strip()
-    r = pbkdf2(to_utf8(password), base64.b64decode(salt), int(rounds),
-               int(keylength))
+    r = pbkdf2_hmac('sha1', to_utf8(password), base64.b64decode(salt),
+                    rounds=int(rounds), keylen=int(keylength))
     return binascii.hexlify(r)
 
 
