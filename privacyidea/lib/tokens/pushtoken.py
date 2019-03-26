@@ -73,6 +73,7 @@ class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
     MOBILE_TEXT = "push_text_on_mobile"
     MOBILE_TITLE = "push_title_on_mobile"
+    SSL_VERIFY = "push_ssl_verify"
 
 
 def strip_key(key):
@@ -217,6 +218,12 @@ class PushTokenClass(TokenClass):
                            'group': "PUSH",
                            'value': [gw.identifier for gw in gws]
                        },
+                       PUSH_ACTION.SSL_VERIFY: {
+                           'type': 'str',
+                           'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
+                           'group':  "PUSH",
+                           'value': ["0", "1"]
+                       }
                    },
                    SCOPE.AUTH: {
                        PUSH_ACTION.MOBILE_TEXT: {
@@ -228,6 +235,13 @@ class PushTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _('The title of the notification, the user sees on his mobile phone.'),
                            'group': 'PUSH'
+                       },
+                       PUSH_ACTION.SSL_VERIFY: {
+                           'type': 'str',
+                           'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
+                           'group': "PUSH",
+                           'value': ["0", "1"]
+
                        }
                    }
                },
@@ -309,6 +323,7 @@ class PushTokenClass(TokenClass):
         user = user or User()
         tokenlabel = params.get("tokenlabel", "<s>")
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
+        sslverify = params.get(PUSH_ACTION.SSL_VERIFY, "1")
         # Add rollout state the response
         response_detail['rollout_state'] = self.token.rollout_state
 
@@ -326,8 +341,9 @@ class PushTokenClass(TokenClass):
             for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
                       FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
                 extra_data[k] = fb_options.get(k)
-            # TODO this allows to upgrade our crypto
+            # this allows to upgrade our crypto
             extra_data["v"] = 1
+            extra_data["sslverify"] = sslverify
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
                                            user=user.login,
@@ -474,6 +490,10 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
+        sslverify = get_action_values_from_options(SCOPE.AUTH,
+                                                   PUSH_ACTION.SSL_VERIFY,
+                                                   options) or "1"
+
         attributes = None
         data = None
         challenge = b32encode_and_unicode(geturandom())
@@ -492,10 +512,11 @@ class PushTokenClass(TokenClass):
                                "question": message_on_mobile,
                                "serial": self.token.serial,
                                "title": title,
+                               "sslverify": sslverify,
                                "url": url}
             # Create the signature.
             # value to string
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**smartphone_data)
+            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
 
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
             privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey), None, default_backend())

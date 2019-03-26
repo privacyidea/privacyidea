@@ -362,7 +362,7 @@ class PushTokenTestCase(MyTestCase):
             # check the signature in the payload!
             data = payload.get("message").get("data")
 
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**data)
+            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
             token_obj = get_tokens(serial=data.get("serial"))[0]
             pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
             pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())

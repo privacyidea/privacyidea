@@ -1254,7 +1254,7 @@ def pushtoken_add_config(request, action):
     This is a token specific wrapper for push token for the endpoint
     /token/init
     According to the policy scope=SCOPE.ENROLL,
-    action=TTL or action=REGISTRATION_URL the parameters are added to the
+    action=SSL_VERIFY_NO or action=FIREBASE_CONFIG the parameters are added to the
     enrollment step.
     :param request:
     :param action:
@@ -1271,7 +1271,7 @@ def pushtoken_add_config(request, action):
             token_resolver = user_object.resolver
         else:
             token_realm = token_resolver = token_user = None
-        # Get the TTL and the Registration URL from the configs
+        # Get the firebase configuration from the policies
         firebase_config = g.policy_object.get_action_values(
             action=PUSH_ACTION.FIREBASE_CONFIG,
             scope=SCOPE.ENROLL,
@@ -1286,6 +1286,19 @@ def pushtoken_add_config(request, action):
         else:
             raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
 
+        # Get the sslverify definition from the policies
+        ssl_verify = g.policy_object.get_action_values(
+            action=PUSH_ACTION.SSL_VERIFY,
+            scope=SCOPE.ENROLL,
+            realm=token_realm,
+            user=token_user,
+            resolver=token_resolver,
+            client=g.client_ip,
+            audit_data=g.audit_object.audit_data,
+            unique=True
+        )
+        if len(ssl_verify) == 1:
+            request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
 
 
 def u2ftoken_verify_cert(request, action):

@@ -1347,6 +1347,18 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": "push"}
         pushtoken_add_config(req, "init")
         self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
+        self.assertEqual(None, req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+
+        # set sslverify="0"
+        set_policy(name="push_pol2",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
+        self.assertEqual("0", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
 
         # finally delete policy
         delete_policy("push_pol")
