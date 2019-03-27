@@ -21,6 +21,7 @@
 #
 
 import logging
+import datetime
 from privacyidea.lib.security.default import SecurityModule
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import get_alphanum_str
@@ -216,6 +217,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             return bytes("")
         log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
+        start = datetime.datetime.now()
         retries = 0
         while True:
             try:
@@ -223,14 +225,19 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 r = self.session.decrypt(k, bytes(data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
-                log.warning(u"Decryption failed: {0!s}".format(exx))
+                log.warning(u"Decryption retry: {0!s}".format(exx))
                 # If something goes wrong in this process, we free memory, session and handlers
                 self.pkcs11.lib.C_Finalize()
                 self.initialize_hsm()
                 retries += 1
                 if retries > self.max_retries:
+                    td = datetime.datetime.now() - start
+                    log.warning(u"Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
                     raise HSMException("Failed to decrypt after multiple retries.")
 
+        if retries > 0:
+            td = datetime.datetime.now() - start
+            log.warning(u"Decryption after {0!s} retries successful. Time taken: {1!s}.".format(retries, td))
         return int_list_to_bytestring(r)
 
     def create_keys(self):
