@@ -1347,7 +1347,15 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": "push"}
         pushtoken_add_config(req, "init")
         self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
-        self.assertEqual(None, req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+
+        # the request tries to inject a rogue value, but we assure sslverify=1
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push",
+            "sslverify": "rogue"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
 
         # set sslverify="0"
         set_policy(name="push_pol2",
@@ -1362,6 +1370,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("push_pol")
+        delete_policy("push_pol2")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
