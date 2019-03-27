@@ -207,20 +207,20 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         return int_list_to_bytestring(r)
 
-    def decrypt(self, data, iv, key_id=SecurityModule.TOKEN_KEY):
+    def decrypt(self, enc_data, iv, key_id=SecurityModule.TOKEN_KEY):
         """
 
         :rtype bytes
         """
-        if len(data) == 0:
+        if len(enc_data) == 0:
             return bytes("")
-        log.debug("Decrypting {} bytes with key {}".format(len(data), key_id))
+        log.debug("Decrypting {} bytes with key {}".format(len(enc_data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         retries = 0
         while True:
             try:
                 k = self.key_handles[key_id]
-                r = self.session.decrypt(k, bytes(data), m)
+                r = self.session.decrypt(k, bytes(enc_data), m)
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Decryption failed: {0!s}".format(exx))
@@ -309,13 +309,13 @@ if __name__ == "__main__":  # pragma: no cover
     p.setup_module({"password": "12345678"})
 
     # random
-    iv = p.random(16)
+    tmp_iv = p.random(16)
     plain = p.random(128)
     log.info("random test successful")
 
     # generic encrypt / decrypt
-    cipher = p.encrypt(plain, iv)
+    cipher = p.encrypt(plain, tmp_iv)
     assert (plain != cipher)
-    text = p.decrypt(cipher, iv)
+    text = p.decrypt(cipher, tmp_iv)
     assert (text == plain)
     log.info("generic encrypt/decrypt test successful")

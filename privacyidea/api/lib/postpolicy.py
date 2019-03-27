@@ -41,11 +41,10 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import datetime
 import logging
-log = logging.getLogger(__name__)
+import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
-from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
@@ -60,6 +59,7 @@ from privacyidea.lib.user import (split_user, User)
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import subscription_status
 
+log = logging.getLogger(__name__)
 
 optional = True
 required = False
@@ -148,9 +148,17 @@ def sign_response(request, response):
     if current_app.config.get("PI_NO_RESPONSE_SIGN"):
         return response
 
-    priv_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
-    pub_file = current_app.config.get("PI_AUDIT_KEY_PUBLIC")
-    sign_object = Sign(priv_file, pub_file)
+    priv_file_name = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+    try:
+        with open(priv_file_name, 'rb') as priv_file:
+            priv_key = priv_file.read()
+        sign_object = Sign(priv_key, public_key=None)
+    except (IOError, ValueError, TypeError) as e:
+        log.info('Could not load private key from '
+                 'file {0!s}: {1!r}!'.format(priv_file_name, e))
+        log.debug(traceback.format_exc())
+        return response
+
     request.all_data = get_all_params(request.values, request.data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200

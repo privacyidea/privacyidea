@@ -262,7 +262,7 @@ class YubikeyTokenClass(TokenClass):
             # The OTP value is no yubikey aes otp value and can not be decoded
             return -4
 
-        msg_bin = secret.aes_decrypt(otp_bin)
+        msg_bin = secret.aes_ecb_decrypt(otp_bin)
         msg_hex = hexlify_and_unicode(msg_bin)
 
         # The checksum is a CRC-16 (16-bit ISO 13239 1st complement) that

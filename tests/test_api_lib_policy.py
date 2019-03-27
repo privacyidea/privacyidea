@@ -1887,13 +1887,31 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                "id": 1}
         resp = jsonify(res)
         from privacyidea.lib.crypto import Sign
-        g.sign_object = Sign("tests/testdata/private.pem",
-                             "tests/testdata/public.pem")
+        sign_object = Sign(private_key=None,
+                           public_key=open("tests/testdata/public.pem", 'rb').read())
 
+        # check that we don't sign if 'PI_NO_RESPONSE_SIGN' is set
+        current_app.config['PI_NO_RESPONSE_SIGN'] = True
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_NO_RESPONSE_SIGN'] = False
+
+        # set a broken signing key path. The function should return without
+        # changing the response
+        orig_key_path = current_app.config['PI_AUDIT_KEY_PRIVATE']
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = '/path/does/not/exist'
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = orig_key_path
+
+        # signing of API responses is the default
         new_response = sign_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")
-        self.assertEqual(jresult.get("signature"), "11355158914966210201410734667484298031497086510917116878993822963793177737963323849914979806826759273431791474575057946263651613906587629736481370983420295626001055840803201448376203681672140726404056349423937599480275853513810616624349811159346536182220806878464577429106150903913526744093300868582898892977164229848617413618851794501457802670374543399415905458325601994002527427083792164898293507308423780001137468154518279116138010266341425663850327379848131113626641510715557748879427991785684858504631545256553961505159377600982900016536629720752767147086708626971940835730555782551222922985302674756190839458609")
+        # After switching to the PSS signature scheme, each signature will be
+        # different. So we have to verify the signature through the sign object
+        sig = jresult.pop('signature')
+        self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
 
     def test_08_get_webui_settings(self):
         # Test that a machine definition will return offline hashes

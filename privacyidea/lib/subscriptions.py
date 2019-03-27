@@ -32,11 +32,10 @@ from .log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.crypto import Sign
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
 from six import PY2, string_types
@@ -280,26 +279,24 @@ def check_signature(subscription):
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
     filename = u"{0!s}/{1!s}.pem".format(dirname, vendor)
-    with open(filename, "r") as file_handle:
-        public = file_handle.read()
 
-    r = False
     try:
         # remove the minutes 00:00:00
         subscription["date_from"] = subscription.get("date_from").strftime(SUBSCRIPTION_DATE_FORMAT)
         subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
         sign_string = SIGN_FORMAT.format(**subscription)
-        RSAkey = RSA.importKey(public)
-        hashvalue = SHA256.new(sign_string.encode("utf-8")).digest()
-        signature = long(subscription.get("signature") or "100")
-        r = RSAkey.verify(hashvalue, (signature,))
+        with open(filename, 'rb') as key_file:
+            sign_obj = Sign(private_key=None, public_key=key_file.read())
+
+        signature = subscription.get('signature', '100')
+        r = sign_obj.verify(sign_string, signature, verify_old_sigs=True)
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"),
             SUBSCRIPTION_DATE_FORMAT)
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"),
             SUBSCRIPTION_DATE_FORMAT)
-    except Exception as exx:
+    except Exception as _e:
         log.debug(traceback.format_exc())
         raise SubscriptionError("Verifying the signature of your subscription "
                                 "failed.",
