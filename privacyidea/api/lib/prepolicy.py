@@ -1299,6 +1299,8 @@ def pushtoken_add_config(request, action):
         )
         if len(ssl_verify) == 1:
             request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
+        else:
+            request.all_data[PUSH_ACTION.SSL_VERIFY] = "1"
 
 
 def u2ftoken_verify_cert(request, action):

@@ -47,7 +47,7 @@ optional = True
 required = False
 
 
-def getParam(param, key, optional=True, default=None, allow_empty=True):
+def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
     """
     returns a parameter from the request parameters.
     
@@ -62,6 +62,8 @@ def getParam(param, key, optional=True, default=None, allow_empty=True):
                     contained in the param.
     :param allow_empty: Set to False is the parameter is a string and is
         not allowed to be empty
+    :param allowed_values: A list of allowed values. If another value is given,
+        then the default value is returned
     :type allow_empty: bool
     
     :return: the value (literal) of the parameter if exists or nothing
@@ -78,6 +80,9 @@ def getParam(param, key, optional=True, default=None, allow_empty=True):
 
     if not allow_empty and ret == "":
         raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
+
+    if allowed_values and ret not in allowed_values:
+            ret = default
 
     return ret
 

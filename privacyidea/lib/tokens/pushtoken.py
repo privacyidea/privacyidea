@@ -323,7 +323,7 @@ class PushTokenClass(TokenClass):
         user = user or User()
         tokenlabel = params.get("tokenlabel", "<s>")
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
-        sslverify = params.get(PUSH_ACTION.SSL_VERIFY, "1")
+        sslverify = getParam(params, PUSH_ACTION.SSL_VERIFY, allowed_values=["0", "1"], default="1")
         # Add rollout state the response
         response_detail['rollout_state'] = self.token.rollout_state
 
@@ -493,6 +493,7 @@ class PushTokenClass(TokenClass):
         sslverify = get_action_values_from_options(SCOPE.AUTH,
                                                    PUSH_ACTION.SSL_VERIFY,
                                                    options) or "1"
+        sslverify = getParam({"sslverify": sslverify}, "sslverify", allowed_values=["0", "1"], default="1")
 
         attributes = None
         data = None
