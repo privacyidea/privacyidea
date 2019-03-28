@@ -15,3 +15,13 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(s, "")
 
         self.assertRaises(ParameterError, getParam, {"serial": ""}, "serial", optional=False, allow_empty=False)
+
+        # check for allowed values
+        v = getParam({"sslverify": "0"}, "sslverify", allowed_values=["0", "1"], default="1")
+        self.assertEqual("0", v)
+
+        v = getParam({"sslverify": "rogue value"}, "sslverify", allowed_values=["0", "1"], default="1")
+        self.assertEqual("1", v)
+
+        v = getParam({}, "sslverify", allowed_values=["0", "1"], default="1")
+        self.assertEqual("1", v)
