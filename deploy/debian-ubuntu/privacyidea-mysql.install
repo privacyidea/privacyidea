@@ -1,7 +1,0 @@
-deploy/debian/pi.cfg                            etc/privacyidea/
-deploy/debian/openssl.cnf			etc/privacyidea/CA
-
-# radius client
-deploy/privacyidea/dictionary                   etc/privacyidea/
-
-
