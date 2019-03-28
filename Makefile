@@ -1,6 +1,5 @@
 info:
 	@echo "make clean        - remove all automatically created files"
-	@echo "make epydoc       - create the API documentation"
 	@echo "make doc-man      - create the documentation as man-page"
 	@echo "make doc-html     - create the documentation as html"
 	@echo "make pypi         - upload package to pypi"
@@ -67,9 +66,7 @@ pypi:
 	gpg --detach-sign -a --default-key ${SIGNING_KEY} dist/*.tar.gz
 	twine upload dist/*.tar.gz dist/*.tar.gz.asc
 
-epydoc:
-	#pydoctor --add-package privacyidea --make-html 
-	epydoc --html privacyidea -o API
+
 depdoc:
 	#sfood privacyidea | sfood-graph | dot -Tpng -o graph.png	
 	dot -Tpng dependencies.dot -o dependencies.png
@@ -80,24 +77,6 @@ doc-man:
 
 doc-html:
 	(cd doc; make html)
-
-centos:
-	make clean
-	mkdir RHBUILD
-	mkdir -p RHBUILD/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-	# create tarball
-	mkdir -p RHBUILD/SOURCES/privacyidea-${VERSION}
-	rsync -a --exclude=".*" --exclude="privacyIDEA.egg-info" --exclude="RHBUILD" --exclude="debian" --exclude="dist" --exclude="build" \
-                --exclude="tests" . RHBUILD/SOURCES/privacyidea-${VERSION} || true
-	# We are using the same config file as in debia an replace it in setup.py
-	cp deploy/centos/pi.cfg RHBUILD/SOURCES/privacyidea-${VERSION}/deploy/centos/
-	# pack the modified source
-	(cd RHBUILD/SOURCES/; tar -zcf privacyidea-${VERSION}.tar.gz privacyidea-${VERSION})
-	rm -fr RHBUILD/SOURCES/privacyidea-${VERSION}
-	# copy spec file
-	cp deploy/centos/privacyidea.spec RHBUILD/SPECS
-	# build it
-	rpmbuild --define "_topdir $(CURDIR)/RHBUILD" -ba RHBUILD/SPECS/privacyidea.spec
 
 
 debianize:
