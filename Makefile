@@ -3,15 +3,10 @@ info:
 	@echo "make doc-man      - create the documentation as man-page"
 	@echo "make doc-html     - create the documentation as html"
 	@echo "make pypi         - upload package to pypi"
-	@echo "make debianzie    - prepare the debian build environment in DEBUILD"
-	@echo "make builddeb     - build .deb file locally on ubuntu 14.04LTS!"
-	@echo "make centos       - build .rpm file to be used with CentOS 7"
 	@echo "make venvdeb      - build .deb file, that contains the whole setup in a virtualenv."
 	@echo "make linitian     - run lintian on debian package"
 	@echo "make translate    - translate WebUI"
-	@echo "                    This is to be used with debian Wheezy"
-	@echo "make ppa-dev      - upload to launchpad development repo"
-	@echo "make ppa          - upload to launchpad stable repo"
+
 	
 #VERSION=1.3~dev5
 SHORT_VERSION=3.0~dev3
@@ -79,38 +74,6 @@ doc-html:
 	(cd doc; make html)
 
 
-debianize:
-	make clean
-	make doc-man
-	mkdir -p DEBUILD/privacyidea.org/debian
-	cp -r ${SRCDIRS} ${SRCFILES} DEBUILD/privacyidea.org || true
-	# remove the requirement for pyOpenSSL otherwise we get a breaking dependency for trusty
-	grep -v pyOpenSSL setup.py > DEBUILD/privacyidea.org/setup.py
-	# We need to touch this, so that our config files 
-	# are written to /etc
-	touch DEBUILD/privacyidea.org/PRIVACYIDEA_PACKAGE
-	cp LICENSE DEBUILD/privacyidea.org/debian/copyright
-	cp LICENSE DEBUILD/privacyidea.org/debian/python-privacyidea.copyright
-	cp LICENSE DEBUILD/privacyidea.org/debian/privacyidea-all.copyright
-	(cd DEBUILD; tar -zcf python-privacyidea_${SHORT_VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
-	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
-	(cd DEBUILD; tar -zcf python-privacyidea_${VERSION_JESSIE}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
-	(cd DEBUILD; tar -zcf privacyidea-venv_${VERSION}.orig.tar.gz --exclude=privacyidea.org/debian privacyidea.org)
-
-builddeb-nosign:
-	make debianize
-	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	(cd DEBUILD/privacyidea.org; debuild -b -i -us -uc)
-
-builddeb:
-	make debianize
-	################## Renew the changelog
-	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
-	sed -e s/"trusty) trusty; urgency"/"$(LOCAL_SERIES)) $(LOCAL_SERIES); urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	################# Build
-	(cd DEBUILD/privacyidea.org; debuild --no-lintian)
-
 venvdeb:
 	make debianize
 	cp -r deploy/debian-virtualenv/* DEBUILD/privacyidea.org/debian/
@@ -119,27 +82,3 @@ venvdeb:
 
 lintian:
 	(cd DEBUILD; lintian -i -I --show-overrides python-privacyidea_2.*_amd64.changes)
-
-ppa-dev:
-	make debianize
-	# trusty
-	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	# xenial
-	sed -e s/"trusty) trusty; urgency"/"xenial) xenial; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	# bionic
-	sed -e s/"trusty) trusty; urgency"/"bionic) bionic; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	dput ppa:privacyidea/privacyidea-dev DEBUILD/python-privacyidea_${VERSION}*_source.changes
-
-ppa:
-	make debianize
-	# trusty
-	cp deploy/debian-ubuntu/changelog DEBUILD/privacyidea.org/debian/
-	cp -r deploy/debian-ubuntu/* DEBUILD/privacyidea.org/debian/
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	# xenial
-	sed -e s/"trusty) trusty; urgency"/"xenial) xenial; urgency"/g deploy/debian-ubuntu/changelog > DEBUILD/privacyidea.org/debian/changelog
-	(cd DEBUILD/privacyidea.org; debuild -sa -S)
-	dput ppa:privacyidea/privacyidea DEBUILD/python-privacyidea_${VERSION}*_source.changes
