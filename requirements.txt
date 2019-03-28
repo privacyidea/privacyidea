@@ -57,7 +57,7 @@ python-dateutil==2.7.3
 python-gnupg==0.4.3
 pytz==2018.4
 pyusb==1.0.2
-PyYAML==4.2b1
+PyYAML==5.1
 qrcode==6.0
 redis==2.10.6
 requests==2.20.0
