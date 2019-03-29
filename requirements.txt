@@ -43,7 +43,6 @@ py==1.5.3
 pyasn1==0.4.3
 pycparser==2.18
 pycrypto==2.6.1
-Pygments==2.2.0
 PyJWT==1.6.4
 PyMySQL==0.8.1
 pymysql-sa==1.0
@@ -65,9 +64,6 @@ responses==0.9.0
 six==1.11.0
 smpplib==2.0
 snowballstemmer==1.2.1
-Sphinx==1.7.5
-sphinxcontrib-httpdomain==1.6.1
-sphinx-rtd-theme==0.3.1
 SQLAlchemy==1.2.8
 sqlsoup==0.9.1
 stdeb==0.8.5
