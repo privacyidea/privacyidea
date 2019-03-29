@@ -421,8 +421,10 @@ class PushTokenClass(TokenClass):
             # get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
             pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-            if not pubkey_pem.startswith("-----"):
-                pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
+            # The public key of the smartphone was probably sent as urlsafe:
+            pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
+            # The public key was sent without any header
+            pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
             # Do the 2nd step of the authentication
             # Find valid challenges
             challengeobject_list = get_challenges(serial=serial, challenge=challenge)

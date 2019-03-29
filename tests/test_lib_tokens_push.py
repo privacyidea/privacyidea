@@ -54,6 +54,8 @@ class PushTokenTestCase(MyTestCase):
             smartphone_public_key.public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo))
+    # The smartphone sends the public key in URLsafe and without the ----BEGIN header
+    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -99,9 +101,9 @@ class PushTokenTestCase(MyTestCase):
         token.update({"enrollment_credential": enrollment_credential,
                       "serial": self.serial1,
                       "fbtoken": "firebasetoken",
-                      "pubkey": self.smartphone_public_key_pem})
+                      "pubkey": self.smartphone_public_key_pem_urlsafe})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
-        self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem)
+        self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
         self.assertTrue(token.get_tokeninfo("public_key_server").startswith(u"-----BEGIN RSA PUBLIC KEY-----\n"),
                         token.get_tokeninfo("public_key_server"))
         parsed_server_pubkey = serialization.load_pem_public_key(
@@ -172,7 +174,7 @@ class PushTokenTestCase(MyTestCase):
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": "wrongserial",
-                                                 "pubkey": self.smartphone_public_key_pem,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 404, res)
@@ -186,7 +188,7 @@ class PushTokenTestCase(MyTestCase):
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": serial,
-                                                 "pubkey": self.smartphone_public_key_pem,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
                                                  "fbtoken": "firebaseT",
                                                  "enrollment_credential": "WRonG"}):
             res = self.app.full_dispatch_request()
@@ -202,7 +204,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
                                                  "serial": serial,
-                                                 "pubkey": self.smartphone_public_key_pem,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -226,7 +228,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(token_obj.token.rollout_state, u"enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
-            self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem)
+            self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
             # The token should also contain the firebase config
