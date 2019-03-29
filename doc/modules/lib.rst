@@ -18,6 +18,7 @@ For further details see the following modules:
    lib/tokenfunction
    lib/applicationclass
    lib/policy
+   lib/jobqueue
    lib/apipolicy
    lib/policydecorator
    lib/eventhandler
