@@ -2200,10 +2200,12 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     elif challenge_response_token_list:
         # The RESPONSE for a previous request of a challenge response token was
         # found.
+        matching_challenge = False
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
                 reply_dict["serial"] = tokenobject.token.serial
+                matching_challenge = True
                 if tokenobject.is_active():
                     # OTP matches
                     res = True
@@ -2227,6 +2229,19 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     reply_dict["message"] = "Challenge matches, but token is inactive."
                     log.info("Received a valid response to a "
                              "challenge for inactive token {0!s}".format(tokenobject.token.serial))
+        if not res:
+            # We did not find any successful response, so we need to increase the
+            # failcounters
+            for token_obj in challenge_response_token_list:
+                token_obj.inc_failcount()
+            if not matching_challenge:
+                if len(challenge_response_token_list) == 1:
+                    reply_dict["serial"] = challenge_response_token_list[0].token.serial
+                    reply_dict["type"] = challenge_response_token_list[0].token.tokentype
+                    reply_dict["message"] = "Response did not match the challenge."
+                else:
+                    reply_dict["message"] = "Response did not match for " \
+                                            "{0!s} tokens.".format(len(challenge_response_token_list))
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token

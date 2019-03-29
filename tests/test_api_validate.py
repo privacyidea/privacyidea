@@ -11,7 +11,7 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
-                                   set_pin)
+                                   set_pin, get_one_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
@@ -2934,6 +2934,82 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("tok2")
         delete_policy("pol_header")
         delete_policy("pol_footer")
+        delete_policy("pol_hotp")
+
+    def test_09_challenge_response_inc_failcounter(self):
+        # make HOTP a challenge response token
+        set_policy(name="pol_hotp",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        init_token({"serial": "tok1",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # On token fails to challenge response
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongOTP",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual("tok1", detail.get("serial"))
+            self.assertEqual("hotp", detail.get("type"))
+            self.assertEqual("Response did not match the challenge.", detail.get("message"))
+
+        init_token({"serial": "tok2",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # Now, two tokens will not match
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongOTP",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertTrue("serial" not in detail)
+            self.assertEqual("Response did not match for 2 tokens.", detail.get("message"))
+
+        # Now check the fail counters of the tokens
+        self.assertEqual(2, get_one_token(serial="tok1").token.failcount)
+        self.assertEqual(1, get_one_token(serial="tok2").token.failcount)
+
+        remove_token("tok1")
+        remove_token("tok2")
         delete_policy("pol_hotp")
 
 
