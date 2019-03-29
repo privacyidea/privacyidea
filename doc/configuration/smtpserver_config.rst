@@ -38,3 +38,10 @@ definition in e.g. a policy for user registraion.
 
 In the edit dialog you can enter all necessary attributes to talk to the SMTP
 server. You can also send a test email, to verify if your settings are correct.
+
+In case a :ref:`job_queue` is configured, the SMTP server dialog shows a checkbox that
+enables sending all emails for the given SMTP server configuration via the job queue.
+Note that if the checkbox is checked, any test email will also be sent via the queue.
+This also means that privacyIDEA will display a success notice when the job has been
+sent to the queue successfully, which does not necessarily mean that the mail was
+actually sent. Thus, it is important to check that the test email is actually received.

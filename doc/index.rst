@@ -50,6 +50,7 @@ Table of Contents
    audit/index
    machines/index
    workflows_and_tools/index
+   jobqueue/index
    application_plugins/index
    modules/index
    faq/index

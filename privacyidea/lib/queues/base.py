@@ -40,6 +40,7 @@ class BaseQueue(object):
     def register_job(self, name, func):  # pragma: no cover
         """
         Add a job to the internal registry.
+
         :param name: Unique job name
         :param func: Function that should be executed by an external job queue
         """
@@ -48,6 +49,7 @@ class BaseQueue(object):
     def enqueue(self, name, args, kwargs):  # pragma: no cover
         """
         Schedule an invocation of a job on the external job queue.
+
         :param name: Unique job name
         :param args: Tuple of positional arguments
         :param kwargs: Dictionary of keyword arguments
