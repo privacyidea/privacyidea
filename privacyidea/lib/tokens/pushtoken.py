@@ -506,7 +506,7 @@ class PushTokenClass(TokenClass):
             fb_gateway = create_sms_instance(fb_identifier)
             url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
             message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
-                                                   PUSH_ACTION.MOBILE_TITLE,
+                                                   PUSH_ACTION.MOBILE_TEXT,
                                                    options) or DEFAULT_MOBILE_TEXT
             title = get_action_values_from_options(SCOPE.AUTH,
                                                    PUSH_ACTION.MOBILE_TITLE,
