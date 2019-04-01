@@ -7,11 +7,8 @@ python:
 # command to install dependencies
 install:
   - "pip install ."
-  - "pip install mock"
-  - "pip install coveralls"
+  - "pip install -r tests/requirements.txt"
   - "pip install codecov"
-  - "pip install -r requirements.txt"
-  - "pip install smpplib"
 
 # split the test run according to
 # http://blog.travis-ci.com/2012-11-28-speeding-up-your-tests-by-parallelizing-them/

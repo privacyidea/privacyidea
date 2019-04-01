@@ -1,0 +1,7 @@
+-r ../requirements.txt
+mock
+pytest>=3.6.0
+pyparsing
+responses
+redis
+pytest-cov
