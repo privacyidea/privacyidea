@@ -58,7 +58,9 @@ from getpass import getpass
 import gnupg
 import yaml
 import contextlib
-
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 import flask
 
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -88,7 +90,6 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import cleanup as authcache_cleanup
 from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
-from Crypto.PublicKey import RSA
 import jwt
 import ast
 
@@ -481,14 +482,22 @@ def create_audit_keys(keysize=2048):
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    new_key = RSA.generate(keysize, e=65537)
-    public_key = new_key.publickey().exportKey("PEM")
-    private_key = new_key.exportKey("PEM")
-    with open(filename, "w") as f:
-        f.write(private_key)
+    new_key = rsa.generate_private_key(public_exponent=65537,
+                                       key_size=keysize,
+                                       backend=default_backend())
+    priv_pem = new_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+    with open(filename, "wb") as f:
+        f.write(priv_pem)
 
-    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w") as f:
-        f.write(public_key)
+    pub_key = new_key.public_key()
+    pub_pem = pub_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "wb") as f:
+        f.write(pub_pem)
 
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))

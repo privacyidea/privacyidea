@@ -9,13 +9,18 @@ Python 3 compatibility.
   * Removed packages:
     * matplotlib
     * pandas
+    * PyCrypto
   * Added packages:
     * cryptography (2.4.2)
   * Updated packages:
     * smpplib (0.1 -> 2.0)
     * pytest (3.6.0 -> 3.6.1)
     * requests (2.18.4 -> 2.20.0)
+    * PyYAML (3.12 -> 5.1)
 
+* Due to the switch from PyCrypto to cryptography, the calculation of signatures
+  changed. In order to be able to verify old audit entry signatures,
+   PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
 
 ## Update from 2.22 to 2.23
 

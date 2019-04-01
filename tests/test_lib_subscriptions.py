@@ -107,7 +107,7 @@ class SubscriptionApplicationTestCase(MyTestCase):
         self.assertRaises(SubscriptionError, check_subscription,
                           "demo_application")
 
-        # try to save some broken sunbscriptions
+        # try to save some broken subscriptions
         sub1 = SUBSCRIPTION1.copy()
         sub1['date_from'] = '1234'
         with self.assertRaises(ValueError):
