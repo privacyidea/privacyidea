@@ -38,10 +38,9 @@ The code is tested in test_mod_apache.py
 import redis
 import requests
 import syslog
-import ConfigParser
 import traceback
 import passlib.hash
-
+from six.moves import configparser
 
 OK = True
 UNAUTHORIZED = False
@@ -124,7 +123,7 @@ def _get_config():
     :return: The configuration
     :rtype: dict
     """
-    config_file = ConfigParser.ConfigParser()
+    config_file = configparser.ConfigParser()
     config_file.read(CONFIG_FILE)
     PRIVACYIDEA = DEFAULT_PRIVACYIDEA
     SSLVERIFY = DEFAULT_SSLVERIFY
@@ -140,7 +139,7 @@ def _get_config():
         REDIS = config_file.get("DEFAULT", "redis") or DEFAULT_REDIS
         TIMEOUT = config_file.get("DEFAULT", "timeout") or DEFAULT_TIMEOUT
         TIMEOUT = int(TIMEOUT)
-    except ConfigParser.NoOptionError as exx:
+    except configparser.NoOptionError as exx:
         syslog.syslog(syslog.LOG_ERR, "{0!s}".format(exx))
     syslog.syslog(syslog.LOG_DEBUG, "Reading configuration {0!s}, {1!s}, {2!s}".format(
         PRIVACYIDEA, REDIS, SSLVERIFY))
