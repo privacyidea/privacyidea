@@ -267,8 +267,13 @@ class AuditTestCase(MyTestCase):
         audit_log = audit.search({"user": "testuser"})
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
-        # but they validate correctly when PI_CHECK_OLD_SIGNATURES is true
+
+        # they validate correctly when PI_CHECK_OLD_SIGNATURES is true
+        # we need to create a new audit object to enable the new config
         self.app.config['PI_CHECK_OLD_SIGNATURES'] = True
+        audit = getAudit(self.app.config)
+        total = audit.get_count({})
+        self.assertEquals(total, 5)
         audit_log = audit.search({"user": "testuser"})
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "OK")

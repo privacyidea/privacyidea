@@ -80,6 +80,9 @@ class Audit(AuditBase):
     * PI_AUDIT_NO_SIGN
 
     You can use PI_AUDIT_NO_SIGN = True to avoid signing of the audit log.
+
+    If PI_CHECK_OLD_SIGNATURES = True old style signatures (text-book RSA) will
+    be checked as well, otherwise they will be marked as 'FAIL'.
     """
     
     def __init__(self, config=None):
@@ -88,9 +91,11 @@ class Audit(AuditBase):
         self.audit_data = {}
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
+        self.verify_old_sig = get_app_config_value('PI_CHECK_OLD_SIGNATURES')
         if self.sign_data:
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))
+            self.sign_object = Sign(self.private, self.public)
 
         # We can use "sqlaudit" as the key because the SQLAudit connection
         # string is fixed for a running privacyIDEA instance.
@@ -254,31 +259,6 @@ class Audit(AuditBase):
             self.session.close()
             # clear the audit data
             self.audit_data = {}
-
-    def read_keys(self, pub, priv):
-        """
-        Set the private and public key for the audit class. This is achieved by
-        passing the entries.
-
-        #priv = config.get("privacyideaAudit.key.private")
-        #pub = config.get("privacyideaAudit.key.public")
-
-        :param pub: Public key, used for verifying the signature
-        :type pub: string with filename
-        :param priv: Private key, used to sign the audit entry
-        :type priv: string with filename
-        :return: None
-        """
-        try:
-            with open(priv, "rb") as privkey_file:
-                private_key = privkey_file.read()
-            with open(pub, 'rb') as pubkey_file:
-                public_key = pubkey_file.read()
-            self.sign_object = Sign(private_key, public_key)
-        except Exception as e:
-            log.error("Error reading key file: {0!r})".format(e))
-            log.debug(traceback.format_exc())
-            raise e
 
     def _check_missing(self, audit_id):
         """
@@ -488,10 +468,10 @@ class Audit(AuditBase):
     
     def audit_entry_to_dict(self, audit_entry):
         sig = None
-        verify_old_sig = get_app_config_value('PI_CHECK_OLD_SIGNATURES', False)
         if self.sign_data:
             sig = self.sign_object.verify(self._log_to_string(audit_entry),
-                                          audit_entry.signature, verify_old_sig)
+                                          audit_entry.signature,
+                                          self.verify_old_sig)
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
