@@ -142,7 +142,8 @@ setup(
                   "migrations/README",
                   "migrations/script.py.mako"]),
                 ('lib/privacyidea/migrations/versions',
-                 get_file_list("migrations/versions/"))
+                 get_file_list("migrations/versions/")),
+                ('lib/privacyidea/', ['requirements.txt'])
                 ],
     classifiers=["Framework :: Flask",
                  "License :: OSI Approved :: "
