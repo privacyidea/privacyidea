@@ -75,7 +75,7 @@ Now you can simply run:
    apt update
    apt dist-upgrade
 
-After this it is a good idea to remove old, unused packages by runnint:
+After this it is a good idea to remove old, unused packages by running:
 
    apt autoremove
 
