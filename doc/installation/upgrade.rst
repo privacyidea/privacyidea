@@ -7,6 +7,9 @@ If you installed privacyIDEA via DEB or RPM repository you can use the normal
 system ways of *apt-get*, *aptitude* and *rpm* to upgrade privacyIDEA to the
 current version.
 
+If you want to upgrade your Ubuntu installtion from privacyIDEA 2.23 to
+privacyIDEA 3.0, please read :ref:`upgrade_ubuntu`.
+
 Basic pip upgrade process
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

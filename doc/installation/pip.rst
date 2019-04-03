@@ -30,10 +30,10 @@ Now you can install privacyIDEA like this::
 
 Now you are within the python virtual environment.
 Within the environment you can now run::
-
-  pip install --upgrade setuptools
+ 
   pip install privacyidea
-
+  # TODO: Do the deterministic installation!
+  
 .. _configuration:
 
 Please see the section :ref:`cfgfile` for a quick setup of your configuration.
@@ -53,6 +53,10 @@ Now you can run the server for your first test::
 
    pi-manage runserver
 
+Stamp the database, so that privacyIDEA has the right database schema version.
+This is important for later update processes:
+
+   pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations
 
 Depending on the database you want to use, you may have to install additional packages.
 

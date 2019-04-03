@@ -2,10 +2,32 @@
 
 ## Update from 2.23 to 3.0
 
-A lot of changes will be introduced in privacyIDEA 3.0, most notably the
-Python 3 compatibility.
+* Database
+
+  **WARNING**: Be sure to run a backup of your database before upgrading!
+  The database schema in regards to the token assignment is changed.
+  The token assignment is moved from the table "token" to the table
+  "tokenowner". The user columns in the "token" table are deleted and
+  migrated to the "tokenowner" table.   
+
+* The packaging for ubuntu has changed. While privacyIDEA 2.23 was
+  installed into the system environment, the ubuntu packages 
+  starting with privacyIDEA 3.0 will install the software in the
+  Python virtual environment at /opt/privacyidea.
+  However, the debian package update process will take care of this.
+
+  But this also means that the apache configuration was changed slightly.
+  In /etc/apache2/sites-available/privacyidea.conf a line
+  "WSGIPythonHome /opt/privacyidea"
+  was added.
+  Unless you modified the file privacyidea.conf, the update process
+  will take care of this automatically.
 
 * Package dependencies:
+
+  A lot of changes will be introduced in privacyIDEA 3.0, most notably the
+  Python 3 compatibility.
+
   * Removed packages:
     * matplotlib
     * pandas
