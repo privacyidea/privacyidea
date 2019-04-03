@@ -407,7 +407,7 @@ def decrypt(enc_data, iv, key_id=0):
     return res
 
 
-@log_with(log, log_exit=False)
+@log_with(log, log_exit=False, hide_args=[0])
 def aes_cbc_decrypt(key, iv, enc_data):
     """
     Decrypts the given cipherdata with AES (CBC Mode) using the key/iv.

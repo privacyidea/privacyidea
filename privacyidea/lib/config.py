@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid consecutive if-statements
 #  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -488,6 +492,7 @@ def get_token_class(tokentype):
     """
     This takes a token type like "hotp" and returns a class
     like <class privacidea.lib.tokens.hotptoken.HotpTokenClass>
+
     :return: The tokenclass for the given type
     :rtype: tokenclass.TokenClass
     """

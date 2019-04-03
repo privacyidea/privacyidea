@@ -433,8 +433,8 @@ def login_mode(wrapped_function, *args, **kwds):
     that the authentication should be performed against privacyIDEA.
 
     :param wrapped_function: Usually the function check_webui_user
-    :param `*args`: arguments user_obj and password
-    :param `**kwds`: keyword arguments like options and !check_otp!
+    :param args: arguments user_obj and password
+    :param kwds: keyword arguments like options and !check_otp!
         kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """

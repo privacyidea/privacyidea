@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  2021-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add extended condition for HTTP environment
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -591,7 +595,7 @@ class PolicyClass(object):
 
         return value_found, value_excluded
 
-    @log_with(log)
+    @log_with(log, log_exit=False)
     def list_policies(self, name: Optional[str] = None, scope: Optional[str] = None, realm: Optional[str] = None,
                       active: Optional[bool] = None, resolver: Optional[str] = None, user: Optional[str] = None,
                       client: Optional[str] = None, action: Optional[str] = None, pinode: Optional[str] = None,
@@ -648,7 +652,7 @@ class PolicyClass(object):
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         if additional_realms:
             if realm and realm not in additional_realms:
@@ -678,7 +682,7 @@ class PolicyClass(object):
                             new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         for searchkey, searchvalue in q:
             if searchvalue is not None:
@@ -707,7 +711,7 @@ class PolicyClass(object):
                                 new_policies.append(policy)
                 reduced_policies = new_policies
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
-                    reduced_policies, searchkey, searchvalue))
+                    [p.get('name') for p in reduced_policies], searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
         # We either match the resolver exactly or we match another resolver (
@@ -742,7 +746,7 @@ class PolicyClass(object):
 
             reduced_policies = new_policies
             log.debug("Policies after matching resolver={1!s}: {0!s}".format(
-                reduced_policies, resolver))
+                [p.get('name') for p in reduced_policies], resolver))
 
         # Match the privacyIDEA node
         if pinode is not None:
@@ -753,7 +757,8 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug(f"Policies after matching pinode={pinode}: {reduced_policies}")
+            log.debug("Policies after matching pinode={1!s}: {0!s}".format(
+                [p.get('name') for p in reduced_policies], pinode))
 
         # Match the user agent
         new_policies = []
@@ -772,7 +777,8 @@ class PolicyClass(object):
                 new_policies.append(policy)
 
         reduced_policies = new_policies
-        log.debug(f"Policies after matching the user_agent={user_agent}: {reduced_policies}")
+        log.debug("Policies after matching the user_agent={1!s}: {0!s}".format(
+            [p.get('name') for p in reduced_policies], user_agent))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -789,7 +795,6 @@ class PolicyClass(object):
 
             new_policies = []
             for policy in reduced_policies:
-                log.debug("checking client ip in policy {0!s}.".format(policy))
                 client_found, client_excluded = check_ip_in_policy(client, policy.get("client"))
                 if client_found and not client_excluded:
                     # The client was contained in the defined subnets and was
@@ -803,7 +808,7 @@ class PolicyClass(object):
                     new_policies.append(policy)
             reduced_policies = new_policies
             log.debug("Policies after matching client={1!s}: {0!s}".format(
-                reduced_policies, client))
+                [p.get('name') for p in reduced_policies], client))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -846,6 +851,7 @@ class PolicyClass(object):
         :param adminuser: see ``list_policies``
         :param time: return only policies that are valid at the specified time.
             Defaults to the current time.
+        :type time: datetime or None
         :param sort_by_priority:
         :param audit_data: A dictionary with audit data collected during a request. This
             method will add found policies to the dictionary.
@@ -877,6 +883,8 @@ class PolicyClass(object):
             realm = user_object.realm
             resolver = user_object.resolver
 
+        log.debug("Trying to match policy for action \"{0!s}\". Policies: {1!s}".format(
+            action, [p.get("name") for p in self.policies]))
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
@@ -897,7 +905,8 @@ class PolicyClass(object):
             else:
                 policies_match_time.append(policy)
         reduced_policies = policies_match_time
-        log.debug(f"Policies after matching time: {[p.get('name') for p in reduced_policies]}")
+        log.debug("Policies after matching time={1!s}: {0!s}".format(
+            [p.get('name') for p in reduced_policies], time))
 
         # filter policies by the policy conditions
         if extended_condition_check != ConditionCheck.DO_NOT_CHECK_AT_ALL:
@@ -909,7 +918,8 @@ class PolicyClass(object):
                 # Add the information on which actions triggered the error to the logs
                 log.error(f"Error checking extended conditions for action '{action}'.")
                 raise
-            log.debug(f"Policies after matching extended conditions: {[p.get('name') for p in reduced_policies]}")
+            log.debug("Policies after matching extended conditions: {0!s}".format(
+                [p.get('name') for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
