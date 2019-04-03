@@ -32,7 +32,12 @@ Now you are within the python virtual environment.
 Within the environment you can now run::
  
   pip install privacyidea
-  # TODO: Do the deterministic installation!
+
+To achieve a deterministic installation, you can now pin the installed
+versions to our tested versions like this::
+
+  pip install -r lib/privacyidea/requirements.txt
+
   
 .. _configuration:
 

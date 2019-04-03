@@ -8,18 +8,18 @@ Ubuntu Packages
 
 There are ready made packages for Ubuntu.
 Up to privacyIDEA 2.23 packages are available for 
-Ubuntu 14.04 LTS and 16.04 LTS [#ubunut1604]_. 
+Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_. 
 These are available via a public ppa repository [#ppa]_.
 
 Starting with privacyIDEA 3.0 packages are available 
-for Ubuntu 16.04LTS and 18.04LTS [#ubuntu1604]_.
+for Ubuntu 16.04LTS and 18.04LTS [#ubuntu1804]_.
 
 Installing privacyIDEA 3.0 or higher
 ....................................
 
 Before installing privacyIDEA 3.0 or upgrading to 3.0 you need to add the repository.
 
-.. _add_ubuntu_respository:
+.. _add_ubuntu_repository:
 
 Add repository
 ~~~~~~~~~~~~~~
@@ -68,7 +68,7 @@ Upgrading privacyIDEA to 3.0
 
 If you want to upgrade your privacyIDEA on Ubuntu to privacyIDEA 3.0,
 you need to add a new repository configuration as described in 
-:ref:`_add_ubuntu_respository`.
+:ref:`_add_ubuntu_repository`.
 
 Now you can simply run:
 
@@ -186,5 +186,5 @@ For further details and configuration see :ref:`otrs_plugin`.
 .. [#otrs] http://www.otrs.com/
 .. [#ubuntu1604] Starting with privacyIDEA 2.15 Ubuntu 16.04 packages are
    provided
-.. [#ubunut1804] Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
+.. [#ubuntu1804] Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
    are provided, Ubuntu 14.04 packages are dropped.
