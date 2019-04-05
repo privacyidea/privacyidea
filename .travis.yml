@@ -6,8 +6,8 @@ python:
   - 3.6
 # command to install dependencies
 install:
-  - "pip install ."
   - "pip install -r tests/requirements.txt"
+  - "pip install ."
   - "pip install codecov"
 
 # split the test run according to
