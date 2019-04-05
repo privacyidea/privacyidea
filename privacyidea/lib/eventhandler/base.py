@@ -129,23 +129,23 @@ class BaseEventHandler(object):
         cond = {
             CONDITION.REALM: {
                 "type": "str",
-                "desc": _("The user realm, for which this event should apply."),
+                "desc": _("The realm of the user, for which this event should apply."),
                 "value": list(realms)
             },
             CONDITION.RESOLVER: {
                 "type": "str",
-                "desc": _("The user resolver, for which this event should apply."),
+                "desc": _("The resolver of the user, for which this event should apply."),
                 "value": list(resolvers)
             },
             CONDITION.TOKENREALM: {
                 "type": "multi",
-                "desc": _("The token realm, for which this event should "
+                "desc": _("The realm of the token, for which this event should "
                           "apply."),
                 "value": [{"name": r} for r in realms]
             },
             CONDITION.TOKENRESOLVER: {
                 "type": "multi",
-                "desc": _("The token resolver, for which this event should "
+                "desc": _("The resolver of the token, for which this event should "
                           "apply."),
                 "value": [{"name": r} for r in resolvers]
             },

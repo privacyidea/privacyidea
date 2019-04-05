@@ -3607,7 +3607,7 @@ msgstr ""
 msgid ""
 "With the PUSH token privacyIDEA sends a notification to your registered smartphone asking\n"
 "    if you want to approve the authentication step.\n"
-"    You can accept of deny the authentication on your smartphone."
+"    You can accept or deny the authentication on your smartphone."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:121

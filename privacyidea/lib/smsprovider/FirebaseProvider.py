@@ -129,12 +129,12 @@ class FirebaseProvider(ISMSProvider):
                       FIREBASE_CONFIG.APP_ID: {
                           "required": True,
                           "description": _(
-                              "The APP ID, that the client should use. Get it from your Firebase console.")
+                              "The App ID, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
                           "required": True,
                           "description": _(
-                              "The API KEY, that the client should use. Get it from your Firebase console.")
+                              "The API Key, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.JSON_CONFG: {
                           "required": True,
