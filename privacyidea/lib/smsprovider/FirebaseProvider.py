@@ -115,7 +115,7 @@ class FirebaseProvider(ISMSProvider):
                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')},
                       FIREBASE_CONFIG.TTL: {
                           "required": True,
-                          "description": _('How long should the second step of the enrollment be accepted (in minutes).')
+                          "description": _('The second enrollment step must be completed within this time (in minutes).')
                       },
                       FIREBASE_CONFIG.PROJECT_ID: {
                           "required": True,

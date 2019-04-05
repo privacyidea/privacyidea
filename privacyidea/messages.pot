@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-04-05 10:32+0200\n"
+"POT-Creation-Date: 2019-04-05 11:28+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1055,7 +1055,7 @@ msgstr ""
 
 #: lib/smsprovider/FirebaseProvider.py:118
 msgid ""
-"How long should the second step of the enrollment be accepted (in "
+"The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
 
