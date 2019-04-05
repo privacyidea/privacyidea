@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-04-05 11:28+0200\n"
-"PO-Revision-Date: 2019-04-05 11:29+0200\n"
+"POT-Creation-Date: 2019-04-05 12:07+0200\n"
+"PO-Revision-Date: 2019-04-05 12:08+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -896,7 +896,7 @@ msgstr "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} Benut
 
 #: lib/smsprovider/FirebaseProvider.py:114
 msgid "The URL the Push App should contact in the second enrollment step. Usually it is the endpoint /ttype/push of the privacyIDEA server."
-msgstr "Die URL für den zweiten Ausrollschritt. Diese URL ruft das Smartphone auf, nachdem der Benutzer den QR-Code gescannt hat. Überlicherweise ist das der Endpunkt /ttype/push des privacyIDEA Servers."
+msgstr "Die URL für den zweiten Ausrollschritt. Diese URL ruft das Smartphone auf, nachdem der Benutzer den QR-Code gescannt hat. Üblicherweise ist das der Endpunkt /ttype/push des privacyIDEA Servers."
 
 #: lib/smsprovider/FirebaseProvider.py:118
 msgid "The second enrollment step must be completed within this time (in minutes)."

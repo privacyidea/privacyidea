@@ -1287,7 +1287,7 @@ msgid ""
 "smartphone needs an internet connection\n"
 "    to privacyIDEA."
 msgstr ""
-"Für den Intialisierungsprozess und auch während der Anmeldung benötigt Ihr "
+"Für den Initialisierungsprozess und auch während der Anmeldung benötigt Ihr "
 "Smartphone eine Netzwerkverbindung, um privacyIDEA zu erreichen."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:229
