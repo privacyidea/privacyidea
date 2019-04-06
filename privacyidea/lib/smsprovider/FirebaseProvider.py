@@ -115,7 +115,7 @@ class FirebaseProvider(ISMSProvider):
                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')},
                       FIREBASE_CONFIG.TTL: {
                           "required": True,
-                          "description": _('How long should the second step of the enrollment be accepted (in minutes).')
+                          "description": _('The second enrollment step must be completed within this time (in minutes).')
                       },
                       FIREBASE_CONFIG.PROJECT_ID: {
                           "required": True,
@@ -129,12 +129,12 @@ class FirebaseProvider(ISMSProvider):
                       FIREBASE_CONFIG.APP_ID: {
                           "required": True,
                           "description": _(
-                              "The APP ID, that the client should use. Get it from your Firebase console.")
+                              "The App ID, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
                           "required": True,
                           "description": _(
-                              "The API KEY, that the client should use. Get it from your Firebase console.")
+                              "The API Key, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.JSON_CONFG: {
                           "required": True,

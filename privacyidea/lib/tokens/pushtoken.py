@@ -62,7 +62,7 @@ from cryptography.exceptions import InvalidSignature
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
-DEFAULT_MOBILE_TEXT = _("Do you want to confirm login?")
+DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
