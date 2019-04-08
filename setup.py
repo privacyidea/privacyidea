@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 from setuptools import setup, find_packages
 import os
 import stat
@@ -18,14 +19,15 @@ def get_file_contents(file_path):
         full_path = os.path.join(package_directory, file_path)
         content = open(full_path, 'r').read()
     except:
-        print >> sys.stderr, "### could not open file {0!r}".format(file_path)
+        print("### could not open file {0!r}".format(file_path), file=sys.stderr)
     return content
+
 
 def get_file_list(file_path):
     full_path = os.path.join(package_directory, file_path)
     file_list = os.listdir(full_path)
     # now we need to add the path to the files
-    return [ file_path + f for f in file_list ]
+    return [file_path + f for f in file_list]
 
 
 install_requires = ["Flask>=0.10.1",
@@ -34,41 +36,31 @@ install_requires = ["Flask>=0.10.1",
                     "Flask-Script>=2.0.5",
                     "Jinja2>=2.7.3",
                     "Mako>=0.9.1",
-                    "MarkupSafe>=0.23",
                     "PyMySQL>=0.6.6",
                     "Pillow>=2.6.1",
                     "PyJWT>=1.3.0",
                     "PyYAML>=5.1",
-                    "Pygments>=2.0.2",
-                    "SQLAlchemy>=1.0.5",
+                    "SQLAlchemy>=1.2.18",
                     "Werkzeug>=0.10.4",
                     "alembic>=0.6.7",
-                    "argparse>=1.2.1",
                     "bcrypt>=1.1.0",
                     "beautifulsoup4>=4.3.2",
-                    "cffi>=0.8.6",
-                    "configobj>=5.0.6",
-                    "docutils>=0.12",
-                    "funcparserlib>=0.3.6",
-                    "itsdangerous>=0.24",
                     "ldap3>=2.6",
                     "netaddr>=0.7.12",
                     "passlib>=1.6.2",
-                    "pyasn1>=0.4.2",
                     "pyOpenSSL>=17.5",
-                    "pycparser>=2.10",
                     "pyrad>=2.0",
-                    "pyusb>=1.0.0b2",
                     "qrcode>=5.1",
                     "requests>=2.7.0",
                     "sqlsoup>=0.9.0",
                     "ecdsa>=0.13",
-                    "lxml>=3.3",
+                    "lxml>=4.2.5",
                     "python-gnupg>=0.4.4",
                     "defusedxml>=0.4.1",
                     "flask-babel>=0.9",
                     "croniter>=0.3.8",
-                    "oauth2client>=2.0.1"
+                    "oauth2client>=2.0.1",
+                    "configobj>=5.0.6"
                     ]
 
 # For python 2.6 we need additional dependency importlib
