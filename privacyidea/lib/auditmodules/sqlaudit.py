@@ -250,6 +250,8 @@ class Audit(AuditBase):
                 self.session.merge(le)
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
+            # in case of a Unicode Error in _log_to_string() we won't have
+            # a signature, but the log entry is available
             log.error("exception {0!r}".format(exx))
             log.error("DATA: {0!s}".format(self.audit_data))
             log.debug("{0!s}".format(traceback.format_exc()))
@@ -266,10 +268,10 @@ class Audit(AuditBase):
         the given id.
         
         TODO: We can not check at the moment if the first or the last entries
-        were deleted. If we want to do this, we need to store some signed
-        meta information
-        1. Which one was the first entry. (use initialize_log)
-        2. Which one was the last entry.
+              were deleted. If we want to do this, we need to store some signed
+              meta information:
+              1. Which one was the first entry. (use initialize_log)
+              2. Which one was the last entry.
         """
         res = False
         try:
@@ -405,14 +407,22 @@ class Audit(AuditBase):
         auditIter = self.search_query(search_dict, page_size=page_size,
                                       page=page, sortorder=sortorder,
                                       timelimit=timelimit)
-        try:
-            le = next(auditIter)
-            while le:
+        while True:
+            try:
+                le = next(auditIter)
                 # Fill the list
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
-                le = next(auditIter)
-        except StopIteration as _e:
-            log.debug("Interation stopped.")
+            except StopIteration as _e:
+                log.debug("Interation stopped.")
+                break
+            except UnicodeDecodeError as _e:
+                # Unfortunately if one of the audit entries fails, the whole
+                # iteration stops and we return an empty paging_object.
+                # TODO: Check if we can return the other entries in the auditIter
+                #  or some meaningful error for the user.
+                log.warning('Could not read audit log entry! '
+                            'Possible database encoding mismatch.')
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return paging_object
         
@@ -469,9 +479,16 @@ class Audit(AuditBase):
     def audit_entry_to_dict(self, audit_entry):
         sig = None
         if self.sign_data:
-            sig = self.sign_object.verify(self._log_to_string(audit_entry),
-                                          audit_entry.signature,
-                                          self.verify_old_sig)
+            try:
+                sig = self.sign_object.verify(self._log_to_string(audit_entry),
+                                              audit_entry.signature,
+                                              self.verify_old_sig)
+            except UnicodeDecodeError as _e:
+                # TODO: Unless we trace and eliminate the broken unicode in the
+                #  audit_entry, we will get issues when packing the response.
+                log.warning('Could not verify log entry! We get invalid values '
+                            'from the database, please check the encoding.')
+                log.debug('{0!s'.format(traceback.format_exc()))
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
