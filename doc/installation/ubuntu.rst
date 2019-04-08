@@ -24,7 +24,7 @@ Before installing privacyIDEA 3.0 or upgrading to 3.0 you need to add the reposi
 Add repository
 ~~~~~~~~~~~~~~
 
-Create a new file ``/etc/apt/sources.list.d/privacyidea-community.lst`` with the
+Create a new file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
 following contents:
 
    deb http://lancelot.netknights.it/community/xenial/stable xenial main
