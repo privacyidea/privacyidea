@@ -488,7 +488,7 @@ class Audit(AuditBase):
                 #  audit_entry, we will get issues when packing the response.
                 log.warning('Could not verify log entry! We get invalid values '
                             'from the database, please check the encoding.')
-                log.debug('{0!s'.format(traceback.format_exc()))
+                log.debug('{0!s}'.format(traceback.format_exc()))
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
