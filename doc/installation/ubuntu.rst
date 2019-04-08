@@ -34,7 +34,7 @@ replase "xenial" with "bionic":
 
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
 
-Download the signing key:
+Download the signing key::
 
    wget https://lancelot.netknights.it/NetKnights-Release.asc
 
