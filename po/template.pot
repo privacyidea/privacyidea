@@ -4023,6 +4023,10 @@ msgstr ""
 msgid "window"
 msgstr ""
 
+#: privacyidea/static/components/audit/controllers/auditControllers.js:33
+msgid "yyyy-MM-dd HH:mm:ss"
+msgstr ""
+
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr ""

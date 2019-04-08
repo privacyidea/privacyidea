@@ -30,7 +30,8 @@ myApp.controller("auditController", function (AuditFactory, $scope,
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-    $scope.dateFormat = gettextCatalog.getString("M/d/yy HH:mm:ss");
+    var df = gettextCatalog.getString("yyyy-MM-dd HH:mm:ss");
+    $scope.dateFormat = df;
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
