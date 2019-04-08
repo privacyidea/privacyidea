@@ -2513,26 +2513,26 @@ class Audit(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
-    signature = db.Column(db.String(audit_column_length.get("signature")))
-    action = db.Column(db.String(audit_column_length.get("action")))
+    signature = db.Column(db.Unicode(audit_column_length.get("signature")))
+    action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
-    serial = db.Column(db.String(audit_column_length.get("serial")))
-    token_type = db.Column(db.String(audit_column_length.get("token_type")))
-    user = db.Column(db.String(audit_column_length.get("user")), index=True)
-    realm = db.Column(db.String(audit_column_length.get("realm")))
-    resolver = db.Column(db.String(audit_column_length.get("resolver")))
+    serial = db.Column(db.Unicode(audit_column_length.get("serial")))
+    token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
+    user = db.Column(db.Unicode(audit_column_length.get("user")), index=True)
+    realm = db.Column(db.Unicode(audit_column_length.get("realm")))
+    resolver = db.Column(db.Unicode(audit_column_length.get("resolver")))
     administrator = db.Column(
-        db.String(audit_column_length.get("administrator")))
+        db.Unicode(audit_column_length.get("administrator")))
     action_detail = db.Column(
-        db.String(audit_column_length.get("action_detail")))
-    info = db.Column(db.String(audit_column_length.get("info")))
+        db.Unicode(audit_column_length.get("action_detail")))
+    info = db.Column(db.Unicode(audit_column_length.get("info")))
     privacyidea_server = db.Column(
-        db.String(audit_column_length.get("privacyidea_server")))
-    client = db.Column(db.String(audit_column_length.get("client")))
-    loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
-    clearance_level = db.Column(db.String(audit_column_length.get(
+        db.Unicode(audit_column_length.get("privacyidea_server")))
+    client = db.Column(db.Unicode(audit_column_length.get("client")))
+    loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
+    clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
-    policies = db.Column(db.String(audit_column_length.get("policies")))
+    policies = db.Column(db.Unicode(audit_column_length.get("policies")))
 
     def __init__(self,
                  action="",
