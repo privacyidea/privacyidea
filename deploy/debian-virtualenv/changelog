@@ -1,3 +1,65 @@
+privacyidea-venv (3.0-1) jessie; urgency=medium
+
+  Features:
+  * Add Push Token that receives a Firebase push notification and allows login
+    by confirming this notification. Works with privacyIDEA Authenticator. (#1342)
+  * Add a queue to offload certain tasks from the original request. 
+    Allow sending emails via queue. (#1290)
+  * Add API to write your own statistics-DB-module to be able to write
+    to a time series DB (#1289)
+  * The matching policies per request get written to the audit log (#874)
+  * Support Python 3 (#676)
+  
+  Enhancements:
+  * Enhance challenge response text, allows headers and footers and HTML
+    in the challenge text (#1384)
+  * Event Handlers may now depend on the user and IP address (#1435)
+  * Improve documentation about customization (#1377)
+  * Allow to use the client IP from X-Forwarded-For for all endpoints (#1399)
+  * The otp-counter-condition for event handlers can also match greater
+    than and less than (#1383)
+  * Allow a token to use another SMS gateway than the default (#1358)
+  * The policy "reset_all_user_tokens" will also work with challenge response (#1348)
+  * Create more readable temporary token passwords based on base58. (#1325)
+  * Allow support button in the UI to point to more sensible locations (#1331)
+
+  Fixes:
+  * Update LDAP3 dependency to 2.6 and fixes broken objectGUID (#1526)
+  * Allow tokentype endpoints /ttype only for the specific tokentypes (#1528)
+  * When logging in to the webui the client IP is only determined by
+    X-Forwarded-For if the original (REMOTE_ADDR) is allowed to overwrite the client ip.
+    (Side effect of #1392)
+  * Remove submodules/authmodules from git repository and from base package (#1516)
+  * Allow userid as integer in SQLResolver (#1513)
+  * Fix revocation of certificates (#1510)
+  * Fix manual resync of TOTP token (#1479)
+  * Fix audit log entry if token resync fails (#1416)
+  * Fix authcache to actually *write* values to the authcache (#1386)
+  * Fix UI language determiniation in IE (#1379)
+  * Fix tokenjanitor which sometimes did not delete all matching tokens (#1322)
+  * Fix bug in two step enrollment (#1347)
+  * Do not pass LDAP service account credentials in GET /resolver (#1271)
+  * Redirect to login page in case of missing authorization header (#1326)
+  * Respond with 404 if a non-existing object (like deleting event handler)
+    is accessed (#817)
+  * fix setrealm policy not to fail, if the original user does not exist (#1205)
+  * Optimize hidden SQL queries (#1457)
+  * Improve installation process and schema migration by initially stamping
+    the database (#1489)
+
+  Redesign:
+  * Remove flask imports from libs to make code more modular (#331)
+  * Making Token-User relation an n:m relation by moving the token assignment
+    into its own database table. This will allow to assign several users to
+    one token (#1288)
+  * Unify password hashing in SQLResolver by using passlib (#1372)
+  * Redesign the cryptolayer and replace pycrypto with cryptography (#1340)
+  * Remove the old statistics, that were based on the audit log in favour
+    of the generic event handler based statistics (#1314)
+  * Deterministic installation with pinned dependencies on all distributions (#1127)
+  
+ -- Cornelius Kölbel <cornelius.koelbel@netknights.it>  Wed, 10 Apr 2019 10:00:00 +0200
+
 privacyidea-venv (2.23.5-1) jessie; urgency=medium
 
   Fixes:

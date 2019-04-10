@@ -1,4 +1,4 @@
-Version 3.0, 2019-03-xx
+Version 3.0, 2019-04-10
 
   Features:
   * Add Push Token that receives a Firebase push notification and allows login
