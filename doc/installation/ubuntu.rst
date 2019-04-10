@@ -38,11 +38,15 @@ Download the signing key::
 
    wget https://lancelot.netknights.it/NetKnights-Release.asc
 
-Check the fingerprint of the key::
+On Ubuntu 16.04 check the fingerprint of the key::
 
    gpg --with-fingerprint NetKnights-Release.asc
 
-It should look like this::
+On 18.04 you need to run::
+
+   gpg --dry-run --import --with-fingerprint NetKnights-Release.asc
+
+The fingerprint of the key is::
 
    pub 4096R/AE250082 2017-05-16 NetKnights GmbH <release@netknights.it>
    Key fingerprint = 0940 4ABB EDB3 586D EDE4 AD22 00F7 0D62 AE25 0082
@@ -68,7 +72,7 @@ Upgrading privacyIDEA to 3.0
 
 If you want to upgrade your privacyIDEA on Ubuntu to privacyIDEA 3.0,
 you need to add a new repository configuration as described in 
-:ref:`_add_ubuntu_repository`.
+:ref:`add_ubuntu_repository`.
 
 Now you can simply run::
 
