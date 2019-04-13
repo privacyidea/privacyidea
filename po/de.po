@@ -601,6 +601,10 @@ msgstr "PIN lokal verifizieren"
 msgid "Check with OTP PIN."
 msgstr "OTP PIN und OTP Wert prüfen."
 
+#: privacyidea/static/components/login/views/login.html:68
+msgid "Choose a realm..."
+msgstr "Realm auswählen..."
+
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
 msgstr "Standard-Realm zurücksetzen"
@@ -1656,7 +1660,7 @@ msgstr "Logbuch"
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:29
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:76
+#: privacyidea/static/components/login/views/login.html:77
 msgid "Log In"
 msgstr "Anmelden"
 
@@ -2008,8 +2012,8 @@ msgstr "Parameter"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:26
-#: privacyidea/static/components/login/views/login.html:69
-#: privacyidea/static/components/login/views/login.html:73
+#: privacyidea/static/components/login/views/login.html:70
+#: privacyidea/static/components/login/views/login.html:74
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -2366,7 +2370,7 @@ msgstr "Erforderliche Realms"
 msgid "Reset Failcounter"
 msgstr "Fehlerzähler zurücksetzen "
 
-#: privacyidea/static/components/login/views/login.html:81
+#: privacyidea/static/components/login/views/login.html:82
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -2931,7 +2935,7 @@ msgstr ""
 "einscannen. So können Sie das Smartphone zu einem Authentisierungs-Token "
 "umwandeln."
 
-#: privacyidea/static/components/login/views/login.html:91
+#: privacyidea/static/components/login/views/login.html:92
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
