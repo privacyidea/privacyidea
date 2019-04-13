@@ -7,11 +7,11 @@ How to mitigate brute force and lock tokens
 
 For each failed authentication attempt privacyIDEA will increase a fail
 counter of a token. If the maximum allowed fail counter is reached,
-authentication with this token is not possible anymore.
+authentication with this token is not possible anymore. The token get a timestamp
+mark, when the maximum fail counter was reached.
 Starting with version 2.20 the administrator can define a timeout in minutes.
-The the last failed authentication is more than these specified minutes ago,
-a successful authentication will reset the fail counter and access will be
-granted.
+If this timestamp is more than these specified minutes ago,
+an authentication attempt with a correct PIN will reset the fail counter.
 See :ref:`clear_failcounter`.
 
 The failcounter avoids brute force attacks which guess passwords or OTP values.

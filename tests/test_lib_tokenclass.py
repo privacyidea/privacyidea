@@ -834,14 +834,14 @@ class TokenBaseTestCase(MyTestCase):
                            datetime.timedelta(minutes=3)).strftime(DATE_FORMAT)
         token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
 
-        r = token_obj.check_failcount()
+        r = token_obj.check_reset_failcount()
         # the fail is only 3 minutes ago, so we will not reset and check will
         #  be false
         self.assertFalse(r)
 
         # Set the timeout to a shorter value
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 2)
-        r = token_obj.check_failcount()
+        r = token_obj.check_reset_failcount()
         # The fail is longer ago.
         self.assertTrue(r)
 
