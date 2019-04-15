@@ -62,8 +62,9 @@ class UserCacheTestCase(MyTestCase):
                                "type.fileName": "string",
                                "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
-        rid = set_realm(realm=self.realm1, resolvers=[self.resolvername1])
-        self.assertTrue(rid > 0, rid)
+        added, failed = set_realm(realm=self.realm1, resolvers=[self.resolvername1])
+        self.assertTrue(len(added) > 0, added)
+        self.assertEqual(len(failed), 0)
 
     def _delete_realm(self):
         delete_realm(self.realm1)

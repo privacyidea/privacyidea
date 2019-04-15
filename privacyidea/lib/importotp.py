@@ -51,16 +51,17 @@ import re
 import binascii
 import base64
 import cgi
-from privacyidea.lib.utils import modhex_decode
-from privacyidea.lib.utils import modhex_encode
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+from privacyidea.lib.utils import (modhex_decode, modhex_encode,
+                                   hexlify_and_unicode, to_unicode, to_utf8)
 from privacyidea.lib.config import get_token_class
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
-from Crypto.Cipher import AES
 from bs4 import BeautifulSoup
 import traceback
-from passlib.utils.pbkdf2 import pbkdf2
-from privacyidea.lib.utils import to_utf8
+from passlib.crypto.digest import pbkdf2_hmac
 import gnupg
 
 import logging
@@ -76,8 +77,10 @@ def _create_static_password(key_hex):
     '''
     msg_hex = "000000000000ffffffffffffffff0f2e"
     msg_bin = binascii.unhexlify(msg_hex)
-    aes = AES.new(binascii.unhexlify(key_hex), AES.MODE_ECB)
-    password_bin = aes.encrypt(msg_bin)
+    cipher = Cipher(algorithms.AES(binascii.unhexlify(key_hex)),
+                    modes.ECB(), default_backend())
+    encryptor = cipher.encryptor()
+    password_bin = encryptor.update(msg_bin) + encryptor.finalize()
     password = modhex_encode(password_bin)
 
     return password
@@ -131,7 +134,7 @@ def parseOATHcsv(csv):
 
     csv_array = csv.split('\n')
 
-    m = re.match("^#\s*version:\s*(\d+)", csv_array[0])
+    m = re.match(r"^#\s*version:\s*(\d+)", csv_array[0])
     if m:
         version = m.group(1)
         log.debug("the file is version {0}.".format(version))
@@ -427,8 +430,8 @@ def derive_key(xml, password):
     salt = keymeth.find("salt").text.strip()
     keylength = keymeth.find("keylength").text.strip()
     rounds = keymeth.find("iterationcount").text.strip()
-    r = pbkdf2(to_utf8(password), base64.b64decode(salt), int(rounds),
-               int(keylength))
+    r = pbkdf2_hmac('sha1', to_utf8(password), base64.b64decode(salt),
+                    rounds=int(rounds), keylen=int(keylength))
     return binascii.hexlify(r)
 
 
@@ -489,7 +492,7 @@ def parsePSKCdata(xml_data,
         try:
             if key.data.secret.plainvalue:
                 secret = key.data.secret.plainvalue.string
-                token["otpkey"] = binascii.hexlify(base64.b64decode(secret))
+                token["otpkey"] = hexlify_and_unicode(base64.b64decode(secret))
             elif key.data.secret.encryptedvalue:
                 encryptionmethod = key.data.secret.encryptedvalue.encryptionmethod
                 enc_algorithm = encryptionmethod["algorithm"].split("#")[-1]
@@ -500,9 +503,11 @@ def parsePSKCdata(xml_data,
                 enc_data = enc_data.strip()
                 secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
                 if token["type"].lower() in ["hotp", "totp"]:
-                    token["otpkey"] = binascii.hexlify(secret)
+                    token["otpkey"] = hexlify_and_unicode(secret)
+                elif token["type"].lower() in ["pw"]:
+                    token["otpkey"] = to_unicode(secret)
                 else:
-                    token["otpkey"] = secret
+                    token["otpkey"] = to_unicode(secret)
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
@@ -556,9 +561,15 @@ class GPGImport(object):
 
     def decrypt(self, input_data):
         """
-        Decrypts the input data with one of the private keys
-        :param input_data:
-        :return:
+        Decrypts the input data with one of the private keys.
+
+        Since this functionality is only used for decrypting import lists, the
+        decrypted data is assumed to be of type text und thus converted to unicode.
+
+        :param input_data: The data to decrypt
+        :type input_data: str or bytes
+        :return: The decrypted input_data
+        :rtype: str
         """
         decrypted = self.gpg.decrypt(message=input_data)
 
@@ -567,7 +578,7 @@ class GPGImport(object):
                 decrypted.status, decrypted.stderr))
             raise Exception(decrypted.stderr)
 
-        return decrypted.data
+        return to_unicode(decrypted.data)
 
 
 def export_pskc(tokenobj_list, psk=None):
@@ -614,7 +625,8 @@ def export_pskc(tokenobj_list, psk=None):
         type = tokenobj.type.lower()
         issuer = "privacyIDEA"
         try:
-            manufacturer = tokenobj.token.description.encode("ascii")
+            manufacturer = tokenobj.token.description.encode("ascii", "replace")
+            manufacturer = to_unicode(manufacturer)
         except UnicodeEncodeError:
             manufacturer = "deleted during export"
         serial = tokenobj.token.serial
@@ -631,6 +643,8 @@ def export_pskc(tokenobj_list, psk=None):
         try:
             if tokenobj.type.lower() in ["totp", "hotp"]:
                 encrypted_otpkey = aes_encrypt_b64(psk, binascii.unhexlify(otpkey))
+            elif tokenobj.type.lower() in ["pw"]:
+                encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
         except TypeError:
@@ -683,5 +697,7 @@ def export_pskc(tokenobj_list, psk=None):
             number_of_exported_tokens += 1
         except Exception as e:
             log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
+            tb = traceback.format_exc()
+            log.debug(tb)
 
-    return binascii.hexlify(psk), number_of_exported_tokens, soup
+    return hexlify_and_unicode(psk), number_of_exported_tokens, soup

@@ -1,0 +1,156 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#  2018-11-14 Friedrich Weber <friedrich.weber@netknights.it>
+#             Add a job queue
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Heavily based on huey_consumer.py, which is licensed as follows.
+#
+# Copyright (c) 2017 Charles Leifer
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
+from __future__ import print_function
+import os
+import sys
+
+import copy
+import logging
+from flask import _app_ctx_stack
+from huey.consumer_options import ConsumerConfig, option
+from huey.consumer_options import OptionParserHandler
+
+from privacyidea.app import create_app, PI_LOGGING_CONFIG
+from privacyidea.lib.queue import get_job_queue, has_job_queue
+from privacyidea.lib.queues.huey_queue import HueyQueue
+
+DEFAULT_LOGFILE = "privacyidea-queue.log"
+
+
+class CustomOptionParserHandler(OptionParserHandler):
+    def get_logging_options(self):
+        """
+        overrides parent method: only supplies ``-l``, not ``-v`` or ``-q``.
+        """
+        return (
+            # -l
+            option('logfile', metavar='FILE'),
+        )
+
+    def get_option_parser(self):
+        """
+        overrides parent method: modifies the usage string to not include ``path.to.huey_instance``.
+        """
+        parser = OptionParserHandler.get_option_parser(self)
+        parser.set_usage('Usage: %prog [options]')
+        return parser
+
+
+def make_push_app_context(app):
+    """
+    Create a huey pre-execute hook that pushes a new app context before executing any job.
+    """
+    def func(task):
+        ctx = app.app_context()
+        ctx.push()
+    return func
+
+
+def pop_app_context(task, ret, exc):
+    """
+    huey post-execute hook that pops the top element of the app context stack.
+    """
+    ctx = _app_ctx_stack.top
+    ctx.pop()
+
+
+def make_logging_config(logfile, loglevel):
+    config = copy.deepcopy(PI_LOGGING_CONFIG)
+    config["handlers"]["file"]["filename"] = logfile
+    config["handlers"]["file"]["level"] = loglevel
+    config["loggers"]["privacyidea"]["level"] = loglevel
+    config["loggers"]["huey"] = {
+        "handlers": ["file"],
+        "qualname": "huey",
+        "level": loglevel,
+    }
+    return config
+
+
+def consumer_main():
+    app = create_app(config_name='production', silent=True)
+
+    with app.app_context():
+        queue = get_job_queue()
+        if not isinstance(queue, HueyQueue):
+            raise RuntimeError("{!r} is not a HueyQueue".format(queue))
+
+    parser_handler = CustomOptionParserHandler()
+    parser = parser_handler.get_option_parser()
+    options, args = parser.parse_args()
+
+    options = {k: v for k, v in options.__dict__.items()
+               if v is not None}
+    config = ConsumerConfig(**options)
+    config.validate()
+    # setup logging:
+    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    # If the file does not exist, we reconfigure logging.
+    if os.path.isfile(log_config_file):
+        # If PI_LOGCONFIG points to an existing file, the user is responsible for configuring
+        # huey logging in the logconfig file. In this case, we do nothing, because logging
+        # has already been set up by ``create_app``.
+        # But we ensure that the user hasn't passed ``-l``
+        if config.logfile is not None:
+            sys.stderr.write("-l is unsupported if PI_LOGCONFIG is used. Exiting.\n")
+            sys.exit(1)
+        print(u"Using logging configuration from {!r}".format(log_config_file))
+    else:
+        # If a logfile was given, we write to that logfile. If not, we write to ``privacyidea-queue.log``.
+        if config.logfile is not None:
+            logfile = config.logfile
+        else:
+            logfile = DEFAULT_LOGFILE
+        loglevel = app.config.get("PI_LOGLEVEL", logging.INFO)
+        log_config = make_logging_config(logfile, loglevel)
+        logging.config.dictConfig(log_config)
+        print(u"Logging to {!r}".format(logfile))
+
+    queue.huey.register_pre_execute('push_app_context', make_push_app_context(app))
+    queue.huey.register_post_execute('pop_app_context', pop_app_context)
+
+    consumer = queue.huey.create_consumer(**config.values)
+    consumer.run()
+
+
+if __name__ == '__main__':
+    consumer_main()

@@ -27,18 +27,14 @@ This is the library with base functions for privacyIDEA.
 This module is tested in tests/test_lib_utils.py
 """
 import six
-import logging
+import logging; log = logging.getLogger(__name__)
 from importlib import import_module
-
-log = logging.getLogger(__name__)
 import binascii
 import base64
 import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
 from io import BytesIO
-from privacyidea.lib.crypto import urandom, geturandom
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 import string
 import re
 from datetime import timedelta, datetime
@@ -48,24 +44,16 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
-import os
+import threading
+import pkg_resources
+import time
 
-try:
-    import bcrypt
-    _bcrypt_hashpw = bcrypt.hashpw
-except ImportError:  # pragma: no cover
-    _bcrypt_hashpw = None
-
-# On App Engine, this function is not available.
-if hasattr(os, 'getpid'):
-    _pid = os.getpid()
-else:  # pragma: no cover
-    # Fake PID
-    _pid = urandom.randint(0, 100000)
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
 ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -141,14 +129,15 @@ def to_utf8(password):
     """
     Convert a password to utf8
     :param password: A password that should be converted to utf8
-    :type password: unicode
+    :type password: str or bytes
     :return: a utf8 encoded password
+    :rtype: bytes
     """
     if password:
         try:
             # If the password exists in unicode we encode it to utf-8
-            password = password.encode(ENCODING)
-        except UnicodeDecodeError as exx:
+            password = password.encode('utf8')
+        except (UnicodeDecodeError, AttributeError) as _exx:
             # In case the password is already an encoded string, we fail to
             # encode it again...
             log.debug("Failed to convert password: {0!s}".format(type(password)))
@@ -157,31 +146,106 @@ def to_utf8(password):
 
 def to_unicode(s, encoding="utf-8"):
     """
-    converts a value to unicode if it is of type str.
+    Converts the string s to unicode if it is of type bytes.
     
-    :param s: the str to decode
-    :type s: bytes, str
+    :param s: the string to convert
+    :type s: bytes or str
     :param encoding: the encoding to use (default utf8)
     :type encoding: str
     :return: unicode string
     :rtype: str
     """
-    if type(s) == str:
-        s = s.decode(encoding)
+    if isinstance(s, six.text_type):
+        return s
+    elif isinstance(s, bytes):
+        return s.decode(encoding)
+    # TODO: warning? Exception?
     return s
 
 
-def generate_otpkey(key_size=20):
+def to_bytes(s):
     """
-    generates the HMAC key of keysize. Should be 20 or 32
-    The key is returned as a hexlified string
-    :param key_size: The size of the key to generate
-    :type key_size: int
-    :return: hexlified key
-    :rtype: string
+    Converts the string s to a unicode encoded byte string
+
+    :param s: string to convert
+    :type s: str or bytes
+    :return: the converted byte string
+    :rtype: bytes
     """
-    log.debug("generating key of size {0!s}".format(key_size))
-    return binascii.hexlify(geturandom(key_size))
+    if isinstance(s, bytes):
+        return s
+    elif isinstance(s, six.text_type):
+        return s.encode('utf8')
+    # TODO: warning? Exception?
+    return s
+
+
+def to_byte_string(value):
+    """
+    Convert the given value to a byte string. If it is not a string type,
+    convert it to a string first.
+
+    :param value: the value to convert
+    :type value: str or bytes or int
+    :return: byte string representing the value
+    :rtype: bytes
+    """
+    if not isinstance(value, (bytes, six.string_types)):
+        value = str(value)
+    value = to_bytes(value)
+    return value
+
+
+def hexlify_and_unicode(s):
+    """
+
+    :param s: string to hexlify
+    :type s: bytes or str
+    :return: hexlified string converted to unicode
+    :rtype: str
+    """
+
+    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    return res
+
+
+def b32encode_and_unicode(s):
+    """
+    Base32-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base32-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b32encode(to_bytes(s)))
+    return res
+
+
+def b64encode_and_unicode(s):
+    """
+    Base64-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.b64encode(to_bytes(s)))
+    return res
+
+
+def urlsafe_b64encode_and_unicode(s):
+    """
+    Base64-urlsafe-encode a str (which is first encoded to UTF-8)
+    or a byte string and return the result as a str.
+    :param s: str or bytes to base32-encode
+    :type s: str or bytes
+    :return: base64-encoded string converted to unicode
+    :rtype: str
+    """
+    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    return res
 
 
 def create_png(data, alt=None):
@@ -200,14 +264,14 @@ def create_img(data, width=0, alt=None, raw=False):
     create the qr image data
 
     :param data: input data that will be munched into the qrcode
-    :type data: string
+    :type data: str
     :param width: image width in pixel
     :type width: int
     :param raw: If set to false, the data will be interpreted as text and a
         QR code will be generated.
 
     :return: image data to be used in an <img> tag
-    :rtype:  string
+    :rtype:  str
     """
     width_str = ''
     alt_str = ''
@@ -216,7 +280,7 @@ def create_img(data, width=0, alt=None, raw=False):
         o_data = create_png(data, alt=alt)
     else:
         o_data = data
-    data_uri = binascii.b2a_base64(o_data).replace(b"\n", b"")
+    data_uri = b64encode_and_unicode(o_data)
 
     if width != 0:
         width_str = " width={0:d} ".format((int(width)))
@@ -225,22 +289,9 @@ def create_img(data, width=0, alt=None, raw=False):
         val = urlencode({'alt': alt})
         alt_str = " alt={0!r} ".format((val[len('alt='):]))
 
-    ret_img = 'data:image/png;base64,{0!s}'.format(data_uri)
-
+    ret_img = u'data:image/png;base64,{0!s}'.format(data_uri)
     return ret_img
 
-
-def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
-    """
-    Generate a random password of the specified lenght of the given characters
-
-    :param size: The length of the password
-    :param characters: The characters the password may consist of
-    :return: password
-    :rtype: basestring
-    """
-    return ''.join(urandom.choice(characters) for _x in range(size))
 
 #
 # Modhex calculations for Yubikey
@@ -253,21 +304,39 @@ mod2HexDict = dict(zip(modHexChars, hexHexChars))
 
 
 def modhex_encode(s):
-    return ''.join(
-        [hex2ModDict[c] for c in binascii.hexlify(s).decode('utf8')]
-    )
-# end def modhex_encode
+    """
+
+    :param s: string to encode
+    :type s: bytes or str
+    :return: the encoded string
+    :rtype: str
+    """
+    return u''.join([hex2ModDict[c] for c in hexlify_and_unicode(s)])
 
 
 def modhex_decode(m):
+    """
+
+    :param m: string to decode
+    :type m: str
+    :return: decoded data
+    :rtype: bytes
+    """
     return binascii.unhexlify(''.join([mod2HexDict[c] for c in m]))
-# end def modhex_decode
 
 
 def checksum(msg):
+    """
+    Calculate CRC-16 (16-bit ISO 13239 1st complement) checksum.
+    (see Yubikey-Manual - Chapter 6: Implementation details)
+
+    :param msg: input byte string for crc calculation
+    :type msg: bytes
+    :return: crc16 checksum of msg
+    :rtype: int
+    """
     crc = 0xffff
-    for i in range(0, len(msg) // 2):
-        b = int(msg[i * 2] + msg[(i * 2) + 1], 16)
+    for b in six.iterbytes(msg):
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -285,10 +354,11 @@ def decode_base32check(encoded_data, always_upper=True):
 
     Raise a ParameterError if the encoded payload is malformed.
     :param encoded_data: The base32 encoded data.
-    :type encoded_data: basestring
+    :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
     :type always_upper: bool
     :return: hex-encoded payload
+    :rtype: str
     """
     # First, add the padding to have a multiple of 8 bytes
     if always_upper:
@@ -300,7 +370,9 @@ def decode_base32check(encoded_data, always_upper=True):
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
-    except TypeError:
+    except (TypeError, binascii.Error, OverflowError):
+        # Python 3.6.7: b32decode throws a binascii.Error when the padding is wrong
+        # Python 3.6.3 (travis): b32decode throws an OverflowError when the padding is wrong
         raise ParameterError("Malformed base32check data: Invalid base32")
     # Extract checksum and payload
     if len(decoded_data) < 4:
@@ -309,7 +381,7 @@ def decode_base32check(encoded_data, always_upper=True):
     payload_hash = hashlib.sha1(payload).digest()
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
-    return binascii.hexlify(payload)
+    return hexlify_and_unicode(payload)
 
 
 def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
@@ -379,8 +451,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data!"
+                        " {0!s}".format(params))
 
     return data, types, desc
 
@@ -442,15 +514,16 @@ def parse_date(date_string):
     if date_string.startswith("+"):
         # We are using an offset
         delta_specifier = date_string[-1].lower()
+        if delta_specifier not in 'mhd':
+            return datetime.now(tzlocal()) + timedelta()
         delta_amount = int(date_string[1:-1])
         if delta_specifier == "m":
             td = timedelta(minutes=delta_amount)
         elif delta_specifier == "h":
             td = timedelta(hours=delta_amount)
-        elif delta_specifier == "d":
-            td = timedelta(days=delta_amount)
         else:
-            td = timedelta()
+            # delta_specifier must be "d"
+            td = timedelta(days=delta_amount)
         return datetime.now(tzlocal()) + td
 
     # check 2016/12/23, 23.12.2016 and including hour and minutes.
@@ -460,7 +533,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match("^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -542,23 +615,50 @@ def get_client_ip(request, proxy_settings):
     :return:
     """
     client_ip = request.remote_addr
-    # We only do the mapping for authentication requests!
+
+    # Set the possible mapped IP to X-Forwarded-For
+    mapped_ip = request.access_route[0] if request.access_route else None
+
+    # We only do the client-param mapping for authentication requests!
     if not hasattr(request, "blueprint") or \
                     request.blueprint in ["validate_blueprint", "ttype_blueprint",
                                           "jwtauth"]:
         # The "client" parameter should overrule a possible X-Forwarded-For
-        mapped_ip = request.all_data.get("client") or \
-                    (request.access_route[0] if request.access_route else None)
-        if mapped_ip:
-            if proxy_settings and check_proxy(client_ip, mapped_ip,
-                                              proxy_settings):
-                client_ip = mapped_ip
-            elif mapped_ip != client_ip:
-                log.warning("Proxy {client_ip} not allowed to set IP to "
-                            "{mapped_ip}.".format(client_ip=client_ip,
-                                                  mapped_ip=mapped_ip))
+        mapped_ip = request.all_data.get("client") or mapped_ip
+
+    if mapped_ip:
+        if proxy_settings and check_proxy(client_ip, mapped_ip,
+                                          proxy_settings):
+            client_ip = mapped_ip
+        elif mapped_ip != client_ip:
+            log.warning("Proxy {client_ip} not allowed to set IP to "
+                        "{mapped_ip}.".format(client_ip=client_ip,
+                                              mapped_ip=mapped_ip))
 
     return client_ip
+
+
+def check_ip_in_policy(client_ip, policy):
+    """
+    This checks, if the given client IP is contained in a list like
+
+       ["10.0.0.2", "192.168.2.1/24", "!192.168.2.12", "-172.16.200.1"]
+
+    :param client_ip: The IP address in question
+    :param policy: A string of single IP addresses, negated IP address and subnets.
+    :return: tuple of (found, excluded)
+    """
+    client_found = False
+    client_excluded = False
+    for ipdef in policy:
+        if ipdef[0] in ['-', '!']:
+            # exclude the client?
+            if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
+                log.debug(u"the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
+                client_excluded = True
+        elif IPAddress(client_ip) in IPNetwork(ipdef):
+            client_found = True
+    return client_found, client_excluded
 
 
 def reload_db(timestamp, db_ts):
@@ -766,7 +866,7 @@ def parse_timedelta(s):
     minutes = 0
     hours = 0
     days = 0
-    m = re.match("\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
+    m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
         raise Exception("Unsupported timedelta")
@@ -803,8 +903,8 @@ def parse_time_offset_from_now(s):
     :return: tuple of modified string and timedelta 
     """
     td = timedelta()
-    m1 = re.search("(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
-    m2 = re.search("(^.*{now})([+-]\d+[smhd])(.*$)", s)
+    m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
+    m2 = re.search(r"(^.*{now})([+-]\d+[smhd])(.*$)", s)
     m = m1 or m2
     if m:
         s1 = m.group(1)
@@ -1012,3 +1112,53 @@ def get_module_class(package_name, class_name, check_method=None):
         raise NameError(u"Class AttributeError: {0}.{1} "
                         u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
     return klass
+
+
+def get_version_number():
+    """
+    returns the privacyidea version
+    """
+    version = "unknown"
+    try:
+        version = pkg_resources.get_distribution("privacyidea").version
+    except:
+        log.info("We are not able to determine the privacyidea version number.")
+    return version
+
+
+def get_version():
+    """
+    This returns the version, that is displayed in the WebUI and
+    self service portal.
+    """
+    version = get_version_number()
+    return "privacyIDEA {0!s}".format(version)
+
+
+def prepare_result(obj, rid=1, details=None):
+    """
+    This is used to preformat the dictionary to be sent by the API response
+
+    :param obj: simple result object like dict, sting or list
+    :type obj: dict or list or string/unicode
+    :param rid: id value, for future versions
+    :type rid: int
+    :param details: optional parameter, which allows to provide more detail
+    :type  details: None or simple type like dict, list or string/unicode
+
+    :return: json rendered sting result
+    :rtype: string
+    """
+    res = {"jsonrpc": "2.0",
+           "result": {"status": True,
+                      "value": obj},
+           "version": get_version(),
+           "versionnumber": get_version_number(),
+           "id": rid,
+           "time": time.time()}
+
+    if details is not None and len(details) > 0:
+        details["threadid"] = threading.current_thread().ident
+        res["detail"] = details
+
+    return res

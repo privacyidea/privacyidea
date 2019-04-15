@@ -28,9 +28,11 @@ The code is tested in test_lib_tokens_registration.py.
 """
 
 import logging
+
+from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import generate_password
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 
@@ -169,5 +171,5 @@ class RegistrationTokenClass(PasswordTokenClass):
         params = params or {}
         secretHOtp = self.token.get_otpkey()
         registrationcode = secretHOtp.getKey()
-        response_detail["registrationcode"] = registrationcode
+        response_detail["registrationcode"] = to_unicode(registrationcode)
         return response_detail

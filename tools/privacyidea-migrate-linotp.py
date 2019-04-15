@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  2018-02-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -14,6 +14,16 @@ You only need an export of the LinOTP "Token" table.
 Please configure below, how your database URIs look like,
 what should be migrated and what should be mapped.
 """
+from __future__ import print_function
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import select
+from sqlalchemy import (Table, MetaData, Column, Integer, Unicode, Boolean,
+                        UnicodeText)
+import sys
+import json
+import getopt
+
 # ========================================================
 # You need to change the following values:
 #  1. set the database URIs for LinOTP and privacyIDEA
@@ -40,7 +50,7 @@ MIGRATE = {"tokens": True,
 This assigns the token to the new resolver
 
 The "resolver" key maps LinOTP-resolvers to privacyIDEA-Resolvers. This value is
-rewritten in the token tabel.
+rewritten in the token table.
 
 The "realm" key puts tokens in the privacyIDEA-Resolver into this privacyIDEA realm.
 
@@ -66,10 +76,6 @@ INSERT_CHUNK_SIZE = 10000
 # Do not change anything after this line
 # ============================================================================
 #
-from sqlalchemy import Table, MetaData, Column
-from sqlalchemy import Integer, Unicode, Boolean, UnicodeText
-import sys
-import getopt
 
 
 def migrate():
@@ -115,12 +121,12 @@ def migrate():
                         Column("rollout_state", Unicode(10), default=u''))
 
     tokeninfo_table = Table("tokeninfo", metadata,
-                      Column("id", Integer, primary_key=True),
-                      Column("Key", Unicode(255), nullable=False),
-                      Column("Value", UnicodeText(), default=u''),
-                      Column("Type", Unicode(100), default=u''),
-                      Column("Description", Unicode(2000), default=u''),
-                      Column("token_id", Integer()))
+                            Column("id", Integer, primary_key=True),
+                            Column("Key", Unicode(255), nullable=False),
+                            Column("Value", UnicodeText(), default=u''),
+                            Column("Type", Unicode(100), default=u''),
+                            Column("Description", Unicode(2000), default=u''),
+                            Column("token_id", Integer()))
 
     tokenrealm_table = Table("tokenrealm", metadata,
                              Column("id", Integer(), primary_key=True),
@@ -157,7 +163,7 @@ def migrate():
     # LinOTP table definitions
     #
 
-    linotp_token_table = Table('Token',metadata,
+    linotp_token_table = Table('Token', metadata,
                                Column('LinOtpTokenId', Integer(),
                                       primary_key=True, nullable=False),
                                Column(
@@ -210,12 +216,6 @@ def migrate():
                                    'LinOtpSyncWindow', Integer(), default=1000)
                                )
 
-
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.sql import select
-    import json
-
     linotp_engine = create_engine(LINOTP_URI)
     privacyidea_engine = create_engine(PRIVACYIDEA_URI)
 
@@ -230,10 +230,10 @@ def migrate():
         Split **values** into chunks of size **chunk_size** and insert them sequentially.
         """
         values_length = len(values)
-        for i in xrange(0, values_length, chunk_size):
-            print 'Insert records {} to {} ...'.format(i, min(i + chunk_size, values_length) - 1)
-            conn.execute(table.insert(), values[i:i+chunk_size])
-
+        for chunk in range(0, values_length, chunk_size):
+            print('Insert records {} to {} ...'.format(chunk, min(chunk + chunk_size,
+                                                                  values_length) - 1))
+            conn.execute(table.insert(), values[chunk:chunk+chunk_size])
 
     # Values to be imported
     token_values = []
@@ -268,9 +268,9 @@ def migrate():
             i = i + 1
             print("processing token #{1!s}: {0!s}".format(r["LinOtpTokenSerialnumber"], i))
             # Adapt type
-            type = r["LinOtpTokenType"]
-            if type.lower() == "hmac":
-                type = "HOTP"
+            ttype = r["LinOtpTokenType"]
+            if ttype.lower() == "hmac":
+                ttype = "HOTP"
             # Adapt resolver
             linotp_resolver = r["LinOtpIdResClass"].split(".")[-1]
 
@@ -291,7 +291,8 @@ def migrate():
                 # Map the LinOTP-Resolver to the PI-Resolver
                 resolver = ASSIGNMENTS.get("resolver").get(linotp_resolver)
                 if not resolver and linotp_resolver:
-                    warnings.append(u"No mapping defined for the LinOTP resolver: {0!s}".format(linotp_resolver))
+                    warnings.append(u"No mapping defined for the LinOTP "
+                                    u"resolver: {0!s}".format(linotp_resolver))
                 resolver_type = resolver_type
                 user_id = r['LinOtpUserid']
             else:
@@ -304,7 +305,7 @@ def migrate():
             token_values.append(dict(
                 description=r["LinOtpTokenDesc"],
                 serial=r["LinOtpTokenSerialnumber"],
-                tokentype=type,
+                tokentype=ttype,
                 user_pin=user_pin,
                 user_pin_iv=user_pin_iv,
                 so_pin=r['LinOtpTokenPinSO'],
@@ -325,14 +326,14 @@ def migrate():
 
             if MIGRATE.get("tokeninfo") and ti:
                 # Add tokeninfo for this token
-                for k, v in ti.iteritems():
+                for (k, v) in ti.items():
                     tokeninfo_values.append(dict(
                         serial=r["LinOtpTokenSerialnumber"],
                         Key=k, Value=v,
                         token_id=r["LinOtpTokenId"]))
                     print(" +--- processing tokeninfo {0!s}".format(k))
 
-        print
+        print()
         print("Adding {} tokens...".format(len(token_values)))
         insert_chunks(conn_pi, token_table, token_values)
 
@@ -365,10 +366,8 @@ def migrate():
             if resolver:
                 realm = ASSIGNMENTS.get("realm").get(resolver)
                 realm_id = realm_id_map.get(realm)
-                print("Assigning token {} for resolver {} to realm_id {} (realm {})".format(token_id,
-                                                                                            resolver,
-                                                                                            realm_id,
-                                                                                            realm))
+                print("Assigning token {} for resolver {} to realm_id {} "
+                      "(realm {})".format(token_id, resolver, realm_id, realm))
                 tokenrealm_values.append(dict(token_id=token_id,
                                               realm_id=realm_id))
             else:

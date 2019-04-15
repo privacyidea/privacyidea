@@ -155,9 +155,8 @@ Sat, Sun.
 from .log import log_with
 from configobj import ConfigObj
 
-from netaddr import IPAddress
-from netaddr import IPNetwork
 from operator import itemgetter
+import six
 import logging
 from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
                       save_config_timestamp)
@@ -169,7 +168,8 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import check_time_in_range, reload_db, fetch_one_resource
+from privacyidea.lib.utils import (check_time_in_range, reload_db,
+                                   fetch_one_resource, is_true, check_ip_in_policy)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -214,6 +214,8 @@ class ACTION(object):
     CACONNECTORDELETE = "caconnectordelete"
     CHALLENGERESPONSE = "challenge_response"
     CHALLENGETEXT = "challenge_text"
+    CHALLENGETEXT_HEADER = "challenge_text_header"
+    CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
@@ -316,6 +318,7 @@ class ACTION(object):
     CUSTOM_BASELINE = "custom_baseline"
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
+    LOGIN_TEXT = "login_text"
 
 
 class GROUP(object):
@@ -577,17 +580,8 @@ class PolicyClass(with_metaclass(Singleton, object)):
         if client is not None:
             new_policies = []
             for policy in reduced_policies:
-                client_found = False
-                client_excluded = False
-                for polclient in policy.get("client"):
-                    if polclient[0] in ['-', '!']:
-                        # exclude the client?
-                        if IPAddress(client) in IPNetwork(polclient[1:]):
-                            log.debug("the client %s is excluded by %s in "
-                                      "policy %s" % (client, polclient, policy))
-                            client_excluded = True
-                    elif IPAddress(client) in IPNetwork(polclient):
-                        client_found = True
+                log.debug(u"checking client ip in policy {0!s}.".format(policy))
+                client_found, client_excluded = check_ip_in_policy(client, policy.get("client"))
                 if client_found and not client_excluded:
                     # The client was contained in the defined subnets and was
                     #  not excluded
@@ -836,6 +830,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
+            filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.get_policies(scope=role, client=client,
@@ -844,10 +839,11 @@ class PolicyClass(with_metaclass(Singleton, object)):
                                              active=True,
                                              action="enroll"+tokentype.upper(),
                                              adminrealm=admin_realm)
-                if not typepols:
+                if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
-                    del(enroll_types[tokentype])
+                    filtered_enroll_types[tokentype] = enroll_types[tokentype]
+            enroll_types = filtered_enroll_types
 
         return enroll_types
 
@@ -885,14 +881,12 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :return: The database ID od the the policy
     :rtype: int
     """
-    if type(active) in [str, unicode]:
-        active = active.lower() == "true"
-    if type(priority) in [str, unicode]:
+    active = is_true(active)
+    if isinstance(priority, six.string_types):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
-    if type(check_all_resolvers) in [str, unicode]:
-        check_all_resolvers = check_all_resolvers.lower() == "true"
+    check_all_resolvers = is_true(check_all_resolvers)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -1588,6 +1582,16 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Use an alternate challenge text for telling the '
                           'user to enter an OTP value.')
             },
+            ACTION.CHALLENGETEXT_HEADER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text precedes the list"
+                          " of the challenge texts.")
+            },
+            ACTION.CHALLENGETEXT_FOOTER: {
+                'type': 'str',
+                'desc': _("If there are several different challenges, this text follows the list"
+                          " of the challenge texts.")
+            },
             ACTION.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -1701,6 +1705,10 @@ def get_static_policy_definitions(scope=None):
                     'to the Web UI. Defaults to "userstore"'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
+            },
+            ACTION.LOGIN_TEXT: {
+                'type': 'str',
+                'desc': _('An alternative text to display on the WebUI login dialog instead of "Please sign in".')
             },
             ACTION.SEARCH_ON_ENTER: {
                 'type': 'bool',

@@ -1,26 +1,33 @@
-# Authors in version 2.23
-  
-Friedrich Weber <friedrich.weber@netknights.it>
+# Authors in version 3.0
+
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
-Andreas Böhler <dev@aboehler.at>
-Pascal   F u k s <pascal@foxit.pro>
-Ivan Stojmirov <stojmir@gmail.com>
-Rene Arends <renini@gmail.com>
-mjbecker
+Friedrich Weber <friedrich.weber@netknights.it>
+Pavol Ipoth <pavol.ipoth@telekom.com>
+Micha Preußer <mail@mpreusser.de>
+M. Maraun <maraun@web.de>
+Ryan Williams <rdw@appnexus.com>
+Josef Wuebbels <josef.wuebbels@t-systems.com>
+Viktor Blesak <viktor.blesak@pan-net.eu>
+Voyrx
+blsho
+renini <r.r.arends@hr.nl>
 
 # Overall authors
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 Friedrich Weber <friedrich.weber@netknights.it>
-Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
 Paul Lettich <paul.lettich@netknights.it>
+Friedrich Weber <fred@reichbier.de>
+Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
+Pavol Ipoth <pavol.ipoth@telekom.com>
+jh23453 <jochen@jochen.org>
 Jochen Hein <jochen@jochen.org>
 jalr <mail@jalr.de>
-yurlov-alexander
+yurlov-alexander <34740879+yurlov-alexander@users.noreply.github.com>
 Andreas Böhler <dev@aboehler.at>
 Dio <diogenes.santos-de-jesus@telekom.sk>
-Cornelius Kölbel <corny@cornelinux.de>
+Micha Preußer <mail@mpreusser.de>
 Quoc Doan <quoc@axiadids.com>
 Bernd Nicklas <nicklas@hrz.uni-marburg.de>
 Cody <cody@quantifiedcode.com>
@@ -33,7 +40,9 @@ Sebastian Plattner <sebastian.plattner@ruag.com>
 blinkiz <github@post.niklashagman.se>
 quoc-axiadids <quoc@axiadids.com>
 Lavesh Gupta <lavesh@Laveshs-MacBook-Pro.local>
+M. Maraun <maraun@web.de>
 Pascal   F u k s <pascal@foxit.pro>
+Ryan Williams <rdw@appnexus.com>
 Salvo Rapisarda <sdrapisarda@gmail.com>
 AreRR <r.r.arends@hr.nl>
 Daniel Hoffend <dh@dotlan.net>
@@ -41,17 +50,21 @@ Diogenes S. Jesus <splashx@users.noreply.github.com>
 Fabian Cernota <cernota@chamaeleon.de>
 Ivan Stojmirov <stojmir@gmail.com>
 Jean-Guilhem Rouel <jean-gui@w3.org>
+Josef Wuebbels <josef.wuebbels@t-systems.com>
 Kleber Rocha <klinux@gmail.com>
 Marc Welp <m.welp@phytec.de>
-Pavol Ipoth <pavol.ipoth@telekom.com>
+Rene Arends <renini@gmail.com>
 René van Dorst <opensource@vdorst.com>
 Richard Franks <git@rf152.co.uk>
 Taylor Chase <Taylor.Chase@tempustechnologies.com>
+Viktor Blesak <viktor.blesak@pan-net.eu>
+Voyrx <48721490+Voyrx@users.noreply.github.com>
+blsho <38477631+blsho@users.noreply.github.com>
 frennkie <mail@rhab.de>
 m7four <manfred.schmid@it-schmid.com>
-Rene Arends <renini@gmail.com>
-mjbecker
+mjbecker <39964311+mjbecker@users.noreply.github.com>
 quynh-axiadids <quynh@axiadids.com>
+renini <r.r.arends@hr.nl>
 root <root@Svr040.livingston.nhsscotland.com>
 
 Created using

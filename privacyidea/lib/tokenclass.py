@@ -83,24 +83,22 @@ from .error import (TokenAdminError,
                     ParameterError)
 
 from ..api.lib.utils import getParam
-from .utils import generate_otpkey, is_true, decode_base32check
 from .log import log_with
 
 from .config import (get_from_config, get_prepend_pin)
-from .utils import create_img
 from .user import (User,
                    get_username)
-from ..models import (TokenRealm, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, Challenge, cleanup_challenges)
 from .challenge import get_challenges
-from .crypto import encryptPassword
-from .crypto import decryptPassword
+from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
+                                    generate_otpkey)
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
-from .utils import parse_timedelta, parse_legacy_time
-from .policy import ACTION
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import (is_true, decode_base32check,
+                                   to_unicode, create_img, parse_timedelta,
+                                   parse_legacy_time)
 from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 
@@ -181,7 +179,7 @@ class TokenClass(object):
         return self.token.tokentype
 
     @check_token_locked
-    def set_user(self, user, report=None):
+    def add_user(self, user, report=None):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
         
@@ -190,9 +188,9 @@ class TokenClass(object):
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
-        self.token.resolver = resolvername
-        self.token.resolver_type = resolvertype
-        self.token.user_id = uid
+        r = TokenOwner(token_id=self.token.id,
+                       user_id=uid, resolver=resolvername,
+                       realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 
@@ -203,32 +201,27 @@ class TokenClass(object):
         If the token has no owner assigned, we return None
 
         :return: The owner of the token
-        :rtype: User object
+        :rtype: User object or None
         """
         user_object = None
-        realmname = ""
-        if self.token.user_id and self.token.resolver:
-            username = get_username(self.token.user_id, self.token.resolver)
-            rlist = self.token.realm_list
-            # FIXME: What if the token has more than one realm assigned?
-            if len(rlist) == 1:
-                realmname = rlist[0].realm.name
-            if username and realmname:
-                user_object = User(login=username,
-                                   resolver=self.token.resolver,
-                                   realm=realmname)
+        tokenowner = self.token.first_owner
+        if tokenowner:
+            username = get_username(tokenowner.user_id, tokenowner.resolver)
+            user_object = User(login=username,
+                               resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name)
         return user_object
 
     def is_orphaned(self):
         """
-        Return True is the token is orphaned. 
+        Return True if the token is orphaned.
         
         An orphaned token means, that it has a user assigned, but the user 
         does not exist in the user store (anymore)
         :return: True / False
         """
         orphaned = False
-        if self.token.user_id:
+        if self.token.first_owner:
             try:
                 if not self.user or not self.user.login:
                     # The token is assigned, but the username does not resolve
@@ -252,20 +245,6 @@ class TokenClass(object):
         user_displayname = u"{0!s} {1!s}".format(user_info.get("givenname", "."),
                                       user_info.get("surname", "."))
         return user_identifier, user_displayname
-
-    @check_token_locked
-    def set_user_identifiers(self, uid, resolvername, resolvertype):
-        """
-        (was setUid)
-        Set the user attributes of a token
-        :param uid: The user id in the user source
-        :param resolvername: The name of the resolver
-        :param resolvertype: The type of the resolver
-        :return: None
-        """
-        self.token.resolver = resolvername
-        self.token.resolver_type = resolvertype
-        self.token.user_id = uid
 
     @check_token_locked
     def reset(self):
@@ -550,7 +529,7 @@ class TokenClass(object):
             if self.token.rollout_state == "clientwait":
                 # If we have otpkey and the token is in the enrollment-state
                 # generate the new key
-                server_component = self.token.get_otpkey().getKey()
+                server_component = to_unicode(self.token.get_otpkey().getKey())
                 client_component = otpKey
                 otpKey = self.generate_symmetric_key(server_component,
                                                      client_component,
@@ -661,7 +640,8 @@ class TokenClass(object):
         return self.token.maxfail
 
     def get_user_id(self):
-        return self.token.user_id
+        tokenowner = self.token.first_owner
+        return "" if not tokenowner else tokenowner.user_id
 
     def set_realms(self, realms, add=False):
         """
@@ -1228,12 +1208,17 @@ class TokenClass(object):
         """
         # The database field is always an integer
         otplen = self.token.otplen
+        log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
         if get_prepend_pin():
             pin = passw[0:-otplen]
             otpval = passw[-otplen:]
+            log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                        len(otpval)))
         else:
             pin = passw[otplen:]
             otpval = passw[0:otplen]
+            log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                       len(otpval)))
 
         return True, pin, otpval
 
@@ -1619,13 +1604,15 @@ class TokenClass(object):
         The basic key-generation is simply replacing the last n byte of the 
         server component with bytes of the client component.
                 
-        :param server_component: The component usually generated by privacyIDEA
-        :type server_component: hex string
+        :param server_component: The component usually generated by privacyIDEA.
+                                 This is a hex string
+        :type server_component: str
         :param client_component: The component usually generated by the
-            client (e.g. smartphone)
-        :type server_component: hex string
+            client (e.g. smartphone). This is a hex string.
+        :type client_component: str
         :param options: 
         :return: the new generated key as hex string
+        :rtype: str
         """
         if len(server_component) <= len(client_component):
             raise Exception("The server component must be longer than the "

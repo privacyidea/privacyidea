@@ -1,9 +1,9 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 
 HOSTSFILE = "tests/testdata/hosts"
 
-class APIMachineResolverTestCase(MyTestCase):
+class APIMachineResolverTestCase(MyApiTestCase):
 
     # Resolvers
     def test_01_pretestresolver(self):

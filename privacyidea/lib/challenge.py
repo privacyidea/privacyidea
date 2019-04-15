@@ -27,19 +27,20 @@ The method is tested in test_lib_challenges
 """
 
 import logging
+import six
 from .log import log_with
 from ..models import Challenge
-from datetime import datetime
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def get_challenges(serial=None, transaction_id=None):
+def get_challenges(serial=None, transaction_id=None, challenge=None):
     """
     This returns a list of database challenge objects.
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
+    :param challenge: The challenge to be found
     :return: list of objects
     """
     sql_query = Challenge.query
@@ -52,6 +53,10 @@ def get_challenges(serial=None, transaction_id=None):
         # filter for transaction id
         sql_query = sql_query.filter(Challenge.transaction_id ==
                                      transaction_id)
+
+    if challenge is not None:
+        # filter for this challenge
+        sql_query = sql_query.filter(Challenge.challenge == challenge)
 
     challenges = sql_query.all()
     return challenges
@@ -84,7 +89,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     sql_query = _create_challenge_query(serial=serial,
                                         transaction_id=transaction_id)
 
-    if type(sortby) in [str, unicode]:
+    if isinstance(sortby, six.string_types):
         # convert the string to a Challenge column
         cols = Challenge.__table__.columns
         sortby = cols.get(sortby)

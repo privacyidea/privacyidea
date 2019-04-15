@@ -47,6 +47,7 @@ This code is tested in tests/test_lib_user.py
 
 import logging
 import traceback
+import six
 
 from .error import UserError
 from ..api.lib.utils import (getParam,
@@ -61,13 +62,11 @@ from .realm import (get_realms,
 from .config import get_from_config
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 
-
-ENCODING = 'utf-8'
-
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
+@six.python_2_unicode_compatible
 class User(object):
     """
     The user has the attributes
@@ -140,24 +139,18 @@ class User(object):
     def __hash__(self):
         return hash((type(self), self.login, self.resolver, self.realm))
 
-    def __unicode__(self):
+    def __str__(self):
         ret = u"<empty user>"
         if not self.is_empty():
-            login = self.login
-            if not isinstance(login, unicode):
-                login = login.decode(ENCODING)
             # Realm and resolver should always be ASCII
             conf = u''
             if self.resolver:
                 conf = u'.{0!s}'.format(self.resolver)
-            ret = u'<{0!s}{1!s}@{2!s}>'.format(login, conf, self.realm)
+            ret = u'<{0!s}{1!s}@{2!s}>'.format(self.login, conf, self.realm)
         return ret
 
-    def __str__(self):
-        return unicode(self).encode('utf-8')
-
     def __repr__(self):
-        ret = ('User(login={0!r}, realm={1!r}, resolver={2!r})'.format(
+        ret = (u"User(login={0!r}, realm={1!r}, resolver={2!r})".format(
             self.login, self.realm, self.resolver))
         return ret
 
@@ -241,9 +234,8 @@ class User(object):
                 # We do not need to search other resolvers!
                 return True
             else:
-                log.debug("user %r not found"
-                          " in resolver %r" % (self.login,
-                                               resolvername))
+                log.debug("user {0!r} not found"
+                          " in resolver {1!r}".format(self.login, resolvername))
                 return False
 
     def get_user_identifiers(self):
@@ -363,8 +355,6 @@ class User(object):
         try:
             log.info("User %r from realm %r tries to "
                      "authenticate" % (self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can verify the
             # password
@@ -427,16 +417,15 @@ class User(object):
             attributes["password"] = password
         success = False
         try:
-            log.info("User info for user {0!r}@{1!r} about to be updated.".format(self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
+            log.info("User info for user {0!r}@{1!r} about to "
+                     "be updated.".format(self.login, self.realm))
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can update the
             # user
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
                 if not y.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!s} is not updateable.".format(y))
+                    log.warning("The resolver {0!r} is not updateable.".format(y))
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
                     if y.update_user(uid, attributes):
@@ -453,7 +442,7 @@ class User(object):
             elif not res:  # pragma: no cover
                 log.error("The user {0!r} exists in NO resolver.".format(self))
         except UserError as exx:  # pragma: no cover
-            log.error("Error while trying to verify the username: {0!s}".format(exx))
+            log.error("Error while trying to verify the username: {0!r}".format(exx))
 
         return success
 
@@ -468,14 +457,12 @@ class User(object):
         success = False
         try:
             log.info("User {0!r}@{1!r} about to be deleted.".format(self.login, self.realm))
-            if type(self.login) != unicode:
-                self.login = self.login.decode(ENCODING)
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can delete it
             if len(res) == 1:
                 y = get_resolver_object(self.resolver)
                 if not y.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!s} is not updateable.".format(y))
+                    log.warning("The resolver {0!r} is not updateable.".format(y))
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
                     if y.delete_user(uid):
@@ -674,24 +661,6 @@ def get_user_list(param=None, user=None):
             continue
 
     return users
-
-
-@log_with(log)
-def get_user_info(userid, resolvername):
-    """
-    return the detailed information for a user in a resolver
-    
-    :param userid: The id of the user in a resolver
-    :type userid: string
-    :param resolvername: The name of the resolver
-    :return: a dict with all the userinformation
-    :rtype: dict
-    """
-    userInfo = {}
-    if userid:
-        y = get_resolver_object(resolvername)
-        userInfo = y.getUserInfo(userid)
-    return userInfo
 
 
 @log_with(log)

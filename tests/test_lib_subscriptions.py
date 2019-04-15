@@ -106,3 +106,21 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # Now we have three users with tokens, subscription will fail
         self.assertRaises(SubscriptionError, check_subscription,
                           "demo_application")
+
+        # try to save some broken subscriptions
+        sub1 = SUBSCRIPTION1.copy()
+        sub1['date_from'] = '1234'
+        with self.assertRaises(ValueError):
+            save_subscription(sub1)
+
+        sub1 = SUBSCRIPTION1.copy()
+        sub1['by_name'] = 'unknown vendor'
+        with self.assertRaisesRegexp(SubscriptionError, 'Verifying the signature '
+                                                        'of your subscription'):
+            save_subscription(sub1)
+
+        sub1 = SUBSCRIPTION1.copy()
+        sub1['signature'] = str(int(sub1['signature']) + 1)
+        with self.assertRaisesRegexp(SubscriptionError, 'Signature of your '
+                                                        'subscription does not'):
+            save_subscription(sub1)

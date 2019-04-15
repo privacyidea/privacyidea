@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 from ..models import AuthCache, db
 from sqlalchemy import and_
 from privacyidea.lib.crypto import hash
@@ -57,6 +56,21 @@ def delete_from_cache(username, realm, resolver, password):
                                        AuthCache.resolver == resolver,
                                        AuthCache.authentication ==
                                        _hash_password(password)).delete()
+    db.session.commit()
+    return r
+
+
+def cleanup(minutes):
+    """
+    Will delete all authcache entries, where last_auth column is older than
+    the given minutes.
+
+    :param minutes: Age of the last_authentication in minutes
+    :type minutes: int
+    :return:
+    """
+    cleanuptime = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes)
+    r = db.session.query(AuthCache).filter(AuthCache.last_auth < cleanuptime).delete()
     db.session.commit()
     return r
 

@@ -27,6 +27,7 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
+import six
 from .lib.utils import (send_error, get_all_params)
 from ..lib.user import get_user_from_param
 import logging
@@ -247,7 +248,17 @@ def after_request(response):
 @postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
-        g.audit_object.log({"info": error.message})
+        message = ''
+
+        if hasattr(error, 'message'):
+            message = error.message
+
+        if hasattr(error, 'details'):
+            if error.details:
+                if 'message' in error.details:
+                    message = u'{}|{}'.format(message, error.details['message'])
+
+        g.audit_object.log({"info": message})
         g.audit_object.finalize_log()
     return send_error(error.message,
                       error_code=error.id,
@@ -322,9 +333,9 @@ def privacyidea_error(error):
     These are not that critical exceptions.
     """
     if "audit_object" in g:
-        g.audit_object.log({"info": unicode(error)})
+        g.audit_object.log({"info": six.text_type(error)})
         g.audit_object.finalize_log()
-    return send_error(unicode(error), error_code=error.id), 400
+    return send_error(six.text_type(error), error_code=error.id), 400
 
 
 # other errors
@@ -350,6 +361,6 @@ def internal_error(error):
     occurs.
     """
     if "audit_object" in g:
-        g.audit_object.log({"info": unicode(error)})
+        g.audit_object.log({"info": six.text_type(error)})
         g.audit_object.finalize_log()
-    return send_error(unicode(error), error_code=-500), 500
+    return send_error(six.text_type(error), error_code=-500), 500

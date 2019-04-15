@@ -70,11 +70,9 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION
 from privacyidea.lib.auth import get_db_admins
-from privacyidea.lib.error import HSMException
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
-import base64
-import binascii
+from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
 
 
 log = logging.getLogger(__name__)
@@ -322,7 +320,7 @@ def rand():
     on the client side. E.g. the command line client when initializing the
     yubikey or the WebUI when creating Client API keys for the yubikey.
 
-    In this case, privacyIDEA can created the random data/keys.
+    In this case, privacyIDEA can create the random data/keys.
 
     :queryparam len: The length of a symmetric key (byte)
     :queryparam encode: The type of encoding. Can be "hex" or "b64".
@@ -334,9 +332,9 @@ def rand():
 
     r = geturandom(length=length)
     if encode == "b64":
-        res = base64.b64encode(r)
+        res = b64encode_and_unicode(r)
     else:
-        res = binascii.hexlify(r)
+        res = hexlify_and_unicode(r)
 
     g.audit_object.log({'success': res})
     return send_result(res)

@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2019-03-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Change POST to GET request
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Generate the nonce on an HSM
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -50,13 +52,16 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
-import os
-import binascii
+from six.moves.urllib.parse import urlencode
 from privacyidea.lib import _
 
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
 YUBICO_URL = "https://api.yubico.com/wsapi/2.0/verify"
+# The Yubico API requires GET requests. See: https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
+# Previously we used POST requests.
+# If you want to have the old behaviour, you can set this to True
+DO_YUBICO_POST = False
 DEFAULT_CLIENT_ID = 20771
 DEFAULT_API_KEY = "9iE9DRkPHQDJbAFFC31/dum5I54="
 
@@ -135,6 +140,7 @@ class YubicoTokenClass(TokenClass):
         apiId = get_from_config("yubico.id", DEFAULT_CLIENT_ID)
         apiKey = get_from_config("yubico.secret", DEFAULT_API_KEY)
         yubico_url = get_from_config("yubico.url", YUBICO_URL)
+        do_yubico_post = get_from_config("yubico.do_post", DO_YUBICO_POST)
 
         if apiKey == DEFAULT_API_KEY or apiId == DEFAULT_CLIENT_ID:
             log.warning("Usage of default apiKey or apiId not recommended!")
@@ -158,8 +164,12 @@ class YubicoTokenClass(TokenClass):
             p["h"] = yubico_api_signature(p, apiKey)
 
             try:
-                r = requests.post(yubico_url,
-                                  data=p)
+                if do_yubico_post:
+                    r = requests.post(yubico_url,
+                                      data=p)
+                else:
+                    r = requests.get(yubico_url,
+                                     params=urlencode(p))
 
                 if r.status_code == requests.codes.ok:
                     response = r.text

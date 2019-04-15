@@ -1,5 +1,5 @@
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.models import (Token)
@@ -14,7 +14,7 @@ from privacyidea.lib.error import (ParameterError, UserError)
 PWFILE = "tests/testdata/passwords"
 
 
-class TtypeAPITestCase(MyTestCase):
+class TtypeAPITestCase(MyApiTestCase):
     """
     test the api.ttype endpoints
     """
@@ -24,9 +24,7 @@ class TtypeAPITestCase(MyTestCase):
 
     def test_01_tiqr(self):
         init_token({"serial": "TIQR1",
-                    "type": "tiqr",
-                    "user": "cornelius",
-                    "realm": self.realm1})
+                    "type": "tiqr"}, User("cornelius", self.realm1))
         with self.app.test_request_context('/ttype/tiqr',
                                            method='POST',
                                            data={"action": "metadata",

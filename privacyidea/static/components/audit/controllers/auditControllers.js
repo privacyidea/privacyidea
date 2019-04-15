@@ -25,11 +25,13 @@
 myApp.controller("auditController", function (AuditFactory, $scope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location) {
+                                              $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
+    var df = gettextCatalog.getString("yyyy-MM-dd HH:mm:ss");
+    $scope.dateFormat = df;
 
     // If the state is called with some filter values
     if ($stateParams.serial) {

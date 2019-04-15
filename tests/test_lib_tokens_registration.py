@@ -11,7 +11,7 @@ from privacyidea.models import Token
 class RegistrationTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
-    # set_user, get_user, reset, set_user_identifiers
+    # add_user, get_user, reset, set_user_identifiers
     
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="registration")

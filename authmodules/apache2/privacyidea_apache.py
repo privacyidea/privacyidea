@@ -38,10 +38,9 @@ The code is tested in test_mod_apache.py
 import redis
 import requests
 import syslog
-import ConfigParser
 import traceback
 import passlib.hash
-
+from six.moves import configparser
 
 OK = True
 UNAUTHORIZED = False
@@ -49,24 +48,24 @@ CONFIG_FILE = "/etc/privacyidea/apache.conf"
 DEFAULT_PRIVACYIDEA = "https://localhost"
 DEFAULT_SSLVERIFY = False
 DEFAULT_REDIS = "localhost"
+DEFAULT_TIMEOUT = 300
 ROUNDS = 2342
 SALT_SIZE = 10
 
 
 def check_password(environ, username, password):
-    PRIVACYIDEA, REDIS, SSLVERIFY = _get_config()
+    PRIVACYIDEA, REDIS, SSLVERIFY, TIMEOUT = _get_config()
     syslog.syslog(syslog.LOG_DEBUG, "Authentication with {0!s}, {1!s}, {2!s}".format(
         PRIVACYIDEA, REDIS, SSLVERIFY))
     r_value = UNAUTHORIZED
     rd = redis.Redis(REDIS)
-    seconds = 300  # 5 minutes timeout
 
     # check, if the user already exists in the database.
     key = _generate_key(username, environ)
     value = rd.get(key)
     if value and passlib.hash.pbkdf2_sha512.verify(password, value):
         # update the timeout
-        rd.setex(key, _generate_digest(password), seconds)
+        rd.setex(key, _generate_digest(password), TIMEOUT)
         r_value = OK
 
     else:
@@ -87,7 +86,7 @@ def check_password(environ, username, password):
                 syslog.syslog(syslog.LOG_DEBUG, "{0!s}".format(traceback.format_exc()))
 
             if json_response.get("result", {}).get("value"):
-                rd.setex(key, _generate_digest(password), seconds)
+                rd.setex(key, _generate_digest(password), TIMEOUT)
                 r_value = OK
         else:
             syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
@@ -120,14 +119,16 @@ def _get_config():
         redis = IPAddress:Port
         privacyidea = https://hostname/path
         sslverify = True | filename to CA bundle
+        timeout = seconds
     :return: The configuration
     :rtype: dict
     """
-    config_file = ConfigParser.ConfigParser()
+    config_file = configparser.ConfigParser()
     config_file.read(CONFIG_FILE)
     PRIVACYIDEA = DEFAULT_PRIVACYIDEA
     SSLVERIFY = DEFAULT_SSLVERIFY
     REDIS = DEFAULT_REDIS
+    TIMEOUT = DEFAULT_TIMEOUT
     try:
         PRIVACYIDEA = config_file.get("DEFAULT", "privacyidea") or DEFAULT_PRIVACYIDEA
         SSLVERIFY = config_file.get("DEFAULT", "sslverify") or DEFAULT_SSLVERIFY
@@ -136,8 +137,10 @@ def _get_config():
         elif SSLVERIFY == "True":
             SSLVERIFY = True
         REDIS = config_file.get("DEFAULT", "redis") or DEFAULT_REDIS
-    except ConfigParser.NoOptionError as exx:
+        TIMEOUT = config_file.get("DEFAULT", "timeout") or DEFAULT_TIMEOUT
+        TIMEOUT = int(TIMEOUT)
+    except configparser.NoOptionError as exx:
         syslog.syslog(syslog.LOG_ERR, "{0!s}".format(exx))
     syslog.syslog(syslog.LOG_DEBUG, "Reading configuration {0!s}, {1!s}, {2!s}".format(
         PRIVACYIDEA, REDIS, SSLVERIFY))
-    return PRIVACYIDEA, REDIS, SSLVERIFY
+    return PRIVACYIDEA, REDIS, SSLVERIFY, TIMEOUT

@@ -32,6 +32,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       CENSORED)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
+from privacyidea.lib.utils import to_bytes, to_unicode
 
 
 objectGUIDs = [
@@ -513,6 +514,14 @@ class SQLResolverTestCase(MyTestCase):
 
         # rid1 != rid4, because the pool size has changed
         self.assertNotEqual(rid1, rid4)
+    
+    def test_08_noninteger_userid(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        y.map["userid"] = "username"
+        user = "cornelius"
+        user_info = y.getUserInfo(user)
+        self.assertEqual(user_info.get("id"), "cornelius")      
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()
@@ -823,8 +832,10 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        res = y.checkPass(user_id, u"bobpwééé")
+        pw = u"bobpwééé"
+        res = y.checkPass(user_id, pw)
         self.assertTrue(res)
+        self.assertTrue(y.checkPass(user_id, pw.encode('utf8')))
 
         res = y.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
@@ -1465,7 +1476,11 @@ class LDAPResolverTestCase(MyTestCase):
         # resolver but alice will be found in the other resolver.
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        # We add :789 to the LDAPURI in order to force a unused resolver ID.
+        # If we omit it, the test occasionally fails because of leftover
+        # cache entries from a resolver with the same resolver ID
+        # that was instantiated in the test_api_validate.py tests.
+        y.loadConfig({'LDAPURI': 'ldap://localhost:789',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1598,7 +1613,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel".encode("utf-8")
+        user = u"kölbel".encode('utf8')
         user_id = y.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
@@ -1615,13 +1630,13 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         uinfo = y.getUserInfo(user_id)
-        self.assertEqual(uinfo.get("username"), user)
+        self.assertEqual(to_bytes(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
-        self.assertTrue(username == "kölbel", username)
+        self.assertTrue(to_bytes(username) == user, username)
 
         res = y.checkPass(user_id, "mySecret")
         self.assertTrue(res)
@@ -1669,13 +1684,13 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         uinfo = y.getUserInfo(user_id)
-        self.assertEqual(uinfo.get("username"), user.encode("utf-8"))
+        self.assertEqual(to_unicode(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
         username = y.getUsername(user_id)
-        self.assertTrue(username == user.encode("utf-8"), username)
+        self.assertTrue(to_unicode(username) == user, username)
 
         res = y.checkPass(user_id, "mySecret")
         self.assertTrue(res)
@@ -1954,7 +1969,7 @@ class LDAPResolverTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
             manager_id = y.getUserId('manager')
-        self.assertEqual(CACHE[y.getResolverId()]['getUserId'].keys(), ['manager'])
+        self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate
     def test_33_cache_disabled(self):

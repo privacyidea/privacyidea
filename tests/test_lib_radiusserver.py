@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This test file tests the lib/radiusserver.py
 """
@@ -99,3 +100,13 @@ class RADIUSServerTestCase(MyTestCase):
                           identifier="myserver", server="1.2.3.4",
                           user="user", password="password",
                           secret="x" * 96, dictionary=DICT_FILE)
+
+    @radiusmock.activate
+    def test_07_non_ascii(self):
+        radiusmock.setdata(success=True)
+        r = add_radius(identifier="myserver", server="1.2.3.4",
+                       secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        radius = get_radius("myserver")
+        r = RADIUSServer.request(radius.config, u"nönäscii", u"passwörd")
+        self.assertEqual(r, True)

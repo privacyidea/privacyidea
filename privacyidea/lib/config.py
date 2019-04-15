@@ -129,7 +129,7 @@ class ConfigClass(with_metaclass(Singleton, object)):
                     data = {}
                     for rconf in resolver.config_list:
                         if rconf.Type == "password":
-                            value = decryptPassword(rconf.Value, convert_unicode=True)
+                            value = decryptPassword(rconf.Value)
                             resolverdef["censor_keys"].append(rconf.Key)
                         else:
                             value = rconf.Value
@@ -182,7 +182,7 @@ class ConfigClass(with_metaclass(Singleton, object)):
         for ckey, cvalue in reduced_config.items():
             if cvalue.get("Type") == "password":
                 # decrypt the password
-                r_config[ckey] = decryptPassword(cvalue.get("Value"), convert_unicode=True)
+                r_config[ckey] = decryptPassword(cvalue.get("Value"))
             else:
                 r_config[ckey] = cvalue.get("Value")
 
@@ -630,6 +630,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.questionnairetoken")
     module_list.add("privacyidea.lib.tokens.vascotoken")
     module_list.add("privacyidea.lib.tokens.tantoken")
+    module_list.add("privacyidea.lib.tokens.pushtoken")
 
     #module_list.add(".tokens.tagespassworttoken")
     #module_list.add(".tokens.vascotoken")

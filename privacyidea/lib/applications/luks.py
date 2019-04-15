@@ -19,11 +19,11 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from privacyidea.lib.applications import MachineApplicationBase
+from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.token import get_tokens
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.crypto import geturandom
-import binascii
-from privacyidea.lib.token import get_tokens
 
 
 class MachineApplication(MachineApplicationBase):
@@ -62,7 +62,7 @@ class MachineApplication(MachineApplicationBase):
                 # the hmac module calculates different responses for 64 bytes.
                 if challenge is None:
                     challenge = geturandom(32)
-                    challenge_hex = binascii.hexlify(challenge)
+                    challenge_hex = hexlify_and_unicode(challenge)
                 else:
                     challenge_hex = challenge
                 ret["challenge"] = challenge_hex

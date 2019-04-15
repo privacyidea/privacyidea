@@ -5,7 +5,7 @@ to fetch machine information and to attach token to machines
 import passlib
 
 from privacyidea.lib.user import User
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.machine import attach_token
@@ -30,7 +30,7 @@ SSHKEY = "ssh-rsa " \
 OTPKEY = "3132333435363738393031323334353637383930"
 
 
-class APIMachinesTestCase(MyTestCase):
+class APIMachinesTestCase(MyApiTestCase):
 
     serial2 = "ser1"
     serial3 = "UBOM12345"
@@ -113,8 +113,9 @@ class APIMachinesTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertGreaterEqual(result["value"]["added"], 1, result)
+            self.assertEquals(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -133,8 +134,9 @@ class APIMachinesTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertEquals(result["value"]["added"], 0, result)
+            self.assertGreaterEqual(result['value']['deleted'], 1, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -155,8 +157,9 @@ class APIMachinesTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertEquals(result["status"], True, result)
+            self.assertGreaterEqual(result["value"]["added"], 1, result)
+            self.assertEquals(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]

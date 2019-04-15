@@ -24,6 +24,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from privacyidea.lib.queue import has_job_queue
+
 __doc__ = """This is the starting point for the single web application.
 Other html code is dynamically loaded via angularJS and located in
 /static/views/...
@@ -38,6 +40,8 @@ from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.config import get_from_config, SYSCONF
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -81,8 +85,8 @@ def single_page_application():
     # Depending on displaying the realm dropdown, we fill realms or not.
     policy_object = PolicyClass()
     realms = ""
-    client_ip = request.access_route[0] if request.access_route else \
-        request.remote_addr
+    client_ip = get_client_ip(request,
+                              get_from_config(SYSCONF.OVERRIDECLIENT))
     realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
                                                 scope=SCOPE.WEBUI,
                                                 client=client_ip,
@@ -134,6 +138,17 @@ def single_page_application():
     else:
         customization_baseline_file = "templates/baseline.html"
 
+    login_text = policy_object.get_action_values(
+        allow_white_space_in_action=True,
+        action=ACTION.LOGIN_TEXT,
+        scope=SCOPE.WEBUI,
+        client=client_ip, unique=True
+    )
+    if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
+        login_text = list(login_text)[0]
+    else:
+        login_text = ""
+
     return render_template("index.html", instance=instance,
                            backendUrl=backend_url,
                            browser_lang=browser_lang,
@@ -141,10 +156,12 @@ def single_page_application():
                            theme=theme,
                            password_reset=password_reset,
                            hsm_ready=hsm_ready,
+                           has_job_queue=str(has_job_queue()),
                            customization=customization,
                            customization_menu_file=customization_menu_file,
                            customization_baseline_file=customization_baseline_file,
                            realms=realms,
                            external_links=external_links,
+                           login_text=login_text,
                            logo=logo)
 

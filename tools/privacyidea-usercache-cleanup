@@ -39,13 +39,12 @@ This script deletes expired entries from the user cache.
 """
 __version__ = "0.1"
 
-from privacyidea.lib.token import get_tokens, remove_token, enable_token
-from privacyidea.lib.policy import ACTION
 from privacyidea.app import create_app
 from flask_script import Manager
 
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
+
 
 def _get_expired_entries():
     """
@@ -54,15 +53,18 @@ def _get_expired_entries():
     filter_condition = create_filter(expired=True)
     return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).all()
 
+
 LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
 
 
 @manager.command
 def delete(noaction=False):
     """
-    Delete all cache entries that are considered expired according to the UserCacheExpiration configuration setting.
+    Delete all cache entries that are considered expired according to the
+    UserCacheExpiration configuration setting.
     If the user cache is disabled, no entries are deleted.
-    If '--noaction' is passed, expired cache entries are listed, but not actually deleted.
+    If '--noaction' is passed, expired cache entries are listed, but not
+    actually deleted.
     """
     if not get_cache_time():
         print('User cache is disabled, not doing anything.')
@@ -87,6 +89,6 @@ def delete(noaction=False):
         else:
             print("'--noaction' was passed, not doing anything.")
 
+
 if __name__ == '__main__':
     manager.run()
-

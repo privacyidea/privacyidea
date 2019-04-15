@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
@@ -9,36 +9,33 @@
 #  contact:  http://www.linotp.org
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
-'''
+"""
   Description:  This tool generates lines for a PasswdIdResolver user file
-                 
+
   Dependencies: ./.
-                
 
-'''
+"""
 
-VERSION = '0.1'
-import os, sys
+import sys
 from getopt import getopt, GetoptError
 import getpass
 import crypt
-import pprint
 import random
 
+__version__ = '0.1'
 
 
 def usage():
-    print  '''
+    print('''
     Parameter:
     -u username
     -i uid (numerical)
     -p password
     -d description
-    '''
+    ''')
 
 
 def main():
-
     user = ""
     password = ""
     uid = ""
@@ -48,18 +45,18 @@ def main():
         opts, args = getopt(sys.argv[1:], "u:i:p:hd:", ["help"])
 
     except GetoptError:
-        print "There is an error in your parameter syntax:"
+        print("There is an error in your parameter syntax:")
         usage()
         sys.exit(1)
 
     for opt, arg in opts:
-        if opt in ('-u'):
+        if opt in ('-u',):
             user = arg
-        elif opt in ('-i'):
+        elif opt in ('-i',):
             uid = arg
-        elif opt in ('-p'):
+        elif opt in ('-p',):
             password = arg
-        elif opt in ('-d'):
+        elif opt in ('-d',):
             description = arg
         elif opt in ('-h', '--help'):
             usage()
@@ -77,12 +74,13 @@ def main():
     home = ""
     shell = ""
     print("%s:%s:%s:%s:%s:%s:%s" % (user,
-                encryptedPW,
-                uid,
-                gid,
-                description,
-                home,
-                shell))
+                                    encryptedPW,
+                                    uid,
+                                    gid,
+                                    description,
+                                    home,
+                                    shell))
+
 
 if __name__ == '__main__':
     main()

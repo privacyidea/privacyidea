@@ -12,6 +12,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.importotp import export_pskc
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 import binascii
 
 
@@ -565,7 +566,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["PW001"].get("type"), "pw")
         self.assertEqual(tokens["PW001"].get("otplen"), "12")
         # The secret (password) of the pw token is "123456789012"
-        self.assertEqual(tokens["PW001"].get("otpkey"), binascii.hexlify("123456789012"))
+        self.assertEqual(tokens["PW001"].get("otpkey"), hexlify_and_unicode("123456789012"))
 
     def test_04_import_pskc_aes(self):
         encryption_key_hex = "12345678901234567890123456789012"
@@ -589,7 +590,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
         self.assertEqual(tokens["987654321"].get("otpkey"),
-                         binascii.hexlify("12345678901234567890"))
+                         hexlify_and_unicode("12345678901234567890"))
         self.assertEqual(tokens["987654321"].get("description"),
                          "TokenVendorAcme")
 
@@ -619,13 +620,13 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")
-        # unicode does not get exported
-        self.assertEqual(tokens.get("t1").get("description"), "deleted during export")
+        # unicode gets replaced
+        self.assertEqual(tokens.get("t1").get("description"), "s?me ?nic?de")
         self.assertEqual(tokens.get("t2").get("type"), "totp")
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
         # password token
-        self.assertEqual(tokens.get("t4").get("otpkey"), "lässig")
+        self.assertEqual(tokens.get("t4").get("otpkey"), u"lässig")
 
 
 class GPGTestCase(MyTestCase):
@@ -636,7 +637,7 @@ class GPGTestCase(MyTestCase):
         self.assertEqual(len(pubkeys), 1)
         self.assertTrue("2F25BAF8645350BB" in pubkeys)
 
-        r = GPG.decrypt(str(HALLO_PAYLOAD))
+        r = GPG.decrypt(HALLO_PAYLOAD)
         self.assertEqual(r, "Hallo\n")
 
         self.assertRaises(Exception, GPG.decrypt, WRONG_PAYLOAD)

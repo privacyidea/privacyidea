@@ -6,7 +6,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 from __future__ import print_function
 import json
 
-from .base import (MyTestCase, PWFILE)
+from .base import (MyApiTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
@@ -25,7 +25,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_email, auditlog_age,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
-                                           tantoken_count, sms_identifiers)
+                                           tantoken_count, sms_identifiers,
+                                           pushtoken_add_config)
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -33,7 +34,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             offline_info, sign_response,
                                             get_webui_settings,
                                             save_pin_change,
-                                            add_user_detail_to_response)
+                                            add_user_detail_to_response,
+                                            mangle_challenge_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token)
 from privacyidea.lib.user import User
@@ -70,7 +72,7 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
          "jPw== corny@schnuck"
 
 
-class PrePolicyDecoratorTestCase(MyTestCase):
+class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_token_action(self):
         g.logged_in_user = {"username": "admin1",
@@ -1313,8 +1315,65 @@ class PrePolicyDecoratorTestCase(MyTestCase):
 
         delete_policy("sms1")
 
+    def test_22_push_firebase_config(self):
+        from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+        g.logged_in_user = {"username": "user1",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {
+            "type": "push"}
+        # In this case we have no firebase config. We will raise an exception
+        self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+        # if we have a non existing firebase config, we will raise an exception
+        req.all_data = {
+            "type": "push",
+            PUSH_ACTION.FIREBASE_CONFIG: "non-existing"}
+        self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
 
-class PostPolicyDecoratorTestCase(MyTestCase):
+        # Set a policy for the firebase config to use.
+        set_policy(name="push_pol",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=some-fb-config".format(PUSH_ACTION.FIREBASE_CONFIG))
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
+        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+
+        # the request tries to inject a rogue value, but we assure sslverify=1
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push",
+            "sslverify": "rogue"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+
+        # set sslverify="0"
+        set_policy(name="push_pol2",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
+        g.policy_object = PolicyClass()
+        req.all_data = {
+            "type": "push"}
+        pushtoken_add_config(req, "init")
+        self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
+        self.assertEqual("0", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
+
+        # finally delete policy
+        delete_policy("push_pol")
+        delete_policy("push_pol2")
+
+
+class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_tokentype(self):
         # http://werkzeug.pocoo.org/docs/0.10/test/#environment-building
@@ -1849,13 +1908,31 @@ class PostPolicyDecoratorTestCase(MyTestCase):
                "id": 1}
         resp = jsonify(res)
         from privacyidea.lib.crypto import Sign
-        g.sign_object = Sign("tests/testdata/private.pem",
-                             "tests/testdata/public.pem")
+        sign_object = Sign(private_key=None,
+                           public_key=open("tests/testdata/public.pem", 'rb').read())
 
+        # check that we don't sign if 'PI_NO_RESPONSE_SIGN' is set
+        current_app.config['PI_NO_RESPONSE_SIGN'] = True
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_NO_RESPONSE_SIGN'] = False
+
+        # set a broken signing key path. The function should return without
+        # changing the response
+        orig_key_path = current_app.config['PI_AUDIT_KEY_PRIVATE']
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = '/path/does/not/exist'
+        new_response = sign_response(req, resp)
+        self.assertEqual(new_response, resp, new_response)
+        current_app.config['PI_AUDIT_KEY_PRIVATE'] = orig_key_path
+
+        # signing of API responses is the default
         new_response = sign_response(req, resp)
         jresult = json.loads(new_response.data)
         self.assertEqual(jresult.get("nonce"), "12345678")
-        self.assertEqual(jresult.get("signature"), "11355158914966210201410734667484298031497086510917116878993822963793177737963323849914979806826759273431791474575057946263651613906587629736481370983420295626001055840803201448376203681672140726404056349423937599480275853513810616624349811159346536182220806878464577429106150903913526744093300868582898892977164229848617413618851794501457802670374543399415905458325601994002527427083792164898293507308423780001137468154518279116138010266341425663850327379848131113626641510715557748879427991785684858504631545256553961505159377600982900016536629720752767147086708626971940835730555782551222922985302674756190839458609")
+        # After switching to the PSS signature scheme, each signature will be
+        # different. So we have to verify the signature through the sign object
+        sig = jresult.pop('signature')
+        self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
 
     def test_08_get_webui_settings(self):
         # Test that a machine definition will return offline hashes
@@ -2048,3 +2125,65 @@ class PostPolicyDecoratorTestCase(MyTestCase):
         # finally delete policy
         delete_policy("pol1")
         delete_policy("pol2")
+
+    def test_18_challenge_text_header(self):
+        # This looks like a validate/check request, that triggers a challenge
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       "pass": "pin"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy for the header
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:<ul>".format(ACTION.CHALLENGETEXT_HEADER))
+        # Set a policy for the footer
+        set_policy(name="pol_footer",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=Happy authenticating!".format(ACTION.CHALLENGETEXT_FOOTER))
+        g.policy_object = PolicyClass()
+
+        req.all_data = {
+            "user": "hans",
+            "pass": "pin"}
+        req.User = User()
+
+        # We do an html list
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": False},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "enter the HOTP from your email, "
+                                     "enter the HOTP from your email, "
+                                     "enter the TOTP from your SMS",
+                          "messages": ["enter the HOTP from your email",
+                                       "enter the HOTP from your email",
+                                       "enter the TOTP from your SMS"],
+                          "multi_challenge": ["chal1", "chal2", "chal3"]}}
+        resp = jsonify(res)
+
+        r = mangle_challenge_response(req, resp)
+        message = r.json.get("detail", {}).get("message")
+        self.assertEqual(message, "These are your options:<ul><li>enter the HOTP from your email</li>\n<li>enter the TOTP from your SMS</li>\nHappy authenticating!")
+
+        # We do no html list
+        set_policy(name="pol_header",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=These are your options:".format(ACTION.CHALLENGETEXT_HEADER))
+        g.policy_object = PolicyClass()
+        resp = jsonify(res)
+
+        r = mangle_challenge_response(req, resp)
+        message = r.json.get("detail", {}).get("message")
+        self.assertTrue("<ul><li>" not in message, message)
+        self.assertEqual(message, "These are your options:\nenter the HOTP from your email, enter the TOTP from your SMS\nHappy authenticating!")
+
+        delete_policy("pol_header")
+        delete_policy("pol_footer")

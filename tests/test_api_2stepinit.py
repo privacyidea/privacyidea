@@ -7,12 +7,13 @@ import time
 
 from passlib.utils.pbkdf2 import pbkdf2
 
+from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.tokens.HMAC import HmacOtp
 
 
-class TwoStepInitTestCase(MyTestCase):
+class TwoStepInitTestCase(MyApiTestCase):
     """
     test the 2stepinit process.
     
@@ -53,7 +54,7 @@ class TwoStepInitTestCase(MyTestCase):
 
         client_component = b"VRYSECRT"
         checksum = hashlib.sha1(client_component).digest()[:4]
-        base32check_client_component = base64.b32encode(checksum + client_component).strip(b"=")
+        base32check_client_component = b32encode_and_unicode(checksum + client_component).strip("=")
 
         # Try to do a 2stepinit on a second step will raise an error
         with self.app.test_request_context('/token/init',
@@ -76,7 +77,7 @@ class TwoStepInitTestCase(MyTestCase):
                                            data={"type": "hotp",
                                                  "2stepinit": "1",
                                                  "serial": serial,
-                                                 "otpkey": b"A" + base32check_client_component[1:],
+                                                 "otpkey": "A" + base32check_client_component[1:],
                                                  "otpkeyformat": "base32check"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -97,7 +98,7 @@ class TwoStepInitTestCase(MyTestCase):
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
-                         u'matching 1 tokens, Token is disabled')
+                             u'matching 1 tokens, Token is disabled')
 
         # Now doing the correct 2nd step
         with self.app.test_request_context('/token/init',

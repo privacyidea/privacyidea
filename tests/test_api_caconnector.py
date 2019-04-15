@@ -2,12 +2,12 @@
 This testcase is used to test the REST API  in api/caconnector.py
 to create, update, delete CA connectors.
 """
-from .base import MyTestCase
+from .base import MyApiTestCase
 import json
 from privacyidea.lib.caconnector import get_caconnector_list, save_caconnector
 
 
-class CAConnectorTestCase(MyTestCase):
+class CAConnectorTestCase(MyApiTestCase):
 
     def test_01_fail_without_auth(self):
         # creation fails without auth

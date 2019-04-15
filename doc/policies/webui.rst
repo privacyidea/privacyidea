@@ -202,6 +202,9 @@ to display the contents in the first step (pre) or in the second step (post).
    *pi.cfg*. This way you can put all modifications in one place apart from
    the original code.
 
+If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
+
+
 realm_dropdown
 ~~~~~~~~~~~~~~
 
@@ -235,6 +238,8 @@ search.
 
 (Since privacyIDEA 2.17)
 
+.. _webui_custom_baseline:
+
 custom_baseline
 ~~~~~~~~~~~~~~~
 
@@ -251,7 +256,11 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 .. note:: This policy is evaluated before login. So any realm or user setting will have no
    effect. But you can specify different baselines for different client IP addresses.
 
+If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
+
 (Since privacyIDEA 2.21)
+
+.. _webui_custom_menu:
 
 custom_menu
 ~~~~~~~~~~~
@@ -269,6 +278,8 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 .. note:: This policy is evaluated before login. So any realm or user setting will have no
    effect. But you can specify different menus for different client IP addresses.
 
+If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
+
 (Since privacyIDEA 2.21)
 
 hide_buttons
@@ -280,3 +291,14 @@ Buttons for actions that a user is not allowed to perform, are hidden instead of
 being disabled.
 
 (Since privacyIDEA 2.24)
+
+login_text
+~~~~~~~~~~
+
+type: str
+
+This way the text "Please sign in" on the login dialog can be changed. Since the policy can
+also depend on the IP address of the client, you can also choose different login texts depending
+on from where a user tries to log in.
+
+(Since privacyIDEA 3.0)

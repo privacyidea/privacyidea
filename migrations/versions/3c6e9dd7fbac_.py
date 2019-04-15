@@ -30,7 +30,7 @@ def upgrade():
         op.create_index(op.f('ix_clientapplication_id'), 'clientapplication', ['id'], unique=False)
         op.create_index(op.f('ix_clientapplication_ip'), 'clientapplication', ['ip'], unique=False)
     except (OperationalError, ProgrammingError, InternalError) as exx:
-        if exx.orig.message.lower().startswith("duplicate column name"):
+        if "duplicate column name" in str(exx.orig).lower():
             print("Good. Table clientapplication already exists.")
         else:
             print("Table already exists")

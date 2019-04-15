@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  privacyIDEA is a fork of LinOTP
@@ -11,30 +11,29 @@
 #  contact:  http://www.linotp.org
 #            http://www.lsexperts.de
 #            linotp@lsexperts.de
-'''
+"""
   Description:  This tool generates passwords for the sql resolver
-                 
+
   Dependencies: ./.
-                
 
-'''
 
-VERSION = '0.1'
-import os, sys
+"""
+
+import sys
 from getopt import getopt, GetoptError
 import getpass
 import crypt
-import pprint
 import random
 
+__version__ = '0.1'
 
 
 def usage():
-    print  '''
+    print('''
     Parameter:
     -u username 
     -p password
-    '''
+    ''')
 
 
 def main():
@@ -42,19 +41,18 @@ def main():
     user = ""
     password = ""
 
-
     try:
         opts, args = getopt(sys.argv[1:], "u:p:h", ["help"])
 
     except GetoptError:
-        print "There is an error in your parameter syntax:"
+        print("There is an error in your parameter syntax:")
         usage()
         sys.exit(1)
 
     for opt, arg in opts:
-        if opt in ('-u'):
+        if opt in ('-u',):
             user = arg
-        elif opt in ('-p'):
+        elif opt in ('-p',):
             password = arg
         elif opt in ('-h', '--help'):
             usage()
@@ -69,6 +67,7 @@ def main():
     encryptedPW = crypt.crypt(password, salt)
 
     print("|%s|%s|%s|" % (user, encryptedPW, salt))
+
 
 if __name__ == '__main__':
     main()

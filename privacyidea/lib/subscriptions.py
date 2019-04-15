@@ -32,20 +32,20 @@ from .log import log_with
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.crypto import Sign
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA
 import traceback
 from sqlalchemy import func
-from six import PY2
+from six import PY2, string_types
+
 
 if not PY2:
     long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
-SIGN_FORMAT = """{application}
+SIGN_FORMAT = u"""{application}
 {for_name}
 {for_address}
 {for_email}
@@ -82,10 +82,9 @@ def get_users_with_active_tokens():
     :return: Number of users
     :rtype: int
     """
-    from privacyidea.models import Token
-    sql_query = Token.query.with_entities(Token.resolver,
-                                          Token.user_id).filter(Token.active == True,
-                                                                Token.user_id != "").distinct()
+    from privacyidea.models import Token, TokenOwner
+    sql_query = TokenOwner.query.with_entities(TokenOwner.resolver, TokenOwner.user_id)
+    sql_query = sql_query.filter(Token.active == True).filter(Token.id == TokenOwner.token_id).distinct()
     return sql_query.count()
 
 
@@ -128,10 +127,10 @@ def save_subscription(subscription):
     :type subscription: dict
     :return: True in case of success
     """
-    if type(subscription.get("date_from")) == str:
+    if isinstance(subscription.get("date_from"), string_types):
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
-    if type(subscription.get("date_till")) == str:
+    if isinstance(subscription.get("date_till"), string_types):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
 
@@ -279,27 +278,25 @@ def check_signature(subscription):
     enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
-    filename = "{0!s}/{1!s}.pem".format(dirname, vendor)
-    with open(filename, "r") as file_handle:
-        public = file_handle.read()
+    filename = u"{0!s}/{1!s}.pem".format(dirname, vendor)
 
-    r = False
     try:
         # remove the minutes 00:00:00
         subscription["date_from"] = subscription.get("date_from").strftime(SUBSCRIPTION_DATE_FORMAT)
         subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
         sign_string = SIGN_FORMAT.format(**subscription)
-        RSAkey = RSA.importKey(public)
-        hashvalue = SHA256.new(sign_string).digest()
-        signature = long(subscription.get("signature") or "100")
-        r = RSAkey.verify(hashvalue, (signature,))
+        with open(filename, 'rb') as key_file:
+            sign_obj = Sign(private_key=None, public_key=key_file.read())
+
+        signature = subscription.get('signature', '100')
+        r = sign_obj.verify(sign_string, signature, verify_old_sigs=True)
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"),
             SUBSCRIPTION_DATE_FORMAT)
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"),
             SUBSCRIPTION_DATE_FORMAT)
-    except Exception as exx:
+    except Exception as _e:
         log.debug(traceback.format_exc())
         raise SubscriptionError("Verifying the signature of your subscription "
                                 "failed.",

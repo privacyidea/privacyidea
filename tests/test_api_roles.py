@@ -5,7 +5,7 @@ selfservice) on the REST API.
 implementation is contained in api/auth.py, api/token.py api/audit.py
 """
 import json
-from .base import MyTestCase
+from .base import MyApiTestCase
 from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    assign_token, unassign_token)
@@ -19,7 +19,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
 PWFILE = "tests/testdata/passwords"
 
 
-class APIAuthTestCase(MyTestCase):
+class APIAuthTestCase(MyApiTestCase):
     """
     This tests some side functionalities of the /auth API.
     """
@@ -145,7 +145,7 @@ class APIAuthTestCase(MyTestCase):
         delete_policy("realmadmin")
 
 
-class APIAuthChallengeResponse(MyTestCase):
+class APIAuthChallengeResponse(MyApiTestCase):
 
     def setUp(self):
         self.setUp_user_realms()
@@ -183,7 +183,7 @@ class APIAuthChallengeResponse(MyTestCase):
             self.assertEqual(data.get("result").get("value").get("username"), "selfservice")
 
 
-class APISelfserviceTestCase(MyTestCase):
+class APISelfserviceTestCase(MyApiTestCase):
 
     my_serial = "myToken"
     foreign_serial = "notMyToken"
@@ -369,8 +369,8 @@ class APISelfserviceTestCase(MyTestCase):
 
         # Check, who is the owner of the new token!
         tokenobject = get_tokens(serial=serial)[0]
-        self.assertEqual(tokenobject.token.user_id, "1004")
-        self.assertEqual(tokenobject.token.resolver, "resolver1")
+        self.assertEqual(tokenobject.token.owners.first().user_id, "1004")
+        self.assertEqual(tokenobject.token.owners.first().resolver, "resolver1")
 
         # user can delete his own token
         with self.app.test_request_context('/token/{0!s}'.format(serial),
@@ -508,8 +508,8 @@ class APISelfserviceTestCase(MyTestCase):
                             response.get("result"))
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
-        self.assertTrue(tokenobject.token.user_id == "1004",
-                         tokenobject.token.user_id)
+        self.assertTrue(tokenobject.token.owners.first().user_id == "1004",
+                         tokenobject.token.owners.first().user_id)
 
         # User can unassign token
         with self.app.test_request_context('/token/unassign',
@@ -524,8 +524,7 @@ class APISelfserviceTestCase(MyTestCase):
                             response.get("result"))
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
-        self.assertTrue(tokenobject.token.user_id == "",
-                         tokenobject.token.user_id)
+        self.assertEqual(tokenobject.token.owners.first(), None)
 
 
         # User can not unassign token, which does not belong to him

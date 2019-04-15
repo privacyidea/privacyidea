@@ -68,6 +68,7 @@ class user_cache(object):
 def get_cache_time():
     """
     :return: UserCacheExpiration config value as a timedelta
+    :rtype: timedelta
     """
     seconds = int(get_from_config(EXPIRATION_SECONDS, '0'))
     return datetime.timedelta(seconds=seconds)
@@ -90,13 +91,14 @@ def delete_user_cache(resolver=None, username=None, expired=None):
     :param expired: Will delete expired (True) or non-expired (False) entries
         or will not care about the expiration date (None)
 
-    :return:
+    :return: number of deleted entries
+    :rtype: int
     """
     filter_condition = create_filter(username=username, resolver=resolver,
                                      expired=expired)
     rowcount = db.session.query(UserCache).filter(filter_condition).delete()
     db.session.commit()
-    log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
+    log.info(u'Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
         rowcount, resolver, username, expired
     ))
     return rowcount
@@ -115,7 +117,7 @@ def add_to_cache(username, used_login, resolver, user_id):
     if is_cache_enabled():
         timestamp = datetime.datetime.now()
         record = UserCache(username, used_login, resolver, user_id, timestamp)
-        log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
+        log.debug(u'Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
             username, used_login, resolver, user_id, timestamp))
         record.save()
 
@@ -179,7 +181,7 @@ def cache_username(wrapped_function, userid, resolvername):
     result = retrieve_latest_entry(filter_conditions)
     if result:
         username = result.username
-        log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
+        log.debug(u'Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
         return username
     else:
         # record was not found in the cache
