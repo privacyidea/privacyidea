@@ -1023,11 +1023,12 @@ class TokenClass(object):
         self.set_count_auth(count)
         return count
 
-    def check_failcount(self):
+    def check_reset_failcount(self):
         """
-        Checks if the failcounter is exceeded. It returns True, if the
-        failcounter is less than maxfail
-        :return: True or False
+        Checks if we should reset the failcounter due to the
+        FAILCOUNTER_CLEAR_TIMEOUT
+
+        :return: True, if the failcounter was resetted
         """
         timeout = 0
         try:
@@ -1036,14 +1037,22 @@ class TokenClass(object):
             log.warning("Misconfiguration. Error retrieving "
                         "failcounter_clear_timeout: "
                         "{0!s}".format(exx))
-        if timeout and self.token.failcount > 0:
+        if timeout and self.token.failcount == self.get_max_failcount():
             now = datetime.datetime.now(tzlocal())
             lastfail = self.get_tokeninfo(FAILCOUNTER_EXCEEDED)
             if lastfail is not None:
                 failcounter_exceeded = parse_legacy_time(lastfail, return_date=True)
                 if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
                     self.reset()
+                    return True
+        return False
 
+    def check_failcount(self):
+        """
+        Checks if the failcounter is exceeded. It returns True, if the
+        failcounter is less than maxfail
+        :return: True or False
+        """
         return self.token.failcount < self.token.maxfail
 
     def check_auth_counter(self):

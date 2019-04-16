@@ -66,12 +66,18 @@ Automatically clearing Failcounter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the failcounter reaches the maximum the token gets a timestamp, when the
-max fail count was reached. A successful authentication after the specified a
-amount of minutes in ``failcounter_clear_timeout`` will clear the failcounter
-again and the user can
-authenticate.
+max fail count was reached. *After* the specified
+amount of minutes in ``failcounter_clear_timeout`` the following will
+clear the failcounter again:
+
+* A successful authentication with correct PIN and correct OTP value
+* A successfully triggered challenge (Usually this means a correct PIN)
+* An authentication with a correct PIN, but a wrong OTP value
 
 A "0" means automatically clearing the fail counter is not used.
+
+.. note:: After the maximum failcounter is reached, new requests will not
+   update the mentioned timestamp.
 
 Also see :ref:`brute_force`.
 

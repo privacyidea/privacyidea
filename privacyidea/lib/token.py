@@ -2162,6 +2162,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         for token_obj in valid_token_list:
             if increase_auth_counters:
                 token_obj.inc_count_auth_success()
+            # Reset the failcounter, if there is a timeout set
+            token_obj.check_reset_failcount()
             # Check if the max auth is succeeded
             if token_obj.check_all(message_list):
                 # The token is active and the auth counters are ok.
@@ -2250,6 +2252,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
+            for token_obj in challenge_request_token_list:
+                token_obj.check_reset_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
@@ -2258,6 +2262,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # So we increase the failcounter. Return failure.
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
+            tokenobject.check_reset_failcount()
             reply_dict["message"] = "wrong otp value"
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was
