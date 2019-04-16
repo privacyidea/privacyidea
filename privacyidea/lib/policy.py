@@ -750,6 +750,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
         rights = set()
         userrealm = None
         adminrealm = None
+        resolver = None
         logged_in_user = {"username": username,
                           "realm": realm}
         if scope == SCOPE.ADMIN:
@@ -758,9 +759,11 @@ class PolicyClass(with_metaclass(Singleton, object)):
         elif scope == SCOPE.USER:
             userrealm = realm
             logged_in_user["role"] = ROLE.USER
+            resolver = User(username, userrealm).resolver
         pols = self.get_policies(scope=scope,
                                  adminrealm=adminrealm,
                                  realm=userrealm,
+                                 resolver=resolver,
                                  user=username, active=True,
                                  client=client)
         for pol in pols:
