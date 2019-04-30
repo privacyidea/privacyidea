@@ -167,6 +167,8 @@ class PushTokenTestCase(MyTestCase):
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
             self.assertTrue("pushurl" in detail)
+            # check that the new URL contains the serial number
+            self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
             enrollment_credential = detail.get("enrollment_credential")
 
