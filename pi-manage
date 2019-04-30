@@ -247,12 +247,16 @@ def change(username, email=None, password_prompt=False):
 @backup_manager.command
 def create(directory="/var/lib/privacyidea/backup/",
            conf_dir="/etc/privacyidea/",
+           radius_directory=None,
            enckey=False):
     """
     Create a new backup of the database and the configuration. The default
     does not include the encryption key. Use the 'enckey' option to also
     backup the encryption key. Then you should make sure, that the backups
     are stored safely.
+
+    If you want to also include the RADIUS configuration into the backup
+    specify a directory using 'radius_directory'.
     """
     CONF_DIR = conf_dir
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
@@ -275,11 +279,13 @@ def create(directory="/var/lib/privacyidea/backup/",
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        m = re.match(".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
+        # We strip parameters, but we do not use them
+        _parameters = m.groups()[4]
         defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
         _write_mysql_defaults(defaults_file, username, password)
         call("mysqldump --defaults-file=%s -h %s %s > %s" % (
@@ -293,6 +299,11 @@ def create(directory="/var/lib/privacyidea/backup/",
 
     backup_call = ["tar", "-zcf",
                    backup_file, CONF_DIR, sqlfile]
+
+    if radius_directory:
+        # Simply append the radius directory to the backup command
+        backup_call.append(radius_directory)
+
     if not enckey:
         # Exclude enckey from backup
         backup_call.append("--exclude={0!s}".format(enc_file))
