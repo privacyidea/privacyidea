@@ -21,6 +21,7 @@ from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib import _
 
+import datetime
 import time
 import responses
 from . import smtpmock, ldap3mock
@@ -877,7 +878,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                 "type": "spass"})
         token_obj.set_count_auth_max(5)
 
-        for i in range(1, 5):
+        for i in range(0, 5):
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"serial": "pass1",
@@ -2405,6 +2406,35 @@ class ValidateAPITestCase(MyApiTestCase):
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
+
+
+class RegistrationValidity(MyApiTestCase):
+
+    def setUp(self):
+        super(RegistrationValidity, self).setUp()
+        self.setUp_user_realms()
+
+    def test_00_registrationtoken_with_validity_period(self):
+        r = init_token({"type": "registration"},
+                       user=User("cornelius", self.realm1))
+        password = r.init_details.get("otpkey")
+
+        # The enddate is 17 minutes in the past
+        end_date = datetime.datetime.now() - datetime.timedelta(minutes=17)
+        end_date_str = end_date.strftime("%Y-%m-%dT%H:%M%z")
+        r.set_validity_period_end(end_date_str)
+        # now check if authentication fails
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data.decode('utf8'))
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
 
 
 class AChallengeResponse(MyApiTestCase):

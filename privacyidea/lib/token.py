@@ -2160,12 +2160,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            if increase_auth_counters:
-                token_obj.inc_count_auth_success()
-            # Reset the failcounter, if there is a timeout set
-            token_obj.check_reset_failcount()
-            # Check if the max auth is succeeded
-            if token_obj.check_all(message_list):
+            # Check if the max auth is succeeded.
+            # We need to set the offsets, since we are in the n+1st authentication.
+            if token_obj.check_all(message_list, offset=1, offset_success=1):
+                if increase_auth_counters:
+                    token_obj.inc_count_auth_success()
+                # Reset the failcounter, if there is a timeout set
+                token_obj.check_reset_failcount()
+
                 # The token is active and the auth counters are ok.
                 res = True
                 if not reply_dict.get("type"):
