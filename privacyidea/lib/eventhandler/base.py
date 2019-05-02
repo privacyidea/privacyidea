@@ -275,22 +275,24 @@ class BaseEventHandler(object):
 
     @staticmethod
     def _get_tokenowner(request):
-        user = request.User
-        serial = request.all_data.get("serial")
-        if user.is_empty() and serial:
-            # maybe the user is empty, but a serial was passed.
-            # Then we determine the user by the serial
-            try:
-                user = get_token_owner(serial) or User()
-            except Exception as exx:
+        user = User()
+        if hasattr(request, "User"):
+            user = request.User
+            serial = request.all_data.get("serial")
+            if user.is_empty() and serial:
+                # maybe the user is empty, but a serial was passed.
+                # Then we determine the user by the serial
+                try:
+                    user = get_token_owner(serial) or User()
+                except Exception as exx:
+                    user = User()
+                    # This can happen for orphaned tokens.
+                    log.info("Could not determine tokenowner for {0!s}. Maybe the "
+                             "user does not exist anymore.".format(serial))
+                    log.debug(exx)
+            # If the user does not exist, we set an empty user
+            if not user.exist():
                 user = User()
-                # This can happen for orphaned tokens.
-                log.info("Could not determine tokenowner for {0!s}. Maybe the "
-                         "user does not exist anymore.".format(serial))
-                log.debug(exx)
-        # If the user does not exist, we set an empty user
-        if not user.exist():
-            user = User()
 
         return user
 
