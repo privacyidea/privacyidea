@@ -442,7 +442,7 @@ def create_enckey():
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    with open(filename, "w") as f:
+    with open(filename, "wb") as f:
         f.write(DefaultSecurityModule.random(96))
 
     print("Encryption key written to %s" % filename)
@@ -1072,7 +1072,7 @@ def delete(name):
 def p_export(filename=None):
     """
     Export all policies to a file.
-    If the filename is omitted, the policies are written to stdout.    
+    If the filename is omitted, the policies are written to stdout.
     """
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
@@ -1090,7 +1090,7 @@ def p_export(filename=None):
 def p_import(filename, cleanup=False):
     """
     Import the policies from a file.
-    If 'cleanup' is specified the existing policies are deleted before the 
+    If 'cleanup' is specified the existing policies are deleted before the
     policies from the file are imported.
     """
     if cleanup:
@@ -1127,10 +1127,10 @@ def p_import(filename, cleanup=False):
 def create(name, scope, action, filename=None):
     """
     create a new policy. 'FILENAME' must contain a dictionary and its content
-    takes precedence over CLI parameters. 
+    takes precedence over CLI parameters.
     I.e. if you are specifying a FILENAME,
     the parameters name, scope and action need to be specified, but are ignored.
-    
+
     Note: This will only create one policy per file.
     """
     if filename:
