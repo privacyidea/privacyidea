@@ -1280,6 +1280,7 @@ def pushtoken_add_config(request, action):
             resolver=token_resolver,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data,
+            allow_white_space_in_action=True,
             unique=True)
         if len(firebase_config) == 1:
             request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]

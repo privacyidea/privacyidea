@@ -46,6 +46,9 @@ class PushTokenTestCase(MyTestCase):
 
     serial1 = "PUSH00001"
 
+    # We now allow white spaces in the firebase config name
+    firebase_config_name = "my firebase config"
+
     smartphone_private_key = rsa.generate_private_key(public_exponent=65537,
                                                       key_size=4096,
                                                       backend=default_backend())
@@ -81,7 +84,8 @@ class PushTokenTestCase(MyTestCase):
         # Unknown config
         self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
 
-        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+        r = set_smsgateway(self.firebase_config_name, u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB",
                            {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                             FIREBASE_CONFIG.TTL: 10,
                             FIREBASE_CONFIG.API_KEY: "1",
@@ -90,7 +94,7 @@ class PushTokenTestCase(MyTestCase):
                             FIREBASE_CONFIG.PROJECT_ID: "4"})
         self.assertTrue(r > 0)
 
-        detail = token.get_init_detail(params={"firebase_config": "fb1"})
+        detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
@@ -143,7 +147,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
-        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+        r = set_smsgateway(self.firebase_config_name, u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                             FIREBASE_CONFIG.TTL: 10,
                             FIREBASE_CONFIG.API_KEY: "1",
@@ -153,7 +157,8 @@ class PushTokenTestCase(MyTestCase):
                             FIREBASE_CONFIG.JSON_CONFG: FIREBASE_FILE})
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}=fb1".format(PUSH_ACTION.FIREBASE_CONFIG))
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
 
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -234,7 +239,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
             # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
+            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
 
     @responses.activate
     def test_03_api_authenticate_fail(self):
