@@ -343,6 +343,7 @@ class PushTokenClass(TokenClass):
                 extra_data[k] = fb_options.get(k)
             # this allows to upgrade our crypto
             extra_data["v"] = 1
+            extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
