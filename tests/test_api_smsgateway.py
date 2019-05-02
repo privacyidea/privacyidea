@@ -112,7 +112,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         # create an sms gateway configuration
         param = {
             "name": "myGW",
-            "module": "privacyidea.lib.SMS",
+            "module": "privacyidea.lib.smsprovider.SMSProvider",
             "description": "myGateway",
             "option.URL": "http://example.com"
         }

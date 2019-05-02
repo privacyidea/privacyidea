@@ -81,6 +81,7 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
             }
         }
 
+        delete $scope.form.options;
         ConfigFactory.setSMSGateway($scope.form, function() {
             $state.go("config.smsgateway.list");
             $('html,body').scrollTop(0);
