@@ -70,7 +70,12 @@ def get_cache_time():
     :return: UserCacheExpiration config value as a timedelta
     :rtype: timedelta
     """
-    seconds = int(get_from_config(EXPIRATION_SECONDS, '0'))
+    seconds = 0
+    try:
+        seconds = int(get_from_config(EXPIRATION_SECONDS, '0'))
+    except ValueError:
+        log.info(u"Non-Integer value stored in system config {0!s}".format(EXPIRATION_SECONDS))
+
     return datetime.timedelta(seconds=seconds)
 
 

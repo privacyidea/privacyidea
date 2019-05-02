@@ -71,8 +71,20 @@ class UserCacheTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
     def test_00_set_config(self):
-        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        # Save wrong data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, "wrong")
+        exp_delta = get_cache_time()
+        self.assertEqual(exp_delta, timedelta(seconds=0))
+        self.assertFalse(is_cache_enabled())
 
+        # Save empty data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, "")
+        exp_delta = get_cache_time()
+        self.assertEqual(exp_delta, timedelta(seconds=0))
+        self.assertFalse(is_cache_enabled())
+
+        # Save real data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
         exp_delta = get_cache_time()
         self.assertEqual(exp_delta, timedelta(seconds=600))
         self.assertTrue(is_cache_enabled())
