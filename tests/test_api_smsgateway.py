@@ -20,7 +20,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         # create an sms gateway definition
         param = {
             "name": "myGW",
-            "module": "privacyidea.lib.SMS",
+            "module": "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider",
             "description": "myGateway",
             "option.URL": "http://example.com"
         }
@@ -49,14 +49,14 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("name"), "myGW")
             self.assertEqual(sms_gw.get("id"), 1)
             self.assertEqual(sms_gw.get("providermodule"),
-                             "privacyidea.lib.SMS")
+                             "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider")
             self.assertEqual(sms_gw.get("options").get("URL"),
                              "http://example.com")
 
         # update
         param = {
             "name": "myGW",
-            "module": "privacyidea.lib.SMS",
+            "module": "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider",
             "description": "new description",
             "id": 1
         }
@@ -112,7 +112,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         # create an sms gateway configuration
         param = {
             "name": "myGW",
-            "module": "privacyidea.lib.smsprovider.SMSProvider",
+            "module": "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider",
             "description": "myGateway",
             "option.URL": "http://example.com"
         }
