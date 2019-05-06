@@ -108,7 +108,7 @@ class PushTokenTestCase(MyTestCase):
         # Everything is fine
         fb_config[FIREBASE_CONFIG.PROJECT_ID] = "test-123456"
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                           fb_config
+                           fb_config)
         self.assertTrue(r > 0)
 
         detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name})
