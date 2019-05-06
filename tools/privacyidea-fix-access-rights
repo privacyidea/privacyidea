@@ -5,7 +5,7 @@ __version__ = '0.1'
 import sys
 from getopt import getopt, GetoptError
 from subprocess import call
-
+from six.moves import shlex_quote
 
 def usage():
     print('''
@@ -24,31 +24,31 @@ def fix_rights(file, user):
 
     # Create the user
     try:
-        call("/usr/sbin/adduser  --system %s" % user, shell=True)
+        call("/usr/sbin/adduser  --system %s" % shlex_quote(user), shell=True)
         print("Created user %s" % user)
     except Exception as e:
         print("Failed to create user %s: %s" % (user, str(e)))
 
     # fix the file itself!
     try:
-        call("chmod 640 %s" % file, shell=True)
-        call("chown %s:%s %s" % (user, "root", file), shell=True)
+        call("chmod 640 %s" % shlex_quote(file), shell=True)
+        call("chown %s:%s %s" % (shlex_quote(user), "root", shlex_quote(file)), shell=True)
         print("Fixed access rights for %s" % file)
     except Exception as _e:
         print("Failed to fix access rights for %s" % file)
 
     # Fix the encryption file
     try:
-        call("chmod 400 %s" % conf.get("PI_ENCFILE"), shell=True)
-        call("chown %s %s" % (user, conf.get("PI_ENCFILE")), shell=True)
+        call("chmod 400 %s" % shlex_quote(conf.get("PI_ENCFILE")), shell=True)
+        call("chown %s %s" % (shlex_quote(user), shlex_quote(conf.get("PI_ENCFILE"))), shell=True)
         print("Fixed access rights for %s" % conf.get("PI_ENCFILE"))
     except Exception as _e:
         print("Failed to fix access rights for %s" % conf.get("PI_ENCFILE"))
 
     # fix the audit key
     try:
-        call("chmod 400 %s" % conf.get("PI_AUDIT_KEY_PRIVATE"), shell=True)
-        call("chown %s %s" % (user, conf.get("PI_AUDIT_KEY_PRIVATE")), shell=True)
+        call("chmod 400 %s" % shlex_quote(conf.get("PI_AUDIT_KEY_PRIVATE")), shell=True)
+        call("chown %s %s" % (shlex_quote(user), shlex_quote(conf.get("PI_AUDIT_KEY_PRIVATE"))), shell=True)
         print("Fixed access rights for %s" % conf.get("PI_AUDIT_KEY_PRIVATE"))
     except Exception as _e:
         print("Failed to fix access rights for %s" % conf.get("PI_AUDIT_KEY_PRIVATE"))
