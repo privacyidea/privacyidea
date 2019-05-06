@@ -23,8 +23,8 @@ Firebase Cloud Messaging Service.
 This provider is used for the push token and can be used for SMS tokens.
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
-from privacyidea.lib.error import ERROR
+from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib import _
 import logging
 from oauth2client.service_account import ServiceAccountCredentials
@@ -111,15 +111,13 @@ class FirebaseProvider(ISMSProvider):
             server_config = json.load(f)
         if server_config:
             if server_config.get("type") != "service_account":
-                raise SMSError(error_id=ERROR.FIREBASE_JSON,
-                               description="The JSON file is not a valid firebase credentials file.")
+                raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")
             project_id = self.smsgateway.option_dict.get(FIREBASE_CONFIG.PROJECT_ID)
             if server_config.get("project_id") != project_id:
-                raise SMSError(error_id=ERROR.FIREBASE_PROJECT,
-                               description="The project_id you entered does not match the project_id from the JSON file.")
+                raise ConfigAdminError(description="The project_id you entered does not match the project_id from the JSON file.")
 
         else:
-            raise SMSError(error_id=123, description="Please check your configuration. Can not load JSON file.")
+            raise ConfigAdminError(description="Please check your configuration. Can not load JSON file.")
 
     @classmethod
     def parameters(cls):

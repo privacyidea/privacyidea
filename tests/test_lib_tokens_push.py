@@ -16,6 +16,7 @@ from privacyidea.models import Token
 from privacyidea.lib.policy import (SCOPE, set_policy)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
+from privacyidea.lib.error import ConfigAdminError
 from base64 import b32decode
 import json
 import responses
@@ -91,13 +92,13 @@ class PushTokenTestCase(MyTestCase):
                      FIREBASE_CONFIG.PROJECT_ID: "4"}
 
         # Wrong JSON file
-        self.assertRaises(SMSError, set_smsgateway,
+        self.assertRaises(ConfigAdminError, set_smsgateway,
                           "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 
         # Wrong Project number
         fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
-        self.assertRaises(SMSError, set_smsgateway,
+        self.assertRaises(ConfigAdminError, set_smsgateway,
                           "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 

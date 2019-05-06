@@ -55,8 +55,6 @@ class ERROR:
     SERVER = 903
     USER = 904
     PARAMETER = 905
-    FIREBASE_JSON = 1001
-    FIREBASE_PROJECT = 1002
 
 
 @six.python_2_unicode_compatible
