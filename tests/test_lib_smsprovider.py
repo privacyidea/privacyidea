@@ -69,7 +69,7 @@ class SMSTestCase(MyTestCase):
 
     def test_02_create_modify_delete_smsgateway_configuration(self):
         identifier = "myGW"
-        provider_module = "privacyidea.lib.smsprovider.HTTPSmsPrpvoder"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
                                      "URL": "example.com"})

@@ -23,7 +23,8 @@ Firebase Cloud Messaging Service.
 This provider is used for the push token and can be used for SMS tokens.
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib import _
 import logging
 from oauth2client.service_account import ServiceAccountCredentials
@@ -44,7 +45,7 @@ log = logging.getLogger(__name__)
 class FIREBASE_CONFIG:
     REGISTRATION_URL = "registration URL"
     TTL = "time to live"
-    JSON_CONFG = "JSON config file"
+    JSON_CONFIG = "JSON config file"
     PROJECT_ID = "projectid"
     PROJECT_NUMBER = "projectnumber"
     APP_ID = "appid"
@@ -67,7 +68,7 @@ class FirebaseProvider(ISMSProvider):
         res = False
 
         credentials = ServiceAccountCredentials.\
-                from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFG),
+                from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG),
                                        SCOPES)
 
         access_token_info = credentials.get_access_token()
@@ -97,6 +98,26 @@ class FirebaseProvider(ISMSProvider):
             log.warning(u"Failed to send message to firebase service: {0!s}".format(resp.text))
 
         return res
+
+    def check_configuration(self):
+        """
+        This method checks the sanity of the configuration of this provider.
+        If there is a configuration error, than an exception is raised.
+        :return:
+        """
+        json_file = self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG)
+        server_config = None
+        with open(json_file) as f:
+            server_config = json.load(f)
+        if server_config:
+            if server_config.get("type") != "service_account":
+                raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")
+            project_id = self.smsgateway.option_dict.get(FIREBASE_CONFIG.PROJECT_ID)
+            if server_config.get("project_id") != project_id:
+                raise ConfigAdminError(description="The project_id you entered does not match the project_id from the JSON file.")
+
+        else:
+            raise ConfigAdminError(description="Please check your configuration. Can not load JSON file.")
 
     @classmethod
     def parameters(cls):
@@ -136,7 +157,7 @@ class FirebaseProvider(ISMSProvider):
                           "description": _(
                               "The API Key, that the client should use. Get it from your Firebase console.")
                       },
-                      FIREBASE_CONFIG.JSON_CONFG: {
+                      FIREBASE_CONFIG.JSON_CONFIG: {
                           "required": True,
                           "description": _("The filename of the JSON config file, that allows privacyIDEA to talk"
                                            " to the Firebase REST API.")
