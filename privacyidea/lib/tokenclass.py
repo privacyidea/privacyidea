@@ -1055,7 +1055,7 @@ class TokenClass(object):
         """
         return self.token.failcount < self.token.maxfail
 
-    def check_auth_counter(self, offset=0, offset_success=0):
+    def check_auth_counter(self):
         """
         This function checks the count_auth and the count_auth_success.
         If the counters are less or equal than the maximum allowed counters
@@ -1068,10 +1068,10 @@ class TokenClass(object):
         count_auth_max = self.get_count_auth_max()
         count_auth_success = self.get_count_auth_success()
         count_auth_success_max = self.get_count_auth_success_max()
-        if count_auth_max != 0 and count_auth + offset > count_auth_max:
+        if count_auth_max != 0 and count_auth >= count_auth_max:
             return False
 
-        if count_auth_success_max != 0 and count_auth_success + offset_success > count_auth_success_max:
+        if count_auth_success_max != 0 and count_auth_success >= count_auth_success_max:
             return False
 
         return True
@@ -1101,7 +1101,7 @@ class TokenClass(object):
 
         return True
 
-    def check_all(self, message_list, offset=0, offset_success=0):
+    def check_all(self, message_list):
         """
         Perform all checks on the token. Returns False if the token is either:
         * auth counter exceeded
@@ -1116,7 +1116,7 @@ class TokenClass(object):
         """
         r = False
         # Check if the max auth is succeeded
-        if not self.check_auth_counter(offset=offset, offset_success=offset_success):
+        if not self.check_auth_counter():
             message_list.append("Authentication counter exceeded")
         # Check if the token is disabled
         elif not self.is_active():
