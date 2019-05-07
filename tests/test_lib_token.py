@@ -15,7 +15,7 @@ getToken....
 """
 from .base import MyTestCase, FakeAudit
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
@@ -1457,6 +1457,26 @@ class TokenTestCase(MyTestCase):
         list2 = next(gen)
         # Check that we did not miss any tokens
         self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
+
+    def test_57_reset_failcounter(self):
+        # Set failcounter clear timeout to 1 minute
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+
+        tokenobject_list = get_tokens()
+
+        # Simulate a HOTP token whose failcounter was exceeded 2 minutes ago
+        hotp_tokenobject = get_tokens(serial="hotptoken")[0]
+        hotp_tokenobject.token.count = 10
+        hotp_tokenobject.set_pin("hotppin")
+        hotp_tokenobject.set_failcount(10)
+        exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
+        hotp_tokenobject.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+
+        # OTP value #11
+        res, reply = check_token_list(tokenobject_list, "hotppin481090")
+        self.assertTrue(res)
+
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
 
 
 class TokenFailCounterTestCase(MyTestCase):
