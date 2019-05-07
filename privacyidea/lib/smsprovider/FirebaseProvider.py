@@ -50,6 +50,8 @@ class FIREBASE_CONFIG:
     PROJECT_NUMBER = "projectnumber"
     APP_ID = "appid"
     API_KEY = "apikey"
+    APP_ID_IOS = "appidios"
+    API_KEY_IOS = "apikeyios"
 
 
 class FirebaseProvider(ISMSProvider):
@@ -150,12 +152,22 @@ class FirebaseProvider(ISMSProvider):
                       FIREBASE_CONFIG.APP_ID: {
                           "required": True,
                           "description": _(
-                              "The App ID, that the client should use. Get it from your Firebase console.")
+                              "The App ID, that the Android client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
                           "required": True,
                           "description": _(
-                              "The API Key, that the client should use. Get it from your Firebase console.")
+                              "The API Key, that the Android client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.APP_ID_IOS:{
+                          "required": True,
+                          "description": _(
+                              "The App ID, that the iOS client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.API_KEY_IOS: {
+                          "required": True,
+                          "description": _(
+                              "The API Key, that the iOS client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.JSON_CONFIG: {
                           "required": True,
