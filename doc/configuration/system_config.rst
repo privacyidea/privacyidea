@@ -81,6 +81,19 @@ A "0" means automatically clearing the fail counter is not used.
 
 Also see :ref:`brute_force`.
 
+Resetting Failcounter on correct PIN
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After the above mentioned timeout the failcounter is reset by a successful
+authentication (correct PIN and OTP value) or by the correct PIN of a challenge
+response token.
+
+It can be also reset by the correct PIN of any token, when setting
+``ResetFailcounterOnPIN`` to True.
+The default behaviour is, that the correct PIN of a normal token will *not*
+reset the failcounter after the clearing timeout.
+
+
 Prepend PIN
 ~~~~~~~~~~~
 
