@@ -72,7 +72,8 @@ clear the failcounter again:
 
 * A successful authentication with correct PIN and correct OTP value
 * A successfully triggered challenge (Usually this means a correct PIN)
-* An authentication with a correct PIN, but a wrong OTP value
+* An authentication with a correct PIN, but a wrong OTP value (Only if
+  :ref:`reset_failcounter_on_correct_pin` is set).
 
 A "0" means automatically clearing the fail counter is not used.
 
@@ -80,6 +81,9 @@ A "0" means automatically clearing the fail counter is not used.
    update the mentioned timestamp.
 
 Also see :ref:`brute_force`.
+
+
+.. _reset_failcounter_on_correct_pin:
 
 Resetting Failcounter on correct PIN
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
