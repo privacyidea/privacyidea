@@ -2264,7 +2264,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # So we increase the failcounter. Return failure.
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
-            if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):  # pragma: no cover
+            if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
                 tokenobject.check_reset_failcount()
             reply_dict["message"] = "wrong otp value"
             if len(pin_matching_token_list) == 1:
