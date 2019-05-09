@@ -1058,20 +1058,20 @@ class TokenClass(object):
     def check_auth_counter(self):
         """
         This function checks the count_auth and the count_auth_success.
-        If the count_auth is less than count_auth_max
-        and count_auth_success is less than count_auth_success_max
+        If the counters are less or equal than the maximum allowed counters
         it returns True. Otherwise False.
         
         :return: success if the counter is less than max
         :rtype: bool
         """
-        if self.get_count_auth_max() != 0 and self.get_count_auth() >= \
-                self.get_count_auth_max():
+        count_auth = self.get_count_auth()
+        count_auth_max = self.get_count_auth_max()
+        count_auth_success = self.get_count_auth_success()
+        count_auth_success_max = self.get_count_auth_success_max()
+        if count_auth_max != 0 and count_auth >= count_auth_max:
             return False
 
-        if self.get_count_auth_success_max() != 0 and  \
-                        self.get_count_auth_success() >=  \
-                        self.get_count_auth_success_max():
+        if count_auth_success_max != 0 and count_auth_success >= count_auth_success_max:
             return False
 
         return True

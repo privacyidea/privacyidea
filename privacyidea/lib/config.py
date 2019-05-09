@@ -212,6 +212,7 @@ class SYSCONF(object):
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RETURNSAML = "ReturnSamlAttributes"
+    RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
 #@cache.cached(key_prefix="allConfig")
