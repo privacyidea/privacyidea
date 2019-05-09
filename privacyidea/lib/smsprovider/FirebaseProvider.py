@@ -50,6 +50,8 @@ class FIREBASE_CONFIG:
     PROJECT_NUMBER = "projectnumber"
     APP_ID = "appid"
     API_KEY = "apikey"
+    APP_ID_IOS = "appidios"
+    API_KEY_IOS = "apikeyios"
 
 
 class FirebaseProvider(ISMSProvider):
@@ -119,6 +121,18 @@ class FirebaseProvider(ISMSProvider):
         else:
             raise ConfigAdminError(description="Please check your configuration. Can not load JSON file.")
 
+        # We need at least
+        #         FIREBASE_CONFIG.API_KEY_IOS and FIREBASE_CONFIG.APP_ID_IOS
+        # or
+        #         FIREBASE_CONFIG.API_KEY and FIREBASE_CONFIG.APP_ID
+        android_configured = bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.APP_ID)) and \
+                             bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.API_KEY))
+        ios_configured = bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.APP_ID_IOS)) and \
+                             bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.API_KEY_IOS))
+        if not android_configured and not ios_configured:
+            raise ConfigAdminError(description="You need to at least configure either app_id and api_key or"
+                                               " app_id_ios and api_key_ios.")
+
     @classmethod
     def parameters(cls):
         """
@@ -148,14 +162,24 @@ class FirebaseProvider(ISMSProvider):
                               "The project number, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.APP_ID: {
-                          "required": True,
+                          "required": False,
                           "description": _(
-                              "The App ID, that the client should use. Get it from your Firebase console.")
+                              "The App ID, that the Android client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
-                          "required": True,
+                          "required": False,
                           "description": _(
-                              "The API Key, that the client should use. Get it from your Firebase console.")
+                              "The API Key, that the Android client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.APP_ID_IOS:{
+                          "required": False,
+                          "description": _(
+                              "The App ID, that the iOS client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.API_KEY_IOS: {
+                          "required": False,
+                          "description": _(
+                              "The API Key, that the iOS client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.JSON_CONFIG: {
                           "required": True,

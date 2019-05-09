@@ -105,6 +105,26 @@ class PushTokenTestCase(MyTestCase):
                           "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 
+        # Missing APP_ID
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                           FIREBASE_CONFIG.TTL: 10,
+                           FIREBASE_CONFIG.API_KEY: "1",
+                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                           FIREBASE_CONFIG.PROJECT_ID: "4"})
+
+        # Missing API_KEY_IOS
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                           FIREBASE_CONFIG.TTL: 10,
+                           FIREBASE_CONFIG.APP_ID_IOS: "1",
+                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                           FIREBASE_CONFIG.PROJECT_ID: "4"})
+
         # Everything is fine
         fb_config[FIREBASE_CONFIG.PROJECT_ID] = "test-123456"
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
@@ -191,6 +211,9 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
+            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
+            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
+            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
             enrollment_credential = detail.get("enrollment_credential")
 

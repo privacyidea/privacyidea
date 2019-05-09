@@ -339,7 +339,8 @@ class PushTokenClass(TokenClass):
                 raise ParameterError("Unknown Firebase configuration!")
             fb_options = firebase_configs[0].option_dict
             for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
-                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
+                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
+                      FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
                 extra_data[k] = fb_options.get(k)
             # this allows to upgrade our crypto
             extra_data["v"] = 1
