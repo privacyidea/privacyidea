@@ -9,7 +9,7 @@ Version 3.0.1, 2019-05-XX
     * Fix to allow PUSH token enrollment, even with Label-policy (#1589)
     * Fix to mark PUSH token challenge answered in the database (#1584)
   * Fix the validity period of the registration token (#1587)
-  * Beautify the vertial alignment in the Web UI top menu (#1559)
+  * Beautify the vertical alignment in the Web UI top menu (#1559)
   * Fix user cache configuration read - defaults to 0 (#1596)
   * Remove links in audit log for normal users (#1497)
   * Check UI rights for user resolvers (#1496)
