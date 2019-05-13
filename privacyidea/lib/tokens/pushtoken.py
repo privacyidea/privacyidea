@@ -339,10 +339,12 @@ class PushTokenClass(TokenClass):
                 raise ParameterError("Unknown Firebase configuration!")
             fb_options = firebase_configs[0].option_dict
             for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
-                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
+                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
+                      FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
                 extra_data[k] = fb_options.get(k)
             # this allows to upgrade our crypto
             extra_data["v"] = 1
+            extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
@@ -401,7 +403,7 @@ class PushTokenClass(TokenClass):
         serial = getParam(request.all_data, "serial", optional=False)
 
         if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
-            # Do the 2nd step of the enrollment
+            log.debug("Do the 2nd step of the enrollment.")
             try:
                 token_obj = get_one_token(serial=serial,
                                           tokentype="push",
@@ -414,6 +416,7 @@ class PushTokenClass(TokenClass):
             details = token_obj.get_init_detail(init_detail_dict)
             result = True
         elif serial and "nonce" in request.all_data and "signature" in request.all_data:
+            log.debug("Handling the authentication response from the smartphone.")
             challenge = getParam(request.all_data, "nonce")
             serial = getParam(request.all_data, "serial")
             signature = getParam(request.all_data, "signature")
@@ -441,7 +444,9 @@ class PushTokenClass(TokenClass):
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
                         # The signature was valid
+                        log.debug("Found matching challenge {0!s}.".format(chal))
                         chal.set_otp_status(True)
+                        chal.save()
                         result = True
                     except InvalidSignature as e:
                         pass

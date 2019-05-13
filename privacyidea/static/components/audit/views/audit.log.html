@@ -62,7 +62,7 @@
                     <pi-filter ng-model="resolverFilter"
                                ng-change="getAuditList()">
                 </th>
-                <th class="pifilter"><translate>policies</translate>
+                <th class="pifilter" ng-if="loggedInUser.role == 'admin'"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
                                ng-change="getAuditList()">
                 </th>
@@ -101,10 +101,14 @@
                 <td><a ui-sref="user.details({username:audit.user,
                 realmname:audit.realm})">
                     {{ audit.user }}</a></td>
-                <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
-                <td><a ui-sref="config.resolvers.list">
-                    {{ audit.resolver }}</a></td>
-                <td><span ng-repeat="policy in audit.policies">
+                <td><a ng-if="loggedInUser.role == 'admin'" ui-sref="config.realms.list">{{ audit.realm }}</a>
+                    <span ng-if="loggedInUser.role == 'user'">{{ audit.realm }}</span>
+                </td>
+                <td><a ng-if="loggedInUser.role == 'admin'" ui-sref="config.resolvers.list">{{ audit.resolver }}</a>
+                    <span ng-if="loggedInUser.role == 'user'">{{ audit.resolver }}</span>
+                </td>
+                <td ng-if="loggedInUser.role == 'admin'">
+                    <span ng-repeat="policy in audit.policies">
                         <span ng-if="policy.endsWith('+')">
                             {{ policy }}
                         </span>

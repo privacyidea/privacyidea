@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
+CLIENT_FILE = "tests/testdata/google-services.json"
 
 from .base import MyTestCase
 from privacyidea.lib.error import ParameterError
@@ -14,7 +15,8 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token
 from privacyidea.lib.policy import (SCOPE, set_policy)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
+from privacyidea.lib.error import ConfigAdminError
 from base64 import b32decode
 import json
 import responses
@@ -45,6 +47,9 @@ class myCredentials(object):
 class PushTokenTestCase(MyTestCase):
 
     serial1 = "PUSH00001"
+
+    # We now allow white spaces in the firebase config name
+    firebase_config_name = "my firebase config"
 
     smartphone_private_key = rsa.generate_private_key(public_exponent=65537,
                                                       key_size=4096,
@@ -81,16 +86,52 @@ class PushTokenTestCase(MyTestCase):
         # Unknown config
         self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
 
+        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                     FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                     FIREBASE_CONFIG.TTL: 10,
+                     FIREBASE_CONFIG.API_KEY: "1",
+                     FIREBASE_CONFIG.APP_ID: "2",
+                     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                     FIREBASE_CONFIG.PROJECT_ID: "4"}
+
+        # Wrong JSON file
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          fb_config)
+
+        # Wrong Project number
+        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          fb_config)
+
+        # Missing APP_ID
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                           FIREBASE_CONFIG.TTL: 10,
+                           FIREBASE_CONFIG.API_KEY: "1",
+                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                           FIREBASE_CONFIG.PROJECT_ID: "4"})
+
+        # Missing API_KEY_IOS
+        self.assertRaises(ConfigAdminError, set_smsgateway,
+                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                           FIREBASE_CONFIG.TTL: 10,
+                           FIREBASE_CONFIG.APP_ID_IOS: "1",
+                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                           FIREBASE_CONFIG.PROJECT_ID: "4"})
+
+        # Everything is fine
+        fb_config[FIREBASE_CONFIG.PROJECT_ID] = "test-123456"
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                            FIREBASE_CONFIG.TTL: 10,
-                            FIREBASE_CONFIG.API_KEY: "1",
-                            FIREBASE_CONFIG.APP_ID: "2",
-                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                            FIREBASE_CONFIG.PROJECT_ID: "4"})
+                           fb_config)
         self.assertTrue(r > 0)
 
-        detail = token.get_init_detail(params={"firebase_config": "fb1"})
+        detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
@@ -143,17 +184,18 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
-        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+        r = set_smsgateway(self.firebase_config_name, u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                             FIREBASE_CONFIG.TTL: 10,
                             FIREBASE_CONFIG.API_KEY: "1",
                             FIREBASE_CONFIG.APP_ID: "2",
                             FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                            FIREBASE_CONFIG.PROJECT_ID: "4",
-                            FIREBASE_CONFIG.JSON_CONFG: FIREBASE_FILE})
+                            FIREBASE_CONFIG.PROJECT_ID: "test-123456",
+                            FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE})
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}=fb1".format(PUSH_ACTION.FIREBASE_CONFIG))
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
 
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -167,6 +209,11 @@ class PushTokenTestCase(MyTestCase):
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
             self.assertTrue("pushurl" in detail)
+            # check that the new URL contains the serial number
+            self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
+            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
+            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
+            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
             enrollment_credential = detail.get("enrollment_credential")
 
@@ -232,7 +279,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
             # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), "fb1")
+            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
 
     @responses.activate
     def test_03_api_authenticate_fail(self):
@@ -254,7 +301,7 @@ class PushTokenTestCase(MyTestCase):
             mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
 
             # add responses, to simulate the failing communication (status 500)
-            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/4/messages:send',
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           body="""{}""",
                           status=500,
                           content_type="application/json")
@@ -293,7 +340,7 @@ class PushTokenTestCase(MyTestCase):
             mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
 
             # add responses, to simulate the communication to firebase
-            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/4/messages:send',
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
 
@@ -382,7 +429,7 @@ class PushTokenTestCase(MyTestCase):
             mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
 
             # add responses, to simulate the communication to firebase
-            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/4/messages:send',
+            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           callback=check_firebase_params,
                           content_type="application/json")
 

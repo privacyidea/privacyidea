@@ -484,6 +484,10 @@ msgstr ""
 msgid "Check with OTP PIN."
 msgstr ""
 
+#: privacyidea/static/components/login/views/login.html:68
+msgid "Choose a realm..."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
 msgstr ""
@@ -1464,7 +1468,7 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:29
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:76
+#: privacyidea/static/components/login/views/login.html:77
 msgid "Log In"
 msgstr ""
 
@@ -1811,8 +1815,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:26
-#: privacyidea/static/components/login/views/login.html:69
-#: privacyidea/static/components/login/views/login.html:73
+#: privacyidea/static/components/login/views/login.html:70
+#: privacyidea/static/components/login/views/login.html:74
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -2150,7 +2154,7 @@ msgstr ""
 msgid "Reset Failcounter"
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:81
+#: privacyidea/static/components/login/views/login.html:82
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -2678,7 +2682,7 @@ msgid ""
 "    smartphone into an authentication device."
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:91
+#: privacyidea/static/components/login/views/login.html:92
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."

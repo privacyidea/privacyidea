@@ -56,7 +56,7 @@ angular.module("privacyideaApp")
     obj = angular.element(document.querySelector("#EXTERNAL_LINKS"));
     $scope.piExternalLinks = obj.val();
     obj = angular.element(document.querySelector('#REALMS'));
-    $scope.piRealms = obj.val().mysplit(",");
+    $scope.piRealms = obj.val().mysplit(",").sort();
     //debug: console.log($scope.piRealms);
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();

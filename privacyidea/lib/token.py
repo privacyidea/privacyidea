@@ -82,7 +82,7 @@ from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo, TokenOwner)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin)
+                                    get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
@@ -2160,10 +2160,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            if increase_auth_counters:
-                token_obj.inc_count_auth_success()
-            # Check if the max auth is succeeded
+            # Reset the failcounter, if there is a timeout set
+            token_obj.check_reset_failcount()
+            # Check if the max auth is succeeded.
+            # We need to set the offsets, since we are in the n+1st authentication.
             if token_obj.check_all(message_list):
+                if increase_auth_counters:
+                    token_obj.inc_count_auth_success()
+
                 # The token is active and the auth counters are ok.
                 res = True
                 if not reply_dict.get("type"):
@@ -2250,6 +2254,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
+            for token_obj in challenge_request_token_list:
+                token_obj.check_reset_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
@@ -2258,6 +2264,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # So we increase the failcounter. Return failure.
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
+            if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
+                tokenobject.check_reset_failcount()
             reply_dict["message"] = "wrong otp value"
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was

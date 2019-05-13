@@ -19,7 +19,9 @@ from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 import datetime
-PWFILE = "tests/testdata/passwords"
+from .base import PWFILE as FILE_PASSWORDS
+from .base import PWFILE2 as FILE_PASSWD
+
 
 
 def _check_policy_name(polname, policies):
@@ -538,6 +540,45 @@ class PolicyTestCase(MyTestCase):
         delete_policy("polAdminA")
         delete_policy("polAdminB")
 
+    def test_17b_ui_rights_users_in_different_resolvers(self):
+        # Create a realm with two resolvers
+
+        rid = save_resolver({"resolver": "passwd",
+                             "type": "passwdresolver",
+                             "fileName": FILE_PASSWD})
+        self.assertTrue(rid > 0, rid)
+
+        rid = save_resolver({"resolver": "passwords",
+                             "type": "passwdresolver",
+                             "fileName": FILE_PASSWORDS})
+        self.assertTrue(rid > 0, rid)
+
+        # create user realm
+        (added, failed) = set_realm("realm4",
+                                    ["passwd", "passwords"])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 2)
+
+        # A user may do something else...
+        set_policy(name="userpol41", scope=SCOPE.USER, action="enable",
+                   realm="realm4", resolver="passwd")
+        set_policy(name="userpol42", scope=SCOPE.USER, action="remove",
+                   realm="realm4", resolver="passwords")
+        P = PolicyClass()
+
+        # The two users are in different resolvers and get different rights
+        rights = P.ui_get_rights(SCOPE.USER, "realm4", "postfix")
+        self.assertEqual(set(rights), {"enable", "disable"})
+
+        rights = P.ui_get_rights(SCOPE.USER, "realm4", "usernotoken")
+        self.assertEqual(set(rights), {"disable", "remove"})
+
+        delete_policy("userpol41")
+        delete_policy("userpol42")
+        delete_realm("realm4")
+        delete_resolver("passwords")
+        delete_resolver("passwd")
+
     def test_18_policy_with_time(self):
         set_policy(name="time1", scope=SCOPE.AUTHZ,
                    action="tokentype=hotp totp, enroll",
@@ -661,7 +702,7 @@ class PolicyTestCase(MyTestCase):
         for reso in ["reso1", "resoX", "resoA"]:
             rid = save_resolver({"resolver": reso,
                                  "type": "passwdresolver",
-                                 "fileName": PWFILE})
+                                 "fileName": FILE_PASSWORDS})
             self.assertTrue(rid > 0, rid)
 
         # create a realm with reso1 being the resolver with the highest priority

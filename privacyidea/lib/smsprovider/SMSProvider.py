@@ -47,6 +47,7 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
     "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider"]
 
+
 class SMSError(Exception):
     def __init__(self, error_id, description):
         Exception.__init__(self)
@@ -89,6 +90,14 @@ class ISMSProvider(object):
         :rtype: bool
         """
         return True
+
+    def check_configuration(self):
+        """
+        This method checks the sanity of the configuration of this provider.
+        If there is a configuration error, than an exception is raised.
+        :return:
+        """
+        return
 
     @classmethod
     def parameters(cls):
@@ -170,6 +179,7 @@ def set_smsgateway(identifier, providermodule, description=None,
     smsgateway = SMSGateway(identifier, providermodule,
                             description=description,
                             options=options)
+    create_sms_instance(identifier).check_configuration()
     return smsgateway.id
 
 
