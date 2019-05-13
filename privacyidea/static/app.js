@@ -88,6 +88,9 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             gettextCatalog.setCurrentLanguage(browserLanguage);
             gettextCatalog.debug = true;
 
+            // we set this, so we can use it in templates
+            $rootScope.browserLanguage = browserLanguage;
+
             $rootScope.publicLink = "https://netknights.it/" + gettextCatalog.getCurrentLanguage() + "/support-link-public";
             $rootScope.privacyideaSupportLink = $rootScope.publicLink;
         }

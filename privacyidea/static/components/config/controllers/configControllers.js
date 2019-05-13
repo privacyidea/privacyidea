@@ -77,6 +77,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.policyDefsLoaded = false;
     $scope.scopes = [];
     $scope.viewPolicyTemplates = false;
+    $scope.action_filter = "";
     $('html,body').scrollTop(0);
 
     var check_all_loaded = function() {

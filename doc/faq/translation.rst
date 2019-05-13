@@ -1,3 +1,5 @@
+.. _translation:
+
 Setup translation
 -----------------
 The translation is performed using grunt. To setup the translation
