@@ -15,15 +15,19 @@ privacyIDEA
 
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
-..    :target: https://pypi.python.org/pypi/privacyidea/
+..    :target: https://pypi.python.org/pypi/privacyIDEA/
     
 .. image:: https://img.shields.io/pypi/v/privacyidea.svg
     :alt: Latest Version
-    :target: https://pypi.python.org/pypi/privacyidea/
-    
+    :target: https://pypi.python.org/pypi/privacyIDEA/#history
+
+.. image:: https://img.shields.io/pypi/pyversions/privacyidea.svg
+    :alt: PyPI - Python Version
+    :target: https://pypi.python.org/pypi/privacyIDEA/
+
 .. image:: https://img.shields.io/github/license/privacyidea/privacyidea.svg
     :alt: License
-    :target: https://pypi.python.org/pypi/privacyidea/
+    :target: https://pypi.python.org/pypi/privacyIDEA/
     
 .. image:: https://readthedocs.org/projects/privacyidea/badge/?version=master
     :alt: Documentation
