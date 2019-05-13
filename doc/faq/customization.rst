@@ -114,7 +114,7 @@ Use web server substitute module
 
 You can also use the substitute module of the Apache webserver.
 It is not clear how much performance impact you get, since this
-module can scan and replace all texts that is delivered by the web server.
+module can scan and replace any text that is delivered by the web server.
 
 If you for example want to replace the title of the webpages, you could
 do it like this::
