@@ -358,7 +358,7 @@ myApp.directive('spinner', function() {
         },
         template: [
             '<div ng-show="showSpinner">',
-            '<span class="glyphicon glyphicon-refresh spin" style="margin: 50% 5px 0 0; font-size:120%; color: #787878;" aria-hidden="true"></span>',
+            '<span class="glyphicon glyphicon-refresh spin" aria-hidden="true"></span>',
             '</div>'
         ].join(''),
         controller: function($scope, $rootScope) {
