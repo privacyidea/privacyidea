@@ -1222,8 +1222,7 @@ def is_remote_user_allowed(req):
                                                          scope=SCOPE.WEBUI,
                                                          user=loginname,
                                                          realm=realm,
-                                                         client=g.client_ip,
-                                                         audit_data=g.audit_object.audit_data)
+                                                         client=g.client_ip)
 
         res = bool(ruser_active)
 
