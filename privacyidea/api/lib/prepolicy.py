@@ -1218,12 +1218,17 @@ def is_remote_user_allowed(req):
                                         get_from_config(SYSCONF.OVERRIDECLIENT))
         if "policy_object" not in g:
             g.policy_object = PolicyClass()
+        if "audit_object" in g:
+            audit_data = g.audit_object.audit_data
+        else:
+            audit_data = None
+
         ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
                                                          scope=SCOPE.WEBUI,
                                                          user=loginname,
                                                          realm=realm,
                                                          client=g.client_ip,
-                                                         audit_data=g.audit_object.audit_data)
+                                                         audit_data=audit_data)
 
         res = bool(ruser_active)
 
