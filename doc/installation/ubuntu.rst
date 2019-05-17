@@ -24,7 +24,7 @@ Before installing privacyIDEA 3.0 or upgrading to 3.0 you need to add the reposi
 Add repository
 ~~~~~~~~~~~~~~
 
-The packages are digitially signed. First you need to download the signing key::
+The packages are digitally signed. First you need to download the signing key::
 
    wget https://lancelot.netknights.it/NetKnights-Release.asc
 
@@ -53,7 +53,7 @@ You can do this by running the command::
 
 or::
 
-   add-apt-repository http://lancelot.netknights.it/community/bionix/stable
+   add-apt-repository http://lancelot.netknights.it/community/bionic/stable
 
 As an alternative you can add the repo in a dedicated file. Create a new 
 file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
