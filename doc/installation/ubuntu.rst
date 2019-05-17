@@ -24,17 +24,7 @@ Before installing privacyIDEA 3.0 or upgrading to 3.0 you need to add the reposi
 Add repository
 ~~~~~~~~~~~~~~
 
-Create a new file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
-following contents:
-
-   deb http://lancelot.netknights.it/community/xenial/stable xenial main
-
-"xenial" is for Ubuntu 16.04LTS. If you are running Ubuntu 18.04LTS, 
-replase "xenial" with "bionic":
-
-   deb http://lancelot.netknights.it/community/bionic/stable bionic main
-
-Download the signing key::
+The packages are digitially signed. First you need to download the signing key::
 
    wget https://lancelot.netknights.it/NetKnights-Release.asc
 
@@ -54,6 +44,27 @@ The fingerprint of the key is::
 Now add the signing key to your system::
 
    apt-key add NetKnights-Release.asc
+
+Now you need to add the repository for your release (either xenial/16.04LTS or bionic/18.04LTS)
+
+You can do this by running the command::
+
+   add-apt-repository http://lancelot.netknights.it/community/xenial/stable
+
+or::
+
+   add-apt-repository http://lancelot.netknights.it/community/bionix/stable
+
+As an alternative you can add the repo in a dedicated file. Create a new 
+file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
+following contents::
+
+   deb http://lancelot.netknights.it/community/xenial/stable xenial main
+
+or::
+
+   deb http://lancelot.netknights.it/community/bionic/stable bionic main
+
 
 
 New installation of privacyIDEA 3.0
