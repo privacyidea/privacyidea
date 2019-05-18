@@ -84,6 +84,16 @@ class APIAuthTestCase(MyApiTestCase):
             self.assertEqual(result.get("value").get("role"), "admin")
             self.assertTrue(result.get("status"), res.data)
 
+        # Check if the /auth request writes the policyname "remote" to the audit entry
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization':
+                                                        self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            auditentry = res.json.get("result").get("value").get("auditdata")[0]
+            self.assertTrue("remote" in auditentry.get("policies"))
+
         self.setUp_user_realms()
         # User "cornelius" from the default realm as normale user
         with self.app.test_request_context('/auth', method='POST',
