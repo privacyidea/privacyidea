@@ -19,11 +19,12 @@
 #
 import six
 
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_utf8
+from privacyidea.lib.utils import fetch_one_resource, to_bytes
 import logging
 from privacyidea.lib.log import log_with
 from time import gmtime, strftime
@@ -116,9 +117,10 @@ class SMTPServer(object):
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config['password']
             # Under Python 2, we pass passwords as bytestrings to get CRAM-MD5 to work.
+            # We add a safeguard config option to disable the conversion.
             # Under Python 3, we pass passwords as unicode.
-            if six.PY2:
-                password = to_utf8(password)
+            if six.PY2 and get_app_config_value("PI_SMTP_PASSWORD_AS_BYTES", True):
+                password = to_bytes(password)
             mail.login(config['username'], password)
         r = mail.sendmail(mail_from, recipient, msg.as_string())
         log.info("Mail sent: {0!s}".format(r))
