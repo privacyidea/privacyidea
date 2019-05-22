@@ -904,3 +904,22 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("act1" in audit_data.get("policies"))
         self.assertTrue("act2" in audit_data.get("policies"))
         self.assertTrue("act3" not in audit_data.get("policies"))
+
+    def test_26_reload_policies(self):
+        # First, remove all policies
+        policy_object = PolicyClass()
+        delete_all_policies()
+        self.assertEqual(policy_object.get_policies(), [])
+        # Now, add a policy and check if the policies have been reloaded
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act1"])
+        self.assertEqual(policy_object.get_policies()[0]["priority"], 1)
+        # Update the policy and check if the policies have been reloaded
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=2)
+        self.assertEqual(policy_object.get_policies()[0]["priority"], 2)
+        # Add a second policy, check
+        set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN), priority=3)
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act1", "act2"])
+        # Delete a policy, check
+        delete_policy("act1")
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act2"])

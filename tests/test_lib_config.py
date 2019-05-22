@@ -3,6 +3,7 @@ This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
+from privacyidea.models import Config, PRIVACYIDEA_TIMESTAMP, save_config_timestamp, db
 from .base import MyTestCase
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -215,9 +216,31 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue("Node2" in nodes)
 
     def test_08_config_object(self):
+        obj1 = get_config_object()
+        # Another call to ``get_config_object`` returns the identical config object
+        self.assertIs(obj1, get_config_object())
         set_privacyidea_config(key="k1", value="v1")
+        # ``set_privacyidea_config`` invalidates the config object, so we get a different one
+        obj2 = get_config_object()
+        self.assertIsNot(obj1, obj2)
         self.assertEqual(get_config_object().get_config("k1"), "v1")
+        # ``set_privacyidea_config`` again invalidates the config object
         set_privacyidea_config(key="k1", value="v2")
-        # updated already
-        invalidate_config_object()
+        obj3 = get_config_object()
+        self.assertIsNot(obj2, obj3)
         self.assertEqual(get_config_object().get_config("k1"), "v2")
+
+    def test_09_invalidate_config_object(self):
+        # Test manual invalidation of the config object
+        # Ensure we have a config object
+        get_config_object()
+        # Add a config option *without invalidating the config*
+        db.session.add(Config(Key=u"some_key", Value=u"some_value"))
+        save_config_timestamp(False)
+        db.session.commit()
+        # The request-local config does not know about the new config option
+        self.assertEqual(get_from_config("some_key", "default"), "default")
+        # ... so we manually invalidate it ...
+        invalidate_config_object()
+        # ... and the new config object knows!
+        self.assertEqual(get_from_config("some_key", "default"), "some_value")

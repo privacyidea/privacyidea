@@ -881,6 +881,7 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         ret = "update"
     else:
         #new_entry = Config(key, value, typ, desc)
+        # ``save`` will call ``save_config_timestamp`` for us
         Config(key, value, typ, desc).save()
         #db.session.add(new_entry)
         ret = "insert"
