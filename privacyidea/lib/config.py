@@ -41,7 +41,7 @@ import threading
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp)
+                      save_config_timestamp, Policy)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from .crypto import encryptPassword
 from .crypto import decryptPassword
@@ -63,32 +63,11 @@ this = sys.modules[__name__]
 this.config = {}
 
 
-class Singleton(type):
-    """
-    This singleton acts as metaclass for the Caching Objects "ConfigClass"
-    and "PolicyClass".
-    """
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        else:
-            # If the singleton already exist, we check in the timestamp in
-            # the database if we need to reread the configuration from the
-            # database.
-            log.debug("The singleton {0!s} already exists.".format(cls))
-            if hasattr(cls._instances[cls], "reload_from_db"):
-                cls._instances[cls].reload_from_db()
-
-        return cls._instances[cls]
-
-
 class SharedConfigClass(object):
     """
     A shared config class object is shared between threads and is supposed
-    to store the current configuration with resolvers and realms, along
-    with the timestamp of the configuration.
+    to store the current configuration with resolvers, realms and policies,
+    along with the timestamp of the configuration.
 
     The method ``reload_from_db()`` compares this timestamp against the
     timestamp in the database (while taking the PI_CHECK_RELOAD_CONFIG
@@ -105,6 +84,7 @@ class SharedConfigClass(object):
         self.resolver = {}
         self.realm = {}
         self.default_realm = None
+        self.policies = []
         self.timestamp = None
 
     def reload_from_db(self):
@@ -122,11 +102,14 @@ class SharedConfigClass(object):
                 resolverconfig = {}
                 realmconfig = {}
                 default_realm = None
+                policies = []
+                # Load system configuration
                 for sysconf in Config.query.all():
                     config[sysconf.Key] = {
                         "Value": sysconf.Value,
                         "Type": sysconf.Type,
                         "Description": sysconf.Description}
+                # Load resolver configuration
                 for resolver in Resolver.query.all():
                     resolverdef = {"type": resolver.rtype,
                                    "resolvername": resolver.name,
@@ -141,7 +124,7 @@ class SharedConfigClass(object):
                         data[rconf.Key] = value
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
-
+                # Load realm configuration
                 for realm in Realm.query.all():
                     if realm.default:
                         default_realm = realm.name
@@ -153,12 +136,17 @@ class SharedConfigClass(object):
                                                      "name": x.resolver.name,
                                                      "type": x.resolver.rtype})
                     realmconfig[realm.name] = realmdef
+                # Load all policies
+                for pol in Policy.query.all():
+                    policies.append(pol.get())
+                # Finally, set the current timestamp
                 timestamp = datetime.datetime.now()
                 with self._config_lock:
                     self.config = config
                     self.resolver = resolverconfig
                     self.realm = realmconfig
                     self.default_realm = default_realm
+                    self.policies = policies
                     self.timestamp = timestamp
 
     def clone(self):
@@ -171,6 +159,7 @@ class SharedConfigClass(object):
                 self.resolver,
                 self.realm,
                 self.default_realm,
+                self.policies,
                 self.timestamp
             )
 
@@ -187,16 +176,17 @@ class SharedConfigClass(object):
 class LocalConfigClass(object):
     """
     The Config_Object will contain all database configuration of system
-    config, resolvers and realm.
+    config, resolvers, realms and policies.
     It will be cloned from the shared config object at the beginning of the
     request and is supposed to stay alive and unchanged during the request.
     """
 
-    def __init__(self, config, resolver, realm, default_realm, timestamp):
+    def __init__(self, config, resolver, realm, default_realm, policies, timestamp):
         self.config = config
         self.resolver = resolver
         self.realm = realm
         self.default_realm = default_realm
+        self.policies = policies
         self.timestamp = timestamp
 
     def get_config(self, key=None, default=None, role="admin",

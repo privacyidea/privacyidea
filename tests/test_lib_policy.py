@@ -786,7 +786,6 @@ class PolicyTestCase(MyTestCase):
                          ["text 2"])
 
         delete_policy("email2")
-        P.reload_from_db()
 
         # with email2 gone, this chooses email1
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
@@ -796,7 +795,6 @@ class PolicyTestCase(MyTestCase):
         # if we now add another policy with priority 77, we get no conflict
         # because email1 is chosen
         set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=77)
-        P.reload_from_db()
 
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
                                                   unique=True, allow_white_space_in_action=True).keys()),
@@ -804,7 +802,6 @@ class PolicyTestCase(MyTestCase):
 
         # but we get a conflict if we change the priority of email4 to 4
         set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=4)
-        P.reload_from_db()
 
         with self.assertRaises(PolicyError) as cm:
             P.get_action_values(
@@ -822,7 +819,6 @@ class PolicyTestCase(MyTestCase):
 
         # we can also change the priority
         set_policy(name="email4", priority=3)
-        P.reload_from_db()
 
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
                                                   unique=True, allow_white_space_in_action=True).keys()),
@@ -870,7 +866,6 @@ class PolicyTestCase(MyTestCase):
                          ["text 1"])
 
         set_policy(name="email2", action="emailtext='text 2'")
-        P.reload_from_db()
         with self.assertRaises(PolicyError):
             P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True)
 

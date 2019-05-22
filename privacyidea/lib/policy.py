@@ -158,10 +158,9 @@ from configobj import ConfigObj
 from operator import itemgetter
 import six
 import logging
-from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
-                      save_config_timestamp)
+from ..models import (Policy, db, save_config_timestamp)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
-                                    Singleton)
+                                    get_config_object)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.realm import get_realms
@@ -380,42 +379,25 @@ class TIMEOUT_ACTION(object):
     LOCKSCREEN = 'lockscreen'
 
 
-class PolicyClass(with_metaclass(Singleton, object)):
-
+class PolicyClass(object):
     """
-    The Policy_Object will contain all database policy entries for easy
-    filtering and mangling.
-    It will be created at the beginning of the request and is supposed to stay
-    alive unchanged during the request.
-    """
+    A policy object can be used to query the current set of policies.
+    The policy object itself does not store any policies. Instead, it
+    uses ``get_config_object`` to retrieve the request-local config object
+    which contains the current set of policies as well.
 
+    Hence, reloading the request-local config object also reloads the
+    set of policies.
+    """
     def __init__(self):
-        """
-        Create the Policy_Object from the database table
+        pass
 
+    @property
+    def policies(self):
         """
-        self.policies = []
-        self.timestamp = None
-        # read the policies from the database and store it in the object
-        self.reload_from_db()
-
-    def reload_from_db(self):
+        Shorthand to retrieve the set of policies of the request-local config object
         """
-        Read the timestamp from the database. If the timestamp is newer than
-        the internal timestamp, then read the complete data
-        :return:
-        """
-        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
-        if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=check_reload_config) < datetime.datetime.now():
-            db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
-            if reload_db(self.timestamp, db_ts):
-                self.policies = []
-                policies = Policy.query.all()
-                for pol in policies:
-                    # read each policy
-                    self.policies.append(pol.get())
-            self.timestamp = datetime.datetime.now()
+        return get_config_object().policies
 
     @classmethod
     def _search_value(cls, policy_attributes, searchvalue):
