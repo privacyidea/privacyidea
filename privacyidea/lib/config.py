@@ -98,6 +98,7 @@ class SharedConfigClass(object):
             self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
             db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
             if reload_db(self.timestamp, db_ts):
+                log.debug(u"Reloading shared config from database")
                 config = {}
                 resolverconfig = {}
                 realmconfig = {}
@@ -268,6 +269,7 @@ def get_shared_config_object():
         # It might happen that two threads create SharedConfigClass() instances in parallel.
         # However, as setting dictionary values is atomic, one of the two objects will "win",
         # and the next request handled by the second thread will use the winning config object.
+        log.debug(u"Creating new shared config object")
         store['shared_config_object'] = SharedConfigClass()
     return store['shared_config_object']
 
@@ -285,6 +287,7 @@ def invalidate_config_object():
     """
     store = get_request_local_store()
     if 'config_object' in store:
+        log.debug(u"Invalidating request-local config object")
         del store['config_object']
 
 
@@ -309,6 +312,7 @@ def get_config_object():
     """
     store = get_request_local_store()
     if 'config_object' not in store:
+        log.debug(u"Cloning request-local config from shared config object")
         shared_config = get_shared_config_object()
         store['config_object'] = shared_config.reload_and_clone()
     return store['config_object']
