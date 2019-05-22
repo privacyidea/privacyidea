@@ -292,6 +292,17 @@ def invalidate_config_object():
         del store['config_object']
 
 
+def ensure_no_config_object():
+    """
+    If the request-local store contains a config object, remove it and emit a warning.
+    If the request-local store contains no config object, do nothing.
+    """
+    store = get_request_local_store()
+    if 'config_object' in store:
+        log.warning(u"Request-local store already contains config object, even though it should not")
+        del store['config_object']
+
+
 def get_config_object():
     """
     Return the request-local config object. If it does not exist yet, create it.
