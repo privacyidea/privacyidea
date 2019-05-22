@@ -382,12 +382,11 @@ class TIMEOUT_ACTION(object):
 class PolicyClass(object):
     """
     A policy object can be used to query the current set of policies.
-    The policy object itself does not store any policies. Instead, it
-    uses ``get_config_object`` to retrieve the request-local config object
-    which contains the current set of policies as well.
+    The policy object itself does not store any policies.
+    Instead, every query uses ``get_config_object`` to retrieve the request-local
+    config object which contains the current set of policies.
 
-    Hence, reloading the request-local config object also reloads the
-    set of policies.
+    Hence, reloading the request-local config object also reloads the set of policies.
     """
     def __init__(self):
         pass

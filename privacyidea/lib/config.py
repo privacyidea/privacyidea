@@ -177,10 +177,10 @@ class LocalConfigClass(object):
     """
     The Config_Object will contain all database configuration of system
     config, resolvers, realms and policies.
+
     It will be cloned from the shared config object at the beginning of the
     request and is supposed to stay alive and unchanged during the request.
     """
-
     def __init__(self, config, resolver, realm, default_realm, policies, timestamp):
         self.config = config
         self.resolver = resolver
@@ -274,6 +274,12 @@ def get_shared_config_object():
 
 def invalidate_config_object():
     """
+    Invalidate the request-local config object. This is useful whenever a request modifies
+    the configuration in the database: In this case, the request-local config object still
+    contains the old configuration and needs to be invalidated. The same request can then
+    create a new request-local config object, which will contain the new configuration.
+
+    In other words, this function does the following:
     If the request-local store contains a config object, remove it.
     If the request-local store contains no config object, do nothing.
     """
@@ -284,6 +290,9 @@ def invalidate_config_object():
 
 def ensure_no_config_object():
     """
+    Ensure that the request-local store contains no config object, and emit
+    a warning if it does. This should only be the case if we are running tests.
+
     If the request-local store contains a config object, remove it and emit a warning.
     If the request-local store contains no config object, do nothing.
     """
@@ -296,7 +305,7 @@ def ensure_no_config_object():
 def get_config_object():
     """
     Return the request-local config object. If it does not exist yet, create it.
-    :return: a ConfigClass object
+    :return: a ``LocalConfigClass`` object
     """
     store = get_request_local_store()
     if 'config_object' not in store:
