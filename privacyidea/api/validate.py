@@ -198,10 +198,8 @@ def offlinerefill():
                     otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                     refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                     response = send_result(True)
-                    content = json.loads(response.data)
-                    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
-                                                          "response": otps}]}
-                    response.data = json.dumps(content)
+                    response.json["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                                                                "response": otps}]}
                     return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
 

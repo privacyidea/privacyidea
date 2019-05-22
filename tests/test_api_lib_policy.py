@@ -1740,8 +1740,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = no_detail_on_success(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue("detail" not in jresult, jresult)
+        self.assertNotIn("detail", new_response.json, new_response.json)
         delete_policy("pol2")
 
     def test_04_no_detail_on_fail(self):
@@ -1771,8 +1770,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = no_detail_on_fail(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue("detail" not in jresult, jresult)
+        self.assertNotIn("detail", new_response.json, new_response.json)
 
         # A successful call has a detail in the response!
         res = {"jsonrpc": "2.0",
@@ -1786,8 +1784,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = no_detail_on_fail(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue("detail" in jresult, jresult)
+        self.assertIn("detail", new_response.json, new_response.json)
 
         delete_policy("pol2")
 
@@ -1828,10 +1825,11 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue("user" in jresult.get("detail"), jresult)
-        self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
-        self.assertFalse("user-realm" in jresult.get("detail"), jresult)
+        self.assertIn("user", new_response.json.get("detail"), new_response.json)
+        self.assertNotIn("user-resolver", new_response.json.get("detail"),
+                         new_response.json)
+        self.assertNotIn("user-realm",  new_response.json.get("detail"),
+                         new_response.json)
 
         # set a policy that adds user resolver to detail
         set_policy(name="pol_add_resolver",
@@ -1841,10 +1839,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         new_response = add_user_detail_to_response(req, resp)
         jresult = json.loads(new_response.data)
-        self.assertTrue("user-resolver" in jresult.get("detail"), jresult)
-        self.assertEqual(jresult.get("detail").get("user-resolver"), self.resolvername1)
-        self.assertTrue("user-realm" in jresult.get("detail"), jresult)
-        self.assertEqual(jresult.get("detail").get("user-realm"), self.realm1)
+        self.assertIn("user-resolver", new_response.json.get("detail"),
+                      new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("user-resolver"),
+                         self.resolvername1)
+        self.assertIn("user-realm", new_response.json.get("detail"),
+                      new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("user-realm"),
+                         self.realm1)
 
         delete_policy("pol_add_user")
         delete_policy("pol_add_resolver")
@@ -1893,10 +1895,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue(jresult.get("result").get("value"), jresult)
-        self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN1")
-        self.assertEqual(jresult.get("detail").get("otplen"), 6)
+        self.assertTrue(new_response.json.get("result").get("value"),
+                        new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("serial"), "UASSIGN1",
+                         new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("otplen"), 6,
+                         new_response.json)
 
         # test the token with test287082 will fail
         res, dict = check_user_pass(User("autoassignuser", self.realm1),
@@ -1954,10 +1958,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertEqual(jresult.get("result").get("value"), True)
-        self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN2")
-        self.assertEqual(jresult.get("detail").get("otplen"), 6)
+        self.assertTrue(new_response.json.get("result").get("value"),
+                        new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("serial"), "UASSIGN2",
+                         new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("otplen"), 6,
+                         new_response.json)
 
         # authenticate with 287082 a second time will fail
         res, dict = check_user_pass(User("autoassignuser", self.realm1),
@@ -2011,12 +2017,13 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = offline_info(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertTrue(jresult.get("result").get("value"), jresult)
-        self.assertEqual(jresult.get("detail").get("serial"), serial)
+        self.assertTrue(new_response.json.get("result").get("value"),
+                        new_response.json)
+        self.assertEqual(new_response.json.get("detail").get("serial"), serial,
+                         new_response.json)
 
         # Check the hashvalues in the offline tree
-        auth_items = jresult.get("auth_items")
+        auth_items = new_response.json.get("auth_items")
         self.assertEqual(len(auth_items), 1)
         response = auth_items.get("offline")[0].get("response")
         self.assertEqual(len(response), 100)
@@ -2027,12 +2034,10 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("offline287082",
-                                             response.get('1')))
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("offline516516",
-                                             response.get('99')))
+        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline287082",
+                                                          response.get(1)))
+        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline516516",
+                                                          response.get(99)))
         res = tokenobject.check_otp("516516") # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
@@ -2077,7 +2082,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # signing of API responses is the default
         new_response = sign_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("nonce"), "12345678")
         # After switching to the PSS signature scheme, each signature will be
         # different. So we have to verify the signature through the sign object
@@ -2125,9 +2130,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
-        self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), False)
+        self.assertFalse(new_response.json.get("result").get("value").get("token_wizard"),
+                         new_response.json)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_wizard",
@@ -2136,8 +2140,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = json.loads(new_response.data)
-        self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), True)
+        self.assertTrue(new_response.json.get("result").get("value").get("token_wizard"),
+                        new_response.json)
 
         # Assert the policy is not honored if inactive
         set_policy(name="pol_wizard",
@@ -2145,8 +2149,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = json.loads(new_response.data)
-        self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), False)
+        self.assertFalse(new_response.json.get("result").get("value").get("token_wizard"),
+                         new_response.json)
 
         delete_policy("pol_wizard")
 

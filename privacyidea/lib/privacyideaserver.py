@@ -80,7 +80,7 @@ class PrivacyIDEAServer(object):
                                                                response.status_code))
             return False
 
-        j_response = json.loads(response.content)
+        j_response = json.loads(response.text)
         result = j_response.get("result")
         return result.get("status") and result.get("value")
 

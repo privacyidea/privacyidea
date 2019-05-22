@@ -671,7 +671,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -711,7 +711,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -750,7 +750,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/serial")
 
@@ -843,7 +843,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/init")
 

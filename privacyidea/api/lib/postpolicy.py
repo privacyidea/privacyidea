@@ -170,7 +170,7 @@ def sign_response(request, response):
     else:
         response_object = response
     try:
-        content = json.loads(response_object.data)
+        content = response_object.json
         nonce = request.all_data.get("nonce")
         if nonce:
             content["nonce"] = nonce
@@ -201,7 +201,7 @@ def check_tokentype(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    content = json.loads(response.data)
+    content = response.json
     tokentype = content.get("detail", {}).get("type")
     policy_object = g.policy_object
     user_object = request.User
@@ -233,7 +233,7 @@ def check_serial(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
     serial = content.get("detail", {}).get("serial")
     # get the serials from a policy definition
@@ -267,7 +267,7 @@ def check_tokeninfo(request, response):
     :type response: Response object
     :return: A new modified response
     """
-    content = json.loads(response.data)
+    content = response.json
     serial = content.get("detail", {}).get("serial")
 
     if serial:
@@ -310,7 +310,7 @@ def no_detail_on_success(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -339,7 +339,7 @@ def add_user_detail_to_response(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # Check for ADD USER IN RESPONSE
@@ -387,7 +387,7 @@ def no_detail_on_fail(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -425,7 +425,7 @@ def save_pin_change(request, response, serial=None):
     :param action:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
     serial = serial or request.all_data.get("serial")
     if not serial:
@@ -480,7 +480,7 @@ def offline_info(request, response):
     OTP.
 
     """
-    content = json.loads(response.data)
+    content = response.json
     # check if the authentication was successful
     if content.get("result").get("value") is True and g.client_ip:
         # If there is no remote address, we can not determine
@@ -512,7 +512,7 @@ def get_webui_settings(request, response):
     :param response: flask response object
     :return: the response
     """
-    content = json.loads(response.data)
+    content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
@@ -702,7 +702,7 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
         user_obj = request.User
@@ -743,25 +743,21 @@ def autoassign(request, response):
                             if otp_check >= 0:
                                 # we found a matching token
                                 #    check MAXTOKENUSER and MAXTOKENREALM
+                                msg = "Token assigned to user via Autoassignment"
                                 check_max_token_user(request=request)
                                 check_max_token_realm(request=request)
                                 #    Assign token
                                 assign_token(serial=token_obj.token.serial,
                                              user=user_obj, pin=pin)
                                 # Set the response to true
-                                content.get("result")["value"] = True
+                                content["result"]["value"] = True
                                 # Set the serial number
                                 if not content.get("detail"):
                                     content["detail"] = {}
-                                content.get("detail")["serial"] = \
-                                    token_obj.token.serial
-                                content.get("detail")["otplen"] = \
-                                    token_obj.token.otplen
-                                content.get("detail")["type"] = token_obj.type
-                                content.get("detail")["message"] = "Token " \
-                                                                   "assigned to " \
-                                                                   "user via " \
-                                                                   "Autoassignment"
+                                content["detail"]["serial"] = token_obj.token.serial
+                                content["detail"]["otplen"] = token_obj.token.otplen
+                                content["detail"]["type"] = token_obj.type
+                                content["detail"]["message"] = msg
                                 response.data = json.dumps(content)
 
                                 g.audit_object.log(
@@ -787,7 +783,7 @@ def construct_radius_response(request, response):
     """
     if request.url_rule.rule == '/validate/radiuscheck':
         return_code = 400 # generic 400 error by default
-        content = json.loads(response.data)
+        content = response.json
         if content['result']['status']:
             if content['result']['value']:
                 # user was successfully authenticated
@@ -810,7 +806,7 @@ def mangle_challenge_response(request, response):
     :return:
     """
     try:
-        content = json.loads(response.data)
+        content = response.json
     except ValueError:
         # This can happen with the validate/radiuscheck endpoint
         return response
