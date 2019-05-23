@@ -195,7 +195,7 @@ msgstr ""
 msgid "Add user"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:286
+#: privacyidea/static/components/config/views/config.policies.details.html:288
 msgid "Admin"
 msgstr ""
 
@@ -469,7 +469,7 @@ msgstr ""
 msgid "Check OTP only."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:278
+#: privacyidea/static/components/config/views/config.policies.details.html:280
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
@@ -484,7 +484,7 @@ msgstr ""
 msgid "Check with OTP PIN."
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:68
+#: privacyidea/static/components/login/views/login.html:69
 msgid "Choose a realm..."
 msgstr ""
 
@@ -522,7 +522,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:302
+#: privacyidea/static/components/config/views/config.policies.details.html:304
 #: privacyidea/static/components/config/views/config.policies.list.html:13
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -554,7 +554,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:129
+#: privacyidea/static/templates/menu.html:130
 msgid "Community"
 msgstr ""
 
@@ -573,10 +573,6 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:69
 msgid "Config"
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enrolled.push.html:3
-msgid "Congratulations. Your PUSH token {{ enrolledToken.serial }} was successfully enrolled."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:194
@@ -610,7 +606,7 @@ msgstr ""
 msgid "Create Periodic Task Definition"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:347
+#: privacyidea/static/components/config/views/config.policies.details.html:349
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr ""
@@ -1049,7 +1045,7 @@ msgstr ""
 msgid "Error fetching policy templates."
 msgstr ""
 
-#: privacyidea/static/components/login/factories/u2f.js:98
+#: privacyidea/static/components/login/factories/u2f.js:99
 msgid "Error in U2F response."
 msgstr ""
 
@@ -1348,7 +1344,7 @@ msgstr ""
 msgid "Import tokens from a file"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:333
+#: privacyidea/static/components/config/views/config.policies.details.html:335
 msgid "In case of conflicting policies, the policy with the lowest priority number will take precedence."
 msgstr ""
 
@@ -1457,7 +1453,7 @@ msgstr ""
 msgid "Loading users..."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:136
+#: privacyidea/static/templates/menu.html:138
 msgid "Lock screen"
 msgstr ""
 
@@ -1468,7 +1464,7 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:29
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:78
 msgid "Log In"
 msgstr ""
 
@@ -1491,7 +1487,7 @@ msgid "Login with credentials"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:161
-#: privacyidea/static/templates/menu.html:139
+#: privacyidea/static/templates/menu.html:141
 msgid "Logout"
 msgstr ""
 
@@ -1815,8 +1811,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:26
-#: privacyidea/static/components/login/views/login.html:70
-#: privacyidea/static/components/login/views/login.html:74
+#: privacyidea/static/components/login/views/login.html:71
+#: privacyidea/static/components/login/views/login.html:75
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -1858,6 +1854,10 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:225
 msgid "Please confirm with one of these tokens:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enrolled.push.html:3
+msgid "Please note, that your smartphone needs internet access during the authentication process."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:97
@@ -1960,7 +1960,7 @@ msgstr ""
 msgid "Print the OTP list"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:326
+#: privacyidea/static/components/config/views/config.policies.details.html:328
 #: privacyidea/static/components/config/views/config.policies.list.html:5
 msgid "Priority"
 msgstr ""
@@ -2154,7 +2154,7 @@ msgstr ""
 msgid "Reset Failcounter"
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:82
+#: privacyidea/static/components/login/views/login.html:83
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -2517,7 +2517,7 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/baseline.html:14
-#: privacyidea/static/templates/menu.html:131
+#: privacyidea/static/templates/menu.html:133
 msgid "Support"
 msgstr ""
 
@@ -2545,12 +2545,12 @@ msgstr ""
 msgid "System Config"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:444
-#: privacyidea/static/components/config/controllers/configControllers.js:671
+#: privacyidea/static/components/config/controllers/configControllers.js:445
+#: privacyidea/static/components/config/controllers/configControllers.js:672
 msgid "System Config saved."
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:453
+#: privacyidea/static/components/config/controllers/configControllers.js:454
 msgid "System entry deleted."
 msgstr ""
 
@@ -2682,7 +2682,7 @@ msgid ""
 "    smartphone into an authentication device."
 msgstr ""
 
-#: privacyidea/static/components/login/views/login.html:92
+#: privacyidea/static/components/login/views/login.html:93
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -2988,7 +2988,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:122
+#: privacyidea/static/app.js:125
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -3476,7 +3476,7 @@ msgstr ""
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:288
+#: privacyidea/static/components/config/views/config.policies.details.html:290
 #: privacyidea/static/components/config/views/config.policies.list.html:11
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
 #: privacyidea/static/components/config/views/config.radius.edit.html:97
@@ -3514,11 +3514,11 @@ msgstr ""
 msgid "User updated successfully."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:248
+#: privacyidea/static/components/config/views/config.policies.details.html:250
 msgid "User-Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:263
+#: privacyidea/static/components/config/views/config.policies.details.html:265
 msgid "User-Resolver"
 msgstr ""
 
@@ -3553,7 +3553,7 @@ msgstr ""
 msgid "Valid subscription"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:314
+#: privacyidea/static/components/config/views/config.policies.details.html:316
 msgid "Valid time"
 msgstr ""
 
@@ -3664,7 +3664,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:150
+#: privacyidea/static/templates/menu.html:152
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
