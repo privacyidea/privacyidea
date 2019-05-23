@@ -1569,7 +1569,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # The token type SPASS is not allowed on this client, so an exception
         #  is raised.
         r = check_tokentype(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
     def test_01_check_undetermined_tokentype(self):
@@ -1636,7 +1636,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action="tokeninfo=testkey/test.*/", client="10.0.0.0/8")
         g.policy_object = PolicyClass()
         r = check_tokeninfo(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
         # Set a policy that does NOT match
@@ -1661,7 +1661,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action="tokeninfo=testkey/missingslash", client="10.0.0.0/8")
         g.policy_object = PolicyClass()
         r = check_tokeninfo(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
         delete_policy("pol1")
@@ -1710,7 +1710,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # The token type SPASS is not allowed on this client, so an exception
         # is raised.
         r = check_serial(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
     def test_03_no_detail_on_success(self):
@@ -1814,7 +1814,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("user" not in jresult.get("detail"), jresult)
 
         # A successful get a user added
@@ -1838,7 +1838,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
         self.assertIn("user-resolver", new_response.json.get("detail"),
                       new_response.json)
         self.assertEqual(new_response.json.get("detail").get("user-resolver"),
@@ -2139,7 +2138,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action=ACTION.TOKENWIZARD)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
         self.assertTrue(new_response.json.get("result").get("value").get("token_wizard"),
                         new_response.json)
 
@@ -2148,7 +2146,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    active=False)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
         self.assertFalse(new_response.json.get("result").get("value").get("token_wizard"),
                          new_response.json)
 

@@ -31,15 +31,15 @@ class APIUsersTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(b'"status": true' in res.data, res.data)
-            self.assertTrue(b'"value": []' in res.data, res.data)
+            self.assertTrue(res.json['result']["status"], res.json)
+            self.assertEqual(res.json['result']["value"], [], res.json)
 
     def test_01_get_passwd_user(self):
         # create resolver
         with self.app.test_request_context('/resolver/r1',
-                                           data=json.dumps({u"resolver": u"r1",
+                                           data={u"resolver": u"r1",
                                                  u"type": u"passwdresolver",
-                                                 u"fileName": PWFILE}),
+                                                 u"fileName": PWFILE},
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()

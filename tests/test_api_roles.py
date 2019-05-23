@@ -684,7 +684,7 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             # Test logout time
             self.assertEqual(result.get("value").get("logout_time"), 200)

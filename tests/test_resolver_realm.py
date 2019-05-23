@@ -51,9 +51,10 @@ class APIResolverTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(b'"fileName": "/etc/passwd"' in res.data, res.data)
-            self.assertTrue(b'"resolvername": "r1"' in res.data, res.data)
-            
+            val = res.json['result']['value']
+            self.assertEqual(val['r1']['resolvername'], 'r1', val)
+            self.assertEqual(val['r1']['data']['fileName'], '/etc/passwd', val)
+
     def test_01_create_realm(self):
         realm = u"realm1"
         resolvers = u"r1, r2"
