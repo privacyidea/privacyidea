@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add passthru_assign policy
 #  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add App Image URL
 #  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -254,6 +256,7 @@ class ACTION(object):
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
+    PASSTHRU_ASSIGN = "passthru_assign"
     PASSWORDRESET = "password_reset"
     PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
@@ -1602,6 +1605,13 @@ def get_static_policy_definitions(scope=None):
                           'authenticated against the userstore or against the '
                           'given RADIUS config,'
                           ' if the user has no tokens assigned.')
+            },
+            ACTION.PASSTHRU_ASSIGN: {
+                'type': 'str',
+                'desc': _('This allows to automatically assign a within privacyIDEA, if the '
+                          'user was authenticated via passthru against a RADIUS server. The OTP value '
+                          'is used to find the unassigned token in privacyIDEA. Enter the length of the OTP value '
+                          'and where the PIN is set like 8:pin or pin:6.')
             },
             ACTION.PASSNOTOKEN: {
                 'type': 'bool',

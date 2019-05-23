@@ -1162,3 +1162,25 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     return res
+
+
+def split_pin_pass(passw, otplen, prependpin):
+    """
+    Split a given password based on the otp length and prepend pin
+    :param passw: The password like test123456 or 123456test
+    :type pass: str
+    :param otplen: The length of the otp value
+    :param prependpin: The password is either in front or after the otp value
+    :return:
+    """
+    if prependpin:
+        pin = passw[0:-otplen]
+        otpval = passw[-otplen:]
+        log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                    len(otpval)))
+    else:
+        pin = passw[otplen:]
+        otpval = passw[0:otplen]
+        log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                   len(otpval)))
+    return pin, otpval

@@ -418,22 +418,22 @@ class Token(MethodsMixin, db.Model):
     
         return res
 
-    def split_pin_pass(self, passwd, prepend=True):
-        """
-        The password is split into the PIN and the OTP component.
-        THe token knows its length, so it can split accordingly.
-
-        :param passwd: The password that is to be split
-        :param prepend: The PIN is put in front of the OTP value
-        :return: tuple of (res, pin, otpval)
-        """
-        if prepend:
-            pin = passwd[:-self.otplen]
-            otp = passwd[-self.otplen:]
-        else:
-            otp = passwd[:self.otplen]
-            pin = passwd[self.otplen:]
-        return True, pin, otp
+#    def split_pin_pass(self, passwd, prepend=True):
+#        """
+#        The password is split into the PIN and the OTP component.
+#        THe token knows its length, so it can split accordingly.##
+#
+#        :param passwd: The password that is to be split
+#        :param prepend: The PIN is put in front of the OTP value
+#        :return: tuple of (res, pin, otpval)
+#        """
+#        if prepend:
+#            pin = passwd[:-self.otplen]
+#            otp = passwd[-self.otplen:]
+#        else:
+#            otp = passwd[:self.otplen]
+#            pin = passwd[self.otplen:]
+#        return True, pin, otp
 
     def is_pin_encrypted(self, pin=None):
         ret = False

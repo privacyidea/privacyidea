@@ -98,7 +98,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
-                                   parse_legacy_time)
+                                   parse_legacy_time, split_pin_pass)
 from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 
@@ -1218,17 +1218,7 @@ class TokenClass(object):
         # The database field is always an integer
         otplen = self.token.otplen
         log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
-        if get_prepend_pin():
-            pin = passw[0:-otplen]
-            otpval = passw[-otplen:]
-            log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                        len(otpval)))
-        else:
-            pin = passw[otplen:]
-            otpval = passw[0:otplen]
-            log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                       len(otpval)))
-
+        pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
         return True, pin, otpval
 
     def status_validation_fail(self):
