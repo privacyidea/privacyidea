@@ -341,7 +341,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                                                       audit_data=g.audit_object.audit_data)
                     messages = []
                     if passthru_assign:
-                        components = passthru_assign.keys()[0].split(":")
+                        components = list(passthru_assign)[0].split(":")
                         if len(components) >= 2:
                             prepend_pin = components[0] == "pin"
                             otp_length = int(components[int(prepend_pin)])
