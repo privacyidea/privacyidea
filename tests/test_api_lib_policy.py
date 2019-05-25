@@ -37,7 +37,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             add_user_detail_to_response,
                                             mangle_challenge_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token)
+                                   set_realms, check_user_pass, unassign_token,
+                                   enable_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
@@ -254,6 +255,54 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           check_token_upload, req)
         # finally delete policy
         delete_policy("pol1")
+
+    def test_04a_check_max_active_token_user(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy, that allows one active token per user
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
+        g.policy_object = PolicyClass()
+        # The user has one token, everything is fine.
+        self.setUp_user_realms()
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": "1234567890123456"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 1)
+        # First we can create the same active token again
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW001"}
+        self.assertTrue(check_max_token_user(req))
+
+        # The user has one token. The check that will run in this case,
+        # before the user would be assigned the NEW 2nd token, will raise a
+        # PolicyError
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW0002"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # Now, we disable the token NEW001, so the user has NO active token
+        enable_token("NEW001", False)
+        self.assertTrue(check_max_token_user(req))
+        # finally delete policy
+        delete_policy("pol1")
+        remove_token("NEW001")
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
