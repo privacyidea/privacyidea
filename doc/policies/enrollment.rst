@@ -48,6 +48,17 @@ Limit the maximum number of tokens per user in this realm.
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
 
+max_active_token_per_user
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Limit the maximum number of active tokens per user.
+
+.. note:: Inactive tokens will not be taken into account.
+   If the token already exists, it can be recreated if the token
+   is already active.
+
 tokenissuer
 ~~~~~~~~~~~
 
