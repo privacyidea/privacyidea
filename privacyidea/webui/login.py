@@ -77,6 +77,8 @@ def single_page_application():
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
     browser_lang = request.accept_languages.best_match(["en", "de", "de-DE"], default="en").split("-")[0]
+    # The page title can be configured in pi.cfg
+    page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
@@ -161,5 +163,6 @@ def single_page_application():
                            realms=realms,
                            external_links=external_links,
                            login_text=login_text,
-                           logo=logo)
+                           logo=logo,
+                           page_title=page_title)
 
