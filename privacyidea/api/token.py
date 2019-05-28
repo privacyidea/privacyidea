@@ -488,6 +488,7 @@ def revoke_api(serial=None):
 
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
+@prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ENABLE)
 @event("token_enable", request, g)
 @log_with(log)
