@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add passthru_assign policy
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add authcache decorator
 #  2017-07-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -46,7 +48,7 @@ from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit, parse_timedelta
+from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 import datetime
 from dateutil.tz import tzlocal
@@ -294,6 +296,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     :return: Tuple of True/False and reply-dictionary
     """
     from privacyidea.lib.token import get_tokens
+    from privacyidea.lib.token import assign_token
     options = options or {}
     g = options.get("g")
     if g:
@@ -327,8 +330,42 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
                     g.audit_object.add_policy([p.get("name") for p in pass_thru])
-                    return True, {'message': u"against RADIUS server {!s} due to '{!s}'".format(
-                                      pass_thru_action, policy_name)}
+                    # TODO: here we can check, if the token should be assigned.
+                    passthru_assign = policy_object.get_action_values(action=ACTION.PASSTHRU_ASSIGN,
+                                                                      scope=SCOPE.AUTH,
+                                                                      realm=user_object.realm,
+                                                                      resolver=user_object.resolver,
+                                                                      user=user_object.login,
+                                                                      client=clientip,
+                                                                      unique=True,
+                                                                      audit_data=g.audit_object.audit_data)
+                    messages = []
+                    if passthru_assign:
+                        components = list(passthru_assign)[0].split(":")
+                        if len(components) >= 2:
+                            prepend_pin = components[0] == "pin"
+                            otp_length = int(components[int(prepend_pin)])
+                            pin, otp = split_pin_pass(passw, otp_length, prepend_pin)
+                            realm_tokens = get_tokens(realm=user_object.realm,
+                                                      assigned=False)
+                            window = 100
+                            if len(components) == 3:
+                                window = int(components[2])
+                            for token_obj in realm_tokens:
+                                otp_check = token_obj.check_otp(otp, window=window)
+                                if otp_check >= 0:
+                                    # We do not check any max tokens per realm or user,
+                                    # since this very user currently has no token
+                                    # and the unassigned token already was contained in the user's realm
+                                    assign_token(serial=token_obj.token.serial,
+                                                 user=user_object, pin=pin)
+                                    messages.append(u"autoassigned {0!s}".format(token_obj.token.serial))
+                                    break
+
+                        else:
+                            log.warning("Wrong value in passthru_assign policy: {0!s}".format(passthru_assign))
+                    messages.append(u"against RADIUS server {!s} due to '{!s}'".format(pass_thru_action, policy_name))
+                    return True, {'message': ",".join(messages)}
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
