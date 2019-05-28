@@ -679,6 +679,7 @@ def check_max_token_user(request=None, action=None):
     Pre Policy
     This checks the maximum token per user policy.
     Check ACTION.MAXTOKENUSER
+    Check ACTION.MAXACTIVETOKENUSER
 
     This decorator can wrap:
         /token/init  (with a realm and user)
@@ -694,9 +695,11 @@ def check_max_token_user(request=None, action=None):
     serial = getParam(params, "serial")
     if user_object.login:
         policy_object = g.policy_object
+        # check maximum tokens of user
         limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
                                                      scope=SCOPE.ENROLL,
                                                      realm=user_object.realm,
+                                                     resolver=user_object.resolver,
                                                      user=user_object.login,
                                                      client=g.client_ip)
         if limit_list:
@@ -711,6 +714,30 @@ def check_max_token_user(request=None, action=None):
             if already_assigned_tokens >= max_value:
                 g.audit_object.add_policy(limit_list.get(str(max_value)))
                 raise PolicyError(ERROR)
+
+        # check maximum active tokens of user
+        limit_list = policy_object.get_action_values(ACTION.MAXACTIVETOKENUSER,
+                                                     scope=SCOPE.ENROLL,
+                                                     realm=user_object.realm,
+                                                     resolver=user_object.resolver,
+                                                     user=user_object.login,
+                                                     client=g.client_ip)
+        if limit_list:
+            # we need to check how many active tokens the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, active=True)
+            if serial:
+                for tok in tokenobject_list:
+                    if tok.token.serial == serial and tok.is_active():
+                        # If a serial is provided and this token already exists (and is active), the
+                        # token can be regenerated. If the token would be inactive, regenerating this
+                        # token would reactivate it and thus the user would have more tokens!
+                        return True
+            already_assigned_tokens = len(tokenobject_list)
+            max_value = max([int(x) for x in limit_list])
+            if already_assigned_tokens >= max_value:
+                g.audit_object.add_policy(limit_list.get(str(max_value)))
+                raise PolicyError(ERROR)
+
     return True
 
 
@@ -1085,14 +1112,24 @@ def check_token_init(request=None, action=None):
     role = g.logged_in_user.get("role")
     admin_realm = g.logged_in_user.get("realm")
     scope = SCOPE.ADMIN
+    # We need this user, if an admin enrolls a token for a user
+    user_obj = get_user_from_param(params)
+    resolver = realm = None
     if role == ROLE.USER:
         scope = SCOPE.USER
+        realm = admin_realm
         admin_realm = None
+        resolver = User(username, realm).resolver
+    elif role == ROLE.ADMIN and user_obj:
+        resolver = user_obj.resolver
+        realm = user_obj.realm
+
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.get_policies(action=action,
                                         user=username,
-                                        realm=params.get("realm"),
+                                        realm=realm,
+                                        resolver=resolver,
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,

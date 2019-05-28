@@ -27,6 +27,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config)
+from privacyidea.lib.realm import set_realm as create_realm
+from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -37,7 +39,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             add_user_detail_to_response,
                                             mangle_challenge_response)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token)
+                                   set_realms, check_user_pass, unassign_token,
+                                   enable_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
@@ -254,6 +257,54 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           check_token_upload, req)
         # finally delete policy
         delete_policy("pol1")
+
+    def test_04a_check_max_active_token_user(self):
+        g.logged_in_user = {"username": "admin1",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+
+        # Set a policy, that allows one active token per user
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
+        g.policy_object = PolicyClass()
+        # The user has one token, everything is fine.
+        self.setUp_user_realms()
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": "1234567890123456"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 1)
+        # First we can create the same active token again
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW001"}
+        self.assertTrue(check_max_token_user(req))
+
+        # The user has one token. The check that will run in this case,
+        # before the user would be assigned the NEW 2nd token, will raise a
+        # PolicyError
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW0002"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # Now, we disable the token NEW001, so the user has NO active token
+        enable_token("NEW001", False)
+        self.assertTrue(check_max_token_user(req))
+        # finally delete policy
+        delete_policy("pol1")
+        remove_token("NEW001")
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
@@ -1371,6 +1422,76 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("push_pol")
         delete_policy("push_pol2")
+
+    def test_23_enroll_different_tokentypes_in_different_resolvers(self):
+        # One realm has different resolvers.
+        # The different users are allowed to enroll different tokentypes.
+        realm = "myrealm"
+        # We need this, to create the resolver3
+        self.setUp_user_realm3()
+        (added, failed) = create_realm(realm,
+                                       [self.resolvername1, self.resolvername3])
+        self.assertEqual(0, len(failed))
+        self.assertEqual(2, len(added))
+        # We have cornelius@myRealm in self.resolvername1
+        # We have corny@myRealm in self.resolvername3
+        set_policy("reso1pol", scope=SCOPE.USER, action="enrollTOTP", realm=realm, resolver=self.resolvername1)
+        set_policy("reso3pol", scope=SCOPE.USER, action="enrollHOTP", realm=realm, resolver=self.resolvername3)
+
+        # Cornelius is allowed to enroll TOTP
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": realm,
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"type": "totp"}
+        g.policy_object = PolicyClass()
+        r = check_token_init(req)
+        self.assertTrue(r)
+
+        # Cornelius is not allowed to enroll HOTP
+        req.all_data = {"type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_token_init, req)
+
+        # Corny is allowed to enroll HOTP
+        g.logged_in_user = {"username": "corny",
+                            "realm": realm,
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"type": "hotp"}
+        g.policy_object = PolicyClass()
+        r = check_token_init(req)
+        self.assertTrue(r)
+
+        # Corny is not allowed to enroll TOTP
+        req.all_data = {"type": "totp"}
+        self.assertRaises(PolicyError,
+                          check_token_init, req)
+
+        delete_policy("reso3pol")
+        g.policy_object = PolicyClass()
+        # Now Corny is not allowed to enroll anything! Also not hotp anymore,
+        # since there is no policy for his resolver.
+        req.all_data = {"type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_token_init, req)
+
+        delete_policy("reso1pol")
+        delete_realm(realm)
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

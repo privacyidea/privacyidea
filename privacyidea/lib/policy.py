@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add passthru_assign policy
 #  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -244,6 +246,7 @@ class ACTION(object):
     MANGLE = "mangle"
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
+    MAXACTIVETOKENUSER = "max_active_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
     ADDUSERINRESPONSE = "add_user_in_response"
     ADDRESOLVERINRESPONSE = "add_resolver_in_response"
@@ -1500,6 +1503,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _('Limit the number of tokens a user may have '
                           'assigned.'),
+                'group': GROUP.TOKEN},
+            ACTION.MAXACTIVETOKENUSER: {
+                'type': 'int',
+                'desc': _('Limit the number of active tokens a user may have assigned.'),
                 'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
