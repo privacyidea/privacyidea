@@ -1112,14 +1112,24 @@ def check_token_init(request=None, action=None):
     role = g.logged_in_user.get("role")
     admin_realm = g.logged_in_user.get("realm")
     scope = SCOPE.ADMIN
+    # We need this user, if an admin enrolls a token for a user
+    user_obj = get_user_from_param(params)
+    resolver = realm = None
     if role == ROLE.USER:
         scope = SCOPE.USER
+        realm = admin_realm
         admin_realm = None
+        resolver = User(username, realm).resolver
+    elif role == ROLE.ADMIN and user_obj:
+        resolver = user_obj.resolver
+        realm = user_obj.realm
+
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.get_policies(action=action,
                                         user=username,
-                                        realm=params.get("realm"),
+                                        realm=realm,
+                                        resolver=resolver,
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
