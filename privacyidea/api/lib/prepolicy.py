@@ -690,6 +690,7 @@ def check_max_token_user(request=None, action=None):
     :return: True otherwise raises an Exception
     """
     ERROR = "The number of tokens for this user is limited!"
+    ERROR_ACTIVE = "The number of active tokens for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
     serial = getParam(params, "serial")
@@ -708,12 +709,13 @@ def check_max_token_user(request=None, action=None):
             if serial and serial in [tok.token.serial for tok in tokenobject_list]:
                 # If a serial is provided and this token already exists, the
                 # token can be regenerated
-                return True
-            already_assigned_tokens = len(tokenobject_list)
-            max_value = max([int(x) for x in limit_list])
-            if already_assigned_tokens >= max_value:
-                g.audit_object.add_policy(limit_list.get(str(max_value)))
-                raise PolicyError(ERROR)
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR)
 
         # check maximum active tokens of user
         limit_list = policy_object.get_action_values(ACTION.MAXACTIVETOKENUSER,
@@ -725,18 +727,20 @@ def check_max_token_user(request=None, action=None):
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True)
+            _token_allowed = False
             if serial:
                 for tok in tokenobject_list:
-                    if tok.token.serial == serial and tok.is_active():
+                    if tok.token.serial == serial:
                         # If a serial is provided and this token already exists (and is active), the
                         # token can be regenerated. If the token would be inactive, regenerating this
                         # token would reactivate it and thus the user would have more tokens!
-                        return True
-            already_assigned_tokens = len(tokenobject_list)
-            max_value = max([int(x) for x in limit_list])
-            if already_assigned_tokens >= max_value:
-                g.audit_object.add_policy(limit_list.get(str(max_value)))
-                raise PolicyError(ERROR)
+                        _token_allowed = True
+            if not _token_allowed:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_ACTIVE)
 
     return True
 
