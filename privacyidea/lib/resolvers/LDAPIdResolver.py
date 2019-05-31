@@ -58,6 +58,7 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import threading
 import functools
 
 from .UserIdResolver import UserIdResolver
@@ -77,6 +78,7 @@ import hashlib
 import binascii
 from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.framework import get_app_local_store
 import datetime
 
 from privacyidea.lib import _
@@ -108,6 +110,33 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
     DEFAULT_CA_FILE = "/etc/ssl/certs/ca-bundle.crt"
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
+
+
+class LockingServerPool(ldap3.ServerPool):
+    """
+    A ``ServerPool`` subclass that uses a RLock to synchronize invocations of
+    ``initialize``, ``get_server`` and ``get_current_server``.
+
+    We synchronize invocations to rule out race conditions when multiple threads
+    try to manipulate the server pool state concurrently.
+
+    We use a ``RLock`` instead of a simple ``Lock`` to avoid locking ourselves.
+    """
+    def __init__(self, *args, **kwargs):
+        ldap3.ServerPool.__init__(self, *args, **kwargs)
+        self._lock = threading.RLock()
+
+    def initialize(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.initialize(self, connection)
+
+    def get_server(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.get_server(self, connection)
+
+    def get_current_server(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.get_current_server(self, connection)
 
 
 def get_ad_timestamp_now():
@@ -298,11 +327,7 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         if not self.serverpool:
-            self.serverpool = self.get_serverpool(self.uri, self.timeout,
-                                                  get_info=ldap3.NONE,
-                                                  tls_context=self.tls_context,
-                                                  rounds=self.serverpool_rounds,
-                                                  exhaust=self.serverpool_skip)
+            self.serverpool = self.get_persistent_serverpool(get_info=ldap3.NONE)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -445,11 +470,7 @@ class IdResolver (UserIdResolver):
     def _bind(self):
         if not self.i_am_bound:
             if not self.serverpool:
-                self.serverpool = self.get_serverpool(self.uri, self.timeout,
-                                              get_info=self.get_info,
-                                              tls_context=self.tls_context,
-                                              rounds=self.serverpool_rounds,
-                                              exhaust=self.serverpool_skip)
+                self.serverpool = self.get_persistent_serverpool(self.get_info)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=self.serverpool,
                                             user=self.binddn,
@@ -804,7 +825,7 @@ class IdResolver (UserIdResolver):
 
     @classmethod
     def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
-                       exhaust=SERVERPOOL_SKIP):
+                       exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -826,13 +847,14 @@ class IdResolver (UserIdResolver):
             before giving up
         :param exhaust: The seconds, for how long a non-reachable server should be
             removed from the serverpool
+        :param pool_cls: ``ldap3.ServerPool`` subclass that should be instantiated
         :return: Server Pool
-        :rtype: LDAP3 Server Pool Instance
+        :rtype: serverpool_cls
         """
         get_info = get_info or ldap3.SCHEMA
-        server_pool = ldap3.ServerPool(None, ldap3.ROUND_ROBIN,
-                                       active=rounds,
-                                       exhaust=exhaust)
+        server_pool = pool_cls(None, ldap3.ROUND_ROBIN,
+                               active=rounds,
+                               exhaust=exhaust)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
@@ -844,6 +866,40 @@ class IdResolver (UserIdResolver):
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
+
+    def get_persistent_serverpool(self, get_info=None):
+        """
+        Return a process-level instance of ``LockingServerPool`` for the current LDAP resolver
+        configuration. Retrieve it from the app-local store. If such an instance does not exist
+        yet, create one.
+        :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
+        :return: a ``LockingServerPool`` instance
+        """
+        if not get_info:
+            get_info = ldap3.SCHEMA
+        pools = get_app_local_store().setdefault('ldap_server_pools', {})
+        # Create a hashable tuple that describes the current server pool configuration
+        pool_description = (self.uri,
+                            self.timeout,
+                            get_info,
+                            repr(self.tls_context),  # this is the string representation of the TLS context
+                            self.serverpool_rounds,
+                            self.serverpool_skip)
+        if pool_description not in pools:
+            # Create a suitable instance of ``LockingServerPool``
+            server_pool = self.get_serverpool(self.uri, self.timeout, get_info,
+                                              self.tls_context, self.serverpool_rounds, self.serverpool_skip,
+                                              pool_cls=LockingServerPool)
+            # It may happen that another thread tries to add an instance to the dictionary concurrently.
+            # However, only one of them will win, and the other ``LockingServerPool`` instance will be
+            # garbage-collected eventually.
+            return pools.setdefault(pool_description, server_pool)
+        else:
+            # If there is already a ``LockingServerPool`` instance, return it.
+            # We never remove instances from the dictionary, so a ``KeyError`` cannot occur.
+            # As a side effect, when we change the LDAP Id resolver configuration,
+            # outdated ``LockingServerPool`` instances will survive until the next server restart.
+            return pools[pool_description]
 
     @classmethod
     def getResolverClassDescriptor(cls):
