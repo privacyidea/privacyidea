@@ -824,8 +824,8 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
-                       exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
+    def create_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
+                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -887,9 +887,9 @@ class IdResolver (UserIdResolver):
                             self.serverpool_skip)
         if pool_description not in pools:
             # Create a suitable instance of ``LockingServerPool``
-            server_pool = self.get_serverpool(self.uri, self.timeout, get_info,
-                                              self.tls_context, self.serverpool_rounds, self.serverpool_skip,
-                                              pool_cls=LockingServerPool)
+            server_pool = self.create_serverpool(self.uri, self.timeout, get_info,
+                                                 self.tls_context, self.serverpool_rounds, self.serverpool_skip,
+                                                 pool_cls=LockingServerPool)
             # It may happen that another thread tries to add an instance to the dictionary concurrently.
             # However, only one of them will win, and the other ``LockingServerPool`` instance will be
             # garbage-collected eventually.
@@ -976,11 +976,11 @@ class IdResolver (UserIdResolver):
             tls_context = None
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
         try:
-            server_pool = cls.get_serverpool(ldap_uri, timeout,
-                                             tls_context=tls_context,
-                                             get_info=get_info,
-                                             rounds=serverpool_rounds,
-                                             exhaust=serverpool_skip)
+            server_pool = cls.create_serverpool(ldap_uri, timeout,
+                                                tls_context=tls_context,
+                                                get_info=get_info,
+                                                rounds=serverpool_rounds,
+                                                exhaust=serverpool_skip)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,

@@ -65,8 +65,8 @@ class LdapMachineResolver(BaseMachineResolver):
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = IdResolver.get_serverpool(self.uri, self.timeout,
-                                                    tls_context=self.tls_context)
+            server_pool = IdResolver.create_serverpool(self.uri, self.timeout,
+                                                       tls_context=self.tls_context)
             self.l = IdResolver.create_connection(authtype=self.authtype,
                                                   server=server_pool,
                                                   user=self.binddn,
@@ -312,10 +312,10 @@ class LdapMachineResolver(BaseMachineResolver):
         else:
             tls_context = None
         try:
-            server_pool = IdResolver.get_serverpool(ldap_uri,
-                                                    float(params.get(
+            server_pool = IdResolver.create_serverpool(ldap_uri,
+                                                       float(params.get(
                                                         "TIMEOUT", 5)),
-                                                    tls_context=tls_context)
+                                                       tls_context=tls_context)
             l = IdResolver.create_connection(authtype=\
                                                  params.get("AUTHTYPE",
                                                             AUTHTYPE.SIMPLE),
