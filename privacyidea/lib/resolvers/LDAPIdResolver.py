@@ -302,6 +302,7 @@ class IdResolver (UserIdResolver):
         self.cache_timeout = 120
         self.tls_context = None
         self.start_tls = False
+        self.serverpool_persistent = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
         self.serverpool = None
@@ -327,7 +328,7 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         if not self.serverpool:
-            self.serverpool = self.get_persistent_serverpool(get_info=ldap3.NONE)
+            self.serverpool = self.get_serverpool_instance(get_info=ldap3.NONE)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -470,7 +471,7 @@ class IdResolver (UserIdResolver):
     def _bind(self):
         if not self.i_am_bound:
             if not self.serverpool:
-                self.serverpool = self.get_persistent_serverpool(self.get_info)
+                self.serverpool = self.get_serverpool_instance(self.get_info)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=self.serverpool,
                                             user=self.binddn,
@@ -774,6 +775,7 @@ class IdResolver (UserIdResolver):
                                    ca_certs_file=self.tls_ca_file)
         else:
             self.tls_context = None
+        self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
         # The configuration might have changed. We reset the serverpool
@@ -866,6 +868,21 @@ class IdResolver (UserIdResolver):
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
+
+    def get_serverpool_instance(self, get_info=None):
+        """
+        Return a ``ServerPool`` instance that should be used. If ``SERVERPOOL_PERSISTENT``
+        is enabled, invoke ``get_persistent_serverpool`` to retrieve a per-process
+        server pool instance. If it is not enabled, invoke ``create_serverpool``
+        to retrieve a per-request server pool instance.
+        :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
+        :return: a ``ServerPool``/``LockingServerPool`` instance
+        """
+        if self.serverpool_persistent:
+            return self.get_persistent_serverpool(get_info)
+        else:
+            return self.create_serverpool(self.uri, self.timeout, get_info,
+                                          self.tls_context, self.serverpool_rounds, self.serverpool_skip)
 
     def get_persistent_serverpool(self, get_info=None):
         """
