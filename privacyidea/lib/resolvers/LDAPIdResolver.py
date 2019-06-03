@@ -955,6 +955,7 @@ class IdResolver (UserIdResolver):
                                 'CACHE_TIMEOUT': 'int',
                                 'SERVERPOOL_ROUNDS': 'int',
                                 'SERVERPOOL_SKIP': 'int',
+                                'SERVERPOOL_PERSISTENT': 'bool',
                                 'OBJECT_CLASSES': 'string',
                                 'DN_TEMPLATE': 'string'}
         return {typ: descriptor}
