@@ -918,6 +918,20 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    # Convert all given parameters to a list of condition tuples
+    conditions = []
+    if realm is not None:
+        conditions.append(("realm", "equal", realm))
+    if adminrealm is not None:
+        conditions.append(("adminrealm", "equal", adminrealm))
+    if resolver is not None:
+        conditions.append(("resolver", "equal", resolver))
+    if user is not None:
+        conditions.append(("user", "equal", user))
+    if client is not None:
+        conditions.append(("client", "equal", client))
+    if time is not None:
+        conditions.append(("time", "equal", time))
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
         # The policy already exist, we need to update
@@ -925,30 +939,18 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.action = action
         if scope is not None:
             p1.scope = scope
-        if realm is not None:
-            p1.realm = realm
-        if adminrealm is not None:
-            p1.adminrealm = adminrealm
-        if resolver is not None:
-            p1.resolver = resolver
-        if user is not None:
-            p1.user = user
-        if client is not None:
-            p1.client = client
-        if time is not None:
-            p1.time = time
         if priority is not None:
             p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        p1.update_conditions(conditions)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
     else:
         # Create a new policy
-        ret = Policy(name, action=action, scope=scope, realm=realm,
-                     user=user, time=time, client=client, active=active,
-                     resolver=resolver, adminrealm=adminrealm,
+        ret = Policy(name, action=action, scope=scope,
+                     conditions=conditions,
                      priority=priority,
                      check_all_resolvers=check_all_resolvers).save()
     return ret

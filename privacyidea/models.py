@@ -1348,6 +1348,11 @@ def cleanup_challenges():
 #
 
 
+POLICY_LEGACY_CONDITIONS_SIMPLE = {"time"}
+POLICY_LEGACY_CONDITIONS_LIST = {"realm", "adminrealm", "resolver", "user", "client"}
+POLICY_LEGACY_CONDITIONS = POLICY_LEGACY_CONDITIONS_LIST | POLICY_LEGACY_CONDITIONS_SIMPLE
+
+
 class Policy(TimestampMethodsMixin, db.Model):
     """
     The policy table contains policy definitions which control
@@ -1362,40 +1367,92 @@ class Policy(TimestampMethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("policy_seq"), primary_key=True)
     active = db.Column(db.Boolean, default=True)
+    # TODO: We currently keep ``check_all_resolvers`` as a field because it is
+    # not clear how it should be migrated to a PolicyCondition row.
     check_all_resolvers = db.Column(db.Boolean, default=False)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     scope = db.Column(db.Unicode(32), nullable=False)
     action = db.Column(db.Unicode(2000), default=u"")
-    realm = db.Column(db.Unicode(256), default=u"")
-    adminrealm = db.Column(db.Unicode(256), default=u"")
-    resolver = db.Column(db.Unicode(256), default=u"")
-    user = db.Column(db.Unicode(256), default=u"")
-    client = db.Column(db.Unicode(256), default=u"")
-    time = db.Column(db.Unicode(64), default=u"")
-    condition = db.Column(db.Integer, default=0, nullable=False)
+
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priotity.
     priority = db.Column(db.Integer, default=1, nullable=False)
+    conditions = db.relationship("PolicyCondition",
+                                 lazy="joined",
+                                 backref="policy",
+                                 cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
-                 active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0, priority=1,
-                 check_all_resolvers=False):
+                 active=True, scope="", action="", priority=1, check_all_resolvers=False,
+                 conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
         self.action = action
         self.scope = scope
         self.active = active
-        self.realm = realm
-        self.adminrealm = adminrealm
-        self.resolver = resolver
-        self.user = user
-        self.client = client
-        self.time = time
-        self.condition = condition
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
+        if conditions is not None:
+            self.replace_conditions(conditions)
+        else:
+            self.conditions = []
+
+    def update_condition(self, key, new_comparator, new_value):
+        """
+        Update a policy condition. If there is already a condition with
+        key ``key``, update the respective entry. If no entry with key
+        ``key`` exists yet, create a new one.
+        This method does not commit the database session.
+        :param key: the condition key (as a string)
+        :param new_comparator: a string that defines the condition comparison (currently, only "equal" is supported)
+        :param new_value: the condition value (as a string)
+        """
+        for condition_object in self.conditions:
+            if condition_object.key == key:
+                condition_object.comparator = new_comparator
+                condition_object.value = new_value
+                break
+        else:
+            condition_object = PolicyCondition()
+            condition_object.key = key
+            condition_object.comparator = new_comparator
+            condition_object.value = new_value
+            self.conditions.append(condition_object)
+            # No need to manually add the PolicyCondition to the session because
+            # of the relationship's ``save-update`` cascade option.
+
+    def update_conditions(self, conditions):
+        """
+        Update policy conditions. For each condition in ``conditions``, update an existing
+        condition entry if it exists, or create a new one otherwise. Existing conditions
+        that are not mentioned in ``conditions`` are left unchanged.
+        This method does not commit the database session.
+        :param conditions: a list of tuples (key, comparator, value)
+        """
+        for key, comparator, value in conditions:
+            self.update_condition(key, comparator, value)
+
+    def replace_conditions(self, conditions):
+        """
+        Replace the policy conditions. Remove all current conditions and only add the conditions
+        in ``conditions``.
+        If the policy already has conditions, this method needs to flush the session.
+        After that, this method does not commit the database session again.
+        :param conditions: a list of tuples (key, comparator, value)
+        """
+        new_conditions = []
+        for key, comparator, value in conditions:
+            condition_object = PolicyCondition(policy=self, key=key, comparator=comparator, value=value)
+            new_conditions.append(condition_object)
+        if self.conditions:
+            # We first need to delete all existing conditions of this policy from the database.
+            # If we remove the ``flush`` here, SQLAlchemy tries to INSERT new condition entries
+            # before the old entries are DELETEd, which may violate the UNIQUE constraint on
+            # the policycondition table.
+            self.conditions = []
+            db.session.flush()
+        self.conditions = new_conditions
 
     @staticmethod
     def _split_string(value):
@@ -1413,6 +1470,18 @@ class Policy(TimestampMethodsMixin, db.Model):
             ret = []
         return ret
 
+    def get_condition_list(self):
+        """
+        :return: the policy conditions as a list of tuples (key, comparator, value)
+        """
+        return [cond.as_tuple() for cond in self.conditions]
+
+    def get_condition_dict(self):
+        """
+        :return: the policy conditions as a dictionary {key: value}. Note that this omits the comparator.
+        """
+        return {key: value for key, comparator, value in self.get_condition_list()}
+
     def get(self, key=None):
         """
         Either returns the complete policy entry or a single value
@@ -1424,15 +1493,16 @@ class Policy(TimestampMethodsMixin, db.Model):
         d = {"name": self.name,
              "active": self.active,
              "scope": self.scope,
-             "realm": self._split_string(self.realm),
-             "adminrealm": self._split_string(self.adminrealm),
-             "resolver": self._split_string(self.resolver),
              "check_all_resolvers": self.check_all_resolvers,
-             "user": self._split_string(self.user),
-             "client": self._split_string(self.client),
-             "time": self.time,
-             "condition": self.condition,
              "priority": self.priority}
+        # For all conditions in POLICY_LEGACY_CONDITIONS, add a key-value pair to ``d``.
+        condition_dict = self.get_condition_dict()
+        for condition_key in POLICY_LEGACY_CONDITIONS:
+            value = condition_dict.get(condition_key, "")
+            if condition_key in POLICY_LEGACY_CONDITIONS_LIST:
+                d[condition_key] = self._split_string(value)
+            else:
+                d[condition_key] = value
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
         action_dict = {}
@@ -1447,6 +1517,27 @@ class Policy(TimestampMethodsMixin, db.Model):
         else:
             ret = d
         return ret
+
+
+class PolicyCondition(MethodsMixin, db.Model):
+    __tablename__ = "policycondition"
+
+    id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
+    policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    key = db.Column(db.Unicode(255), nullable=False)
+    value = db.Column(db.Unicode(2000), default=u'')
+    comparator = db.Column(db.Unicode(255), default=u'equal')
+
+    __table_args__ = (db.UniqueConstraint('policy_id',
+                                          'key',
+                                          name='pcix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
+    def as_tuple(self):
+        """
+        :return: the condition as a tuple (key, comparator, value)
+        """
+        return self.key, self.comparator, self.value
 
 # ------------------------------------------------------------------
 #

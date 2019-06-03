@@ -18,7 +18,7 @@ from privacyidea.models import (Token,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption, MonitoringStats)
+                                PeriodicTaskOption, MonitoringStats, PolicyCondition)
 from .base import MyTestCase
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -363,31 +363,47 @@ class TokenModelTestCase(MyTestCase):
 
     def test_11_policy(self):
         p = Policy("pol1", active="true",
-                   scope="selfservice", action="action1",
-                   realm="*")
+                   scope="selfservice", action="action1")
         p.save()
         self.assertTrue(p.action == "action1", p)
         self.assertTrue("action1" in p.get().get("action"), p)
         self.assertTrue("action1" in p.get("action"), p)
+        self.assertEqual(p.conditions, [])
+        self.assertEqual(p.get()["realm"], [])
 
         p2 = Policy("pol1", active="false",
-                    scope="selfservice", action="action1",
-                    realm="*")
+                    scope="selfservice", action="action1")
         self.assertFalse(p2.active, p2.active)
 
-        # update
-        self.assertTrue(p.user == "", p.user)
-        p.user = "cornelius"
-        p.resolver = "*"
-        p.client = "0.0.0.0"
-        p.time = "anytime"
+        # add conditions
+        p.update_conditions([("user", "equal", "cornelius"),
+                             ("resolver", "equal", "*"),
+                             ("client", "equal", "0.0.0.0"),
+                             ("time", "equal", "anytime")])
         p.save()
-        self.assertTrue(p.user == "cornelius", p.user)
+        self.assertEqual(p.get()["user"], ["cornelius"])
+        self.assertEqual(p.get()["client"], ["0.0.0.0"])
+        self.assertEqual(len(p.conditions), 4)
+
+        # ``update_conditions`` does not touch existing conditions
+        p.update_conditions([("client", "equal", "127.0.0.1"),
+                             ("user", "equal", "someoneelse")])
+        p.save()
+        self.assertEqual(p.get()["client"], ["127.0.0.1"])
+        self.assertEqual(p.get()["time"], "anytime")
+        self.assertEqual(len(p.conditions), 4)
+
+        # ``set_conditions`` removes all conditions that are not mentioned
+        p.replace_conditions([("client", "equal", "127.0.1.1")])
+        p.save()
+        self.assertEqual(p.get()["client"], ["127.0.1.1"])
+        self.assertEqual(p.get()["time"], "")
+        self.assertEqual(len(p.conditions), 1)
 
         # save admin policy
         p3 = Policy("pol3", active="false", scope="admin",
-                    adminrealm='superuser', action="*")
-        self.assertEqual(p3.adminrealm, "superuser")
+                    action="*", conditions=[("adminrealm", "equal", "superuser")])
+        self.assertEqual(p3.get()["adminrealm"], ["superuser"])
 
     def test_12_challenge(self):
         c = Challenge("S123456")
