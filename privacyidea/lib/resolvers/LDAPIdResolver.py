@@ -903,7 +903,7 @@ class IdResolver (UserIdResolver):
                             self.serverpool_rounds,
                             self.serverpool_skip)
         if pool_description not in pools:
-            log.debug("Creating a persistent server pool instance for {!r} ...")
+            log.debug("Creating a persistent server pool instance for {!r} ...".format(pool_description))
             # Create a suitable instance of ``LockingServerPool``
             server_pool = self.create_serverpool(self.uri, self.timeout, get_info,
                                                  self.tls_context, self.serverpool_rounds, self.serverpool_skip,
