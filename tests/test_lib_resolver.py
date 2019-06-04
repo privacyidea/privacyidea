@@ -2089,6 +2089,21 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertIs(type(y4.serverpool), LockingServerPool)
         self.assertIs(y3.serverpool, y4.serverpool)
 
+    def test_36_locking_serverpool(self):
+        # check that the LockingServerPool correctly forwards all relevant method calls
+        pool = LockingServerPool()
+        pool.add(ldap3.Server('server1'))
+        pool.add(ldap3.Server('server2'))
+        with mock.patch('ldap3.ServerPool.initialize') as mock_method:
+            pool.initialize(None)
+            mock_method.assert_called_once()
+        with mock.patch('ldap3.ServerPool.get_server') as mock_method:
+            pool.get_server(None)
+            mock_method.assert_called_once()
+        with mock.patch('ldap3.ServerPool.get_current_server') as mock_method:
+            pool.get_current_server(None)
+            mock_method.assert_called_once()
+
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):
