@@ -163,13 +163,13 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="serverpool-persistent" class="col-sm-3 control-label" translate>
-            Per-process server pool
-        </label>
-        <div class="col-sm-9">
-            <input name="serverpool-persistent"
-                   ng-model="params.SERVERPOOL_PERSISTENT"
-                   type="checkbox" />
+        <label for="sizelimit" class="col-sm-3 control-label"
+                translate>Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
         </div>
     </div>
     <div class="form-group">
@@ -191,13 +191,16 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="sizelimit" class="col-sm-3 control-label"
-                translate>Size Limit</label>
-
-        <div class="col-sm-3">
-            <input name="sizelimit" class="form-control"
-                   ng-model="params.SIZELIMIT" required
-                   placeholder="500"/>
+        <label for="serverpool-persistent" class="col-sm-3 control-label" translate>
+            Per-process server pool
+        </label>
+        <div class="col-sm-9">
+            <input name="serverpool-persistent"
+                   ng-model="params.SERVERPOOL_PERSISTENT"
+                   type="checkbox" />
+            <p class="help-block" translate>
+                This setting activates a LDAP server pool that is persisted between requests.
+            </p>
         </div>
     </div>
     <div class="form-group">
