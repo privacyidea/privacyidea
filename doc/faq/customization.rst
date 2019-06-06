@@ -130,7 +130,7 @@ do it like this::
 Logo
 ~~~~
 
-The default logo is located at ``privacyidea/static/css/privacyIDEA1.png``.
+The default logo is located at ``privacyidea/static/img/privacyIDEA1.png``.
 If you want to use your own logo, you can put youf file "mylogo.png" just
 in the same folder and set
 
