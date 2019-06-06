@@ -16,7 +16,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ServerError
 from privacyidea.lib.user import User
 import datetime
 from .base import PWFILE as FILE_PASSWORDS
@@ -909,3 +909,104 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("act1" in audit_data.get("policies"))
         self.assertTrue("act2" in audit_data.get("policies"))
         self.assertTrue("act3" not in audit_data.get("policies"))
+
+        delete_policy("act1")
+        delete_policy("act2")
+        delete_policy("act3")
+
+    def test_26_get_policies_user_object(self):
+        # We pass a user object instead of user, resolver and realm
+        # Create resolver and realm
+        rid = save_resolver({"resolver": "reso1",
+                             "type": "passwdresolver",
+                             "fileName": FILE_PASSWORDS})
+        self.assertGreater(rid, 0)
+        rid = save_resolver({"resolver": "reso2",
+                             "type": "passwdresolver",
+                             "fileName": FILE_PASSWD})
+        self.assertGreater(rid, 0)
+
+        (added, failed) = set_realm("realm1", ["reso1"])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        (added, failed) = set_realm("realm2", ["reso2"])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        cornelius = User(login="cornelius", realm="realm1")
+        nonascii = User(login=u"nönäscii", realm="realm1")
+        selfservice = User(login="selfservice", realm="realm1")
+        whoopsie = User(login="whoopsie", realm="realm2")
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   user=u"cornelius, nönäscii")
+        set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   resolver="reso1")
+        set_policy("act3", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN),
+                   realm="realm1")
+        set_policy("act4", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN),
+                   user=u"nönäscii", realm="realm1")
+
+        P = PolicyClass()
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=cornelius)),
+                         {"act1", "act2", "act3"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=cornelius),
+                         {"userstore": ["act1", "act2"], "none": ["act3"]})
+
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=nonascii)),
+                         {"act1", "act2", "act3", "act4"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=nonascii),
+                         {"userstore": ["act1", "act2"], "none": ["act3", "act4"]})
+
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=selfservice)),
+                         {"act2", "act3"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=selfservice),
+                         {"userstore": ["act2"], "none": ["act3"]})
+
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=whoopsie)),
+                         set())
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=whoopsie),
+                         {})
+
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=None)),
+                         {"act1", "act2", "act3", "act4"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=None),
+                         {"userstore": ["act1", "act2"], "none": ["act3", "act4"]})
+
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=User())),
+                         set())
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                             user_object=User()),
+                         {})
+
+        with self.assertRaises(ParameterError):
+            P.get_policies(user_object=cornelius, realm="realm3")
+
+        with self.assertRaises(ParameterError):
+            P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
+                                user_object=cornelius, user="selfservice")
+
+        set_policy("act5", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+
+        P = PolicyClass()
+        # If we pass an empty user object, only policies without user match
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=User())),
+                         {"act5"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=User()),
+                         {"none": ["act5"]})
+        # If we pass None as the user object, all policies match
+        self.assertEqual(set(p['name'] for p in P.get_policies(user_object=None)),
+                         {"act1", "act2", "act3", "act4", "act5"})
+        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=None),
+                         {"userstore": ["act1", "act2"], "none": ["act3", "act4", "act5"]})
+
+        delete_policy("act1")
+        delete_policy("act2")
+        delete_policy("act3")
+        delete_policy("act4")
+        delete_policy("act5")

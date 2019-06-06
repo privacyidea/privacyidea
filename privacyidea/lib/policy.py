@@ -463,11 +463,17 @@ class PolicyClass(with_metaclass(Singleton, object)):
 
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, client=None, action=None,
+                     resolver=None, user=None, user_object=None,
+                     client=None, action=None,
                      adminrealm=None, time=None, all_times=False,
                      sort_by_priority=True, audit_data=None):
         """
         Return the policies of the given filter values.
+
+        In order to retrieve policies matching the current user,
+        callers can *either* pass a user(name), resolver and realm,
+        *or* pass a user object from which login name, resolver and realm will be read.
+        In case of conflicting parameters, a ParameterError will be raised.
 
         :param name: The name of the policy
         :param scope: The scope of the policy
@@ -476,6 +482,8 @@ class PolicyClass(with_metaclass(Singleton, object)):
         :param resolver: Only policies with this resolver
         :param user: Only policies with this user
         :type user: basestring
+        :param user_object: Only policies matching this user object
+        :type user_object: User
         :param client:
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
@@ -494,6 +502,13 @@ class PolicyClass(with_metaclass(Singleton, object)):
         :return: list of policies
         :rtype: list of dicts
         """
+        if user_object is not None:
+            if not (user is None and realm is None and resolver is None):
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+            user = user_object.login
+            realm = user_object.realm
+            resolver = user_object.resolver
+
         reduced_policies = self.policies
 
         # filter policy for time. If no time is set or is a time is set and
@@ -639,7 +654,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
                           allow_white_space_in_action=False, adminrealm=None,
-                          audit_data=None):
+                          user_object=None, audit_data=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -649,6 +664,8 @@ class PolicyClass(with_metaclass(Singleton, object)):
             scope: authorization
             action: serial
         would return a dictionary of {serial: policyname}
+
+        All parameters not described below are covered in the documentation of ``get_policies``.
 
         :param unique: if set, the function will only consider the policy with the
             highest priority and check for policy conflicts.
@@ -666,7 +683,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
         policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
-                                     realm=realm, resolver=resolver, user=user,
+                                     realm=realm, resolver=resolver, user=user, user_object=user_object,
                                      client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:

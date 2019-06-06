@@ -208,9 +208,7 @@ def check_tokentype(request, response):
     allowed_tokentypes = policy_object.get_action_values(
         ACTION.TOKENTYPE,
         scope=SCOPE.AUTHZ,
-        user=user_object.login,
-        resolver=user_object.resolver,
-        realm=user_object.realm,
+        user_object=user_object,
         client=g.client_ip,
         audit_data=g.audit_object.audit_data)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
@@ -719,9 +717,7 @@ def autoassign(request, response):
             autoassign_values = policy_object.\
                 get_action_values(action=ACTION.AUTOASSIGN,
                                   scope=SCOPE.ENROLL,
-                                  user=user_obj.login,
-                                  resolver=user_obj.resolver,
-                                  realm=user_obj.realm,
+                                  user_object=user_obj,
                                   client=g.client_ip,
                                   unique=True)
 
@@ -825,9 +821,7 @@ def mangle_challenge_response(request, response):
                                                  scope=SCOPE.AUTH,
                                                  allow_white_space_in_action=True,
                                                  client=g.client_ip,
-                                                 user=user_obj.login,
-                                                 realm=user_obj.realm,
-                                                 resolver=user_obj.resolver,
+                                                 user_object=user_obj,
                                                  audit_data=g.audit_object.audit_data,
                                                  unique=True)
 
@@ -835,9 +829,7 @@ def mangle_challenge_response(request, response):
                                                  scope=SCOPE.AUTH,
                                                  allow_white_space_in_action=True,
                                                  client=g.client_ip,
-                                                 user=user_obj.login,
-                                                 realm=user_obj.realm,
-                                                 resolver=user_obj.resolver,
+                                                 user_object=user_obj,
                                                  audit_data=g.audit_object.audit_data,
                                                  unique=True)
 

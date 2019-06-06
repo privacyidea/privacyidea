@@ -494,18 +494,11 @@ class U2fTokenClass(TokenClass):
                     # certificate is authorized.
                     # If not, we can raise a policy exception
                     g = options.get("g")
-                    if self.user:
-                        token_user = self.user.login
-                        token_realm = self.user.realm
-                        token_resolver = self.user.resolver
-                    else:
-                        token_realm = token_resolver = token_user = None
+                    user_object = self.user
                     allowed_certs_pols = g.policy_object.get_action_values(
                         U2FACTION.REQ,
                         scope=SCOPE.AUTHZ,
-                        realm=token_realm,
-                        user=token_user,
-                        resolver=token_resolver,
+                        user_object=user_object if user_object else None,
                         client=g.client_ip,
                         audit_data=g.audit_object.audit_data)
                     for allowed_cert in allowed_certs_pols:
