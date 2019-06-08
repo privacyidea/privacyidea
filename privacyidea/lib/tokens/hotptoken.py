@@ -59,7 +59,7 @@ from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
-                                   hexlify_and_unicode)
+                                   hexlify_and_unicode, check_hash_keylength)
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
@@ -294,6 +294,14 @@ class HotpTokenClass(TokenClass):
         for k, v in param.items():
             upd_param[k] = v
 
+        val = getParam(upd_param, "hashlib", optional)
+        if val is not None:
+            hashlibStr = val
+        else:
+            hashlibStr = self.hashlib
+        otpKey = getParam(upd_param, "otpkey", optional)
+        genkey = is_true(getParam(upd_param, "genkey", optional))
+
         # Special handling of 2-step enrollment
         if is_true(getParam(param, "2stepinit", optional)):
             # Use the 2step_serversize setting for the size of the server secret
@@ -305,12 +313,11 @@ class HotpTokenClass(TokenClass):
                 ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
                 ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
                 self.add_tokeninfo(key, getParam(param, key, optional, default))
-
-        val = getParam(upd_param, "hashlib", optional)
-        if val is not None:
-            hashlibStr = val
-        else:
-            hashlibStr = self.hashlib
+        elif "otpkey" in upd_param and \
+                upd_param.get("otpkeyformat", "hex") == "hex" and \
+                not is_true(upd_param.get("2stepinit")):
+            # If the user provides an otpkey, we check the length unless base32check
+            check_hash_keylength(hashlibStr, len(otpKey)/2)
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
@@ -319,8 +326,6 @@ class HotpTokenClass(TokenClass):
         if key_size is None:
             upd_param['keysize'] = keylen.get(hashlibStr)
 
-        otpKey = getParam(upd_param, "otpkey", optional)
-        genkey = is_true(getParam(upd_param, "genkey", optional))
         if genkey and otpKey:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time

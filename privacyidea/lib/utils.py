@@ -1184,3 +1184,24 @@ def split_pin_pass(passw, otplen, prependpin):
         log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
                                                                                    len(otpval)))
     return pin, otpval
+
+
+def check_hash_keylength(hashalgo, keylength):
+    """
+    Check if the keylength is an appropriate keylength for
+    the given hash algorithm.
+    :param keylength: The length of the key
+    :type keylength: int
+    :param hashalgo: The hash algorithm (sha1, sha256...)
+    :type hashalgo: str
+    :return: True, otherwise raises exception
+    """
+    hashalgo = hashalgo.lower()
+    if hashalgo == "sha1" and keylength != 20:
+        raise Exception("HMAC-SHA1 needs a keylength of 20 bytes.")
+    if hashalgo == "sha256" and keylength != 32:
+        raise Exception("HMAC-SHA256 needs a keylength of 32 bytes.")
+    if hashalgo == "sha512" and keylength != 64:
+        raise Exception("HMAC-SHA512 needs a keylength of 64 bytes.")
+    return True
+

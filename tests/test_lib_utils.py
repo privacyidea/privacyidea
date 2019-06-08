@@ -21,7 +21,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
-                                   check_ip_in_policy, split_pin_pass)
+                                   check_ip_in_policy, split_pin_pass,
+                                   check_hash_keylength)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -650,3 +651,11 @@ class UtilsTestCase(MyTestCase):
         pin, otp = split_pin_pass("12345678hallo", 8, False)
         self.assertEqual(pin, "hallo")
         self.assertEqual(otp, "12345678")
+
+    def test_31_hash_keylength(self):
+        self.assertTrue(check_hash_keylength("sha1", 20))
+        self.assertTrue(check_hash_keylength("sha256", 32))
+        self.assertTrue(check_hash_keylength("sha512", 64))
+        self.assertRaises(Exception, check_hash_keylength, "sha1", 10)
+        self.assertRaises(Exception, check_hash_keylength, "sha256", 20)
+        self.assertRaises(Exception, check_hash_keylength, "sha512", 30)
