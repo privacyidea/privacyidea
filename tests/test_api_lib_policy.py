@@ -26,7 +26,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
-                                           pushtoken_add_config)
+                                           pushtoken_add_config, pushtoken_wait)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -45,6 +45,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
 from flask import Response, Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -1492,6 +1493,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("reso1pol")
         delete_realm(realm)
+
+    def test_24_push_wait_policy(self):
+
+        # We send a fake push_wait, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       'pass': "pin",
+                                       'push_wait': "120"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"push_wait": "120"}
+        g.policy_object = PolicyClass()
+        pushtoken_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        # Now we use the policy, to set the push_wait seconds
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        req.all_data = {}
+        g.policy_object = PolicyClass()
+        pushtoken_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
+
+        delete_policy("push1")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

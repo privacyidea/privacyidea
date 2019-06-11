@@ -1295,6 +1295,39 @@ def save_client_application_type(request, action):
     return True
 
 
+def pushtoken_wait(request, action):
+    """
+    This is a auth specific wrapper to decorate /validate/check
+    According to the policy scope=SCOPE.AUTH, action=push_wait
+
+    :param request:
+    :param action:
+    :return:
+    """
+    user_object = request.User
+    if user_object:
+        token_user = user_object.login
+        token_realm = user_object.realm
+        token_resolver = user_object.resolver
+    else:
+        token_realm = token_resolver = token_user = None
+
+    waiting = g.policy_object.get_action_values(
+        action=PUSH_ACTION.WAIT,
+        scope=SCOPE.AUTH,
+        realm=token_realm,
+        user=token_user,
+        resolver=token_resolver,
+        client=g.client_ip,
+        audit_data=g.audit_object.audit_data,
+        allow_white_space_in_action=True,
+        unique=True)
+    if len(waiting) >= 1:
+        request.all_data[PUSH_ACTION.WAIT] = max([int(i) for i in list(waiting)])
+    else:
+        request.all_data[PUSH_ACTION.WAIT] = False
+
+
 def pushtoken_add_config(request, action):
     """
     This is a token specific wrapper for push token for the endpoint

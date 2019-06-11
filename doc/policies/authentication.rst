@@ -362,6 +362,32 @@ This is the title of the push notification that is displayed
 on the user's smartphone during the login process with
 a :ref:`push_token`.
 
+.. _policy_push_wait:
+
+push_wait
+~~~~~~~~~
+
+.. index:: push token, push direct authentication
+
+type: int
+
+This can be set to a number of seconds. If this is set, the authentication
+with a push token is only performed via one request to ``/validate/check``.
+The HTTP request to ``/validate/check`` will wait up to this number of
+seconds and check, if the push challenge was confirmed by the user.
+
+This way push tokens can be used with any non-push-capable applications.
+
+Sensible numbers might be 10 or 20 seconds.
+
+.. note:: This behaviour can interfere with other tokentypes. Even if
+   the user also has a normal HOTP token, the ``/validate/check`` request
+   will only return after this number of seconds.
+
+.. warning:: Using simple webserver setups like Apache WSGI this actually
+   can block all available worker threads!
+
+
 .. _policy_challenge_text:
 
 challenge_text, challenge_text_header, challenge_test_footer
