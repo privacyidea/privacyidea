@@ -41,7 +41,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.models import Challenge
+from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
@@ -605,6 +605,7 @@ class PushTokenClass(TokenClass):
             starttime = time.time()
             while True:
                 # TODO: It is not clear if in a process/threaded environment like apache the challenges are updated in one thread!
+                db.session.commit()
                 otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
                 if otp_counter >= 0 or (time.time() - starttime) > waiting:
                     break
