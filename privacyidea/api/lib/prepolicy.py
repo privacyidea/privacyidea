@@ -1323,7 +1323,7 @@ def pushtoken_wait(request, action):
         allow_white_space_in_action=True,
         unique=True)
     if len(waiting) >= 1:
-        request.all_data[PUSH_ACTION.WAIT] = max([int(i) for i in list(waiting)])
+        request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
     else:
         request.all_data[PUSH_ACTION.WAIT] = False
 

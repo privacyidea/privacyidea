@@ -423,6 +423,32 @@ class PushTokenTestCase(MyTestCase):
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
             delete_policy("push1")
 
+        # Authentication fails, if the push notification is not accepted within the configured time
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.WAIT))
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = json.loads(res.data.decode('utf8'))
+                # We fail to authenticate! Oh No!
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+            delete_policy("push1")
+
     def mark_challenge_as_accepted(self):
         # We simply mark all challenges as successfully answered!
         with self.app.test_request_context():

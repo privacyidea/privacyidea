@@ -604,12 +604,12 @@ class PushTokenClass(TokenClass):
             # now we need to check and wait for the response to be answered in the challenge table
             starttime = time.time()
             while True:
-                # TODO: It is not clear if in a process/threaded environment like apache the challenges are updated in one thread!
                 db.session.commit()
                 otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
-                if otp_counter >= 0 or (time.time() - starttime) > waiting:
+                elapsed_time = time.time() - starttime
+                if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
                     break
-                time.sleep(DELAY - ((time.time() - starttime) % DELAY))
+                time.sleep(DELAY - (elapsed_time % DELAY))
 
         return pin_match, otp_counter, reply
 

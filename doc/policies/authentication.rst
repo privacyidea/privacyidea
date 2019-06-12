@@ -385,7 +385,9 @@ Sensible numbers might be 10 or 20 seconds.
    will only return after this number of seconds.
 
 .. warning:: Using simple webserver setups like Apache WSGI this actually
-   can block all available worker threads!
+   can block all available worker threads, which will cause privacyIDEA
+   to become unresponsive if the number of open PUSH challenges exceeds
+   the number of available worker threads!
 
 
 .. _policy_challenge_text:
