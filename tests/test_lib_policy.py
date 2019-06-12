@@ -16,7 +16,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
-from privacyidea.lib.error import ParameterError, ServerError
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 import datetime
 from .base import PWFILE as FILE_PASSWORDS
