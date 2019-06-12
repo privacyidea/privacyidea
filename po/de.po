@@ -11,6 +11,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.0.6\n"
 
+# This is the level in the subscriptions
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr "Subskriptionsstufe"
+
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -428,7 +435,7 @@ msgstr "Token anhängen"
 msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:256
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:269
 msgid "Attribute mapping"
 msgstr "Attributszuordnung"
 
@@ -823,7 +830,7 @@ msgstr "Eine neue SMS-Gateway-Definition erzeugen"
 msgid "Create realm"
 msgstr "Realm anlegen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:214
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:227
 msgid "DN of a new created user object"
 msgstr "DN eines neu erzeugten Benutzerobjekts"
 
@@ -1085,7 +1092,7 @@ msgstr "Realms bearbeiten"
 msgid "Edit user"
 msgstr "Benutzer bearbeiten"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:207
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:88
 msgid "Edit user store"
 msgstr "Benutzerquelle editierbar"
@@ -1591,13 +1598,6 @@ msgstr ""
 msgid "Length of UID"
 msgstr "Länge des UID"
 
-# This is the level in the subscriptions
-#. level of subscription
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
-msgctxt "subscription"
-msgid "Level"
-msgstr "Subskriptionsstufe"
-
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
 msgstr "Lizenziert unter"
@@ -1746,7 +1746,7 @@ msgstr "Der Microsoft Internet Explorer wird nicht unterstützt."
 msgid "Mobile"
 msgstr "Mobiltelefon"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:268
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:281
 msgid "Multivalue Attributes"
 msgstr "Attribute mit mehreren Werten"
 
@@ -1815,11 +1815,11 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:150
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:305
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:299
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:312
 msgid "No retrieval of schema information"
 msgstr "Schema-Informationen werden nicht abgerufen."
 
@@ -1903,7 +1903,7 @@ msgstr "Gültigkeitszeitraum für OTP"
 msgid "OTRS"
 msgstr "OTRS"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:208
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:221
 msgid "Object classes of a new created user object"
 msgstr "Objektklassen eines neu erzeugten Benutzerobjekts"
 
@@ -2027,6 +2027,10 @@ msgstr "Passwort erfolgreich gesetzt."
 msgid "Paste the ssh PUBLIC key"
 msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein."
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
+msgid "Per-process server pool"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.html:35
 msgid "Periodic Tasks"
 msgstr "Regelmäßige Aufgaben"
@@ -2142,11 +2146,11 @@ msgstr ""
 "angehängt."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:143
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:229
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:242
 msgid "Preset Active Directory"
 msgstr "Active Directory vorbelegen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:226
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:239
 msgid "Preset OpenLDAP"
 msgstr "OpenLDAP vorbelegen"
 
@@ -2201,7 +2205,7 @@ msgstr "Fragenkatalog"
 msgid "Questionnaire Token settings"
 msgstr "Fragenkatalog-Token Einstellungen"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:305
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:318
 msgid "Quick Resolver Test"
 msgstr "Schneller Resolver-Test"
 
@@ -2535,7 +2539,7 @@ msgstr "Realms speichern"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:39
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:202
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:317
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:330
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:38
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:86
 msgid "Save resolver"
@@ -2552,7 +2556,7 @@ msgid "Scope"
 msgstr "Geltungsbereich"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:164
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:245
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:258
 msgid "Search Filter"
 msgstr "Suchfilter"
 
@@ -2667,11 +2671,11 @@ msgstr "Server"
 msgid "Server URI"
 msgstr "Server-URI"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:166
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:176
 msgid "Server pool retry rounds"
 msgstr "Serverpool Rundenanzahl"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:174
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
 msgid "Server pool skip timeout (seconds)"
 msgstr ""
 "Zeit, die ein nicht erreichbarer Server im Serverpool ignoriert wird "
@@ -2714,7 +2718,7 @@ msgid "Show selected actions only"
 msgstr "Zeige nur aktivierte Aktionen"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:132
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:184
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:166
 msgid "Size Limit"
 msgstr "Größenbeschränkung"
 
@@ -2774,12 +2778,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:445
-#: privacyidea/static/components/config/controllers/configControllers.js:672
+#: privacyidea/static/components/config/controllers/configControllers.js:453
+#: privacyidea/static/components/config/controllers/configControllers.js:680
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:454
+#: privacyidea/static/components/config/controllers/configControllers.js:462
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
@@ -2817,7 +2821,7 @@ msgid "Test Email sent successfully."
 msgstr "Test Email wurde erfolgreich versendet."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:198
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:312
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:325
 msgid "Test LDAP Resolver"
 msgstr "LDAP-Resolver testen"
 
@@ -3280,6 +3284,10 @@ msgstr ""
 msgid "The challenge validity time"
 msgstr "Die Gültigkeitszeit der Challenge"
 
+#: privacyidea/static/components/config/controllers/configControllers.js:385
+msgid "The character '/' is not allowed here."
+msgstr "Das Zeichen '/' ist hier nicht erlaubt."
+
 #: privacyidea/static/components/config/views/config.token.yubico.html:20
 msgid "The client ID"
 msgstr "Die Client-ID"
@@ -3537,7 +3545,7 @@ msgstr ""
 "Die Benutzerdaten in der Datenbank können von privacyIDEA aus verwaltet "
 "werden."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:202
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:215
 msgid ""
 "The user data in this database can be modified from within\n"
 "                privacyIDEA."
@@ -3733,6 +3741,11 @@ msgstr ""
 "Dies muss ein gültiger FQDN mit einer gültigen Top-Level-Domain sein -  "
 "ansonsten wird ein U2F Fehlercode 2 geworfen (Bad Request)."
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:201
+msgid ""
+"This setting activates a LDAP server pool that is persisted between requests."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
 msgstr "TiQR Authentisierungsserver"
@@ -3892,7 +3905,7 @@ msgstr "U2F Token Einstellungen"
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr "U2F: Universal 2nd Factor. Hardware Token."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:277
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:290
 msgid "UID Type"
 msgstr "UID Typ"
 
@@ -4228,11 +4241,11 @@ msgstr "Yubikey ID"
 msgid "Yubikey Token settings"
 msgstr "Yubikey Token Einstellungen"
 
-#: privacyidea/static/components/audit/views/audit.log.html:29
+#: privacyidea/static/components/audit/views/audit.log.html:30
 msgid "action"
 msgstr "Aktion"
 
-#: privacyidea/static/components/audit/views/audit.log.html:37
+#: privacyidea/static/components/audit/views/audit.log.html:40
 msgid "action detail"
 msgstr "Aktionsdetail"
 
@@ -4246,7 +4259,7 @@ msgstr "aktiv"
 msgid "active, assigned tokens"
 msgstr "aktive, zugewiesene Token"
 
-#: privacyidea/static/components/audit/views/audit.log.html:49
+#: privacyidea/static/components/audit/views/audit.log.html:55
 msgid "administrator"
 msgstr "Administrator"
 
@@ -4262,11 +4275,11 @@ msgstr "AppID"
 msgid "certificate"
 msgstr "Zertifikat"
 
-#: privacyidea/static/components/audit/views/audit.log.html:79
+#: privacyidea/static/components/audit/views/audit.log.html:92
 msgid "clearance"
 msgstr "Freigabestufe"
 
-#: privacyidea/static/components/audit/views/audit.log.html:69
+#: privacyidea/static/components/audit/views/audit.log.html:80
 msgid "client"
 msgstr "Client"
 
@@ -4322,7 +4335,7 @@ msgstr "Hostname"
 msgid "id"
 msgstr "ID"
 
-#: privacyidea/static/components/audit/views/audit.log.html:73
+#: privacyidea/static/components/audit/views/audit.log.html:85
 msgid "info"
 msgstr "Info"
 
@@ -4330,7 +4343,7 @@ msgstr "Info"
 msgid "locked"
 msgstr "gesperrt"
 
-#: privacyidea/static/components/audit/views/audit.log.html:80
+#: privacyidea/static/components/audit/views/audit.log.html:93
 msgid "log level"
 msgstr "Logstufe"
 
@@ -4346,7 +4359,7 @@ msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
 msgid "maxfail"
 msgstr "Max. Fehlerzähler"
 
-#: privacyidea/static/components/audit/views/audit.log.html:78
+#: privacyidea/static/components/audit/views/audit.log.html:91
 msgid "missing_line"
 msgstr "Fehlende Zeile"
 
@@ -4375,7 +4388,7 @@ msgstr "Passwort"
 msgid "phone"
 msgstr "Telefon"
 
-#: privacyidea/static/components/audit/views/audit.log.html:65
+#: privacyidea/static/components/audit/views/audit.log.html:75
 msgid "policies"
 msgstr "Richtlinien"
 
@@ -4416,16 +4429,16 @@ msgstr ""
 msgid "privacyIDEA servers"
 msgstr "privacyIDEA Server"
 
-#: privacyidea/static/components/audit/views/audit.log.html:81
+#: privacyidea/static/components/audit/views/audit.log.html:94
 msgid "privacyidea server"
 msgstr "privacyIDEA Server"
 
-#: privacyidea/static/components/audit/views/audit.log.html:57
+#: privacyidea/static/components/audit/views/audit.log.html:65
 #: privacyidea/static/components/token/views/token.list.html:64
 msgid "realm"
 msgstr "Realm"
 
-#: privacyidea/static/components/audit/views/audit.log.html:61
+#: privacyidea/static/components/audit/views/audit.log.html:70
 msgid "resolver"
 msgstr "Resolver"
 
@@ -4437,7 +4450,7 @@ msgstr "Resolver"
 msgid "revoked"
 msgstr "widerrufen"
 
-#: privacyidea/static/components/audit/views/audit.log.html:41
+#: privacyidea/static/components/audit/views/audit.log.html:45
 #: privacyidea/static/components/token/views/token.challenges.html:28
 #: privacyidea/static/components/token/views/token.list.html:19
 #: privacyidea/static/components/user/views/user.details.html:81
@@ -4460,7 +4473,7 @@ msgstr "Setze als Standard"
 msgid "set password"
 msgstr "Passwort setzen"
 
-#: privacyidea/static/components/audit/views/audit.log.html:77
+#: privacyidea/static/components/audit/views/audit.log.html:90
 msgid "sig_check"
 msgstr "Signatur"
 
@@ -4480,7 +4493,7 @@ msgstr "Fangen Sie an, eine Seriennummer zu tippen."
 msgid "start typing a username"
 msgstr "Fangen Sie an, einen Benutzernamen zu tippen."
 
-#: privacyidea/static/components/audit/views/audit.log.html:33
+#: privacyidea/static/components/audit/views/audit.log.html:35
 msgid "success"
 msgstr "Erfolg"
 
@@ -4492,7 +4505,7 @@ msgstr "Nachname"
 msgid "timestamp"
 msgstr "Zeitstempel"
 
-#: privacyidea/static/components/audit/views/audit.log.html:45
+#: privacyidea/static/components/audit/views/audit.log.html:50
 msgid "token type"
 msgstr "Tokentyp"
 
@@ -4524,7 +4537,7 @@ msgstr ""
 msgid "use VASCO Serial"
 msgstr "VASCO Seriennummer verwenden"
 
-#: privacyidea/static/components/audit/views/audit.log.html:53
+#: privacyidea/static/components/audit/views/audit.log.html:60
 #: privacyidea/static/components/token/views/token.list.html:63
 msgid "user"
 msgstr "Benutzer"

@@ -66,7 +66,8 @@ myApp.controller("policyListController", function($scope, $stateParams,
 
 myApp.controller("policyDetailsController", function($scope, $stateParams,
                                                      ConfigFactory, $state,
-                                                     PolicyTemplateFactory) {
+                                                     PolicyTemplateFactory, inform,
+                                                     gettextCatalog) {
     // init
     $scope.realms = [];
     $scope.adminRealms = [];
@@ -376,6 +377,13 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                 var policy = data.result.value[0];
                 $scope.presetEditValues2(policy);
             });
+        }
+    };
+    $scope.checkPolicyName = function () {
+        var policyName = document.getElementById("policyname").value;
+        if (policyName.includes("/")) {
+            inform.add(gettextCatalog.getString("The character '/' is not allowed here."),
+                {type: "danger", ttl: 10000});
         }
     }
 });

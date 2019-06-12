@@ -33,7 +33,7 @@
         <div class="col-sm-6">
             <input name="policyname" id="policyname" class="form-control"
                    ng-model="policyname" required placeholder="policy1"
-                   autofocus required/>
+                   autofocus required ng-change="checkPolicyName()"/>
             <p class="help-block"
                 ng-show="existingPolicyname" translate>
                 If you change the name of the policy, it will create a new policy
