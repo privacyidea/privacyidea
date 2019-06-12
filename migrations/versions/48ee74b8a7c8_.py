@@ -14,9 +14,9 @@ down_revision = 'cb6d7b7bae63'
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import Sequence, CreateSequence
 from sqlalchemy import orm
-from privacyidea.models import ResolverRealm, TokenRealm, Resolver
+from privacyidea.models import TokenRealm, Resolver
 import sys
 
 Base = declarative_base()
@@ -61,10 +61,22 @@ class Token(Base):
                        default=u'', index=True)
 
 
+# Check if the SQL dialect uses sequences
+# (from https://stackoverflow.com/a/17196812/7036742)
+def dialect_supports_sequences():
+    return op._proxy.migration_context.dialect.supports_sequences
+
+
+def create_seq(name):
+    if dialect_supports_sequences():
+        op.execute(CreateSequence(Sequence(name)))
+
+
 def upgrade():
     try:
+        create_seq('tokenowner_seq')
         op.create_table('tokenowner',
-        sa.Column('id', sa.Integer()),
+        sa.Column('id', sa.Integer(), Sequence("tokenowner_seq"), primary_key=True),
         sa.Column('token_id', sa.Integer(), nullable=True),
         sa.Column('resolver', sa.Unicode(length=120), nullable=True),
         sa.Column('user_id', sa.Unicode(length=320), nullable=True),
