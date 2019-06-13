@@ -650,6 +650,8 @@ def check_ip_in_policy(client_ip, policy):
     """
     client_found = False
     client_excluded = False
+    # Remove empty strings from the list
+    policy = list(filter(None, policy))
     for ipdef in policy:
         if ipdef[0] in ['-', '!']:
             # exclude the client?

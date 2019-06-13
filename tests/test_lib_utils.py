@@ -643,6 +643,11 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(excluded)
         self.assertTrue(found)
 
+        # run a test for empty condition
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", u'', None])
+        self.assertTrue(excluded)
+        self.assertTrue(found)
+
     def test_30_split_pin_pass(self):
         pin, otp = split_pin_pass("test1234", 4, True)
         self.assertEqual(pin, "test")
