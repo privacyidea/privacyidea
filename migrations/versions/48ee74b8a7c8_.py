@@ -11,7 +11,7 @@ revision = '48ee74b8a7c8'
 down_revision = 'cb6d7b7bae63'
 
 
-from alembic import op
+from alembic import op, context
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import Sequence, CreateSequence
@@ -64,28 +64,33 @@ class Token(Base):
 # Check if the SQL dialect uses sequences
 # (from https://stackoverflow.com/a/17196812/7036742)
 def dialect_supports_sequences():
-    return op._proxy.migration_context.dialect.supports_sequences
+    migration_context = context.get_context()
+    return migration_context.dialect.supports_sequences
 
 
-def create_seq(name):
+def create_seq(seq):
     if dialect_supports_sequences():
-        op.execute(CreateSequence(Sequence(name)))
+        op.execute(CreateSequence(seq))
 
 
 def upgrade():
     try:
-        create_seq('tokenowner_seq')
+        seq = Sequence('tokenowner_seq')
+        try:
+            create_seq(seq)
+        except Exception as _e:
+            pass
         op.create_table('tokenowner',
-        sa.Column('id', sa.Integer(), Sequence("tokenowner_seq"), primary_key=True),
-        sa.Column('token_id', sa.Integer(), nullable=True),
-        sa.Column('resolver', sa.Unicode(length=120), nullable=True),
-        sa.Column('user_id', sa.Unicode(length=320), nullable=True),
-        sa.Column('realm_id', sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
-        sa.ForeignKeyConstraint(['token_id'], ['token.id'], ),
-        sa.PrimaryKeyConstraint('id'),
-        mysql_row_format='DYNAMIC'
-        )
+                        sa.Column('id', sa.Integer(), seq, primary_key=True),
+                        sa.Column('token_id', sa.Integer(), nullable=True),
+                        sa.Column('resolver', sa.Unicode(length=120), nullable=True),
+                        sa.Column('user_id', sa.Unicode(length=320), nullable=True),
+                        sa.Column('realm_id', sa.Integer(), nullable=True),
+                        sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
+                        sa.ForeignKeyConstraint(['token_id'], ['token.id'], ),
+                        sa.PrimaryKeyConstraint('id'),
+                        mysql_row_format='DYNAMIC'
+                        )
         op.create_index(op.f('ix_tokenowner_resolver'), 'tokenowner', ['resolver'], unique=False)
         op.create_index(op.f('ix_tokenowner_user_id'), 'tokenowner', ['user_id'], unique=False)
     except Exception as exx:
