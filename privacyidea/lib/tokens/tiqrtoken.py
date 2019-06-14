@@ -440,6 +440,8 @@ class TiqrTokenClass(OcraTokenClass):
             for challengeobject in challengeobject_list:
                 # check if we are still in time.
                 if challengeobject.is_valid():
+                    # This is a valid transaction ID not need to increase fail counter
+                    self.set_failcount(abs(self.get_failcount()) - 1)
                     _, status = challengeobject.get_otp_status()
                     if status is True:
                         # create a positive response
