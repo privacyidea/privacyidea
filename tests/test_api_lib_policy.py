@@ -2150,6 +2150,19 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_wizard")
 
+        # check if the dialog_no_token will not be displayed
+        self.assertEqual(jresult.get("result").get("value").get(
+            "dialog_no_token"), False)
+
+        # Now set a policy and check again
+        set_policy(name="pol_dialog", scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = json.loads(new_response.data)
+        self.assertEqual(jresult.get("result").get("value").get(
+            ACTION.DIALOG_NO_TOKEN), True)
+        delete_policy("pol_dialog")
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "role": "user"}

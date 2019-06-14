@@ -53,7 +53,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             TokenFactory.getTokens(function (data) {
                 if (data) {
                     $scope.tokendata = data.result.value;
-                    //debug: console.log($scope.tokendata);
                 }
             }, $scope.params);
         }
