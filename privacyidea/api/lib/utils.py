@@ -27,7 +27,7 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode
 import time
 import logging
 import json
@@ -212,7 +212,7 @@ def get_all_params(param, body):
 
     # In case of serialized JSON data in the body, add these to the values.
     try:
-        json_data = json.loads(body)
+        json_data = json.loads(to_unicode(body))
         for k, v in json_data.items():
             return_param[k] = v
     except Exception as exx:

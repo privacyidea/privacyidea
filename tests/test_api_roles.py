@@ -679,8 +679,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             ACTION.LOGOUTTIME, 200))
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -692,3 +691,9 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(result.get("value").get("user_page_size"), 20)
             self.assertEqual(result.get("value").get("policy_template_url"),
                              DEFAULT_POLICY_TEMPLATE_URL)
+
+            # check if we have the same values in the data attribute
+            result2 = json.loads(res.data.decode('utf8')).get('result')
+            self.assertTrue(result2.get("status"), res.data)
+            # Test logout time
+            self.assertEqual(result2.get("value").get("logout_time"), 200)

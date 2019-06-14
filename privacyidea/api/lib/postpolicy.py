@@ -177,7 +177,7 @@ def sign_response(request, response):
 
         content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
         response_object.data = json.dumps(content)
-    except ValueError:
+    except TypeError:
         # The response.data is no JSON (but CSV or policy export)
         # We do no signing in this case.
         log.info("We only sign JSON response data.")
