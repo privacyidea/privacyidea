@@ -273,6 +273,12 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(compare_condition("<100", 1000))
         self.assertFalse(compare_condition("<100", 100))
 
+        # There are invalid conditions, which should not raise an exception
+        # An empty condition will result in False
+        self.assertFalse(compare_condition("", 100))
+        # An invalid condition, which misses a compare-value, will result in false
+        self.assertFalse(compare_condition(">", 100))
+
     def test_09_get_data_from_params(self):
         config_description = {
             "local":  {

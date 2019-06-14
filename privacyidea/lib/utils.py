@@ -749,24 +749,31 @@ def compare_condition(condition, value):
     :return: True or False
     """
     condition = condition.replace(" ", "")
+    if not condition:
+        # No condition to match!
+        return False
 
-    # compare equal
-    if condition[0] in "=" + string.digits:
-        if condition[0] == "=":
+    try:
+        # compare equal
+        if condition[0] in "=" + string.digits:
+            if condition[0] == "=":
+                compare_value = int(condition[1:])
+            else:
+                compare_value = int(condition)
+            return value == compare_value
+
+        # compare bigger
+        if condition[0] == ">":
             compare_value = int(condition[1:])
-        else:
-            compare_value = int(condition)
-        return value == compare_value
+            return value > compare_value
 
-    # compare bigger
-    if condition[0] == ">":
-        compare_value = int(condition[1:])
-        return value > compare_value
-
-    # compare less
-    if condition[0] == "<":
-        compare_value = int(condition[1:])
-        return value < compare_value
+        # compare less
+        if condition[0] == "<":
+            compare_value = int(condition[1:])
+            return value < compare_value
+    except ValueError:
+        log.warning(u"Invalid condition {0!s}. Needs to contain an integer.".format(condition))
+        return False
 
 
 def compare_value_value(value1, comparator, value2):
