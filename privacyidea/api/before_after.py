@@ -211,6 +211,7 @@ def before_request():
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
+@eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
@@ -243,6 +244,7 @@ def after_request(response):
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
 @smtpserver_blueprint.app_errorhandler(AuthError)
+@eventhandling_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
 @monitoring_blueprint.app_errorhandler(AuthError)
 @postrequest(sign_response, request=request)
@@ -275,6 +277,7 @@ def auth_error(error):
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
 @smtpserver_blueprint.app_errorhandler(PolicyError)
+@eventhandling_blueprint.app_errorhandler(PolicyError)
 @register_blueprint.app_errorhandler(PolicyError)
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
@@ -297,6 +300,7 @@ def policy_error(error):
 @audit_blueprint.app_errorhandler(ResourceNotFoundError)
 @application_blueprint.app_errorhandler(ResourceNotFoundError)
 @smtpserver_blueprint.app_errorhandler(ResourceNotFoundError)
+@eventhandling_blueprint.app_errorhandler(ResourceNotFoundError)
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
 @subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -322,6 +326,7 @@ def resource_not_found_error(error):
 @audit_blueprint.app_errorhandler(privacyIDEAError)
 @application_blueprint.app_errorhandler(privacyIDEAError)
 @smtpserver_blueprint.app_errorhandler(privacyIDEAError)
+@eventhandling_blueprint.app_errorhandler(privacyIDEAError)
 @register_blueprint.app_errorhandler(privacyIDEAError)
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
@@ -349,6 +354,7 @@ def privacyidea_error(error):
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
 @smtpserver_blueprint.app_errorhandler(500)
+@eventhandling_blueprint.app_errorhandler(500)
 @register_blueprint.app_errorhandler(500)
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
