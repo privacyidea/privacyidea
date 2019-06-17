@@ -325,6 +325,7 @@ class ACTION(object):
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
+    DIALOG_NO_TOKEN = "dialog_no_token"
 
 
 class GROUP(object):
@@ -1793,6 +1794,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("The tokenwizard will be displayed in the token "
                           "menu, even if the user already has a token.")
+            },
+            ACTION.DIALOG_NO_TOKEN: {
+                'type': 'bool',
+                'desc': _("The welcome dialog will be displayed if the user has no tokens assigned.")
             },
             ACTION.DEFAULT_TOKENTYPE: {
                 'type': 'str',

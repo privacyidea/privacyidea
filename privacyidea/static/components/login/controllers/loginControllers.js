@@ -70,7 +70,6 @@ angular.module("privacyideaApp")
         $scope.registrationAllowed = data.result.value;
     });
     $scope.welcomeStep = 0;
-
     // customization
     $scope.piCustomMenuFile = angular.element(document.querySelector('#CUSTOM_MENU')).val();
     $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
@@ -344,6 +343,10 @@ angular.module("privacyideaApp")
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;
             $scope.token_wizard_2nd = data.result.value.token_wizard_2nd;
+            $scope.dialogNoToken = data.result.value.dialog_no_token;
+            if ($scope.dialogNoToken) {
+                $('#dialogNoToken').modal("show");
+            }
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;
@@ -388,6 +391,7 @@ angular.module("privacyideaApp")
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
         $scope.welcomeStep = 0;
+        $scope.dialogNoToken = false;
         $scope.privacyideaSupportLink = $rootScope.publicLink;
         $state.go("login");
         Idle.unwatch();
@@ -406,6 +410,14 @@ angular.module("privacyideaApp")
     };
     $scope.resetWelcome = function() {
         $scope.welcomeStep = 0;
+    };
+
+    $scope.closeNoToken = function() {
+        $scope.dialogNoToken = false;
+        $('#dialogNoToken').modal('hide');
+        // Hack, since we can not close the modal and thus the body
+        // keeps the modal-open and thus has no scroll-bars
+        $("body").removeClass("modal-open");
     };
 
     $scope.lock_screen = function () {
