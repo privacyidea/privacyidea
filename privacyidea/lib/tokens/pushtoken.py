@@ -41,7 +41,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.models import Challenge
+from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
@@ -57,7 +57,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
-
+import time
 
 log = logging.getLogger(__name__)
 
@@ -68,12 +68,14 @@ PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 
+DELAY = 1.0
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
     MOBILE_TEXT = "push_text_on_mobile"
     MOBILE_TITLE = "push_title_on_mobile"
     SSL_VERIFY = "push_ssl_verify"
+    WAIT = "push_wait"
 
 
 def strip_key(key):
@@ -174,7 +176,7 @@ class PushTokenClass(TokenClass):
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type(u"push")
-        self.mode = ['challenge']
+        self.mode = ['challenge', 'authenticate']
         self.hKeyRequired = False
 
 
@@ -241,8 +243,13 @@ class PushTokenClass(TokenClass):
                            'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
                            'group': "PUSH",
                            'value': ["0", "1"]
-
+                       },
+                       PUSH_ACTION.WAIT: {
+                           'type': 'int',
+                           'desc': _('Wait for number of seconds for the user to confirm the challenge in the first request.'),
+                           'group': "PUSH"
                        }
+
                    }
                },
         }
@@ -469,6 +476,9 @@ class PushTokenClass(TokenClass):
 
         :return: returns true or false
         """
+        if options.get(PUSH_ACTION.WAIT):
+            # We have a push_wait in the parameters
+            return False
         return self.check_pin(passw, user=user, options=options)
 
     def create_challenge(self, transactionid=None, options=None):
@@ -560,6 +570,48 @@ class PushTokenClass(TokenClass):
         db_challenge.save()
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, attributes
+
+    @check_token_locked
+    def authenticate(self, passw, user=None, options=None):
+        """
+        High level interface which covers the check_pin and check_otp
+        This is the method that verifies single shot authentication.
+        The challenge is send to the smartphone app and privacyIDEA
+        waits for the response to arrive.
+
+        :param passw: the password which could be pin+otp value
+        :type passw: string
+        :param user: The authenticating user
+        :type user: User object
+        :param options: dictionary of additional request parameters
+        :type options: dict
+
+        :return: returns tuple of
+                 1. true or false for the pin match,
+                 2. the otpcounter (int) and the
+                 3. reply (dict) that will be added as
+                    additional information in the JSON response
+                    of ``/validate/check``.
+        :rtype: tuple
+        """
+        otp_counter = -1
+        reply = None
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match:
+            waiting = int(options.get(PUSH_ACTION.WAIT, 20))
+            # Trigger the challenge
+            _t, _m, transaction_id, _attr = self.create_challenge(options=options)
+            # now we need to check and wait for the response to be answered in the challenge table
+            starttime = time.time()
+            while True:
+                db.session.commit()
+                otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
+                elapsed_time = time.time() - starttime
+                if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
+                    break
+                time.sleep(DELAY - (elapsed_time % DELAY))
+
+        return pin_match, otp_counter, reply
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):

@@ -146,8 +146,7 @@ def init_random_pin(request=None, action=None):
     # get the length of the random PIN from the policies
     pin_pols = policy_object.get_action_values(action=ACTION.OTPPINRANDOM,
                                                scope=SCOPE.ENROLL,
-                                               user=user_object.login,
-                                               realm=user_object.realm,
+                                               user_object=user_object,
                                                client=g.client_ip,
                                                unique=True,
                                                audit_data=g.audit_object.audit_data)
@@ -159,7 +158,7 @@ def init_random_pin(request=None, action=None):
         # handle the PIN
         handle_pols = policy_object.get_action_values(
             action=ACTION.PINHANDLING, scope=SCOPE.ENROLL,
-            user=user_object.login, realm=user_object.realm,
+            user_object=user_object,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data)
         # We can have more than one pin handler policy. So we can process the
@@ -364,14 +363,11 @@ def papertoken_count(request=None, action=None):
     :return:
     """
     from privacyidea.lib.tokens.papertoken import PAPERACTION
-    user_object = request.User
     policy_object = g.policy_object
     pols = policy_object.get_action_values(
         action=PAPERACTION.PAPERTOKEN_COUNT,
         scope=SCOPE.ENROLL,
-        user=user_object.login,
-        resolver=user_object.resolver,
-        realm=user_object.realm,
+        user_object=request.User,
         client=g.client_ip,
         unique=True,
         audit_data=g.audit_object.audit_data)
@@ -396,14 +392,11 @@ def tantoken_count(request=None, action=None):
     :return:
     """
     from privacyidea.lib.tokens.tantoken import TANACTION
-    user_object = request.User
     policy_object = g.policy_object
     pols = policy_object.get_action_values(
         action=TANACTION.TANTOKEN_COUNT,
         scope=SCOPE.ENROLL,
-        user=user_object.login,
-        resolver=user_object.resolver,
-        realm=user_object.realm,
+        user=request.User,
         client=g.client_ip,
         unique=True,
         audit_data=g.audit_object.audit_data)
@@ -522,8 +515,7 @@ def init_tokenlabel(request=None, action=None):
     # get the serials from a policy definition
     label_pols = policy_object.get_action_values(action=ACTION.TOKENLABEL,
                                                  scope=SCOPE.ENROLL,
-                                                 user=user_object.login,
-                                                 realm=user_object.realm,
+                                                 user_object=user_object,
                                                  client=g.client_ip,
                                                  unique=True,
                                                  allow_white_space_in_action=True,
@@ -535,8 +527,7 @@ def init_tokenlabel(request=None, action=None):
 
     issuer_pols = policy_object.get_action_values(action=ACTION.TOKENISSUER,
                                                   scope=SCOPE.ENROLL,
-                                                  user=user_object.login,
-                                                  realm=user_object.realm,
+                                                  user_object=user_object,
                                                   client=g.client_ip,
                                                   unique=True,
                                                   allow_white_space_in_action=True,
@@ -546,8 +537,7 @@ def init_tokenlabel(request=None, action=None):
 
     imageurl_pols = policy_object.get_action_values(action=ACTION.APPIMAGEURL,
                                                     scope=SCOPE.ENROLL,
-                                                    user=user_object.login,
-                                                    realm=user_object.realm,
+                                                    user_object=user_object,
                                                     client=g.client_ip,
                                                     unique=True,
                                                     allow_white_space_in_action=True,
@@ -679,6 +669,7 @@ def check_max_token_user(request=None, action=None):
     Pre Policy
     This checks the maximum token per user policy.
     Check ACTION.MAXTOKENUSER
+    Check ACTION.MAXACTIVETOKENUSER
 
     This decorator can wrap:
         /token/init  (with a realm and user)
@@ -689,15 +680,16 @@ def check_max_token_user(request=None, action=None):
     :return: True otherwise raises an Exception
     """
     ERROR = "The number of tokens for this user is limited!"
+    ERROR_ACTIVE = "The number of active tokens for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
     serial = getParam(params, "serial")
     if user_object.login:
         policy_object = g.policy_object
+        # check maximum tokens of user
         limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
                                                      scope=SCOPE.ENROLL,
-                                                     realm=user_object.realm,
-                                                     user=user_object.login,
+                                                     user_object=user_object,
                                                      client=g.client_ip)
         if limit_list:
             # we need to check how many tokens the user already has assigned!
@@ -705,12 +697,37 @@ def check_max_token_user(request=None, action=None):
             if serial and serial in [tok.token.serial for tok in tokenobject_list]:
                 # If a serial is provided and this token already exists, the
                 # token can be regenerated
-                return True
-            already_assigned_tokens = len(tokenobject_list)
-            max_value = max([int(x) for x in limit_list])
-            if already_assigned_tokens >= max_value:
-                g.audit_object.add_policy(limit_list.get(str(max_value)))
-                raise PolicyError(ERROR)
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR)
+
+        # check maximum active tokens of user
+        limit_list = policy_object.get_action_values(ACTION.MAXACTIVETOKENUSER,
+                                                     scope=SCOPE.ENROLL,
+                                                     user_object=user_object,
+                                                     client=g.client_ip)
+        if limit_list:
+            # we need to check how many active tokens the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, active=True)
+            _token_allowed = False
+            if serial:
+                for tok in tokenobject_list:
+                    if tok.token.serial == serial:
+                        # If a serial is provided and this token already exists (and is active), the
+                        # token can be regenerated. If the token would be inactive, regenerating this
+                        # token would reactivate it and thus the user would have more tokens!
+                        _token_allowed = True
+            if not _token_allowed:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_ACTIVE)
+
     return True
 
 
@@ -917,8 +934,7 @@ def mangle(request=None, action=None):
     policy_object = g.policy_object
     mangle_pols = policy_object.get_action_values(ACTION.MANGLE,
                                                   scope=SCOPE.AUTH,
-                                                  realm=user_object.realm,
-                                                  user=user_object.login,
+                                                  user_object=user_object,
                                                   client=g.client_ip)
     # We can have several mangle policies! One for user, one for realm and
     # one for pass. So we do no checking here.
@@ -1085,14 +1101,24 @@ def check_token_init(request=None, action=None):
     role = g.logged_in_user.get("role")
     admin_realm = g.logged_in_user.get("realm")
     scope = SCOPE.ADMIN
+    # We need this user, if an admin enrolls a token for a user
+    user_obj = get_user_from_param(params)
+    resolver = realm = None
     if role == ROLE.USER:
         scope = SCOPE.USER
+        realm = admin_realm
         admin_realm = None
+        resolver = User(username, realm).resolver
+    elif role == ROLE.ADMIN and user_obj:
+        resolver = user_obj.resolver
+        realm = user_obj.realm
+
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.get_policies(action=action,
                                         user=username,
-                                        realm=params.get("realm"),
+                                        realm=realm,
+                                        resolver=resolver,
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=admin_realm,
@@ -1254,6 +1280,39 @@ def save_client_application_type(request, action):
     return True
 
 
+def pushtoken_wait(request, action):
+    """
+    This is a auth specific wrapper to decorate /validate/check
+    According to the policy scope=SCOPE.AUTH, action=push_wait
+
+    :param request:
+    :param action:
+    :return:
+    """
+    user_object = request.User
+    if user_object:
+        token_user = user_object.login
+        token_realm = user_object.realm
+        token_resolver = user_object.resolver
+    else:
+        token_realm = token_resolver = token_user = None
+
+    waiting = g.policy_object.get_action_values(
+        action=PUSH_ACTION.WAIT,
+        scope=SCOPE.AUTH,
+        realm=token_realm,
+        user=token_user,
+        resolver=token_resolver,
+        client=g.client_ip,
+        audit_data=g.audit_object.audit_data,
+        allow_white_space_in_action=True,
+        unique=True)
+    if len(waiting) >= 1:
+        request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
+    else:
+        request.all_data[PUSH_ACTION.WAIT] = False
+
+
 def pushtoken_add_config(request, action):
     """
     This is a token specific wrapper for push token for the endpoint
@@ -1269,20 +1328,11 @@ def pushtoken_add_config(request, action):
     if ttype and ttype.lower() == "push":
         ttl = None
         registration_url = None
-        user_object = request.User
-        if user_object:
-            token_user = user_object.login
-            token_realm = user_object.realm
-            token_resolver = user_object.resolver
-        else:
-            token_realm = token_resolver = token_user = None
         # Get the firebase configuration from the policies
         firebase_config = g.policy_object.get_action_values(
             action=PUSH_ACTION.FIREBASE_CONFIG,
             scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
+            user_object=request.User if request.User else None,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data,
             allow_white_space_in_action=True,
@@ -1296,9 +1346,7 @@ def pushtoken_add_config(request, action):
         ssl_verify = g.policy_object.get_action_values(
             action=PUSH_ACTION.SSL_VERIFY,
             scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
+            user_object=request.User if request.User else None,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data,
             unique=True
@@ -1374,7 +1422,6 @@ def u2ftoken_allowed(request, action):
     if reg_data:
         # We have a registered u2f device!
         serial = request.all_data.get("serial")
-        user_object = request.User
 
         # We just check, if the issuer is allowed, not if the certificate
         # is still valid! (verify_cert=False)
@@ -1390,19 +1437,10 @@ def u2ftoken_allowed(request, action):
             "attestation_subject": x509name_to_string(
                 attestation_cert.get_subject())}
 
-        if user_object:
-            token_user = user_object.login
-            token_realm = user_object.realm
-            token_resolver = user_object.resolver
-        else:
-            token_realm = token_resolver = token_user = None
-
         allowed_certs_pols = policy_object.get_action_values(
             U2FACTION.REQ,
             scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
+            user_object=request.User if request.User else None,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data)
         for allowed_cert in allowed_certs_pols:

@@ -302,7 +302,7 @@ msgstr "Neue Frage hinzufügen"
 msgid "Add user"
 msgstr "Benutzer hinzufügen"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:286
+#: privacyidea/static/components/config/views/config.policies.details.html:288
 msgid "Admin"
 msgstr "Administrator"
 
@@ -584,7 +584,7 @@ msgstr "PIN ändern"
 msgid "Check OTP only."
 msgstr "Nur den OTP-Wert prüfen."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:278
+#: privacyidea/static/components/config/views/config.policies.details.html:280
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
@@ -601,7 +601,7 @@ msgstr "PIN lokal verifizieren"
 msgid "Check with OTP PIN."
 msgstr "OTP PIN und OTP Wert prüfen."
 
-#: privacyidea/static/components/login/views/login.html:68
+#: privacyidea/static/components/login/views/login.html:69
 msgid "Choose a realm..."
 msgstr "Realm auswählen..."
 
@@ -647,7 +647,7 @@ msgstr ""
 "scannen  Sie den QR-Code, um den Token Ihrer TiQR-App hinzuzufügen."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:302
+#: privacyidea/static/components/config/views/config.policies.details.html:304
 #: privacyidea/static/components/config/views/config.policies.list.html:13
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:49
 msgid "Client"
@@ -679,7 +679,7 @@ msgstr "Clients"
 msgid "Close"
 msgstr "Schließen"
 
-#: privacyidea/static/templates/menu.html:129
+#: privacyidea/static/templates/menu.html:130
 msgid "Community"
 msgstr "Community"
 
@@ -699,14 +699,6 @@ msgstr "Bedingungen"
 #: privacyidea/static/templates/menu.html:69
 msgid "Config"
 msgstr "Konfiguration"
-
-#: privacyidea/static/components/token/views/token.enrolled.push.html:3
-msgid ""
-"Congratulations. Your PUSH token {{ enrolledToken.serial }} was successfully "
-"enrolled."
-msgstr ""
-"Glückwunsch. Ihr PUSH Token {{{ enrolledToken.serial }} wurde erfolgreich "
-"ausgerollt."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:194
 msgid "Connection Parameters"
@@ -739,7 +731,7 @@ msgstr "Erstelle eine Ereignisdefinition"
 msgid "Create Periodic Task Definition"
 msgstr "Erstelle eine Definition einer regelmäßigen Aufgabe"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:347
+#: privacyidea/static/components/config/views/config.policies.details.html:349
 #: privacyidea/static/components/config/views/config.policies.details.html:85
 msgid "Create Policy"
 msgstr "Richtlinie erzeugen"
@@ -1184,7 +1176,7 @@ msgstr "Fehler beim Laden der Richtlinien-Vorlage."
 msgid "Error fetching policy templates."
 msgstr "Fehler beim Laden der Richtlinien-Vorlagen."
 
-#: privacyidea/static/components/login/factories/u2f.js:98
+#: privacyidea/static/components/login/factories/u2f.js:99
 msgid "Error in U2F response."
 msgstr "Fehler in der U2F-Antwort."
 
@@ -1529,7 +1521,7 @@ msgstr "Token importieren"
 msgid "Import tokens from a file"
 msgstr "Tokendatei importieren"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:333
+#: privacyidea/static/components/config/views/config.policies.details.html:335
 msgid ""
 "In case of conflicting policies, the policy with the lowest priority number "
 "will take precedence."
@@ -1649,7 +1641,7 @@ msgstr "Laden Seriennummern..."
 msgid "Loading users..."
 msgstr "Lade Benutzer..."
 
-#: privacyidea/static/templates/menu.html:136
+#: privacyidea/static/templates/menu.html:138
 msgid "Lock screen"
 msgstr "Applikation sperren"
 
@@ -1660,7 +1652,7 @@ msgstr "Logbuch"
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:29
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:78
 msgid "Log In"
 msgstr "Anmelden"
 
@@ -1683,7 +1675,7 @@ msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
 #: privacyidea/static/components/token/views/token.enroll.html:161
-#: privacyidea/static/templates/menu.html:139
+#: privacyidea/static/templates/menu.html:141
 msgid "Logout"
 msgstr "Abmelden"
 
@@ -2012,8 +2004,8 @@ msgstr "Parameter"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:84
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:20
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:26
-#: privacyidea/static/components/login/views/login.html:70
-#: privacyidea/static/components/login/views/login.html:74
+#: privacyidea/static/components/login/views/login.html:71
+#: privacyidea/static/components/login/views/login.html:75
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -2057,6 +2049,12 @@ msgstr ""
 #: privacyidea/static/components/login/controllers/loginControllers.js:225
 msgid "Please confirm with one of these tokens:"
 msgstr "Bitte bestätigen Sie mit einem dieser Token:"
+
+#: privacyidea/static/components/token/views/token.enrolled.push.html:3
+msgid ""
+"Please note, that your smartphone needs internet access during the "
+"authentication process."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:97
 msgid ""
@@ -2166,7 +2164,7 @@ msgstr "Zurück"
 msgid "Print the OTP list"
 msgstr "OTP-Liste drucken"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:326
+#: privacyidea/static/components/config/views/config.policies.details.html:328
 #: privacyidea/static/components/config/views/config.policies.list.html:5
 msgid "Priority"
 msgstr "Priorität"
@@ -2370,7 +2368,7 @@ msgstr "Erforderliche Realms"
 msgid "Reset Failcounter"
 msgstr "Fehlerzähler zurücksetzen "
 
-#: privacyidea/static/components/login/views/login.html:82
+#: privacyidea/static/components/login/views/login.html:83
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -2748,7 +2746,7 @@ msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
 #: privacyidea/static/templates/baseline.html:14
-#: privacyidea/static/templates/menu.html:131
+#: privacyidea/static/templates/menu.html:133
 msgid "Support"
 msgstr "Support"
 
@@ -2776,12 +2774,12 @@ msgstr "System"
 msgid "System Config"
 msgstr "Systemkonfiguration"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:444
-#: privacyidea/static/components/config/controllers/configControllers.js:671
+#: privacyidea/static/components/config/controllers/configControllers.js:445
+#: privacyidea/static/components/config/controllers/configControllers.js:672
 msgid "System Config saved."
 msgstr "Systemkonfiguration gespeichert."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:453
+#: privacyidea/static/components/config/controllers/configControllers.js:454
 msgid "System entry deleted."
 msgstr "Systemeinstellung gelöscht."
 
@@ -2935,7 +2933,7 @@ msgstr ""
 "einscannen. So können Sie das Smartphone zu einem Authentisierungs-Token "
 "umwandeln."
 
-#: privacyidea/static/components/login/views/login.html:92
+#: privacyidea/static/components/login/views/login.html:93
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -3375,7 +3373,7 @@ msgstr ""
 "bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
-#: privacyidea/static/app.js:122
+#: privacyidea/static/app.js:125
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Das privacyIDEA-System scheint offline zu sein. Die API ist nicht erreichbar."
@@ -3955,7 +3953,7 @@ msgstr "TLS verwenden"
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:288
+#: privacyidea/static/components/config/views/config.policies.details.html:290
 #: privacyidea/static/components/config/views/config.policies.list.html:11
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:64
 #: privacyidea/static/components/config/views/config.radius.edit.html:97
@@ -3993,11 +3991,11 @@ msgstr "Benutzer erfolgreich gelöscht."
 msgid "User updated successfully."
 msgstr "Benutzer erfolgreich aktualisiert."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:248
+#: privacyidea/static/components/config/views/config.policies.details.html:250
 msgid "User-Realm"
 msgstr "Benutzerrealm"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:263
+#: privacyidea/static/components/config/views/config.policies.details.html:265
 msgid "User-Resolver"
 msgstr "Benutzer-Resolver"
 
@@ -4032,7 +4030,7 @@ msgstr "VASCO Token Blob"
 msgid "Valid subscription"
 msgstr "Gültige Subskription"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:314
+#: privacyidea/static/components/config/views/config.policies.details.html:316
 msgid "Valid time"
 msgstr "Gültigkeitszeitraum"
 
@@ -4163,7 +4161,7 @@ msgstr ""
 "Drücken des blinkenden Knopfes oder durch neu Einstecken des Tokens.  Dies "
 "hängt von dem konkreten Tokentyp an."
 
-#: privacyidea/static/templates/menu.html:150
+#: privacyidea/static/templates/menu.html:152
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
@@ -4546,6 +4544,13 @@ msgstr "d.M.yy HH:mm:ss"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#~ msgid ""
+#~ "Congratulations. Your PUSH token {{ enrolledToken.serial }} was "
+#~ "successfully enrolled."
+#~ msgstr ""
+#~ "Glückwunsch. Ihr PUSH Token {{{ enrolledToken.serial }} wurde erfolgreich "
+#~ "ausgerollt."
 
 #~ msgid "Administrative actions"
 #~ msgstr "Administrative Aktionen"

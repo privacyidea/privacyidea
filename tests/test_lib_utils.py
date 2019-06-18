@@ -21,7 +21,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
-                                   check_ip_in_policy)
+                                   check_ip_in_policy, split_pin_pass)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -272,6 +272,12 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_condition("  <100", 10))
         self.assertFalse(compare_condition("<100", 1000))
         self.assertFalse(compare_condition("<100", 100))
+
+        # There are invalid conditions, which should not raise an exception
+        # An empty condition will result in False
+        self.assertFalse(compare_condition("", 100))
+        # An invalid condition, which misses a compare-value, will result in false
+        self.assertFalse(compare_condition(">", 100))
 
     def test_09_get_data_from_params(self):
         config_description = {
@@ -642,3 +648,16 @@ class UtilsTestCase(MyTestCase):
         found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2"])
         self.assertTrue(excluded)
         self.assertTrue(found)
+
+        # run a test for empty condition
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", u'', None])
+        self.assertTrue(excluded)
+        self.assertTrue(found)
+
+    def test_30_split_pin_pass(self):
+        pin, otp = split_pin_pass("test1234", 4, True)
+        self.assertEqual(pin, "test")
+        self.assertEqual(otp, "1234")
+        pin, otp = split_pin_pass("12345678hallo", 8, False)
+        self.assertEqual(pin, "hallo")
+        self.assertEqual(otp, "12345678")

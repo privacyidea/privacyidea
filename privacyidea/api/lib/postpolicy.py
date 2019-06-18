@@ -208,9 +208,7 @@ def check_tokentype(request, response):
     allowed_tokentypes = policy_object.get_action_values(
         ACTION.TOKENTYPE,
         scope=SCOPE.AUTHZ,
-        user=user_object.login,
-        resolver=user_object.resolver,
-        realm=user_object.realm,
+        user_object=user_object,
         client=g.client_ip,
         audit_data=g.audit_object.audit_data)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
@@ -563,11 +561,16 @@ def get_webui_settings(request, response):
                                        active=True,
                                        audit_data=g.audit_object.audit_data))
         token_wizard = False
+        dialog_no_token = False
         if role == ROLE.USER:
+            user_obj = User(loginname, realm)
+            user_token_num = get_tokens(user=user_obj, count=True)
             token_wizard_pol = policy_object.get_policies(
                 action=ACTION.TOKENWIZARD,
                 scope=SCOPE.WEBUI,
-                realm=realm,
+                realm=user_obj.realm,
+                resolver=user_obj.resolver,
+                user=user_obj.login,
                 client=client,
                 active=True,
                 audit_data=g.audit_object.audit_data
@@ -576,9 +579,19 @@ def get_webui_settings(request, response):
             # We also need to check, if the user has not tokens assigned.
             # If the user has no tokens, we run the wizard. If the user
             # already has tokens, we do not run the wizard.
-            if token_wizard_pol:
-                token_wizard = get_tokens(user=User(loginname, realm),
-                                          count=True) == 0
+            token_wizard = bool(token_wizard_pol) and (user_token_num == 0)
+
+            dialog_no_token_pol = policy_object.get_policies(
+                scope=SCOPE.WEBUI,
+                action=ACTION.DIALOG_NO_TOKEN,
+                client=client,
+                realm=user_obj.realm,
+                resolver=user_obj.resolver,
+                user=user_obj.login,
+                active=True,
+                audit_data=g.audit_object.audit_data
+            )
+            dialog_no_token = bool(dialog_no_token_pol) and (user_token_num == 0)
         user_details_pol = policy_object.get_policies(
             action=ACTION.USERDETAILS,
             scope=SCOPE.WEBUI,
@@ -667,6 +680,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
+        content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
         content["result"]["value"]["hide_welcome"] = hide_welcome
@@ -703,9 +717,7 @@ def autoassign(request, response):
             autoassign_values = policy_object.\
                 get_action_values(action=ACTION.AUTOASSIGN,
                                   scope=SCOPE.ENROLL,
-                                  user=user_obj.login,
-                                  resolver=user_obj.resolver,
-                                  realm=user_obj.realm,
+                                  user_object=user_obj,
                                   client=g.client_ip,
                                   unique=True)
 
@@ -809,9 +821,7 @@ def mangle_challenge_response(request, response):
                                                  scope=SCOPE.AUTH,
                                                  allow_white_space_in_action=True,
                                                  client=g.client_ip,
-                                                 user=user_obj.login,
-                                                 realm=user_obj.realm,
-                                                 resolver=user_obj.resolver,
+                                                 user_object=user_obj,
                                                  audit_data=g.audit_object.audit_data,
                                                  unique=True)
 
@@ -819,9 +829,7 @@ def mangle_challenge_response(request, response):
                                                  scope=SCOPE.AUTH,
                                                  allow_white_space_in_action=True,
                                                  client=g.client_ip,
-                                                 user=user_obj.login,
-                                                 realm=user_obj.realm,
-                                                 resolver=user_obj.resolver,
+                                                 user_object=user_obj,
                                                  audit_data=g.audit_object.audit_data,
                                                  unique=True)
 

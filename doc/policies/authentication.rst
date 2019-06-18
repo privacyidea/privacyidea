@@ -86,6 +86,37 @@ for the RADIUS server.
    delete all his tokens and then authenticate with
    his static password again.
 
+passthru_assign
+~~~~~~~~~~~~~~~
+
+.. index:: passthru, migration
+
+type: str
+
+This policy is only evaluated, if the policy ``passthru`` is set.
+If the user is authenticated against a RADIUS server, then privacyIDEA
+splits the sent password into PIN and OTP value and tries to find an unassigned token,
+that is in the user's realm by using the OTP value. If it can identify this token, it assigns this
+token to the user and sets the sent PIN.
+
+The policy is configured with a string value, that contains
+* the position of the PIN
+* the OTP length and
+* the number of OTP values tested for each unassigned token (optional, default=100).
+
+Examples are
+
+* ``8:pin`` would be an eight digit OTP value followed by the PIN
+* ``pin:6:10000`` would be the PIN followed by an 6 digit OTP value, 10.000
+  otp values would be checked for each token.
+
+.. note:: This method can be used to automatically migrated tokens from an old system
+   to privacyIDEA. The administrator needs to import all seeds of the old tokens
+   and put the tokens in the user's realm.
+
+.. warning:: This can be very time consuming if the OTP values to check is set to high!
+
+
 passOnNoToken
 ~~~~~~~~~~~~~
 
@@ -330,6 +361,34 @@ type: string
 This is the title of the push notification that is displayed
 on the user's smartphone during the login process with
 a :ref:`push_token`.
+
+.. _policy_push_wait:
+
+push_wait
+~~~~~~~~~
+
+.. index:: push token, push direct authentication
+
+type: int
+
+This can be set to a number of seconds. If this is set, the authentication
+with a push token is only performed via one request to ``/validate/check``.
+The HTTP request to ``/validate/check`` will wait up to this number of
+seconds and check, if the push challenge was confirmed by the user.
+
+This way push tokens can be used with any non-push-capable applications.
+
+Sensible numbers might be 10 or 20 seconds.
+
+.. note:: This behaviour can interfere with other tokentypes. Even if
+   the user also has a normal HOTP token, the ``/validate/check`` request
+   will only return after this number of seconds.
+
+.. warning:: Using simple webserver setups like Apache WSGI this actually
+   can block all available worker threads, which will cause privacyIDEA
+   to become unresponsive if the number of open PUSH challenges exceeds
+   the number of available worker threads!
+
 
 .. _policy_challenge_text:
 

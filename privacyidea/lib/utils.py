@@ -650,6 +650,8 @@ def check_ip_in_policy(client_ip, policy):
     """
     client_found = False
     client_excluded = False
+    # Remove empty strings from the list
+    policy = list(filter(None, policy))
     for ipdef in policy:
         if ipdef[0] in ['-', '!']:
             # exclude the client?
@@ -747,24 +749,31 @@ def compare_condition(condition, value):
     :return: True or False
     """
     condition = condition.replace(" ", "")
+    if not condition:
+        # No condition to match!
+        return False
 
-    # compare equal
-    if condition[0] in "=" + string.digits:
-        if condition[0] == "=":
+    try:
+        # compare equal
+        if condition[0] in "=" + string.digits:
+            if condition[0] == "=":
+                compare_value = int(condition[1:])
+            else:
+                compare_value = int(condition)
+            return value == compare_value
+
+        # compare bigger
+        if condition[0] == ">":
             compare_value = int(condition[1:])
-        else:
-            compare_value = int(condition)
-        return value == compare_value
+            return value > compare_value
 
-    # compare bigger
-    if condition[0] == ">":
-        compare_value = int(condition[1:])
-        return value > compare_value
-
-    # compare less
-    if condition[0] == "<":
-        compare_value = int(condition[1:])
-        return value < compare_value
+        # compare less
+        if condition[0] == "<":
+            compare_value = int(condition[1:])
+            return value < compare_value
+    except ValueError:
+        log.warning(u"Invalid condition {0!s}. Needs to contain an integer.".format(condition))
+        return False
 
 
 def compare_value_value(value1, comparator, value2):
@@ -1162,3 +1171,25 @@ def prepare_result(obj, rid=1, details=None):
         res["detail"] = details
 
     return res
+
+
+def split_pin_pass(passw, otplen, prependpin):
+    """
+    Split a given password based on the otp length and prepend pin
+    :param passw: The password like test123456 or 123456test
+    :type pass: str
+    :param otplen: The length of the otp value
+    :param prependpin: The password is either in front or after the otp value
+    :return:
+    """
+    if prependpin:
+        pin = passw[0:-otplen]
+        otpval = passw[-otplen:]
+        log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                    len(otpval)))
+    else:
+        pin = passw[otplen:]
+        otpval = passw[0:otplen]
+        log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
+                                                                                   len(otpval)))
+    return pin, otpval

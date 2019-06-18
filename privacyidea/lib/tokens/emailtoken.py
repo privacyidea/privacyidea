@@ -353,20 +353,14 @@ class EmailTokenClass(HotpTokenClass):
         message = default
         mimetype = "plain"
         g = options.get("g")
-        username = None
-        realm = None
         user_object = options.get("user")
-        if user_object:  # pragma: no cover
-            username = user_object.login
-            realm = user_object.realm
         if g:
             clientip = options.get("clientip")
             policy_object = g.policy_object
             messages = policy_object.\
                 get_action_values(action=action,
                                   scope=SCOPE.AUTH,
-                                  realm=realm,
-                                  user=username,
+                                  user_object=user_object if user_object else None,
                                   client=clientip,
                                   unique=True,
                                   allow_white_space_in_action=True,

@@ -45,7 +45,6 @@ from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list
-from privacyidea.lib.framework import get_app_config_value
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -91,7 +90,7 @@ class Audit(AuditBase):
         self.audit_data = {}
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
-        self.verify_old_sig = get_app_config_value('PI_CHECK_OLD_SIGNATURES')
+        self.verify_old_sig = self.config.get('PI_CHECK_OLD_SIGNATURES')
         if self.sign_data:
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))

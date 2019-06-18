@@ -47,7 +47,8 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token, import_token)
+                                   unassign_token, import_token,
+                                   get_tokens_paginated_generator)
 from privacyidea.app import create_app
 from flask_script import Manager
 import re

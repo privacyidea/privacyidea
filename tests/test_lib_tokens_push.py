@@ -13,7 +13,7 @@ from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token
-from privacyidea.lib.policy import (SCOPE, set_policy)
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
 from privacyidea.lib.error import ConfigAdminError
@@ -28,7 +28,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-
+from threading import Timer
+import time
 
 class myAccessTokenInfo(object):
     def __init__(self, access_token):
@@ -391,6 +392,70 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = json.loads(res.data.decode('utf8'))
             # Result-Value is True, since the challenge is marked resolved in the DB
         self.assertTrue(jsonresp.get("result").get("value"))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        # Do single shot auth with waiting
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            # In two seconds we need to run an update on the challenge table.
+            Timer(2, self.mark_challenge_as_accepted).start()
+
+            set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = json.loads(res.data.decode('utf8'))
+                # We successfully authenticated! YEAH!
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+            delete_policy("push1")
+
+        # Authentication fails, if the push notification is not accepted within the configured time
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.WAIT))
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = json.loads(res.data.decode('utf8'))
+                # We fail to authenticate! Oh No!
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+            delete_policy("push1")
+
+    def mark_challenge_as_accepted(self):
+        # We simply mark all challenges as successfully answered!
+        with self.app.test_request_context():
+            challenges = get_challenges()
+            for chal in challenges:
+                chal.set_otp_status(True)
+                chal.save()
 
     @responses.activate
     def test_04_api_authenticate_smartphone(self):

@@ -140,6 +140,12 @@ in the ``pi.cfg`` config file.
 
 .. _customize_menu:
 
+Page title
+~~~~~~~~~~
+
+You can configure the page title by setting ``PI_PAGE_TITLE`` in the
+``pi.cfg`` file.
+
 Menu
 ~~~~
 

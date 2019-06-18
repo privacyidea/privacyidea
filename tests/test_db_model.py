@@ -135,16 +135,6 @@ class TokenModelTestCase(MyTestCase):
         r = t2.check_pin("thepin")
         self.assertTrue(r)
 
-        # call split_pin_pass
-        res, pin, otp = t2.split_pin_pass("pin123456")
-        self.assertTrue(res)
-        self.assertTrue(pin == "pin", pin)
-        self.assertTrue(otp == "123456", otp)
-        res, pin, otp = t2.split_pin_pass("123456pin", prepend=False)
-        self.assertTrue(res)
-        self.assertTrue(pin == "pin", pin)
-        self.assertTrue(otp == "123456", otp)
-
         # save the pin in an encrypted way
         t2.set_pin("thepin", hashed=False)
         t2.save()

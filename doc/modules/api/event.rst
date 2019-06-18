@@ -7,7 +7,7 @@ Event endpoints
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:
-   :blueprints: event_blueprint
+   :blueprints: eventhandling_blueprint
 
    :include-empty-docstring:
 

@@ -80,7 +80,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action)
+                                           check_base_action, pushtoken_wait)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -218,6 +218,7 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
@@ -367,6 +368,7 @@ def check():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)

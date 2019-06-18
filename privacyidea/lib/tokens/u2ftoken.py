@@ -182,9 +182,9 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 
 """
 
-IMAGES = {"yubico": "static/css/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "static/css/plugup.jpg",
-          "u2fzero.com": "static/css/u2fzero.png"}
+IMAGES = {"yubico": "static/img/FIDO-U2F-Security-Key-444x444.png",
+          "plug-up": "static/img/plugup.jpg",
+          "u2fzero.com": "static/img/u2fzero.png"}
 U2F_Version = "U2F_V2"
 
 log = logging.getLogger(__name__)
@@ -348,7 +348,7 @@ class U2fTokenClass(TokenClass):
             if not app_id:
                 raise TokenAdminError(_("You need to define the appId in the "
                                         "token config!"))
-            nonce = urlsafe_b64encode_and_unicode(geturandom(32))
+            nonce = url_encode(geturandom(32))
             response_detail = TokenClass.get_init_detail(self, params, user)
             register_request = {"version": U2F_Version,
                                 "challenge": nonce,
@@ -494,18 +494,11 @@ class U2fTokenClass(TokenClass):
                     # certificate is authorized.
                     # If not, we can raise a policy exception
                     g = options.get("g")
-                    if self.user:
-                        token_user = self.user.login
-                        token_realm = self.user.realm
-                        token_resolver = self.user.resolver
-                    else:
-                        token_realm = token_resolver = token_user = None
+                    user_object = self.user
                     allowed_certs_pols = g.policy_object.get_action_values(
                         U2FACTION.REQ,
                         scope=SCOPE.AUTHZ,
-                        realm=token_realm,
-                        user=token_user,
-                        resolver=token_resolver,
+                        user_object=user_object if user_object else None,
                         client=g.client_ip,
                         audit_data=g.audit_object.audit_data)
                     for allowed_cert in allowed_certs_pols:

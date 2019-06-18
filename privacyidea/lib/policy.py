@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add max_active_token_per_user
+#  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add passthru_assign policy
 #  2018-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add App Image URL
 #  2018-01-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -241,6 +245,7 @@ class ACTION(object):
     MANGLE = "mangle"
     MAXTOKENREALM = "max_token_per_realm"
     MAXTOKENUSER = "max_token_per_user"
+    MAXACTIVETOKENUSER = "max_active_token_per_user"
     NODETAILSUCCESS = "no_detail_on_success"
     ADDUSERINRESPONSE = "add_user_in_response"
     ADDRESOLVERINRESPONSE = "add_resolver_in_response"
@@ -253,6 +258,7 @@ class ACTION(object):
     PASSNOTOKEN = "passOnNoToken"
     PASSNOUSER = "passOnNoUser"
     PASSTHRU = "passthru"
+    PASSTHRU_ASSIGN = "passthru_assign"
     PASSWORDRESET = "password_reset"
     PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
@@ -318,6 +324,7 @@ class ACTION(object):
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
+    DIALOG_NO_TOKEN = "dialog_no_token"
 
 
 class GROUP(object):
@@ -437,19 +444,39 @@ class PolicyClass(object):
 
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, client=None, action=None,
+                     resolver=None, user=None, user_object=None,
+                     client=None, action=None,
                      adminrealm=None, time=None, all_times=False,
                      sort_by_priority=True, audit_data=None):
         """
         Return the policies of the given filter values.
 
+        In order to retrieve policies matching the current user,
+        callers can *either* pass a user(name), resolver and realm,
+        *or* pass a user object from which login name, resolver and realm will be read.
+        In case of conflicting parameters, a ParameterError will be raised.
+
+        The following rule holds for all filter arguments:
+
+        If ``None`` is passed as a value, policies are not filtered according to the
+        argument at all. As an example, if ``realm=None`` is passed,
+        policies are matched regardless of their ``realm`` attribute.
+        If any value is passed (even the empty string), policies are filtered
+        according to the given value. As an example, if ``realm=''`` is passed,
+        only policies that have a matching (or empty) realm attribute are returned.
+
+        The only exception is the ``client`` parameter, which does not accept the empty string,
+        and throws a ParameterError if the empty string is passed.
+
         :param name: The name of the policy
         :param scope: The scope of the policy
         :param realm: The realm in the policy
-        :param active: Only active policies
+        :param active: One of None, True, False: All policies, only active or only inactive policies
         :param resolver: Only policies with this resolver
         :param user: Only policies with this user
         :type user: basestring
+        :param user_object: Only policies matching this user object
+        :type user_object: User
         :param client:
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
@@ -468,6 +495,13 @@ class PolicyClass(object):
         :return: list of policies
         :rtype: list of dicts
         """
+        if user_object is not None:
+            if not (user is None and realm is None and resolver is None):
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+            user = user_object.login
+            realm = user_object.realm
+            resolver = user_object.resolver
+
         reduced_policies = self.policies
 
         # filter policy for time. If no time is set or is a time is set and
@@ -559,6 +593,9 @@ class PolicyClass(object):
         # the client 10.0.0.1 does not match the policy "10.0.0.0/8, -10.0.0.1".
         # An empty client definition in the policy matches all clients.
         if client is not None:
+            if not client:
+                raise ParameterError("client argument must be a non-empty string")
+
             new_policies = []
             for policy in reduced_policies:
                 log.debug(u"checking client ip in policy {0!s}.".format(policy))
@@ -613,7 +650,7 @@ class PolicyClass(object):
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
                           allow_white_space_in_action=False, adminrealm=None,
-                          audit_data=None):
+                          user_object=None, audit_data=None):
         """
         Get the defined action values for a certain action like
             scope: authorization
@@ -623,6 +660,8 @@ class PolicyClass(object):
             scope: authorization
             action: serial
         would return a dictionary of {serial: policyname}
+
+        All parameters not described below are covered in the documentation of ``get_policies``.
 
         :param unique: if set, the function will only consider the policy with the
             highest priority and check for policy conflicts.
@@ -640,7 +679,7 @@ class PolicyClass(object):
         policy_values = {}
         policies = self.get_policies(scope=scope, adminrealm=adminrealm,
                                      action=action, active=True,
-                                     realm=realm, resolver=resolver, user=user,
+                                     realm=realm, resolver=resolver, user=user, user_object=user_object,
                                      client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
@@ -1479,6 +1518,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Limit the number of tokens a user may have '
                           'assigned.'),
                 'group': GROUP.TOKEN},
+            ACTION.MAXACTIVETOKENUSER: {
+                'type': 'int',
+                'desc': _('Limit the number of active tokens a user may have assigned.'),
+                'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
                 'value': list(range(0, 32)),
@@ -1583,6 +1626,13 @@ def get_static_policy_definitions(scope=None):
                           'authenticated against the userstore or against the '
                           'given RADIUS config,'
                           ' if the user has no tokens assigned.')
+            },
+            ACTION.PASSTHRU_ASSIGN: {
+                'type': 'str',
+                'desc': _('This allows to automatically assign a within privacyIDEA, if the '
+                          'user was authenticated via passthru against a RADIUS server. The OTP value '
+                          'is used to find the unassigned token in privacyIDEA. Enter the length of the OTP value '
+                          'and where the PIN is set like 8:pin or pin:6.')
             },
             ACTION.PASSNOTOKEN: {
                 'type': 'bool',
@@ -1757,6 +1807,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("The tokenwizard will be displayed in the token "
                           "menu, even if the user already has a token.")
+            },
+            ACTION.DIALOG_NO_TOKEN: {
+                'type': 'bool',
+                'desc': _("The welcome dialog will be displayed if the user has no tokens assigned.")
             },
             ACTION.DEFAULT_TOKENTYPE: {
                 'type': 'str',

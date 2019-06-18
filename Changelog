@@ -1,4 +1,10 @@
-Version 3.0.1, 2019-05-XX
+Version 3.0.2, 2019-06-17
+
+  Fixes:
+  * Fix creation of table tokenover and update with PostgreSQL DB
+  * Fix user assignment migration with non-ascii characters in userid
+
+Version 3.0.1, 2019-05-23
 
   Fixes:
   * Fix PUSH token issues:
