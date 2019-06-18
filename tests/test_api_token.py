@@ -1188,6 +1188,36 @@ class APITokenTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertEqual(value.get("count"), 0)
 
+        # create a second challenge and a third cahllenge
+        r = check_serial_pass(serial, "pin")
+        r = check_serial_pass(serial, "pin")
+        transaction_ids = []
+        with self.app.test_request_context('/token/challenges/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 3)
+            challenges = value.get("challenges")
+            for challenge in challenges:
+                # Fill the list of all transaction_ids
+                transaction_ids.append(challenge.get("transaction_id"))
+
+        # Now we only ask for the first transation id. This should return only ONE challenge
+        with self.app.test_request_context('/token/challenges/',
+                                            data={"transaction_id": transaction_ids[0]},
+                                            method='GET',
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            value = result.get("value")
+            self.assertEqual(value.get("count"), 1)
+            challenges = value.get("challenges")
+            self.assertEqual(challenges[0].get("transaction_id"), transaction_ids[0])
+
         delete_policy("chalresp")
 
     def test_20_init_yubikey(self):

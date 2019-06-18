@@ -307,6 +307,8 @@ def get_challenges_api(serial=None):
     :query sortdir: asc/desc
     :query page: request a certain page
     :query pagesize: limit the number of returned tokens
+    :query transaction_id: only returns challenges for this
+        transaction_id. This is useful when working with push or tiqr tokens.
     :return: json
     """
     param = request.all_data
@@ -314,8 +316,10 @@ def get_challenges_api(serial=None):
     sort = getParam(param, "sortby", optional, default="timestamp")
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
+    transaction_id = getParam(param, "transaction_id", optional)
     g.audit_object.log({"serial": serial})
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
+                                         transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
     return send_result(challenges)
