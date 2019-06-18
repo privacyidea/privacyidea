@@ -121,9 +121,7 @@ def challenge_response_allowed(func):
             allowed_tokentypes_dict = policy_object.get_action_values(
                 action=ACTION.CHALLENGERESPONSE,
                 scope=SCOPE.AUTH,
-                realm=user_object.realm,
-                resolver=user_object.resolver,
-                user=user_object.login,
+                user_object=user_object,
                 client=clientip)
             log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
 
@@ -167,9 +165,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
         auth_cache_dict = policy_object.get_action_values(
             action=ACTION.AUTH_CACHE,
             scope=SCOPE.AUTH,
-            realm=user_object.realm,
-            resolver=user_object.resolver,
-            user=user_object.login,
+            user_object=user_object,
             client=clientip,
             unique=True)
         if auth_cache_dict:
@@ -333,9 +329,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                     # TODO: here we can check, if the token should be assigned.
                     passthru_assign = policy_object.get_action_values(action=ACTION.PASSTHRU_ASSIGN,
                                                                       scope=SCOPE.AUTH,
-                                                                      realm=user_object.realm,
-                                                                      resolver=user_object.resolver,
-                                                                      user=user_object.login,
+                                                                      user_object=user_object,
                                                                       client=clientip,
                                                                       unique=True,
                                                                       audit_data=g.audit_object.audit_data)
@@ -403,17 +397,13 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         max_success_dict = policy_object.get_action_values(
             action=ACTION.AUTHMAXSUCCESS,
             scope=SCOPE.AUTHZ,
-            realm=user_object.realm,
-            resolver=user_object.resolver,
-            user=user_object.login,
+            user_object=user_object,
             client=clientip,
             unique=True)
         max_fail_dict = policy_object.get_action_values(
             action=ACTION.AUTHMAXFAIL,
             scope=SCOPE.AUTHZ,
-            realm=user_object.realm,
-            resolver=user_object.resolver,
-            user=user_object.login,
+            user_object=user_object,
             client=clientip,
             unique=True)
         # Check for maximum failed authentications
@@ -562,9 +552,7 @@ def login_mode(wrapped_function, *args, **kwds):
         login_mode_dict = policy_object.get_action_values(
             ACTION.LOGINMODE,
             scope=SCOPE.WEBUI,
-            realm=user_object.realm,
-            resolver=user_object.resolver,
-            user=user_object.login,
+            user_object=user_object,
             client=clientip,
             unique=True,
             audit_data=g.audit_object.audit_data)
@@ -621,9 +609,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
         policy_object = g.policy_object
         otppin_dict = policy_object.get_action_values(ACTION.OTPPIN,
                                                       scope=SCOPE.AUTH,
-                                                      realm=user_object.realm,
-                                                      resolver=user_object.resolver,
-                                                      user=user_object.login,
+                                                      user_object=user_object,
                                                       client=clientip,
                                                       unique=True,
                                                       audit_data=g.audit_object.audit_data)
@@ -668,41 +654,28 @@ def config_lost_token(wrapped_function, *args, **kwds):
         serial = args[0]
         toks = get_tokens(serial=serial)
         if len(toks) == 1:
-            username = None
-            realm = None
-            resolver = None
             user_object = toks[0].user
-            if user_object:
-                username = user_object.login
-                realm = user_object.realm
-                resolver = user_object.resolver
             clientip = options.get("clientip")
             # get the policy
             policy_object = g.policy_object
             contents_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWCONTENTS,
                 scope=SCOPE.ENROLL,
-                realm=realm,
-                resolver=resolver,
-                user=username,
+                user_object=user_object if user_object else None,
                 client=clientip,
                 unique=True,
                 audit_data=g.audit_object.audit_data)
             validity_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENVALID,
                 scope=SCOPE.ENROLL,
-                realm=realm,
-                resolver=resolver,
-                user=username,
+                user_object=user_object if user_object else None,
                 client=clientip,
                 unique=True,
                 audit_data=g.audit_object.audit_data)
             pw_len_dict = policy_object.get_action_values(
                 ACTION.LOSTTOKENPWLEN,
                 scope=SCOPE.ENROLL,
-                realm=realm,
-                resolver=resolver,
-                user=username,
+                user_object=user_object if user_object else None,
                 client=clientip,
                 unique=True,
                 audit_data=g.audit_object.audit_data)
@@ -743,9 +716,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
         reset_all = policy_object.get_policies(
             action=ACTION.RESETALLTOKENS,
             scope=SCOPE.AUTH,
-            realm=token_owner.login if token_owner else None,
-            resolver=token_owner.resolver if token_owner else None,
-            user=token_owner.realm if token_owner else None,
+            user_object=token_owner if token_owner else None,
             client=clientip, active=True,
             audit_data=g.audit_object.audit_data)
         if reset_all:
