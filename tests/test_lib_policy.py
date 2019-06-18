@@ -225,6 +225,10 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol4", p), p)
         self.assertTrue(len(p) == 1, p)
 
+        # client="" throws a ParameterError
+        with self.assertRaises(ParameterError):
+            P.get_policies(client="")
+
     def test_08_user_policies(self):
         set_policy(name="pol1", scope="s", user="*")
         set_policy(name="pol2", scope="s", user="admin, root, user1")
@@ -253,6 +257,12 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol2", p), p)
         self.assertTrue(_check_policy_name("pol3", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
+        # get policies for empty user
+        p = P.get_policies(user="")
+        self.assertEqual(len(p), 3)
+        self.assertTrue(_check_policy_name("pol1", p), p)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
 
     def test_09_realm_resolver_policy(self):
         set_policy(name="pol1", scope="s", realm="r1")
@@ -275,6 +285,14 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol3", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
 
+        # Check cases in which we pass an empty realm or realm=None
+        p = P.get_policies(realm="")
+        self.assertEqual(len(p), 1)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+
+        p = P.get_policies(realm=None)
+        self.assertEqual(len(p), 4)
+
         p = P.get_policies(resolver="reso1")
         self.assertEqual(len(p), 3)
         self.assertTrue(_check_policy_name("pol1", p), p)
@@ -287,6 +305,12 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertFalse(_check_policy_name("pol2", p), p)
         self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
+
+        # Check case in which we pass an empty resolver
+        p = P.get_policies(resolver="")
+        self.assertEqual(len(p), 2)
+        self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertTrue(_check_policy_name("pol4", p), p)
 
     def test_10_action_policies(self):
@@ -307,6 +331,16 @@ class PolicyTestCase(MyTestCase):
 
         p = P.get_policies(action="otppin")
         self.assertTrue(len(p) == 2, (len(p), p))
+
+        # Check cases in which we pass an empty action or action=None
+        p = P.get_policies(action="")
+        # Here, we get pol3 and pol4
+        self.assertEqual(len(p), 2)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
+
+        p = P.get_policies(action=None)
+        self.assertEqual(len(p), 4)
 
     def test_11_get_policy_definitions(self):
         p = get_static_policy_definitions()
