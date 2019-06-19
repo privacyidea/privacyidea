@@ -2082,7 +2082,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     valid_token_list = []
 
     # Remove locked tokens from tokenobject_list
-    if len(tokenobject_list) > 1:
+    if len(tokenobject_list) > 0:
         tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
 
         if len(tokenobject_list) == 0:
@@ -2210,8 +2210,18 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                                                     options=options) >= 0:
                 reply_dict["serial"] = tokenobject.token.serial
                 matching_challenge = True
-                if tokenobject.is_active():
-                    # OTP matches
+                messages = []
+                if not tokenobject.is_active():
+                    # usually check_challenge response would return "False" in case of inactive tokens
+                    reply_dict["message"] = "Challenge matches, but token is inactive."
+                    log.info("Received a valid response to a "
+                             "challenge for inactive token {0!s}".format(tokenobject.token.serial))
+                elif not tokenobject.is_fit_for_challenge(options=options):
+                    reply_dict["message"] = "Challenge matches, but token is not fit for challenge."
+                    log.info("Received a valid response to a "
+                             "challenge for a non-fit token {0!s}".format(tokenobject.token.serial))
+                else:
+                    # Challenge matches, token is active and token is fit for challenge
                     res = True
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
@@ -2228,11 +2238,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
-                else:  # pragma: no cover
-                    # usually check_challenge response would return "False" in case of inactive tokens
-                    reply_dict["message"] = "Challenge matches, but token is inactive."
-                    log.info("Received a valid response to a "
-                             "challenge for inactive token {0!s}".format(tokenobject.token.serial))
+
         if not res:
             # We did not find any successful response, so we need to increase the
             # failcounters
