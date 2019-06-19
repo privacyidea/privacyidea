@@ -60,7 +60,7 @@ get_pi_cfg() {
 	log "===================="
 	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' $PICFG >> $tempfile
 	# only write the driver part of the URI to the logfile.
-	# So we need if eg. pymysql, mysql or any other dialect is used.
+	# So we see if eg. pymysql, mysql or any other dialect is used.
 	grep ^SQLALCHEMY_DATABASE_URI $PICFG | cut -d':' -f 1 >> $tempfile
 }
 
