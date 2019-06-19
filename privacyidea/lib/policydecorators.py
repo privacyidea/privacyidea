@@ -222,9 +222,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
         policy_object = g.policy_object
         pass_no_token = policy_object.get_policies(action=ACTION.PASSNOTOKEN,
                                                    scope=SCOPE.AUTH,
-                                                   realm=user_object.realm,
-                                                   resolver=user_object.resolver,
-                                                   user=user_object.login,
+                                                   user_object=user_object,
                                                    client=clientip, active=True)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
@@ -260,9 +258,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
         policy_object = g.policy_object
         pass_no_user = policy_object.get_policies(action=ACTION.PASSNOUSER,
                                                   scope=SCOPE.AUTH,
-                                                  realm=user_object.realm,
-                                                  resolver=user_object.resolver,
-                                                  user=user_object.login,
+                                                  user_object=user_object,
                                                   client=clientip,
                                                   active=True)
         if pass_no_user:
@@ -300,9 +296,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
         clientip = options.get("clientip")
         pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
                                                scope=SCOPE.AUTH,
-                                               realm=user_object.realm,
-                                               resolver=user_object.resolver,
-                                               user=user_object.login,
+                                               user_object=user_object,
                                                client=clientip,
                                                active=True,
                                                sort_by_priority=True)

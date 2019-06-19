@@ -424,8 +424,7 @@ def encrypt_pin(request=None, action=None):
     # get the length of the random PIN from the policies
     pin_pols = policy_object.get_policies(action=ACTION.ENCRYPTPIN,
                                           scope=SCOPE.ENROLL,
-                                          user=user_object.login,
-                                          realm=user_object.realm,
+                                          user_object=user_object,
                                           client=g.client_ip,
                                           active=True,
                                           audit_data=g.audit_object.audit_data)
@@ -972,12 +971,9 @@ def check_anonymous_user(request=None, action=None):
     policy_object = g.policy_object
     scope = SCOPE.USER
     user_obj = get_user_from_param(params)
-    username = user_obj.login
-    realm = user_obj.realm
 
     action = policy_object.get_policies(action=action,
-                                        user=username,
-                                        realm=realm,
+                                        user_object=user_obj,
                                         scope=scope,
                                         client=g.client_ip,
                                         adminrealm=None,
@@ -1171,16 +1167,13 @@ def api_key_required(request=None, action=None):
             "but no key was passed."
     params = request.all_data
     policy_object = g.policy_object
-    #user_object = get_user_from_param(params)
-    user_object = request.User
 
     # Get the policies
     action = policy_object.get_policies(action=ACTION.APIKEY,
-                                        user=user_object.login,
-                                        realm=user_object.realm,
                                         scope=SCOPE.AUTHZ,
                                         client=g.client_ip,
                                         active=True,
+                                        user_object=request.User,
                                         audit_data=g.audit_object.audit_data)
     # Do we have a policy?
     if action:
@@ -1375,21 +1368,11 @@ def u2ftoken_verify_cert(request, action):
         policy_object = g.policy_object
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
-        user_object = request.User
-
-        if user_object:
-            token_user = user_object.login
-            token_realm = user_object.realm
-            token_resolver = user_object.resolver
-        else:
-            token_realm = token_resolver = token_user = None
 
         do_not_verify_the_cert = policy_object.get_policies(
             action=U2FACTION.NO_VERIFY_CERT,
             scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
+            user_object=request.User if request.User else None,
             active=True,
             client=g.client_ip,
             audit_data=g.audit_object.audit_data)

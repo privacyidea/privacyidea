@@ -531,19 +531,13 @@ class SmsTokenClass(HotpTokenClass):
         autosms = False
         g = options.get("g")
         user_object = options.get("user")
-        username = None
-        realm = None
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
         if g:
             clientip = options.get("clientip")
             policy_object = g.policy_object
             autosmspol = policy_object.\
                 get_policies(action=SMSACTION.SMSAUTO,
                              scope=SCOPE.AUTH,
-                             realm=realm,
-                             user=username,
+                             user_object=user_object if user_object else None,
                              client=clientip, active=True,
                              audit_data=g.audit_object.audit_data)
             autosms = len(autosmspol) >= 1

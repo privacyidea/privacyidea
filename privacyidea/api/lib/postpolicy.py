@@ -568,9 +568,7 @@ def get_webui_settings(request, response):
             token_wizard_pol = policy_object.get_policies(
                 action=ACTION.TOKENWIZARD,
                 scope=SCOPE.WEBUI,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
+                user_object=user_obj,
                 client=client,
                 active=True,
                 audit_data=g.audit_object.audit_data
@@ -585,9 +583,7 @@ def get_webui_settings(request, response):
                 scope=SCOPE.WEBUI,
                 action=ACTION.DIALOG_NO_TOKEN,
                 client=client,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
+                user_object=user_obj,
                 active=True,
                 audit_data=g.audit_object.audit_data
             )

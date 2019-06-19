@@ -396,19 +396,13 @@ class EmailTokenClass(HotpTokenClass):
         autosms = False
         g = options.get("g")
         user_object = options.get("user")
-        username = None
-        realm = None
-        if user_object:  # pragma: no cover
-            username = user_object.login
-            realm = user_object.realm
         if g:
             clientip = options.get("clientip")
             policy_object = g.policy_object
             autoemailpol = policy_object.\
                 get_policies(action=EMAILACTION.EMAILAUTO,
                              scope=SCOPE.AUTH,
-                             realm=realm,
-                             user=username,
+                             user_object=user_object if user_object else None,
                              client=clientip, active=True,
                              audit_data=g.audit_object.audit_data)
             autosms = len(autoemailpol) >= 1
