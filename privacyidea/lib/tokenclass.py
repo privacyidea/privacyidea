@@ -124,12 +124,19 @@ class TOKENKIND(object):
     VIRTUAL = "virtual"
 
 
+class TOKENMODE(object):
+    AUTHENTICATE = 'authenticate'
+    CHALLENGE = 'challenge'
+    # If the challenge is answered out of band
+    OUTOFBAND = 'outofband'
+
+
 class TokenClass(object):
 
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = ['authenticate', 'challenge']
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
 
     @log_with(log)
     def __init__(self, db_token):
@@ -162,6 +169,10 @@ class TokenClass(object):
         tokentype = u'' + tokentype
         self.type = tokentype
         self.token.tokentype = tokentype
+
+    @classmethod
+    def is_outofband(cls):
+        return TOKENMODE.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():

@@ -2237,7 +2237,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             # We did not find any successful response, so we need to increase the
             # failcounters
             for token_obj in challenge_response_token_list:
-                token_obj.inc_failcount()
+                if not token_obj.is_outofband():
+                    token_obj.inc_failcount()
             if not matching_challenge:
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
