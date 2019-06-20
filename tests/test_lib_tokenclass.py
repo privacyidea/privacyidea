@@ -528,6 +528,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
+        transaction_id = "123456789"
 
         db_token.set_pin("test")
         # No challenge request
@@ -548,12 +549,20 @@ class TokenBaseTestCase(MyTestCase):
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test123456",
-                                            options={"transaction_id": "123456789"})
-        self.assertTrue(resp, resp)
+                                            options={"transaction_id": transaction_id})
+        # The token has not DB entry in the challenges table
+        self.assertFalse(resp)
+
+        # Create a challenge
+        C = Challenge(serial=self.serial1, transaction_id=transaction_id, challenge="12")
+        C.save()
+        resp = token.is_challenge_response(User(login="cornelius",
+                                                realm=self.realm1),
+                                           "test123456",
+                                           options={"transaction_id": transaction_id})
+        self.assertTrue(resp)
 
         # test if challenge is valid
-        C = Challenge("S123455", transaction_id="tid", challenge="Who are you?")
-        C.save()
         self.assertTrue(C.is_valid())
 
     def test_19_pin_otp_functions(self):

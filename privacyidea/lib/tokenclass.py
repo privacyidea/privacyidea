@@ -1360,8 +1360,12 @@ class TokenClass(object):
         """
         options = options or {}
         challenge_response = False
-        if "state" in options or "transaction_id" in options:
-            challenge_response = True
+        transaction_id = options.get("transaction_id") or options.get("state")
+        if transaction_id:
+            # Now we also need to check, if the transaction_id is an entry to the
+            # serial number of this token
+            chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
+            challenge_response = bool(chals)
 
         return challenge_response
 
