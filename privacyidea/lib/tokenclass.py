@@ -625,14 +625,14 @@ class TokenClass(object):
     def is_active(self):
         return self.token.active
 
-    def is_fit_for_challenge(self, options=None, messages=None):
+    def is_fit_for_challenge(self, messages, options=None):
         """
         This method is called if a cryptographically matching response to a challenge was found.
         This method may implement final checks, if there is anything that should deny the
         success of the authentication with the response to the challenge.
 
         The options dictionary can also contain the transaction_id, so even the
-        challege table for this token can be used for checking.
+        challenge table for this token can be used for checking.
 
         :param options:
         :type options: dict
@@ -640,7 +640,6 @@ class TokenClass(object):
         :type messages: list
         :return: True or False
         """
-        messages = messages or []
         return self.check_all(messages)
 
     def get_failcount(self):

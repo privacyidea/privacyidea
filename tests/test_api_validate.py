@@ -2529,7 +2529,7 @@ class AChallengeResponse(MyApiTestCase):
             data = json.loads(res.data.decode('utf8'))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(detail.get("message"), "Challenge matches, but token is inactive.")
+            self.assertEqual(detail.get("message"), "Challenge matches, but token is not fit for challenge. Token is disabled")
 
         # The token is still disabled. We are checking, if we can do a challenge response
         # for a disabled token

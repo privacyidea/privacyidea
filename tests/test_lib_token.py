@@ -1146,7 +1146,7 @@ class TokenTestCase(MyTestCase):
         r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[2], user,
                                      options={"transaction_id": transaction_id})
         self.assertFalse(r)
-        self.assertEqual(r_dict.get("message"), "Challenge matches, but token is not fit for challenge.")
+        self.assertEqual(r_dict.get("message"), "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
 
         remove_token("CR2A")
         remove_token("CR2B")

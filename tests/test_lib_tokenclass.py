@@ -168,7 +168,7 @@ class TokenBaseTestCase(MyTestCase):
         token.token.active = True
         # Set failcounter high
         token.token.failcount = 13
-        r = token.is_fit_for_challenge()
+        r = token.is_fit_for_challenge([])
         self.assertFalse(r)
         # reset failcount
         token.token.failcount = 8

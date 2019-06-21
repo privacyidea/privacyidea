@@ -2211,15 +2211,12 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 reply_dict["serial"] = tokenobject.token.serial
                 matching_challenge = True
                 messages = []
-                if not tokenobject.is_active():
-                    # usually check_challenge response would return "False" in case of inactive tokens
-                    reply_dict["message"] = "Challenge matches, but token is inactive."
+                if not tokenobject.is_fit_for_challenge(messages, options=options):
+                    messages.insert(0, "Challenge matches, but token is not fit for challenge")
+                    reply_dict["message"] = ". ".join(messages)
                     log.info("Received a valid response to a "
-                             "challenge for inactive token {0!s}".format(tokenobject.token.serial))
-                elif not tokenobject.is_fit_for_challenge(options=options):
-                    reply_dict["message"] = "Challenge matches, but token is not fit for challenge."
-                    log.info("Received a valid response to a "
-                             "challenge for a non-fit token {0!s}".format(tokenobject.token.serial))
+                             "challenge for a non-fit token {0!s}. {1!s}".format(tokenobject.token.serial,
+                                                                                 reply_dict["message"]))
                 else:
                     # Challenge matches, token is active and token is fit for challenge
                     res = True
