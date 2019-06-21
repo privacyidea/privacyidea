@@ -267,10 +267,14 @@ def get_auth_token():
             g.audit_object.log({"user": "",
                                 "administrator": user_obj.login,
                                 "realm": user_obj.realm,
+                                "resolver": user_obj.resolver,
+                                "serial": details.get('serial', None) if details else None,
                                 "info": log_used_user(user_obj)})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
+                                "resolver": user_obj.resolver,
+                                "serial": details.get('serial', None) if details else None,
                                 "info": log_used_user(user_obj)})
 
     if not admin_auth and not user_auth:
