@@ -47,6 +47,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
+from privacyidea.lib.utils import create_tag_dict
 from privacyidea.lib import _
 import logging
 import datetime
@@ -296,28 +297,16 @@ class UserNotificationEventHandler(BaseEventHandler):
                 token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
 
-            time = datetime.datetime.now().strftime("%H:%M:%S")
-            date = datetime.datetime.now().strftime("%Y-%m-%d")
-            tags = dict(admin=logged_in_user.get("username"),
-                        realm=logged_in_user.get("realm"),
-                        action=request.path,
-                        serial=serial,
-                        url=request.url_root,
-                        user=tokenowner.info.get("givenname"),
-                        surname=tokenowner.info.get("surname"),
-                        givenname=recipient.get("givenname"),
-                        username=tokenowner.login,
-                        userrealm=tokenowner.realm,
-                        tokentype=tokentype,
-                        registrationcode=registrationcode,
-                        recipient_givenname=recipient.get("givenname"),
-                        recipient_surname=recipient.get("surname"),
-                        googleurl_value=googleurl_value,
-                        time=time,
-                        date=date,
-                        client_ip=g.client_ip,
-                        ua_browser=request.user_agent.browser,
-                        ua_string=request.user_agent.string)
+            tags = create_tag_dict(logged_in_user=logged_in_user,
+                                   request=request,
+                                   client_ip=g.client_ip,
+                                   googleurl_value=googleurl_value,
+                                   recipient=recipient,
+                                   tokenowner=tokenowner,
+                                   serial=serial,
+                                   tokentype=tokentype,
+                                   registrationcode=registrationcode)
+
             body = body.format(googleurl_img=googleurl_img,
                                **tags)
             subject = subject.format(**tags)

@@ -71,7 +71,7 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import (SCOPE, ACTION, get_action_values_from_options)
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
@@ -438,12 +438,18 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
-        message = message.format(otp=otp, serial=serial)
+        tags = create_tag_dict(serial=serial,
+                               tokenowner=self.user,
+                               tokentype=self.get_tokentype(),
+                               recipient={"givenname": self.user.info.get("givenname"),
+                                          "surname": self.user.info.get("surname")})
+
+        message = message.format(otp=otp, **tags)
 
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)
 
-        subject = subject.format(otp=otp, serial=serial)
+        subject = subject.format(otp=otp, **tags)
 
         log.debug("sending Email to {0!r}".format(recipient))
 

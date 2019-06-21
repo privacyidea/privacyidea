@@ -181,7 +181,20 @@ type: string
 
 This is the text that is sent via Email to be used with Email Token. This
 text should contain the OTP value.
-You can use the tags *<otp>* and *<serial>*.
+
+The text can contain the following tags, that will be filled:
+
+  * {serial} the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {tokentype} the type of the token.
+  * {recipient_givenname} the given name of the recipient.
+  * {recipient_surname} the surname of the recipient.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
@@ -191,7 +204,7 @@ Default: *<otp>*
 
 You can also provide the filename to an email template. The filename must be prefixed with
 ``file:`` like ``file:/etc/privacyidea/emailtemplate.html``. The template is
-an HTML file and contain the tags ``{otp}`` and ``{serial}``.
+an HTML file.
 
 .. note:: If a message text is supplied directly, the email is sent as plain text.
    If the email template is read from a file, a HTML-only email is sent instead.
@@ -204,7 +217,7 @@ emailsubject
 type: string
 
 This is the subject of the Email sent by the Email Token.
-You can use the tags *<otp>* and *<serial>*.
+You can use the same tags as mentioned in ``emailtext``.
 
 Default: Your OTP
 
