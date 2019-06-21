@@ -1125,6 +1125,29 @@ class TokenTestCase(MyTestCase):
         self.assertFalse(r)
         self.assertTrue("message" in r_dict)
         self.assertTrue("transaction_id" in r_dict)
+        transaction_id = r_dict.get("transaction_id")
+
+        # Now we try authenticate:
+        r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
+                                     options={"transaction_id": transaction_id})
+        self.assertTrue(r)
+
+        # New challenge
+        r, r_dict = check_token_list([token_a, token_b], pin, user)
+        self.assertTrue("transaction_id" in r_dict)
+        transaction_id = r_dict.get("transaction_id")
+
+        # Now we run a bunch of failing responses to the challenge
+        for i in range(0, 10):
+            r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
+                                         options={"transaction_id": transaction_id})
+            self.assertFalse(r)
+        # Now we try the next value, which fails
+        r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[2], user,
+                                     options={"transaction_id": transaction_id})
+        self.assertFalse(r)
+        self.assertEqual(r_dict.get("message"), "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
+
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test48")

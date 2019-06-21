@@ -163,6 +163,15 @@ class TokenBaseTestCase(MyTestCase):
         
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
+
+        # Set token to be active
+        token.token.active = True
+        # Set failcounter high
+        token.token.failcount = 13
+        r = token.is_fit_for_challenge([])
+        self.assertFalse(r)
+        # reset failcount
+        token.token.failcount = 8
         
         self.assertTrue(token.get_user_id() == token.token.owners.first().user_id)
         
