@@ -38,9 +38,11 @@ from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
-from privacyidea.api.auth import (user_required, admin_required)
+from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
 from privacyidea.lib.token import get_token_type
+from privacyidea.api.ttype import ttype_blueprint
+from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -218,6 +220,11 @@ def before_request():
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
 @monitoring_blueprint.after_request
+@ttype_blueprint.after_request
+@validate_blueprint.after_request
+@register_blueprint.after_request
+@recover_blueprint.after_request
+@jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -226,7 +233,7 @@ def after_request(response):
     """
     # In certain error cases the before_request was not handled
     # completely so that we do not have an audit_object
-    if "audit_object" in g:
+    if "audit_object" in g and bool(g.audit_object.audit_data):
         g.audit_object.finalize_log()
 
     # No caching!
