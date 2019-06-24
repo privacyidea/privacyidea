@@ -306,7 +306,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    serial=serial,
                                    tokentype=tokentype,
                                    registrationcode=registrationcode,
-                                   escape_html=action.lower() == "sendmail" and handler_options.get("mimetype").lower() == "html")
+                                   escape_html=action.lower() == "sendmail" and
+                                               handler_options.get("mimetype", "").lower() == "html")
 
             body = body.format(googleurl_img=googleurl_img,
                                **tags)

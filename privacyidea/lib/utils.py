@@ -1249,7 +1249,7 @@ def create_tag_dict(logged_in_user=None,
                 ua_string=request.user_agent.string if request else "")
     if escape_html:
         escaped_tags = {}
-        for key, value in tags:
+        for key, value in tags.iteritems():
             escaped_tags[key] = cgi.escape(value) if value is not None else None
         tags = escaped_tags
 
