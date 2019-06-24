@@ -442,7 +442,8 @@ class EmailTokenClass(HotpTokenClass):
                                tokenowner=self.user,
                                tokentype=self.get_tokentype(),
                                recipient={"givenname": self.user.info.get("givenname"),
-                                          "surname": self.user.info.get("surname")})
+                                          "surname": self.user.info.get("surname")},
+                               escape_html=mimetype.lower() == "html")
 
         message = message.format(otp=otp, **tags)
 

@@ -47,6 +47,7 @@ import traceback
 import threading
 import pkg_resources
 import time
+import cgi
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
@@ -1203,7 +1204,8 @@ def create_tag_dict(logged_in_user=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
-                    client_ip=None):
+                    client_ip=None,
+                    escape_html=False):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1219,6 +1221,7 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param googleurl_value: The URL for the QR code during token enrollemnt
     :param client_ip: The IP of the client
+    :param escape_html: Whether the values for the tags should be html escaped
     :return: The tag dictionary
     """
     time = datetime.now().strftime("%H:%M:%S")
@@ -1244,4 +1247,10 @@ def create_tag_dict(logged_in_user=None,
                 client_ip=client_ip,
                 ua_browser=request.user_agent.browser if request else "",
                 ua_string=request.user_agent.string if request else "")
+    if escape_html:
+        escaped_tags = {}
+        for key, value in tags:
+            escaped_tags[key] = cgi.escape(value) if value is not None else None
+        tags = escaped_tags
+
     return tags
