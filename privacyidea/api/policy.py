@@ -49,7 +49,7 @@ from ..lib.policy import (set_policy,
                           enable_policy)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
@@ -270,17 +270,18 @@ def get_policy(name=None, export=None):
     realm = getParam(param, "realm")
     scope = getParam(param, "scope")
     active = getParam(param, "active")
+    if active is not None:
+        active = is_true(active)
 
     P = g.policy_object
     if not export:
         log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
 
-        pol = P.get_policies(name=name, realm=realm, scope=scope,
-                             active=active, all_times=True)
+        pol = P.list_policies(name=name, realm=realm, scope=scope, active=active)
         ret = send_result(pol)
     else:
         # We want to export all policies
-        pol = P.get_policies()
+        pol = P.list_policies()
         response = make_response(export_policies(pol))
         response.headers["Content-Disposition"] = ("attachment; "
                                                    "filename=%s" % export)

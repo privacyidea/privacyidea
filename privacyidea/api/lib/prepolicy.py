@@ -465,9 +465,7 @@ def enroll_pin(request=None, action=None):
                                           client=g.client_ip,
                                           active=True,
                                           audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
 
     if action_at_all and not pin_pols:
         # Not allowed to set a PIN during enrollment!
@@ -983,9 +981,7 @@ def check_anonymous_user(request=None, action=None):
                                         adminrealm=None,
                                         active=True,
                                         audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR)
     return True
@@ -1046,9 +1042,7 @@ def check_base_action(request=None, action=None, anonymous=False):
                                         adminrealm=admin_realm,
                                         active=True,
                                         audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
@@ -1074,8 +1068,7 @@ def check_token_upload(request=None, action=None):
                                         adminrealm=admin_realm,
                                         active=True,
                                         audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN,
-                                               active=True, all_times=True)
+    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
@@ -1124,8 +1117,7 @@ def check_token_init(request=None, action=None):
                                         adminrealm=admin_realm,
                                         active=True,
                                         audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope, active=True,
-                                               all_times=True)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True

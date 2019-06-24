@@ -461,12 +461,26 @@ class PolicyClass(with_metaclass(Singleton, object)):
 
         return value_found, value_excluded
 
+    def list_policies(self, *args, **kwargs):
+        """
+        Return all policies matching the given arguments, but do not take the
+        current context into account. In particular, return all policies
+        regardless of their defined validity time.
+
+        This function is useful if the caller is interested in a list of currently
+        defined policies (e.g. for displaying them in the WebUI),
+        instead of a list of policies matching a set of arguments.
+        This is equivalent to calling ``get_policies`` with ``match_context=False``.
+        """
+        return self.get_policies(*args, match_context=False, **kwargs)
+
     @log_with(log)
     def get_policies(self, name=None, scope=None, realm=None, active=None,
                      resolver=None, user=None, user_object=None,
                      client=None, action=None,
-                     adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True, audit_data=None):
+                     adminrealm=None, time=None,
+                     sort_by_priority=True, audit_data=None,
+                     match_context=True):
         """
         Return the policies of the given filter values.
 
@@ -503,9 +517,9 @@ class PolicyClass(with_metaclass(Singleton, object)):
         :param time: The optional time, for which the policies should be
             fetched. The default time is now()
         :type time: datetime
-        :param all_times: If True the time restriction of the policies is
+        :param match_context: If True the time restriction of the policies is
             ignored. Policies of all time ranges will be returned.
-        :type all_times: bool
+        :type match_context: bool
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
@@ -525,7 +539,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
 
         # filter policy for time. If no time is set or is a time is set and
         # it matches the time_range, then we add this policy
-        if not all_times:
+        if match_context:
             reduced_policies = [policy for policy in reduced_policies if
                                 (policy.get("time") and
                                  check_time_in_range(policy.get("time"), time))

@@ -622,7 +622,10 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
         policies = P.get_policies(name="time1",
                                   scope=SCOPE.AUTHZ,
-                                  all_times=True)
+                                  match_context=False)
+        self.assertEqual(len(policies), 1)
+
+        policies = P.list_policies(name="time1", scope=SCOPE.AUTHZ)
         self.assertEqual(len(policies), 1)
 
         policies = P.get_policies(name="time1",
