@@ -233,7 +233,7 @@ def after_request(response):
     """
     # In certain error cases the before_request was not handled
     # completely so that we do not have an audit_object
-    if "audit_object" in g and bool(g.audit_object.audit_data):
+    if "audit_object" in g and g.audit_object.audit_data:
         g.audit_object.finalize_log()
 
     # No caching!
