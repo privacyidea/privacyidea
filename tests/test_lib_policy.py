@@ -820,7 +820,6 @@ class PolicyTestCase(MyTestCase):
                          ["text 2"])
 
         delete_policy("email2")
-        P.reload_from_db()
 
         # with email2 gone, this chooses email1
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
@@ -830,7 +829,6 @@ class PolicyTestCase(MyTestCase):
         # if we now add another policy with priority 77, we get no conflict
         # because email1 is chosen
         set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=77)
-        P.reload_from_db()
 
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
                                                   unique=True, allow_white_space_in_action=True).keys()),
@@ -838,7 +836,6 @@ class PolicyTestCase(MyTestCase):
 
         # but we get a conflict if we change the priority of email4 to 4
         set_policy(name="email4", scope=SCOPE.AUTH, action="emailtext=text 4", priority=4)
-        P.reload_from_db()
 
         with self.assertRaises(PolicyError) as cm:
             P.get_action_values(
@@ -856,7 +853,6 @@ class PolicyTestCase(MyTestCase):
 
         # we can also change the priority
         set_policy(name="email4", priority=3)
-        P.reload_from_db()
 
         self.assertEqual(list(P.get_action_values(action="emailtext", scope=SCOPE.AUTH,
                                                   unique=True, allow_white_space_in_action=True).keys()),
@@ -904,7 +900,6 @@ class PolicyTestCase(MyTestCase):
                          ["text 1"])
 
         set_policy(name="email2", action="emailtext='text 2'")
-        P.reload_from_db()
         with self.assertRaises(PolicyError):
             P.get_action_values(scope=SCOPE.AUTH, action="emailtext", unique=True)
 
@@ -943,7 +938,6 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("act1" in audit_data.get("policies"))
         self.assertTrue("act2" in audit_data.get("policies"))
         self.assertTrue("act3" not in audit_data.get("policies"))
-
         delete_policy("act1")
         delete_policy("act2")
         delete_policy("act3")
@@ -1044,3 +1038,22 @@ class PolicyTestCase(MyTestCase):
         delete_policy("act3")
         delete_policy("act4")
         delete_policy("act5")
+
+    def test_27_reload_policies(self):
+        # First, remove all policies
+        policy_object = PolicyClass()
+        delete_all_policies()
+        self.assertEqual(policy_object.get_policies(), [])
+        # Now, add a policy and check if the policies have been reloaded
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=1)
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act1"])
+        self.assertEqual(policy_object.get_policies()[0]["priority"], 1)
+        # Update the policy and check if the policies have been reloaded
+        set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN), priority=2)
+        self.assertEqual(policy_object.get_policies()[0]["priority"], 2)
+        # Add a second policy, check
+        set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN), priority=3)
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act1", "act2"])
+        # Delete a policy, check
+        delete_policy("act1")
+        self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act2"])

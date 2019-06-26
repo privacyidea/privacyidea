@@ -41,7 +41,7 @@ from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
-                                    SYSCONF, update_config_object)
+                                    SYSCONF, ensure_no_config_object)
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip
 import json
@@ -56,7 +56,7 @@ def before_request():
     """
     This is executed before the request
     """
-    update_config_object()
+    ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host

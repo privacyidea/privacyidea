@@ -88,7 +88,12 @@ class MethodsMixin(object):
         return ret
 
 
-def save_config_timestamp():
+def save_config_timestamp(invalidate_config=True):
+    """
+    Save the current timestamp to the database, and optionally
+    invalidate the current request-local config object.
+    :param invalidate_config: defaults to True
+    """
     c1 = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
     if c1:
         c1.Value = datetime.now().strftime("%s")
@@ -97,6 +102,14 @@ def save_config_timestamp():
                                datetime.now().strftime("%s"),
                                Description="config timestamp. last changed.")
         db.session.add(new_timestamp)
+    if invalidate_config:
+        # We have just modified the config. From now on, the request handling
+        # should operate on the *new* config. Hence, we need to invalidate
+        # the current request-local config object. The next access to the config
+        # during this request will reload the config from the database and create
+        # a new request-local config object, which holds the *new* config.
+        from privacyidea.lib.config import invalidate_config_object
+        invalidate_config_object()
 
 
 class TimestampMethodsMixin(object):
