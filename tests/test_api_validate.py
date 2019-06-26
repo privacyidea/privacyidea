@@ -1054,6 +1054,128 @@ class ValidateAPITestCase(MyApiTestCase):
         # delete the token
         remove_token(serial=serial)
 
+    def test_11b_challenge_response_multiple_hotp_failcounters(self):
+        # Check behavior of Challenge-Response with multiple tokens
+        # set a chalresp policy for HOTP
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=hotp",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
+
+        chalresp_serials = ["CHALRESP1", "CHALRESP2"]
+        chalresp_pins = ["chalresp1", "chalresp2"]
+        tokens = []
+
+        # create two C/R tokens with different PINs for the same user
+        for serial, pin in zip(chalresp_serials, chalresp_pins):
+            # create a token and assign to the user
+            db_token = Token(serial, tokentype="hotp")
+            db_token.update_otpkey(self.otpkey)
+            db_token.save()
+            token = HotpTokenClass(db_token)
+            token.add_user(User("cornelius", self.realm1))
+            token.set_pin(pin)
+            # Set the failcounter
+            token.set_failcount(5)
+            tokens.append(token)
+
+        # create a challenge for the first token by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": chalresp_pins[0]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), _("please enter otp: "))
+            transaction_id = detail.get("transaction_id")
+
+        # Failcounters are unchanged
+        self.assertEqual(tokens[0].get_failcount(), 5)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # send an incorrect OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertFalse(result.get("value"))
+
+        # Failcounter for the first token is increased
+        # Failcounter for the second token is unchanged
+        self.assertEqual(tokens[0].get_failcount(), 6)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # send the correct OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertTrue(result.get("value"))
+
+        # Failcounter for the first token is reset
+        # Failcounter for the second token is unchanged
+        self.assertEqual(tokens[0].get_failcount(), 0)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # Set the same failcount for both tokens
+        tokens[0].set_failcount(5)
+
+        # trigger a challenge for both tokens
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        # send an incorrect OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertFalse(result.get("value"))
+
+        # Failcounter for both tokens are increased
+        self.assertEqual(tokens[0].get_failcount(), 6)
+        self.assertEqual(tokens[1].get_failcount(), 6)
+
+        # delete the tokens
+        for serial in chalresp_serials:
+            remove_token(serial=serial)
+
     def test_12_challenge_response_sms(self):
         # set a chalresp policy for SMS
         with self.app.test_request_context('/policy/pol_chal_resp',
@@ -2529,7 +2651,7 @@ class AChallengeResponse(MyApiTestCase):
             data = json.loads(res.data.decode('utf8'))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(detail.get("message"), "Challenge matches, but token is inactive.")
+            self.assertEqual(detail.get("message"), "Challenge matches, but token is not fit for challenge. Token is disabled")
 
         # The token is still disabled. We are checking, if we can do a challenge response
         # for a disabled token

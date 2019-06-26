@@ -86,6 +86,7 @@ def get_module_positions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.allowed_positions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 
@@ -103,6 +104,7 @@ def get_module_actions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.actions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 
@@ -120,6 +122,7 @@ def get_module_conditions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.conditions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 

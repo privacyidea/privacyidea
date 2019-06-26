@@ -33,10 +33,7 @@ The TiQR Token uses this API to implement its special functionalities. See
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import (getParam,
-                        optional,
-                        required,
-                        send_result)
+from .lib.utils import getParam
 from ..lib.log import log_with
 from flask import g, jsonify, current_app, Response
 import logging
@@ -46,7 +43,6 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object)
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from privacyidea.lib.utils import get_client_ip
 import json
 
@@ -80,23 +76,6 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "info": ""})
-
-
-@ttype_blueprint.after_request
-@postrequest(sign_response, request=request)
-def after_request(response):
-    """
-    This function is called after a request
-    :return: The response
-    """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g:
-        g.audit_object.finalize_log()
-
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
-    return response
 
 
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])

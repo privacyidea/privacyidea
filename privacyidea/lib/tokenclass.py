@@ -124,12 +124,19 @@ class TOKENKIND(object):
     VIRTUAL = "virtual"
 
 
+class TOKENMODE(object):
+    AUTHENTICATE = 'authenticate'
+    CHALLENGE = 'challenge'
+    # If the challenge is answered out of band
+    OUTOFBAND = 'outofband'
+
+
 class TokenClass(object):
 
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = ['authenticate', 'challenge']
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
 
     @log_with(log)
     def __init__(self, db_token):
@@ -162,6 +169,10 @@ class TokenClass(object):
         tokentype = u'' + tokentype
         self.type = tokentype
         self.token.tokentype = tokentype
+
+    @classmethod
+    def is_outofband(cls):
+        return TOKENMODE.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():
@@ -624,6 +635,23 @@ class TokenClass(object):
 
     def is_active(self):
         return self.token.active
+
+    def is_fit_for_challenge(self, messages, options=None):
+        """
+        This method is called if a cryptographically matching response to a challenge was found.
+        This method may implement final checks, if there is anything that should deny the
+        success of the authentication with the response to the challenge.
+
+        The options dictionary can also contain the transaction_id, so even the
+        challenge table for this token can be used for checking.
+
+        :param options:
+        :type options: dict
+        :param messages: This is a list of messages. This method can append new information to this message list.
+        :type messages: list
+        :return: True or False
+        """
+        return self.check_all(messages)
 
     def get_failcount(self):
         return self.token.failcount
@@ -1360,8 +1388,12 @@ class TokenClass(object):
         """
         options = options or {}
         challenge_response = False
-        if "state" in options or "transaction_id" in options:
-            challenge_response = True
+        transaction_id = options.get("transaction_id") or options.get("state")
+        if transaction_id:
+            # Now we also need to check, if the transaction_id is an entry to the
+            # serial number of this token
+            chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
+            challenge_response = bool(chals)
 
         return challenge_response
 

@@ -1,10 +1,57 @@
 import json
+
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from .base import MyApiTestCase
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 
 
 class APIEventsTestCase(MyApiTestCase):
+
+    def test_00_api_errors(self):
+        # check for auth error
+        with self.app.test_request_context('/event',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.json['result']['error']['code'], 4033, res.json)
+
+        param = {
+            "name": "Send an email",
+            "event": "token_init",
+            "action": "sendmail",
+            "handlermodule": "UserNotification",
+            "conditions": '{"blabla": "yes"}'
+        }
+        with self.app.test_request_context('/event',
+                                           method='POST',
+                                           data=param,
+                                           headers={'Authorization': self.at}):
+            # check for policy error with a restrictive admin policy
+            set_policy(name="adm_disable_event", scope=SCOPE.ADMIN,
+                       action="configwrite")
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403, res)
+            self.assertEqual(res.json['result']['error']['code'], 303, res.json)
+            delete_policy('adm_disable_event')
+
+        # check fo resourceNotFound error
+        with self.app.test_request_context('/event/enable/1234',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 404, res)
+            self.assertEqual(res.json['result']['error']['code'], 601, res.json)
+        # And check if the /event request writes a valid (failed) audit entry
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': 'POST /event/enable/<eventid>'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            auditentry = res.json.get("result").get("value").get("auditdata")[0]
+            self.assertEqual(auditentry['action'], 'POST /event/enable/<eventid>', auditentry)
+            self.assertEqual(auditentry['success'], 0, auditentry)
 
     def test_01_crud_events(self):
 
@@ -15,9 +62,19 @@ class APIEventsTestCase(MyApiTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), [])
+            self.assertIn('signature', res.json, res.json)
+
+        # Check if the /event request writes a valid audit entry
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            auditentry = res.json.get("result").get("value").get("auditdata")[0]
+            self.assertEqual(auditentry['action'], 'GET /event', auditentry)
+            self.assertEqual(auditentry['success'], 1, auditentry)
 
         # create an event configuration
         param = {
