@@ -69,13 +69,13 @@ class SharedConfigClass(object):
     to store the current configuration with resolvers, realms and policies,
     along with the timestamp of the configuration.
 
-    The method ``reload_from_db()`` compares this timestamp against the
+    The method ``_reload_from_db()`` compares this timestamp against the
     timestamp in the database (while taking the PI_CHECK_RELOAD_CONFIG
     setting into account). If the database timestamp is newer, the current
     configuration is updated.
 
     However, app code must not access the config stored in the shared object!
-    Instead, it must use ``clone()`` or ``reload_and_clone()`` to retrieve
+    Instead, it must use ``reload_and_clone()`` to retrieve
     a ``LocalConfigClass`` object which holds a local configuration snapshot.
     """
     def __init__(self):
@@ -87,7 +87,7 @@ class SharedConfigClass(object):
         self.policies = []
         self.timestamp = None
 
-    def reload_from_db(self):
+    def _reload_from_db(self):
         """
         Read the timestamp from the database. If the timestamp is newer than
         the internal timestamp, then read the complete data
@@ -150,7 +150,7 @@ class SharedConfigClass(object):
                     self.policies = policies
                     self.timestamp = timestamp
 
-    def clone(self):
+    def _clone(self):
         """
         :return: a ``LocalConfigClass`` object containing the current configuration state
         """
@@ -170,8 +170,8 @@ class SharedConfigClass(object):
         PI_CHECK_RELOAD_CONFIG setting), reload it if needed and return a
         ``LocalConfigClass`` object containing the current configuration state
         """
-        self.reload_from_db()
-        return self.clone()
+        self._reload_from_db()
+        return self._clone()
 
 
 class LocalConfigClass(object):
