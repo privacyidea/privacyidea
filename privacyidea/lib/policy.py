@@ -284,6 +284,7 @@ class ACTION(object):
     SETTOKENINFO = "settokeninfo"
     TOKENISSUER = "tokenissuer"
     TOKENLABEL = "tokenlabel"
+    TOKENLIST = "tokenlist"
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
@@ -1222,6 +1223,10 @@ def get_static_policy_definitions(scope=None):
                                            'realms of a token.'),
                                  'mainmenu': [MAIN_MENU.TOKENS],
                                  'group': GROUP.TOKEN},
+            ACTION.TOKENLIST: {'type': 'bool',
+                               'desc': _('Admin is allowed to list tokens.'),
+                               'mainmenu': [MAIN_MENU.TOKENS],
+                               'group': GROUP.TOKEN},
             ACTION.GETSERIAL: {'type': 'bool',
                                'desc': _('Admin is allowed to retrieve a serial'
                                          ' for a given OTP value.'),

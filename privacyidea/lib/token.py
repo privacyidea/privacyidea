@@ -140,7 +140,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial_exact=None, serial_wildcard=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, filterRealm=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -189,6 +189,11 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.realm_id == Realm.id,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
+
+    if filterRealm  is not None:
+        sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in filterRealm]),
+                                          TokenRealm.realm_id == Realm.id,
+                                          TokenRealm.token_id == Token.id)).distinct()
 
     stripped_resolver = None if resolver is None else resolver.strip("*")
     stripped_userid = None if userid is None else userid.strip("*")
@@ -413,7 +418,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None):
+                page=1, description=None, userid=None, filterRealm=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -451,7 +456,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 serial_wildcard=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
-                                description=description, userid=userid)
+                                description=description, userid=userid,
+                                    filterRealm=filterRealm)
 
     if isinstance(sortby, string_types):
         # convert the string to a Token column

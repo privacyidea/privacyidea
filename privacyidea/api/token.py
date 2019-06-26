@@ -88,7 +88,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            u2ftoken_allowed, u2ftoken_verify_cert,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config)
+                                           sms_identifiers, pushtoken_add_config,
+                                           check_admin_tokenlist)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -292,7 +293,7 @@ def init():
 
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
+@prepolicy(check_base_action, request, action=ACTION.TOKENLIST)
 @event("token_getchallenges", request, g)
 @log_with(log)
 @admin_required
@@ -326,6 +327,7 @@ def get_challenges_api(serial=None):
 
 
 @token_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_tokenlist, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -379,13 +381,13 @@ def list_api():
     if ufields:
         user_fields = [u.strip() for u in ufields.split(",")]
 
-    # filterRealm determines, which realms the admin would be allowed to see
-    filterRealm = ["*"]
-    # TODO: Userfields
+    if hasattr(request, "filterRealm"):
+        # filterRealm determines, which realms the admin would be allowed to see
+        filterRealm = request.filterRealm
+    else:
+        # In certain cases like for users, we do not have filterRealms  
+        filterRealm = None
 
-    # If the admin wants to see only one realm, then do it:
-    if realm and (realm in filterRealm or '*' in filterRealm):
-        filterRealm = [realm]
     g.audit_object.log({'info': "realm: {0!s}".format((filterRealm))})
 
     # get list of tokens as a dictionary
@@ -395,7 +397,7 @@ def list_api():
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid)
+                                 userid=userid, filterRealm=filterRealm)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

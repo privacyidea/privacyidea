@@ -44,6 +44,20 @@ to enable tokens in the user-realm *sales*.
 The following actions are available in the scope
 *admin*:
 
+tokenlist
+~~~~~~~~~
+
+type: bool
+
+This allows the administrator to list existing tokens in the specified user realm.
+Note, that the resolver in this policy is ignored.
+
+If the policy with the action ``tokenlist`` is not bound to any user realm, this acts
+as a wild card and the admin is allowed to list all tokens.
+
+If the action ``tokenlist`` is not active, but admin policies exist, then the admin
+is not allowed to list any tokens.
+
 init
 ~~~~
 

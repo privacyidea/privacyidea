@@ -991,6 +991,58 @@ def check_anonymous_user(request=None, action=None):
     return True
 
 
+def check_admin_tokenlist(request=None, action=None):
+    """
+    Depending on the policy scope=admin, action=tokenlist, the
+    filterRealms parameter is set to define, the token of which
+    realms and administrator is allowed to see.
+
+    Sets the filterRealm
+    None: means the admin has no restrictions
+    []: the admin can not see any realms
+    ["realm1", "realm2"...]: the admin can see these realms
+
+    :param request:
+    :return:
+    """
+    filterRealm = None
+    wildcard = False
+    role = g.logged_in_user.get("role")
+    if role == ROLE.USER:
+        return True
+
+    policy_object = g.policy_object
+    username = g.logged_in_user.get("username")
+    admin_realm = g.logged_in_user.get("realm")
+
+    pols = policy_object.get_policies(action=ACTION.TOKENLIST,
+                                      user=username,
+                                      scope=SCOPE.ADMIN,
+                                      client=g.client_ip,
+                                      adminrealm=admin_realm,
+                                      active=True,
+                                      audit_data=g.audit_object.audit_data)
+
+    pols_at_all = policy_object.get_policies(scope=SCOPE.ADMIN,
+                                             active=True,
+                                             all_times=True)
+
+    if pols_at_all:
+        filterRealm = []
+        for pol in pols:
+            if not pol.get("realm"):
+                # if there is no realm set in a tokenlist policy, then this is a wildcard!
+                wildcard = True
+            else:
+                filterRealm.extend(pol.get("realm"))
+
+        if wildcard:
+            filterRealm = None
+
+    request.filterRealm = filterRealm
+    return True
+
+
 def check_base_action(request=None, action=None, anonymous=False):
     """
     This decorator function takes the request and verifies the given action
