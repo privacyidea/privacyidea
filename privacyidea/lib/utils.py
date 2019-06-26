@@ -47,6 +47,7 @@ import traceback
 import threading
 import pkg_resources
 import time
+import cgi
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 
@@ -1193,3 +1194,63 @@ def split_pin_pass(passw, otplen, prependpin):
         log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
                                                                                    len(otpval)))
     return pin, otpval
+
+
+def create_tag_dict(logged_in_user=None,
+                    request=None,
+                    serial=None,
+                    tokenowner=None,
+                    tokentype=None,
+                    recipient=None,
+                    registrationcode=None,
+                    googleurl_value=None,
+                    client_ip=None,
+                    escape_html=False):
+    """
+    This helper function creates a dictionary with tags to be used in sending emails
+    either with email tokens or within the notification handler
+
+    :param logged_in_user: The acting logged in user (admin)
+    :param request: The HTTP request object
+    :param serial: The serial number of the token
+    :param tokenowner: The owner of the token
+    :type tokenowner: user object
+    :param tokentype: The type of the token
+    :param recipient: The recipient
+    :type recipient: dictionary with "givenname" and "surname"
+    :param registrationcode: The registration code of a token
+    :param googleurl_value: The URL for the QR code during token enrollemnt
+    :param client_ip: The IP of the client
+    :param escape_html: Whether the values for the tags should be html escaped
+    :return: The tag dictionary
+    """
+    time = datetime.now().strftime("%H:%M:%S")
+    date = datetime.now().strftime("%Y-%m-%d")
+    recipient = recipient or {}
+    tags = dict(admin=logged_in_user.get("username") if logged_in_user else "",
+                realm=logged_in_user.get("realm") if logged_in_user else "",
+                action=request.path if request else "",
+                serial=serial,
+                url=request.url_root if request else "",
+                user=tokenowner.info.get("givenname") if tokenowner else "",
+                surname=tokenowner.info.get("surname") if tokenowner else "",
+                givenname=recipient.get("givenname"),
+                username=tokenowner.login if tokenowner else "",
+                userrealm=tokenowner.realm if tokenowner else "",
+                tokentype=tokentype,
+                registrationcode=registrationcode,
+                recipient_givenname=recipient.get("givenname"),
+                recipient_surname=recipient.get("surname"),
+                googleurl_value=googleurl_value,
+                time=time,
+                date=date,
+                client_ip=client_ip,
+                ua_browser=request.user_agent.browser if request else "",
+                ua_string=request.user_agent.string if request else "")
+    if escape_html:
+        escaped_tags = {}
+        for key, value in tags.items():
+            escaped_tags[key] = cgi.escape(value) if value is not None else None
+        tags = escaped_tags
+
+    return tags
