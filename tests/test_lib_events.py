@@ -35,7 +35,7 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, to_unicode
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -2693,7 +2693,7 @@ class UserNotificationTestCase(MyTestCase):
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = parsed_email.get_payload(decode=True)
+        payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/plain")
         self.assertIn("<b>agent</b>", payload)
         # If we send a HTML email, we do escape HTML
@@ -2710,7 +2710,7 @@ class UserNotificationTestCase(MyTestCase):
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = parsed_email.get_payload(decode=True)
+        payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/html")
         self.assertIn("&lt;b&gt;agent&lt;/b&gt;", payload)
         self.assertNotIn("<b>", payload)
@@ -2784,7 +2784,7 @@ class UserNotificationTestCase(MyTestCase):
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = parsed_email.get_payload(decode=True)
+        payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/html")
         # Check that the base64-encoded image does not get mangled
         self.assertEqual(payload,
