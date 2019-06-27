@@ -18,7 +18,7 @@ from privacyidea.models import (Token,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption, MonitoringStats)
+                                PeriodicTaskOption, MonitoringStats, PolicyExtraCondition)
 from .base import MyTestCase
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -369,6 +369,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(p.action == "action1", p)
         self.assertTrue("action1" in p.get().get("action"), p)
         self.assertTrue("action1" in p.get("action"), p)
+        self.assertEqual(p.get()["extra_conditions"], [])
 
         p2 = Policy("pol1", active="false",
                     scope="selfservice", action="action1",
@@ -388,6 +389,31 @@ class TokenModelTestCase(MyTestCase):
         p3 = Policy("pol3", active="false", scope="admin",
                     adminrealm='superuser', action="*")
         self.assertEqual(p3.adminrealm, "superuser")
+        p3.save()
+
+        # set extra conditions
+        p3.set_extra_conditions([("userinfo", "type", "equal", "foobar"),
+                                 ("request", "user_agent", "equal", "abcd")])
+        self.assertEqual(p3.get_extra_conditions_tuples(),
+                         [("userinfo", "type", "equal", "foobar"),
+                          ("request", "user_agent", "equal", "abcd")])
+        self.assertEqual(p3.get()["extra_conditions"],
+                         [("userinfo", "type", "equal", "foobar"),
+                          ("request", "user_agent", "equal", "abcd")])
+        self.assertEqual(PolicyExtraCondition.query.count(), 2)
+
+        p3.set_extra_conditions([("userinfo", "type", "equal", "baz")])
+        p3.save()
+        self.assertEqual(p3.get()["extra_conditions"],
+                         [("userinfo", "type", "equal", "baz")])
+        self.assertEqual(len(p3.extra_conditions), 1)
+        self.assertEqual(p3.extra_conditions[0].value, "baz")
+        self.assertEqual(PolicyExtraCondition.query.count(), 1)
+
+        p3.set_extra_conditions([])
+        p3.save()
+        self.assertEqual(p3.get()["extra_conditions"], [])
+        self.assertEqual(PolicyExtraCondition.query.count(), 0)
 
     def test_12_challenge(self):
         c = Challenge("S123456")

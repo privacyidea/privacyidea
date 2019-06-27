@@ -1389,11 +1389,16 @@ class Policy(TimestampMethodsMixin, db.Model):
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priotity.
     priority = db.Column(db.Integer, default=1, nullable=False)
+    extra_conditions = db.relationship("PolicyExtraCondition",
+                                       lazy="joined",
+                                       backref="policy",
+                                       order_by="PolicyExtraCondition.id",
+                                       cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
                  resolver="", user="", client="", time="", condition=0, priority=1,
-                 check_all_resolvers=False):
+                 check_all_resolvers=False, extra_conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
@@ -1409,6 +1414,23 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.condition = condition
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
+        if extra_conditions is None:
+            self.extra_conditions = []
+        else:
+            self.set_extra_conditions(extra_conditions)
+
+    def set_extra_conditions(self, extra_conditions):
+        if self.extra_conditions:
+            self.extra_conditions = []
+            db.session.flush()
+        for section, key, comparator, value in extra_conditions:
+            condition_object = PolicyExtraCondition(
+                section=section, key=key, comparator=comparator, value=value,
+            )
+            self.extra_conditions.append(condition_object)
+
+    def get_extra_conditions_tuples(self):
+        return [condition.as_tuple() for condition in self.extra_conditions]
 
     @staticmethod
     def _split_string(value):
@@ -1445,6 +1467,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "client": self._split_string(self.client),
              "time": self.time,
              "condition": self.condition,
+             "extra_conditions": self.get_extra_conditions_tuples(),
              "priority": self.priority}
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
@@ -1460,6 +1483,26 @@ class Policy(TimestampMethodsMixin, db.Model):
         else:
             ret = d
         return ret
+
+
+class PolicyExtraCondition(MethodsMixin, db.Model):
+    __tablename__ = "policyextracondition"
+
+    id = db.Column(db.Integer, Sequence("policyextracondition_seq"), primary_key=True)
+    policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    section = db.Column(db.Unicode(255), nullable=False)
+    key = db.Column(db.Unicode(255), nullable=False)
+    value = db.Column(db.Unicode(2000), default=u'')
+    comparator = db.Column(db.Unicode(255), default=u'equal')
+
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+
+    def as_tuple(self):
+        """
+        :return: the extra condition as a tuple (section, key, comparator, value)
+        """
+        return self.section, self.key, self.comparator, self.value
+
 
 # ------------------------------------------------------------------
 #

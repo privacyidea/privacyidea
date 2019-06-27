@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-06-19 Friedrich Weber <friedrich.weber@netknights.it>
+#             Add handling of policy extra conditions
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -387,6 +389,11 @@ class TIMEOUT_ACTION(object):
     LOCKSCREEN = 'lockscreen'
 
 
+class EXTRACONDITION_SECTION(object):
+    __doc__ = """This is a list of available sections for extra conditions of policies """
+    USERINFO = "userinfo"
+
+
 class PolicyClass(object):
     """
     A policy object can be used to query the current set of policies.
@@ -615,6 +622,9 @@ class PolicyClass(object):
             log.debug("Policies after matching client".format(
                 reduced_policies))
 
+        if user_object is not None:
+            reduced_policies = list(self.filter_policies_by_extra_conditions(reduced_policies, user_object))
+
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
@@ -623,6 +633,47 @@ class PolicyClass(object):
                 audit_data.setdefault("policies", []).append(p.get("name"))
 
         return reduced_policies
+
+    def filter_policies_by_extra_conditions(self, policies, user_object=None):
+        for policy in policies:
+            exclude_policy = False
+            for section, key, comparator, value in policy['extra_conditions']:
+                if section == EXTRACONDITION_SECTION.USERINFO:
+                    if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+                        exclude_policy = True
+                        break
+                else:
+                    log.warning(u"Policy {!r} has extra condition with unknown section: {!r}".format(
+                        policy['name'], section
+                    ))
+            if not exclude_policy:
+                yield policy
+
+    def _policy_matches_userinfo_condition(self, policy, key, comparator, value, user_object=None):
+        # Match the user object's user info, if it is not-None and non-empty
+        if user_object is not None:
+            info = user_object.info
+            if key in info:
+                if comparator == 'equal':
+                    return info[key] == value
+                elif comparator == 'contains':
+                    return value in info[key]
+                else:
+                    log.warning(u"Policy {!r} has extra condition with unknown comparator {!r}".format(
+                        policy['name'], comparator
+                    ))
+                    return False
+            else:
+                log.warning(u"Policy {!r} has extra condition with unknown userinfo key: {!r}".format(
+                    policy['name'], key
+                ))
+                return False
+        else:
+            log.warning(
+                u"Policy {!r} has extra condition for user info, but user info is not available".format(
+                    policy['name']
+                ))
+            return True
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -881,7 +932,8 @@ class PolicyClass(object):
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
-               adminrealm=None, priority=None, check_all_resolvers=False):
+               adminrealm=None, priority=None, check_all_resolvers=False,
+               extra_conditions=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -956,6 +1008,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        if extra_conditions is not None:
+            p1.set_extra_conditions(extra_conditions)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
@@ -965,7 +1019,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
                      priority=priority,
-                     check_all_resolvers=check_all_resolvers).save()
+                     check_all_resolvers=check_all_resolvers,
+                     extra_conditions=extra_conditions).save()
     return ret
 
 
