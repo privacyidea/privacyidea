@@ -1039,7 +1039,7 @@ def check_admin_tokenlist(request=None, action=None):
         if wildcard:
             allowed_realms = None
 
-    request.allowed_realms = allowed_realms
+    request.pi_allowed_realms = allowed_realms
     return True
 
 

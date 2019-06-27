@@ -383,7 +383,7 @@ def list_api():
 
     # allowed_realms determines, which realms the admin would be allowed to see
     # In certain cases like for users, we do not have allowed_realms
-    allowed_realms = getattr(request, "allowed_realms", None)
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
     g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
     # get list of tokens as a dictionary

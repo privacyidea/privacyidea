@@ -1561,7 +1561,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         r = check_admin_tokenlist(req)
         self.assertTrue(r)
         # The admin1 has the policy "pol-all-realms", so he is allowed to view all realms!
-        self.assertEqual(req.filterRealm, None)
+        self.assertEqual(req.pi_allowed_realms, None)
 
         enable_policy("pol-all-realms", False)
         # Now he is only allowed to view realm1
@@ -1570,7 +1570,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         r = check_admin_tokenlist(req)
         self.assertTrue(r)
         # The admin1 has the policy "pol-realm1", so he is allowed to view all realms!
-        self.assertEqual(req.filterRealm, [self.realm1])
+        self.assertEqual(req.pi_allowed_realms, [self.realm1])
 
         enable_policy("pol-realm1", False)
         # Now he only has the admin right to init tokens
@@ -1579,7 +1579,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         r = check_admin_tokenlist(req)
         self.assertTrue(r)
         # The admin1 has the policy "pol-only-init", so he is not allowed to list tokens
-        self.assertEqual(req.filterRealm, [])
+        self.assertEqual(req.pi_allowed_realms, [])
 
         for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
             delete_policy(pol)
