@@ -293,7 +293,7 @@ def init():
 
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
-@prepolicy(check_base_action, request, action=ACTION.TOKENLIST)
+@prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
 @admin_required
@@ -381,14 +381,10 @@ def list_api():
     if ufields:
         user_fields = [u.strip() for u in ufields.split(",")]
 
-    if hasattr(request, "filterRealm"):
-        # filterRealm determines, which realms the admin would be allowed to see
-        filterRealm = request.filterRealm
-    else:
-        # In certain cases like for users, we do not have filterRealms  
-        filterRealm = None
-
-    g.audit_object.log({'info': "realm: {0!s}".format((filterRealm))})
+    # allowed_realms determines, which realms the admin would be allowed to see
+    # In certain cases like for users, we do not have allowed_realms
+    allowed_realms = getattr(request, "allowed_realms", None)
+    g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
@@ -397,7 +393,7 @@ def list_api():
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid, filterRealm=filterRealm)
+                                 userid=userid, allowed_realms=allowed_realms)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

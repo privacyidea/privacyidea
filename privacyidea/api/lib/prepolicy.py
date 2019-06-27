@@ -994,10 +994,10 @@ def check_anonymous_user(request=None, action=None):
 def check_admin_tokenlist(request=None, action=None):
     """
     Depending on the policy scope=admin, action=tokenlist, the
-    filterRealms parameter is set to define, the token of which
+    allowed_realms parameter is set to define, the token of which
     realms and administrator is allowed to see.
 
-    Sets the filterRealm
+    Sets the allowed_realms
     None: means the admin has no restrictions
     []: the admin can not see any realms
     ["realm1", "realm2"...]: the admin can see these realms
@@ -1005,7 +1005,7 @@ def check_admin_tokenlist(request=None, action=None):
     :param request:
     :return:
     """
-    filterRealm = None
+    allowed_realms = None
     wildcard = False
     role = g.logged_in_user.get("role")
     if role == ROLE.USER:
@@ -1028,18 +1028,18 @@ def check_admin_tokenlist(request=None, action=None):
                                              all_times=True)
 
     if pols_at_all:
-        filterRealm = []
+        allowed_realms = []
         for pol in pols:
             if not pol.get("realm"):
                 # if there is no realm set in a tokenlist policy, then this is a wildcard!
                 wildcard = True
             else:
-                filterRealm.extend(pol.get("realm"))
+                allowed_realms.extend(pol.get("realm"))
 
         if wildcard:
-            filterRealm = None
+            allowed_realms = None
 
-    request.filterRealm = filterRealm
+    request.allowed_realms = allowed_realms
     return True
 
 

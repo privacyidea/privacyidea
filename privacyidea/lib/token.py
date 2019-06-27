@@ -140,7 +140,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial_exact=None, serial_wildcard=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None, filterRealm=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -190,8 +190,8 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
 
-    if filterRealm  is not None:
-        sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in filterRealm]),
+    if allowed_realms is not None:
+        sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
                                           TokenRealm.realm_id == Realm.id,
                                           TokenRealm.token_id == Token.id)).distinct()
 
@@ -418,7 +418,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None, filterRealm=None):
+                page=1, description=None, userid=None, allowed_realms=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -457,7 +457,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
                                 description=description, userid=userid,
-                                    filterRealm=filterRealm)
+                                allowed_realms=allowed_realms)
 
     if isinstance(sortby, string_types):
         # convert the string to a Token column
