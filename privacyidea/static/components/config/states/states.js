@@ -132,7 +132,7 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
                     templateUrl: configpath + "config.system.html"
                 })
                 .state('config.policies', {
-                    url: "/policies",
+                    url: "/policies/",
                     templateUrl: configpath + "config.policies.html"
                 })
                 .state('config.policies.list', {
