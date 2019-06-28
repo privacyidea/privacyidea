@@ -673,6 +673,31 @@ def setpin_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/description', methods=['POST'])
+@token_blueprint.route('/description/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
+@event("token_set", request, g)
+@log_with(log)
+def set_description_api(serial=None):
+    """
+    This endpoint can be used by the user or by the admin to set
+    the description of a token.
+
+    :jsonparam basestring description: The description for the token
+    :param serial:
+    :return:
+    """
+    user = request.User
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
+    description = getParam(request.all_data, "description", optional=required)
+    g.audit_object.add_to_log({'action_detail': u"description={0!r}".format(description)})
+    res = set_description(serial, description, user=user)
+    g.audit_object.log({"success": True})
+    return send_result(res)
+
+
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SET)

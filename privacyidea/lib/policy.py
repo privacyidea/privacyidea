@@ -274,6 +274,7 @@ class ACTION(object):
     RESYNC = "resync"
     REVOKE = "revoke"
     SET = "set"
+    SETDESCRIPTION = "setdescription"
     SETPIN = "setpin"
     SETREALM = "setrealm"
     SERIAL = "serial"
@@ -1463,6 +1464,10 @@ def get_static_policy_definitions(scope=None):
                                       "PIN of his tokens."),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
+            ACTION.SETDESCRIPTION: {'type': 'bool',
+                                    'desc': _('The user is allowed to set the token description.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("The user is allowed to set the OTP "
                                          "PIN during enrollment."),
