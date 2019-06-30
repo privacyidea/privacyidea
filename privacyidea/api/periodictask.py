@@ -106,6 +106,7 @@ def list_periodic_tasks():
 
 @periodictask_blueprint.route('/<ptaskid>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
 def get_periodic_task_api(ptaskid):
     """
     Return the dictionary describing a periodic task.

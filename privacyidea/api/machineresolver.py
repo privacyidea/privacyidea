@@ -49,6 +49,7 @@ machineresolver_blueprint = Blueprint('machineresolver_blueprint', __name__)
 
 @machineresolver_blueprint.route('/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
 def get_resolvers():
     """
     returns a json list of all machine resolver.
