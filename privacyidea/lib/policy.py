@@ -624,6 +624,8 @@ class PolicyClass(object):
 
         if user_object is not None:
             reduced_policies = list(self.filter_policies_by_extra_conditions(reduced_policies, user_object))
+            log.debug("Policies after matching extra conditions".format(
+                reduced_policies))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -635,6 +637,14 @@ class PolicyClass(object):
         return reduced_policies
 
     def filter_policies_by_extra_conditions(self, policies, user_object=None):
+        """
+        Given a list of policy dictionaries and a current user object (if any),
+        yield all policies whose extra conditions match the given user object.
+        If the user object is None, all policies match.
+        :param policies: a list of policy dictionaries
+        :param user_object: a User object, or None if there is no current user
+        :return: generates a list of policy dictionaries
+        """
         for policy in policies:
             exclude_policy = False
             for section, key, comparator, value in policy['extra_conditions']:
@@ -650,25 +660,47 @@ class PolicyClass(object):
                 yield policy
 
     def _policy_matches_userinfo_condition(self, policy, key, comparator, value, user_object=None):
+        """
+        Check if the given policy matches a certain userinfo extra condition.
+        :param policy: a policy dictionary, the policy in question
+        :param key: a userinfo key
+        :param comparator: a value comparator: one of "equal", "contains"
+        :param value: a value against which the userinfo value will be compared
+        :param user_object: a User object, if any
+        :return: a Boolean
+        """
         # Match the user object's user info, if it is not-None and non-empty
         if user_object is not None:
             info = user_object.info
-            if key in info:
-                if comparator == 'equal':
-                    return info[key] == value
-                elif comparator == 'contains':
-                    return value in info[key]
+            try:
+                if key in info:
+                    if comparator == 'equal':
+                        return info[key] == value
+                    elif comparator == 'contains':
+                        return value in info[key]
+                    else:
+                        # If we do have a user object, but the extra conditions of a policy reference
+                        # an unknown comparator, the policy does not match
+                        log.warning(u"Policy {!r} has extra condition with unknown comparator {!r}".format(
+                            policy['name'], comparator
+                        ))
+                        return False
                 else:
-                    log.warning(u"Policy {!r} has extra condition with unknown comparator {!r}".format(
-                        policy['name'], comparator
+                    # If we do have a user object, but the extra conditions of policies reference
+                    # an unknown userinfo key, the policy does not match
+                    log.warning(u"Policy {!r} has extra condition with unknown userinfo key: {!r}".format(
+                        policy['name'], key
                     ))
                     return False
-            else:
-                log.warning(u"Policy {!r} has extra condition with unknown userinfo key: {!r}".format(
-                    policy['name'], key
+            except Exception as exx:
+                # If an error occurs, the policy does not match
+                log.warning(u"Error during handling the extra condition on userinfo {!r} of policy {!r}: {!r}".format(
+                    key, policy['name'], exx
                 ))
                 return False
         else:
+            # If we do not have a user object, the extra conditions of policies
+            # do not matter, so any policy matches
             log.warning(
                 u"Policy {!r} has extra condition for user info, but user info is not available".format(
                     policy['name']
@@ -954,6 +986,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param extra_conditions: A list of 4-tuples (section, key, comparator, value) of extra policy conditions
     :return: The database ID od the the policy
     :rtype: int
     """

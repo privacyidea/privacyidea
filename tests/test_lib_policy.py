@@ -1097,7 +1097,7 @@ class PolicyTestCase(MyTestCase):
         delete_realm("realm1")
         delete_resolver("reso1")
 
-    def test_29_filter_by_extra_conditions_equal(self):
+    def test_29_filter_by_extra_conditions(self):
         def _names(policies):
             return set(p['name'] for p in policies)
 
@@ -1156,3 +1156,19 @@ class PolicyTestCase(MyTestCase):
         # user3 => notverysecure matches
         self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user3)),
                          {"notverysecure"})
+
+        for policy in ["verysecure", "notverysecure"]:
+            delete_policy(policy)
+
+        # Check graceful handling of errors
+        set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   extra_conditions=[("userinfo", "number", "contains", "b")])
+        all_policies = P.get_policies()
+
+        user4 = MockUser()
+        user4.info = {"type": "notverysecure", "number": 5}
+
+        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user4)),
+                         set())
+
+        delete_policy("error")

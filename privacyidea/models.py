@@ -1420,9 +1420,11 @@ class Policy(TimestampMethodsMixin, db.Model):
             self.set_extra_conditions(extra_conditions)
 
     def set_extra_conditions(self, extra_conditions):
-        if self.extra_conditions:
-            self.extra_conditions = []
-            db.session.flush()
+        """
+        Replace the list of extra conditions of this policy with a new list
+        of extra conditions, i.e. a list of 4-tuples (section, key, comparator, value).
+        """
+        self.extra_conditions = []
         for section, key, comparator, value in extra_conditions:
             condition_object = PolicyExtraCondition(
                 section=section, key=key, comparator=comparator, value=value,
@@ -1430,6 +1432,9 @@ class Policy(TimestampMethodsMixin, db.Model):
             self.extra_conditions.append(condition_object)
 
     def get_extra_conditions_tuples(self):
+        """
+        :return: a list of 4-tuples (section, key, comparator, value).
+        """
         return [condition.as_tuple() for condition in self.extra_conditions]
 
     @staticmethod
