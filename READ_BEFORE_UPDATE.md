@@ -1,5 +1,23 @@
 # Update Notes
 
+## Update from 3.0 to 3.1
+
+* Policies
+
+  In the scope admin a new action "tokenlist" was added. This
+  action assures, that admins can only list tokens in certain realms.
+  Without this action, and administrator can not view any tokens.
+  To allow all administrators to still list tokens, during migration
+  from 3.0 to 3.1 a new policy **pi-update-policy-b9131d0686eb** is
+  automatically created.
+
+  After the update you might want to review this policy and the
+  token list rights of your administrators.
+
+  **Note**, that due to the naming of this auto-generated policy, it is
+  not possible to modify this policy. You can still disable and enable
+  or delete this policy.
+
 ## Update from 2.23 to 3.0
 
 * Database
