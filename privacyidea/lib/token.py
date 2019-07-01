@@ -448,6 +448,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type psize: int
     :param page: The number of the page to view. Starts with 1 ;-)
     :type page: int
+    :param allowed_realms: A list of realms, that the admin is allowed to see
+    :type allowed_realms: list
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
