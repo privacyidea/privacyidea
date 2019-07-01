@@ -1254,12 +1254,12 @@ def get_static_policy_definitions(scope=None):
                                             "configuration."),
                                   "group": GROUP.SYSTEM,
                                   'mainmenu': [MAIN_MENU.CONFIG]},
-            ACTION.SYSTEMDELETE: {'type': 'bool',
-                                  "desc": _("Admin is allowed to read "
-                                            "basic system configuration "
-                                            "configuration."),
-                                  "group": GROUP.SYSTEM,
-                                  'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.SYSTEMREAD: {'type': 'bool',
+                                "desc": _("Admin is allowed to read "
+                                          "basic system configuration "
+                                          "configuration."),
+                                "group": GROUP.SYSTEM,
+                                'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CONFIGDOCUMENTATION: {'type': 'bool',
                                          'desc': _('Admin is allowed to '
                                                    'export a documentation '
