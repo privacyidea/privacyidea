@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add admin read policies
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
