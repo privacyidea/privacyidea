@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #  2019-06-19 Friedrich Weber <friedrich.weber@netknights.it>
-#             Add handling of policy extra conditions
+#             Add handling of policy conditions
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -389,8 +389,8 @@ class TIMEOUT_ACTION(object):
     LOCKSCREEN = 'lockscreen'
 
 
-class EXTRACONDITION_SECTION(object):
-    __doc__ = """This is a list of available sections for extra conditions of policies """
+class CONDITION_SECTION(object):
+    __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
 
 
@@ -623,8 +623,8 @@ class PolicyClass(object):
                 reduced_policies))
 
         if user_object is not None:
-            reduced_policies = list(self.filter_policies_by_extra_conditions(reduced_policies, user_object))
-            log.debug("Policies after matching extra conditions".format(
+            reduced_policies = list(self.filter_policies_by_conditions(reduced_policies, user_object))
+            log.debug("Policies after matching conditions".format(
                 reduced_policies))
 
         if sort_by_priority:
@@ -636,10 +636,10 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    def filter_policies_by_extra_conditions(self, policies, user_object=None):
+    def filter_policies_by_conditions(self, policies, user_object=None):
         """
         Given a list of policy dictionaries and a current user object (if any),
-        yield all policies whose extra conditions match the given user object.
+        yield all policies whose conditions match the given user object.
         If the user object is None, all policies match.
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
@@ -647,13 +647,13 @@ class PolicyClass(object):
         """
         for policy in policies:
             exclude_policy = False
-            for section, key, comparator, value in policy['extra_conditions']:
-                if section == EXTRACONDITION_SECTION.USERINFO:
+            for section, key, comparator, value in policy['conditions']:
+                if section == CONDITION_SECTION.USERINFO:
                     if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
                         exclude_policy = True
                         break
                 else:
-                    log.warning(u"Policy {!r} has extra condition with unknown section: {!r}".format(
+                    log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
                         policy['name'], section
                     ))
             if not exclude_policy:
@@ -661,7 +661,7 @@ class PolicyClass(object):
 
     def _policy_matches_userinfo_condition(self, policy, key, comparator, value, user_object=None):
         """
-        Check if the given policy matches a certain userinfo extra condition.
+        Check if the given policy matches a certain userinfo condition.
         :param policy: a policy dictionary, the policy in question
         :param key: a userinfo key
         :param comparator: a value comparator: one of "equal", "contains"
@@ -679,30 +679,30 @@ class PolicyClass(object):
                     elif comparator == 'contains':
                         return value in info[key]
                     else:
-                        # If we do have a user object, but the extra conditions of a policy reference
+                        # If we do have a user object, but the conditions of a policy reference
                         # an unknown comparator, the policy does not match
-                        log.warning(u"Policy {!r} has extra condition with unknown comparator {!r}".format(
+                        log.warning(u"Policy {!r} has condition with unknown comparator {!r}".format(
                             policy['name'], comparator
                         ))
                         return False
                 else:
-                    # If we do have a user object, but the extra conditions of policies reference
+                    # If we do have a user object, but the conditions of policies reference
                     # an unknown userinfo key, the policy does not match
-                    log.warning(u"Policy {!r} has extra condition with unknown userinfo key: {!r}".format(
+                    log.warning(u"Policy {!r} has condition with unknown userinfo key: {!r}".format(
                         policy['name'], key
                     ))
                     return False
             except Exception as exx:
                 # If an error occurs, the policy does not match
-                log.warning(u"Error during handling the extra condition on userinfo {!r} of policy {!r}: {!r}".format(
+                log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
                     key, policy['name'], exx
                 ))
                 return False
         else:
-            # If we do not have a user object, the extra conditions of policies
+            # If we do not have a user object, the conditions of policies
             # do not matter, so any policy matches
             log.warning(
-                u"Policy {!r} has extra condition for user info, but user info is not available".format(
+                u"Policy {!r} has condition for user info, but user info is not available".format(
                     policy['name']
                 ))
             return True
@@ -965,7 +965,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, priority=None, check_all_resolvers=False,
-               extra_conditions=None):
+               conditions=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -986,7 +986,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
-    :param extra_conditions: A list of 4-tuples (section, key, comparator, value) of extra policy conditions
+    :param conditions: A list of 4-tuples (section, key, comparator, value) of policy conditions
     :return: The database ID od the the policy
     :rtype: int
     """
@@ -1041,8 +1041,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
-        if extra_conditions is not None:
-            p1.set_extra_conditions(extra_conditions)
+        if conditions is not None:
+            p1.set_conditions(conditions)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
@@ -1053,7 +1053,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      resolver=resolver, adminrealm=adminrealm,
                      priority=priority,
                      check_all_resolvers=check_all_resolvers,
-                     extra_conditions=extra_conditions).save()
+                     conditions=conditions).save()
     return ret
 
 

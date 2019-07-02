@@ -1064,7 +1064,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual([p["name"] for p in policy_object.get_policies()], ["act2"])
         delete_policy("act2")
 
-    def test_28_extra_conditions(self):
+    def test_28_conditions(self):
         rid = save_resolver({"resolver": "reso1",
                              "type": "passwdresolver",
                              "fileName": FILE_PASSWORDS})
@@ -1074,22 +1074,22 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
-        # Set policy with extra conditions
+        # Set policy with conditions
         set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("userinfo", "type", "equal", "verysecure")])
+                   conditions=[("userinfo", "type", "equal", "verysecure")])
 
         P = PolicyClass()
-        self.assertEqual(P.get_policies()[0]["extra_conditions"],
+        self.assertEqual(P.get_policies()[0]["conditions"],
                          [("userinfo", "type", "equal", "verysecure")])
 
-        # Update existing policy with extra conditions
-        set_policy("act1", extra_conditions=[
+        # Update existing policy with conditions
+        set_policy("act1", conditions=[
             ("userinfo", "type", "equal", "notverysecure"),
             ("request", "user_agent", "equal", "vpn")
         ])
         P = PolicyClass()
 
-        self.assertEqual(P.get_policies()[0]["extra_conditions"],
+        self.assertEqual(P.get_policies()[0]["conditions"],
                          [("userinfo", "type", "equal", "notverysecure"),
                           ("request", "user_agent", "equal", "vpn")])
 
@@ -1097,16 +1097,16 @@ class PolicyTestCase(MyTestCase):
         delete_realm("realm1")
         delete_resolver("reso1")
 
-    def test_29_filter_by_extra_conditions(self):
+    def test_29_filter_by_conditions(self):
         def _names(policies):
             return set(p['name'] for p in policies)
 
         set_policy("verysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("userinfo", "type", "equal", "verysecure")])
+                   conditions=[("userinfo", "type", "equal", "verysecure")])
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("userinfo", "bla", "equal", "verysecure")])
+                   conditions=[("userinfo", "bla", "equal", "verysecure")])
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("nothing", "something", "equal", "something")])
+                   conditions=[("nothing", "something", "equal", "something")])
         P = PolicyClass()
 
         all_policies = P.get_policies()
@@ -1123,16 +1123,16 @@ class PolicyTestCase(MyTestCase):
         empty_user = User()
 
         # No user object => all policies match
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies)),
                          {"verysecure", "unknownsection", "unknownkey"})
         # Empty user object => unknownsection matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, empty_user)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, empty_user)),
                          {"unknownsection"})
         # user1 => unknownsection, verysecure matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user1)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
                          {"unknownsection", "verysecure"})
         # user2 => unknownsection matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user2)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user2)),
                          {"unknownsection"})
 
         delete_policy("unknownkey")
@@ -1140,21 +1140,21 @@ class PolicyTestCase(MyTestCase):
 
         # Add a policy for type=verysecure and groups contains b
         set_policy("notverysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("userinfo", "type", "equal", "notverysecure"),
-                                     ("userinfo", "groups", "contains", "b")])
+                   conditions=[("userinfo", "type", "equal", "notverysecure"),
+                               ("userinfo", "groups", "contains", "b")])
         all_policies = P.get_policies()
 
         user3 = MockUser()
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # user1 => verysecure matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user1)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
                          {"verysecure"})
         # user2 => no policy matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user2)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user2)),
                          set())
         # user3 => notverysecure matches
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user3)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
                          {"notverysecure"})
 
         for policy in ["verysecure", "notverysecure"]:
@@ -1162,13 +1162,13 @@ class PolicyTestCase(MyTestCase):
 
         # Check graceful handling of errors
         set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   extra_conditions=[("userinfo", "number", "contains", "b")])
+                   conditions=[("userinfo", "number", "contains", "b")])
         all_policies = P.get_policies()
 
         user4 = MockUser()
         user4.info = {"type": "notverysecure", "number": 5}
 
-        self.assertEqual(_names(P.filter_policies_by_extra_conditions(all_policies, user4)),
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user4)),
                          set())
 
         delete_policy("error")

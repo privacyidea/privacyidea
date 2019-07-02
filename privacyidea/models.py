@@ -1385,20 +1385,23 @@ class Policy(TimestampMethodsMixin, db.Model):
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
-    condition = db.Column(db.Integer, default=0, nullable=False)
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priotity.
     priority = db.Column(db.Integer, default=1, nullable=False)
-    extra_conditions = db.relationship("PolicyExtraCondition",
-                                       lazy="joined",
-                                       backref="policy",
-                                       order_by="PolicyExtraCondition.id",
-                                       cascade="save-update, merge, delete, delete-orphan")
+    conditions = db.relationship("PolicyCondition",
+                                 lazy="joined",
+                                 backref="policy",
+                                 order_by="PolicyCondition.id",
+                                 # With these cascade options, we ensure that whenever a Policy object is added
+                                 # to a session, its conditions are also added to the session (save-update, merge).
+                                 # Likewise, whenever a Policy object is deleted, its conditions are also
+                                 # deleted (delete). Conditions without a policy are deleted (delete-orphan).
+                                 cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0, priority=1,
-                 check_all_resolvers=False, extra_conditions=None):
+                 resolver="", user="", client="", time="", priority=1,
+                 check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
@@ -1411,31 +1414,30 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.user = user
         self.client = client
         self.time = time
-        self.condition = condition
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
-        if extra_conditions is None:
-            self.extra_conditions = []
+        if conditions is None:
+            self.conditions = []
         else:
-            self.set_extra_conditions(extra_conditions)
+            self.set_conditions(conditions)
 
-    def set_extra_conditions(self, extra_conditions):
+    def set_conditions(self, conditions):
         """
-        Replace the list of extra conditions of this policy with a new list
-        of extra conditions, i.e. a list of 4-tuples (section, key, comparator, value).
+        Replace the list of conditions of this policy with a new list
+        of conditions, i.e. a list of 4-tuples (section, key, comparator, value).
         """
-        self.extra_conditions = []
-        for section, key, comparator, value in extra_conditions:
-            condition_object = PolicyExtraCondition(
+        self.conditions = []
+        for section, key, comparator, value in conditions:
+            condition_object = PolicyCondition(
                 section=section, key=key, comparator=comparator, value=value,
             )
-            self.extra_conditions.append(condition_object)
+            self.conditions.append(condition_object)
 
-    def get_extra_conditions_tuples(self):
+    def get_conditions_tuples(self):
         """
         :return: a list of 4-tuples (section, key, comparator, value).
         """
-        return [condition.as_tuple() for condition in self.extra_conditions]
+        return [condition.as_tuple() for condition in self.conditions]
 
     @staticmethod
     def _split_string(value):
@@ -1471,8 +1473,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
-             "condition": self.condition,
-             "extra_conditions": self.get_extra_conditions_tuples(),
+             "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
@@ -1490,10 +1491,10 @@ class Policy(TimestampMethodsMixin, db.Model):
         return ret
 
 
-class PolicyExtraCondition(MethodsMixin, db.Model):
-    __tablename__ = "policyextracondition"
+class PolicyCondition(MethodsMixin, db.Model):
+    __tablename__ = "policycondition"
 
-    id = db.Column(db.Integer, Sequence("policyextracondition_seq"), primary_key=True)
+    id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
     policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
     section = db.Column(db.Unicode(255), nullable=False)
     key = db.Column(db.Unicode(255), nullable=False)
@@ -1504,7 +1505,7 @@ class PolicyExtraCondition(MethodsMixin, db.Model):
 
     def as_tuple(self):
         """
-        :return: the extra condition as a tuple (section, key, comparator, value)
+        :return: the condition as a tuple (section, key, comparator, value)
         """
         return self.section, self.key, self.comparator, self.value
 
