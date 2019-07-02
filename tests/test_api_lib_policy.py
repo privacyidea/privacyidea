@@ -8,7 +8,7 @@ import json
 
 from .base import (MyApiTestCase, PWFILE)
 
-from privacyidea.lib.policy import (set_policy, delete_policy,
+from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
                                     AUTOASSIGNVALUE)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
@@ -26,7 +26,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_wait)
+                                           pushtoken_add_config, pushtoken_wait,
+                                           check_admin_tokenlist)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -1521,6 +1522,67 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
 
         delete_policy("push1")
+
+    def test_25_admin_token_list(self):
+        # The tokenlist policy can result in a None filter, an empty [] filter or
+        # a filter with realms ["realm1", "realm2"].
+        # The None is a wildcard, [] allows no listing at all.
+        admin1 = {"username": "admin1",
+                  "role": "admin",
+                  "realm": "realm1"}
+
+        # admin1 is allowed to see realm1
+        set_policy(name="pol-realm1",
+                   scope=SCOPE.ADMIN,
+                   action="tokenlist", user="admin1", realm=self.realm1)
+
+        # Admin1 is allowed to list all realms
+        set_policy(name="pol-all-realms",
+                   scope=SCOPE.ADMIN,
+                   action="tokenlist", user="admin1")
+
+        # Admin1 is allowed to only init, not list
+        set_policy(name="pol-only-init",
+                   scope=SCOPE.ADMIN)
+
+        g.policy_object = PolicyClass()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+
+        # admin1 is allowed to do everything
+        g.logged_in_user = admin1
+        r = check_admin_tokenlist(req)
+        self.assertTrue(r)
+        # The admin1 has the policy "pol-all-realms", so he is allowed to view all realms!
+        self.assertEqual(req.pi_allowed_realms, None)
+
+        enable_policy("pol-all-realms", False)
+        # Now he is only allowed to view realm1
+        g.policy_object = PolicyClass()
+        req = Request(env)
+        r = check_admin_tokenlist(req)
+        self.assertTrue(r)
+        # The admin1 has the policy "pol-realm1", so he is allowed to view all realms!
+        self.assertEqual(req.pi_allowed_realms, [self.realm1])
+
+        enable_policy("pol-realm1", False)
+        # Now he only has the admin right to init tokens
+        g.policy_object = PolicyClass()
+        req = Request(env)
+        r = check_admin_tokenlist(req)
+        self.assertTrue(r)
+        # The admin1 has the policy "pol-only-init", so he is not allowed to list tokens
+        self.assertEqual(req.pi_allowed_realms, [])
+
+        for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
+            delete_policy(pol)
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -140,7 +140,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial_exact=None, serial_wildcard=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -189,6 +189,11 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.realm_id == Realm.id,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
+
+    if allowed_realms is not None:
+        sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
+                                          TokenRealm.realm_id == Realm.id,
+                                          TokenRealm.token_id == Token.id)).distinct()
 
     stripped_resolver = None if resolver is None else resolver.strip("*")
     stripped_userid = None if userid is None else userid.strip("*")
@@ -413,7 +418,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None):
+                page=1, description=None, userid=None, allowed_realms=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -443,6 +448,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type psize: int
     :param page: The number of the page to view. Starts with 1 ;-)
     :type page: int
+    :param allowed_realms: A list of realms, that the admin is allowed to see
+    :type allowed_realms: list
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
@@ -451,7 +458,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 serial_wildcard=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
-                                description=description, userid=userid)
+                                description=description, userid=userid,
+                                allowed_realms=allowed_realms)
 
     if isinstance(sortby, string_types):
         # convert the string to a Token column
