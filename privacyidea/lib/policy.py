@@ -1449,6 +1449,11 @@ def get_static_policy_definitions(scope=None):
                                                "definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMSGATEWAYREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMS gateway definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.CLIENTTYPE: {'type': 'bool',
                                 'desc': _("Admin is allowed to get the list "
                                           "of authenticated clients and their "
