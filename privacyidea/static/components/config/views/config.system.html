@@ -293,7 +293,8 @@
         </div>
         -->
 
-        <div class="text-center">
+        <div class="text-center"
+            ng-show="checkRight('configwrite')">
             <button ng-click="saveSystemConfig()"
                     class="btn btn-primary" translate>Save System Config
             </button>

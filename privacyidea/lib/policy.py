@@ -1386,12 +1386,22 @@ def get_static_policy_definitions(scope=None):
                                                "SMTP server definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMTPSERVERREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMTP server definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.RADIUSSERVERREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "RADIUS server definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
                                             'desc': _("Admin is allowed to "
                                                       "write remote "
@@ -1399,11 +1409,23 @@ def get_static_policy_definitions(scope=None):
                                                       "definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERREAD: {'type': 'bool',
+                                           'desc': _("Admin is allowed to "
+                                                     "read remote "
+                                                     "privacyIDEA server "
+                                                     "definitions."),
+                                           'mainmenu': [MAIN_MENU.CONFIG],
+                                           'group': GROUP.SYSTEM},
             ACTION.PERIODICTASKWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "periodic task definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PERIODICTASKREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "periodic task definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.STATISTICSREAD: {'type': 'bool',
                                     'desc': _("Admin is allowed to read statistics data."),
                                     'group': GROUP.SYSTEM},

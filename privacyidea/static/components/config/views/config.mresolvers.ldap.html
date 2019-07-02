@@ -200,6 +200,7 @@
                 class="btn btn-success" translate>Test LDAP Resolver
         </button>
         <button ng-click="setLDAPMachineResolver()"
+                ng-show="checkRight('mresolverwrite')"
                 ng-disabled="formMachineResolverAddLdap.$invalid"
                 class="btn btn-primary" translate>Save resolver
         </button>
