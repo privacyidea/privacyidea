@@ -392,20 +392,20 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        p3.set_conditions([("userinfo", "type", "equal", "foobar"),
-                                 ("request", "user_agent", "equal", "abcd")])
+        p3.set_conditions([("userinfo", "type", "==", "foobar"),
+                           ("request", "user_agent", "==", "abcd")])
         self.assertEqual(p3.get_conditions_tuples(),
-                         [("userinfo", "type", "equal", "foobar"),
-                          ("request", "user_agent", "equal", "abcd")])
+                         [("userinfo", "type", "==", "foobar"),
+                          ("request", "user_agent", "==", "abcd")])
         self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "equal", "foobar"),
-                          ("request", "user_agent", "equal", "abcd")])
+                         [("userinfo", "type", "==", "foobar"),
+                          ("request", "user_agent", "==", "abcd")])
         self.assertEqual(PolicyCondition.query.count(), 2)
 
-        p3.set_conditions([("userinfo", "type", "equal", "baz")])
+        p3.set_conditions([("userinfo", "type", "==", "baz")])
         p3.save()
         self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "equal", "baz")])
+                         [("userinfo", "type", "==", "baz")])
         self.assertEqual(len(p3.conditions), 1)
         self.assertEqual(p3.conditions[0].value, "baz")
         self.assertEqual(PolicyCondition.query.count(), 1)

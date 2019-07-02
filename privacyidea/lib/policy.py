@@ -175,6 +175,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
+from privacyidea.lib.utils.compare import compare_values, CompareError
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -674,15 +675,13 @@ class PolicyClass(object):
             info = user_object.info
             try:
                 if key in info:
-                    if comparator == 'equal':
-                        return info[key] == value
-                    elif comparator == 'contains':
-                        return value in info[key]
-                    else:
-                        # If we do have a user object, but the conditions of a policy reference
-                        # an unknown comparator, the policy does not match
-                        log.warning(u"Policy {!r} has condition with unknown comparator {!r}".format(
-                            policy['name'], comparator
+                    try:
+                        return compare_values(info[key], comparator, value)
+                    except CompareError as exx:
+                        # If we do have a user object, but the conditions of a policy is invalid,
+                        # the policy does not match and we print a warning
+                        log.warning(u"Policy {!r} has invalid condition: {!r}".format(
+                            policy['name'], exx.message
                         ))
                         return False
                 else:

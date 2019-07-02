@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This tests the file lib.utils
+This tests the package lib.utils
 """
 from .base import MyTestCase
 
