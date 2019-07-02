@@ -1499,7 +1499,7 @@ class PolicyCondition(MethodsMixin, db.Model):
     section = db.Column(db.Unicode(255), nullable=False)
     key = db.Column(db.Unicode(255), nullable=False)
     value = db.Column(db.Unicode(2000), default=u'')
-    comparator = db.Column(db.Unicode(255), default=u'equal')
+    comparator = db.Column(db.Unicode(255), default=u'==')
 
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
