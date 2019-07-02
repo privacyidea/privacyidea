@@ -132,7 +132,8 @@
             logged-in-user="loggedInUser"></tr>
         <!-- If setData is called within the directive tokenDataEdit,
         the function set in the parent scope is called -->
-        <tr token-data-edit text="{{ 'Description'|translate }}"
+        <tr ng-show="loggedInUser.role==='admin'"
+            token-data-edit text="{{ 'Description'|translate }}"
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ token.description }}"
             token-locked="{{ token.locked }}"
@@ -141,6 +142,18 @@
             token-key="description"
             callback-cancel="get()"
             callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr ng-show="loggedInUser.role==='user'"
+            token-data-edit text="{{ 'Description'|translate }}"
+            button-text="{{ 'Set description'|translate }}"
+            token-data="{{ token.description }}"
+            token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('setdescription') }}"
+            editable-as-user = true
+            token-key="description"
+            callback-cancel="get()"
+            callback="setdescription(value)"
             logged-in-user="loggedInUser"></tr>
         <tr>
             <td translate>Info</td>

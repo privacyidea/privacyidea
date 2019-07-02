@@ -30,6 +30,7 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
             setRight: '@',
             inputPattern: '@',
             inputType: '@',
+            editableAsUser: '@',
             callback: '&',
             callbackCancel: '&'
         },
