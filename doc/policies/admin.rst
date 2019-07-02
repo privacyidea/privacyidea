@@ -404,7 +404,7 @@ smsgateway_write
 type: bool
 
 To be able to define new :ref:`smsgateway` or delete existing ones, the
-administrator needs this rights ``smsgateway_write``.
+administrator needs the right ``smsgateway_write``.
 
 smsgateway_read
 ~~~~~~~~~~~~~~~
@@ -432,7 +432,7 @@ eventhandling_write
 
 type: bool
 
-Allow the adminstrator to configure :ref:`eventhandler`.
+Allow the administrator to configure :ref:`eventhandler`.
 
 eventhandling_read
 ~~~~~~~~~~~~~~~~~~
@@ -443,7 +443,7 @@ Allow the administrator to read event handlers.
 
 .. note:: Currently the policies do not take into account resolvers,
    or realms. Having the right to read event handlers, will allow the
-   administrator to see all policies.
+   administrator to see all event handler definitions.
 
 
 policywrite, policyread, policydelete

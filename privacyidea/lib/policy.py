@@ -1256,8 +1256,7 @@ def get_static_policy_definitions(scope=None):
                                   'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.SYSTEMREAD: {'type': 'bool',
                                 "desc": _("Admin is allowed to read "
-                                          "basic system configuration "
-                                          "configuration."),
+                                          "basic system configuration."),
                                 "group": GROUP.SYSTEM,
                                 'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CONFIGDOCUMENTATION: {'type': 'bool',

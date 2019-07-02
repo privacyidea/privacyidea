@@ -114,6 +114,7 @@ def delete_resolver_api(resolver=None):
 
 @machineresolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
 def get_resolver(resolver=None):
     """
     This function retrieves the definition of a single machine resolver.
