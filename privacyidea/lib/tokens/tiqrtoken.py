@@ -384,7 +384,7 @@ class TiqrTokenClass(OcraTokenClass):
 
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
-                                 transaction_id=None,
+                                 transaction_id=transactionid,
                                  challenge=challenge,
                                  data=None,
                                  session=options.get("session"),
