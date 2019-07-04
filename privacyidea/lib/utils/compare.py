@@ -59,10 +59,10 @@ def compare_values(left, comparator, right):
     """
     Compare two values according to ``comparator`` and return either True or False.
     If the comparison is invalid, raise a CompareError with a descriptive message.
-    :param left:
-    :param comparator:
-    :param right:
-    :return:
+    :param left: Left operand of the comparison
+    :param comparator: Comparator to use, one of ``COMPARATORS``
+    :param right: Right operand of the comparison
+    :return: True or False
     """
     if comparator in COMPARATORS:
         return COMPARATORS[comparator](left, comparator, right)
