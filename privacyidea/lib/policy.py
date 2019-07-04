@@ -445,18 +445,11 @@ class PolicyClass(object):
         return value_found, value_excluded
 
     @log_with(log)
-    def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, user_object=None,
-                     client=None, action=None,
-                     adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True, audit_data=None):
+    def list_policies(self, name=None, scope=None, realm=None, active=None,
+                      resolver=None, user=None, client=None, action=None,
+                      adminrealm=None, sort_by_priority=True):
         """
-        Return the policies of the given filter values.
-
-        In order to retrieve policies matching the current user,
-        callers can *either* pass a user(name), resolver and realm,
-        *or* pass a user object from which login name, resolver and realm will be read.
-        In case of conflicting parameters, a ParameterError will be raised.
+        Return the policies, filtered by the given values.
 
         The following rule holds for all filter arguments:
 
@@ -477,44 +470,17 @@ class PolicyClass(object):
         :param resolver: Only policies with this resolver
         :param user: Only policies with this user
         :type user: basestring
-        :param user_object: Only policies matching this user object
-        :type user_object: User
         :param client:
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
-        :param time: The optional time, for which the policies should be
-            fetched. The default time is now()
-        :type time: datetime
-        :param all_times: If True the time restriction of the policies is
-            ignored. Policies of all time ranges will be returned.
-        :type all_times: bool
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
-        :param audit_data: A dictionary with audit data collected during a request. This
-            method will add found policies to the dictionary.
         :return: list of policies
         :rtype: list of dicts
         """
-        if user_object is not None:
-            if not (user is None and realm is None and resolver is None):
-                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
-            user = user_object.login
-            realm = user_object.realm
-            resolver = user_object.resolver
-
         reduced_policies = self.policies
-
-        # filter policy for time. If no time is set or is a time is set and
-        # it matches the time_range, then we add this policy
-        if not all_times:
-            reduced_policies = [policy for policy in reduced_policies if
-                                (policy.get("time") and
-                                 check_time_in_range(policy.get("time"), time))
-                                or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format(
-            reduced_policies))
 
         # Do exact matches for "name", "active" and "scope", as these fields
         # can only contain one entry
@@ -619,6 +585,63 @@ class PolicyClass(object):
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
+        return reduced_policies
+
+    def match_policies(self, name=None, scope=None, realm=None, active=None,
+                       resolver=None, user=None, user_object=None,
+                       client=None, action=None, adminrealm=None, time=None,
+                       sort_by_priority=True, audit_data=None):
+        """
+        Return all policies matching the given context.
+        Optionally, write the matching policies to the audit log.
+
+        In order to retrieve policies matching the current user,
+        callers can *either* pass a user(name), resolver and realm,
+        *or* pass a user object from which login name, resolver and realm will be read.
+        In case of conflicting parameters, a ParameterError will be raised.
+
+        This function takes all parameters taken by ``list_policies``, plus
+        some additional parameters.
+
+        :param name: see ``list_policies``
+        :param scope: see ``list_policies``
+        :param realm: see ``list_policies``
+        :param active: see ``list_policies``
+        :param resolver: see ``list_policies``
+        :param user: see ``list_policies``
+        :param client: see ``list_policies``
+        :param action: see ``list_policies``
+        :param adminrealm: see ``list_policies``
+        :param sort_by_priority:
+        :param user_object: the currently active user, or None
+        :type user_object: User or None
+        :param time: return only policies that are valid at the specified time. Defaults to the current time.
+        :type time: datetime or None
+        :param audit_data: A dictionary with audit data collected during a request. This
+        method will add found policies to the dictionary.
+        :type audit_data: dict or None
+        :return: a list of policy dictionaries
+        """
+        if user_object is not None:
+            if not (user is None and realm is None and resolver is None):
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+            user = user_object.login
+            realm = user_object.realm
+            resolver = user_object.resolver
+
+        reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
+                                              resolver=resolver, user=user, client=client, action=action,
+                                              adminrealm=adminrealm, sort_by_priority=sort_by_priority)
+
+        # filter policy for time. If no time is set or is a time is set and
+        # it matches the time_range, then we add this policy
+        reduced_policies = [policy for policy in reduced_policies if
+                            (policy.get("time") and
+                             check_time_in_range(policy.get("time"), time))
+                            or not policy.get("time")]
+        log.debug("Policies after matching time: {0!s}".format(
+            reduced_policies))
+
         if audit_data is not None:
             for p in reduced_policies:
                 audit_data.setdefault("policies", []).append(p.get("name"))
@@ -663,7 +686,7 @@ class PolicyClass(object):
             action: serial
         would return a dictionary of {serial: policyname}
 
-        All parameters not described below are covered in the documentation of ``get_policies``.
+        All parameters not described below are covered in the documentation of ``match_policies``.
 
         :param unique: if set, the function will only consider the policy with the
             highest priority and check for policy conflicts.
@@ -679,10 +702,10 @@ class PolicyClass(object):
         :rtype: dict
         """
         policy_values = {}
-        policies = self.get_policies(scope=scope, adminrealm=adminrealm,
-                                     action=action, active=True,
-                                     realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                     client=client, sort_by_priority=True)
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+                                       action=action, active=True,
+                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -782,12 +805,12 @@ class PolicyClass(object):
             userrealm = realm
             logged_in_user["role"] = ROLE.USER
             resolver = User(username, userrealm).resolver
-        pols = self.get_policies(scope=scope,
-                                 adminrealm=adminrealm,
-                                 realm=userrealm,
-                                 resolver=resolver,
-                                 user=username, active=True,
-                                 client=client)
+        pols = self.match_policies(scope=scope,
+                                   adminrealm=adminrealm,
+                                   realm=userrealm,
+                                   resolver=resolver,
+                                   user=username, active=True,
+                                   client=client)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -796,7 +819,7 @@ class PolicyClass(object):
                     if isinstance(action_value, string_types):
                         rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
-        pols = self.get_policies(scope=scope, active=True)
+        pols = self.match_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
@@ -844,7 +867,7 @@ class PolicyClass(object):
             admin_realm = None
             user_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
-        pols = self.get_policies(scope=role, active=True)
+        pols = self.match_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
@@ -858,12 +881,12 @@ class PolicyClass(object):
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
-                typepols = self.get_policies(scope=role, client=client,
-                                             user=logged_in_user.get("username"),
-                                             realm=user_realm,
-                                             active=True,
-                                             action="enroll"+tokentype.upper(),
-                                             adminrealm=admin_realm)
+                typepols = self.match_policies(scope=role, client=client,
+                                               user=logged_in_user.get("username"),
+                                               realm=user_realm,
+                                               active=True,
+                                               action="enroll"+tokentype.upper(),
+                                               adminrealm=admin_realm)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.

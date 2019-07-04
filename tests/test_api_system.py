@@ -617,9 +617,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["value"] == 2, result)
             # check if policies are there
             P = PolicyClass()
-            p1 = P.get_policies(name="importpol1")
+            p1 = P.match_policies(name="importpol1")
             self.assertTrue(len(p1) == 1, p1)
-            p2 = P.get_policies(name="importpol2")
+            p2 = P.match_policies(name="importpol2")
             self.assertTrue(len(p2) == 1, p2)
 
         # import empty file

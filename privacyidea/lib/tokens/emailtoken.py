@@ -405,12 +405,12 @@ class EmailTokenClass(HotpTokenClass):
             clientip = options.get("clientip")
             policy_object = g.policy_object
             autoemailpol = policy_object.\
-                get_policies(action=EMAILACTION.EMAILAUTO,
-                             scope=SCOPE.AUTH,
-                             realm=realm,
-                             user=username,
-                             client=clientip, active=True,
-                             audit_data=g.audit_object.audit_data)
+                match_policies(action=EMAILACTION.EMAILAUTO,
+                               scope=SCOPE.AUTH,
+                               realm=realm,
+                               user=username,
+                               client=clientip, active=True,
+                               audit_data=g.audit_object.audit_data)
             autosms = len(autoemailpol) >= 1
 
         return autosms
