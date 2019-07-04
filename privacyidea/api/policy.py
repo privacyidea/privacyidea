@@ -275,12 +275,12 @@ def get_policy(name=None, export=None):
     if not export:
         log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
 
-        pol = P.get_policies(name=name, realm=realm, scope=scope,
-                             active=active, all_times=True)
+        pol = P.match_policies(name=name, realm=realm, scope=scope,
+                               active=active, all_times=True)
         ret = send_result(pol)
     else:
         # We want to export all policies
-        pol = P.get_policies()
+        pol = P.match_policies()
         response = make_response(export_policies(pol))
         response.headers["Content-Disposition"] = ("attachment; "
                                                    "filename=%s" % export)
@@ -484,9 +484,9 @@ def check_policy_api():
     resolver = getParam(param, "resolver", optional)
 
     P = g.policy_object
-    policies = P.get_policies(user=user, realm=realm, resolver=resolver,
-                              scope=scope, action=action, client=client,
-                              active=True)
+    policies = P.match_policies(user=user, realm=realm, resolver=resolver,
+                                scope=scope, action=action, client=client,
+                                active=True)
     if policies:
         res["allowed"] = True
         res["policy"] = policies

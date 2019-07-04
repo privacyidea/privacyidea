@@ -94,7 +94,7 @@ def get_config_documentation():
     config = get_from_config()
     resolvers = get_resolver_list()
     realms = get_realms()
-    policies = P.get_policies()
+    policies = P.match_policies()
     admins = get_db_admins()
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),

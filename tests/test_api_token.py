@@ -1325,7 +1325,7 @@ class APITokenTestCase(MyApiTestCase):
         tn = datetime.datetime.now()
         dow = tn.isoweekday()
         P = PolicyClass()
-        all_admin_policies = P.get_policies(all_times=True)
+        all_admin_policies = P.match_policies(all_times=True)
         self.assertEqual(len(all_admin_policies), 1)
         self.assertEqual(len(P.policies), 1)
 

@@ -220,12 +220,12 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
-        pass_no_token = policy_object.get_policies(action=ACTION.PASSNOTOKEN,
-                                                   scope=SCOPE.AUTH,
-                                                   realm=user_object.realm,
-                                                   resolver=user_object.resolver,
-                                                   user=user_object.login,
-                                                   client=clientip, active=True)
+        pass_no_token = policy_object.match_policies(action=ACTION.PASSNOTOKEN,
+                                                     scope=SCOPE.AUTH,
+                                                     realm=user_object.realm,
+                                                     resolver=user_object.resolver,
+                                                     user=user_object.login,
+                                                     client=clientip, active=True)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
@@ -258,13 +258,13 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
     if g:
         clientip = options.get("clientip")
         policy_object = g.policy_object
-        pass_no_user = policy_object.get_policies(action=ACTION.PASSNOUSER,
-                                                  scope=SCOPE.AUTH,
-                                                  realm=user_object.realm,
-                                                  resolver=user_object.resolver,
-                                                  user=user_object.login,
-                                                  client=clientip,
-                                                  active=True)
+        pass_no_user = policy_object.match_policies(action=ACTION.PASSNOUSER,
+                                                    scope=SCOPE.AUTH,
+                                                    realm=user_object.realm,
+                                                    resolver=user_object.resolver,
+                                                    user=user_object.login,
+                                                    client=clientip,
+                                                    active=True)
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
@@ -298,14 +298,14 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     if g:
         policy_object = g.policy_object
         clientip = options.get("clientip")
-        pass_thru = policy_object.get_policies(action=ACTION.PASSTHRU,
-                                               scope=SCOPE.AUTH,
-                                               realm=user_object.realm,
-                                               resolver=user_object.resolver,
-                                               user=user_object.login,
-                                               client=clientip,
-                                               active=True,
-                                               sort_by_priority=True)
+        pass_thru = policy_object.match_policies(action=ACTION.PASSTHRU,
+                                                 scope=SCOPE.AUTH,
+                                                 realm=user_object.realm,
+                                                 resolver=user_object.resolver,
+                                                 user=user_object.login,
+                                                 client=clientip,
+                                                 active=True,
+                                                 sort_by_priority=True)
         # We only go to passthru, if the user has no tokens!
         if pass_thru and get_tokens(user=user_object, count=True) == 0:
             # Ensure that there are no conflicting action values within the same priority
@@ -713,7 +713,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
         clientip = options.get("clientip")
         policy_object = g.policy_object
         token_owner = tokenobject_list[0].user
-        reset_all = policy_object.get_policies(
+        reset_all = policy_object.match_policies(
             action=ACTION.RESETALLTOKENS,
             scope=SCOPE.AUTH,
             user_object=token_owner if token_owner else None,

@@ -196,11 +196,11 @@ def get_realms_api():
     g.audit_object.log({"success": True})
     # This endpoint is called by admins anyways
     luser = g.logged_in_user
-    policies = g.policy_object.get_policies(scope=luser.get("role", ROLE.ADMIN),
-                                            client=g.client_ip,
-                                            adminrealm=luser.get("realm"),
-                                            user=luser.get("username"),
-                                            active=True)
+    policies = g.policy_object.match_policies(scope=luser.get("role", ROLE.ADMIN),
+                                              client=g.client_ip,
+                                              adminrealm=luser.get("realm"),
+                                              user=luser.get("username"),
+                                              active=True)
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)

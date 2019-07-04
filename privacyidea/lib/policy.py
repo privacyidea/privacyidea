@@ -445,11 +445,11 @@ class PolicyClass(object):
         return value_found, value_excluded
 
     @log_with(log)
-    def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, user_object=None,
-                     client=None, action=None,
-                     adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True, audit_data=None):
+    def match_policies(self, name=None, scope=None, realm=None, active=None,
+                       resolver=None, user=None, user_object=None,
+                       client=None, action=None,
+                       adminrealm=None, time=None, all_times=False,
+                       sort_by_priority=True, audit_data=None):
         """
         Return the policies of the given filter values.
 
@@ -679,10 +679,10 @@ class PolicyClass(object):
         :rtype: dict
         """
         policy_values = {}
-        policies = self.get_policies(scope=scope, adminrealm=adminrealm,
-                                     action=action, active=True,
-                                     realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                     client=client, sort_by_priority=True)
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+                                       action=action, active=True,
+                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -782,12 +782,12 @@ class PolicyClass(object):
             userrealm = realm
             logged_in_user["role"] = ROLE.USER
             resolver = User(username, userrealm).resolver
-        pols = self.get_policies(scope=scope,
-                                 adminrealm=adminrealm,
-                                 realm=userrealm,
-                                 resolver=resolver,
-                                 user=username, active=True,
-                                 client=client)
+        pols = self.match_policies(scope=scope,
+                                   adminrealm=adminrealm,
+                                   realm=userrealm,
+                                   resolver=resolver,
+                                   user=username, active=True,
+                                   client=client)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -796,7 +796,7 @@ class PolicyClass(object):
                     if isinstance(action_value, string_types):
                         rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
-        pols = self.get_policies(scope=scope, active=True)
+        pols = self.match_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
@@ -844,7 +844,7 @@ class PolicyClass(object):
             admin_realm = None
             user_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
-        pols = self.get_policies(scope=role, active=True)
+        pols = self.match_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
@@ -858,12 +858,12 @@ class PolicyClass(object):
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
-                typepols = self.get_policies(scope=role, client=client,
-                                             user=logged_in_user.get("username"),
-                                             realm=user_realm,
-                                             active=True,
-                                             action="enroll"+tokentype.upper(),
-                                             adminrealm=admin_realm)
+                typepols = self.match_policies(scope=role, client=client,
+                                               user=logged_in_user.get("username"),
+                                               realm=user_realm,
+                                               active=True,
+                                               action="enroll"+tokentype.upper(),
+                                               adminrealm=admin_realm)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
