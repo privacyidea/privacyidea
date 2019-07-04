@@ -651,7 +651,7 @@ class PolicyClass(object):
             reduced_policies))
 
         if user_object is not None:
-            reduced_policies = list(self.filter_policies_by_conditions(reduced_policies, user_object))
+            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
             log.debug("Policies after matching conditions".format(
                 reduced_policies))
 
@@ -664,25 +664,28 @@ class PolicyClass(object):
     def filter_policies_by_conditions(self, policies, user_object=None):
         """
         Given a list of policy dictionaries and a current user object (if any),
-        yield all policies whose conditions match the given user object.
+        return a list of all policies whose conditions match the given user object.
         If the user object is None, all policies match.
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
         :return: generates a list of policy dictionaries
         """
+        reduced_policies = []
         for policy in policies:
-            exclude_policy = False
-            for section, key, comparator, value in policy['conditions']:
-                if section == CONDITION_SECTION.USERINFO:
-                    if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
-                        exclude_policy = True
-                        break
-                else:
-                    log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
-                        policy['name'], section
-                    ))
-            if not exclude_policy:
-                yield policy
+            include_policy = True
+            for section, key, comparator, value, active in policy['conditions']:
+                if active:
+                    if section == CONDITION_SECTION.USERINFO:
+                        if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+                            include_policy = False
+                            break
+                    else:
+                        log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
+                            policy['name'], section
+                        ))
+            if include_policy:
+                reduced_policies.append(policy)
+        return reduced_policies
 
     def _policy_matches_userinfo_condition(self, policy, key, comparator, value, user_object=None):
         """
@@ -1009,7 +1012,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
-    :param conditions: A list of 4-tuples (section, key, comparator, value) of policy conditions
+    :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :return: The database ID od the the policy
     :rtype: int
     """

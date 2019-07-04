@@ -392,27 +392,36 @@ class TokenModelTestCase(MyTestCase):
         p3.save()
 
         # set conditions
-        p3.set_conditions([("userinfo", "type", "==", "foobar"),
-                           ("request", "user_agent", "==", "abcd")])
+        p3.set_conditions([("userinfo", "type", "==", "foobar", False),
+                           ("request", "user_agent", "==", "abcd", True)])
         self.assertEqual(p3.get_conditions_tuples(),
-                         [("userinfo", "type", "==", "foobar"),
-                          ("request", "user_agent", "==", "abcd")])
+                         [("userinfo", "type", "==", "foobar", False),
+                          ("request", "user_agent", "==", "abcd", True)])
         self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "==", "foobar"),
-                          ("request", "user_agent", "==", "abcd")])
+                         [("userinfo", "type", "==", "foobar", False),
+                          ("request", "user_agent", "==", "abcd", True)])
         self.assertEqual(PolicyCondition.query.count(), 2)
 
-        p3.set_conditions([("userinfo", "type", "==", "baz")])
+        p3.set_conditions([("userinfo", "type", "==", "baz", True)])
         p3.save()
         self.assertEqual(p3.get()["conditions"],
-                         [("userinfo", "type", "==", "baz")])
+                         [("userinfo", "type", "==", "baz", True)])
         self.assertEqual(len(p3.conditions), 1)
-        self.assertEqual(p3.conditions[0].value, "baz")
+        self.assertEqual(p3.conditions[0].Value, "baz")
+        self.assertEqual(PolicyCondition.query.count(), 1)
+
+        # Check that the change has been persisted to the database
+        p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
+        self.assertEqual(p3_reloaded1.get()["conditions"],
+                         [("userinfo", "type", "==", "baz", True)])
+        self.assertEqual(len(p3_reloaded1.conditions), 1)
+        self.assertEqual(p3_reloaded1.conditions[0].Value, "baz")
         self.assertEqual(PolicyCondition.query.count(), 1)
 
         p3.set_conditions([])
         p3.save()
         self.assertEqual(p3.get()["conditions"], [])
+        self.assertEqual(Policy.query.filter_by(name="pol3").one().get()["conditions"], [])
         self.assertEqual(PolicyCondition.query.count(), 0)
 
     def test_12_challenge(self):

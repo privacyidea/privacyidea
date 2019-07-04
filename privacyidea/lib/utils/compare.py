@@ -40,8 +40,11 @@ def _compare_equality(left, comparator, right):
 
 def _compare_contains(left, comparator, right):
     """
-    Return True if ``left`` has ``right`` as an element. Raise a CompareError if
-    ``left`` is not a list.
+    Return True if ``left`` has ``right`` as an element.
+    Raise a CompareError if ``left`` is not a list.
+    :param left: a Python list
+    :param right: an arbitrary Python value
+    :return: True or False
     """
     if isinstance(left, list):
         return right in left
@@ -49,9 +52,19 @@ def _compare_contains(left, comparator, right):
         raise CompareError(u"Left value must be a list, not {!r}".format(type(left)))
 
 
-COMPARATORS = {
-    "==": _compare_equality,
-    "contains": _compare_contains,
+#: This class enumerates all available comparators.
+#: In order to add a comparator to this module, add a suitable member to COMPARATORS
+#: and a suitable entry to COMPARATOR_FUNCTIONS.
+class COMPARATORS(object):
+    EQUALS = "=="
+    CONTAINS = "contains"
+
+
+#: This dictionary connects comparators to comparator functions.
+#: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
+COMPARATOR_FUNCTIONS = {
+    COMPARATORS.EQUALS: _compare_equality,
+    COMPARATORS.CONTAINS: _compare_contains,
 }
 
 
@@ -64,11 +77,8 @@ def compare_values(left, comparator, right):
     :param right: Right operand of the comparison
     :return: True or False
     """
-    if comparator in COMPARATORS:
-        return COMPARATORS[comparator](left, comparator, right)
+    if comparator in COMPARATOR_FUNCTIONS:
+        return COMPARATOR_FUNCTIONS[comparator](left, comparator, right)
     else:
         # We intentionally leave out the values, in case sensitive values are compared
         raise CompareError(u"Invalid comparator: {!r}".format(comparator))
-
-
-__all__ = [COMPARATORS, compare_values]

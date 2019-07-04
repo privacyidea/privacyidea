@@ -1424,18 +1424,18 @@ class Policy(TimestampMethodsMixin, db.Model):
     def set_conditions(self, conditions):
         """
         Replace the list of conditions of this policy with a new list
-        of conditions, i.e. a list of 4-tuples (section, key, comparator, value).
+        of conditions, i.e. a list of 5-tuples (section, key, comparator, value, active).
         """
         self.conditions = []
-        for section, key, comparator, value in conditions:
+        for section, key, comparator, value, active in conditions:
             condition_object = PolicyCondition(
-                section=section, key=key, comparator=comparator, value=value,
+                section=section, Key=key, comparator=comparator, Value=value, active=active,
             )
             self.conditions.append(condition_object)
 
     def get_conditions_tuples(self):
         """
-        :return: a list of 4-tuples (section, key, comparator, value).
+        :return: a list of 5-tuples (section, key, comparator, value, active).
         """
         return [condition.as_tuple() for condition in self.conditions]
 
@@ -1497,17 +1497,20 @@ class PolicyCondition(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
     policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
     section = db.Column(db.Unicode(255), nullable=False)
-    key = db.Column(db.Unicode(255), nullable=False)
-    value = db.Column(db.Unicode(2000), default=u'')
+    # We use upper-case "Key" and "Value" to prevent conflicts with databases
+    # that do not support "key" or "value" as column names
+    Key = db.Column(db.Unicode(255), nullable=False)
     comparator = db.Column(db.Unicode(255), default=u'==')
+    Value = db.Column(db.Unicode(2000), default=u'')
+    active = db.Column(db.Boolean, default=True)
 
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
     def as_tuple(self):
         """
-        :return: the condition as a tuple (section, key, comparator, value)
+        :return: the condition as a tuple (section, key, comparator, value, active)
         """
-        return self.section, self.key, self.comparator, self.value
+        return self.section, self.Key, self.comparator, self.Value, self.active
 
 
 # ------------------------------------------------------------------

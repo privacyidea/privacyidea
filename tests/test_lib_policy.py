@@ -1106,22 +1106,22 @@ class PolicyTestCase(MyTestCase):
 
         # Set policy with conditions
         set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "verysecure")])
+                   conditions=[("userinfo", "type", "==", "verysecure", True)])
 
         P = PolicyClass()
         self.assertEqual(P.match_policies()[0]["conditions"],
-                         [("userinfo", "type", "==", "verysecure")])
+                         [("userinfo", "type", "==", "verysecure", True)])
 
         # Update existing policy with conditions
         set_policy("act1", conditions=[
-            ("userinfo", "type", "==", "notverysecure"),
-            ("request", "user_agent", "==", "vpn")
+            ("userinfo", "type", "==", "notverysecure", True),
+            ("request", "user_agent", "==", "vpn", True)
         ])
         P = PolicyClass()
 
         self.assertEqual(P.match_policies()[0]["conditions"],
-                         [("userinfo", "type", "==", "notverysecure"),
-                          ("request", "user_agent", "==", "vpn")])
+                         [("userinfo", "type", "==", "notverysecure", True),
+                          ("request", "user_agent", "==", "vpn", True)])
 
         delete_policy("act1")
         delete_realm("realm1")
@@ -1132,11 +1132,11 @@ class PolicyTestCase(MyTestCase):
             return set(p['name'] for p in policies)
 
         set_policy("verysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "verysecure")])
+                   conditions=[("userinfo", "type", "==", "verysecure", True)])
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "bla", "==", "verysecure")])
+                   conditions=[("userinfo", "bla", "==", "verysecure", True)])
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("nothing", "something", "==", "something")])
+                   conditions=[("nothing", "something", "==", "something", True)])
         P = PolicyClass()
 
         all_policies = P.match_policies()
@@ -1170,8 +1170,8 @@ class PolicyTestCase(MyTestCase):
 
         # Add a policy for type=verysecure and groups contains b
         set_policy("notverysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "notverysecure"),
-                               ("userinfo", "groups", "contains", "b")])
+                   conditions=[("userinfo", "type", "==", "notverysecure", True),
+                               ("userinfo", "groups", "contains", "b", True)])
         all_policies = P.match_policies()
 
         user3 = MockUser()
@@ -1198,7 +1198,7 @@ class PolicyTestCase(MyTestCase):
 
         # Check graceful handling of errors
         set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "number", "contains", "b")])
+                   conditions=[("userinfo", "number", "contains", "b", True)])
         all_policies = P.match_policies()
 
         user4 = MockUser()
