@@ -4,6 +4,8 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import mock
+
 from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -1156,6 +1158,12 @@ class PolicyTestCase(MyTestCase):
         # user3 => notverysecure matches
         self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
                          {"notverysecure"})
+
+        # Check that errors in the comparison function are caught
+        with mock.patch("privacyidea.lib.policy.compare_values") as mock_function:
+            mock_function.side_effect = ValueError
+            self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
+                             set())
 
         for policy in ["verysecure", "notverysecure"]:
             delete_policy(policy)

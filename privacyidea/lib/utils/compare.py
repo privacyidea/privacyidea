@@ -18,7 +18,8 @@
 #
 #
 """
-This module implements matching conditions TODO
+This module implements comparisons between two values.
+It is tested in test_lib_utils_compare.py
 """
 
 import logging
@@ -31,10 +32,17 @@ class CompareError(Exception):
 
 
 def _compare_equality(left, comparator, right):
+    """
+    Return True if two values are exactly equal, according to Python semantics.
+    """
     return left == right
 
 
 def _compare_contains(left, comparator, right):
+    """
+    Return True if ``left`` has ``right`` as an element. Raise a CompareError if
+    ``left`` is not a list.
+    """
     if isinstance(left, list):
         return right in left
     else:
@@ -48,6 +56,14 @@ COMPARATORS = {
 
 
 def compare_values(left, comparator, right):
+    """
+    Compare two values according to ``comparator`` and return either True or False.
+    If the comparison is invalid, raise a CompareError with a descriptive message.
+    :param left:
+    :param comparator:
+    :param right:
+    :return:
+    """
     if comparator in COMPARATORS:
         return COMPARATORS[comparator](left, comparator, right)
     else:
