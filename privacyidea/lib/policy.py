@@ -590,11 +590,6 @@ class PolicyClass(object):
             log.debug("Policies after matching client".format(
                 reduced_policies))
 
-        if user_object is not None:
-            reduced_policies = list(self.filter_policies_by_conditions(reduced_policies, user_object))
-            log.debug("Policies after matching conditions".format(
-                reduced_policies))
-
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
@@ -654,6 +649,11 @@ class PolicyClass(object):
                             or not policy.get("time")]
         log.debug("Policies after matching time: {0!s}".format(
             reduced_policies))
+
+        if user_object is not None:
+            reduced_policies = list(self.filter_policies_by_conditions(reduced_policies, user_object))
+            log.debug("Policies after matching conditions".format(
+                reduced_policies))
 
         if audit_data is not None:
             for p in reduced_policies:
