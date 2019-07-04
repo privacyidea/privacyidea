@@ -4,6 +4,9 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import dateutil
+import mock
+
 from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -613,24 +616,51 @@ class PolicyTestCase(MyTestCase):
         delete_resolver("passwords")
         delete_resolver("passwd")
 
-    def test_18_policy_with_time(self):
+    def test_18_policy_match_policies_with_time(self):
         set_policy(name="time1", scope=SCOPE.AUTHZ,
                    action="tokentype=hotp totp, enroll",
                    time="Mon-Wed: 0-23:59")
-        tn = datetime.datetime.now()
-        dow = tn.isoweekday()
-        P = PolicyClass()
-        policies = P.match_policies(name="time1",
-                                    scope=SCOPE.AUTHZ,
-                                    all_times=True)
-        self.assertEqual(len(policies), 1)
 
-        policies = P.match_policies(name="time1",
-                                    scope=SCOPE.AUTHZ)
-        if dow in [1, 2, 3]:
+        wednesday = dateutil.parser.parse("Jul 03 2019 13:00")
+        thursday = dateutil.parser.parse("Jul 04 2019 14:34")
+
+        # Simulate a Wednesday
+        with mock.patch('privacyidea.lib.utils.datetime') as mock_dt:
+            mock_dt.now.return_value = wednesday
+
+            P = PolicyClass()
+            # Regardless of the weekday, ``list_policies`` returns the policy
+            policies = P.list_policies(name="time1", scope=SCOPE.AUTHZ)
             self.assertEqual(len(policies), 1)
-        else:
+            self.assertEqual(policies[0]["name"], "time1")
+            # And ``match_policies`` returns it on Wednesdays
+            policies = P.match_policies(name="time1", scope=SCOPE.AUTHZ)
+            self.assertEqual(len(policies), 1)
+            self.assertEqual(policies[0]["name"], "time1")
+
+        # Simulate a Thursday
+        with mock.patch('privacyidea.lib.utils.datetime') as mock_dt:
+            mock_dt.now.return_value = thursday
+
+            P = PolicyClass()
+            # Regardless of the weekday, ``list_policies`` returns the policy
+            policies = P.list_policies(name="time1", scope=SCOPE.AUTHZ)
+            self.assertEqual(len(policies), 1)
+            self.assertEqual(policies[0]["name"], "time1")
+            # But ``match_policies`` does not return it on Thursdays!
+            policies = P.match_policies(name="time1", scope=SCOPE.AUTHZ)
             self.assertEqual(len(policies), 0)
+
+        # Directly specify a time
+        # Match on Wednesday
+        policies = P.match_policies(name="time1", scope=SCOPE.AUTHZ, time=wednesday)
+        self.assertEqual(len(policies), 1)
+        self.assertEqual(policies[0]["name"], "time1")
+
+        # No match on Thursday
+        policies = P.match_policies(name="time1", scope=SCOPE.AUTHZ, time=thursday)
+        self.assertEqual(len(policies), 0)
+
         delete_policy("time1")
 
     def test_19_ui_get_menus(self):
@@ -942,7 +972,7 @@ class PolicyTestCase(MyTestCase):
         delete_policy("act2")
         delete_policy("act3")
 
-    def test_26_get_policies_user_object(self):
+    def test_26_match_policies_user_object(self):
         # We pass a user object instead of user, resolver and realm
         # Create resolver and realm
         rid = save_resolver({"resolver": "reso1",

@@ -1043,7 +1043,7 @@ def list_policies():
     list the policies
     """
     pol_cls = PolicyClass()
-    policies = pol_cls.match_policies()
+    policies = pol_cls.list_policies()
     print("Active \t Name \t Scope")
     print(40*"=")
     for policy in policies:
