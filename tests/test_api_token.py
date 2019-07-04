@@ -1325,7 +1325,7 @@ class APITokenTestCase(MyApiTestCase):
         tn = datetime.datetime.now()
         dow = tn.isoweekday()
         P = PolicyClass()
-        all_admin_policies = P.get_policies(all_times=True)
+        all_admin_policies = P.list_policies()
         self.assertEqual(len(all_admin_policies), 1)
         self.assertEqual(len(P.policies), 1)
 
@@ -1672,6 +1672,65 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token("goog1")
         delete_policy("imgurl")
+
+    def test_29_user_set_description(self):
+        self.authenticate_selfservice_user()
+        # create a token for the user
+        r = init_token({"serial": "SETDESC01",
+                        "otpkey": self.otpkey},
+                       user=User("selfservice", "realm1"))
+        self.assertTrue(r)
+
+        # create a token, that does not belong to the user
+        r = init_token({"serial": "SETDESC02",
+                        "otpkey": self.otpkey})
+        self.assertTrue(r)
+
+        # policy: allow user to set description
+        set_policy(name="SETDESCPOL", scope=SCOPE.USER,
+                   action=ACTION.SETDESCRIPTION)
+
+        # successful set description on own token
+        with self.app.test_request_context('/token/description/SETDESC01',
+                                           method='POST',
+                                           data={"description": "New Token"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertEqual(result.get("value"), 1)
+
+        # check the description of the token
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"serial": "SETDESC01"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertEqual(result.get("value").get("tokens")[0].get("description"),
+                             "New Token")
+
+        # fail to set description on foreign token
+        with self.app.test_request_context('/token/description',
+                                           method='POST',
+                                           data={"serial": "SETDESC02",
+                                                 "description": "new token"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 404, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result.get("error").get("message"),
+                             u"The requested token could not be found.")
+
+        # cleanup
+        delete_policy("SETDESCPOL")
+        remove_token("SETDESC01")
+        remove_token("SETDESC02")
+
 
 class API00TokenPerformance(MyApiTestCase):
 

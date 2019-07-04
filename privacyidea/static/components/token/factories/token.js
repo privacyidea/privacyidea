@@ -175,6 +175,14 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }).success(callback
                 ).error(AuthFactory.authError);
             },
+            set_description: function (serial, description, callback) {
+                $http.post(tokenUrl + "/description/" + serial,
+                    {"description": description},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).success(callback
+                ).error(AuthFactory.authError);
+            },
             set_dict: function (serial, params, callback) {
                 $http.post(tokenUrl + "/set/" + serial, params,
                     {
