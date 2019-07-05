@@ -1109,7 +1109,7 @@ class PolicyTestCase(MyTestCase):
                    conditions=[("userinfo", "type", "==", "verysecure", True)])
 
         P = PolicyClass()
-        self.assertEqual(P.match_policies()[0]["conditions"],
+        self.assertEqual(P.list_policies()[0]["conditions"],
                          [("userinfo", "type", "==", "verysecure", True)])
 
         # Update existing policy with conditions
@@ -1119,7 +1119,7 @@ class PolicyTestCase(MyTestCase):
         ])
         P = PolicyClass()
 
-        self.assertEqual(P.match_policies()[0]["conditions"],
+        self.assertEqual(P.list_policies()[0]["conditions"],
                          [("userinfo", "type", "==", "notverysecure", True),
                           ("request", "user_agent", "==", "vpn", True)])
 
@@ -1133,16 +1133,16 @@ class PolicyTestCase(MyTestCase):
 
         set_policy("verysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    conditions=[("userinfo", "type", "==", "verysecure", True)])
-        set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "bla", "==", "verysecure", True)])
-        set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("nothing", "something", "==", "something", True)])
+        set_policy("notverysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   conditions=[("userinfo", "type", "==", "notverysecure", True),
+                               ("userinfo", "groups", "contains", "b", True)])
         P = PolicyClass()
-
-        all_policies = P.match_policies()
+        all_policies = P.list_policies()
 
         class MockUser(object):
             pass
+
+        empty_user = User()
 
         user1 = MockUser()
         user1.info = {"type": "verysecure", "groups": ["a", "b", "c"]}
@@ -1150,32 +1150,16 @@ class PolicyTestCase(MyTestCase):
         user2 = MockUser()
         user2.info = {"type": "notverysecure", "groups": ["c"]}
 
-        empty_user = User()
-
-        # No user object => all policies match
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies)),
-                         {"verysecure", "unknownsection", "unknownkey"})
-        # Empty user object => unknownsection matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, empty_user)),
-                         {"unknownsection"})
-        # user1 => unknownsection, verysecure matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
-                         {"unknownsection", "verysecure"})
-        # user2 => unknownsection matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user2)),
-                         {"unknownsection"})
-
-        delete_policy("unknownkey")
-        delete_policy("unknownsection")
-
-        # Add a policy for type=verysecure and groups contains b
-        set_policy("notverysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "notverysecure", True),
-                               ("userinfo", "groups", "contains", "b", True)])
-        all_policies = P.match_policies()
-
         user3 = MockUser()
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
+
+        # no user => policy error
+        with self.assertRaisesRegexp(PolicyError, ".*userinfo is not available.*"):
+            P.filter_policies_by_conditions(all_policies, None)
+
+        # empty user => policy error
+        with self.assertRaisesRegexp(PolicyError, ".*Unknown key.*"):
+            P.filter_policies_by_conditions(all_policies, empty_user)
 
         # user1 => verysecure matches
         self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
@@ -1187,24 +1171,75 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
                          {"notverysecure"})
 
-        # Check that errors in the comparison function are caught
+        # an unforeseen error in the comparison function => policy error
         with mock.patch("privacyidea.lib.policy.compare_values") as mock_function:
             mock_function.side_effect = ValueError
-            self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
-                             set())
+            with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
+                P.filter_policies_by_conditions(all_policies, user1)
 
         for policy in ["verysecure", "notverysecure"]:
             delete_policy(policy)
 
-        # Check graceful handling of errors
-        set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "number", "contains", "b", True)])
-        all_policies = P.match_policies()
+        # Policy with initially inactive condition
+        set_policy("extremelysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   conditions=[("userinfo", "type", "==", "notverysecure", False)])
+        all_policies = P.list_policies()
 
+        # user1 matches, because the condition on type is inactive
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
+                         {"extremelysecure"})
+
+        # activate the condition
+        set_policy("extremelysecure", conditions=[("userinfo", "type", "==", "notverysecure", True)])
+        all_policies = P.list_policies()
+
+        # user1 does not match anymore, because the condition on type is active
+        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
+                         set())
+
+        delete_policy("extremelysecure")
+
+    def test_30_filter_by_conditions_errors(self):
+        P = PolicyClass()
+
+        class MockUser(object):
+            pass
+
+        user1 = MockUser()
+        user1.info = {"type": "verysecure", "groups": ["a", "b", "c"]}
+
+        # Various error cases:
+
+        # an unknown section in the condition
+        set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                    conditions=[("somesection", "bla", "==", "verysecure", True)])
+        all_policies = P.list_policies()
+        with self.assertRaisesRegexp(PolicyError, r".*unknown section.*"):
+            P.filter_policies_by_conditions(all_policies, user1)
+        delete_policy("unknownsection")
+
+        # ... but the error does not occur if the condition is inactive
+        set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                    conditions=[("somesection", "bla", "==", "verysecure", False)])
+        all_policies = P.list_policies()
+        self.assertEqual(P.filter_policies_by_conditions(all_policies, user1), all_policies)
+        delete_policy("unknownsection")
+
+        # an unknown key in the condition
+        set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                    conditions=[("userinfo", "bla", "==", "verysecure", True)])
+        all_policies = P.list_policies()
+        with self.assertRaisesRegexp(PolicyError, r".*Unknown key.*"):
+            P.filter_policies_by_conditions(all_policies, user1)
+        delete_policy("unknownkey")
+
+        # a CompareError
         user4 = MockUser()
         user4.info = {"type": "notverysecure", "number": 5}
 
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user4)),
-                         set())
-
+        set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
+                   conditions=[("userinfo", "number", "contains", "b", True)])
+        all_policies = P.list_policies()
+        with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
+            P.filter_policies_by_conditions(all_policies, user4)
         delete_policy("error")

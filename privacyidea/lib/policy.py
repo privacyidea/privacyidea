@@ -650,10 +650,10 @@ class PolicyClass(object):
         log.debug("Policies after matching time: {0!s}".format(
             reduced_policies))
 
-        if user_object is not None:
-            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
-            log.debug("Policies after matching conditions".format(
-                reduced_policies))
+        # filter policies by the policy conditions
+        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
+        log.debug("Policies after matching conditions".format(
+            reduced_policies))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -665,7 +665,7 @@ class PolicyClass(object):
         """
         Given a list of policy dictionaries and a current user object (if any),
         return a list of all policies whose conditions match the given user object.
-        If the user object is None, all policies match.
+        Raises a PolicyError if a condition references an unknown section.
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
         :return: generates a list of policy dictionaries
@@ -683,55 +683,55 @@ class PolicyClass(object):
                         log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
                             policy['name'], section
                         ))
+                        raise PolicyError(u"Policy {!r} has condition with unknown section".format(policy['name']))
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
 
-    def _policy_matches_userinfo_condition(self, policy, key, comparator, value, user_object=None):
+    @staticmethod
+    def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
         """
         Check if the given policy matches a certain userinfo condition.
+        If ``user_object`` is None, a PolicyError is raised.
         :param policy: a policy dictionary, the policy in question
         :param key: a userinfo key
         :param comparator: a value comparator: one of "equal", "contains"
         :param value: a value against which the userinfo value will be compared
-        :param user_object: a User object, if any
+        :param user_object: a User object, if any, or None
         :return: a Boolean
         """
         # Match the user object's user info, if it is not-None and non-empty
         if user_object is not None:
             info = user_object.info
-            try:
-                if key in info:
-                    try:
-                        return compare_values(info[key], comparator, value)
-                    except CompareError as exx:
-                        # If we do have a user object, but the conditions of a policy is invalid,
-                        # the policy does not match and we print a warning
-                        log.warning(u"Policy {!r} has invalid condition: {!r}".format(
-                            policy['name'], exx.message
-                        ))
-                        return False
-                else:
-                    # If we do have a user object, but the conditions of policies reference
-                    # an unknown userinfo key, the policy does not match
-                    log.warning(u"Policy {!r} has condition with unknown userinfo key: {!r}".format(
-                        policy['name'], key
+            if key in info:
+                try:
+                    return compare_values(info[key], comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
+                        key, policy['name'], exx
                     ))
-                    return False
-            except Exception as exx:
-                # If an error occurs, the policy does not match
-                log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
-                    key, policy['name'], exx
+                    raise PolicyError(
+                        u"Invalid comparison in the userinfo conditions of policy {!r}".format(policy['name']))
+            else:
+                # If we do have a user object, but the conditions of policies reference
+                # an unknown userinfo key, we have a misconfiguration and raise an error.
+                log.warning(u"Unknown userinfo key referenced in a condition of policy {!r}: {!r}".format(
+                    policy['name'], key
                 ))
-                return False
-        else:
-            # If we do not have a user object, the conditions of policies
-            # do not matter, so any policy matches
-            log.warning(
-                u"Policy {!r} has condition for user info, but user info is not available".format(
+                raise PolicyError(u"Unknown key in the userinfo conditions of policy {!r}".format(
                     policy['name']
                 ))
-            return True
+        else:
+            log.warning(u"Policy {!r} has condition on userinfo {!r}, but userinfo is not available".format(
+                policy['name'], key
+            ))
+            # If the policy specifies a userinfo condition, but no user object is available,
+            # the policy is misconfigured. We have to raise a PolicyError to ensure that
+            # the privacyIDEA server does not silently misbehave.
+            raise PolicyError(
+                u"Policy {!r} has condition on userinfo, but userinfo is not available".format(
+                    policy['name']
+                ))
 
     @staticmethod
     def check_for_conflicts(policies, action):
