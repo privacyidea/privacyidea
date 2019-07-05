@@ -88,7 +88,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            u2ftoken_allowed, u2ftoken_verify_cert,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config)
+                                           sms_identifiers, pushtoken_add_config,
+                                           check_admin_tokenlist)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -326,6 +327,7 @@ def get_challenges_api(serial=None):
 
 
 @token_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_tokenlist, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -379,14 +381,10 @@ def list_api():
     if ufields:
         user_fields = [u.strip() for u in ufields.split(",")]
 
-    # filterRealm determines, which realms the admin would be allowed to see
-    filterRealm = ["*"]
-    # TODO: Userfields
-
-    # If the admin wants to see only one realm, then do it:
-    if realm and (realm in filterRealm or '*' in filterRealm):
-        filterRealm = [realm]
-    g.audit_object.log({'info': "realm: {0!s}".format((filterRealm))})
+    # allowed_realms determines, which realms the admin would be allowed to see
+    # In certain cases like for users, we do not have allowed_realms
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
+    g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
@@ -395,7 +393,7 @@ def list_api():
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid)
+                                 userid=userid, allowed_realms=allowed_realms)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
@@ -669,6 +667,31 @@ def setpin_api(serial=None):
         g.audit_object.add_to_log({'action_detail': "otppin, "})
         res += set_pin(serial, otppin, user=user, encrypt_pin=encrypt_pin)
 
+    g.audit_object.log({"success": True})
+    return send_result(res)
+
+
+@token_blueprint.route('/description', methods=['POST'])
+@token_blueprint.route('/description/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
+@event("token_set", request, g)
+@log_with(log)
+def set_description_api(serial=None):
+    """
+    This endpoint can be used by the user or by the admin to set
+    the description of a token.
+
+    :jsonparam basestring description: The description for the token
+    :param serial:
+    :return:
+    """
+    user = request.User
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
+    description = getParam(request.all_data, "description", optional=required)
+    g.audit_object.add_to_log({'action_detail': u"description={0!r}".format(description)})
+    res = set_description(serial, description, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
 

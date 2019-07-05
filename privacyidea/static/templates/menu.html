@@ -72,7 +72,7 @@
                 <li ng-class="{active: $state.includes('audit')}"
                     ng-show="loggedInUser.role &&
                             checkMainMenu('audit')">
-                    <a ui-sref="audit">
+                    <a ui-sref="audit.log">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
                         <translate>Audit</translate>
@@ -81,7 +81,7 @@
                 <li ng-class="{active: $state.includes('component')}"
                     ng-show="loggedInUser.role == 'admin' &&
                             checkMainMenu('components')">
-                    <a ui-sref="component">
+                    <a ui-sref="component.clienttype">
                         <span class="glyphicon glyphicon-calendar"
                               aria-hidden="true"></span>
                         <translate>Components</translate>

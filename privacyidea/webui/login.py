@@ -89,10 +89,10 @@ def single_page_application():
     realms = ""
     client_ip = get_client_ip(request,
                               get_from_config(SYSCONF.OVERRIDECLIENT))
-    realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
-                                                scope=SCOPE.WEBUI,
-                                                client=client_ip,
-                                                active=True)
+    realm_dropdown = policy_object.match_policies(action=ACTION.REALMDROPDOWN,
+                                                  scope=SCOPE.WEBUI,
+                                                  client=client_ip,
+                                                  active=True)
     if realm_dropdown:
         try:
             realm_dropdown_values = policy_object.get_action_values(

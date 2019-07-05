@@ -4,6 +4,7 @@ import os
 import datetime
 import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
+                                    enable_policy,
                                     PolicyClass)
 from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user
 from privacyidea.lib.user import User
@@ -83,6 +84,82 @@ gP5WP+mj9LRgWCP1MdAR9pcNGd9pZMcCHQLxT76mc/eol4kb/6/U6yxBmzaff8eB
 oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
 XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 -----END CERTIFICATE REQUEST-----"""
+
+
+class API000TokenAdminRealmList(MyApiTestCase):
+
+    def test_000_setup_realms(self):
+        self.setUp_user_realms()
+
+        self.setUp_user_realms()
+
+        # create tokens
+        t = init_token({"otpkey": self.otpkey},
+                       tokenrealms=[self.realm1])
+
+        t = init_token({"otpkey": self.otpkey},
+                       tokenrealms=[self.realm2])
+
+    def test_01_test_two_tokens(self):
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # we have two tokens
+            self.assertEqual(2, result.get("value").get("count"))
+
+        # admin is allowed to see realm1
+        set_policy(name="pol-realm1",
+                   scope=SCOPE.ADMIN,
+                   action="tokenlist", user="testadmin", realm=self.realm1)
+
+        # admin is allowed to list all realms
+        set_policy(name="pol-all-realms",
+                   scope=SCOPE.ADMIN,
+                   action="tokenlist", user="testadmin")
+
+        # admin is allowed to only init, not list
+        set_policy(name="pol-only-init",
+                   scope=SCOPE.ADMIN)
+
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # we have two tokens
+            self.assertEqual(2, result.get("value").get("count"))
+
+        # Disable to be allowed to list all realms
+        enable_policy("pol-all-realms", False)
+
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # we have one token
+            self.assertEqual(1, result.get("value").get("count"))
+            # The token is in realm1
+            self.assertEqual(self.realm1,
+                             result.get("value").get("tokens")[0].get("realms")[0])
+
+        # Disable to be allowed to list realm1
+        enable_policy("pol-realm1", False)
+
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # we have two tokens
+            self.assertEqual(0, result.get("value").get("count"))
+
 
 class APITokenTestCase(MyApiTestCase):
 
@@ -1248,7 +1325,7 @@ class APITokenTestCase(MyApiTestCase):
         tn = datetime.datetime.now()
         dow = tn.isoweekday()
         P = PolicyClass()
-        all_admin_policies = P.get_policies(all_times=True)
+        all_admin_policies = P.list_policies()
         self.assertEqual(len(all_admin_policies), 1)
         self.assertEqual(len(P.policies), 1)
 
@@ -1595,6 +1672,65 @@ class APITokenTestCase(MyApiTestCase):
 
         remove_token("goog1")
         delete_policy("imgurl")
+
+    def test_29_user_set_description(self):
+        self.authenticate_selfservice_user()
+        # create a token for the user
+        r = init_token({"serial": "SETDESC01",
+                        "otpkey": self.otpkey},
+                       user=User("selfservice", "realm1"))
+        self.assertTrue(r)
+
+        # create a token, that does not belong to the user
+        r = init_token({"serial": "SETDESC02",
+                        "otpkey": self.otpkey})
+        self.assertTrue(r)
+
+        # policy: allow user to set description
+        set_policy(name="SETDESCPOL", scope=SCOPE.USER,
+                   action=ACTION.SETDESCRIPTION)
+
+        # successful set description on own token
+        with self.app.test_request_context('/token/description/SETDESC01',
+                                           method='POST',
+                                           data={"description": "New Token"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertEqual(result.get("value"), 1)
+
+        # check the description of the token
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"serial": "SETDESC01"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"))
+            self.assertEqual(result.get("value").get("tokens")[0].get("description"),
+                             "New Token")
+
+        # fail to set description on foreign token
+        with self.app.test_request_context('/token/description',
+                                           method='POST',
+                                           data={"serial": "SETDESC02",
+                                                 "description": "new token"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 404, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result.get("error").get("message"),
+                             u"The requested token could not be found.")
+
+        # cleanup
+        delete_policy("SETDESCPOL")
+        remove_token("SETDESC01")
+        remove_token("SETDESC02")
+
 
 class API00TokenPerformance(MyApiTestCase):
 
