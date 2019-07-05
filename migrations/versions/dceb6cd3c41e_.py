@@ -35,9 +35,10 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('section', sa.Unicode(length=255), nullable=False),
-        sa.Column('key', sa.Unicode(length=255), nullable=False),
-        sa.Column('value', sa.Unicode(length=2000), nullable=True),
-        sa.Column('comparator', sa.Unicode(length=255), nullable=True),
+        sa.Column('Key', sa.Unicode(length=255), nullable=False),
+        sa.Column('comparator', sa.Unicode(length=255), nullable=False),
+        sa.Column('Value', sa.Unicode(length=2000), nullable=False),
+        sa.Column('active', sa.Boolean(), nullable=False),
         sa.ForeignKeyConstraint(['policy_id'], ['policy.id'], ),
         sa.PrimaryKeyConstraint('id'),
         mysql_row_format='DYNAMIC'
