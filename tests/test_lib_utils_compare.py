@@ -25,5 +25,6 @@ class UtilsCompareTestCase(MyTestCase):
             compare_values("hello world", "contains", "hello")
 
     def test_03_compare_errors(self):
-        with self.assertRaises(CompareError):
+        with self.assertRaises(CompareError) as cm:
             compare_values("hello world", "something", "hello")
+        self.assertIn("Invalid comparator", repr(cm.exception))
