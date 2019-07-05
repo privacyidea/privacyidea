@@ -7,6 +7,7 @@
                     <a ui-sref="config.radius.list"
                             translate>List RADIUS server definitions</a></li>
                 <li role="presentation"
+                    ng-show="checkRight('radiusserver_write')"
                     >
                     <a ui-sref="config.radius.edit" translate>
                         New RADIUS server

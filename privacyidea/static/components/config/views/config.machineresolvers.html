@@ -12,7 +12,8 @@
                     <a ui-sref="config.mresolvers.edit" translate>
                         Edit Resolver {{ resolvername }}</a></li>
 
-                <li class="nav nav-pills nav-header" translate>
+                <li class="nav nav-pills nav-header" translate
+                    ng-show="checkRight('mresolverwrite')">
                     New Resolvers</li>
                 <!-- Here we can get all resolvers and iterated over
                      the resolver types.
@@ -22,6 +23,7 @@
                     ng-class="{active:
                     $state.includes('config.mresolvers.add'+mResolvertype) }">
                     <a ui-sref="config.mresolvers.add{{ mResolvertype }}"
+                       ng-show="checkRight('mresolverwrite')"
                             translate>
                         New {{ mResolvertype | uppercase }} Resolver</a>
                 </li>
