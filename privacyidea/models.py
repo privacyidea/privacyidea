@@ -1385,15 +1385,23 @@ class Policy(TimestampMethodsMixin, db.Model):
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
-    condition = db.Column(db.Integer, default=0, nullable=False)
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priotity.
     priority = db.Column(db.Integer, default=1, nullable=False)
+    conditions = db.relationship("PolicyCondition",
+                                 lazy="joined",
+                                 backref="policy",
+                                 order_by="PolicyCondition.id",
+                                 # With these cascade options, we ensure that whenever a Policy object is added
+                                 # to a session, its conditions are also added to the session (save-update, merge).
+                                 # Likewise, whenever a Policy object is deleted, its conditions are also
+                                 # deleted (delete). Conditions without a policy are deleted (delete-orphan).
+                                 cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0, priority=1,
-                 check_all_resolvers=False):
+                 resolver="", user="", client="", time="", priority=1,
+                 check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
@@ -1406,9 +1414,30 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.user = user
         self.client = client
         self.time = time
-        self.condition = condition
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
+        if conditions is None:
+            self.conditions = []
+        else:
+            self.set_conditions(conditions)
+
+    def set_conditions(self, conditions):
+        """
+        Replace the list of conditions of this policy with a new list
+        of conditions, i.e. a list of 5-tuples (section, key, comparator, value, active).
+        """
+        self.conditions = []
+        for section, key, comparator, value, active in conditions:
+            condition_object = PolicyCondition(
+                section=section, Key=key, comparator=comparator, Value=value, active=active,
+            )
+            self.conditions.append(condition_object)
+
+    def get_conditions_tuples(self):
+        """
+        :return: a list of 5-tuples (section, key, comparator, value, active).
+        """
+        return [condition.as_tuple() for condition in self.conditions]
 
     @staticmethod
     def _split_string(value):
@@ -1444,7 +1473,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
-             "condition": self.condition,
+             "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
@@ -1460,6 +1489,29 @@ class Policy(TimestampMethodsMixin, db.Model):
         else:
             ret = d
         return ret
+
+
+class PolicyCondition(MethodsMixin, db.Model):
+    __tablename__ = "policycondition"
+
+    id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
+    policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    section = db.Column(db.Unicode(255), nullable=False)
+    # We use upper-case "Key" and "Value" to prevent conflicts with databases
+    # that do not support "key" or "value" as column names
+    Key = db.Column(db.Unicode(255), nullable=False)
+    comparator = db.Column(db.Unicode(255), nullable=False, default=u'==')
+    Value = db.Column(db.Unicode(2000), nullable=False, default=u'')
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+
+    def as_tuple(self):
+        """
+        :return: the condition as a tuple (section, key, comparator, value, active)
+        """
+        return self.section, self.Key, self.comparator, self.Value, self.active
+
 
 # ------------------------------------------------------------------
 #

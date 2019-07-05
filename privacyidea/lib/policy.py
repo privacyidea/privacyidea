@@ -2,6 +2,8 @@
 #
 #  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add admin read policies
+#  2019-06-19 Friedrich Weber <friedrich.weber@netknights.it>
+#             Add handling of policy conditions
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -175,6 +177,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
+from privacyidea.lib.utils.compare import compare_values, CompareError
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -398,6 +401,11 @@ class TIMEOUT_ACTION(object):
     __doc__ = """This is a list of actions values for idle users"""
     LOGOUT = "logout"
     LOCKSCREEN = 'lockscreen'
+
+
+class CONDITION_SECTION(object):
+    __doc__ = """This is a list of available sections for conditions of policies """
+    USERINFO = "userinfo"
 
 
 class PolicyClass(object):
@@ -654,11 +662,88 @@ class PolicyClass(object):
         log.debug("Policies after matching time: {0!s}".format(
             reduced_policies))
 
+        # filter policies by the policy conditions
+        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
+        log.debug("Policies after matching conditions".format(
+            reduced_policies))
+
         if audit_data is not None:
             for p in reduced_policies:
                 audit_data.setdefault("policies", []).append(p.get("name"))
 
         return reduced_policies
+
+    def filter_policies_by_conditions(self, policies, user_object=None):
+        """
+        Given a list of policy dictionaries and a current user object (if any),
+        return a list of all policies whose conditions match the given user object.
+        Raises a PolicyError if a condition references an unknown section.
+        :param policies: a list of policy dictionaries
+        :param user_object: a User object, or None if there is no current user
+        :return: generates a list of policy dictionaries
+        """
+        reduced_policies = []
+        for policy in policies:
+            include_policy = True
+            for section, key, comparator, value, active in policy['conditions']:
+                if active:
+                    if section == CONDITION_SECTION.USERINFO:
+                        if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+                            include_policy = False
+                            break
+                    else:
+                        log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
+                            policy['name'], section
+                        ))
+                        raise PolicyError(u"Policy {!r} has condition with unknown section".format(policy['name']))
+            if include_policy:
+                reduced_policies.append(policy)
+        return reduced_policies
+
+    @staticmethod
+    def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+        """
+        Check if the given policy matches a certain userinfo condition.
+        If ``user_object`` is None, a PolicyError is raised.
+        :param policy: a policy dictionary, the policy in question
+        :param key: a userinfo key
+        :param comparator: a value comparator: one of "equal", "contains"
+        :param value: a value against which the userinfo value will be compared
+        :param user_object: a User object, if any, or None
+        :return: a Boolean
+        """
+        # Match the user object's user info, if it is not-None and non-empty
+        if user_object is not None:
+            info = user_object.info
+            if key in info:
+                try:
+                    return compare_values(info[key], comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
+                        key, policy['name'], exx
+                    ))
+                    raise PolicyError(
+                        u"Invalid comparison in the userinfo conditions of policy {!r}".format(policy['name']))
+            else:
+                # If we do have a user object, but the conditions of policies reference
+                # an unknown userinfo key, we have a misconfiguration and raise an error.
+                log.warning(u"Unknown userinfo key referenced in a condition of policy {!r}: {!r}".format(
+                    policy['name'], key
+                ))
+                raise PolicyError(u"Unknown key in the userinfo conditions of policy {!r}".format(
+                    policy['name']
+                ))
+        else:
+            log.warning(u"Policy {!r} has condition on userinfo {!r}, but userinfo is not available".format(
+                policy['name'], key
+            ))
+            # If the policy specifies a userinfo condition, but no user object is available,
+            # the policy is misconfigured. We have to raise a PolicyError to ensure that
+            # the privacyIDEA server does not silently misbehave.
+            raise PolicyError(
+                u"Policy {!r} has condition on userinfo, but userinfo is not available".format(
+                    policy['name']
+                ))
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -917,7 +1002,8 @@ class PolicyClass(object):
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
-               adminrealm=None, priority=None, check_all_resolvers=False):
+               adminrealm=None, priority=None, check_all_resolvers=False,
+               conditions=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -938,6 +1024,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :return: The database ID od the the policy
     :rtype: int
     """
@@ -992,6 +1079,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        if conditions is not None:
+            p1.set_conditions(conditions)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
@@ -1001,7 +1090,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
                      priority=priority,
-                     check_all_resolvers=check_all_resolvers).save()
+                     check_all_resolvers=check_all_resolvers,
+                     conditions=conditions).save()
     return ret
 
 
