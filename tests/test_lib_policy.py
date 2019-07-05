@@ -1137,10 +1137,11 @@ class PolicyTestCase(MyTestCase):
                    conditions=[("userinfo", "type", "==", "notverysecure", True),
                                ("userinfo", "groups", "contains", "b", True)])
         P = PolicyClass()
-        all_policies = P.list_policies()
 
         class MockUser(object):
-            pass
+            login = 'login'
+            realm = 'realm'
+            resolver = 'resolver'
 
         empty_user = User()
 
@@ -1155,27 +1156,27 @@ class PolicyTestCase(MyTestCase):
 
         # no user => policy error
         with self.assertRaisesRegexp(PolicyError, ".*userinfo is not available.*"):
-            P.filter_policies_by_conditions(all_policies, None)
+            P.match_policies(user_object=None)
 
         # empty user => policy error
         with self.assertRaisesRegexp(PolicyError, ".*Unknown key.*"):
-            P.filter_policies_by_conditions(all_policies, empty_user)
+            P.match_policies(user_object=empty_user)
 
         # user1 => verysecure matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
+        self.assertEqual(_names(P.match_policies(user_object=user1)),
                          {"verysecure"})
         # user2 => no policy matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user2)),
+        self.assertEqual(_names(P.match_policies(user_object=user2)),
                          set())
         # user3 => notverysecure matches
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user3)),
+        self.assertEqual(_names(P.match_policies(user_object=user3)),
                          {"notverysecure"})
 
         # an unforeseen error in the comparison function => policy error
         with mock.patch("privacyidea.lib.policy.compare_values") as mock_function:
             mock_function.side_effect = ValueError
             with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
-                P.filter_policies_by_conditions(all_policies, user1)
+                P.match_policies(user_object=user1)
 
         for policy in ["verysecure", "notverysecure"]:
             delete_policy(policy)
@@ -1183,18 +1184,16 @@ class PolicyTestCase(MyTestCase):
         # Policy with initially inactive condition
         set_policy("extremelysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    conditions=[("userinfo", "type", "==", "notverysecure", False)])
-        all_policies = P.list_policies()
 
         # user1 matches, because the condition on type is inactive
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
+        self.assertEqual(_names(P.match_policies(user_object=user1)),
                          {"extremelysecure"})
 
         # activate the condition
         set_policy("extremelysecure", conditions=[("userinfo", "type", "==", "notverysecure", True)])
-        all_policies = P.list_policies()
 
         # user1 does not match anymore, because the condition on type is active
-        self.assertEqual(_names(P.filter_policies_by_conditions(all_policies, user1)),
+        self.assertEqual(_names(P.match_policies(user_object=user1)),
                          set())
 
         delete_policy("extremelysecure")
@@ -1203,7 +1202,9 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
 
         class MockUser(object):
-            pass
+            login = 'login'
+            realm = 'realm'
+            resolver = 'resolver'
 
         user1 = MockUser()
         user1.info = {"type": "verysecure", "groups": ["a", "b", "c"]}
@@ -1213,24 +1214,22 @@ class PolicyTestCase(MyTestCase):
         # an unknown section in the condition
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                     conditions=[("somesection", "bla", "==", "verysecure", True)])
-        all_policies = P.list_policies()
         with self.assertRaisesRegexp(PolicyError, r".*unknown section.*"):
-            P.filter_policies_by_conditions(all_policies, user1)
+            P.match_policies(user_object=user1)
         delete_policy("unknownsection")
 
         # ... but the error does not occur if the condition is inactive
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                     conditions=[("somesection", "bla", "==", "verysecure", False)])
         all_policies = P.list_policies()
-        self.assertEqual(P.filter_policies_by_conditions(all_policies, user1), all_policies)
+        self.assertEqual(P.match_policies(user_object=user1), all_policies)
         delete_policy("unknownsection")
 
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                     conditions=[("userinfo", "bla", "==", "verysecure", True)])
-        all_policies = P.list_policies()
         with self.assertRaisesRegexp(PolicyError, r".*Unknown key.*"):
-            P.filter_policies_by_conditions(all_policies, user1)
+            P.match_policies(user_object=user1)
         delete_policy("unknownkey")
 
         # a CompareError
@@ -1239,7 +1238,6 @@ class PolicyTestCase(MyTestCase):
 
         set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    conditions=[("userinfo", "number", "contains", "b", True)])
-        all_policies = P.list_policies()
         with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
-            P.filter_policies_by_conditions(all_policies, user4)
+            P.match_policies(user_object=user4)
         delete_policy("error")
