@@ -13,12 +13,14 @@
                             translate>Edit Resolver {{ resolvername }}</a></li>
 
                 <li class="nav nav-pills nav-header"
+                        ng-show="checkRight('resolverwrite')"
                         translate>New Resolvers</li>
                 <!-- Here we can get all resolvers and iterated over
                      the resolver types.
                 -->
                 <li ng-repeat="resolvertype in availableResolverTypes"
                         role="presentation"
+                        ng-show="checkRight('resolverwrite')"
                     ng-class="{active:
                     $state.includes('config.resolvers.add'+resolvertype) }">
                     <a ui-sref="config.resolvers.add{{ resolvertype }}"

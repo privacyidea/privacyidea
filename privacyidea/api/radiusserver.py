@@ -82,6 +82,7 @@ def create(identifier=None):
 
 @radiusserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.RADIUSSERVERREAD)
 def list_radius():
     """
     This call gets the list of RADIUS server definitions

@@ -77,6 +77,7 @@ def create(identifier=None):
 
 @privacyideaserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERREAD)
 def list_privacyidea():
     """
     This call gets the list of privacyIDEA server definitions

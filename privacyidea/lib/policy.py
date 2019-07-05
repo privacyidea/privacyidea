@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add admin read policies
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -240,6 +242,7 @@ class ACTION(object):
     LOSTTOKENVALID = "losttoken_valid"
     MACHINERESOLVERWRITE = "mresolverwrite"
     MACHINERESOLVERDELETE = "mresolverdelete"
+    MACHINERESOLVERREAD = "mresolverread"
     MACHINELIST = "machinelist"
     MACHINETOKENS = "manage_machine_tokens"
     MANGLE = "mangle"
@@ -263,6 +266,7 @@ class ACTION(object):
     PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
+    POLICYREAD = "policyread"
     POLICYTEMPLATEURL = "policy_template_url"
     REALM = "realm"
     REMOTE_USER = "remote_user"
@@ -270,6 +274,7 @@ class ACTION(object):
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
+    RESOLVERREAD = "resolverread"
     RESOLVER = "resolver"
     RESYNC = "resync"
     REVOKE = "revoke"
@@ -280,6 +285,7 @@ class ACTION(object):
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
+    SYSTEMREAD = "configread"
     CONFIGDOCUMENTATION = "system_documentation"
     SETTOKENINFO = "settokeninfo"
     TOKENISSUER = "tokenissuer"
@@ -302,12 +308,18 @@ class ACTION(object):
     APIKEY = "api_key_required"
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
+    SMTPSERVERREAD = "smtpserver_read"
     RADIUSSERVERWRITE = "radiusserver_write"
+    RADIUSSERVERREAD = "radiusserver_read"
     PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
+    PRIVACYIDEASERVERREAD = "privacyideaserver_read"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
+    EVENTHANDLINGREAD = "eventhandling_read"
     PERIODICTASKWRITE = "periodictask_write"
+    PERIODICTASKREAD = "periodictask_read"
     SMSGATEWAYWRITE = "smsgateway_write"
+    SMSGATEWAYREAD = "smsgateway_read"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
     CLIENTTYPE = "clienttype"
@@ -1271,6 +1283,11 @@ def get_static_policy_definitions(scope=None):
                                             "configuration."),
                                   "group": GROUP.SYSTEM,
                                   'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.SYSTEMREAD: {'type': 'bool',
+                                "desc": _("Admin is allowed to read "
+                                          "basic system configuration."),
+                                "group": GROUP.SYSTEM,
+                                'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CONFIGDOCUMENTATION: {'type': 'bool',
                                          'desc': _('Admin is allowed to '
                                                    'export a documentation '
@@ -1289,6 +1306,10 @@ def get_static_policy_definitions(scope=None):
                                             "policies."),
                                   "group": GROUP.SYSTEM,
                                   'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.POLICYREAD: {'type': 'bool',
+                                'desc': _("Admin is allowed to read policies."),
+                                'group': GROUP.SYSTEM,
+                                'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RESOLVERWRITE: {'type': 'bool',
                                    "desc": _("Admin is allowed to write and "
                                              "modify the "
@@ -1301,6 +1322,10 @@ def get_static_policy_definitions(scope=None):
                                               "resolvers and realms."),
                                     "group": GROUP.SYSTEM,
                                     'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.RESOLVERREAD: {'type': 'bool',
+                                   'desc': _("Admin is allowed to read resolvers."),
+                                   'group': GROUP.SYSTEM,
+                                '   mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
@@ -1324,6 +1349,12 @@ def get_static_policy_definitions(scope=None):
                                                      "machine resolvers."),
                                            'group': GROUP.SYSTEM,
                                            'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.MACHINERESOLVERREAD: {'type': 'bool',
+                                         'desc': _("Admin is allowed to "
+                                                   "read "
+                                                   "machine resolvers."),
+                                         'group': GROUP.SYSTEM,
+                                         'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
                                   "desc": _("Set the maximum allowed length "
@@ -1384,12 +1415,22 @@ def get_static_policy_definitions(scope=None):
                                                "SMTP server definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMTPSERVERREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMTP server definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.RADIUSSERVERREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "RADIUS server definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
                                             'desc': _("Admin is allowed to "
                                                       "write remote "
@@ -1397,11 +1438,23 @@ def get_static_policy_definitions(scope=None):
                                                       "definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERREAD: {'type': 'bool',
+                                           'desc': _("Admin is allowed to "
+                                                     "read remote "
+                                                     "privacyIDEA server "
+                                                     "definitions."),
+                                           'mainmenu': [MAIN_MENU.CONFIG],
+                                           'group': GROUP.SYSTEM},
             ACTION.PERIODICTASKWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "periodic task definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PERIODICTASKREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "periodic task definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.STATISTICSREAD: {'type': 'bool',
                                     'desc': _("Admin is allowed to read statistics data."),
                                     'group': GROUP.SYSTEM},
@@ -1414,12 +1467,22 @@ def get_static_policy_definitions(scope=None):
                                                   "handling configuration."),
                                         'mainmenu': [MAIN_MENU.CONFIG],
                                         'group': GROUP.SYSTEM},
+            ACTION.EVENTHANDLINGREAD: {'type': 'bool',
+                                       'desc': _("Admin is allowed to read "
+                                                 "handling configuration."),
+                                       'mainmenu': [MAIN_MENU.CONFIG],
+                                       'group': GROUP.SYSTEM},
             ACTION.SMSGATEWAYWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write "
                                                "and modify SMS gateway "
                                                "definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMSGATEWAYREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMS gateway definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.CLIENTTYPE: {'type': 'bool',
                                 'desc': _("Admin is allowed to get the list "
                                           "of authenticated clients and their "

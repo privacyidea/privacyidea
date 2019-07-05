@@ -206,6 +206,7 @@ def set_policy_api(name=None):
 @policy_blueprint.route('/<name>', methods=['GET'])
 @policy_blueprint.route('/export/<export>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.POLICYREAD)
 def get_policy(name=None, export=None):
     """
     this function is used to retrieve the policies that you

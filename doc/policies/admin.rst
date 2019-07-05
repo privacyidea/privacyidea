@@ -411,12 +411,98 @@ type: bool
 To be able to define new :ref:`smtpserver` or delete existing ones, the
 administrator needs this rights ``smtpserver_write``.
 
+smtpserver_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the smtpserver configuration.
+
+smsgateway_write
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+To be able to define new :ref:`smsgateway` or delete existing ones, the
+administrator needs the right ``smsgateway_write``.
+
+smsgateway_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the smsgateway configuration.
+
+periodictask_write
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete periodictask definitions.
+
+periodictask_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the periodictask definitions.
+
 eventhandling_write
 ~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the admiinstrator to configure :ref:`eventhandler`.
+Allow the administrator to configure :ref:`eventhandler`.
+
+eventhandling_read
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read event handlers.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read event handlers, will allow the
+   administrator to see all event handler definitions.
+
+
+policywrite, policyread, policydelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete policies.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read policies, will allow the
+   administrator to see all policies.
+
+resolverwrite, resolverread, resolverdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete user resolvers and realms.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read resolvers, will allow the
+   administrator to see all resolvers and realms.
+
+mresolverwrite, mresolverread, mresolverdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete machine resolvers.
+
+
+configwrite, configread, configdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete system configuration.
+
 
 auditlog
 ~~~~~~~~
