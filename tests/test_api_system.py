@@ -767,6 +767,21 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue("enrollHOTP" in admin_pol, admin_pol)
             self.assertTrue("enrollPW" in admin_pol, admin_pol)
 
+        with self.app.test_request_context('/policy/defs/conditions',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            conditions = result.get("value")
+            self.assertIn("sections", conditions)
+            self.assertIn("userinfo", conditions["sections"])
+            self.assertIn("description", conditions["sections"]["userinfo"])
+            self.assertIn("comparators", conditions)
+            self.assertIn("contains", conditions["comparators"])
+            self.assertIn("description", conditions["comparators"]["contains"])
+
     def test_14_enable_disable_policy(self):
         with self.app.test_request_context('/policy/pol2',
                                            method='GET',

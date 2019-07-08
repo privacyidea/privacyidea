@@ -177,7 +177,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
-from privacyidea.lib.utils.compare import compare_values, CompareError
+from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -2069,3 +2069,28 @@ def get_action_values_from_options(scope, action, options):
             return None
 
     return value
+
+
+def get_policy_condition_sections():
+    """
+    :return: a dictionary mapping condition sections to dictionaries with the following keys:
+      * ``"description"``, a human-readable description of the section
+    """
+    return {
+        CONDITION_SECTION.USERINFO: {
+            "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
+        }
+    }
+
+
+def get_policy_condition_comparators():
+    """
+    :return: a dictionary mapping comparators to dictionaries with the following keys:
+     * ``"description"``, a human-readable description of the comparator
+    """
+    descriptions = {
+        COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
+        COMPARATORS.EQUALS: _("true if the two values are equal")
+    }
+    return {comparator: {"description": descriptions.get(comparator, "(no description)")}
+            for comparator in COMPARATOR_FUNCTIONS.keys()}

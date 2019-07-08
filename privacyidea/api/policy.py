@@ -46,7 +46,7 @@ from ..lib.policy import (set_policy,
                           PolicyClass, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
-                          enable_policy)
+                          enable_policy, get_policy_condition_sections, get_policy_condition_comparators)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode
@@ -517,6 +517,13 @@ def get_policy_defs(scope=None):
     definitions, that can
     be used to define your policies.
 
+    If the given scope is "conditions", this returns a dictionary with the following keys:
+     * ``"sections"``, containing a dictionary mapping each condition section name to a dictionary with
+       the following keys:
+         * ``"description"``, a human-readable description of the section
+     * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
+         * ``"description"``, a human-readable description of the comparator
+
     :query scope: if given, the function will only return policy
                   definitions for the given scope.
 
@@ -524,17 +531,27 @@ def get_policy_defs(scope=None):
         action types. The top level key is the scope.
     :rtype: dict
     """
-    static_pol = get_static_policy_definitions()
-    dynamic_pol = get_dynamic_policy_definitions()
 
-    # combine static and dynamic policies
-    keys = list(static_pol) + list(dynamic_pol)
-    pol = {k: dict(list(static_pol.get(k, {}).items())
-                   + list(dynamic_pol.get(k, {}).items())) for k in keys}
+    if scope == 'conditions':
+        # special treatment: get descriptions of conditions
+        section_descriptions = get_policy_condition_sections()
+        comparator_descriptions = get_policy_condition_comparators()
+        result = {
+            "sections": section_descriptions,
+            "comparators": comparator_descriptions,
+        }
+    else:
+        static_pol = get_static_policy_definitions()
+        dynamic_pol = get_dynamic_policy_definitions()
 
-    if scope:
-        pol = pol.get(scope)
+        # combine static and dynamic policies
+        keys = list(static_pol) + list(dynamic_pol)
+        result = {k: dict(list(static_pol.get(k, {}).items())
+                          + list(dynamic_pol.get(k, {}).items())) for k in keys}
+
+        if scope:
+            result = result.get(scope)
 
     g.audit_object.log({"success": True,
                         'info': scope})
-    return send_result(pol)
+    return send_result(result)

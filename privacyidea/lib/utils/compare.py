@@ -20,6 +20,11 @@
 """
 This module implements comparisons between two values.
 It is tested in test_lib_utils_compare.py
+
+In order to add a new comparator:
+ 1) add the comparator to COMPARATORS
+ 2) implement a comparison function and add it to COMPARATOR_FUNCTIONS
+ 3) add a description of the comparator to get_policy_condition_comparators in lib/policy.py
 """
 
 import logging
