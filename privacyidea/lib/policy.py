@@ -1056,6 +1056,18 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    # validate conditions parameter
+    if conditions is not None:
+        for condition in conditions:
+            if len(condition) != 5:
+                raise ParameterError(u"Conditions must be 5-tuples: {!r}".format(condition))
+            if not (isinstance(condition[0], six.string_types)
+                    and isinstance(condition[1], six.string_types)
+                    and isinstance(condition[2], six.string_types)
+                    and isinstance(condition[3], six.string_types)
+                    and isinstance(condition[4], bool)):
+                raise ParameterError(u"Conditions must be 5-tuples of four strings and one boolean: {!r}".format(
+                    condition))
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
         # The policy already exist, we need to update

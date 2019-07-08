@@ -126,6 +126,11 @@ def set_policy_api(name=None):
     :jsonparam active: bool, whether this policy is active or not
     :jsonparam check_all_resolvers: bool, whether all all resolvers in which
         the user exists should be checked with this policy.
+    :jsonparam conditions: a (possibly empty) list of conditions of the policy.
+        Each condition is encoded as a list with 5 elements:
+        ``[section (string), key (string), comparator (string), value (string), active (boolean)]``
+        In order for a policy to match, *all* conditions must be fulfilled.
+        Note that the order of conditions is not guaranteed to be preserved.
 
     :return: a json result with success or error
 
@@ -186,6 +191,7 @@ def set_policy_api(name=None):
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
     priority = int(getParam(param, "priority", optional, default=1))
+    conditions = getParam(param, "conditions", optional)
 
     g.audit_object.log({'action_detail': name,
                         'info': u"{0!s}".format(param)})
@@ -193,7 +199,7 @@ def set_policy_api(name=None):
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
                      check_all_resolvers=check_all_resolvers or False,
-                     priority=priority)
+                     priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret
