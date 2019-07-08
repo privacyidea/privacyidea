@@ -1,14 +1,14 @@
 """Add a generic admin policy for all admin read actions
 
 Revision ID: 3d7f8b29cbb1
-Revises: 849170064430
+Revises: dceb6cd3c41e
 Create Date: 2019-07-04 22:37:53.594962
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '3d7f8b29cbb1'
-down_revision = '849170064430'
+down_revision = 'dceb6cd3c41e'
 
 from alembic import op
 import sqlalchemy as sa
