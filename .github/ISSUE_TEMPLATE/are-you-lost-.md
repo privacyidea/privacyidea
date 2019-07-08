@@ -1,7 +1,6 @@
 ---
-name: Are you lost?
-about: If you did not find a bug and do not want to suggest a new feature, you probably
-  have some questions.
+name: Ask a quetion
+about: ... if you need some explanations TODO
 title: ''
 labels: question
 assignees: ''
