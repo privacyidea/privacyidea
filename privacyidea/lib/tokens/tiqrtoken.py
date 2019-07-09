@@ -86,6 +86,7 @@ from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
 from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_token_type
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
@@ -322,21 +323,23 @@ class TiqrTokenClass(OcraTokenClass):
             # We need to get the token serial for this sessionKey
             challenges = get_challenges(transaction_id=session)
             # We found exactly one challenge
-            if (len(challenges) == 1 and challenges[0].is_valid() and
-                        challenges[0].otp_valid is False):
-                # Challenge is still valid (time has not passed) and no
-                    # correct response was given.
-                    serial = challenges[0].serial
-                    token = get_one_token(serial=serial, tokentype="tiqr")
-                    # We found exactly the one token
-                    res = "INVALID_RESPONSE"
-                    r = token.verify_response(
-                        challenge=challenges[0].challenge, passw=passw)
-                    if r > 0:
-                        res = "OK"
-                        # Mark the challenge as answered successfully.
-                        challenges[0].set_otp_status(True)
 
+            if (len(challenges) > 0):
+                for challenge in challenges:
+                    if (challenge.is_valid() and challenge.otp_valid is False):
+                        # Challenge is still valid (time has not passed) and no
+                        # correct response was given.
+                        serial = challenge.serial
+                        if (get_token_type(serial=serial) == "tiqr"):
+                            token = get_one_token(serial=serial, tokentype="tiqr")
+                            # We found exactly the one token
+                            res = "INVALID_RESPONSE"
+                            r = token.verify_response(
+                                challenge=challenge.challenge, passw=passw)
+                            if r > 0:
+                                res = "OK"
+                                # Mark the challenge as answered successfully.
+                                challenge.set_otp_status(True)
             cleanup_challenges()
 
             return "plain", res
