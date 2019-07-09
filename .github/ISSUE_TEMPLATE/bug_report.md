@@ -1,6 +1,6 @@
 ---
 name: File a bug report
-about: ... if you have experienced behavior that you did not expected
+about: ... if you experienced behavior that you did not expect
 title: ''
 labels: possible bug
 assignees: ''
