@@ -177,7 +177,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
-from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS
+from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
+    COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -2100,9 +2101,5 @@ def get_policy_condition_comparators():
     :return: a dictionary mapping comparators to dictionaries with the following keys:
      * ``"description"``, a human-readable description of the comparator
     """
-    descriptions = {
-        COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
-        COMPARATORS.EQUALS: _("true if the two values are equal")
-    }
-    return {comparator: {"description": descriptions.get(comparator, "(no description)")}
-            for comparator in COMPARATOR_FUNCTIONS.keys()}
+    return {comparator: {"description": description}
+            for comparator, description in COMPARATOR_DESCRIPTIONS.items()}

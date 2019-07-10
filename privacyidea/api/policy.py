@@ -129,7 +129,9 @@ def set_policy_api(name=None):
     :jsonparam conditions: a (possibly empty) list of conditions of the policy.
         Each condition is encoded as a list with 5 elements:
         ``[section (string), key (string), comparator (string), value (string), active (boolean)]``
-        In order for a policy to match, *all* conditions must be fulfilled.
+        Hence, the ``conditions`` parameter expects a list of lists.
+        When privacyIDEA checks if a defined policy should take effect,
+        *all* conditions of the policy must be fulfilled for the policy to match.
         Note that the order of conditions is not guaranteed to be preserved.
 
     :return: a json result with success or error
