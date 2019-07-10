@@ -86,7 +86,6 @@ from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
 from privacyidea.lib.token import get_one_token
-from privacyidea.lib.token import get_token_type
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
