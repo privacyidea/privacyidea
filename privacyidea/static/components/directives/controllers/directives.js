@@ -417,3 +417,36 @@ myApp.directive('focus', function($timeout){
  }
 };
 });
+
+myApp.directive("piPolicyConditions", function (instanceUrl) {
+    return {
+        restrict: 'E',
+        scope: {
+            policyConditions: "=conditions",
+            conditionDefs: "=defs"
+        },
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.policyconditions.html",
+        link: function (scope, element, attr, ctrl) {
+            scope.editIndex = -1;
+
+            scope.editCondition = function (idx) {
+                if(scope.editIndex == idx) {
+                    // we are editing this condition right now, toggle editing
+                    scope.editIndex = -1;
+                } else {
+                    scope.editIndex = idx;
+                }
+            };
+
+            scope.deleteCondition = function (idx) {
+                scope.policyConditions.splice(idx, 1);
+            };
+
+            scope.addCondition = function () {
+                // add a condition with default values
+                scope.policyConditions.push(["userinfo", "", "==", "", false]);
+                scope.editIndex = scope.policyConditions.length - 1;
+            };
+        },
+    };
+});

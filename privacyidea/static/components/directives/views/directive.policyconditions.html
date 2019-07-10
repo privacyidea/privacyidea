@@ -1,0 +1,52 @@
+<div class="table-responsive">
+    <table class="table">
+       <tr ng-repeat="condition in policyConditions">
+           <td>
+               <input type="checkbox" name="{{ conditionname }}"
+                      ng-model="condition[4]" ng-disabled="editIndex != $index">
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[0] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <select ng-model="condition[0]" class="form-control"
+                           ng-options="key as key for (key, value) in conditionDefs.sections"></select>
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[1] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <input type="text" ng-model="condition[1]" class="form-control" />
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[2] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <select ng-model="condition[2]" class="form-control"
+                           ng-options="key as key for (key, value) in conditionDefs.comparators"></select>
+               </span>
+           </td>
+           <td>
+               <span ng-show="editIndex != $index"><code>{{ condition[3] }}</code></span>
+               <span ng-show="editIndex == $index">
+                   <input type="text" ng-model="condition[3]" class="form-control" />
+               </span>
+           </td>
+           <td>
+               <button class="btn btn-default" ng-click="editCondition($index)">
+                   <span class="glyphicon glyphicon-edit"></span>
+                </button>
+               <button class="btn btn-default" ng-click="deleteCondition($index)">
+                   <span class="glyphicon glyphicon-remove"></span>
+               </button>
+           </td>
+        </tr>
+        <tr>
+            <td colspan="6">
+                <button class="btn btn-default" ng-click="addCondition()">
+                    <span class="glyphicon glyphicon-plus"></span>
+                    <span translate>Add a condition</span>
+                </button>
+            </td>
+        </tr>
+    </table>
+</div>
