@@ -514,7 +514,7 @@ class PushTokenClass(TokenClass):
                                                    options) or "1"
         sslverify = getParam({"sslverify": sslverify}, "sslverify", allowed_values=["0", "1"], default="1")
 
-        attributes = None
+        attributes = {"poll": True, "hideResponseInput": True}
         data = None
         challenge = b32encode_and_unicode(geturandom())
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
