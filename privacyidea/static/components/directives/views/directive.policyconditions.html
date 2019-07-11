@@ -3,13 +3,18 @@
        <tr ng-repeat="condition in policyConditions">
            <td>
                <input type="checkbox" name="{{ conditionname }}"
-                      ng-model="condition[4]" ng-disabled="editIndex != $index">
+                      ng-model="condition[4]">
            </td>
            <td>
-               <span ng-show="editIndex != $index"><code>{{ condition[0] }}</code></span>
+               <span ng-show="editIndex != $index">
+                   <code title="{{ conditionDefs.sections[condition[0]].description }}">{{ condition[0] }}</code>
+               </span>
                <span ng-show="editIndex == $index">
-                   <select ng-model="condition[0]" class="form-control"
-                           ng-options="key as key for (key, value) in conditionDefs.sections"></select>
+                   <select ng-model="condition[0]" class="form-control">
+                       <option ng-repeat="(key, value) in conditionDefs.sections"
+                               ng-value="key"
+                               title="{{ value.description }}">{{ key }}</option>
+                   </select>
                </span>
            </td>
            <td>
@@ -19,10 +24,15 @@
                </span>
            </td>
            <td>
-               <span ng-show="editIndex != $index"><code>{{ condition[2] }}</code></span>
+               <span ng-show="editIndex != $index">
+                   <code title="{{ conditionDefs.comparators[condition[2]].description }}">{{ condition[2] }}</code>
+               </span>
                <span ng-show="editIndex == $index">
-                   <select ng-model="condition[2]" class="form-control"
-                           ng-options="key as key for (key, value) in conditionDefs.comparators"></select>
+                   <select ng-model="condition[2]" class="form-control">
+                       <option ng-repeat="(key, value) in conditionDefs.comparators"
+                               ng-value="key"
+                               title="{{ value.description }}">{{ key }}</option>
+                   </select>
                </span>
            </td>
            <td>
@@ -31,7 +41,7 @@
                    <input type="text" ng-model="condition[3]" class="form-control" />
                </span>
            </td>
-           <td>
+           <td style="text-align: right;">
                <button class="btn btn-default" ng-click="editCondition($index)">
                    <span class="glyphicon glyphicon-edit"></span>
                 </button>
