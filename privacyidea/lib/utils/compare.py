@@ -20,9 +20,16 @@
 """
 This module implements comparisons between two values.
 It is tested in test_lib_utils_compare.py
-"""
 
+In order to add a new comparator:
+ 1) add the comparator to COMPARATORS
+ 2) implement a comparison function and add it to COMPARATOR_FUNCTIONS
+ 3) add a description of the comparator to COMPARATOR_DESCRIPTIONS
+"""
 import logging
+
+from privacyidea.lib.framework import _
+
 log = logging.getLogger(__name__)
 
 
@@ -32,6 +39,7 @@ class CompareError(Exception):
 
     def __repr__(self):
         return u"CompareError({!r})".format(self.message)
+
 
 def _compare_equality(left, comparator, right):
     """
@@ -56,7 +64,7 @@ def _compare_contains(left, comparator, right):
 
 #: This class enumerates all available comparators.
 #: In order to add a comparator to this module, add a suitable member to COMPARATORS
-#: and a suitable entry to COMPARATOR_FUNCTIONS.
+#: and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
 class COMPARATORS(object):
     EQUALS = "=="
     CONTAINS = "contains"
@@ -67,6 +75,12 @@ class COMPARATORS(object):
 COMPARATOR_FUNCTIONS = {
     COMPARATORS.EQUALS: _compare_equality,
     COMPARATORS.CONTAINS: _compare_contains,
+}
+
+#: This dictionary connects comparators to their human-readable (and translated) descriptions.
+COMPARATOR_DESCRIPTIONS = {
+    COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
+    COMPARATORS.EQUALS: _("true if the two values are equal")
 }
 
 

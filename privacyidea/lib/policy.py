@@ -177,7 +177,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
-from privacyidea.lib.utils.compare import compare_values, CompareError
+from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
+    COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -1056,6 +1057,18 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    # validate conditions parameter
+    if conditions is not None:
+        for condition in conditions:
+            if len(condition) != 5:
+                raise ParameterError(u"Conditions must be 5-tuples: {!r}".format(condition))
+            if not (isinstance(condition[0], six.string_types)
+                    and isinstance(condition[1], six.string_types)
+                    and isinstance(condition[2], six.string_types)
+                    and isinstance(condition[3], six.string_types)
+                    and isinstance(condition[4], bool)):
+                raise ParameterError(u"Conditions must be 5-tuples of four strings and one boolean: {!r}".format(
+                    condition))
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
         # The policy already exist, we need to update
@@ -2069,3 +2082,24 @@ def get_action_values_from_options(scope, action, options):
             return None
 
     return value
+
+
+def get_policy_condition_sections():
+    """
+    :return: a dictionary mapping condition sections to dictionaries with the following keys:
+      * ``"description"``, a human-readable description of the section
+    """
+    return {
+        CONDITION_SECTION.USERINFO: {
+            "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
+        }
+    }
+
+
+def get_policy_condition_comparators():
+    """
+    :return: a dictionary mapping comparators to dictionaries with the following keys:
+     * ``"description"``, a human-readable description of the comparator
+    """
+    return {comparator: {"description": description}
+            for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
