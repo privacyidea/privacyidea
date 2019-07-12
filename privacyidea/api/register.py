@@ -112,13 +112,7 @@ def register_post():
     password = getParam(request.all_data, "password", required)
     mobile = getParam(request.all_data, "mobile")
     phone = getParam(request.all_data, "phone")
-    options = {"g": g,
-               "clientip": g.client_ip}
     g.audit_object.log({"info": username})
-    # Add all params to the options
-    for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
 
     # 0. check, if we can do the registration at all!
     smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,

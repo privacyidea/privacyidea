@@ -36,7 +36,7 @@ import threading
 import six
 from flask import (jsonify,
                    current_app,
-                   Response)
+                   Response, request, g)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -268,3 +268,16 @@ def verify_auth_token(auth_token, required_role=None):
                         "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
+
+
+def build_request_options():
+    """
+    Build an options dictionary for the library level, given the current request and app context.
+    :return: a dictionary with keys "g" and "clientip". If the request data contains a parameter
+    "transaction_id", it is also copied to the resulting dictionary.
+    """
+    options = {"g": g,
+               "clientip": g.client_ip}
+    if "transaction_id" in request.all_data:
+        options["transaction_id"] = request.all_data["transaction_id"]
+    return options

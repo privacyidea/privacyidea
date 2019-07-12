@@ -62,7 +62,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import (send_result, get_all_params,
-                                       verify_auth_token, getParam)
+                                       verify_auth_token, getParam, build_request_options)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
 from privacyidea.lib.event import event, EventConfiguration
@@ -252,11 +252,7 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database,
         # so we do the rest of the check
-        options = {"g": g,
-                   "clientip": g.client_ip}
-        for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
+        options = build_request_options()
         user_obj = User(loginname, realm)
         user_auth, role, details = check_webui_user(user_obj,
                                                     password,

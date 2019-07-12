@@ -66,7 +66,7 @@ In case if authenitcating a serial number:
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
-from .lib.utils import send_result, getParam
+from .lib.utils import send_result, getParam, build_request_options
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
@@ -311,12 +311,7 @@ def check():
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
     otp_only = getParam(request.all_data, "otponly")
-    options = {"g": g,
-               "clientip": g.client_ip}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
+    options = build_request_options()
 
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
@@ -403,13 +398,7 @@ def samlcheck():
     """
     user = request.User
     password = getParam(request.all_data, "pass", required)
-    options = {"g": g,
-               "clientip": g.client_ip}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
-
+    options = build_request_options()
     auth, details = check_user_pass(user, password, options=options)
     ui = user.info
     result_obj = {"auth": auth,
