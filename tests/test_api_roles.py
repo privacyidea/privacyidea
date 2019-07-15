@@ -718,6 +718,53 @@ class APISelfserviceTestCase(MyApiTestCase):
         delete_policy("pol_lastauth")
         delete_policy("pol_loginmode")
 
+    def test_11_authz_tokentype(self):
+        # Check TOKENTYPE policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                       user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        set_policy("pol_tokentype",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENTYPE: "hotp",
+                   })
+
+        # Cannot authenticate with SPASS token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertIn("Tokentype not allowed", result["error"]["message"])
+
+        # Allow HOTP+SPASS
+        set_policy("pol_tokentype",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENTYPE: "hotp spass",
+                   })
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_tokentype")
+        delete_policy("pol_loginmode")
+
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
         serial = "serial0001"
