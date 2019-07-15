@@ -704,6 +704,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertIn("long ago", content["detail"]["message"])
 
         selfservice_token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+
         # But now it works
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -714,6 +715,18 @@ class APISelfserviceTestCase(MyApiTestCase):
             content = json.loads(res.data.decode('utf8'))
             result = content.get("result")
             self.assertTrue(result.get("status"), res.data)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
         remove_token(selfservice_token.token.serial)
         delete_policy("pol_lastauth")
         delete_policy("pol_loginmode")
@@ -761,8 +774,73 @@ class APISelfserviceTestCase(MyApiTestCase):
             result = content.get("result")
             self.assertTrue(result.get("status"), res.data)
 
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
         remove_token(spass_token.token.serial)
         delete_policy("pol_tokentype")
+        delete_policy("pol_loginmode")
+
+    def test_11_authz_tokeninfo(self):
+        # Check TOKENINFO policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                 user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        set_policy("pol_tokeninfo",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENINFO: "secure/yes/",
+                   })
+
+        # Cannot authenticate with token that does not have a "secure" tokeninfo
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertIn("Tokeninfo field", result["error"]["message"])
+
+        # Add the tokeninfo, we can authenticate
+        spass_token.add_tokeninfo("secure", "yes")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_tokeninfo")
         delete_policy("pol_loginmode")
 
     def test_31_user_is_not_allowed_for_some_api_calls(self):

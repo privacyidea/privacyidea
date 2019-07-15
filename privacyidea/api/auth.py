@@ -59,7 +59,8 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype
+from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype, \
+    check_tokeninfo
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
@@ -103,6 +104,7 @@ def before_request():
 @postpolicy(get_webui_settings)
 @postpolicy(add_user_detail_to_response, request=request)
 @postpolicy(check_tokentype, request=request)
+@postpolicy(check_tokeninfo, request=request)
 @event("auth", request, g)
 def get_auth_token():
     """
