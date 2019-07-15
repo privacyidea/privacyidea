@@ -4,6 +4,7 @@ selfservice) on the REST API.
 
 implementation is contained in api/auth.py, api/token.py api/audit.py
 """
+import datetime
 import json
 
 from . import ldap3mock
@@ -13,6 +14,7 @@ from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    assign_token, unassign_token, init_token)
 from privacyidea.lib.user import User
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
@@ -672,6 +674,49 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertNotIn("detail", content)
 
         delete_policy("pol_add_info")
+
+    def test_10_authz_lastauth(self):
+        # Test LASTAUTH policy action for /auth endpoint
+        # This only works if we authenticate against privacyIDEA
+        set_policy("pol_lastauth",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.LASTAUTH: "10m",
+                   })
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        selfservice_token = init_token({"type": "spass", "pin": "somepin"},
+                                       user=User("selfservice", "realm1"))
+        # Last authentication was too long ago.
+        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertIn("long ago", content["detail"]["message"])
+
+        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+        # But now it works
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+        remove_token(selfservice_token.token.serial)
+        delete_policy("pol_lastauth")
+        delete_policy("pol_loginmode")
 
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
