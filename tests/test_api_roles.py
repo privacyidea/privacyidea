@@ -617,6 +617,62 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(response.get("result").get("value"),
                             response.get("result"))
 
+    def test_09_authz_user_detail(self):
+        # Test behavior of ADDUSERINRESPONSE and ADDRESOLVERINRESPONSE policy action for /auth endpoint
+        # Normally, no userinfo and realm/resolver are found in the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1")
+            self.assertNotIn("detail", content)
+
+        set_policy(name="pol_add_info",
+                   scope=SCOPE.AUTHZ,
+                   action=[ACTION.ADDUSERINRESPONSE, ACTION.ADDRESOLVERINRESPONSE],
+                   realm="realm1")
+
+        # Userinfo + realm/resolver are added to the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1")
+            self.assertEqual(content["detail"]["user-realm"], "realm1")
+            self.assertEqual(content["detail"]["user-resolver"], "resolver1")
+            self.assertIn("user", content["detail"])
+            self.assertEqual(content["detail"]["user"]["userid"], "1004")
+
+        # ... but not for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertNotIn("detail", content)
+
+        delete_policy("pol_add_info")
+
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
         serial = "serial0001"
