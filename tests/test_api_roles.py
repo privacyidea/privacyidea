@@ -789,7 +789,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         delete_policy("pol_tokentype")
         delete_policy("pol_loginmode")
 
-    def test_11_authz_tokeninfo(self):
+    def test_12_authz_tokeninfo(self):
         # Check TOKENINFO policy action for /auth endpoint
         spass_token = init_token({"type": "spass", "pin": "somepin"},
                                  user=User("selfservice", "realm1"))
@@ -843,7 +843,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         delete_policy("pol_tokeninfo")
         delete_policy("pol_loginmode")
 
-    def test_12_authz_tokenserial(self):
+    def test_13_authz_tokenserial(self):
         # Check SERIAL policy action for /auth endpoint
         spass_token = init_token({"type": "spass", "pin": "somepin"},
                                  user=User("selfservice", "realm1"))
@@ -897,6 +897,58 @@ class APISelfserviceTestCase(MyApiTestCase):
         remove_token(spass_token.token.serial)
         remove_token(good_token.token.serial)
         delete_policy("pol_serial")
+        delete_policy("pol_loginmode")
+
+    def test_13_authz_no_detail_on_success(self):
+        # Check NODETAILSUCCESS policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                 user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+
+        # Without the policy, there are details in the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = json.loads(res.data.decode('utf8'))
+            self.assertIn("detail", content)
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        # With the policy, there aren't
+        set_policy("pol_detail",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.NODETAILSUCCESS)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = json.loads(res.data.decode('utf8'))
+            self.assertNotIn("detail", content)
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = json.loads(res.data.decode('utf8'))
+            result = content.get("result")
+            self.assertTrue(result.get("status"), res.data)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_detail")
         delete_policy("pol_loginmode")
 
     def test_31_user_is_not_allowed_for_some_api_calls(self):

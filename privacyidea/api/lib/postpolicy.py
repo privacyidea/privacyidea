@@ -319,9 +319,10 @@ def no_detail_on_success(request, response):
                                              client=g.client_ip,
                                              active=True)
 
-    if detailPol and content.get("result", {}).get("value"):
+    if detailPol and content.get("result", {}).get("value") and "detail" in content:
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
+        # But only if there is a "detail" key in the response.
         del content["detail"]
         response.data = json.dumps(content)
         g.audit_object.add_policy([p.get("name") for p in detailPol])
