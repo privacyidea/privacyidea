@@ -282,6 +282,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         } else {
             $scope.form.genkey = true;
         }
+        if ($scope.form.type === "radius") {
+            // only load RADIUS servers when the user actually tries to enroll a RADIUS token,
+            // because the user might not be allowed to list RADIUS servers
+            $scope.getRADIUSIdentifiers();
+        }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
     };
@@ -495,7 +500,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.radiusIdentifiers = data.result.value;
         });
     };
-    $scope.getRADIUSIdentifiers();
 
     // get the list of configured CA connectors
     $scope.getCAConnectors = function () {
