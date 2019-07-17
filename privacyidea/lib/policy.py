@@ -170,7 +170,7 @@ from ..models import (Policy, db, save_config_timestamp)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object)
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
@@ -2087,6 +2087,50 @@ def get_action_values_from_options(scope, action, options):
             return None
 
     return value
+
+
+def match_policies_strict(g, scope, action, realm, user, write_to_audit_log=True):
+    """
+    A shorthand for lengthy ``PolicyClass.match_policies`` calls.
+
+    Given the current ``g``, return a list of policies that match the current context
+    and the given scope, action, realm and user. By default, write the list of
+    matched policies to the audit log.
+
+    :param g: current context (required), needs to have attributes ``audit_object``,
+              ``policy_object`` and ``client_ip``.
+    :param scope: policy scope (required)
+    :param action: policy action (required)
+    :param realm: either the realm that should be matched, or None
+    :param user: either the user object that should be matched, or None
+    :param write_to_audit_log: If True, the matched policies are written to the audit log.
+    :return: a list of policies
+    """
+    if write_to_audit_log:
+        audit_data = g.audit_object.audit_data
+    else:
+        audit_data = None
+    if user is None:
+        user_object = None
+        username = None
+        resolver = None
+        adminrealm = None
+    elif isinstance(user, User):
+        user_object = user
+        if realm is not None:
+            raise ServerError("Contradicting parameters: realm/user")
+        username = None
+        realm = None
+        resolver = None
+        adminrealm = None
+    else:
+        raise ServerError("Invalid user")
+    return g.policy_object.match_policies(
+        name=None, scope=scope, realm=realm, active=True,
+        resolver=resolver, user=username, user_object=user_object,
+        client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
+        sort_by_priority=True, audit_data=audit_data
+    )
 
 
 def get_policy_condition_sections():

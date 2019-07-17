@@ -46,7 +46,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import logging
 from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
-from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
+from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE, match_policies_strict
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
@@ -218,14 +218,9 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        clientip = options.get("clientip")
-        policy_object = g.policy_object
-        pass_no_token = policy_object.match_policies(action=ACTION.PASSNOTOKEN,
-                                                     scope=SCOPE.AUTH,
-                                                     realm=user_object.realm,
-                                                     resolver=user_object.resolver,
-                                                     user=user_object.login,
-                                                     client=clientip, active=True)
+        pass_no_token = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSNOTOKEN,
+                                              realm=None, user=user_object,
+                                              write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
@@ -256,15 +251,8 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        clientip = options.get("clientip")
-        policy_object = g.policy_object
-        pass_no_user = policy_object.match_policies(action=ACTION.PASSNOUSER,
-                                                    scope=SCOPE.AUTH,
-                                                    realm=user_object.realm,
-                                                    resolver=user_object.resolver,
-                                                    user=user_object.login,
-                                                    client=clientip,
-                                                    active=True)
+        pass_no_user = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSNOUSER,
+                                             realm=None, user=user_object)
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
@@ -298,14 +286,9 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     if g:
         policy_object = g.policy_object
         clientip = options.get("clientip")
-        pass_thru = policy_object.match_policies(action=ACTION.PASSTHRU,
-                                                 scope=SCOPE.AUTH,
-                                                 realm=user_object.realm,
-                                                 resolver=user_object.resolver,
-                                                 user=user_object.login,
-                                                 client=clientip,
-                                                 active=True,
-                                                 sort_by_priority=True)
+        pass_thru = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU,
+                                          realm=None, user=user_object,
+                                          write_to_audit_log=False)
         # We only go to passthru, if the user has no tokens!
         if pass_thru and get_tokens(user=user_object, count=True) == 0:
             # Ensure that there are no conflicting action values within the same priority
@@ -710,15 +693,9 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
     # A successful authentication was done
     if r[0] and g and allow_reset:
-        clientip = options.get("clientip")
-        policy_object = g.policy_object
         token_owner = tokenobject_list[0].user
-        reset_all = policy_object.match_policies(
-            action=ACTION.RESETALLTOKENS,
-            scope=SCOPE.AUTH,
-            user_object=token_owner if token_owner else None,
-            client=clientip, active=True,
-            audit_data=g.audit_object.audit_data)
+        reset_all = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
+                                          realm=None, user=token_owner)
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))

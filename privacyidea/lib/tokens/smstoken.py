@@ -56,7 +56,7 @@ from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
+from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options, match_policies_strict
 from privacyidea.lib.log import log_with
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
@@ -531,21 +531,9 @@ class SmsTokenClass(HotpTokenClass):
         autosms = False
         g = options.get("g")
         user_object = options.get("user")
-        username = None
-        realm = None
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
         if g:
-            clientip = options.get("clientip")
-            policy_object = g.policy_object
-            autosmspol = policy_object.\
-                match_policies(action=SMSACTION.SMSAUTO,
-                               scope=SCOPE.AUTH,
-                               realm=realm,
-                               user=username,
-                               client=clientip, active=True,
-                               audit_data=g.audit_object.audit_data)
+            autosmspol = match_policies_strict(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO,
+                                               realm=None, user=user_object)
             autosms = len(autosmspol) >= 1
 
         return autosms

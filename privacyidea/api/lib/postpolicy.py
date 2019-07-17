@@ -44,7 +44,7 @@ import logging
 import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, match_policies_strict
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
@@ -308,14 +308,11 @@ def no_detail_on_success(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.match_policies(action=ACTION.NODETAILSUCCESS,
-                                             scope=SCOPE.AUTHZ,
-                                             client=g.client_ip,
-                                             active=True)
-
+    detailPol = match_policies_strict(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS,
+                                      realm=None, user=None,
+                                      write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -337,14 +334,11 @@ def add_user_detail_to_response(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # Check for ADD USER IN RESPONSE
-    detail_pol = policy_object.match_policies(action=ACTION.ADDUSERINRESPONSE,
-                                              scope=SCOPE.AUTHZ,
-                                              client=g.client_ip,
-                                              active=True)
-
+    detail_pol = match_policies_strict(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE,
+                                       realm=None, user=None,
+                                       write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
         #  details
@@ -357,11 +351,9 @@ def add_user_detail_to_response(request, response):
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
-    detail_pol = policy_object.match_policies(action=ACTION.ADDRESOLVERINRESPONSE,
-                                              scope=SCOPE.AUTHZ,
-                                              client=g.client_ip,
-                                              active=True)
-
+    detail_pol = match_policies_strict(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE,
+                                       realm=None, user=None,
+                                       write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
         content["detail"]["user-resolver"] = request.User.resolver
@@ -384,14 +376,11 @@ def no_detail_on_fail(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.match_policies(action=ACTION.NODETAILFAIL,
-                                             scope=SCOPE.AUTHZ,
-                                             client=g.client_ip,
-                                             active=True)
-
+    detailPol = match_policies_strict(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILFAIL,
+                                      realm=None, user=None,
+                                      write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -435,10 +424,8 @@ def save_pin_change(request, response, serial=None):
         realm = realm or get_default_realm()
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
-            pinpol = policy_object.match_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
-                                                  scope=SCOPE.ENROLL, realm=realm,
-                                                  client=g.client_ip, active=True,
-                                                  audit_data=g.audit_object.audit_data)
+            pinpol = match_policies_strict(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE,
+                                           realm=realm, user=None)
             if pinpol:
                 token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
@@ -547,78 +534,32 @@ def get_webui_settings(request, response):
             client=client,
             unique=True,
             audit_data=g.audit_object.audit_data)
-        token_wizard_2nd = bool(role == ROLE.USER and
-            policy_object.match_policies(action=ACTION.TOKENWIZARD2ND,
-                                         scope=SCOPE.WEBUI,
-                                         realm=realm,
-                                         client=client,
-                                         active=True,
-                                         audit_data=g.audit_object.audit_data))
+        token_wizard_2nd = (role == ROLE.USER and
+                            match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
+                                                  realm=realm, user=None))
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
             user_obj = User(loginname, realm)
             user_token_num = get_tokens(user=user_obj, count=True)
-            token_wizard_pol = policy_object.match_policies(
-                action=ACTION.TOKENWIZARD,
-                scope=SCOPE.WEBUI,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
-                client=client,
-                active=True,
-                audit_data=g.audit_object.audit_data
-            )
-
+            token_wizard_pol = match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD,
+                                                     realm=None, user=user_obj)
             # We also need to check, if the user has not tokens assigned.
             # If the user has no tokens, we run the wizard. If the user
             # already has tokens, we do not run the wizard.
             token_wizard = bool(token_wizard_pol) and (user_token_num == 0)
 
-            dialog_no_token_pol = policy_object.match_policies(
-                scope=SCOPE.WEBUI,
-                action=ACTION.DIALOG_NO_TOKEN,
-                client=client,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
-                active=True,
-                audit_data=g.audit_object.audit_data
-            )
+            dialog_no_token_pol = match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN,
+                                                        realm=None, user=user_obj)
             dialog_no_token = bool(dialog_no_token_pol) and (user_token_num == 0)
-        user_details_pol = policy_object.match_policies(
-            action=ACTION.USERDETAILS,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        search_on_enter = policy_object.match_policies(
-            action=ACTION.SEARCH_ON_ENTER,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        hide_welcome = policy_object.match_policies(
-            action=ACTION.HIDE_WELCOME,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        hide_welcome = bool(hide_welcome)
-        hide_buttons = policy_object.match_policies(
-            action=ACTION.HIDE_BUTTONS,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-        )
-        hide_buttons = bool(hide_buttons)
+        user_details_pol = match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
+                                                 realm=realm, user=None)
+        search_on_enter = match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.SEARCH_ON_ENTER,
+                                                realm=realm, user=None)
+        hide_welcome = bool(match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME,
+                                                  realm=realm, user=None))
+        hide_buttons = bool(match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
+                                                  realm=realm, user=None))
         default_tokentype_pol = policy_object.get_action_values(
             action=ACTION.DEFAULT_TOKENTYPE,
             scope=SCOPE.WEBUI,
@@ -627,16 +568,8 @@ def get_webui_settings(request, response):
             unique=True,
             audit_data=g.audit_object.audit_data
         )
-        show_seed = policy_object.match_policies(
-            action=ACTION.SHOW_SEED,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        show_seed = bool(show_seed)
-
+        show_seed = bool(match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
+                                               realm=realm, user=None))
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE

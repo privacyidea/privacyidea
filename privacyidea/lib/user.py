@@ -65,7 +65,7 @@ from .usercache import (user_cache, cache_username, user_init, delete_user_cache
 log = logging.getLogger(__name__)
 
 
-@log_with(log)
+#@log_with(log)
 @six.python_2_unicode_compatible
 class User(object):
     """

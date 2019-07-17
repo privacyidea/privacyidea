@@ -66,7 +66,7 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
+from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass, match_policies_strict
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
@@ -419,17 +419,10 @@ def encrypt_pin(request=None, action=None):
     It uses the policy SCOPE.ENROLL, ACTION.ENCRYPTPIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.match_policies(action=ACTION.ENCRYPTPIN,
-                                            scope=SCOPE.ENROLL,
-                                            user=user_object.login,
-                                            realm=user_object.realm,
-                                            client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
-
+    pin_pols = match_policies_strict(g, scope=SCOPE.ENROLL, action=ACTION.ENCRYPTPIN,
+                                     realm=None, user=user_object)
     if pin_pols:
         request.all_data["encryptpin"] = "True"
     else:
@@ -983,20 +976,11 @@ def check_anonymous_user(request=None, action=None):
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
     policy_object = g.policy_object
-    scope = SCOPE.USER
     user_obj = get_user_from_param(params)
-    username = user_obj.login
-    realm = user_obj.realm
 
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          scope=scope,
-                                          client=g.client_ip,
-                                          adminrealm=None,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
+    action = match_policies_strict(g, scope=SCOPE.USER, action=action,
+                                   realm=None, user=user_obj)
+    action_at_all = policy_object.list_policies(scope=SCOPE.USER, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR)
     return True
@@ -1237,21 +1221,11 @@ def api_key_required(request=None, action=None):
     If so, the validate request will only performed, if a JWT token is passed
     with role=validate.
     """
-    ERROR = "The policy requires an API key to authenticate, " \
-            "but no key was passed."
-    params = request.all_data
-    policy_object = g.policy_object
-    #user_object = get_user_from_param(params)
     user_object = request.User
 
     # Get the policies
-    action = policy_object.match_policies(action=ACTION.APIKEY,
-                                          user=user_object.login,
-                                          realm=user_object.realm,
-                                          scope=SCOPE.AUTHZ,
-                                          client=g.client_ip,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    action = match_policies_strict(g, scope=SCOPE.AUTHZ, action=ACTION.APIKEY,
+                                   realm=None, user=user_object)
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1454,27 +1428,11 @@ def u2ftoken_verify_cert(request, action):
     # Get the registration data of the 2nd step of enrolling a U2F device
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "u2f":
-        policy_object = g.policy_object
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
         user_object = request.User
-
-        if user_object:
-            token_user = user_object.login
-            token_realm = user_object.realm
-            token_resolver = user_object.resolver
-        else:
-            token_realm = token_resolver = token_user = None
-
-        do_not_verify_the_cert = policy_object.match_policies(
-            action=U2FACTION.NO_VERIFY_CERT,
-            scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
-            active=True,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data)
+        do_not_verify_the_cert = match_policies_strict(g, scope=SCOPE.ENROLL, action=U2FACTION.NO_VERIFY_CERT,
+                                                       realm=None, user=user_object if user_object else None)
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
 
