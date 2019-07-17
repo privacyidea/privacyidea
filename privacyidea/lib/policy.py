@@ -1428,7 +1428,12 @@ def get_static_policy_definitions(scope=None):
             ACTION.RESOLVERREAD: {'type': 'bool',
                                    'desc': _("Admin is allowed to read resolvers."),
                                    'group': GROUP.SYSTEM,
-                                '   mainmenu': [MAIN_MENU.CONFIG]},
+                                   'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.CACONNECTORREAD: {"type": "bool",
+                                     "desc": _("Admin is allowed to read the "
+                                               "CA Connector definitions."),
+                                     "group": GROUP.SYSTEM,
+                                     "mainmenu": [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "

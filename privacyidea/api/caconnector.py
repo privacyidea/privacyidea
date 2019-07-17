@@ -45,7 +45,7 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 @caconnector_blueprint.route('/<name>', methods=['GET'])
 @caconnector_blueprint.route('/', methods=['GET'])
 @log_with(log)
-#@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
+@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
     returns a json list of the available CA connectors
