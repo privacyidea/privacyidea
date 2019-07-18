@@ -44,7 +44,8 @@ import logging
 import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, match_policies_strict
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, match_policies_strict, \
+    match_policy_action_values_strict
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
@@ -202,14 +203,9 @@ def check_tokentype(request, response):
     :return: A new (maybe modified) response
     """
     tokentype = response.json.get("detail", {}).get("type")
-    policy_object = g.policy_object
     user_object = request.User
-    allowed_tokentypes = policy_object.get_action_values(
-        ACTION.TOKENTYPE,
-        scope=SCOPE.AUTHZ,
-        user_object=user_object,
-        client=g.client_ip,
-        audit_data=g.audit_object.audit_data)
+    allowed_tokentypes = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENTYPE,
+                                                           realm=None, user=user_object, unique=False)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         # If we have tokentype policies, but
         # the tokentype is not allowed, we raise an exception
@@ -232,13 +228,10 @@ def check_serial(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    policy_object = g.policy_object
     serial = response.json.get("detail", {}).get("serial")
     # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
-                                                      scope=SCOPE.AUTHZ,
-                                                      client=g.client_ip,
-                                                      audit_data=g.audit_object.audit_data)
+    allowed_serials = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.SERIAL,
+                                                        realm=None, user=None, unique=False)
 
     # If we can compare a serial and if we do serial matching!
     if serial and allowed_serials:
@@ -268,12 +261,9 @@ def check_tokeninfo(request, response):
     serial = response.json.get("detail", {}).get("serial")
 
     if serial:
-        tokeninfos_pol = g.policy_object.get_action_values(
-            ACTION.TOKENINFO,
-            scope=SCOPE.AUTHZ,
-            client=g.client_ip,
-            allow_white_space_in_action=True,
-            audit_data=g.audit_object.audit_data)
+        tokeninfos_pol = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO,
+                                                           realm=None, user=None, unique=False,
+                                                           allow_white_space_in_action=True)
         if tokeninfos_pol:
             tokens = get_tokens(serial=serial)
             if len(tokens) == 1:
@@ -441,10 +431,8 @@ def save_pin_change(request, response, serial=None):
 
                 # If there is a change_pin_every policy, we need to set the PIN
                 # anew.
-                pinpol = policy_object.get_action_values(
-                    ACTION.CHANGE_PIN_EVERY, scope=SCOPE.ENROLL,
-                    realm=realm, client=g.client_ip, unique=True,
-                    audit_data=g.audit_object.audit_data)
+                pinpol = match_policy_action_values_strict(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_EVERY,
+                                                           realm=realm, user=None, unique=True)
                 if pinpol:
                     token = get_one_token(serial=serial)
                     token.set_next_pin_change(diff=list(pinpol)[0])
@@ -506,34 +494,14 @@ def get_webui_settings(request, response):
             client = g.client_ip
         except Exception:
             client = None
-        logout_time_pol = policy_object.get_action_values(
-            action=ACTION.LOGOUTTIME,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        timeout_action_pol = policy_object.get_action_values(
-            action=ACTION.TIMEOUT_ACTION,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        token_page_size_pol = policy_object.get_action_values(
-            action=ACTION.TOKENPAGESIZE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        user_page_size_pol = policy_object.get_action_values(
-            action=ACTION.USERPAGESIZE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
+        logout_time_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUTTIME,
+                                                            realm=realm, user=None, unique=True)
+        timeout_action_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.TIMEOUT_ACTION,
+                                                               realm=realm, user=None, unique=True)
+        token_page_size_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.TOKENPAGESIZE,
+                                                                realm=realm, user=None, unique=True)
+        user_page_size_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
+                                                               realm=realm, user=None, unique=True)
         token_wizard_2nd = (role == ROLE.USER and
                             match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
                                                   realm=realm, user=None))
@@ -560,14 +528,8 @@ def get_webui_settings(request, response):
                                                   realm=realm, user=None))
         hide_buttons = bool(match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
                                                   realm=realm, user=None))
-        default_tokentype_pol = policy_object.get_action_values(
-            action=ACTION.DEFAULT_TOKENTYPE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data
-        )
+        default_tokentype_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
+                                                                  realm=realm, user=None, unique=True)
         show_seed = bool(match_policies_strict(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                                realm=realm, user=None))
         token_page_size = DEFAULT_PAGE_SIZE
@@ -588,13 +550,9 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
-        policy_template_url_pol = policy_object.get_action_values(
-            action=ACTION.POLICYTEMPLATEURL,
-            scope=SCOPE.WEBUI,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-
+        policy_template_url_pol = match_policy_action_values_strict(g, scope=SCOPE.WEBUI,
+                                                                    action=ACTION.POLICYTEMPLATEURL,
+                                                                    realm=None, user=None, unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
         if len(policy_template_url_pol) == 1:
             policy_template_url = list(policy_template_url_pol)[0]
@@ -639,15 +597,9 @@ def autoassign(request, response):
             # If there is no user in the request (because it is a serial
             # authentication request) we immediately bail out
             # check if the policy is defined
-            policy_object = g.policy_object
-
-            autoassign_values = policy_object.\
-                get_action_values(action=ACTION.AUTOASSIGN,
-                                  scope=SCOPE.ENROLL,
-                                  user_object=user_obj,
-                                  client=g.client_ip,
-                                  unique=True)
-
+            autoassign_values = match_policy_action_values_strict(g, scope=SCOPE.ENROLL, action=ACTION.AUTOASSIGN,
+                                                                  realm=None, user=user_obj,
+                                                                  unique=True, write_to_audit_log=False)
             # check if the user has no token
             if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
                 # Check if the token would match
@@ -733,25 +685,14 @@ def mangle_challenge_response(request, response):
         # This can happen with the validate/radiuscheck endpoint
         return response
     content = response.json
-    policy_object = g.policy_object
     user_obj = request.User
 
-    header_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_HEADER,
-                                                 scope=SCOPE.AUTH,
-                                                 allow_white_space_in_action=True,
-                                                 client=g.client_ip,
-                                                 user_object=user_obj,
-                                                 audit_data=g.audit_object.audit_data,
-                                                 unique=True)
-
-    footer_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_FOOTER,
-                                                 scope=SCOPE.AUTH,
-                                                 allow_white_space_in_action=True,
-                                                 client=g.client_ip,
-                                                 user_object=user_obj,
-                                                 audit_data=g.audit_object.audit_data,
-                                                 unique=True)
-
+    header_pol = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_HEADER,
+                                                   realm=None, user=user_obj, unique=True,
+                                                   allow_white_space_in_action=True)
+    footer_pol = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_FOOTER,
+                                                   realm=None, user=user_obj, unique=True,
+                                                   allow_white_space_in_action=True)
     if header_pol:
         multi_challenge = content.get("detail", {}).get("multi_challenge")
         if multi_challenge:

@@ -2140,6 +2140,22 @@ def match_policies_strict(g, scope, action, realm, user, write_to_audit_log=True
     )
 
 
+def match_policy_action_values_strict(g, scope, action, realm, user, unique,
+                                      allow_white_space_in_action=False,
+                                      write_to_audit_log=True):
+    policies = match_policies_strict(g, scope=scope, action=action, realm=realm, user=user,
+                                     write_to_audit_log=False) # we write later
+    action_values = g.policy_object.extract_action_values(policies, action,
+                                                          unique=unique,
+                                                          allow_white_space_in_action=allow_white_space_in_action)
+    if write_to_audit_log:
+        for action_value, policy_names in action_values.items():
+            for p_name in policy_names:
+                g.audit_object.audit_data.setdefault("policies", []).append(p_name)
+
+    return action_values
+
+
 def match_admin_policies_strict(g, action, realm, write_to_audit_log=True):
     if write_to_audit_log:
         audit_data = g.audit_object.audit_data
@@ -2147,9 +2163,9 @@ def match_admin_policies_strict(g, action, realm, write_to_audit_log=True):
         audit_data = None
     username = g.logged_in_user["username"]
     adminrealm = g.logged_in_user["realm"]
-    from lib.auth import ROLE
-    if g.logged_in_user["role"] != ROLE.ADMIN:
-        raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
+    from privacyidea.lib.auth import ROLE
+    #if g.logged_in_user["role"] != ROLE.ADMIN: # TODO
+    #    raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
     resolver = None
     return g.policy_object.match_policies(
         name=None, scope=SCOPE.ADMIN, realm=realm, active=True,

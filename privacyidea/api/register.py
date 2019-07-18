@@ -33,7 +33,7 @@ from flask import (Blueprint, request, g, current_app)
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 import logging
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import ACTION, SCOPE, match_policy_action_values_strict
 from privacyidea.lib.user import create_user
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
@@ -61,11 +61,8 @@ def register_status():
 
     :return: JSON with value=True or value=False
     """
-    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
-                                                     scope=SCOPE.REGISTER,
-                                                     unique=True,
-                                                     audit_data=g.audit_object.audit_data)
-
+    resolvername = match_policy_action_values_strict(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER,
+                                                     realm=None, user=None, unique=True)
     result = bool(resolvername)
     g.audit_object.log({"info": result,
                         "success": True})
@@ -121,28 +118,22 @@ def register_post():
                 options[key] = value
 
     # 0. check, if we can do the registration at all!
-    smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
-                                                   scope=SCOPE.REGISTER,
-                                                   unique=True,
-                                                   audit_data=g.audit_object.audit_data)
+    smtpconfig = match_policy_action_values_strict(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG,
+                                                   realm=None, user=None, unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
-    realm = g.policy_object.get_action_values(ACTION.REALM,
-                                              scope=SCOPE.REGISTER,
-                                              unique=True,
-                                              audit_data=g.audit_object.audit_data)
+    realm = match_policy_action_values_strict(g, scope=SCOPE.REGISTER, action=ACTION.REALM,
+                                              realm=None, user=None, unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
         realm = get_default_realm
     else:
         # we use the first realm in the list
         realm = list(realm)[0]
-    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
-                                                     scope=SCOPE.REGISTER,
-                                                     unique=True,
-                                                     audit_data=g.audit_object.audit_data)
+    resolvername = match_policy_action_values_strict(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER,
+                                                     realm=None, user=None, unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = list(resolvername)[0]
@@ -167,10 +158,8 @@ def register_post():
 
     smtpconfig = list(smtpconfig)[0]
     # Send the registration key via email
-    body = g.policy_object.get_action_values(ACTION.REGISTERBODY,
-                                             scope=SCOPE.REGISTER,
-                                             unique=True,
-                                             audit_data=g.audit_object.audit_data)
+    body = match_policy_action_values_strict(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY,
+                                             realm=None, user=None, unique=True)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(
         smtpconfig, email,
