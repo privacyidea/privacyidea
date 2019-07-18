@@ -770,41 +770,9 @@ class PolicyClass(object):
                         and other_policy["action"][action] != prioritized_action):
                     raise PolicyError("Contradicting {!s} policies.".format(action))
 
-    @log_with(log)
-    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
-                          resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None,
-                          user_object=None, audit_data=None):
-        """
-        Get the defined action values for a certain action like
-            scope: authorization
-            action: tokentype
-        would return a dictionary of {tokentype: policyname}
-
-            scope: authorization
-            action: serial
-        would return a dictionary of {serial: policyname}
-
-        All parameters not described below are covered in the documentation of ``match_policies``.
-
-        :param unique: if set, the function will only consider the policy with the
-            highest priority and check for policy conflicts.
-        :param allow_white_space_in_action: Some policies like emailtext
-            would allow entering text with whitespaces. These whitespaces
-            must not be used to separate action values!
-        :type allow_white_space_in_action: bool
-        :param audit_data: This is a dictionary, that can take audit_data in the g object.
-            If set, this dictionary will be filled with the list of triggered policynames in the
-            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
-            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
-            the value of the action needs to be evaluated in a more special case.
-        :rtype: dict
-        """
+    @staticmethod
+    def extract_action_values(policies, action, unique=False, allow_white_space_in_action=False):
         policy_values = {}
-        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
-                                       action=action, active=True,
-                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                       client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -837,6 +805,45 @@ class PolicyClass(object):
         if unique and len(policy_values) > 1:
             names = [p['name'] for p in policies]
             raise PolicyError(u"There are policies with conflicting actions: {!r}".format(names))
+        return policy_values
+
+    @log_with(log)
+    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
+                          resolver=None, user=None, client=None, unique=False,
+                          allow_white_space_in_action=False, adminrealm=None,
+                          user_object=None, audit_data=None):
+        """
+        Get the defined action values for a certain action like
+            scope: authorization
+            action: tokentype
+        would return a dictionary of {tokentype: policyname}
+
+            scope: authorization
+            action: serial
+        would return a dictionary of {serial: policyname}
+
+        All parameters not described below are covered in the documentation of ``match_policies``.
+
+        :param unique: if set, the function will only consider the policy with the
+            highest priority and check for policy conflicts.
+        :param allow_white_space_in_action: Some policies like emailtext
+            would allow entering text with whitespaces. These whitespaces
+            must not be used to separate action values!
+        :type allow_white_space_in_action: bool
+        :param audit_data: This is a dictionary, that can take audit_data in the g object.
+            If set, this dictionary will be filled with the list of triggered policynames in the
+            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
+            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
+            the value of the action needs to be evaluated in a more special case.
+        :rtype: dict
+        """
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+                                       action=action, active=True,
+                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True)
+        policy_values = self.extract_action_values(policies, action,
+                                                   unique=unique,
+                                                   allow_white_space_in_action=allow_white_space_in_action)
 
         if audit_data is not None:
             for action_value, policy_names in policy_values.items():
