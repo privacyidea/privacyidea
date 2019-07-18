@@ -1412,15 +1412,16 @@ def allowed_audit_realm(request=None, action=None):
     :param action:
     :return: True
     """
-    pols = match_admin_policies_strict(g, action=ACTION.AUDIT, realm=None)
-    if pols:
-        # get all values in realm:
-        allowed_audit_realms = []
-        for pol in pols:
-            if pol.get("realm"):
-                allowed_audit_realms += pol.get("realm")
-        request.all_data["allowed_audit_realm"] = list(set(
-            allowed_audit_realms))
+    if g.logged_in_user["role"] == ROLE.ADMIN:
+        pols = match_admin_policies_strict(g, action=ACTION.AUDIT, realm=None)
+        if pols:
+            # get all values in realm:
+            allowed_audit_realms = []
+            for pol in pols:
+                if pol.get("realm"):
+                    allowed_audit_realms += pol.get("realm")
+            request.all_data["allowed_audit_realm"] = list(set(
+                allowed_audit_realms))
 
     return True
 

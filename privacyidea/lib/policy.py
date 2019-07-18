@@ -2164,8 +2164,8 @@ def match_admin_policies_strict(g, action, realm, write_to_audit_log=True):
     username = g.logged_in_user["username"]
     adminrealm = g.logged_in_user["realm"]
     from privacyidea.lib.auth import ROLE
-    #if g.logged_in_user["role"] != ROLE.ADMIN: # TODO
-    #    raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
+    if g.logged_in_user["role"] != ROLE.ADMIN:
+        raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
     resolver = None
     return g.policy_object.match_policies(
         name=None, scope=SCOPE.ADMIN, realm=realm, active=True,
