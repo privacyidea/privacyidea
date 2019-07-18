@@ -66,7 +66,7 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass, match_policies_strict
+from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass, match_policies_strict, match_admin_policies_strict
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)
@@ -197,12 +197,8 @@ def realmadmin(request=None, action=None):
         params = request.all_data
         if not "realm" in params:
             # add the realm to params
-            policy_object = g.policy_object
-            po = policy_object.match_policies(
-                action=action, scope=SCOPE.ADMIN,
-                user=g.logged_in_user.get("username"),
-                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
-                active=True, audit_data=g.audit_object.audit_data)
+            po = match_policies_strict(g, scope=SCOPE.ADMIN, action=action,
+                                       user=None, realm=None)
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -1007,17 +1003,7 @@ def check_admin_tokenlist(request=None, action=None):
         return True
 
     policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    admin_realm = g.logged_in_user.get("realm")
-
-    pols = policy_object.match_policies(action=ACTION.TOKENLIST,
-                                        user=username,
-                                        scope=SCOPE.ADMIN,
-                                        client=g.client_ip,
-                                        adminrealm=admin_realm,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-
+    pols = match_admin_policies_strict(g, action=ACTION.TOKENLIST, realm=None)
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
@@ -1107,16 +1093,7 @@ def check_token_upload(request=None, action=None):
     """
     params = request.all_data
     policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    admin_realm = g.logged_in_user.get("realm")
-    action = policy_object.match_policies(action=ACTION.IMPORT,
-                                          user=username,
-                                          realm=params.get("realm"),
-                                          scope=SCOPE.ADMIN,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    action = match_admin_policies_strict(g, action=ACTION.IMPORT, realm=params.get("realm"))
     action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
@@ -1511,17 +1488,7 @@ def allowed_audit_realm(request=None, action=None):
     :param action:
     :return: True
     """
-    admin_user = g.logged_in_user
-    policy_object = g.policy_object
-    pols = policy_object.match_policies(
-        action=ACTION.AUDIT,
-        scope=SCOPE.ADMIN,
-        user=admin_user.get("username"),
-        adminrealm=admin_user.get("realm"),
-        client=g.client_ip,
-        active=True,
-        audit_data=g.audit_object.audit_data)
-
+    pols = match_admin_policies_strict(g, action=ACTION.AUDIT, realm=None)
     if pols:
         # get all values in realm:
         allowed_audit_realms = []

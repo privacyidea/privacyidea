@@ -2133,6 +2133,25 @@ def match_policies_strict(g, scope, action, realm, user, write_to_audit_log=True
     )
 
 
+def match_admin_policies_strict(g, action, realm, write_to_audit_log=True):
+    if write_to_audit_log:
+        audit_data = g.audit_object.audit_data
+    else:
+        audit_data = None
+    username = g.logged_in_user["username"]
+    adminrealm = g.logged_in_user["realm"]
+    from lib.auth import ROLE
+    if g.logged_in_user["role"] != ROLE.ADMIN:
+        raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
+    resolver = None
+    return g.policy_object.match_policies(
+        name=None, scope=SCOPE.ADMIN, realm=realm, active=True,
+        resolver=resolver, user=username, user_object=None,
+        client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
+        sort_by_priority=True, audit_data=audit_data
+    )
+
+
 def get_policy_condition_sections():
     """
     :return: a dictionary mapping condition sections to dictionaries with the following keys:
