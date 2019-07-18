@@ -1044,11 +1044,13 @@ def check_token_upload(request=None, action=None):
     """
     params = request.all_data
     policy_object = g.policy_object
-    action = match_admin_policies_strict(g, action=ACTION.IMPORT, realm=params.get("realm"))
-    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
-    if action_at_all and len(action) == 0:
-        raise PolicyError("Admin actions are defined, but you are not allowed"
-                          " to upload token files.")
+    if g.logged_in_user["role"] == ROLE.ADMIN:
+        # The endpoint is only accessible for admins anyway
+        action = match_admin_policies_strict(g, action=ACTION.IMPORT, realm=params.get("realm"))
+        action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
+        if action_at_all and len(action) == 0:
+            raise PolicyError("Admin actions are defined, but you are not allowed"
+                              " to upload token files.")
     return True
 
 
