@@ -1,6 +1,15 @@
 <div class="table-responsive">
     <table class="table">
-       <tr ng-repeat="condition in policyConditions">
+        <thead>
+        <tr>
+            <th translate>Active</th>
+            <th translate>Section</th>
+            <th translate>Key</th>
+            <th translate>Comparator</th>
+            <th translate>Value</th>
+        </tr>
+        </thead>
+        <tr ng-repeat="condition in policyConditions">
            <td>
                <input type="checkbox" name="{{ conditionname }}"
                       ng-model="condition[4]">
