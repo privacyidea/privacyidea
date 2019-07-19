@@ -93,10 +93,11 @@ class Match(object):
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
         :param realm: the realm against which policies should be matched. Can be None.
+        :type realm: str or None
         :param user: the user against which policies should be matched. Can be None.
                      If a user is given, the argument ``realm`` *must* be None because
                      the ``realm`` attribute of policies is matched against the user realm.
-        :type user: privacyidea.lib.user.User
+        :type user: privacyidea.lib.user.User or None
         :rtype: ``Match``
         """
         if scope == SCOPE.ADMIN:
