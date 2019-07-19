@@ -82,8 +82,8 @@ system_blueprint = Blueprint('system_blueprint', __name__)
 
 
 @system_blueprint.route('/documentation', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
 def get_config_documentation():
     """
     returns an restructured text document, that describes the complete
@@ -149,8 +149,8 @@ def get_config(key=None):
 
 
 @system_blueprint.route('/setConfig', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_config():
     """
     set a configuration key or a set of configuration entries
@@ -214,8 +214,8 @@ def set_config():
 
 
 @system_blueprint.route('/setDefault', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_default():
     """
     define default settings for tokens. These default settings
@@ -261,9 +261,9 @@ def set_default():
 
 
 @system_blueprint.route('/<key>', methods=['DELETE'])
+@admin_required
 @prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
 @log_with(log)
-@admin_required
 def delete_config(key=None):
     """
     delete a configuration key
@@ -281,9 +281,9 @@ def delete_config(key=None):
 
 
 @system_blueprint.route('/hsm', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, ACTION.SETHSM)
 @log_with(log)
-@admin_required
 def set_security_module():
     """
     Set the password for the security module
@@ -296,8 +296,8 @@ def set_security_module():
 
 
 @system_blueprint.route('/hsm', methods=['GET'])
-@log_with(log)
 @admin_required
+@log_with(log)
 def get_security_module():
     """
     Get the status of the security module.
@@ -310,9 +310,9 @@ def get_security_module():
 
 
 @system_blueprint.route('/random', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETRANDOM)
 @log_with(log)
-@admin_required
 def rand():
     """
     This endpoint can be used to retrieve random keys from privacyIDEA.
@@ -341,9 +341,9 @@ def rand():
 
 
 @system_blueprint.route('/test/<tokentype>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SYSTEMWRITE)
 @log_with(log)
-@admin_required
 def test(tokentype=None):
     """
     The call /system/test/email tests the configuration of the email token.
