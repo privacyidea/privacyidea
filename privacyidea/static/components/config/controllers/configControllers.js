@@ -75,6 +75,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.resolversLoaded = false;
     $scope.adminRealmsLoaded = false;
     $scope.policyDefsLoaded = false;
+    $scope.policyConditionDefsLoaded = false;
     $scope.scopes = [];
     $scope.viewPolicyTemplates = false;
     $scope.action_filter = "";
@@ -84,7 +85,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         if ($scope.resolversLoaded &&
             $scope.adminRealmsLoaded &&
             $scope.realmsLoaded &&
-            $scope.policyDefsLoaded) {
+            $scope.policyDefsLoaded &&
+            $scope.policyConditionDefsLoaded) {
             $scope.presetEditValues();
         }
     };
@@ -144,6 +146,11 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         $scope.policyDefsLoaded = true;
         check_all_loaded();
     });
+    ConfigFactory.getPolicyConditionDefs(function (data) {
+        $scope.policyConditionDefs = data.result.value;
+        $scope.policyConditionDefsLoaded = true;
+        check_all_loaded();
+    });
 
     ConfigFactory.getRealms(function(data){
         var realms = data.result.value;
@@ -181,7 +188,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             check_all_resolvers: false,
             client: "",
             time: "",
-            priority: 1
+            priority: 1,
+            conditions: []
         };
     $scope.existingPolicyname = $stateParams.policyname;
     if ($scope.existingPolicyname) {
@@ -335,6 +343,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
+            // we need to deep-copy the policy conditions to ensure that we're working on our own copy
+            $scope.params.conditions = angular.copy(policy.conditions);
             // tick the realms and the resolvers
             angular.forEach($scope.realms, function (value, key) {
                 if (policy.realm.indexOf(value.name) > -1) {

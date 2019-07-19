@@ -247,6 +247,13 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).success(callback
             ).error(AuthFactory.authError);
         },
+        getPolicyConditionDefs: function (callback) {
+            // Return the definitions for policy conditions
+            $http.get(policyUrl + "/defs/conditions", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).success(callback
+            ).error(AuthFactory.authError);
+        },
         getResolvers: function (callback) {
             $http.get(resolverUrl + "/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}

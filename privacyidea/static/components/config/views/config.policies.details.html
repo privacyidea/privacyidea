@@ -338,6 +338,14 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <label for="policy-conditions" class="col-sm-3 control-label"
+               translate>Additional conditions</label>
+
+        <div class="col-sm-9">
+            <pi-policy-conditions conditions="params.conditions" defs="policyConditionDefs"></pi-policy-conditions>
+        </div>
+    </div>
 
     <div class="text-center"
          ng-show="checkRight('policywrite')">

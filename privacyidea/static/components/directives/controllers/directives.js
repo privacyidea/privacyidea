@@ -417,3 +417,47 @@ myApp.directive('focus', function($timeout){
  }
 };
 });
+
+myApp.directive("piPolicyConditions", function (instanceUrl) {
+    /* This directive is used to set the conditions of a policy.
+       It supports adding, removing and editing conditions. */
+    return {
+        restrict: 'E',
+        scope: {
+            // We need a bidirectional binding because we modify the conditions.
+            // The conditions are a list of 5-element lists.
+            policyConditions: "=conditions",
+            // We only need a one-directional binding, because we will never change the definitions
+            conditionDefs: "=defs"
+        },
+        templateUrl: instanceUrl + "/static/components/directives/views/directive.policyconditions.html",
+        link: function (scope, element, attr, ctrl) {
+            // The index of the condition that is currently being edited,
+            // or -1 if no condition is currently being edited
+            scope.editIndex = -1;
+
+            // Called when the user clicks on the "edit" button of a condition
+            scope.editCondition = function (idx) {
+                if(scope.editIndex == idx) {
+                    // we are editing this condition right now, toggle editing
+                    scope.editIndex = -1;
+                } else {
+                    scope.editIndex = idx;
+                }
+            };
+
+            // Called when the user clicks on the "delete" button of a condition
+            scope.deleteCondition = function (idx) {
+                scope.policyConditions.splice(idx, 1);
+                scope.editIndex = -1;
+            };
+
+            // Called when the user clicks on the "add condition" button.
+            // Adds a condition with default values
+            scope.addCondition = function () {
+                scope.policyConditions.push(["userinfo", "", "==", "", false]);
+                scope.editIndex = scope.policyConditions.length - 1;
+            };
+        },
+    };
+});
