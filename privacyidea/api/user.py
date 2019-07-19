@@ -108,8 +108,8 @@ def get_users():
 
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
-@prepolicy(check_base_action, request, ACTION.DELETEUSER)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.DELETEUSER)
 def delete_user(resolvername=None, username=None):
     """
     Delete a User in the user store.
@@ -136,8 +136,8 @@ def delete_user(resolvername=None, username=None):
 
 @user_blueprint.route('', methods=['POST'])
 @user_blueprint.route('/', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.ADDUSER)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.ADDUSER)
 def create_user_api():
     """
     Create a new user in the given resolver.

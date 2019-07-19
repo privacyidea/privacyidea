@@ -293,10 +293,10 @@ def init():
 
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
-@admin_required
 def get_challenges_api(serial=None):
     """
     This endpoint returns the active challenges in the database or returns
@@ -698,10 +698,10 @@ def set_description_api(serial=None):
 
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SET)
 @event("token_set", request, g)
 @log_with(log)
-@admin_required
 def set_api(serial=None):
     """
     This API is only to be used by the admin!
@@ -800,11 +800,11 @@ def set_api(serial=None):
 
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
 @event("token_realm", request, g)
-@admin_required
 def tokenrealm_api(serial=None):
     """
     Set the realms of a token.
@@ -834,10 +834,10 @@ def tokenrealm_api(serial=None):
 
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_token_upload, request)
 @event("token_load", request, g)
-@admin_required
 def loadtokens_api(filename=None):
     """
     The call imports the given file containing token definitions.
@@ -939,10 +939,10 @@ def loadtokens_api(filename=None):
 
 
 @token_blueprint.route('/copypin', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_base_action, request, action=ACTION.COPYTOKENPIN)
 @event("token_copypin", request, g)
-@admin_required
 def copypin_api():
     """
     Copy the token PIN from one token to the other.
@@ -962,10 +962,10 @@ def copypin_api():
 
 
 @token_blueprint.route('/copyuser', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.COPYTOKENUSER)
 @event("token_copyuser", request, g)
 @log_with(log)
-@admin_required
 def copyuser_api():
     """
     Copy the token user from one token to the other.
@@ -1021,10 +1021,10 @@ def lost_api(serial=None):
 
 
 @token_blueprint.route('/getserial/<otp>', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
 @event("token_getserial", request, g)
 @log_with(log)
-@admin_required
 def get_serial_by_otp_api(otp=None):
     """
     Get the serial number for a given OTP value.
@@ -1075,10 +1075,10 @@ def get_serial_by_otp_api(otp=None):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
-@admin_required
 def set_tokeninfo_api(serial, key):
     """
     Add a specific tokeninfo entry to a token. Already existing entries
@@ -1099,10 +1099,10 @@ def set_tokeninfo_api(serial, key):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
-@admin_required
 def delete_tokeninfo_api(serial, key):
     """
     Delete a specific tokeninfo entry of a token.
