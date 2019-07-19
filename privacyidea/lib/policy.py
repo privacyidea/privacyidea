@@ -2066,6 +2066,8 @@ def get_action_values_from_options(scope, action, options):
     This function is used in the library level to fetch policy action values
     from a given option dictionary.
 
+    The matched policies are *not* written to the audit log.
+
     :return: A scalar, string or None
     """
     value = None
@@ -2074,7 +2076,8 @@ def get_action_values_from_options(scope, action, options):
         user_object = options.get("user")
         value = match_policy_action_values_strict(g, scope=scope, action=action,
                                                   realm=None, user=user_object, unique=True,
-                                                  allow_white_space_in_action=True)
+                                                  allow_white_space_in_action=True,
+                                                  write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]
         else:
