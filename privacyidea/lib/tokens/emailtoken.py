@@ -72,8 +72,8 @@ from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.lib.policy import (SCOPE, ACTION, get_action_values_from_options, match_policies_strict,
-                                    match_policy_action_values_strict)
+from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
+from privacyidea.lib.policymatch import Match
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -356,9 +356,9 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=action,
-                                                         realm=None, user=user_object if user_object else None,
-                                                         unique=True, allow_white_space_in_action=True)
+            messages = Match.simple(g, scope=SCOPE.AUTH, action=action,
+                                    realm=None, user=user_object if user_object else None)\
+                .action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
@@ -390,8 +390,8 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autoemailpol = match_policies_strict(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO,
-                                                 realm=None, user=user_object)
+            autoemailpol = Match.simple(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO,
+                                        realm=None, user=user_object).policies()
             autosms = len(autoemailpol) >= 1
 
         return autosms

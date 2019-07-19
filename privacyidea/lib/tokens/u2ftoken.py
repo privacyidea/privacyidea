@@ -41,8 +41,8 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
-from privacyidea.lib.policy import (SCOPE, GROUP, ACTION,
-                                    get_action_values_from_options, match_policy_action_values_strict)
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
+from privacyidea.lib.policymatch import Match
 from privacyidea.lib.utils import (is_true, hexlify_and_unicode, to_unicode,
                                    urlsafe_b64encode_and_unicode)
 import binascii
@@ -495,10 +495,9 @@ class U2fTokenClass(TokenClass):
                     # If not, we can raise a policy exception
                     g = options.get("g")
                     user_object = self.user
-                    allowed_certs_pols = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
-                                                                           realm=None,
-                                                                           user=user_object if user_object else None,
-                                                                           unique=False)
+                    allowed_certs_pols = Match.simple(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
+                                                      realm=None, user=user_object if user_object else None)\
+                        .action_values(unique=False)
                     for allowed_cert in allowed_certs_pols:
                         tag, matching, _rest = allowed_cert.split("/", 3)
                         tag_value = self.get_tokeninfo(
@@ -541,8 +540,8 @@ class U2fTokenClass(TokenClass):
         app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
-        pol_facets = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS,
-                                                       realm=None, user=None, unique=False)
+        pol_facets = Match.simple(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS,
+                                  realm=None, user=None).action_values(unique=False)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 

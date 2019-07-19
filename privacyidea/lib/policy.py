@@ -2074,95 +2074,16 @@ def get_action_values_from_options(scope, action, options):
     g = options.get("g")
     if g:
         user_object = options.get("user")
-        value = match_policy_action_values_strict(g, scope=scope, action=action,
-                                                  realm=None, user=user_object, unique=True,
-                                                  allow_white_space_in_action=True,
-                                                  write_to_audit_log=False)
+        from privacyidea.lib.policymatch import Match
+        value = Match.simple(g, scope=scope, action=action,
+                             realm=None, user=user_object)\
+            .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]
         else:
             return None
 
     return value
-
-
-def match_policies_strict(g, scope, action, realm, user, write_to_audit_log=True):
-    """
-    A shorthand for lengthy ``PolicyClass.match_policies`` calls.
-
-    Given the current ``g``, return a list of policies that match the current context
-    and the given scope, action, realm and user. By default, write the list of
-    matched policies to the audit log.
-
-    :param g: current context (required), needs to have attributes ``audit_object``,
-              ``policy_object`` and ``client_ip``.
-    :param scope: policy scope (required)
-    :param action: policy action (required)
-    :param realm: either the realm that should be matched, or None
-    :param user: either the user object that should be matched, or None
-    :param write_to_audit_log: If True, the matched policies are written to the audit log.
-    :return: a list of policies
-    """
-    if write_to_audit_log:
-        audit_data = g.audit_object.audit_data
-    else:
-        audit_data = None
-    if user is None:
-        user_object = None
-        username = None
-        resolver = None
-        adminrealm = None
-    elif isinstance(user, User):
-        user_object = user
-        if realm is not None:
-            raise ServerError("Contradicting parameters: realm/user")
-        username = None
-        realm = None
-        resolver = None
-        adminrealm = None
-    else:
-        raise ServerError("Invalid user")
-    return g.policy_object.match_policies(
-        name=None, scope=scope, realm=realm, active=True,
-        resolver=resolver, user=username, user_object=user_object,
-        client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
-        sort_by_priority=True, audit_data=audit_data
-    )
-
-
-def match_policy_action_values_strict(g, scope, action, realm, user, unique,
-                                      allow_white_space_in_action=False,
-                                      write_to_audit_log=True):
-    policies = match_policies_strict(g, scope=scope, action=action, realm=realm, user=user,
-                                     write_to_audit_log=False) # we write later
-    action_values = g.policy_object.extract_action_values(policies, action,
-                                                          unique=unique,
-                                                          allow_white_space_in_action=allow_white_space_in_action)
-    if write_to_audit_log:
-        for action_value, policy_names in action_values.items():
-            for p_name in policy_names:
-                g.audit_object.audit_data.setdefault("policies", []).append(p_name)
-
-    return action_values
-
-
-def match_admin_policies_strict(g, action, realm, write_to_audit_log=True):
-    if write_to_audit_log:
-        audit_data = g.audit_object.audit_data
-    else:
-        audit_data = None
-    username = g.logged_in_user["username"]
-    adminrealm = g.logged_in_user["realm"]
-    from privacyidea.lib.auth import ROLE
-    if g.logged_in_user["role"] != ROLE.ADMIN:
-        raise ServerError("SCOPE.ADMIN policies can only be retrieved by admins")
-    resolver = None
-    return g.policy_object.match_policies(
-        name=None, scope=SCOPE.ADMIN, realm=realm, active=True,
-        resolver=resolver, user=username, user_object=None,
-        client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
-        sort_by_priority=True, audit_data=audit_data
-    )
 
 
 def get_policy_condition_sections():

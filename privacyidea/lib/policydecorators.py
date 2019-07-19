@@ -44,10 +44,11 @@ policy decorators for the API (pre/post) are defined in api/lib/policy
 The functions of this module are tested in tests/test_lib_policy_decorator.py
 """
 import logging
+
+from privacyidea.lib.policymatch import Match
 from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
-from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE, match_policies_strict, \
-    match_policy_action_values_strict
+from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
@@ -116,10 +117,10 @@ def challenge_response_allowed(func):
         token = args[0]
         user_object = kwds.get("user") or User()
         if g:
-            allowed_tokentypes_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTH,
-                                                                        action=ACTION.CHALLENGERESPONSE,
-                                                                        realm=None, user=user_object, unique=False,
-                                                                        write_to_audit_log=False)
+            allowed_tokentypes_dict = Match.simple(g, scope=SCOPE.AUTH,
+                                                   action=ACTION.CHALLENGERESPONSE,
+                                                   realm=None, user=user_object)\
+                .action_values(unique=False, write_to_audit_log=False)
             log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
 
             # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
@@ -157,9 +158,9 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     g = options.get("g")
     auth_cache_dict = None
     if g:
-        auth_cache_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
-                                                            realm=None, user=user_object, unique=True,
-                                                            write_to_audit_log=False)
+        auth_cache_dict = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
+                                       realm=None,
+                                       user=user_object).action_values(unique=True, write_to_audit_log=False)
         if auth_cache_dict:
             # verify in cache and return an early success
             auth_times = list(auth_cache_dict)[0].split("/")
@@ -210,9 +211,8 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_token = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSNOTOKEN,
-                                              realm=None, user=user_object,
-                                              write_to_audit_log=False)
+        pass_no_token = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.PASSNOTOKEN,
+                                     realm=None, user=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
             tokencount = get_tokens(user=user_object, count=True)
@@ -243,8 +243,8 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_user = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSNOUSER,
-                                             realm=None, user=user_object)
+        pass_no_user = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.PASSNOUSER,
+                                    realm=None, user=user_object).policies()
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
@@ -277,9 +277,8 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     g = options.get("g")
     if g:
         policy_object = g.policy_object
-        pass_thru = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU,
-                                          realm=None, user=user_object,
-                                          write_to_audit_log=False)
+        pass_thru = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU,
+                                 realm=None, user=user_object).policies(write_to_audit_log=False)
         # We only go to passthru, if the user has no tokens!
         if pass_thru and get_tokens(user=user_object, count=True) == 0:
             # Ensure that there are no conflicting action values within the same priority
@@ -301,9 +300,8 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 if r:
                     g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     # TODO: here we can check, if the token should be assigned.
-                    passthru_assign = match_policy_action_values_strict(g,
-                                                                        scope=SCOPE.AUTH, action=ACTION.PASSTHRU_ASSIGN,
-                                                                        realm=None, user=user_object, unique=True)
+                    passthru_assign = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU_ASSIGN,
+                                                   realm=None, user=user_object).action_values(unique=True)
                     messages = []
                     if passthru_assign:
                         components = list(passthru_assign)[0].split(":")
@@ -361,12 +359,12 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     options = options or {}
     g = options.get("g")
     if g:
-        max_success_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXSUCCESS,
-                                                             realm=None, user=user_object, unique=True,
-                                                             write_to_audit_log=False)
-        max_fail_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXFAIL,
-                                                          realm=None, user=user_object, unique=True,
-                                                          write_to_audit_log=False)
+        max_success_dict = Match.simple(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXSUCCESS,
+                                        realm=None,
+                                        user=user_object).action_values(unique=True, write_to_audit_log=False)
+        max_fail_dict = Match.simple(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHMAXFAIL,
+                                     realm=None,
+                                     user=user_object).action_values(unique=True, write_to_audit_log=False)
         # Check for maximum failed authentications
         # Always - also in case of unsuccessful authentication
         if len(max_fail_dict) == 1:
@@ -452,9 +450,9 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 # the token does not exist anymore. So we immediately return
                 return res, reply_dict
 
-            last_auth_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTHZ, action=ACTION.LASTAUTH,
-                                                               realm=None, user=user_object, unique=True,
-                                                               write_to_audit_log=False)
+            last_auth_dict = Match.simple(g, scope=SCOPE.AUTHZ, action=ACTION.LASTAUTH,
+                                          realm=None,
+                                          user=user_object).action_values(unique=True, write_to_audit_log=False)
             if len(last_auth_dict) == 1:
                 res = token.check_last_auth_newer(list(last_auth_dict)[0])
                 if not res:
@@ -492,8 +490,8 @@ def login_mode(wrapped_function, *args, **kwds):
         # We need the user but we do not need the password
         user_object = args[0]
         # get the policy
-        login_mode_dict = match_policy_action_values_strict(g, scope=SCOPE.WEBUI, action=ACTION.LOGINMODE,
-                                                             realm=None, user=user_object, unique=True)
+        login_mode_dict = Match.simple(g, scope=SCOPE.WEBUI, action=ACTION.LOGINMODE,
+                                       realm=None, user=user_object).action_values(unique=True)
         if login_mode_dict:
             # There is a login mode policy
             if list(login_mode_dict)[0] == LOGINMODE.PRIVACYIDEA:
@@ -543,8 +541,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
             # user object.
             user_object=User("", realm="")
         # get the policy
-        otppin_dict = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=ACTION.OTPPIN,
-                                                        realm=None, user=user_object, unique=True)
+        otppin_dict = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.OTPPIN,
+                                   realm=None, user=user_object).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
                 if pin == "":
@@ -588,15 +586,15 @@ def config_lost_token(wrapped_function, *args, **kwds):
         if len(toks) == 1:
             user_object = toks[0].user
             # get the policy
-            contents_dict = match_policy_action_values_strict(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWCONTENTS,
-                                                              realm=None, user=user_object if user_object else None,
-                                                              unique=True)
-            validity_dict = match_policy_action_values_strict(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENVALID,
-                                                              realm=None, user=user_object if user_object else None,
-                                                              unique=True)
-            pw_len_dict = match_policy_action_values_strict(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWLEN,
-                                                            realm=None, user=user_object if user_object else None,
-                                                            unique=True)
+            contents_dict = Match.simple(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWCONTENTS,
+                                         realm=None, user=user_object if user_object else None)\
+                .action_values(unique=True)
+            validity_dict = Match.simple(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENVALID,
+                                         realm=None, user=user_object if user_object else None)\
+                .action_values(unique=True)
+            pw_len_dict = Match.simple(g, scope=SCOPE.ENROLL, action=ACTION.LOSTTOKENPWLEN,
+                                       realm=None, user=user_object if user_object else None)\
+                .action_values(unique=True)
 
             if contents_dict:
                 kwds["contents"] = list(contents_dict)[0]
@@ -629,8 +627,8 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     # A successful authentication was done
     if r[0] and g and allow_reset:
         token_owner = tokenobject_list[0].user
-        reset_all = match_policies_strict(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
-                                          realm=None, user=token_owner)
+        reset_all = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
+                                 realm=None, user=token_owner).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))

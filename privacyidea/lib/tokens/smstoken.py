@@ -56,9 +56,9 @@ from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options, match_policies_strict, \
-    match_policy_action_values_strict
+from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policymatch import Match
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
@@ -501,9 +501,8 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = match_policy_action_values_strict(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
-                                                         realm=None, user=user_object if user_object else None,
-                                                         unique=True)
+            messages = Match.simple(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
+                                    realm=None, user=user_object if user_object else None).action_values(unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
@@ -525,8 +524,8 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autosmspol = match_policies_strict(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO,
-                                               realm=None, user=user_object)
+            autosmspol = Match.simple(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO,
+                                      realm=None, user=user_object).policies()
             autosms = len(autosmspol) >= 1
 
         return autosms
