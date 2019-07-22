@@ -1106,22 +1106,22 @@ class PolicyTestCase(MyTestCase):
 
         # Set policy with conditions
         set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "verysecure", True)])
+                   conditions=[("userinfo", "type", "equals", "verysecure", True)])
 
         P = PolicyClass()
         self.assertEqual(P.list_policies()[0]["conditions"],
-                         [("userinfo", "type", "==", "verysecure", True)])
+                         [("userinfo", "type", "equals", "verysecure", True)])
 
         # Update existing policy with conditions
         set_policy("act1", conditions=[
-            ("userinfo", "type", "==", "notverysecure", True),
-            ("request", "user_agent", "==", "vpn", True)
+            ("userinfo", "type", "equals", "notverysecure", True),
+            ("request", "user_agent", "equals", "vpn", True)
         ])
         P = PolicyClass()
 
         self.assertEqual(P.list_policies()[0]["conditions"],
-                         [("userinfo", "type", "==", "notverysecure", True),
-                          ("request", "user_agent", "==", "vpn", True)])
+                         [("userinfo", "type", "equals", "notverysecure", True),
+                          ("request", "user_agent", "equals", "vpn", True)])
 
         delete_policy("act1")
         delete_realm("realm1")
@@ -1132,9 +1132,9 @@ class PolicyTestCase(MyTestCase):
             return set(p['name'] for p in policies)
 
         set_policy("verysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "verysecure", True)])
+                   conditions=[("userinfo", "type", "equals", "verysecure", True)])
         set_policy("notverysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "notverysecure", True),
+                   conditions=[("userinfo", "type", "equals", "notverysecure", True),
                                ("userinfo", "groups", "contains", "b", True)])
         P = PolicyClass()
 
@@ -1183,14 +1183,14 @@ class PolicyTestCase(MyTestCase):
 
         # Policy with initially inactive condition
         set_policy("extremelysecure", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   conditions=[("userinfo", "type", "==", "notverysecure", False)])
+                   conditions=[("userinfo", "type", "equals", "notverysecure", False)])
 
         # user1 matches, because the condition on type is inactive
         self.assertEqual(_names(P.match_policies(user_object=user1)),
                          {"extremelysecure"})
 
         # activate the condition
-        set_policy("extremelysecure", conditions=[("userinfo", "type", "==", "notverysecure", True)])
+        set_policy("extremelysecure", conditions=[("userinfo", "type", "equals", "notverysecure", True)])
 
         # user1 does not match anymore, because the condition on type is active
         self.assertEqual(_names(P.match_policies(user_object=user1)),
@@ -1213,21 +1213,21 @@ class PolicyTestCase(MyTestCase):
 
         # an unknown section in the condition
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "==", "verysecure", True)])
+                    conditions=[("somesection", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegexp(PolicyError, r".*unknown section.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownsection")
 
         # ... but the error does not occur if the condition is inactive
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("somesection", "bla", "==", "verysecure", False)])
+                    conditions=[("somesection", "bla", "equals", "verysecure", False)])
         all_policies = P.list_policies()
         self.assertEqual(P.match_policies(user_object=user1), all_policies)
         delete_policy("unknownsection")
 
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                    conditions=[("userinfo", "bla", "==", "verysecure", True)])
+                    conditions=[("userinfo", "bla", "equals", "verysecure", True)])
         with self.assertRaisesRegexp(PolicyError, r".*Unknown key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")

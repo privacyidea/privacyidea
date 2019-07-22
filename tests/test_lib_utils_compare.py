@@ -8,11 +8,11 @@ from .base import MyTestCase
 
 class UtilsCompareTestCase(MyTestCase):
     def test_01_compare_equal(self):
-        self.assertTrue(compare_values("hello", "==", "hello"))
-        self.assertTrue(compare_values(1, "==", 1))
-        self.assertFalse(compare_values("hello", "==", " hello"))
-        self.assertFalse(compare_values(1, "==", 2))
-        self.assertFalse(compare_values(1, "==", "1"))
+        self.assertTrue(compare_values("hello", "equals", "hello"))
+        self.assertTrue(compare_values(1, "equals", 1))
+        self.assertFalse(compare_values("hello", "equals", " hello"))
+        self.assertFalse(compare_values(1, "equals", 2))
+        self.assertFalse(compare_values(1, "equals", "1"))
 
     def test_02_compare_contains(self):
         self.assertTrue(compare_values(["hello", "world"], "contains", "hello"))

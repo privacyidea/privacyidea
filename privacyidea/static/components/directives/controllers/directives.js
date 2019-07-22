@@ -455,7 +455,7 @@ myApp.directive("piPolicyConditions", function (instanceUrl) {
             // Called when the user clicks on the "add condition" button.
             // Adds a condition with default values
             scope.addCondition = function () {
-                scope.policyConditions.push(["userinfo", "", "==", "", false]);
+                scope.policyConditions.push(["userinfo", "", "equals", "", false]);
                 scope.editIndex = scope.policyConditions.length - 1;
             };
         },

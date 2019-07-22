@@ -66,7 +66,7 @@ def _compare_contains(left, comparator, right):
 #: In order to add a comparator to this module, add a suitable member to COMPARATORS
 #: and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
 class COMPARATORS(object):
-    EQUALS = "=="
+    EQUALS = "equals"
     CONTAINS = "contains"
 
 
@@ -96,5 +96,4 @@ def compare_values(left, comparator, right):
     if comparator in COMPARATOR_FUNCTIONS:
         return COMPARATOR_FUNCTIONS[comparator](left, comparator, right)
     else:
-        # We intentionally leave out the values, in case sensitive values are compared
         raise CompareError(u"Invalid comparator: {!r}".format(comparator))
