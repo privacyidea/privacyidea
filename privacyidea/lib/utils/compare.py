@@ -29,6 +29,7 @@ In order to add a new comparator:
 import csv
 import logging
 import re
+from six import wraps
 
 from privacyidea.lib.framework import _
 
@@ -114,31 +115,66 @@ def _compare_in(left, comparator, right):
     return left in parse_comma_separated_string(right)
 
 
+def negate(func):
+    """
+    Given a comparison function ``func``, build and return a comparison function that negates
+    the result of ``func``.
+    :param func: a comparison function taking three arguments
+    :return: a comparison function taking three arguments
+    """
+    @wraps(func)
+    def negated(left, comparator, right):
+        return not func(left, comparator, right)
+    return negated
+
+
 #: This class enumerates all available comparators.
 #: In order to add a comparator to this module, add a suitable member to COMPARATORS
 #: and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
 class COMPARATORS(object):
     EQUALS = "equals"
+    NOT_EQUALS = "!equals"
+
     CONTAINS = "contains"
+    NOT_CONTAINS = "!contains"
+
     MATCHES = "matches"
+    NOT_MATCHES = "!matches"
+
     IN = "in"
+    NOT_IN = "!in"
 
 
 #: This dictionary connects comparators to comparator functions.
 #: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
 COMPARATOR_FUNCTIONS = {
     COMPARATORS.EQUALS: _compare_equality,
+    COMPARATORS.NOT_EQUALS: negate(_compare_equality),
+
     COMPARATORS.CONTAINS: _compare_contains,
+    COMPARATORS.NOT_CONTAINS: negate(_compare_contains),
+
     COMPARATORS.MATCHES: _compare_matches,
+    COMPARATORS.NOT_MATCHES: negate(_compare_matches),
+
     COMPARATORS.IN: _compare_in,
+    COMPARATORS.NOT_IN: negate(_compare_in),
 }
+
 
 #: This dictionary connects comparators to their human-readable (and translated) descriptions.
 COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
+    COMPARATORS.NOT_CONTAINS: _("false if the left value contains the right value"),
+
     COMPARATORS.EQUALS: _("true if the two values are equal"),
+    COMPARATORS.NOT_EQUALS: _("false if the two values are equal"),
+
     COMPARATORS.MATCHES: _("true if the left value matches the given regular expression pattern"),
+    COMPARATORS.NOT_MATCHES: _("false if the left value matches the given regular expression pattern"),
+
     COMPARATORS.IN: _("true if the left value is contained in the comma-separated values on the right"),
+    COMPARATORS.NOT_IN: _("false if the left value is contained in the comma-separated values on the right")
 }
 
 

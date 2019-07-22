@@ -13,6 +13,9 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values("hello", "equals", " hello"))
         self.assertFalse(compare_values(1, "equals", 2))
         self.assertFalse(compare_values(1, "equals", "1"))
+        # negation
+        self.assertFalse(compare_values("hello", "!equals", "hello"))
+        self.assertTrue(compare_values(1, "!equals", "1"))
 
     def test_02_compare_contains(self):
         self.assertTrue(compare_values(["hello", "world"], "contains", "hello"))
@@ -23,6 +26,12 @@ class UtilsCompareTestCase(MyTestCase):
         # must pass a list
         with self.assertRaises(CompareError):
             compare_values("hello world", "contains", "hello")
+
+        # negation
+        self.assertTrue(compare_values([1, "world"], "!contains", "hello"))
+        self.assertFalse(compare_values([1, "world"], "!contains", "world"))
+        with self.assertRaises(CompareError):
+            compare_values("hello world", "!contains", "hello")
 
     def test_03_compare_errors(self):
         with self.assertRaises(CompareError) as cm:
@@ -43,6 +52,12 @@ class UtilsCompareTestCase(MyTestCase):
         # raises errors on invalid patterns
         with self.assertRaises(CompareError):
             compare_values("hello world", "matches", "this is (invalid")
+
+        # negation
+        self.assertTrue(compare_values("uid=hello,cn=users,dc=test,dc=intranet", "!matches",
+                                       "uid=[^,]+,cn=admins,dc=test,dc=intranet"))
+        self.assertFalse(compare_values("uid=hello,cn=admins,dc=test,dc=intranet", "!matches",
+                                        "uid=[^,]+,cn=admins,dc=test,dc=intranet"))
 
     def test_05_parse_comma_separated_string(self):
         self.assertEquals(parse_comma_separated_string("hello world"), ["hello world"])
@@ -74,3 +89,8 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_values("hello", "in", "hello world"))
         self.assertFalse(compare_values("hello,world", "in", 'hello,world'))
         self.assertTrue(compare_values("hello,world", "in", '"hello,world"'))
+
+        # negation
+        self.assertTrue(compare_values("hello", "!in", "world"))
+        self.assertFalse(compare_values("hello", "!in", " hello, world"))
+        self.assertTrue(compare_values("hello", "!in", "hello world"))
