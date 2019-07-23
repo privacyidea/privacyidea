@@ -199,6 +199,43 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue("status=OK" in result, result)
         self.assertTrue("nonce={0!s}".format(nonce) in result, result)
 
+    def test_11_strip_whitespace(self):
+        fixed = "ebedeeefegeheiej"
+        # The backend automatically strips whitespace from the OTP key
+        otpkey = "cc 17 a4 d7 7e ae d9 6e 9d 14 b5 c8 7a 02 e7 18"
+        uid = "000000000000"
+        otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
+                "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
+                "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
+                "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
+                "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
+        ]
+
+        token = init_token({"type": "yubikey",
+                            "otpkey": otpkey,
+                            "otplen": len(otps[0]),
+                            "yubikey.prefix": fixed,
+                            "serial": "UBAM12345678_1"})
+
+        builder = EnvironBuilder(method='GET',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        nonce = "random nonce"
+        apiid = "hallo"
+        apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
+        set_privacyidea_config("yubikey.apiid.{0!s}".format(apiid), apikey)
+        req.all_data = {'id': apiid,
+                        "otp": otps[0],
+                        "nonce": nonce}
+        text_type, result = YubikeyTokenClass.api_endpoint(req, g)
+        self.assertEqual(text_type, "plain")
+        self.assertTrue("status=OK" in result, result)
+        self.assertTrue("nonce={0!s}".format(nonce) in result, result)
+
     def test_98_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
