@@ -1504,6 +1504,29 @@ def u2ftoken_allowed(request, action):
     return True
 
 
+def check_plausibility(request=None, action=None):
+    """
+    This is a wrapper for the /token/init endpoint.
+    If a policy with scope ENROLL and action CHECK_PLAUSIBILITY is defined,
+    this wrapper passes the parameter ``check_plausibility=1`` to the /token/init
+    endpoint. If no such policy is defined, the user-provided value is not modified.
+    :param request:
+    :param action:
+    :return:
+    """
+    user_object = request.User
+    check_plausibility_policies = g.policy_object.match_policies(
+        action=ACTION.CHECK_PLAUSIBILITY,
+        scope=SCOPE.ENROLL,
+        user_object=user_object if user_object else None,
+        active=True,
+        client=g.client_ip,
+        audit_data=g.audit_object.audit_data)
+    if check_plausibility_policies:
+        request.all_data["check_plausibility"] = True
+    return True
+
+
 def allowed_audit_realm(request=None, action=None):
     """
     This decorator function takes the request and adds additional parameters 

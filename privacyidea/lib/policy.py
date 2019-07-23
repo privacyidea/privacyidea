@@ -226,6 +226,7 @@ class ACTION(object):
     CHALLENGETEXT_HEADER = "challenge_text_header"
     CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
+    CHECK_PLAUSIBILITY = "check_plausibility"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DEFAULT_TOKENTYPE = "default_tokentype"
@@ -1789,6 +1790,11 @@ def get_static_policy_definitions(scope=None):
                 'value': list(range(1, 61)),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
+            ACTION.CHECK_PLAUSIBILITY: {
+                'type': 'bool',
+                'desc': _('Prevent enrollment of tokens with invalid configuration.'),
+                'group': GROUP.TOKEN,
+            }
         },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {

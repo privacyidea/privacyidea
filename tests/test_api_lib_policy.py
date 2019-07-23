@@ -27,7 +27,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist)
+                                           check_admin_tokenlist, check_plausibility)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -1584,6 +1584,43 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
             delete_policy(pol)
 
+    def test_26_check_plausibility(self):
+        # we define a CHECK_PLAUSIBILITY policy
+        set_policy("pol-plausibility", scope=SCOPE.ENROLL, action=ACTION.CHECK_PLAUSIBILITY)
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"type": "hotp", "otpkey": "abcd"}
+        g.policy_object = PolicyClass()
+        r = check_plausibility(req)
+        self.assertTrue(r)
+        self.assertTrue(req.all_data["check_plausibility"])
+
+        # if a policy is given, we overwrite the user-provided parameter
+        req.all_data = {"type": "hotp", "otpkey": "abcd", "check_plausibility": False}
+        g.policy_object = PolicyClass()
+        r = check_plausibility(req)
+        self.assertTrue(r)
+        self.assertTrue(req.all_data["check_plausibility"])
+
+        # now without the policy
+        delete_policy("pol-plausibility")
+        req.all_data = {"type": "hotp", "otpkey": "abcd"}
+        g.policy_object = PolicyClass()
+        r = check_plausibility(req)
+        self.assertTrue(r)
+        self.assertNotIn("check_plausibility", req.all_data)
+
+        req.all_data = {"type": "hotp", "otpkey": "abcd", "check_plausibility": True}
+        g.policy_object = PolicyClass()
+        r = check_plausibility(req)
+        self.assertTrue(r)
+        self.assertTrue(req.all_data["check_plausibility"])
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
