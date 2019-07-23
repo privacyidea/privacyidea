@@ -965,13 +965,9 @@ def init_token(param, user=None, tokenrealms=None,
     :type tokenrealms: list
     :param tokenkind: The kind of the token, can be "software",
         "hardware" or "virtual"
-
     :return: token object or None
     :rtype: TokenClass object
     """
-    db_token = None
-    tokenobject = None
-
     tokentype = param.get("type") or "hotp"
     serial = param.get("serial") or gen_serial(tokentype, param.get("prefix"))
     realms = []
@@ -983,26 +979,26 @@ def init_token(param, user=None, tokenrealms=None,
         raise TokenAdminError("init token failed: unknown token type {0!r}".format(tokentype), id=1610)
 
     # Check, if a token with this serial already exist
-    # create a list of the found tokens
-    tokenobject_list = get_tokens(serial=serial)
-    token_count = len(tokenobject_list)
-    if token_count == 0:
-        # A token with the serial was not found, so we create a new one
+    try:
+        db_token = get_one_token(serial=serial).token
+        is_new_token = False
+    except ResourceNotFoundError:
+        # We create a new token
         db_token = Token(serial, tokentype=tokentype.lower())
+        # We add it to the session and commit in any case for now.
+        # In case of an error, we might delete the token object later.
+        db_token.save()
+        is_new_token = True
 
-    else:
-        # The token already exist, so we update the token
-        db_token = tokenobject_list[0].token
-        # prevent from changing the token type
-        old_typ = db_token.tokentype
-        if old_typ.lower() != tokentype.lower():
-            msg = ('token %r already exist with type %r. '
-                   'Can not initialize token with new type %r' % (serial,
-                                                                  old_typ,
-                                                                  tokentype))
-            log.error(msg)
-            raise TokenAdminError("initToken failed: {0!s}".format(msg))
-
+    # prevent from changing the token type
+    old_typ = db_token.tokentype
+    if old_typ.lower() != tokentype.lower():
+        msg = ('token %r already exist with type %r. '
+               'Can not initialize token with new type %r' % (serial,
+                                                              old_typ,
+                                                              tokentype))
+        log.error(msg)
+        raise TokenAdminError("initToken failed: {0!s}".format(msg))
     # if there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
     if param.get("realm") and 'user' not in param:
@@ -1016,13 +1012,12 @@ def init_token(param, user=None, tokenrealms=None,
     if realms or user:
         # We need to save the token to the DB, otherwise the Token
         # has no id!
-        db_token.save()
         db_token.set_realms(realms)
 
     # the tokenclass object is created
     tokenobject = create_tokenclass_object(db_token)
 
-    if token_count == 0:
+    if is_new_token:
         # if this token is a newly created one, we have to setup the defaults,
         # which later might be overwritten by the tokenobject.update(param)
         tokenobject.set_defaults()
@@ -1031,8 +1026,15 @@ def init_token(param, user=None, tokenrealms=None,
     if user is not None and user.login != "":
         tokenobject.add_user(user)
 
-    upd_params = param
-    tokenobject.update(upd_params)
+    try:
+        tokenobject.update(param)
+    except ParameterError:
+        # If we just created a new token in the database, but enrollment
+        # failed because of invalid parameters, we delete it from the database
+        # before re-raising the exception.
+        if is_new_token:
+            remove_token(db_token.serial)
+        raise
 
     try:
         # Save the token to the database

@@ -23,6 +23,7 @@ from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
 import datetime
 import hashlib
+import mock
 import base64
 import binascii
 from privacyidea.lib.token import (create_tokenclass_object,
@@ -336,6 +337,25 @@ class TokenTestCase(MyTestCase):
                                  tokenrealms=[self.realm1])
         self.assertTrue(self.realm1 in tokenobject.token.get_realms(),
                         tokenobject.token.get_realms())
+
+        # if a ParameterError is raised during enrollment, no database object is created
+        with self.assertRaisesRegexp(ParameterError, "some message"):
+            with mock.patch("privacyidea.lib.tokens.hotptoken.HotpTokenClass.update") as mock_update:
+                mock_update.side_effect = ParameterError("some message")
+
+                init_token({"serial": "NEW004", "type": "hotp",
+                            "otpkey": "1234567890123456"})
+        self.assertEqual(Token.query.filter_by(serial="NEW004").all(), [])
+
+        # but if a ParameterError is raised when updating an existing token, the token keeps existing
+        self.assertEqual(Token.query.filter_by(serial="NEW003").count(), 1)
+        with self.assertRaisesRegexp(ParameterError, "some message"):
+            with mock.patch("privacyidea.lib.tokens.hotptoken.HotpTokenClass.update") as mock_update:
+                mock_update.side_effect = ParameterError("some message")
+                # NEW003 already exists
+                init_token({"serial": "NEW003", "type": "hotp",
+                            "otpkey": "12345678901234567"})
+        self.assertEqual(Token.query.filter_by(serial="NEW003").count(), 1)
 
     def test_16_remove_token(self):
         self.assertRaises(ParameterError, remove_token)
@@ -1225,7 +1245,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkeyformat": "foobar"},
                                 user=User(login="cornelius",
                                           realm=self.realm1))
-        remove_token("NEW001")
         # successful base32check encoding
         base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
         tokenobject = init_token({"serial": "NEW002", "type": "hotp",
@@ -1237,7 +1256,6 @@ class TokenTestCase(MyTestCase):
                         tokenobject.token)
         self.assertEqual(tokenobject.token.get_otpkey().getKey(),
                          binascii.hexlify(otpkey))
-        remove_token("NEW002")
 
         # successful base32check encoding, but lower case
         base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
@@ -1251,7 +1269,6 @@ class TokenTestCase(MyTestCase):
                         tokenobject.token)
         self.assertEqual(tokenobject.token.get_otpkey().getKey(),
                          binascii.hexlify(otpkey))
-        remove_token("NEW002")
 
         # base32check encoding with padding
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
@@ -1264,7 +1281,6 @@ class TokenTestCase(MyTestCase):
                         tokenobject.token)
         self.assertEqual(tokenobject.token.get_otpkey().getKey(),
                          binascii.hexlify(otpkey))
-        remove_token("NEW003")
         # invalid base32check encoding (incorrect checksum due to typo)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "A" + base32check_encoding[1:]
@@ -1275,7 +1291,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW004") # TODO: Token is created anyway?
         # invalid base32check encoding (missing four characters => incorrect checksum)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding[:-4]
@@ -1286,7 +1301,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW005") # TODO: Token is created anyway?
         # invalid base32check encoding (too many =)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding + "==="
@@ -1297,7 +1311,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006") # TODO: Token is created anyway?
         # invalid base32check encoding (wrong characters)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "1" + base32check_encoding[1:]
@@ -1308,7 +1321,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006") # TODO: Token is created anyway?
         # invalid key (too short)
         base32check_encoding = b32encode_and_unicode(b'Yo')
         self.assertRaisesRegexp(ParameterError,
@@ -1318,7 +1330,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006")
 
     def test_51_tokenkind(self):
         # A normal token will be of kind "software"
