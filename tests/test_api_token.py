@@ -1731,6 +1731,74 @@ class APITokenTestCase(MyApiTestCase):
         remove_token("SETDESC01")
         remove_token("SETDESC02")
 
+    def test_30_check_plausibility(self):
+        # Enrolling a HOTP token with an invalid OTP key works by default
+        # (it is not hexadecimal and too short!)
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "serial": "FOO123",
+                                                 "otpkey": "hallo"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+
+        # This creates a token object
+        self.assertEqual(len(get_tokens(serial="FOO123")), 1)
+
+        # But if we pass check_plausibility=1, we cannot enroll the token ...
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "check_plausibility": "1",
+                                                 "serial": "FOO456",
+                                                 "otpkey": "hallo"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result["error"]["code"], 905)
+
+        # ... and do not have a token in the database
+        self.assertEqual(get_tokens(serial="FOO456"), [])
+
+        # but if we pass a well-formed OTP key, we can enroll the token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "check_plausibility": "1",
+                                                 "serial": "FOO789",
+                                                 "otpkey": "ab" * 20},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+
+        self.assertEqual(len(get_tokens(serial="FOO789")), 1)
+
+        # ... but plausibility is also checked in case of a token update
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "check_plausibility": "1",
+                                                 "serial": "FOO789",
+                                                 "otpkey": "QQ" * 20},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result["error"]["code"], 905)
+
+        # but the token keeps existing
+        self.assertEqual(len(get_tokens(serial="FOO789")), 1)
+
 
 class API00TokenPerformance(MyApiTestCase):
 

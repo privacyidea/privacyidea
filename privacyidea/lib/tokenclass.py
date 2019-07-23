@@ -476,6 +476,12 @@ class TokenClass(object):
         else:
             raise ParameterError("Unknown OTP key format: {!r}".format(otpkeyformat))
 
+    def ensure_plausibility(self):
+        """
+        Check for invalid token configurations and throw a ParameterError if the token is misconfigured.
+        This function may be called by ``init_token`` after token creation/update.
+        """
+        pass
 
     def update(self, param, reset_failcount=True):
         """

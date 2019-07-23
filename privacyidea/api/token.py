@@ -73,7 +73,7 @@ from privacyidea.lib.error import (ParameterError, TokenAdminError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, is_true
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
@@ -159,6 +159,8 @@ def init():
                     see :ref:`2step_enrollment`.
     :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
                             hex or base32check (see :ref:`2step_enrollment`)
+    :jsonparam check_plausibility: if true, perform a token-specific plausibility check, e.g. to
+                                   ensure that the secret has the correct size
 
     :return: a json result with a boolean "result": true
 
@@ -240,6 +242,7 @@ def init():
     response_details = {}
     tokenrealms = None
     param = request.all_data
+    check_plausibility = is_true(getParam(param, "check_plausibility", optional, False))
 
     # check admin authorization
     # user_tnum = len(getTokens4UserOrSerial(user))
@@ -252,9 +255,13 @@ def init():
     #    tokenrealm = res['realms']
 
     user = request.User
+    # Write user information to the audit log already, in case ``init_token`` fails
+    g.audit_object.log({'user': user.login,
+                        'realm': user.realm})
     tokenobject = init_token(param,
                              user,
-                             tokenrealms=tokenrealms)
+                             tokenrealms=tokenrealms,
+                             check_plausibility=check_plausibility)
 
     if tokenobject:
         g.audit_object.log({"success": True})
@@ -263,9 +270,7 @@ def init():
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
 
-    g.audit_object.log({'user': user.login,
-                        'realm': user.realm,
-                        'serial': tokenobject.token.serial,
+    g.audit_object.log({'serial': tokenobject.token.serial,
                         'token_type': tokenobject.token.tokentype})
 
     # logTokenNum()

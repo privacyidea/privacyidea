@@ -950,9 +950,10 @@ def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
 
 @log_with(log)
 def init_token(param, user=None, tokenrealms=None,
-               tokenkind=None):
+               tokenkind=None, check_plausibility=False):
     """
-    create a new token or update an existing token
+    create a new token or update an existing token.
+    If a ParameterError occurs during the enrollment of a new token, remove the token from the database.
 
     :param param: initialization parameters like:
                   serial (optional)
@@ -965,6 +966,8 @@ def init_token(param, user=None, tokenrealms=None,
     :type tokenrealms: list
     :param tokenkind: The kind of the token, can be "software",
         "hardware" or "virtual"
+    :param check_plausibility: if True, invoke the token-specific ``ensure_plausibility`` method
+                               after token creation/update to check for invalid token configurations.
     :return: token object or None
     :rtype: TokenClass object
     """
@@ -1028,6 +1031,8 @@ def init_token(param, user=None, tokenrealms=None,
 
     try:
         tokenobject.update(param)
+        if check_plausibility:
+            tokenobject.ensure_plausibility()
     except ParameterError:
         # If we just created a new token in the database, but enrollment
         # failed because of invalid parameters, we delete it from the database

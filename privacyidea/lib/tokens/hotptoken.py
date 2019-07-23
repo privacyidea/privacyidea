@@ -277,6 +277,28 @@ class HotpTokenClass(TokenClass):
                 '2step_output': int(keylen[self.hashlib]),
                 '2step_difficulty': int(self.get_tokeninfo('2step_difficulty'))}
 
+    def ensure_plausibility(self):
+        """
+        Check for a plausible token configuration:
+         * in case the token is fully enrolled already:
+            * ensure that the length of the OTP key matches the hashlib
+            * check that the OTP key is a hexstring
+         * check that the OTP length is at least 6
+        """
+        if self.token.rollout_state != "clientwait":
+            otpkey = self.token.get_otpkey().getKey()
+            expected_keylen = keylen.get(self.hashlib)
+            if expected_keylen is not None:
+                if len(otpkey) != expected_keylen * 2:
+                    raise ParameterError(u"Invalid secret key, expected string of length {}, got {}".format(
+                        expected_keylen * 2, len(otpkey)))
+            try:
+                binascii.unhexlify(otpkey)
+            except (binascii.Error, TypeError):
+                raise ParameterError(u"Invalid secret key, expected string of hexadecimal digits")
+        if self.token.otplen < 6:
+            raise ParameterError(u"OTP length too short: {} < 6".format(self.token.otplen))
+
     @log_with(log)
     def update(self, param, reset_failcount=True):
         """
@@ -290,9 +312,7 @@ class HotpTokenClass(TokenClass):
         :return: nothing
         """
         # In case am Immutable MultiDict:
-        upd_param = {}
-        for k, v in param.items():
-            upd_param[k] = v
+        upd_param = param.copy()
 
         # Special handling of 2-step enrollment
         if is_true(getParam(param, "2stepinit", optional)):

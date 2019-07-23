@@ -805,3 +805,42 @@ class HOTPTokenTestCase(MyTestCase):
         expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
+
+    def test_31_ensure_plausibility(self):
+        db_token = Token("plaus1", tokentype="hotp")
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.update({
+            "hashlib": "sha256",
+            "otpkey": "abcd",
+        })
+        # SHA-256: OTP key must be 32 bytes = hexstring with 64 characters
+        with self.assertRaisesRegexp(ParameterError, "of length 64, got 4"):
+            token.ensure_plausibility()
+        token.update({
+            "otpkey": "QQ" * 32,
+        })
+        # SHA-256: OTP key must be a hexstring
+        with self.assertRaisesRegexp(ParameterError, "hexadecimal"):
+            token.ensure_plausibility()
+        token.update({
+            "otpkey": "aa" * 32,
+            "otplen": "4",
+        })
+        # OTP length must be at least 6
+        with self.assertRaisesRegexp(ParameterError, "length"):
+            token.ensure_plausibility()
+        # Finally, the configuration is correct:
+        token.update({
+            "otpkey": "aa" * 32,
+            "otplen": "6",
+        })
+        token.ensure_plausibility()
+        token.update({
+            "otpkey": "aa" * 10,
+        })
+        token.token.rollout_state = "clientwait"
+        # shorter OTP keys are OK in the first step of a 2step enrollment
+        token.ensure_plausibility()
+        # cleanup
+        token.token.delete()
