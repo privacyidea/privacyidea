@@ -244,7 +244,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
     g = options.get("g")
     if g:
         pass_no_user = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.PASSNOUSER,
-                                    realm=None, user=user_object).policies()
+                                    realm=None, user=user_object).policies(write_to_audit_log=False)
         if pass_no_user:
             # Check if user object exists
             if not user_object.exist():
