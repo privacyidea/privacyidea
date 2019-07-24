@@ -82,6 +82,9 @@ class UtilsCompareTestCase(MyTestCase):
         # error if we pass multiple lines
         with self.assertRaises(CompareError):
             parse_comma_separated_string('realm1\nrealm2')
+        # but we can quote newlines
+        self.assertEquals(parse_comma_separated_string('"realm1\nrealm2"'),
+                          ["realm1\nrealm2"])
 
     def test_06_compare_in(self):
         self.assertTrue(compare_values("hello", "in", "hello"))

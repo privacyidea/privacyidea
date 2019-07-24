@@ -63,8 +63,6 @@ def parse_comma_separated_string(input_string):
         rows = list(reader)
     except Exception as exx:
         raise CompareError(u"Malformed comma-separated value: {!r}".format(input_string, exx))
-    if len(rows) != 1:
-        raise CompareError(u"Newlines in comma-separated values are unsupported: {!r}".format(input_string))
     return rows[0]
 
 
