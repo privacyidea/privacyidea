@@ -628,7 +628,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     if r[0] and g and allow_reset:
         token_owner = tokenobject_list[0].user
         reset_all = Match.simple(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
-                                 realm=None, user=token_owner).policies()
+                                 realm=None, user=token_owner if token_owner else None).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))

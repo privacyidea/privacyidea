@@ -65,7 +65,6 @@ from .usercache import (user_cache, cache_username, user_init, delete_user_cache
 log = logging.getLogger(__name__)
 
 
-#@log_with(log)
 @six.python_2_unicode_compatible
 class User(object):
     """
@@ -84,6 +83,9 @@ class User(object):
     realm = ""
     resolver = ""
 
+    # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
+    # which is why we have to decorate __init__
+    @log_with(log)
     def __init__(self, login="", realm="", resolver=""):
         self.login = login or ""
         self.used_login = self.login

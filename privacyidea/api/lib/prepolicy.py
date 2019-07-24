@@ -965,13 +965,11 @@ def check_token_upload(request=None, action=None):
     """
     params = request.all_data
     policy_object = g.policy_object
-    if g.logged_in_user["role"] == ROLE.ADMIN:
-        # The endpoint is only accessible for admins anyway
-        action = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).policies()
-        action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
-        if action_at_all and len(action) == 0:
-            raise PolicyError("Admin actions are defined, but you are not allowed"
-                              " to upload token files.")
+    action = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).policies()
+    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
+    if action_at_all and len(action) == 0:
+        raise PolicyError("Admin actions are defined, but you are not allowed"
+                          " to upload token files.")
     return True
 
 
@@ -1335,6 +1333,9 @@ def allowed_audit_realm(request=None, action=None):
     :param action:
     :return: True
     """
+    # The endpoint is accessible to users, but we only set ``allowed_audit_realm``
+    # for admins, as users are only allowed to view their own realm anyway (this
+    # is ensured by the fixed "realm" parameter)
     if g.logged_in_user["role"] == ROLE.ADMIN:
         pols = Match.admin(g, action=ACTION.AUDIT, realm=None).policies()
         if pols:

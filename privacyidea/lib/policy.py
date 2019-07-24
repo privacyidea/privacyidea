@@ -772,6 +772,20 @@ class PolicyClass(object):
 
     @staticmethod
     def extract_action_values(policies, action, unique=False, allow_white_space_in_action=False):
+        """
+        Given an action, extract all values the given policies specify for that action.
+        :param policies: a list of policy dictionaries
+        :type policies: list
+        :param action: a policy action
+        :type action: action
+        :param unique: if True, only consider the policy with the highest priority
+                       and check for policy conflicts (in this case, raise a PolicyError).
+        :type unique: bool
+        :param allow_white_space_in_action: Some policies like emailtext
+            would allow entering text with whitespaces. These whitespaces
+            must not be used to separate action values!
+        :return: a dictionary mapping action values to lists of matching policies.
+        """
         policy_values = {}
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
