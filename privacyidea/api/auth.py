@@ -62,7 +62,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import (send_result, get_all_params,
-                                       verify_auth_token, getParam)
+                                       verify_auth_token, getParam, add_request_information)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
 from privacyidea.lib.event import event, EventConfiguration
@@ -88,8 +88,7 @@ def before_request():
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    add_request_information(g, request)
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,

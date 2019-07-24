@@ -28,7 +28,7 @@ It also contains the error handlers.
 """
 
 import six
-from .lib.utils import (send_error, get_all_params)
+from .lib.utils import (send_error, get_all_params, add_request_information)
 from ..lib.user import get_user_from_param
 import logging
 from .lib.utils import getParam
@@ -156,9 +156,7 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    add_request_information(g, request)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Already get some typical parameters to log

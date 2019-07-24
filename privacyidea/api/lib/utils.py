@@ -27,7 +27,8 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version
+from privacyidea.lib.utils import prepare_result, get_version, get_client_ip
+from privacyidea.lib.config import get_from_config, SYSCONF
 import time
 import logging
 import json
@@ -268,3 +269,19 @@ def verify_auth_token(auth_token, required_role=None):
                         "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
+
+
+def add_request_information(g, request):
+    """
+    Add some request information to the ``g`` object.
+    This function sets:
+     * ``g.client_ip``
+     * ``g.request_context``, a dictionary with the following keys:
+        * ``endpoint``, denotes the REST API endpoint that was called or None. e.g. "/token/init"
+    :param g: Flask g object
+    :param request: Flask request object
+    """
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.request_context = {
+        'endpoint': str(request.url_rule) if request.url_rule is not None else None,
+    }

@@ -33,7 +33,7 @@ The TiQR Token uses this API to implement its special functionalities. See
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import getParam
+from .lib.utils import getParam, add_request_information
 from ..lib.log import log_with
 from flask import g, jsonify, current_app, Response
 import logging
@@ -66,9 +66,7 @@ def before_request():
     # can be passed to the innerpolicies.
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    add_request_information(g, request)
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,

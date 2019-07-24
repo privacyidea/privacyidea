@@ -66,7 +66,7 @@ In case if authenitcating a serial number:
 """
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
-from .lib.utils import send_result, getParam
+from .lib.utils import send_result, getParam, add_request_information
 from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
@@ -130,8 +130,7 @@ def before_request():
 
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    add_request_information(g, request)
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
