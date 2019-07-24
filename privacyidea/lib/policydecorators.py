@@ -410,15 +410,14 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         # Always - also in case of unsuccessful authentication
         if len(max_fail_dict) == 1:
             policy_count, tdelta = parse_timelimit(list(max_fail_dict)[0])
+            endpoint_name = g.request_context['endpoint'] or '/validate/check'
             fail_c = g.audit_object.get_count({"user": user_object.login,
                                                "realm": user_object.realm,
-                                               "action":
-                                                   "%/validate/check"},
+                                               "action": "%" + endpoint_name},
                                               success=False,
                                               timedelta=tdelta)
-            log.debug("Checking users timelimit %s: %s "
-                      "failed authentications" %
-                      (list(max_fail_dict)[0], fail_c))
+            log.debug(u"Checking users timelimit {}: {} failed authentications at endpoint {}".format(
+                      list(max_fail_dict)[0], fail_c, endpoint_name))
             if fail_c >= policy_count:
                 res = False
                 reply_dict["message"] = ("Only %s failed authentications "
@@ -430,16 +429,15 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
             # Only in case of a successful authentication
             if len(max_success_dict) == 1:
                 policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
+                endpoint_name = g.request_context['endpoint'] or '/validate/check'
                 # check the successful authentications for this user
                 succ_c = g.audit_object.get_count({"user": user_object.login,
                                                    "realm": user_object.realm,
-                                                   "action":
-                                                       "%/validate/check"},
+                                                   "action": "%" + endpoint_name},
                                                   success=True,
                                                   timedelta=tdelta)
-                log.debug("Checking users timelimit %s: %s "
-                          "succesful authentications" %
-                          (list(max_success_dict)[0], succ_c))
+                log.debug(u"Checking users timelimit {}: {} successful authentications at endpoint {}".format(
+                    list(max_success_dict)[0], succ_c, endpoint_name))
                 if succ_c >= policy_count:
                     res = False
                     reply_dict["message"] = ("Only %s successfull "
