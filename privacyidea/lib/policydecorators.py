@@ -46,6 +46,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import logging
 from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
+from privacyidea.lib.audit import find_authentication_attempts
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
@@ -411,11 +412,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
         if len(max_fail_dict) == 1:
             policy_count, tdelta = parse_timelimit(list(max_fail_dict)[0])
             endpoint_name = g.request_context['endpoint'] or '/validate/check'
-            fail_c = g.audit_object.get_count({"user": user_object.login,
-                                               "realm": user_object.realm,
-                                               "action": "%" + endpoint_name},
-                                              success=False,
-                                              timedelta=tdelta)
+            fail_c = find_authentication_attempts(g.audit_object, user_object, endpoint_name, tdelta, success=False)
             log.debug(u"Checking users timelimit {}: {} failed authentications at endpoint {}".format(
                       list(max_fail_dict)[0], fail_c, endpoint_name))
             if fail_c >= policy_count:
@@ -431,11 +428,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                 policy_count, tdelta = parse_timelimit(list(max_success_dict)[0])
                 endpoint_name = g.request_context['endpoint'] or '/validate/check'
                 # check the successful authentications for this user
-                succ_c = g.audit_object.get_count({"user": user_object.login,
-                                                   "realm": user_object.realm,
-                                                   "action": "%" + endpoint_name},
-                                                  success=True,
-                                                  timedelta=tdelta)
+                succ_c = find_authentication_attempts(g.audit_object, user_object, endpoint_name, tdelta, success=True)
                 log.debug(u"Checking users timelimit {}: {} successful authentications at endpoint {}".format(
                     list(max_success_dict)[0], succ_c, endpoint_name))
                 if succ_c >= policy_count:

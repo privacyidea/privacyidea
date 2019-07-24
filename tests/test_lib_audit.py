@@ -7,8 +7,9 @@ This tests the files
 
 from .base import MyTestCase
 from mock import mock
-from privacyidea.lib.audit import getAudit, search
+from privacyidea.lib.audit import getAudit, search, find_authentication_attempts
 from privacyidea.lib.auditmodules.sqlaudit import column_length
+from privacyidea.lib.user import User
 import datetime
 import time
 
@@ -282,3 +283,70 @@ class AuditTestCase(MyTestCase):
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
+
+
+class AuthenticationAttemptsTestCase(MyTestCase):
+    # Implemented in a separate class so that we start out with a clean audit log
+    def test_01_find_authentication_attempts(self):
+        log_entries = [{"action": "POST /auth",
+                        "user": "hans",
+                        "realm": "defrealm",
+                        "success": True},
+                       {"action": "POST /auth",
+                        "user": "hans",
+                        "realm": "defrealm",
+                        "success": False},
+                       {"action": "POST /auth",
+                        "user": "wurst",
+                        "realm": "defrealm",
+                        "success": True},
+                       {"action": "POST /auth",
+                        "administrator": "wurst",
+                        "realm": "adminrealm",
+                        "success": True},
+                       {"action": "POST /auth",
+                        "user": "hans",
+                        "realm": "defrealm",
+                        "success": False},
+                       {"action": "POST /validate/check",
+                        "user": "hans",
+                        "realm": "defrealm",
+                        "success": True}
+                       ]
+        # add the log entries, 5 minutes apart
+        current_timestamp = datetime.datetime.now()
+        for entry in reversed(log_entries):
+            with mock.patch('privacyidea.models.datetime') as mock_dt:
+                mock_dt.now.return_value = current_timestamp
+                audit = getAudit(self.app.config)
+                audit.log(entry)
+                audit.finalize_log()
+            current_timestamp -= datetime.timedelta(minutes=5)
+        # now we test find_authentication_attempts
+        audit = getAudit(self.app.config)
+
+        hans = User("hans", "defrealm")
+        wurst_defrealm = User("wurst", "defrealm")
+        wurst_adminrealm = User("wurst", "adminrealm")
+        self.assertEqual(find_authentication_attempts(audit, hans, "/validate/check"),
+                         1)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/validate/check", success=False),
+                         0)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/foo"), 0)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/auth"),
+                         3)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/auth", success=True),
+                         1)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/auth", success=False),
+                         2)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/auth", success=False,
+                                                      timedelta=datetime.timedelta(minutes=10)),
+                         1)
+        self.assertEqual(find_authentication_attempts(audit, hans, "/auth", success=False,
+                                                      timedelta=datetime.timedelta(minutes=3)),
+                         0)
+        self.assertEqual(find_authentication_attempts(audit, wurst_defrealm, "/auth"), 1)
+        self.assertEqual(find_authentication_attempts(audit, wurst_adminrealm, "/auth"), 1)
+        self.assertEqual(find_authentication_attempts(audit, wurst_adminrealm, "/auth",
+                                                      timedelta=datetime.timedelta(minutes=20)),
+                         1)

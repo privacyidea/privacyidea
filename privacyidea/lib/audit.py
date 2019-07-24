@@ -54,7 +54,7 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import parse_timedelta, get_module_class
-
+from privacyidea.lib.framework import get_app_config_value
 
 @log_with(log, log_entry=False)
 def getAudit(config):
@@ -116,3 +116,26 @@ def search(config, param=None, user=None):
            "count": pagination.total}
 
     return ret
+
+
+def find_authentication_attempts(audit_object, user_object, endpoint_name, timedelta=None, success=None):
+    """
+    Search the audit log for authentication attempts for a given user and return the number of authentication
+    attempts matching the given criteria. This function also handles the case in which the user is an
+    external admin (i.e. the user realm is contained in SUPERUSER_REALM).
+    :param audit_object: an audit object
+    :param user_object: a User object, might be an external admin
+    :param endpoint_name: the endpoint, normally "/validate/check" or "/auth"
+    :param timedelta: optionally, the timedelta in which authentication attempts should be searched
+    :param success: optionally, only search for successful/unsuccessful authentication attempts
+    :return: number of matching authentication attempts in the audit log
+    :rtype: int
+    """
+    superuser_realms = get_app_config_value("SUPERUSER_REALM", [])
+    search_dict = {"realm": user_object.realm,
+                   "action": "%" + endpoint_name}
+    if user_object.realm in superuser_realms:
+        search_dict["administrator"] = user_object.login
+    else:
+        search_dict["user"] = user_object.login
+    return audit_object.get_count(search_dict, success=success, timedelta=timedelta)
