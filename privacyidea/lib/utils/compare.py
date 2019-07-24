@@ -61,7 +61,7 @@ def parse_comma_separated_string(input_string):
     try:
         reader = csv.reader([input_string], strict=True, skipinitialspace=True, doublequote=False, escapechar="\\")
         rows = list(reader)
-    except Exception as exx:
+    except csv.Error as exx:
         raise CompareError(u"Malformed comma-separated value: {!r}".format(input_string, exx))
     return rows[0]
 
@@ -89,7 +89,7 @@ def _compare_contains(left, comparator, right):
 
 def _compare_matches(left, comparator, right):
     """
-    Return True if ``left`` matches the regular expression given in ``right``.
+    Return True if the string in ``left`` completely matches the regular expression given in ``right``.
     Raise a CompareError if ``right`` is not a valid regular expression, or
     if any other matching error occurs.
     :param left: a string
@@ -168,8 +168,8 @@ COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.EQUALS: _("true if the two values are equal"),
     COMPARATORS.NOT_EQUALS: _("false if the two values are equal"),
 
-    COMPARATORS.MATCHES: _("true if the left value matches the given regular expression pattern"),
-    COMPARATORS.NOT_MATCHES: _("false if the left value matches the given regular expression pattern"),
+    COMPARATORS.MATCHES: _("true if the left value completely matches the given regular expression pattern"),
+    COMPARATORS.NOT_MATCHES: _("false if the left value completely matches the given regular expression pattern"),
 
     COMPARATORS.IN: _("true if the left value is contained in the comma-separated values on the right"),
     COMPARATORS.NOT_IN: _("false if the left value is contained in the comma-separated values on the right")
