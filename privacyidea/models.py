@@ -1500,7 +1500,7 @@ class PolicyCondition(MethodsMixin, db.Model):
     # We use upper-case "Key" and "Value" to prevent conflicts with databases
     # that do not support "key" or "value" as column names
     Key = db.Column(db.Unicode(255), nullable=False)
-    comparator = db.Column(db.Unicode(255), nullable=False, default=u'==')
+    comparator = db.Column(db.Unicode(255), nullable=False, default=u'equals')
     Value = db.Column(db.Unicode(2000), nullable=False, default=u'')
     active = db.Column(db.Boolean, nullable=False, default=True)
 

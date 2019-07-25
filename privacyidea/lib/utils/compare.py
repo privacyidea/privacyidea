@@ -26,7 +26,10 @@ In order to add a new comparator:
  2) implement a comparison function and add it to COMPARATOR_FUNCTIONS
  3) add a description of the comparator to COMPARATOR_DESCRIPTIONS
 """
+import csv
 import logging
+import re
+from six import wraps
 
 from privacyidea.lib.framework import _
 
@@ -34,11 +37,33 @@ log = logging.getLogger(__name__)
 
 
 class CompareError(Exception):
+    """
+    Signals that an error occurred when carrying out a comparison.
+    The error message is not presented to the user, but written to the logfile.
+    """
     def __init__(self, message):
         self.message = message
 
     def __repr__(self):
         return u"CompareError({!r})".format(self.message)
+
+
+def parse_comma_separated_string(input_string):
+    """
+    Parse a string that contains a list of comma-separated values and return the list of values.
+    Each value may be quoted with a doublequote, and doublequotes may be escaped with a backslash.
+    Whitespace immediately following a delimiter is skipped.
+    Raise a CompareError if the input is malformed.
+    :param input_string: an input string
+    :return: a list of strings
+    """
+    # We use Python's csv module because it supports quoted values
+    try:
+        reader = csv.reader([input_string], strict=True, skipinitialspace=True, doublequote=False, escapechar="\\")
+        rows = list(reader)
+    except csv.Error as exx:
+        raise CompareError(u"Malformed comma-separated value: {!r}".format(input_string, exx))
+    return rows[0]
 
 
 def _compare_equality(left, comparator, right):
@@ -62,25 +87,92 @@ def _compare_contains(left, comparator, right):
         raise CompareError(u"Left value must be a list, not {!r}".format(type(left)))
 
 
+def _compare_matches(left, comparator, right):
+    """
+    Return True if the string in ``left`` completely matches the regular expression given in ``right``.
+    Raise a CompareError if ``right`` is not a valid regular expression, or
+    if any other matching error occurs.
+    :param left: a string
+    :param right: a regular expression
+    :return: True or False
+    """
+    try:
+        return re.match("^" + right + "$", left) is not None
+    except re.error as e:
+        raise CompareError(u"Error during matching: {!r}".format(e))
+
+
+def _compare_in(left, comparator, right):
+    """
+    Return True if ``left`` is a member of ``right``, which is a string containing a
+    list of values, separated by commas (see ``parse_comma_separated_string``).
+    :param left: a string
+    :param right: a string of comma-separated values
+    :return: True or False
+    """
+    return left in parse_comma_separated_string(right)
+
+
+def negate(func):
+    """
+    Given a comparison function ``func``, build and return a comparison function that negates
+    the result of ``func``.
+    :param func: a comparison function taking three arguments
+    :return: a comparison function taking three arguments
+    """
+    @wraps(func)
+    def negated(left, comparator, right):
+        return not func(left, comparator, right)
+    return negated
+
+
 #: This class enumerates all available comparators.
 #: In order to add a comparator to this module, add a suitable member to COMPARATORS
 #: and suitable entries to COMPARATOR_FUNCTIONS and COMPARATOR_DESCRIPTIONS.
 class COMPARATORS(object):
-    EQUALS = "=="
+    EQUALS = "equals"
+    NOT_EQUALS = "!equals"
+
     CONTAINS = "contains"
+    NOT_CONTAINS = "!contains"
+
+    MATCHES = "matches"
+    NOT_MATCHES = "!matches"
+
+    IN = "in"
+    NOT_IN = "!in"
 
 
 #: This dictionary connects comparators to comparator functions.
 #: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
 COMPARATOR_FUNCTIONS = {
     COMPARATORS.EQUALS: _compare_equality,
+    COMPARATORS.NOT_EQUALS: negate(_compare_equality),
+
     COMPARATORS.CONTAINS: _compare_contains,
+    COMPARATORS.NOT_CONTAINS: negate(_compare_contains),
+
+    COMPARATORS.MATCHES: _compare_matches,
+    COMPARATORS.NOT_MATCHES: negate(_compare_matches),
+
+    COMPARATORS.IN: _compare_in,
+    COMPARATORS.NOT_IN: negate(_compare_in),
 }
+
 
 #: This dictionary connects comparators to their human-readable (and translated) descriptions.
 COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
-    COMPARATORS.EQUALS: _("true if the two values are equal")
+    COMPARATORS.NOT_CONTAINS: _("false if the left value contains the right value"),
+
+    COMPARATORS.EQUALS: _("true if the two values are equal"),
+    COMPARATORS.NOT_EQUALS: _("false if the two values are equal"),
+
+    COMPARATORS.MATCHES: _("true if the left value completely matches the given regular expression pattern"),
+    COMPARATORS.NOT_MATCHES: _("false if the left value completely matches the given regular expression pattern"),
+
+    COMPARATORS.IN: _("true if the left value is contained in the comma-separated values on the right"),
+    COMPARATORS.NOT_IN: _("false if the left value is contained in the comma-separated values on the right")
 }
 
 
@@ -96,5 +188,4 @@ def compare_values(left, comparator, right):
     if comparator in COMPARATOR_FUNCTIONS:
         return COMPARATOR_FUNCTIONS[comparator](left, comparator, right)
     else:
-        # We intentionally leave out the values, in case sensitive values are compared
         raise CompareError(u"Invalid comparator: {!r}".format(comparator))
