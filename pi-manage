@@ -1043,7 +1043,7 @@ def list_policies():
     list the policies
     """
     pol_cls = PolicyClass()
-    policies = pol_cls.get_policies()
+    policies = pol_cls.list_policies()
     print("Active \t Name \t Scope")
     print(40*"=")
     for policy in policies:
@@ -1090,7 +1090,7 @@ def p_export(filename=None):
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     pol_cls = PolicyClass()
-    policies = pol_cls.get_policies()
+    policies = pol_cls.list_policies()
     pol_str = pp.pformat(policies)
     if filename:
         with open(filename, 'w') as f:
@@ -1109,7 +1109,7 @@ def p_import(filename, cleanup=False):
     if cleanup:
         print("Cleanup old policies.")
         pol_cls = PolicyClass()
-        policies = pol_cls.get_policies()
+        policies = pol_cls.list_policies()
         for policy in policies:
             name = policy.get("name")
             r = delete_policy(name)

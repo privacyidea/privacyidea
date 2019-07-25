@@ -75,7 +75,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF, update_config_object)
+                                    SYSCONF, ensure_no_config_object)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
@@ -92,8 +92,6 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
-from privacyidea.api.auth import jwtauth
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
@@ -118,7 +116,7 @@ def before_request():
     """
     This is executed before the request
     """
-    update_config_object()
+    ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
@@ -141,26 +139,6 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "info": ""})
-
-
-@validate_blueprint.after_request
-@register_blueprint.after_request
-@recover_blueprint.after_request
-@jwtauth.after_request
-@postrequest(sign_response, request=request)
-def after_request(response):
-    """
-    This function is called after a request
-    :return: The response
-    """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g:
-        g.audit_object.finalize_log()
-
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
-    return response
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])

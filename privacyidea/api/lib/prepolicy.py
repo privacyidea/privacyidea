@@ -198,7 +198,7 @@ def realmadmin(request=None, action=None):
         if not "realm" in params:
             # add the realm to params
             policy_object = g.policy_object
-            po = policy_object.get_policies(
+            po = policy_object.match_policies(
                 action=action, scope=SCOPE.ADMIN,
                 user=g.logged_in_user.get("username"),
                 adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
@@ -422,13 +422,13 @@ def encrypt_pin(request=None, action=None):
     policy_object = g.policy_object
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.get_policies(action=ACTION.ENCRYPTPIN,
-                                          scope=SCOPE.ENROLL,
-                                          user=user_object.login,
-                                          realm=user_object.realm,
-                                          client=g.client_ip,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    pin_pols = policy_object.match_policies(action=ACTION.ENCRYPTPIN,
+                                            scope=SCOPE.ENROLL,
+                                            user=user_object.login,
+                                            realm=user_object.realm,
+                                            client=g.client_ip,
+                                            active=True,
+                                            audit_data=g.audit_object.audit_data)
 
     if pin_pols:
         request.all_data["encryptpin"] = "True"
@@ -457,17 +457,15 @@ def enroll_pin(request=None, action=None):
         username = g.logged_in_user.get("username")
         realm = getParam(request.all_data, "realm")
         adminrealm = g.logged_in_user.get("realm")
-    pin_pols = policy_object.get_policies(action=ACTION.ENROLLPIN,
-                                          scope=scope,
-                                          user=username,
-                                          realm=realm,
-                                          adminrealm=adminrealm,
-                                          client=g.client_ip,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    pin_pols = policy_object.match_policies(action=ACTION.ENROLLPIN,
+                                            scope=scope,
+                                            user=username,
+                                            realm=realm,
+                                            adminrealm=adminrealm,
+                                            client=g.client_ip,
+                                            active=True,
+                                            audit_data=g.audit_object.audit_data)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
 
     if action_at_all and not pin_pols:
         # Not allowed to set a PIN during enrollment!
@@ -975,19 +973,67 @@ def check_anonymous_user(request=None, action=None):
     username = user_obj.login
     realm = user_obj.realm
 
-    action = policy_object.get_policies(action=action,
-                                        user=username,
-                                        realm=realm,
-                                        scope=scope,
-                                        client=g.client_ip,
-                                        adminrealm=None,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    action = policy_object.match_policies(action=action,
+                                          user=username,
+                                          realm=realm,
+                                          scope=scope,
+                                          client=g.client_ip,
+                                          adminrealm=None,
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR)
+    return True
+
+
+def check_admin_tokenlist(request=None, action=None):
+    """
+    Depending on the policy scope=admin, action=tokenlist, the
+    allowed_realms parameter is set to define, the token of which
+    realms and administrator is allowed to see.
+
+    Sets the allowed_realms
+    None: means the admin has no restrictions
+    []: the admin can not see any realms
+    ["realm1", "realm2"...]: the admin can see these realms
+
+    :param request:
+    :return:
+    """
+    allowed_realms = None
+    wildcard = False
+    role = g.logged_in_user.get("role")
+    if role == ROLE.USER:
+        return True
+
+    policy_object = g.policy_object
+    username = g.logged_in_user.get("username")
+    admin_realm = g.logged_in_user.get("realm")
+
+    pols = policy_object.match_policies(action=ACTION.TOKENLIST,
+                                        user=username,
+                                        scope=SCOPE.ADMIN,
+                                        client=g.client_ip,
+                                        adminrealm=admin_realm,
+                                        active=True,
+                                        audit_data=g.audit_object.audit_data)
+
+    pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
+
+    if pols_at_all:
+        allowed_realms = []
+        for pol in pols:
+            if not pol.get("realm"):
+                # if there is no realm set in a tokenlist policy, then this is a wildcard!
+                wildcard = True
+            else:
+                allowed_realms.extend(pol.get("realm"))
+
+        if wildcard:
+            allowed_realms = None
+
+    request.pi_allowed_realms = allowed_realms
     return True
 
 
@@ -1037,18 +1083,16 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(request.view_args.get("serial"),
                                         only_first_realm=True)
 
-    action = policy_object.get_policies(action=action,
-                                        user=username,
-                                        realm=realm,
-                                        scope=scope,
-                                        resolver=resolver,
-                                        client=g.client_ip,
-                                        adminrealm=admin_realm,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope,
-                                               active=True,
-                                               all_times=True)
+    action = policy_object.match_policies(action=action,
+                                          user=username,
+                                          realm=realm,
+                                          scope=scope,
+                                          resolver=resolver,
+                                          client=g.client_ip,
+                                          adminrealm=admin_realm,
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
@@ -1066,16 +1110,15 @@ def check_token_upload(request=None, action=None):
     policy_object = g.policy_object
     username = g.logged_in_user.get("username")
     admin_realm = g.logged_in_user.get("realm")
-    action = policy_object.get_policies(action=ACTION.IMPORT,
-                                        user=username,
-                                        realm=params.get("realm"),
-                                        scope=SCOPE.ADMIN,
-                                        client=g.client_ip,
-                                        adminrealm=admin_realm,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=SCOPE.ADMIN,
-                                               active=True, all_times=True)
+    action = policy_object.match_policies(action=ACTION.IMPORT,
+                                          user=username,
+                                          realm=params.get("realm"),
+                                          scope=SCOPE.ADMIN,
+                                          client=g.client_ip,
+                                          adminrealm=admin_realm,
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
+    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
@@ -1115,17 +1158,16 @@ def check_token_init(request=None, action=None):
 
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
-    action = policy_object.get_policies(action=action,
-                                        user=username,
-                                        realm=realm,
-                                        resolver=resolver,
-                                        scope=scope,
-                                        client=g.client_ip,
-                                        adminrealm=admin_realm,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.get_policies(scope=scope, active=True,
-                                               all_times=True)
+    action = policy_object.match_policies(action=action,
+                                          user=username,
+                                          realm=realm,
+                                          resolver=resolver,
+                                          scope=scope,
+                                          client=g.client_ip,
+                                          adminrealm=admin_realm,
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
+    action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
     return True
@@ -1175,13 +1217,13 @@ def api_key_required(request=None, action=None):
     user_object = request.User
 
     # Get the policies
-    action = policy_object.get_policies(action=ACTION.APIKEY,
-                                        user=user_object.login,
-                                        realm=user_object.realm,
-                                        scope=SCOPE.AUTHZ,
-                                        client=g.client_ip,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
+    action = policy_object.match_policies(action=ACTION.APIKEY,
+                                          user=user_object.login,
+                                          realm=user_object.realm,
+                                          scope=SCOPE.AUTHZ,
+                                          client=g.client_ip,
+                                          active=True,
+                                          audit_data=g.audit_object.audit_data)
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1384,7 +1426,7 @@ def u2ftoken_verify_cert(request, action):
         else:
             token_realm = token_resolver = token_user = None
 
-        do_not_verify_the_cert = policy_object.get_policies(
+        do_not_verify_the_cert = policy_object.match_policies(
             action=U2FACTION.NO_VERIFY_CERT,
             scope=SCOPE.ENROLL,
             realm=token_realm,
@@ -1473,7 +1515,7 @@ def allowed_audit_realm(request=None, action=None):
     """
     admin_user = g.logged_in_user
     policy_object = g.policy_object
-    pols = policy_object.get_policies(
+    pols = policy_object.match_policies(
         action=ACTION.AUDIT,
         scope=SCOPE.ADMIN,
         user=admin_user.get("username"),

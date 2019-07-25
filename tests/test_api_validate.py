@@ -38,6 +38,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 'oid': "2",
                                 "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
+                                "memberOf": ["cn=admins,o=test", "cn=users,o=test"],
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rM1',
@@ -47,6 +48,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "sn": "Marley",
                                 "givenName": "Robert",
                                 "email": "bob@example.com",
+                                "memberOf": ["cn=users,o=test"],
                                 "mobile": "123456",
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
@@ -59,6 +61,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Corny",
                                 "sn": "keule",
                                 "email": "ck@o",
+                                "memberOf": ["cn=helpdesk,o=test", "cn=users,o=test"],
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
@@ -70,6 +73,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Frank",
                                 "sn": "Hause",
                                 "email": "fh@o",
+                                "memberOf": ["cn=users,o=test"],
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
@@ -3160,6 +3164,39 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("tok1")
         remove_token("tok2")
         delete_policy("pol_hotp")
+
+    def test_10_unique_transaction_id(self):
+        # Tokens should create a unique transaction id
+        # The TiQR token changes the transaction id.
+
+        # Assign token to user:
+        r = init_token({"serial": "tok1", "type": "hotp", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+        r = init_token({"serial": "tok2", "type": "tiqr", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+
+        set_policy("chalresp", scope=SCOPE.AUTHZ, action="{0!s}=hotp".format(ACTION.TRIGGERCHALLENGE))
+
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertEqual(data.get("result").get("value"), 2)
+            # The two challenges should be the same
+            multichallenge = data.get("detail").get("multi_challenge")
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
+            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+
+        delete_policy("chalresp")
+        remove_token("tok1")
+        remove_token("tok2")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

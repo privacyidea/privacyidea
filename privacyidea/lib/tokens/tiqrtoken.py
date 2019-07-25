@@ -80,7 +80,7 @@ from six.moves.urllib.parse import quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
@@ -115,6 +115,7 @@ class TiqrTokenClass(OcraTokenClass):
     """
     The TiQR Token implementation.
     """
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
 
     @staticmethod
     def get_class_type():
@@ -320,22 +321,25 @@ class TiqrTokenClass(OcraTokenClass):
             # The sessionKey is stored in the db_challenge.transaction_id
             # We need to get the token serial for this sessionKey
             challenges = get_challenges(transaction_id=session)
-            # We found exactly one challenge
-            if (len(challenges) == 1 and challenges[0].is_valid() and
-                        challenges[0].otp_valid is False):
-                # Challenge is still valid (time has not passed) and no
+            # We found several challenges with the given transaction ID,
+            # and some of the challenges may belong to other tokens.
+            # We only handle the TiQR tokens.
+            for challenge in challenges:
+                if challenge.is_valid() and challenge.otp_valid is False:
+                    # Challenge is still valid (time has not passed) and no
                     # correct response was given.
-                    serial = challenges[0].serial
-                    token = get_one_token(serial=serial, tokentype="tiqr")
-                    # We found exactly the one token
-                    res = "INVALID_RESPONSE"
-                    r = token.verify_response(
-                        challenge=challenges[0].challenge, passw=passw)
-                    if r > 0:
-                        res = "OK"
-                        # Mark the challenge as answered successfully.
-                        challenges[0].set_otp_status(True)
-
+                    token = get_one_token(serial=challenge.serial)
+                    if token.type.lower() == "tiqr":
+                        # We found a TiQR token with a valid challenge with the given transaction ID
+                        res = "INVALID_RESPONSE"
+                        r = token.verify_response(
+                            challenge=challenge.challenge, passw=passw)
+                        if r > 0:
+                            res = "OK"
+                            # Mark the challenge as answered successfully.
+                            challenge.set_otp_status(True)
+                            # We have found a valid TiQR token transaction, we break out of the loop
+                            break
             cleanup_challenges()
 
             return "plain", res
@@ -383,7 +387,7 @@ class TiqrTokenClass(OcraTokenClass):
 
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
-                                 transaction_id=None,
+                                 transaction_id=transactionid,
                                  challenge=challenge,
                                  data=None,
                                  session=options.get("session"),

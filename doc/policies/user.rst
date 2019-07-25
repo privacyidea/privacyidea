@@ -104,7 +104,15 @@ setpin
 
 type: bool 
 
-The user ist allowed to set the OTP PIN for his tokens.
+The user is allowed to set the OTP PIN for his tokens.
+
+
+setdescription
+~~~~~~~~~~~~~~
+
+type: bool
+
+The user is allowed to set the description of his tokens.
 
 enrollpin
 ~~~~~~~~~

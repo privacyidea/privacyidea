@@ -59,9 +59,9 @@ def get_caconnector_api(name=None):
 
 
 @caconnector_blueprint.route('/<name>', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORWRITE)
-@admin_required
 def save_caconnector_api(name=None):
     """
     Create a new CA connector
@@ -75,9 +75,9 @@ def save_caconnector_api(name=None):
 
 
 @caconnector_blueprint.route('/<name>', methods=['DELETE'])
+@admin_required
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORDELETE)
-@admin_required
 def delete_caconnector_api(name=None):
     """
     Delete a specific CA connector

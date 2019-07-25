@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add admin read policies
+#  2019-06-19 Friedrich Weber <friedrich.weber@netknights.it>
+#             Add handling of policy conditions
 #  2019-05-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add max_active_token_per_user
 #  2019-05-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -162,10 +166,9 @@ from configobj import ConfigObj
 from operator import itemgetter
 import six
 import logging
-from ..models import (Policy, Config, PRIVACYIDEA_TIMESTAMP, db,
-                      save_config_timestamp)
+from ..models import (Policy, db, save_config_timestamp)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
-                                    Singleton)
+                                    get_config_object)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.realm import get_realms
@@ -174,6 +177,8 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
                                    fetch_one_resource, is_true, check_ip_in_policy)
+from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
+    COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -241,6 +246,7 @@ class ACTION(object):
     LOSTTOKENVALID = "losttoken_valid"
     MACHINERESOLVERWRITE = "mresolverwrite"
     MACHINERESOLVERDELETE = "mresolverdelete"
+    MACHINERESOLVERREAD = "mresolverread"
     MACHINELIST = "machinelist"
     MACHINETOKENS = "manage_machine_tokens"
     MANGLE = "mangle"
@@ -264,6 +270,7 @@ class ACTION(object):
     PINHANDLING = "pinhandling"
     POLICYDELETE = "policydelete"
     POLICYWRITE = "policywrite"
+    POLICYREAD = "policyread"
     POLICYTEMPLATEURL = "policy_template_url"
     REALM = "realm"
     REMOTE_USER = "remote_user"
@@ -271,19 +278,23 @@ class ACTION(object):
     RESET = "reset"
     RESOLVERDELETE = "resolverdelete"
     RESOLVERWRITE = "resolverwrite"
+    RESOLVERREAD = "resolverread"
     RESOLVER = "resolver"
     RESYNC = "resync"
     REVOKE = "revoke"
     SET = "set"
+    SETDESCRIPTION = "setdescription"
     SETPIN = "setpin"
     SETREALM = "setrealm"
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
     SYSTEMWRITE = "configwrite"
+    SYSTEMREAD = "configread"
     CONFIGDOCUMENTATION = "system_documentation"
     SETTOKENINFO = "settokeninfo"
     TOKENISSUER = "tokenissuer"
     TOKENLABEL = "tokenlabel"
+    TOKENLIST = "tokenlist"
     TOKENPAGESIZE = "token_page_size"
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
@@ -301,12 +312,18 @@ class ACTION(object):
     APIKEY = "api_key_required"
     SETHSM = "set_hsm_password"
     SMTPSERVERWRITE = "smtpserver_write"
+    SMTPSERVERREAD = "smtpserver_read"
     RADIUSSERVERWRITE = "radiusserver_write"
+    RADIUSSERVERREAD = "radiusserver_read"
     PRIVACYIDEASERVERWRITE = "privacyideaserver_write"
+    PRIVACYIDEASERVERREAD = "privacyideaserver_read"
     REALMDROPDOWN = "realm_dropdown"
     EVENTHANDLINGWRITE = "eventhandling_write"
+    EVENTHANDLINGREAD = "eventhandling_read"
     PERIODICTASKWRITE = "periodictask_write"
+    PERIODICTASKREAD = "periodictask_read"
     SMSGATEWAYWRITE = "smsgateway_write"
+    SMSGATEWAYREAD = "smsgateway_read"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
     CLIENTTYPE = "clienttype"
@@ -387,42 +404,29 @@ class TIMEOUT_ACTION(object):
     LOCKSCREEN = 'lockscreen'
 
 
-class PolicyClass(with_metaclass(Singleton, object)):
+class CONDITION_SECTION(object):
+    __doc__ = """This is a list of available sections for conditions of policies """
+    USERINFO = "userinfo"
 
-    """
-    The Policy_Object will contain all database policy entries for easy
-    filtering and mangling.
-    It will be created at the beginning of the request and is supposed to stay
-    alive unchanged during the request.
-    """
 
+class PolicyClass(object):
+    """
+    A policy object can be used to query the current set of policies.
+    The policy object itself does not store any policies.
+    Instead, every query uses ``get_config_object`` to retrieve the request-local
+    config object which contains the current set of policies.
+
+    Hence, reloading the request-local config object also reloads the set of policies.
+    """
     def __init__(self):
-        """
-        Create the Policy_Object from the database table
+        pass
 
+    @property
+    def policies(self):
         """
-        self.policies = []
-        self.timestamp = None
-        # read the policies from the database and store it in the object
-        self.reload_from_db()
-
-    def reload_from_db(self):
+        Shorthand to retrieve the set of policies of the request-local config object
         """
-        Read the timestamp from the database. If the timestamp is newer than
-        the internal timestamp, then read the complete data
-        :return:
-        """
-        check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
-        if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=check_reload_config) < datetime.datetime.now():
-            db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
-            if reload_db(self.timestamp, db_ts):
-                self.policies = []
-                policies = Policy.query.all()
-                for pol in policies:
-                    # read each policy
-                    self.policies.append(pol.get())
-            self.timestamp = datetime.datetime.now()
+        return get_config_object().policies
 
     @classmethod
     def _search_value(cls, policy_attributes, searchvalue):
@@ -462,18 +466,11 @@ class PolicyClass(with_metaclass(Singleton, object)):
         return value_found, value_excluded
 
     @log_with(log)
-    def get_policies(self, name=None, scope=None, realm=None, active=None,
-                     resolver=None, user=None, user_object=None,
-                     client=None, action=None,
-                     adminrealm=None, time=None, all_times=False,
-                     sort_by_priority=True, audit_data=None):
+    def list_policies(self, name=None, scope=None, realm=None, active=None,
+                      resolver=None, user=None, client=None, action=None,
+                      adminrealm=None, sort_by_priority=True):
         """
-        Return the policies of the given filter values.
-
-        In order to retrieve policies matching the current user,
-        callers can *either* pass a user(name), resolver and realm,
-        *or* pass a user object from which login name, resolver and realm will be read.
-        In case of conflicting parameters, a ParameterError will be raised.
+        Return the policies, filtered by the given values.
 
         The following rule holds for all filter arguments:
 
@@ -494,44 +491,17 @@ class PolicyClass(with_metaclass(Singleton, object)):
         :param resolver: Only policies with this resolver
         :param user: Only policies with this user
         :type user: basestring
-        :param user_object: Only policies matching this user object
-        :type user_object: User
         :param client:
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
-        :param time: The optional time, for which the policies should be
-            fetched. The default time is now()
-        :type time: datetime
-        :param all_times: If True the time restriction of the policies is
-            ignored. Policies of all time ranges will be returned.
-        :type all_times: bool
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
-        :param audit_data: A dictionary with audit data collected during a request. This
-            method will add found policies to the dictionary.
         :return: list of policies
         :rtype: list of dicts
         """
-        if user_object is not None:
-            if not (user is None and realm is None and resolver is None):
-                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
-            user = user_object.login
-            realm = user_object.realm
-            resolver = user_object.resolver
-
         reduced_policies = self.policies
-
-        # filter policy for time. If no time is set or is a time is set and
-        # it matches the time_range, then we add this policy
-        if not all_times:
-            reduced_policies = [policy for policy in reduced_policies if
-                                (policy.get("time") and
-                                 check_time_in_range(policy.get("time"), time))
-                                or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format(
-            reduced_policies))
 
         # Do exact matches for "name", "active" and "scope", as these fields
         # can only contain one entry
@@ -636,11 +606,145 @@ class PolicyClass(with_metaclass(Singleton, object)):
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
 
+        return reduced_policies
+
+    def match_policies(self, name=None, scope=None, realm=None, active=None,
+                       resolver=None, user=None, user_object=None,
+                       client=None, action=None, adminrealm=None, time=None,
+                       sort_by_priority=True, audit_data=None):
+        """
+        Return all policies matching the given context.
+        Optionally, write the matching policies to the audit log.
+
+        In order to retrieve policies matching the current user,
+        callers can *either* pass a user(name), resolver and realm,
+        *or* pass a user object from which login name, resolver and realm will be read.
+        In case of conflicting parameters, a ParameterError will be raised.
+
+        This function takes all parameters taken by ``list_policies``, plus
+        some additional parameters.
+
+        :param name: see ``list_policies``
+        :param scope: see ``list_policies``
+        :param realm: see ``list_policies``
+        :param active: see ``list_policies``
+        :param resolver: see ``list_policies``
+        :param user: see ``list_policies``
+        :param client: see ``list_policies``
+        :param action: see ``list_policies``
+        :param adminrealm: see ``list_policies``
+        :param sort_by_priority:
+        :param user_object: the currently active user, or None
+        :type user_object: User or None
+        :param time: return only policies that are valid at the specified time. Defaults to the current time.
+        :type time: datetime or None
+        :param audit_data: A dictionary with audit data collected during a request. This
+        method will add found policies to the dictionary.
+        :type audit_data: dict or None
+        :return: a list of policy dictionaries
+        """
+        if user_object is not None:
+            if not (user is None and realm is None and resolver is None):
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+            user = user_object.login
+            realm = user_object.realm
+            resolver = user_object.resolver
+
+        reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
+                                              resolver=resolver, user=user, client=client, action=action,
+                                              adminrealm=adminrealm, sort_by_priority=sort_by_priority)
+
+        # filter policy for time. If no time is set or is a time is set and
+        # it matches the time_range, then we add this policy
+        reduced_policies = [policy for policy in reduced_policies if
+                            (policy.get("time") and
+                             check_time_in_range(policy.get("time"), time))
+                            or not policy.get("time")]
+        log.debug("Policies after matching time: {0!s}".format(
+            reduced_policies))
+
+        # filter policies by the policy conditions
+        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
+        log.debug("Policies after matching conditions".format(
+            reduced_policies))
+
         if audit_data is not None:
             for p in reduced_policies:
                 audit_data.setdefault("policies", []).append(p.get("name"))
 
         return reduced_policies
+
+    def filter_policies_by_conditions(self, policies, user_object=None):
+        """
+        Given a list of policy dictionaries and a current user object (if any),
+        return a list of all policies whose conditions match the given user object.
+        Raises a PolicyError if a condition references an unknown section.
+        :param policies: a list of policy dictionaries
+        :param user_object: a User object, or None if there is no current user
+        :return: generates a list of policy dictionaries
+        """
+        reduced_policies = []
+        for policy in policies:
+            include_policy = True
+            for section, key, comparator, value, active in policy['conditions']:
+                if active:
+                    if section == CONDITION_SECTION.USERINFO:
+                        if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+                            include_policy = False
+                            break
+                    else:
+                        log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
+                            policy['name'], section
+                        ))
+                        raise PolicyError(u"Policy {!r} has condition with unknown section".format(policy['name']))
+            if include_policy:
+                reduced_policies.append(policy)
+        return reduced_policies
+
+    @staticmethod
+    def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+        """
+        Check if the given policy matches a certain userinfo condition.
+        If ``user_object`` is None, a PolicyError is raised.
+        :param policy: a policy dictionary, the policy in question
+        :param key: a userinfo key
+        :param comparator: a value comparator: one of "equal", "contains"
+        :param value: a value against which the userinfo value will be compared
+        :param user_object: a User object, if any, or None
+        :return: a Boolean
+        """
+        # Match the user object's user info, if it is not-None and non-empty
+        if user_object is not None:
+            info = user_object.info
+            if key in info:
+                try:
+                    return compare_values(info[key], comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
+                        key, policy['name'], exx
+                    ))
+                    raise PolicyError(
+                        u"Invalid comparison in the userinfo conditions of policy {!r}".format(policy['name']))
+            else:
+                # If we do have a user object, but the conditions of policies reference
+                # an unknown userinfo key, we have a misconfiguration and raise an error.
+                log.warning(u"Unknown userinfo key referenced in a condition of policy {!r}: {!r}".format(
+                    policy['name'], key
+                ))
+                raise PolicyError(u"Unknown key in the userinfo conditions of policy {!r}".format(
+                    policy['name']
+                ))
+        else:
+            log.warning(u"Policy {!r} has condition on userinfo {!r}, but userinfo is not available".format(
+                policy['name'], key
+            ))
+            # If the policy specifies a userinfo condition, but no user object is available,
+            # the policy is misconfigured. We have to raise a PolicyError to ensure that
+            # the privacyIDEA server does not silently misbehave.
+            raise PolicyError(
+                u"Policy {!r} has condition on userinfo, but userinfo is not available".format(
+                    policy['name']
+                ))
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -680,7 +784,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
             action: serial
         would return a dictionary of {serial: policyname}
 
-        All parameters not described below are covered in the documentation of ``get_policies``.
+        All parameters not described below are covered in the documentation of ``match_policies``.
 
         :param unique: if set, the function will only consider the policy with the
             highest priority and check for policy conflicts.
@@ -696,10 +800,10 @@ class PolicyClass(with_metaclass(Singleton, object)):
         :rtype: dict
         """
         policy_values = {}
-        policies = self.get_policies(scope=scope, adminrealm=adminrealm,
-                                     action=action, active=True,
-                                     realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                     client=client, sort_by_priority=True)
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+                                       action=action, active=True,
+                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -799,12 +903,12 @@ class PolicyClass(with_metaclass(Singleton, object)):
             userrealm = realm
             logged_in_user["role"] = ROLE.USER
             resolver = User(username, userrealm).resolver
-        pols = self.get_policies(scope=scope,
-                                 adminrealm=adminrealm,
-                                 realm=userrealm,
-                                 resolver=resolver,
-                                 user=username, active=True,
-                                 client=client)
+        pols = self.match_policies(scope=scope,
+                                   adminrealm=adminrealm,
+                                   realm=userrealm,
+                                   resolver=resolver,
+                                   user=username, active=True,
+                                   client=client)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -813,7 +917,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
                     if isinstance(action_value, string_types):
                         rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
-        pols = self.get_policies(scope=scope, active=True)
+        pols = self.match_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
@@ -861,7 +965,7 @@ class PolicyClass(with_metaclass(Singleton, object)):
             admin_realm = None
             user_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
-        pols = self.get_policies(scope=role, active=True)
+        pols = self.match_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
@@ -875,12 +979,12 @@ class PolicyClass(with_metaclass(Singleton, object)):
             filtered_enroll_types = {}
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
-                typepols = self.get_policies(scope=role, client=client,
-                                             user=logged_in_user.get("username"),
-                                             realm=user_realm,
-                                             active=True,
-                                             action="enroll"+tokentype.upper(),
-                                             adminrealm=admin_realm)
+                typepols = self.match_policies(scope=role, client=client,
+                                               user=logged_in_user.get("username"),
+                                               realm=user_realm,
+                                               active=True,
+                                               action="enroll"+tokentype.upper(),
+                                               adminrealm=admin_realm)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -899,7 +1003,8 @@ class PolicyClass(with_metaclass(Singleton, object)):
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
-               adminrealm=None, priority=None, check_all_resolvers=False):
+               adminrealm=None, priority=None, check_all_resolvers=False,
+               conditions=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -920,6 +1025,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :return: The database ID od the the policy
     :rtype: int
     """
@@ -951,6 +1057,18 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    # validate conditions parameter
+    if conditions is not None:
+        for condition in conditions:
+            if len(condition) != 5:
+                raise ParameterError(u"Conditions must be 5-tuples: {!r}".format(condition))
+            if not (isinstance(condition[0], six.string_types)
+                    and isinstance(condition[1], six.string_types)
+                    and isinstance(condition[2], six.string_types)
+                    and isinstance(condition[3], six.string_types)
+                    and isinstance(condition[4], bool)):
+                raise ParameterError(u"Conditions must be 5-tuples of four strings and one boolean: {!r}".format(
+                    condition))
     p1 = Policy.query.filter_by(name=name).first()
     if p1:
         # The policy already exist, we need to update
@@ -974,6 +1092,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.priority = priority
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        if conditions is not None:
+            p1.set_conditions(conditions)
         save_config_timestamp()
         db.session.commit()
         ret = p1.id
@@ -983,7 +1103,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
                      priority=priority,
-                     check_all_resolvers=check_all_resolvers).save()
+                     check_all_resolvers=check_all_resolvers,
+                     conditions=conditions).save()
     return ret
 
 
@@ -1222,6 +1343,10 @@ def get_static_policy_definitions(scope=None):
                                            'realms of a token.'),
                                  'mainmenu': [MAIN_MENU.TOKENS],
                                  'group': GROUP.TOKEN},
+            ACTION.TOKENLIST: {'type': 'bool',
+                               'desc': _('Admin is allowed to list tokens.'),
+                               'mainmenu': [MAIN_MENU.TOKENS],
+                               'group': GROUP.TOKEN},
             ACTION.GETSERIAL: {'type': 'bool',
                                'desc': _('Admin is allowed to retrieve a serial'
                                          ' for a given OTP value.'),
@@ -1261,6 +1386,11 @@ def get_static_policy_definitions(scope=None):
                                             "configuration."),
                                   "group": GROUP.SYSTEM,
                                   'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.SYSTEMREAD: {'type': 'bool',
+                                "desc": _("Admin is allowed to read "
+                                          "basic system configuration."),
+                                "group": GROUP.SYSTEM,
+                                'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CONFIGDOCUMENTATION: {'type': 'bool',
                                          'desc': _('Admin is allowed to '
                                                    'export a documentation '
@@ -1279,6 +1409,10 @@ def get_static_policy_definitions(scope=None):
                                             "policies."),
                                   "group": GROUP.SYSTEM,
                                   'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.POLICYREAD: {'type': 'bool',
+                                'desc': _("Admin is allowed to read policies."),
+                                'group': GROUP.SYSTEM,
+                                'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.RESOLVERWRITE: {'type': 'bool',
                                    "desc": _("Admin is allowed to write and "
                                              "modify the "
@@ -1291,6 +1425,10 @@ def get_static_policy_definitions(scope=None):
                                               "resolvers and realms."),
                                     "group": GROUP.SYSTEM,
                                     'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.RESOLVERREAD: {'type': 'bool',
+                                   'desc': _("Admin is allowed to read resolvers."),
+                                   'group': GROUP.SYSTEM,
+                                '   mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.CACONNECTORWRITE: {'type': 'bool',
                                       "desc": _("Admin is allowed to create new"
                                                 " CA Connector definitions "
@@ -1314,6 +1452,12 @@ def get_static_policy_definitions(scope=None):
                                                      "machine resolvers."),
                                            'group': GROUP.SYSTEM,
                                            'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.MACHINERESOLVERREAD: {'type': 'bool',
+                                         'desc': _("Admin is allowed to "
+                                                   "read "
+                                                   "machine resolvers."),
+                                         'group': GROUP.SYSTEM,
+                                         'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.OTPPINMAXLEN: {'type': 'int',
                                   'value': list(range(0, 32)),
                                   "desc": _("Set the maximum allowed length "
@@ -1374,12 +1518,22 @@ def get_static_policy_definitions(scope=None):
                                                "SMTP server definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMTPSERVERREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMTP server definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.RADIUSSERVERWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "new RADIUS server "
                                                  "definitions."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
+            ACTION.RADIUSSERVERREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "RADIUS server definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.PRIVACYIDEASERVERWRITE: {'type': 'bool',
                                             'desc': _("Admin is allowed to "
                                                       "write remote "
@@ -1387,11 +1541,23 @@ def get_static_policy_definitions(scope=None):
                                                       "definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PRIVACYIDEASERVERREAD: {'type': 'bool',
+                                           'desc': _("Admin is allowed to "
+                                                     "read remote "
+                                                     "privacyIDEA server "
+                                                     "definitions."),
+                                           'mainmenu': [MAIN_MENU.CONFIG],
+                                           'group': GROUP.SYSTEM},
             ACTION.PERIODICTASKWRITE: {'type': 'bool',
                                        'desc': _("Admin is allowed to write "
                                                  "periodic task definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            ACTION.PERIODICTASKREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read "
+                                                "periodic task definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
             ACTION.STATISTICSREAD: {'type': 'bool',
                                     'desc': _("Admin is allowed to read statistics data."),
                                     'group': GROUP.SYSTEM},
@@ -1404,12 +1570,22 @@ def get_static_policy_definitions(scope=None):
                                                   "handling configuration."),
                                         'mainmenu': [MAIN_MENU.CONFIG],
                                         'group': GROUP.SYSTEM},
+            ACTION.EVENTHANDLINGREAD: {'type': 'bool',
+                                       'desc': _("Admin is allowed to read "
+                                                 "handling configuration."),
+                                       'mainmenu': [MAIN_MENU.CONFIG],
+                                       'group': GROUP.SYSTEM},
             ACTION.SMSGATEWAYWRITE: {'type': 'bool',
                                      'desc': _("Admin is allowed to write "
                                                "and modify SMS gateway "
                                                "definitions."),
                                      'mainmenu': [MAIN_MENU.CONFIG],
                                      'group': GROUP.SYSTEM},
+            ACTION.SMSGATEWAYREAD: {'type': 'bool',
+                                    'desc': _("Admin is allowed to read "
+                                              "SMS gateway definitions."),
+                                    'mainmenu': [MAIN_MENU.CONFIG],
+                                    'group': GROUP.SYSTEM},
             ACTION.CLIENTTYPE: {'type': 'bool',
                                 'desc': _("Admin is allowed to get the list "
                                           "of authenticated clients and their "
@@ -1482,6 +1658,10 @@ def get_static_policy_definitions(scope=None):
                                       "PIN of his tokens."),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
+            ACTION.SETDESCRIPTION: {'type': 'bool',
+                                    'desc': _('The user is allowed to set the token description.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.TOKEN},
             ACTION.ENROLLPIN: {'type': 'bool',
                                "desc": _("The user is allowed to set the OTP "
                                          "PIN during enrollment."),
@@ -1902,3 +2082,24 @@ def get_action_values_from_options(scope, action, options):
             return None
 
     return value
+
+
+def get_policy_condition_sections():
+    """
+    :return: a dictionary mapping condition sections to dictionaries with the following keys:
+      * ``"description"``, a human-readable description of the section
+    """
+    return {
+        CONDITION_SECTION.USERINFO: {
+            "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
+        }
+    }
+
+
+def get_policy_condition_comparators():
+    """
+    :return: a dictionary mapping comparators to dictionaries with the following keys:
+     * ``"description"``, a human-readable description of the comparator
+    """
+    return {comparator: {"description": description}
+            for comparator, description in COMPARATOR_DESCRIPTIONS.items()}

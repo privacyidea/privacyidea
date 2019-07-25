@@ -51,6 +51,7 @@ smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 @smsgateway_blueprint.route('', methods=['GET'])
 @smsgateway_blueprint.route('/<gwid>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.SMSGATEWAYREAD)
 def get_gateway(gwid=None):
     """
     returns a json list of the gateway definitions

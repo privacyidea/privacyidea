@@ -1,6 +1,6 @@
 import json
 from .base import MyApiTestCase
-
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
 
 class APISmsGatewayTestCase(MyApiTestCase):
 
@@ -206,3 +206,50 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue("PROXY" in http_parameters.get("parameters"))
             self.assertTrue("HTTP_METHOD" in http_parameters.get("parameters"))
 
+    def test_05_read_write_policies(self):
+        set_policy(name="pol_read", scope=SCOPE.ADMIN,
+                   action=ACTION.SMSGATEWAYREAD)
+        # create an sms gateway configuration
+        param = {
+            "name": "myGW",
+            "module": "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider",
+            "description": "myGateway",
+            "option.URL": "http://example.com"
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+
+        # Now we create a write policy, and we are allowed to write
+        set_policy(name="pol_write", scope=SCOPE.ADMIN,
+                   action=ACTION.SMSGATEWAYWRITE)
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # delete the read policy
+        delete_policy("pol_read")
+
+        with self.app.test_request_context('/smsgateway',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+
+        # delete the write policy
+        delete_policy("pol_write")
+
+        # and delete sms gateway
+        with self.app.test_request_context('/smsgateway/myGW',
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)

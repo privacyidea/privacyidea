@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This tests the file lib.utils
+This tests the package lib.utils
 """
 from .base import MyTestCase
 
@@ -21,7 +21,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
-                                   check_ip_in_policy, split_pin_pass)
+                                   check_ip_in_policy, split_pin_pass, create_tag_dict)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -661,3 +661,23 @@ class UtilsTestCase(MyTestCase):
         pin, otp = split_pin_pass("12345678hallo", 8, False)
         self.assertEqual(pin, "hallo")
         self.assertEqual(otp, "12345678")
+
+    def test_31_create_tag_dict(self):
+        class UserAgentMock():
+            string = "<b>hello world</b>"
+            browser = "browser"
+
+        class RequestMock():
+            user_agent = UserAgentMock()
+            path = "/validate/check"
+            url_root = ""
+
+        recipient = {"givenname": u"<b>Sömeone</b>"}
+        dict1 = create_tag_dict(request=RequestMock(), recipient=recipient)
+        self.assertEqual(dict1["ua_string"], "<b>hello world</b>")
+        self.assertEqual(dict1["action"], "/validate/check")
+        self.assertEqual(dict1["recipient_givenname"], u"<b>Sömeone</b>")
+        dict2 = create_tag_dict(request=RequestMock(), recipient=recipient, escape_html=True)
+        self.assertEqual(dict2["ua_string"], "&lt;b&gt;hello world&lt;/b&gt;")
+        self.assertEqual(dict2["action"], "/validate/check")
+        self.assertEqual(dict2["recipient_givenname"], u"&lt;b&gt;Sömeone&lt;/b&gt;")

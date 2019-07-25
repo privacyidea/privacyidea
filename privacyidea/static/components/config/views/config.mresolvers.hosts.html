@@ -35,7 +35,7 @@
                        autofocus/>
             </div>
         </div>
-        <div class="text-center">
+        <div class="text-center" ng-show="checkRight('mresolverwrite')">
             <button ng-click="setMachineResolver()"
                     ng-disabled="formMResolverAddHosts.$invalid"
                     class="btn btn-primary" translate>Save resolver

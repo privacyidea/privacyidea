@@ -138,7 +138,8 @@
         </div>
     </div>
 
-    <div class="text-center">
+    <div class="text-center"
+        ng-show="checkRight('smtpserver_write')">
         <button ng-click="saveSMTPServer()"
                 ng-disabled="formSmtp.$invalid"
                 class="btn btn-primary"

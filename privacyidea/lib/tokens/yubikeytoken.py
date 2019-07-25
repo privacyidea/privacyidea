@@ -456,5 +456,10 @@ h={h}
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
-        TokenClass.update(self, param, reset_failcount)
+        update_params = param.copy()
+        # As the secret is usually copy-pasted from the Yubikey personalization GUI,
+        # which separates hexlified bytes by spaces, we remove all spaces from the OTP key.
+        if "otpkey" in update_params:
+            update_params["otpkey"] = update_params["otpkey"].replace(" ", "")
+        TokenClass.update(self, update_params, reset_failcount)
         self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)

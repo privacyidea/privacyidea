@@ -64,7 +64,7 @@ class RegistrationTokenClass(PasswordTokenClass):
            Host: example.com
            Accept: application/json
 
-           type=register
+           type=registration
            user=cornelius
            realm=realm1
 

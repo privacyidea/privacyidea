@@ -2,7 +2,7 @@ from __future__ import print_function
 import json
 from .base import MyApiTestCase
 
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, ACTION, SCOPE
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
@@ -617,9 +617,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["value"] == 2, result)
             # check if policies are there
             P = PolicyClass()
-            p1 = P.get_policies(name="importpol1")
+            p1 = P.match_policies(name="importpol1")
             self.assertTrue(len(p1) == 1, p1)
-            p2 = P.get_policies(name="importpol2")
+            p2 = P.match_policies(name="importpol2")
             self.assertTrue(len(p2) == 1, p2)
 
         # import empty file
@@ -766,6 +766,21 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue("enrollTOTP" in admin_pol, admin_pol)
             self.assertTrue("enrollHOTP" in admin_pol, admin_pol)
             self.assertTrue("enrollPW" in admin_pol, admin_pol)
+
+        with self.app.test_request_context('/policy/defs/conditions',
+                                           method='GET',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            conditions = result.get("value")
+            self.assertIn("sections", conditions)
+            self.assertIn("userinfo", conditions["sections"])
+            self.assertIn("description", conditions["sections"]["userinfo"])
+            self.assertIn("comparators", conditions)
+            self.assertIn("contains", conditions["comparators"])
+            self.assertIn("description", conditions["comparators"]["contains"])
 
     def test_14_enable_disable_policy(self):
         with self.app.test_request_context('/policy/pol2',
@@ -928,3 +943,69 @@ class APIConfigTestCase(MyApiTestCase):
             # the intenal password is correct
             internal_resolver_config = self.app_context.g._request_local_store.get("config_object").resolver.get(resolvername)
             self.assertEqual(internal_resolver_config.get("data").get("BINDPW"), "ldaptest")
+
+    def test_21_read_write_resolver_policy(self):
+        # create resolver
+        resolvername = "reso21"
+        params = {"resolver": resolvername,
+                  "type": "passwdresolver",
+                  "file": "/etc/passwd"}
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           data=params,
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # Set a read policy
+        set_policy(name="pol_read", scope=SCOPE.ADMIN,
+                   action=ACTION.RESOLVERREAD)
+
+        # Now writing a resolver will fail
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           data=params,
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+
+        # reading a resolver will succeed
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # set a write policy
+        set_policy(name="pol_write", scope=SCOPE.ADMIN,
+                   action=ACTION.RESOLVERWRITE)
+
+        # Now writing a resolver will succeed
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           data=params,
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # delete read policy
+        delete_policy("pol_read")
+
+        # reading a resolver will fail
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+
+        # writing a resolver will still succeed
+        with self.app.test_request_context('/resolver/{0}'.format(resolvername),
+                                           data=params,
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        delete_policy("pol_write")
+        delete_resolver(resolvername)
+

@@ -12,12 +12,13 @@
             <td>
                 <span class="glyphicon glyphicon-ok"
                       ng-show="realm.default"></span>
-                <button class="btn btn-success"
-                        ng-hide="realm.default"
-                        ng-click="setDefaultRealm(realmname)"
-                        translate>set Default
-                </button>
-
+                <span ng-show="checkRight('resolverwrite')">
+                    <button class="btn btn-success"
+                            ng-hide="realm.default"
+                            ng-click="setDefaultRealm(realmname)"
+                            translate>set Default
+                    </button>
+                </span>
             </td>
             <td>
                 {{ realmname }}
@@ -56,10 +57,12 @@
             <td>
                 <span ng-hide="editRealm">
                 <button class="btn btn-primary"
+                        ng-show="checkRight('resolverwrite')"
                         ng-click="startEdit(realmname, realm)"
                         translate>Edit
                 </button>
                 <button class="btn btn-danger"
+                        ng-show="checkRight('resolverdelete')"
                         ng-click="delRealm(realmname)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
@@ -67,6 +70,7 @@
                 </span>
                 <span ng-show="editRealm == realmname">
                     <button class="btn btn-primary"
+                            ng-show="checkRight('resolverwrite')"
                             ng-click="setRealm(realmname)"
                             translate>Save
                     </button>
@@ -77,9 +81,12 @@
                 </span>
             </td>
         </tr>
-        <form name="formNewRealm" role="form" validate>
+        <form name="formNewRealm" role="form"
+              validate>
 
-            <tr ng-hide="editRealm">
+            {{ editRealm }}
+
+            <tr ng-hide="editRealm.length > 0 || !checkRight('resolverwrite')">
                 <td>
                 </td>
                 <td>

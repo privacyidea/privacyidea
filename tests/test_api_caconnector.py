@@ -5,6 +5,8 @@ to create, update, delete CA connectors.
 from .base import MyApiTestCase
 import json
 from privacyidea.lib.caconnector import get_caconnector_list, save_caconnector
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION
+from privacyidea.lib.error import ERROR
 
 
 class CAConnectorTestCase(MyApiTestCase):
@@ -136,3 +138,34 @@ class CAConnectorTestCase(MyApiTestCase):
         ca_list = get_caconnector_list()
         self.assertEqual(len(ca_list), 1)
         self.assertEqual(ca_list[0].get("connectorname"), "con2")
+
+    def test_07_caconnector_admin_required(self):
+        self.authenticate_selfservice_user()
+
+        # As a selfservice user, we are not allowed to delete a CA connector
+        with self.app.test_request_context('/caconnector/con1',
+                                           data={},
+                                           method='DELETE',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result['status'])
+            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertIn("You do not have the necessary role (['admin']) to access this resource",
+                          result['error']['message'])
+
+        # We should get the same error message if a USER policy is defined.
+        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT, realm="")
+        with self.app.test_request_context('/caconnector/con1',
+                                           data={},
+                                           method='DELETE',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result['status'])
+            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertIn("You do not have the necessary role (['admin']) to access this resource",
+                          result['error']['message'])
+

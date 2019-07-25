@@ -40,7 +40,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -173,6 +173,8 @@ class PushTokenClass(TokenClass):
     https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
 
     """
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type(u"push")

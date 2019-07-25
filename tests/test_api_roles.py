@@ -5,15 +5,19 @@ selfservice) on the REST API.
 implementation is contained in api/auth.py, api/token.py api/audit.py
 """
 import json
+
+from . import ldap3mock
+from .test_api_validate import LDAPDirectory
 from .base import MyApiTestCase
 from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   assign_token, unassign_token)
+                                   assign_token, unassign_token, init_token)
 from privacyidea.lib.user import User
+from privacyidea.lib.resolver import save_resolver
 from privacyidea.models import Token
-from privacyidea.lib.realm import (set_realm, delete_realm)
+from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy, LOGINMODE
 
 
 PWFILE = "tests/testdata/passwords"
@@ -697,3 +701,179 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(result2.get("status"), res.data)
             # Test logout time
             self.assertEqual(result2.get("value").get("logout_time"), 200)
+
+class PolicyConditionsTestCase(MyApiTestCase):
+    @ldap3mock.activate
+    def test_00_set_ldap_realm(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'MULTIVALUEATTRIBUTES': '["groups"]',
+                  'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"groups": "memberOf", '
+                                  '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "ldapgroups",
+                  "type": "ldapresolver"}
+
+        r = save_resolver(params)
+        self.assertTrue(r > 0)
+
+        r = set_realm("ldaprealm", resolvers=["ldapgroups"])
+        set_default_realm("ldaprealm")
+        self.assertEqual(r, (["ldapgroups"], []))
+
+        # find a user, check the groups
+        alice = User("alice", "ldaprealm")
+        self.assertEqual(alice.info["groups"], ["cn=admins,o=test", "cn=users,o=test"])
+
+    @ldap3mock.activate
+    def test_01_policies_with_userinfo_conditions(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create some webui policies with conditions: Depending on their LDAP group membership,
+        # users cannot log in at all, are authenticated against privacyIDEA, or against the userstore.
+
+        # disabled policy: by default, login is disabled
+        with self.app.test_request_context('/policy/disabled',
+                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
+                                                 'scope': SCOPE.WEBUI,
+                                                 'realm': '',
+                                                 'priority': 2,
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # userstore policy: for admins, require the userstore password
+        with self.app.test_request_context('/policy/userstore',
+                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'scope': SCOPE.WEBUI,
+                                                 'realm': '',
+                                                 'priority': 1,
+                                                 'conditions': [
+                                                     ["userinfo", "groups", "contains", "cn=admins,o=test", True],
+                                                 ],
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # privacyidea policy: for helpdesk users, require the token PIN
+        with self.app.test_request_context('/policy/privacyidea',
+                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'scope': SCOPE.WEBUI,
+                                                 'realm': '',
+                                                 'priority': 1,
+                                                 'conditions': [
+                                                     ["userinfo", "groups", "contains", "cn=helpdesk,o=test", True],
+                                                 ],
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # enroll 4 SPASS tokens
+        users_pins = [("alice", "pin1"),
+                      ("bob", "pin2"),
+                      ("manager", "pin3"),
+                      ("frank", "pin4")]
+        for username, pin in users_pins:
+            init_token({"type": "spass", "pin": pin}, user=User(username, "ldaprealm"))
+
+        # check our policies:
+        # frank is not allowed to log in, because he is neither admin nor helpdesk
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "frank",
+                                                 "password": "ldaptest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result["error"]["message"], "The login for this user is disabled.")
+
+        # alice is allowed to log in with the userstore password, because he is in the admins group
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "alice",
+                                                 "password": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # ... but the OTP PIN will not work
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "alice",
+                                                 "password": "pin1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"))
+            self.assertIn("Wrong credentials", result["error"]["message"])
+
+        # manager can log in with the OTP PIN, because he is in the helpdesk group
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "manager",
+                                                 "password": "pin3"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # ... but the userstore password will not work
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "manager",
+                                                 "password": "ldaptest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertFalse(result.get("status"))
+            self.assertIn("Wrong credentials", result["error"]["message"])
+
+        # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
+        with self.app.test_request_context('/policy/privacyidea',
+                                           json={'scope': SCOPE.WEBUI,
+                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'realm': '',
+                                                 'active': True,
+                                                 'conditions': [
+                                                     ["userinfo", "groups", "contains", "cn=helpdesk,o=test", False],
+                                                 ]},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/policy/userstore',
+                                           json={'scope': SCOPE.WEBUI,
+                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'realm': '',
+                                                 'active': True,
+                                                 'conditions': [
+                                                     ["userinfo", "groups", "contains", "cn=admins,o=test", False],
+                                                 ]},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # policy error because of conflicting actions
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "manager",
+                                                 "password": "pin3"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("conflicting actions", result["error"]["message"])
