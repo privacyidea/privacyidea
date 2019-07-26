@@ -202,21 +202,21 @@ def getLowerParams(param):
     return ret
 
 
-def get_all_params(param, body):
+def get_all_params(request):
     """
     Combine parameters from GET and POST requests
+    :param request:
+    :type request: Request
     """
     return_param = {}
-    for key in param.keys():
-        return_param[key] = param[key]
+    for key in request.values.keys():
+        return_param[key] = request.values[key]
 
     # In case of serialized JSON data in the body, add these to the values.
-    try:
-        json_data = json.loads(body)
+    json_data = request.get_json(force=True, silent=True)
+    if json_data:
         for k, v in json_data.items():
             return_param[k] = v
-    except Exception as exx:
-        log.debug("Can not get param: {0!s}".format(exx))
 
     return return_param
 

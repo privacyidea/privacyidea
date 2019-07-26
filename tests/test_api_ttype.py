@@ -31,7 +31,7 @@ class TtypeAPITestCase(MyApiTestCase):
                                                  "serial": "TIQR1",
                                                  "session": "12345"}):
             res = self.app.full_dispatch_request()
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             identity = data.get("identity")
             service = data.get("service")
             self.assertEqual(identity.get("displayName"), "Cornelius ")
@@ -44,7 +44,7 @@ class TtypeAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertEqual(res.mimetype, u'application/fido.trusted-apps+json')
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue("trustedFacets" in data)
 
         # Check the audit log.
@@ -53,7 +53,7 @@ class TtypeAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             result = json_response.get("result")
             auditdata = result.get("value").get("auditdata")
             self.assertTrue(len(auditdata) > 0)

@@ -45,7 +45,6 @@ from privacyidea.lib.utils import (compare_condition, compare_value_value,
 import datetime
 from dateutil.tz import tzlocal
 import re
-import json
 import logging
 from privacyidea.lib.tokenclass import DATE_FORMAT
 
@@ -299,7 +298,7 @@ class BaseEventHandler(object):
     @staticmethod
     def _get_response_content(response):
         if response:
-            content = json.loads(response.data)
+            content = response.get_json(force=True)
         else:
             # In Pre-Handling we have no response and no content
             content = {}
@@ -323,8 +322,7 @@ class BaseEventHandler(object):
         content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
-        serial = request.all_data.get("serial") or \
-                 content.get("detail", {}).get("serial")
+        serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None

@@ -43,8 +43,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import (SCOPE, GROUP, ACTION,
                                     get_action_values_from_options)
-from privacyidea.lib.utils import (is_true, hexlify_and_unicode,
-                                   urlsafe_b64encode_and_unicode)
+from privacyidea.lib.utils import (is_true, hexlify_and_unicode,to_unicode)
 import binascii
 import json
 import re
@@ -468,7 +467,7 @@ class U2fTokenClass(TokenClass):
             # This is a valid response for a U2F token
             challenge_url = url_encode(challenge)
             clientdata = url_decode(clientdata)
-            clientdata_dict = json.loads(clientdata)
+            clientdata_dict = json.loads(to_unicode(clientdata))
             client_challenge = clientdata_dict.get("challenge")
             if challenge_url != client_challenge:
                 return ret

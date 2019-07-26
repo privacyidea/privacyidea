@@ -117,7 +117,7 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
@@ -176,10 +176,10 @@ def offlinerefill():
                     otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                     refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                     response = send_result(True)
-                    content = json.loads(response.data)
+                    content = response.json
                     content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
                                                           "response": otps}]}
-                    response.data = json.dumps(content)
+                    response.set_data(json.dumps(content))
                     return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
 

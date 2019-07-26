@@ -40,7 +40,7 @@ class LifecycleTestCase(MyTestCase):
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()
@@ -49,7 +49,7 @@ class LifecycleTestCase(MyTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()
@@ -65,7 +65,7 @@ class LifecycleTestCase(MyTestCase):
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()

@@ -26,7 +26,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))
@@ -57,7 +57,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))

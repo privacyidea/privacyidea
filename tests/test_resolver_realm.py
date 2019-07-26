@@ -44,7 +44,7 @@ class APIResolverTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
             self.assertEquals(res.json['result']['value'], 1, res.json)
-                    
+
         # check if the resolver was created
         with self.app.test_request_context('/resolver/',
                                            method='GET',
@@ -53,7 +53,7 @@ class APIResolverTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b'"fileName": "/etc/passwd"' in res.data, res.data)
             self.assertTrue(b'"resolvername": "r1"' in res.data, res.data)
-            
+
     def test_01_create_realm(self):
         realm = u"realm1"
         resolvers = u"r1, r2"
@@ -63,11 +63,11 @@ class APIResolverTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             value = result.get("result").get("value")
             self.assertTrue('r1' in value["added"], res.data)
             self.assertTrue('r2' in value["failed"], res.data)
-            
+
 '''
         with self.app.test_request_context(
                 '/api/1.0/comments/' + str(c.id),

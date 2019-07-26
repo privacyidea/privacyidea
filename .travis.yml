@@ -3,7 +3,7 @@ language: python
 sudo: false
 python:
   - "2.7"
-#  - "3.5"
+  - "3.5"
   - "3.6"
   - "3.7"
 # command to install dependencies
@@ -19,10 +19,6 @@ env:
     - PYTHONHASHSEED=random  # test for ordered dict use
   matrix:
     - TESTS=tests/
-
-#matrix:
-#    allow_failures:
-#       - python: 3.5
 
 # command to run tests
 script: "python -b -m pytest -v --cov=privacyidea $TESTS"
