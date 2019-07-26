@@ -888,26 +888,25 @@ class PolicyClass(object):
         :param client: The HTTP client IP
         :return: A list of actions
         """
-        from privacyidea.lib.auth import ROLE
         from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
-        userrealm = None
-        adminrealm = None
-        resolver = None
-        logged_in_user = {"username": username,
-                          "realm": realm}
         if scope == SCOPE.ADMIN:
+            # If the logged-in user is an admin, we match for username/adminrealm only
+            match_username = username
+            user_object = None
             adminrealm = realm
-            logged_in_user["role"] = ROLE.ADMIN
         elif scope == SCOPE.USER:
-            userrealm = realm
-            logged_in_user["role"] = ROLE.USER
-            resolver = User(username, userrealm).resolver
+            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
+            match_username = None
+            adminrealm = None
+            user_object = User(username, realm)
+        else:
+            raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
+                                   user=match_username,
+                                   user_object=user_object,
                                    adminrealm=adminrealm,
-                                   realm=userrealm,
-                                   resolver=resolver,
-                                   user=username, active=True,
+                                   active=True,
                                    client=client)
         for pol in pols:
             for action, action_value in pol.get("action").items():
@@ -917,7 +916,7 @@ class PolicyClass(object):
                     if isinstance(action_value, string_types):
                         rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
-        pols = self.match_policies(scope=scope, active=True)
+        pols = self.list_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
@@ -959,13 +958,19 @@ class PolicyClass(object):
         enroll_types = {}
         role = logged_in_user.get("role")
         if role == ROLE.ADMIN:
-            admin_realm = logged_in_user.get("realm")
+            # If the logged-in user is an admin, we match for username/adminrealm
+            user_name = logged_in_user.get("username")
             user_realm = None
+            user_object = None
+            admin_realm = logged_in_user.get("realm")
         else:
+            # If the logged-in user is a user, we pass an user object to allow matching for userinfo attributes
+            user_name = user_realm = None
             admin_realm = None
-            user_realm = logged_in_user.get("realm")
+            user_object = User(logged_in_user.get("username"),
+                               logged_in_user.get("realm"))
         # check, if we have a policy definition at all.
-        pols = self.match_policies(scope=role, active=True)
+        pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
@@ -980,8 +985,9 @@ class PolicyClass(object):
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
-                                               user=logged_in_user.get("username"),
+                                               user=user_name,
                                                realm=user_realm,
+                                               user_object=user_object,
                                                active=True,
                                                action="enroll"+tokentype.upper(),
                                                adminrealm=admin_realm)
