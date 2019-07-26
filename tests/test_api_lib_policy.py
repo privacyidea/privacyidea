@@ -221,6 +221,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                             "role": "user"}
         r = check_token_init(req)
         self.assertTrue(r)
+
+        # An exception is raised for an invalid role
+        g.logged_in_user = {"username": "user1",
+                            "role": "invalid"}
+        with self.assertRaises(PolicyError):
+            check_token_init(req)
+
         # finally delete policy
         delete_policy("pol1")
 

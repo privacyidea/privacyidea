@@ -536,6 +536,10 @@ class PolicyTestCase(MyTestCase):
 
     def test_17_ui_get_rights(self):
         P = PolicyClass()
+        # Check invalid scope
+        with self.assertRaises(PolicyError):
+            P.ui_get_rights(SCOPE.ENROLL, "realm1", "admin")
+
         # Without policies, the admin gets all
         rights = P.ui_get_rights(SCOPE.ADMIN, "realm1", "admin")
         self.assertTrue(len(rights) >= 60)
