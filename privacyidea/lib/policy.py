@@ -960,15 +960,14 @@ class PolicyClass(object):
         if role == ROLE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm
             user_name = logged_in_user.get("username")
-            user_realm = None
             user_object = None
             admin_realm = logged_in_user.get("realm")
         else:
             # If the logged-in user is a user, we pass an user object to allow matching for userinfo attributes
-            user_name = user_realm = None
-            admin_realm = None
+            user_name = None
             user_object = User(logged_in_user.get("username"),
                                logged_in_user.get("realm"))
+            admin_realm = None
         # check, if we have a policy definition at all.
         pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
@@ -986,7 +985,6 @@ class PolicyClass(object):
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
                                                user=user_name,
-                                               realm=user_realm,
                                                user_object=user_object,
                                                active=True,
                                                action="enroll"+tokentype.upper(),

@@ -1151,7 +1151,7 @@ def check_token_init(request=None, action=None):
                            g.logged_in_user.get("realm"))
     elif role == ROLE.ADMIN:
         # If the logged-in admin enrolls the token, the "user"/"adminrealm" parameters match
-        # administrator.  If the token is enrolled *for* a user, the "resolver" and "realm"
+        # the administrator.  If the token is enrolled *for* a user, the "resolver" and "realm"
         # fields match the token owner's resolver and realm.
         scope = SCOPE.ADMIN
         username = g.logged_in_user.get("username")
