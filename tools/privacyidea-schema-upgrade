@@ -19,4 +19,4 @@ if [ -z "$(pi-manage db current -v -d $MIGRATION_PATH | grep "^Rev:")" ]; then
 fi
 # Upgrade the database
 echo "++ Upgrading DB schema."
-pi-manage db upgrade -d $MIGRATION_PATH > /dev/null
+pi-manage db upgrade -d $MIGRATION_PATH
