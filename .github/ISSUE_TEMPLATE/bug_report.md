@@ -40,7 +40,7 @@ What did actually happen?
 ### Configuration
 
 * **privacyIDEA version**:
-* **Installation method**: (from PyPI, Ubuntu packages, ...)
+* **Installation method**: (from Ubuntu packages, github, PyPI, ...)
 * **Python version**:
 * **Operating system**:
 * **Webserver**:
