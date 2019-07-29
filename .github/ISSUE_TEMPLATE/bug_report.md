@@ -35,21 +35,18 @@ What do you think, how the system should have worked?
 
 ### Actual outcome
 
-What did acutally happen?
+What did actually happen?
 
 ### Configuration
 
-**privacyIDEA Version**:
-
-**Installation method**: (from source, github, virtualenv, ubuntu packages...)
-
-**Operating System**:
-
-**Webserver**:
-
-**Tokendatabase**: (like MySQL, PostgreSQL, ...)
+* **privacyIDEA version**:
+* **Installation method**: (from PyPI, Ubuntu packages, ...)
+* **Python version**:
+* **Operating system**:
+* **Webserver**:
+* **Token database**: (MySQL, PostgreSQL, ...)
 
 ### Log file
 
-**Turn on debug level and take a look at the privacyidea.log!**
-**If appropriate, attach the log file.**
+**Set PI_LOGLEVEL = logging.DEBUG in pi.cfg and take a look at the privacyidea.log!**
+**If appropriate, attach the log file or paste relevant portions.**
