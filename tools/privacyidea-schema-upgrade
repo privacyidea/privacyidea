@@ -4,7 +4,7 @@ MIGRATION_PATH=$1
 FIRST_VERSION="4f32a4e1bf33"
 SKIP_STAMP=$2
 
-if [ -z "$MIGRATION_PATH" ]; then
+if [ ! -d "$MIGRATION_PATH" ]; then
 	echo "Please specify the path with the migration files."
 	exit 1
 fi
