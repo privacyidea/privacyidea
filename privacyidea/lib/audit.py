@@ -120,9 +120,10 @@ def search(config, param=None, user=None):
 
 def find_authentication_attempts(audit_object, user_object, endpoint_name, timedelta=None, success=None):
     """
-    Search the audit log for authentication attempts for a given user and return the number of authentication
-    attempts matching the given criteria. This function also handles the case in which the user is an
-    external admin (i.e. the user realm is contained in SUPERUSER_REALM).
+    Search the audit log for authentication attempts at a given endpoint for a given user and
+    return the number of authentication attempts matching the given criteria.
+    This function also handles the case of authentication attempts at the /auth endpoint in case
+    the user is an external admin (i.e. the user realm is contained in SUPERUSER_REALM).
     :param audit_object: an audit object
     :param user_object: a User object, might be an external admin
     :param endpoint_name: the endpoint, normally "/validate/check" or "/auth"
@@ -134,7 +135,9 @@ def find_authentication_attempts(audit_object, user_object, endpoint_name, timed
     superuser_realms = get_app_config_value("SUPERUSER_REALM", [])
     search_dict = {"realm": user_object.realm,
                    "action": "%" + endpoint_name}
-    if user_object.realm in superuser_realms:
+    if endpoint_name == '/auth' and user_object.realm in superuser_realms:
+        # Audit entries logging authentication attempts of external administrator at /auth
+        # store the username in the "administrator" field
         search_dict["administrator"] = user_object.login
     else:
         search_dict["user"] = user_object.login

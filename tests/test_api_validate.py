@@ -1502,6 +1502,52 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("pol_time1")
         remove_token(token.token.serial)
 
+    def test_18b_auth_timelimit_fail_admin(self):
+        # check that this works the same with an external administrator
+        (added, failed) = set_realm("adminrealm",
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+        user = User("selfservice", "adminrealm")
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "spass", "pin": pin}, user=user)
+
+        # set policy for timelimit
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+
+        for i in [1, 2]:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "selfservice",
+                                                     "realm": "adminrealm",
+                                                     "pass": "wrongpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = json.loads(res.data.decode('utf8')).get("result")
+                self.assertEqual(result.get("value"), False)
+
+        # Now we do the correct authentication, but
+        # as already two authentications failed, this will fail, too
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "realm": "adminrealm",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEqual(result.get("value"), False)
+            details = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20")
+
+        delete_realm("adminrealm")
+        delete_policy("pol_time1")
+        remove_token(token.token.serial)
+
     def test_19_validate_passthru(self):
         # user passthru, realm: self.realm2, passwd: pthru
         set_policy(name="pthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)

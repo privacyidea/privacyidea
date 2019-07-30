@@ -304,6 +304,10 @@ class AuthenticationAttemptsTestCase(MyTestCase):
                         "administrator": "wurst",
                         "realm": "adminrealm",
                         "success": True},
+                       {"action": "POST /validate/check",
+                        "user": "wurst",
+                        "realm": "adminrealm",
+                        "success": True},
                        {"action": "POST /auth",
                         "user": "hans",
                         "realm": "defrealm",
@@ -350,3 +354,4 @@ class AuthenticationAttemptsTestCase(MyTestCase):
         self.assertEqual(find_authentication_attempts(audit, wurst_adminrealm, "/auth",
                                                       timedelta=datetime.timedelta(minutes=20)),
                          1)
+        self.assertEqual(find_authentication_attempts(audit, wurst_adminrealm, "/validate/check"), 1)
