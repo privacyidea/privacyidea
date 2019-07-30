@@ -746,7 +746,7 @@ def autoassign(request, response):
                                 # Set the response to true
                                 content.get("result")["value"] = True
                                 # Set the serial number
-                                detail = content.get("detail", {})
+                                detail = content.setdefault("detail", {})
                                 detail["serial"] = token_obj.token.serial
                                 detail["otplen"] = token_obj.token.otplen
                                 detail["type"] = token_obj.type
