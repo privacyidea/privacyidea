@@ -64,17 +64,24 @@ def upgrade():
     """
     bind = op.get_bind()
     session = orm.Session(bind=bind)
-    if session.query(Policy).filter(Policy.scope == u"{0!s}".format(SCOPE.ADMIN),
-                                    Policy.active.is_(True)).all():
-        # add policy
-        tokenlist_pol = Policy(name=POLICYNAME, scope=u"{0!s}".format(SCOPE.ADMIN),
-                               action=u"{0!s}".format(ACTION.TOKENLIST))
-        session.add(tokenlist_pol)
-        print("Added '{0!s}' action for admin policies.".format(ACTION.TOKENLIST))
+    if session.query(Policy.id).filter(Policy.scope == u"{0!s}".format(SCOPE.ADMIN),
+                                       Policy.active.is_(True)).all():
+        # add policy if it does not exist yet
+        if session.query(Policy.id).filter_by(name=POLICYNAME).first() is None:
+            tokenlist_pol = Policy(name=POLICYNAME, scope=u"{0!s}".format(SCOPE.ADMIN),
+                                   action=u"{0!s}".format(ACTION.TOKENLIST))
+            session.add(tokenlist_pol)
+            print("Added '{0!s}' action for admin policies.".format(ACTION.TOKENLIST))
+        else:
+            print("Policy {} already exists.".format(POLICYNAME))
     else:
         print("No admin policy active. No need to create '{0!s}' action.".format(ACTION.TOKENLIST))
 
-    session.commit()
+    try:
+        session.commit()
+    except Exception as exx:
+        print("Could not create policy {}: {!r}".format(POLICYNAME, exx))
+        print(exx)
 
 
 def downgrade():
