@@ -1322,6 +1322,18 @@ def save_client_application_type(request, action):
     return True
 
 
+def pushtoken_disable_wait(request, action):
+    """
+    This is used for the /auth endpoint and sets the
+    PUSH_ACTION.WAIT parameter to False.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    request.all_data[PUSH_ACTION.WAIT] = False
+
+
 def pushtoken_wait(request, action):
     """
     This is a auth specific wrapper to decorate /validate/check

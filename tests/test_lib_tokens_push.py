@@ -13,7 +13,7 @@ from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION, LOGINMODE)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
 from privacyidea.lib.error import ConfigAdminError
@@ -642,3 +642,95 @@ class PushTokenTestCase(MyTestCase):
         self.assertNotIn("-", stripped_pubkey)
         self.assertEqual(strip_key(stripped_pubkey), stripped_pubkey)
         self.assertEqual(strip_key("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
+
+    @responses.activate
+    def test_06_api_auth(self):
+        self.setUp_user_realms()
+
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Set a loginmode policy
+        set_policy("webui", scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        # Set a PUSH_WAIT action which will be ignored by privacyIDEA
+        set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     PUSH_ACTION.WAIT: "10",
+                                                     "password": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+                jsonresp = json.loads(res.data.decode('utf8'))
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertIn("transaction_id", jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+                self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+        # Get the challenge from the database
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0].challenge
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # We still cannot log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            self.assertFalse(res.json['result']['status'])
+
+        # Answer the challenge
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+
+        # We can now log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json['result']['status'])
+
+        delete_policy("push1")
+        delete_policy("webui")

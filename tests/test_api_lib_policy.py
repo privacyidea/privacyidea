@@ -27,7 +27,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist)
+                                           check_admin_tokenlist, pushtoken_disable_wait)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -1520,6 +1520,31 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         pushtoken_wait(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
+
+        delete_policy("push1")
+
+    def test_24b_push_disable_wait_policy(self):
+        # We send a fake push_wait that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       'pass': "pin",
+                                       'push_wait': "120"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"push_wait": "120"}
+        g.policy_object = PolicyClass()
+        pushtoken_disable_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        # But even with a policy, the function still sets PUSH_ACTION.WAIT to False
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        pushtoken_disable_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
         delete_policy("push1")
 
