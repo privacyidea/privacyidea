@@ -123,13 +123,13 @@ Each policy can contain the following attributes:
 
   In the time field of a policy you can define a list of time ranges. A time
   range can consist of day of weeks (*dow*) and of times in 24h format.
-  Possible values are:
+  Possible values are::
 
      <dow>: <hh>-<hh>
      <dow>: <hh:mm>-<hh:mm>
      <dow>-<dow>: <hh:mm>-<hh:mm>
 
-  You may use any combination of these. Like:
+  You may use any combination of these. Like::
 
      Mon-Fri: 8-18
 
@@ -146,7 +146,7 @@ Each policy can contain the following attributes:
   The priority field of policies contains a positive number and defaults to 1.
   In case of policy conflicts, policies with a lower priority number take precedence.
 
-  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy`:
+  It can be used to resolve policy conflicts. An example is the :ref:`passthru_policy` policy:
   Assume there are two passthru policies ``pol1`` and ``pol2`` that
   define different action values, e.g. ``pol1`` defines ``passthru=userstore``
   and ``pol2`` defines ``passthru=radius1``.
