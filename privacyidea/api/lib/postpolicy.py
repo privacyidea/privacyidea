@@ -170,7 +170,7 @@ def sign_response(request, response):
     else:
         response_object = response
     if response_object.is_json:
-        content = response_object.json
+        content = response_object.get_json(cache=False)
         nonce = request.all_data.get("nonce")
         if nonce:
             content["nonce"] = nonce
@@ -201,7 +201,7 @@ def check_tokentype(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    tokentype = response.json.get("detail", {}).get("type")
+    tokentype = response.get_json(cache=False).get("detail", {}).get("type")
     policy_object = g.policy_object
     user_object = request.User
     allowed_tokentypes = policy_object.get_action_values(
@@ -233,7 +233,7 @@ def check_serial(request, response):
     :return: A new (maybe modified) response
     """
     policy_object = g.policy_object
-    serial = response.json.get("detail", {}).get("serial")
+    serial = response.get_json(cache=False).get("detail", {}).get("serial")
     # get the serials from a policy definition
     allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
                                                       scope=SCOPE.AUTHZ,
@@ -265,7 +265,7 @@ def check_tokeninfo(request, response):
     :type response: Response object
     :return: A new modified response
     """
-    serial = response.json.get("detail", {}).get("serial")
+    serial = response.get_json(cache=False).get("detail", {}).get("serial")
 
     if serial:
         tokeninfos_pol = g.policy_object.get_action_values(
@@ -307,7 +307,7 @@ def no_detail_on_success(request, response):
     :param response:
     :return:
     """
-    content = response.json
+    content = response.get_json(cache=False)
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -336,7 +336,7 @@ def add_user_detail_to_response(request, response):
     :param response:
     :return:
     """
-    content = response.json
+    content = response.get_json(cache=False)
     policy_object = g.policy_object
 
     # Check for ADD USER IN RESPONSE
@@ -383,7 +383,7 @@ def no_detail_on_fail(request, response):
     :param response:
     :return:
     """
-    content = response.json
+    content = response.get_json(cache=False)
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -421,7 +421,7 @@ def save_pin_change(request, response, serial=None):
     :param action:
     :return:
     """
-    content = response.json
+    content = response.get_json(cache=False)
     policy_object = g.policy_object
     serial = serial or request.all_data.get("serial")
     if not serial:
@@ -476,7 +476,7 @@ def offline_info(request, response):
     OTP.
 
     """
-    content = response.json
+    content = response.get_json(cache=False)
     # check if the authentication was successful
     if content.get("result").get("value") is True and g.client_ip:
         # If there is no remote address, we can not determine
@@ -507,7 +507,7 @@ def get_webui_settings(request, response):
     :param response: flask response object
     :return: the response
     """
-    content = response.json
+    content = response.get_json(cache=False)
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
@@ -697,7 +697,7 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
-    content = response.json
+    content = response.get_json(cache=False)
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
         user_obj = request.User
@@ -776,7 +776,7 @@ def construct_radius_response(request, response):
     """
     if request.url_rule.rule == '/validate/radiuscheck':
         return_code = 400 # generic 400 error by default
-        content = response.json
+        content = response.get_json(cache=False)
         if content['result']['status']:
             if content['result']['value']:
                 # user was successfully authenticated
@@ -801,7 +801,7 @@ def mangle_challenge_response(request, response):
     if not response.is_json:
         # This can happen with the validate/radiuscheck endpoint
         return response
-    content = response.json
+    content = response.get_json(cache=False)
     policy_object = g.policy_object
     user_obj = request.User
 

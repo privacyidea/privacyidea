@@ -176,7 +176,7 @@ def offlinerefill():
                     otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                     refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                     response = send_result(True)
-                    content = response.json
+                    content = response.get_json(cache=False)
                     content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
                                                           "response": otps}]}
                     response.set_data(json.dumps(content))
