@@ -157,3 +157,13 @@ Each policy can contain the following attributes:
 
   Policy conflicts can still occur if multiple policies with the same priority
   specify different values for the same action.
+
+
+**additional conditions**
+
+  (added in privacyIDEA 3.1)
+
+  Using conditions, you can specify more advanced rules that determine whether
+  a policy is valid for a request.
+
+  Conditions are described in :ref:`policy_conditions`.
