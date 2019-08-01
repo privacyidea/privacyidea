@@ -1525,24 +1525,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_24b_push_disable_wait_policy(self):
         # We send a fake push_wait that is not in the policies
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "hans",
-                                       'pass': "pin",
-                                       'push_wait': "120"},
-                                 headers={})
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.User = User()
+        class RequestMock(object):
+            pass
+        req = RequestMock()
         req.all_data = {"push_wait": "120"}
-        g.policy_object = PolicyClass()
         pushtoken_disable_wait(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
         # But even with a policy, the function still sets PUSH_ACTION.WAIT to False
         set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        req = RequestMock()
+        req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
