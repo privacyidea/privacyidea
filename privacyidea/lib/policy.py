@@ -1709,8 +1709,24 @@ def get_static_policy_definitions(scope=None):
                                    'desc': _("The user is allowed to do a "
                                              "password reset in an editable "
                                              "UserIdResolver."),
-                                   'mainmenu': []}
-
+                                   'mainmenu': []},
+            ACTION.CACONNECTORREAD: {"type": "bool",
+                                     "desc": _("User is allowed to read the "
+                                               "CA Connector definitions."),
+                                     "group": GROUP.SYSTEM,
+                                     "mainmenu": [MAIN_MENU.CONFIG]},
+            ACTION.PRIVACYIDEASERVERREAD: {"type": "bool",
+                                           "desc": _("User is allowed to "
+                                                     "read remote "
+                                                     "privacyIDEA server "
+                                                     "definitions."),
+                                           "group": GROUP.SYSTEM,
+                                           "mainmenu": [MAIN_MENU.CONFIG]},
+            ACTION.RADIUSSERVERREAD: {'type': 'bool',
+                                      'desc': _("User is allowed to read "
+                                                "RADIUS server definitions."),
+                                      'mainmenu': [MAIN_MENU.CONFIG],
+                                      'group': GROUP.SYSTEM},
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
