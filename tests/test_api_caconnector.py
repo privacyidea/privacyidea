@@ -80,6 +80,28 @@ class CAConnectorTestCase(MyApiTestCase):
             value = result["value"]
             self.assertEqual(len(value), 2)
 
+        # cannot read CA connectors anymore if an admin policy is defined
+        set_policy("pol_audit", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
+        with self.app.test_request_context('/caconnector/',
+                                           data={},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+
+        # need a CACONNECTORREAD policy
+        set_policy("pol_ca", scope=SCOPE.ADMIN, action=ACTION.CACONNECTORREAD)
+        with self.app.test_request_context('/caconnector/',
+                                           data={},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"] is True, result)
+            value = result["value"]
+            self.assertEqual(len(value), 2)
+
         # Get only one destinct connector filtered by name
         with self.app.test_request_context('/caconnector/con1',
                                            data={},
@@ -92,6 +114,9 @@ class CAConnectorTestCase(MyApiTestCase):
             value = result["value"]
             self.assertEqual(len(value), 1)
             self.assertEqual(value[0].get("connectorname"), "con1")
+
+        delete_policy("pol_ca")
+        delete_policy("pol_audit")
 
     def test_05_read_as_user(self):
         self.setUp_user_realms()
