@@ -4,6 +4,8 @@ import json
 from . import radiusmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.radiusserver import delete_radius
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+
 DICT_FILE = "tests/testdata/dictionary"
 
 
@@ -141,4 +143,33 @@ class RADIUSServerTestCase(MyApiTestCase):
             self.assertEqual(server1.get("dictionary"), "")
             self.assertEqual(server1.get("description"), "")
 
+        # define a USER policy: not allowed to read RADIUS Servers anymore
+        set_policy("pol_user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        with self.app.test_request_context('/radiusserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("radiusserver_read is not allowed", result['error']['message'])
+
+        # ... but we are allowed with a matching policy
+        set_policy("pol_radius", scope=SCOPE.USER, action=ACTION.RADIUSSERVERREAD)
+        with self.app.test_request_context('/radiusserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data.decode('utf8'))
+            server_list = data.get("result").get("value")
+            self.assertEqual(len(server_list), 1)
+            # The user does not get any information about the server!
+            server1 = server_list.get("server1")
+            self.assertEqual(server1.get("port"), "")
+            self.assertEqual(server1.get("server"), "")
+            self.assertEqual(server1.get("dictionary"), "")
+            self.assertEqual(server1.get("description"), "")
+
+        delete_policy("pol_radius")
+        delete_policy("pol_user")
         delete_radius("server1")

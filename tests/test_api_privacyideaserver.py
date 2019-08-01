@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from privacyidea.lib.privacyideaserver import delete_privacyideaserver
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from .base import MyApiTestCase
 import json
 import responses
@@ -91,3 +93,81 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = json.loads(res.data.decode('utf8'))
             self.assertEqual(data.get("result").get("value"), True)
+
+    def test_03_privacyideaserver_user(self):
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # Create a privacyIDEA server
+        with self.app.test_request_context('/privacyideaserver/server1',
+                                           method='POST',
+                                           data={"url": "https://pi",
+                                                 "tls": "0",
+                                                 "description": "myServer"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data.decode('utf8'))
+            self.assertEqual(data.get("result").get("value"), True)
+
+        # User is not allowed to delete a privacyIDEA server
+        with self.app.test_request_context('/privacyideaserver/server1',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # User is not allowed to create a privacyIDEA server
+        with self.app.test_request_context('/privacyideaserver/server1',
+                                           method='POST',
+                                           data={"url": "https://pi",
+                                                 "tls": "0",
+                                                 "description": "myServer"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        # User is allowed to list the privacyIDEA servers
+        with self.app.test_request_context('/privacyideaserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data.decode('utf8'))
+            server_list = data.get("result").get("value")
+            self.assertEqual(len(server_list), 1)
+            # The user does not get any information about the server!
+            server1 = server_list.get("server1")
+            self.assertEqual(server1.get("url"), "")
+            self.assertEqual(server1.get("tls"), "")
+            self.assertEqual(server1.get("description"), "")
+
+        # define a USER policy: not allowed to read privacyIDEA Servers anymore
+        set_policy("pol_user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        with self.app.test_request_context('/privacyideaserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("privacyideaserver_read is not allowed", result['error']['message'])
+
+        # ... but we are allowed with a matching policy
+        set_policy("pol_privacyidea", scope=SCOPE.USER, action=ACTION.PRIVACYIDEASERVERREAD)
+        with self.app.test_request_context('/privacyideaserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data.decode('utf8'))
+            server_list = data.get("result").get("value")
+            self.assertEqual(len(server_list), 1)
+            # The user does not get any information about the server!
+            server1 = server_list.get("server1")
+            self.assertEqual(server1.get("url"), "")
+            self.assertEqual(server1.get("tls"), "")
+            self.assertEqual(server1.get("description"), "")
+
+        delete_privacyideaserver("server1")
+        delete_policy("pol_privacyidea")
+        delete_policy("pol_user")

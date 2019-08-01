@@ -5,7 +5,7 @@ to create, update, delete CA connectors.
 from .base import MyApiTestCase
 import json
 from privacyidea.lib.caconnector import get_caconnector_list, save_caconnector
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.error import ERROR
 
 
@@ -122,6 +122,34 @@ class CAConnectorTestCase(MyApiTestCase):
             value = result["value"]
             self.assertEqual(len(value), 2)
             self.assertEqual(value[0].get("data"), {})
+
+        # define a USER policy: not allowed to read CA connectors anymore
+        set_policy("pol_user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        with self.app.test_request_context('/caconnector/',
+                                           data={},
+                                           method='GET',
+                                           headers={'Authorization': at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEquals(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("caconnectorread is not allowed", result['error']['message'])
+
+        # ... but we are allowed with a matching policy
+        set_policy("pol_caconn", scope=SCOPE.USER, action=ACTION.CACONNECTORREAD)
+        with self.app.test_request_context('/caconnector/',
+                                           data={},
+                                           method='GET',
+                                           headers={'Authorization': at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"] is True, result)
+            value = result["value"]
+            self.assertEqual(len(value), 2)
+            self.assertEqual(value[0].get("data"), {})
+
+        delete_policy("pol_caconn")
+        delete_policy("pol_user")
 
     def test_06_delete_caconnector(self):
         with self.app.test_request_context('/caconnector/con1',
