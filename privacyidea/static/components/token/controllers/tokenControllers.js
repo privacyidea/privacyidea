@@ -287,6 +287,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             // because the user might not be allowed to list RADIUS servers
             $scope.getRADIUSIdentifiers();
         }
+        if($scope.form.type == "certificate") {
+            // only load CA connectors when the user actually tries to enroll a certificate token
+            $scope.getCAConnectors();
+        }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
     };
@@ -513,7 +517,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             //debug: console.log($scope.CAConnectors);
         });
     };
-    $scope.getCAConnectors();
 
     // If the user is admin, he can read the config.
     ConfigFactory.loadSystemConfig(function (data) {
