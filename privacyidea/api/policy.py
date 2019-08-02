@@ -49,7 +49,7 @@ from ..lib.policy import (set_policy,
                           enable_policy, get_policy_condition_sections, get_policy_condition_comparators)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
