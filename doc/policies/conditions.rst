@@ -94,6 +94,10 @@ email address *and* is a member of the specified group. In other words, members
 of the group with an email address ending in ``@privacyidea.org`` will still be
 allowed to log in.
 
+.. note:: Keep in mind that changes in the LDAP directory may not be
+   immediately visible to privacyIDEA due to caching settings (see
+   :ref:`ldap_resolver`).
+
 If the userinfo of the user that is trying to log in does not contain attributes
 ``email`` or ``groups`` (due to a resolver misconfiguration, for example), privacyIDEA
 throws an error and the request is aborted.
@@ -119,6 +123,6 @@ Error Handling
 
 privacyIDEA's error handling when checking policy conditions is quite strict,
 in order to prevent policy misconfiguration from going unnoticed. If
-privacyIDEA encounters a policy condition that is neither true nor false, but
-simply *invalid* due to a misconfiguration, it throws an error and the current
-request is aborted.
+privacyIDEA encounters a policy condition that evaluates neither to true nor
+false, but simply *invalid* due to a misconfiguration, privacyIDEA throws an
+error and the current request is aborted.
