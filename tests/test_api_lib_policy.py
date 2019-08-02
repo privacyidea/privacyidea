@@ -504,8 +504,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {
-                        "user": "cornelius",
+        req.all_data = {"user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
 
@@ -513,9 +512,31 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
         # Check, if the tokenissuer was added
         self.assertEqual(req.all_data.get("tokenissuer"), "myPI")
+        # Check, if force_app_pin was added and set to False (since there is no policy)
+        self.assertFalse(req.all_data.get('force_app_pin'))
+
+        # reset the request data and start again with force_app_pin policy
+        set_policy(name="pol3",
+                   scope=SCOPE.ENROLL,
+                   action="hotp_force_app_pin=True")
+        req.all_data = {"user": "cornelius",
+                        "realm": "home"}
+        init_tokenlabel(req)
+        # Check, if force_app_pin was added and is True
+        self.assertTrue(req.all_data.get('force_app_pin'))
+
+        # Check that the force_app_pin policy isn't set for totp token
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "TOTP"}
+        init_tokenlabel(req)
+        # Check, if force_app_pin was added and is False
+        self.assertFalse(req.all_data.get('force_app_pin'))
+
         # finally delete policy
         delete_policy("pol1")
         delete_policy("pol2")
+        delete_policy("pol3")
 
     def test_07_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",

@@ -148,6 +148,11 @@ class HotpTokenClass(TokenClass):
                            'type': 'int',
                            'desc': _("The difficulty factor used for the OTP seed generation "
                                      "(should be at least 10000)")
+                       },
+                       'hotp_force_app_pin': {
+                           'type': 'bool',
+                           'desc': _('Enforce setting an app pin for the privacyIDEA '
+                                     'Authenticator App')
                        }
                    },
                    SCOPE.USER: {
@@ -220,6 +225,9 @@ class HotpTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
+        force_app_pin = params.get('force_app_pin')
+        if force_app_pin:
+            extra_data.update({'pin': True})
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:                               

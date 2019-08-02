@@ -502,6 +502,9 @@ def init_tokenlabel(request=None, action=None):
     In addtion it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
+    It also checks if the force_app_pin policy is set and adds the corresponding
+    value to params.
+
     It uses the policy SCOPE.ENROLL, ACTION.TOKENLABEL and ACTION.TOKENISSUER
     to set the tokenlabel and tokenissuer
     of Smartphone tokens during enrollment and this fill the details of the
@@ -510,6 +513,7 @@ def init_tokenlabel(request=None, action=None):
     params = request.all_data
     policy_object = g.policy_object
     user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional, "hotp").lower()
     # get the serials from a policy definition
     label_pols = policy_object.get_action_values(action=ACTION.TOKENLABEL,
                                                  scope=SCOPE.ENROLL,
@@ -521,7 +525,7 @@ def init_tokenlabel(request=None, action=None):
 
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
-        request.all_data["tokenlabel"] = list(label_pols)[0]
+        request.all_data[ACTION.TOKENLABEL] = list(label_pols)[0]
 
     issuer_pols = policy_object.get_action_values(action=ACTION.TOKENISSUER,
                                                   scope=SCOPE.ENROLL,
@@ -531,7 +535,7 @@ def init_tokenlabel(request=None, action=None):
                                                   allow_white_space_in_action=True,
                                                   audit_data=g.audit_object.audit_data)
     if len(issuer_pols) == 1:
-        request.all_data["tokenissuer"] = list(issuer_pols)[0]
+        request.all_data[ACTION.TOKENISSUER] = list(issuer_pols)[0]
 
     imageurl_pols = policy_object.get_action_values(action=ACTION.APPIMAGEURL,
                                                     scope=SCOPE.ENROLL,
@@ -541,7 +545,19 @@ def init_tokenlabel(request=None, action=None):
                                                     allow_white_space_in_action=True,
                                                     audit_data=g.audit_object.audit_data)
     if len(imageurl_pols) == 1:
-        request.all_data["appimageurl"] = list(imageurl_pols)[0]
+        request.all_data[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
+
+    # check the force_app_pin policy
+    app_pin_pols = policy_object.match_policies(action='{0!s}_force_app_pin'.format(token_type),
+                                                scope=SCOPE.ENROLL,
+                                                user_object=user_object,
+                                                client=g.client_ip,
+                                                active=True,
+                                                audit_data=g.audit_object.audit_data)
+    if app_pin_pols:
+        request.all_data["force_app_pin"] = True
+    else:
+        request.all_data["force_app_pin"] = False
 
     return True
 
