@@ -1731,6 +1731,31 @@ class APITokenTestCase(MyApiTestCase):
         remove_token("SETDESC01")
         remove_token("SETDESC02")
 
+    def test_30_force_app_pin(self):
+        set_policy("app_pin", scope=SCOPE.ENROLL,
+                   action={"hotp_" + ACTION.FORCE_APP_PIN: True,
+                           "totp_" + ACTION.FORCE_APP_PIN: True})
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "genkey": "1",
+                                                 "realm": self.realm1,
+                                                 "serial": "goog2",
+                                                 "type": 'TOTP',
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json["result"]
+            detail = res.json["detail"]
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertTrue(u'pin=True' in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+
+        remove_token("goog2")
+        delete_policy('app_pin')
+
 
 class API00TokenPerformance(MyApiTestCase):
 

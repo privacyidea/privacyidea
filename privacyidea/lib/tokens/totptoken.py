@@ -156,7 +156,13 @@ class TotpTokenClass(HotpTokenClass):
                                                       "contributed by the server (in bytes)")},
                        '2step_difficulty': {'type': 'int',
                                             'desc': _("The difficulty factor used for the "
-                                                      "OTP seed generation ""(should be at least 10000)")}
+                                                      "OTP seed generation ""(should be at least "
+                                                      "10000)")},
+                       'totp_' + ACTION.FORCE_APP_PIN: {
+                           'type': 'bool',
+                           'desc': _('Enforce setting an app pin for the privacyIDEA '
+                                     'Authenticator App')
+                       }
                    }
                },
                }
