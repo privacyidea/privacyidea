@@ -44,6 +44,18 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(pol1.get("check_all_resolvers"), True)
             self.assertEqual(pol1.get("priority"), 3)
 
+        # get active policies
+        with self.app.test_request_context('/policy/?active=true',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'], res.json)
+            self.assertEqual(len(value), 1)
+            pol1 = value[0]
+            self.assertEqual(pol1.get("check_all_resolvers"), True)
+            self.assertEqual(pol1.get("priority"), 3)
+
         # Update policy to check_all_resolvers = false and priority = 5
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
