@@ -63,7 +63,7 @@ from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib import _
 import traceback
 import logging
@@ -149,7 +149,7 @@ class HotpTokenClass(TokenClass):
                            'desc': _("The difficulty factor used for the OTP seed generation "
                                      "(should be at least 10000)")
                        },
-                       'hotp_force_app_pin': {
+                       'hotp_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')

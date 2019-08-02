@@ -548,16 +548,15 @@ def init_tokenlabel(request=None, action=None):
         request.all_data[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
 
     # check the force_app_pin policy
-    app_pin_pols = policy_object.match_policies(action='{0!s}_force_app_pin'.format(token_type),
+    app_pin_pols = policy_object.match_policies(action='{0!s}_{1!s}'.format(token_type,
+                                                                            ACTION.FORCE_APP_PIN),
                                                 scope=SCOPE.ENROLL,
                                                 user_object=user_object,
                                                 client=g.client_ip,
                                                 active=True,
                                                 audit_data=g.audit_object.audit_data)
     if app_pin_pols:
-        request.all_data["force_app_pin"] = True
-    else:
-        request.all_data["force_app_pin"] = False
+        request.all_data[ACTION.FORCE_APP_PIN] = True
 
     return True
 

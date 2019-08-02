@@ -1733,8 +1733,8 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_30_force_app_pin(self):
         set_policy("app_pin", scope=SCOPE.ENROLL,
-                   action={"hotp_force_app_pin": True,
-                           "totp_force_app_pin": True})
+                   action={"hotp_" + ACTION.FORCE_APP_PIN: True,
+                           "totp_" + ACTION.FORCE_APP_PIN: True})
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"user": "cornelius",

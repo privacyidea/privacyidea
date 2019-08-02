@@ -234,6 +234,7 @@ class ACTION(object):
     EMAILCONFIG = "smtpconfig"
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
+    FORCE_APP_PIN = "force_app_pin"
     GETSERIAL = "getserial"
     GETRANDOM = "getrandom"
     IMPORT = "importtokens"

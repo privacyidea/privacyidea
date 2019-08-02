@@ -158,7 +158,7 @@ class TotpTokenClass(HotpTokenClass):
                                             'desc': _("The difficulty factor used for the "
                                                       "OTP seed generation ""(should be at least "
                                                       "10000)")},
-                       'totp_force_app_pin': {
+                       'totp_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')

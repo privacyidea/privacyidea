@@ -509,16 +509,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         init_tokenlabel(req)
 
         # Check, if the tokenlabel was added
-        self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
+        self.assertEqual(req.all_data.get(ACTION.TOKENLABEL), "<u>@<r>")
         # Check, if the tokenissuer was added
-        self.assertEqual(req.all_data.get("tokenissuer"), "myPI")
-        # Check, if force_app_pin was added and set to False (since there is no policy)
-        self.assertFalse(req.all_data.get('force_app_pin'))
+        self.assertEqual(req.all_data.get(ACTION.TOKENISSUER), "myPI")
+        # Check, if force_app_pin wasn't added (since there is no policy)
+        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
 
         # reset the request data and start again with force_app_pin policy
         set_policy(name="pol3",
                    scope=SCOPE.ENROLL,
-                   action="hotp_force_app_pin=True")
+                   action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
         req.all_data = {"user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
@@ -530,8 +530,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "realm": "home",
                         "type": "TOTP"}
         init_tokenlabel(req)
-        # Check, if force_app_pin was added and is False
-        self.assertFalse(req.all_data.get('force_app_pin'))
+        # Check, that force_app_pin wasn't added
+        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
 
         # finally delete policy
         delete_policy("pol1")
