@@ -1155,21 +1155,33 @@ def check_token_init(request=None, action=None):
                       "enroll this token type!"}
     params = request.all_data
     policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
     role = g.logged_in_user.get("role")
-    admin_realm = g.logged_in_user.get("realm")
-    scope = SCOPE.ADMIN
-    # We need this user, if an admin enrolls a token for a user
-    user_obj = get_user_from_param(params)
-    resolver = realm = None
     if role == ROLE.USER:
+        # If the logged-in user enrolls the token, we pass a user object to match_policies
+        # to allow matching for userinfo attributes
         scope = SCOPE.USER
-        realm = admin_realm
+        username = resolver = realm = None
         admin_realm = None
-        resolver = User(username, realm).resolver
-    elif role == ROLE.ADMIN and user_obj:
-        resolver = user_obj.resolver
-        realm = user_obj.realm
+        user_object = User(g.logged_in_user.get("username"),
+                           g.logged_in_user.get("realm"))
+    elif role == ROLE.ADMIN:
+        # If the logged-in admin enrolls the token, the "user"/"adminrealm" parameters match
+        # the administrator.  If the token is enrolled *for* a user, the "resolver" and "realm"
+        # fields match the token owner's resolver and realm.
+        scope = SCOPE.ADMIN
+        username = g.logged_in_user.get("username")
+        new_token_owner = get_user_from_param(params)
+        if new_token_owner:
+            resolver = new_token_owner.resolver
+            realm = new_token_owner.realm
+        else:
+            resolver = realm = None
+        admin_realm = g.logged_in_user.get("realm")
+        # ... but we cannot pass a user object to match_policies, because "username" is
+        # taken from the admin and "resolver"/"realm" are taken from the user.
+        user_object = None
+    else:
+        raise PolicyError(u"Unknown role: {}".format(role))
 
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
@@ -1180,6 +1192,7 @@ def check_token_init(request=None, action=None):
                                           scope=scope,
                                           client=g.client_ip,
                                           adminrealm=admin_realm,
+                                          user_object=user_object,
                                           active=True,
                                           audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.list_policies(scope=scope, active=True)

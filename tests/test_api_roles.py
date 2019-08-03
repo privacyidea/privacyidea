@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This file tests the authentication of admin users and normal user (
 selfservice) on the REST API.
@@ -873,3 +874,134 @@ class PolicyConditionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 403)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertIn("conflicting actions", result["error"]["message"])
+
+        # delete all policies
+        delete_policy("disabled")
+        delete_policy("userstore")
+        delete_policy("privacyidea")
+
+    @ldap3mock.activate
+    def test_02_enroll_rights(self):
+        # Test a scenario that users are allowed to enroll different tokens according to their LDAP groups
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # by default, users may only enroll HOTP tokens
+        with self.app.test_request_context('/policy/default_enroll',
+                                           json={'action': "enrollHOTP",
+                                                 'scope': SCOPE.USER,
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # but helpdesk users can additionally enroll TOTP tokens
+        with self.app.test_request_context('/policy/helpdesk_enroll',
+                                           json={'action': "enrollTOTP",
+                                                 'scope': SCOPE.USER,
+                                                 'realm': '',
+                                                 'active': True,
+                                                 'conditions': [
+                                                     ["userinfo", "groups", "contains", "cn=helpdesk,o=test", True],
+                                                 ]},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # check that the endpoint / doesn't throw an error if a user policy with
+        # userinfo attribute conditions is defined
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # get an auth token for bob, who is an ordinary user
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "bob",
+                                                 "password": u"bobpwééé"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            bob_token = result['value']['token']
+            # check the rights and menus for bob
+            self.assertEqual(result['value']['role'], 'user')
+            # bob can only enroll HOTP
+            self.assertEqual(result['value']['rights'], ['enrollHOTP'])
+            self.assertEqual(result['value']['menus'], ['tokens'])
+
+        # get an auth token for manager, who is a helpdesk user
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "manager",
+                                                 "password": "ldaptest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            manager_token = result['value']['token']
+            # check the rights and menus for manager
+            self.assertEqual(result['value']['role'], 'user')
+            # manager may enroll HOTP and TOTP
+            self.assertEqual(set(result['value']['rights']), {'enrollHOTP', 'enrollTOTP'})
+            self.assertEqual(result['value']['menus'], ['tokens'])
+
+        # check the rights of bob
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           headers={'Authorization': bob_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # only HOTP tokens
+            self.assertEqual(set(result['value'].keys()), {'hotp'})
+
+        # check the rights of manager
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           headers={'Authorization': manager_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            # HOTP+TOTP tokens
+            self.assertEqual(set(result['value'].keys()), {'hotp', 'totp'})
+
+        # helper function for trying to enroll tokens, returns a tuple (status code, result)
+        def _try_enroll(auth_token, token_type):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={'type': token_type, 'genkey': '1'},
+                                               headers={'Authorization': auth_token}):
+                res = self.app.full_dispatch_request()
+                return res.status_code, json.loads(res.data.decode('utf8')).get("result")
+
+        # bob may enroll HOTP ...
+        status_code, result = _try_enroll(bob_token, 'hotp')
+        self.assertEqual(status_code, 200)
+        self.assertEqual(result, {"status": True, "value": True})
+        # ... but not TOTP ...
+        status_code, result = _try_enroll(bob_token, 'totp')
+        self.assertEqual(status_code, 403)
+        self.assertFalse(result['status'])
+        self.assertIn("not allowed to enroll this token type", result['error']['message'])
+        # ... and certainly not SPASS
+        status_code, result = _try_enroll(bob_token, 'spass')
+        self.assertEqual(status_code, 403)
+        self.assertFalse(result['status'])
+        self.assertIn("not allowed to enroll this token type", result['error']['message'])
+
+        # manager may enroll HOTP ...
+        status_code, result = _try_enroll(manager_token, 'hotp')
+        self.assertEqual(status_code, 200)
+        self.assertEqual(result, {"status": True, "value": True})
+        # ... and TOTP ...
+        status_code, result = _try_enroll(manager_token, 'totp')
+        self.assertEqual(status_code, 200)
+        self.assertEqual(result, {"status": True, "value": True})
+        # ... but not SPASS
+        status_code, result = _try_enroll(manager_token, 'spass')
+        self.assertEqual(status_code, 403)
+        self.assertFalse(result['status'])
+        self.assertIn("not allowed to enroll this token type", result['error']['message'])
+
+        delete_policy("default_enroll")
+        delete_policy("helpdesk_enroll")
