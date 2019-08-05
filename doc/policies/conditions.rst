@@ -20,36 +20,40 @@ and the right value are entered in the policy definition. Each condition
 consists of five parts:
 
  * ``Active`` determines if the condition is currently active.
- * ``Section`` refers to an aspect of the incoming request on which the condition is formulated.
+ * ``Section`` refers to an aspect of the incoming request on which the condition is applied.
    The available sections are predefined, see `Sections`_.
  * The meaning of ``Key`` depends on the chosen ``Section``. Typically, it determines the exact property
-   of the incoming request on which the condition is formulated.
+   of the incoming request on which the condition is applied.
  * ``Comparator`` defines the comparison to be performed. The available comparators are predefined, see `Comparators`_.
  * ``Value`` determines the value the property should be compared against.
 
 Sections
 ~~~~~~~~
 
+privacyIDEA 3.1 implements only one section, which is called ``userinfo``.
+
 ``userinfo``
 ^^^^^^^^^^^^
 
+The section ``userinfo`` can be used to define conditions that are checked against attributes of the
+current user in the request (the so-called *handled user*).
 The validity of a policy condition with section ``userinfo`` is determined as follows:
 
-* privacyIDEA retrieves the userinfo of the currently managed user. These are the user attributes as they are
+* privacyIDEA retrieves the userinfo of the currently handled user. These are the user attributes as they are
   determined by the respective resolver. This is configured via the attribute mappings of resolvers
   (see :ref:`useridresolvers`).
 * Then, it retrieves the userinfo attribute given by ``Key``
 * Finally, it uses the ``Comparator`` to compare the contents of the userinfo attribute with the given ``Value``.
   The result of the comparison determines if the request matches the condition or not.
 
-.. note:: There are situations in which the currently managed user
-    cannot be determined.  If privacyIDEA encounters a policy with ``userinfo``
-    conditions in such a situation, it throws an error and the current request is
-    aborted.
+.. note:: There are situations in which the currently handled user
+   cannot be determined.  If privacyIDEA encounters a policy with ``userinfo``
+   conditions in such a situation, it throws an error and the current request is
+   aborted.
 
-    Likewise, privacyIDEA raises an error if ``Key`` refers to an unknown userinfo
-    attribute, or if the condition definition is invalid due to some other reasons.
-    More detailed information are then written to the logfile.
+   Likewise, privacyIDEA raises an error if ``Key`` refers to an unknown userinfo
+   attribute, or if the condition definition is invalid due to some other reasons.
+   More detailed information are then written to the logfile.
 
 As an example for a correct and useful ``userinfo`` condition, let us assume
 that you have configured a realm *ldaprealm* with a single LDAP resolver called
