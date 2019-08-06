@@ -2549,6 +2549,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[3]}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
 
         # try to authenticate with a token assigned to a different user
         token.add_user(User("nönäscii", self.realm1))
@@ -2561,6 +2565,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "serial": self.serials[1],
                                                  "pass": OTPs[3]}):
             res = self.app.full_dispatch_request()
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
             self.assertEqual(res.status_code, 400, res)
 
 
