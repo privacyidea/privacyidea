@@ -46,7 +46,7 @@ select.ng-invalid:focus:not(#username):not(#password){
           box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;
 }
 
-/* Style all anchors without hrefs (usually some js callback) with the pointer cursor */
-a:not([href]) {
+/* Style all Elements with an `ng-click`-attribute (JS-callbacks) with the pointer cursor */
+*[ng-click] {
   cursor: pointer;
 }
