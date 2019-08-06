@@ -2533,6 +2533,44 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
 
+    def test_34_validate_user_and_serial(self):
+        # create a new token
+        db_token = Token(self.serials[1], tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        self.assertEqual(token.token.serial, self.serials[1], token)
+        # try to authenticate a given user with a given unassigned token serial
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serials[1],
+                                                 "pass": OTPs[3]}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
+
+        # try to authenticate with a token assigned to a different user
+        token.add_user(User(u"nönäscii", self.realm2))
+        token.set_pin("pin")
+        self.assertEqual(token.token.owners.first().user_id, "1116")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serials[1],
+                                                 "pass": OTPs[3]}):
+            res = self.app.full_dispatch_request()
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
+            self.assertEqual(res.status_code, 400, res)
+
 
 class RegistrationValidity(MyApiTestCase):
 

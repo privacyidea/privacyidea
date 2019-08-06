@@ -323,6 +323,10 @@ def check():
                         "realm": user.realm})
 
     if serial:
+        if user:
+            # check if the given token belongs to the user
+            if not get_tokens(user=user, serial=serial, count=True):
+                raise ParameterError('Given serial does not belong to given user!')
         if not otp_only:
             result, details = check_serial_pass(serial, password, options=options)
         else:
