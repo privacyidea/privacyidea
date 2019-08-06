@@ -2555,7 +2555,7 @@ class ValidateAPITestCase(MyApiTestCase):
                              result)
 
         # try to authenticate with a token assigned to a different user
-        token.add_user(User("nönäscii", self.realm1))
+        token.add_user(User(u"nönäscii", self.realm2))
         token.set_pin("pin")
         self.assertEqual(token.token.owners.first().user_id, "1116")
         with self.app.test_request_context('/validate/check',
