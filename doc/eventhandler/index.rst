@@ -256,7 +256,7 @@ With ``token/init`` you could get:
 
 "missing Authorization header"
 
-..note:: The field ``detail->error->message is only available in case of an
+.. note:: The field ``detail->error->message is only available in case of an
    internal error, i.e. if the response status is ``False``.
 
 **detail_message**
@@ -272,8 +272,7 @@ Those messages can be manyfold like:
 
 "Only 2 failed authentications per 1:00:00"
 
-
-..note:: The field ``detail->message`` is available in case of status ``True``,
+.. note:: The field ``detail->message`` is available in case of status ``True``,
    like an authentication request that was handled successfully but failed.
 
 

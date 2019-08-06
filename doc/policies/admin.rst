@@ -143,9 +143,9 @@ This is the maximum allowed PIN length the admin is allowed to
 use when setting the OTP PIN.
 
 .. note:: There can be token type specific policies like
-``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
-``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
-priority of the common PIN policy.
+   ``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
+   ``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
+   priority of the common PIN policy.
 
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
