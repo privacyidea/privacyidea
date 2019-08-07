@@ -24,7 +24,7 @@ import os.path
 import logging
 import logging.config
 import sys
-from flask import Flask, request
+from flask import Flask, request, Response
 from privacyidea.lib import queue
 
 import privacyidea.api.before_after
@@ -89,6 +89,16 @@ PI_LOGGING_CONFIG = {
                                 "level": logging.DEBUG}
                 }
 }
+
+
+class PiResponseClass(Response):
+    @property
+    def json(self):
+        """This will contain the parsed JSON data if the mimetype indicates
+        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
+        will be ``None``.
+        """
+        return self.get_json(cache=False)
 
 
 def create_app(config_name="development",
@@ -172,6 +182,7 @@ def create_app(config_name="development",
     db.init_app(app)
     migrate = Migrate(app, db)
 
+    app.response_class = PiResponseClass
 
     try:
         # Try to read logging config from file
@@ -223,4 +234,3 @@ def create_app(config_name="development",
     queue.register_app(app)
 
     return app
-
