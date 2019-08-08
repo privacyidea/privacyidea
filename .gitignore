@@ -32,3 +32,6 @@ privacyidea/static/customize/views/
 .eggs/
 privacyIDEA.egg-info/
 __pycache__/
+/enckey
+/public.pem
+/private.pem
