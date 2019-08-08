@@ -2,3 +2,9 @@
     /* 50px baseline + 1px border */
     height: 51px;
 }
+
+/* Add some protected space around floating input elements to keep them from clashing with the baseline. */
+.multiSelect .checkboxLayer {
+    /* 51px + 15px */
+    margin-bottom: 66px;
+}
