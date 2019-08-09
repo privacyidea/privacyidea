@@ -15,8 +15,8 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
             self.assertEqual("Not Implemented", detail.get("description"))
 
@@ -30,7 +30,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
 
@@ -39,7 +39,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("machineresolver1" in result["value"], result)
             self.assertTrue("filename" in result["value"]["machineresolver1"][
@@ -51,7 +51,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The value is empty
             self.assertTrue(result["value"] == {}, result)
@@ -62,7 +62,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertTrue("machineresolver1" in value, value)
 
@@ -71,7 +71,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("machineresolver1" in result["value"], result)
@@ -85,7 +85,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("machineresolver1" in result["value"], result)
             self.assertTrue("filename" in result["value"]["machineresolver1"][
@@ -96,7 +96,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
@@ -106,7 +106,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result["status"])
 
@@ -121,7 +121,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
 
@@ -130,7 +130,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("machineresolver2" in result["value"], result)
             self.assertTrue("LDAPURI" in result["value"]["machineresolver2"][
@@ -141,7 +141,7 @@ class APIMachineResolverTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)

@@ -156,8 +156,6 @@ def offlinerefill():
     :param pass: the last password (maybe password+OTP) entered by the user
     :return:
     """
-    result = False
-    otps = {}
     serial = getParam(request.all_data, "serial", required)
     refilltoken = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)

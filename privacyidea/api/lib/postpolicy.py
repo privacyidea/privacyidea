@@ -421,12 +421,11 @@ def save_pin_change(request, response, serial=None):
     :param action:
     :return:
     """
-    content = response.json
     policy_object = g.policy_object
     serial = serial or request.all_data.get("serial")
     if not serial:
         # No serial in request, so we look into the response
-        serial = content.get("detail", {}).get("serial")
+        serial = response.json.get("detail", {}).get("serial")
     if not serial:
         log.error("Can not determine serial number. Have no idea of any "
                   "realm!")
@@ -776,9 +775,8 @@ def construct_radius_response(request, response):
     """
     if request.url_rule.rule == '/validate/radiuscheck':
         return_code = 400 # generic 400 error by default
-        content = response.json
-        if content['result']['status']:
-            if content['result']['value']:
+        if response.json['result']['status']:
+            if response.json['result']['value']:
                 # user was successfully authenticated
                 return_code = 204
         # send empty body

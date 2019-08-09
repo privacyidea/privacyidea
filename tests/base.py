@@ -155,7 +155,7 @@ class MyTestCase(unittest.TestCase):
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             self.at = result.get("value").get("token")
 
@@ -167,7 +167,7 @@ class MyTestCase(unittest.TestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             self.at_user = result.get("value").get("token")

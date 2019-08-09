@@ -21,9 +21,8 @@ from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
-from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
+from privacyidea.lib.error import ConfigAdminError
 import json
-from privacyidea.lib import _
 import requests
 
 __doc__ = """

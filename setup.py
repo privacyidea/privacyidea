@@ -108,7 +108,7 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
@@ -127,7 +127,7 @@ setup(
                  ['deploy/apache/privacyideaapp.wsgi',
                   'deploy/privacyidea/dictionary']),
                 ('share/man/man1', get_man_pages("tools")),
-               ('lib/privacyidea/authmodules/OTRS',
+                ('lib/privacyidea/authmodules/OTRS',
                  ["authmodules/OTRS/privacyIDEA.pm"]),
                 ('lib/privacyidea/migrations',
                  ["migrations/alembic.ini",
@@ -151,6 +151,7 @@ setup(
                  'Programming Language :: Python :: 2',
                  'Programming Language :: Python :: 2.7',
                  'Programming Language :: Python :: 3',
+                 'Programming Language :: Python :: 3.5',
                  'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7'
                  ],

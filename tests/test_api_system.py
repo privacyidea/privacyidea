@@ -67,7 +67,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["DefaultOtpLen"] == "insert",
@@ -78,7 +78,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1,result)
         
@@ -87,7 +87,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] is None, result)
 
@@ -115,7 +115,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertEquals(result['value']['setPolicy pol1'], 1, res.json)
 
@@ -170,7 +170,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("pol1" == result["value"][0].get("name"), res.data)
 
@@ -198,7 +198,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
@@ -213,7 +213,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
             
@@ -223,7 +223,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             policy = {}
             for pol in result["value"]:
@@ -239,7 +239,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
 
         # delete policy
@@ -248,7 +248,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 404)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result["status"])
 
         # check policy
@@ -257,7 +257,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == [], result)
 
@@ -287,8 +287,8 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
             self.assertTrue("no active server available in server pool" in
                             detail.get("description"),
@@ -314,7 +314,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             data = result["value"]["testL"]["data"]
             self.assertEqual(data.get("BINDPW"), CENSORED)
@@ -324,7 +324,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             data = result["value"]["testL"]["data"]
             self.assertEqual(data.get("BINDPW"), CENSORED)
@@ -340,7 +340,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
 
@@ -349,7 +349,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("resolver1" in result["value"], result)
             self.assertTrue("filename" in result["value"]["resolver1"]["data"])
@@ -360,7 +360,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The value is empty
             self.assertTrue(result["value"] == {}, result)
@@ -373,7 +373,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The value is empty
             self.assertTrue(result["value"] == {}, result)
@@ -384,7 +384,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertTrue("resolver1" in value, value)
 
@@ -396,7 +396,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertTrue("resolver1" in value, value)
 
@@ -405,7 +405,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("resolver1" in result["value"], result)
@@ -418,7 +418,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("resolver1" in result["value"], result)
             self.assertTrue("filename" in result["value"]["resolver1"]["data"])
@@ -428,7 +428,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
@@ -438,7 +438,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
             # Trying to delete a non existing resolver returns -1
@@ -455,7 +455,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was created. The ID of the resolver is returend.
             self.assertTrue(result["value"] > 0, result)
@@ -467,7 +467,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was created
             self.assertTrue(len(result["value"].get("added")) == 1, result)
@@ -479,7 +479,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was created = 1
             self.assertTrue(realmname in result["value"], result)
@@ -493,7 +493,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("adminrealm" in result["value"], result)
 
@@ -512,7 +512,7 @@ class APIConfigTestCase(MyApiTestCase):
             # The realm gets deleted
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The realm is successfully deleted: value == 1
             self.assertTrue(result["value"] == 1, result)
@@ -524,7 +524,7 @@ class APIConfigTestCase(MyApiTestCase):
             # The resolver must not be deleted, since it is contained in a realm
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was deleted = 1
             self.assertTrue(result["value"] == 1, result)
@@ -541,7 +541,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
 
         # create a realm
@@ -552,7 +552,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
 
         # get the default realm
@@ -561,7 +561,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("defrealm" in result["value"], result)
 
@@ -571,7 +571,7 @@ class APIConfigTestCase(MyApiTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
 
         # get the default realm
@@ -580,7 +580,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == {}, result)
 
@@ -590,7 +590,7 @@ class APIConfigTestCase(MyApiTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
 
 
@@ -600,7 +600,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             self.assertTrue(res.status_code == 200, res)
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue("defrealm" in result["value"], result)
 
@@ -612,7 +612,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 2, result)
             # check if policies are there
@@ -658,7 +658,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
 
 
         with self.app.test_request_context('/policy/pol2',
@@ -671,7 +671,7 @@ class APIConfigTestCase(MyApiTestCase):
                                                  "client": "172.16.1.1"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
 
         # CHECK: user=superuser, action=action1, client=172.16.1.1
@@ -689,7 +689,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("value").get("allowed"), result)
 
         # CHECK: user=superuser, action=action1, client=172.16.1.2
@@ -704,7 +704,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value").get("allowed"), result)
 
 
@@ -720,7 +720,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("value").get("allowed"), result)
 
 
@@ -736,7 +736,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value").get("allowed"), result)
 
 
@@ -747,7 +747,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             policies = result.get("value")
             admin_pol = policies.get("admin")
             self.assertTrue("enable" in admin_pol, admin_pol)
@@ -759,7 +759,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             admin_pol = result.get("value")
             self.assertTrue("enable" in admin_pol, admin_pol)
@@ -773,7 +773,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             conditions = result.get("value")
             self.assertIn("sections", conditions)
             self.assertIn("userinfo", conditions["sections"])
@@ -787,7 +787,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             pol = result.get("value")
             self.assertTrue(pol[0].get("active"), pol[0])
@@ -797,14 +797,14 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
 
         with self.app.test_request_context('/policy/pol2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             pol = result.get("value")
             self.assertFalse(pol[0].get("active"), pol[0])
@@ -814,14 +814,14 @@ class APIConfigTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
 
         with self.app.test_request_context('/policy/pol2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             pol = result.get("value")
             self.assertTrue(pol[0].get("active"), pol[0])
@@ -841,7 +841,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertTrue(value.get("is_ready"), value)
 
@@ -859,8 +859,8 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            details = res.json.get("detail")
             value = result.get("value")
             self.assertEqual(value, False)
             self.assertEqual(details.get("message"), "Not implemented")
@@ -871,7 +871,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             # hex encoded value
             self.assertEqual(len(value), 64)
@@ -884,7 +884,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             # hex encoded value
             self.assertEqual(len(value), 44)
@@ -898,7 +898,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             # We probably have no keys in here
             # But value returns a dictionary with the KeyID and "armor" and
@@ -928,7 +928,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             pass
 
         with self.app.test_request_context('/resolver/{0}'.format(resolvername),
@@ -936,7 +936,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             params = result.get("value").get(resolvername).get("data")
             # the returned password is censored
             self.assertEqual(params.get("BINDPW"), CENSORED)
