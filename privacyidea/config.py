@@ -23,6 +23,7 @@ class Config(object):
     # PI_LOGO = "otherlogo.png"
     # PI_AUDIT_SQL_URI = sqlite://
     PI_VASCO_LIBRARY = None
+    PI_CUSTOM_CSS = False
 
 
 class DevelopmentConfig(Config):

@@ -21,6 +21,7 @@
     <link href="{{ instance }}/static/contrib/css/hotkeys.min.css"
           rel="stylesheet"/>
     <link href="{{ instance }}{{ theme }}" rel="stylesheet"/>
+    {% if custom_css %}<link href="{{ instance }}{{ custom_css }}" rel="stylesheet"/>{% endif %}
 
     <script type="application/javascript">
         // Pass the browser Language to our Javascript code
