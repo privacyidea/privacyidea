@@ -143,8 +143,7 @@ def save_resolver(params):
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data! {0!s}".format(params))
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:

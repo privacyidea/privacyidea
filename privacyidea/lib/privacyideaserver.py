@@ -20,7 +20,7 @@
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 import logging
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
 import json
 from privacyidea.lib import _
@@ -80,7 +80,7 @@ class PrivacyIDEAServer(object):
                                                                response.status_code))
             return False
 
-        j_response = json.loads(response.content)
+        j_response = json.loads(to_unicode(response.content))
         result = j_response.get("result")
         return result.get("status") and result.get("value")
 

@@ -27,6 +27,7 @@ import sys
 from flask import Flask, request, Response
 from privacyidea.lib import queue
 
+# we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
