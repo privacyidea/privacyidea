@@ -29,6 +29,7 @@ node_modules
 po/*.mo
 htmlcov/
 privacyidea/static/customize/views/
+privacyidea/static/customize/css/
 .eggs/
 privacyIDEA.egg-info/
 __pycache__/
