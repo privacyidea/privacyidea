@@ -258,11 +258,13 @@ class TiqrTokenClass(OcraTokenClass):
             reg_server = get_from_config("tiqr.regServer")
             auth_server = get_from_config("tiqr.authServer") or reg_server
             logo_url = get_from_config("tiqr.logoUrl")
+            info_url = get_from_config("tiqr.infoUrl") or \
+                    "https://www.privacyidea.org"
 
             service = {"displayName": service_displayname,
                        "identifier": service_identifier,
                        "logoUrl": logo_url,
-                       "infoUrl": "https://www.privacyidea.org",
+                       "infoUrl": info_url,
                        "authenticationUrl":
                            "{0!s}".format(auth_server),
                        "ocraSuite": ocrasuite,
