@@ -63,6 +63,18 @@
 </div>
 
 <div class="form-group">
+    <label for="tiqrInfoUrl" translate>TiQR Info URL</label>
+    <p class="help-block" translate>
+        The website of the identity provider
+    </p>
+    <input type="url"
+           required
+           placeholder="https://www.privacyidea.org"
+           class="form-control"
+           ng-model="form['tiqr.infoUrl']" name="tiqrInfoUrl">
+</div>
+
+<div class="form-group">
     <label for="tiqrOCRA" translate>OCRA Suite</label>
     <p class="help-block" translate>
         This is the OCRA suite used by the TiQR App.
