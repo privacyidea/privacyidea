@@ -44,16 +44,16 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 
 @caconnector_blueprint.route('/<name>', methods=['GET'])
 @caconnector_blueprint.route('/', methods=['GET'])
+@admin_required
 @log_with(log)
-#@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
+@prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
     returns a json list of the available CA connectors
     """
     g.audit_object.log({"detail": u"{0!s}".format(name)})
-    role = g.logged_in_user.get("role")
     res = get_caconnector_list(filter_caconnector_name=name,
-                               return_config=(role == "admin"))
+                               return_config=True)  # the endpoint is only accessed by admins
     g.audit_object.log({"success": True})
     return send_result(res)
 

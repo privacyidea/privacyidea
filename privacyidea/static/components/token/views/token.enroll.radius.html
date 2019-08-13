@@ -37,8 +37,7 @@
     <select class="form-control"
             ng-model="form['radius.identifier']"
             name="identifier"
-            ng-options="identifier as identifier for (identifier, config) in
-            radiusIdentifiers">
+            ng-options="identifier for identifier in radiusIdentifiers">
     </select>
 
 <div class="form-group">
