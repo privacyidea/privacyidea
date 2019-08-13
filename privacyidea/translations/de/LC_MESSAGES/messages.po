@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-08-13 15:29+0200\n"
-"PO-Revision-Date: 2019-08-13 15:31+0200\n"
+"POT-Creation-Date: 2019-08-13 17:32+0200\n"
+"PO-Revision-Date: 2019-08-13 17:34+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -661,7 +661,7 @@ msgstr "Wenn dies angehakt ist, wird das Seed während des Rollouts als Text ang
 
 #: lib/policy.py:2099
 msgid "The policy only matches if certain conditions on the user info are fulfilled."
-msgstr "Die Richtlinie greift, wenn zusätzliche Bedingungen der Benutzerattribute erfüllt sind."
+msgstr "Die Richtlinie greift, wenn zusätzliche Anforderungen an die Benutzerattribute erfüllt sind."
 
 #: lib/radiusserver.py:204 lib/radiusserver.py:236
 msgid "The RADIUS secret is too long"
@@ -1402,11 +1402,11 @@ msgstr "Falsch, wenn der Wert des linken Attributes gleich dem rechten Wert ist.
 
 #: lib/utils/compare.py:171
 msgid "true if the value of the left attribute completely matches the given regular expression pattern on the right"
-msgstr "Wahr, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulärem Ausdruck entspricht."
+msgstr "Wahr, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulären Ausdruck entspricht."
 
 #: lib/utils/compare.py:172
 msgid "false if the value of the left attribute completely matches the given regular expression pattern on the right"
-msgstr "Falsch, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulärem Ausdruck entspricht."
+msgstr "Falsch, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulären Ausdruck entspricht."
 
 #: lib/utils/compare.py:174
 msgid "true if the value of the left attribute is contained in the comma-separated values on the right"
