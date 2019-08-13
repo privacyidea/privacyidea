@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-08-13 17:32+0200\n"
-"PO-Revision-Date: 2019-08-13 17:34+0200\n"
+"POT-Creation-Date: 2019-08-13 17:38+0200\n"
+"PO-Revision-Date: 2019-08-13 17:39+0200\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
@@ -749,7 +749,7 @@ msgstr "Die Aktion wird ausgeführt, wenn der Benutzer diese Anzahl an Tokens be
 
 #: lib/eventhandler/base.py:208
 msgid "Action is triggered, if the counter of the token equals this setting. Can also be '>100' or '<99' for no exact match."
-msgstr "Die Aktion wird ausgelöst, wenn der OTP Zähler dem angegebenem Wert entspricht. Die Bedingung kann auch größer '>100' oder kleiner '<99' als ein definierter Grenzwert sein."
+msgstr "Die Aktion wird ausgelöst, wenn der OTP Zähler dem angegebenen Wert entspricht. Die Bedingung kann auch größer '>100' oder kleiner '<99' als ein definierter Grenzwert sein."
 
 #: lib/eventhandler/base.py:214
 msgid "Action is triggered, if the last authentication of the token is older than 7h, 10d or 1y."
@@ -887,7 +887,7 @@ msgstr "Der Token ist ab dem angegebenen Datum gültig. Dies kann ein fixes Datu
 
 #: lib/eventhandler/tokenhandler.py:199
 msgid "The token will be valid until the given date. Can be a fixed date or an offset like +10m, +24h, +7d."
-msgstr "Der Token wird bis zu dem angegebenem Datum gültig sein. Dies kann ein fixes Datum oder eine Differenz wie +10m, +24h, +7d sein (10 Minuten, 24 Stunden, 7 Tage)"
+msgstr "Der Token wird bis zu dem angegebenen Datum gültig sein. Dies kann ein fixes Datum oder eine Differenz wie +10m, +24h, +7d sein (10 Minuten, 24 Stunden, 7 Tage)"
 
 #: lib/eventhandler/tokenhandler.py:212
 msgid "Set the new count window of the token."
@@ -1402,11 +1402,11 @@ msgstr "Falsch, wenn der Wert des linken Attributes gleich dem rechten Wert ist.
 
 #: lib/utils/compare.py:171
 msgid "true if the value of the left attribute completely matches the given regular expression pattern on the right"
-msgstr "Wahr, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulären Ausdruck entspricht."
+msgstr "Wahr, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenen regulären Ausdruck entspricht."
 
 #: lib/utils/compare.py:172
 msgid "false if the value of the left attribute completely matches the given regular expression pattern on the right"
-msgstr "Falsch, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenem regulären Ausdruck entspricht."
+msgstr "Falsch, wenn der Wert des linken Attributes komplett dem auf der rechten Seite angegebenen regulären Ausdruck entspricht."
 
 #: lib/utils/compare.py:174
 msgid "true if the value of the left attribute is contained in the comma-separated values on the right"
