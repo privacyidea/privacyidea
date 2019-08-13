@@ -162,17 +162,17 @@ COMPARATOR_FUNCTIONS = {
 
 #: This dictionary connects comparators to their human-readable (and translated) descriptions.
 COMPARATOR_DESCRIPTIONS = {
-    COMPARATORS.CONTAINS: _("true if the left value contains the right value"),
-    COMPARATORS.NOT_CONTAINS: _("false if the left value contains the right value"),
+    COMPARATORS.CONTAINS: _("true if the value of the left attribute contains the right value"),
+    COMPARATORS.NOT_CONTAINS: _("false if the value of the left attribute contains the right value"),
 
-    COMPARATORS.EQUALS: _("true if the two values are equal"),
-    COMPARATORS.NOT_EQUALS: _("false if the two values are equal"),
+    COMPARATORS.EQUALS: _("true if the value of the left attribute equals the right value"),
+    COMPARATORS.NOT_EQUALS: _("false if the value of the left attribute equals the right value"),
 
-    COMPARATORS.MATCHES: _("true if the left value completely matches the given regular expression pattern"),
-    COMPARATORS.NOT_MATCHES: _("false if the left value completely matches the given regular expression pattern"),
+    COMPARATORS.MATCHES: _("true if the value of the left attribute completely matches the given regular expression pattern on the right"),
+    COMPARATORS.NOT_MATCHES: _("false if the value of the left attribute completely matches the given regular expression pattern on the right"),
 
-    COMPARATORS.IN: _("true if the left value is contained in the comma-separated values on the right"),
-    COMPARATORS.NOT_IN: _("false if the left value is contained in the comma-separated values on the right")
+    COMPARATORS.IN: _("true if the value of the left attribute is contained in the comma-separated values on the right"),
+    COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the right")
 }
 
 
