@@ -94,7 +94,6 @@ def teardown_request(exc):
 @audit_blueprint.before_request
 @user_blueprint.before_request
 @system_blueprint.before_request
-@privacyideaserver_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -113,6 +112,7 @@ def before_user_request():
 @smsgateway_blueprint.before_request
 @radiusserver_blueprint.before_request
 @caconnector_blueprint.before_request
+@privacyideaserver_blueprint.before_request
 @client_blueprint.before_request
 @subscriptions_blueprint.before_request
 @monitoring_blueprint.before_request
