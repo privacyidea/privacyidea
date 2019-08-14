@@ -38,7 +38,6 @@ import logging
 from privacyidea.lib.radiusserver import (add_radius, RADIUSServer,
                                           delete_radius, get_radiusservers, test_radius)
 from privacyidea.models import RADIUSServer as RADIUSServerDB
-from privacyidea.api.auth import admin_required
 
 
 log = logging.getLogger(__name__)
@@ -47,7 +46,6 @@ radiusserver_blueprint = Blueprint('radiusserver_blueprint', __name__)
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def create(identifier=None):
@@ -82,7 +80,6 @@ def create(identifier=None):
 
 @radiusserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERREAD)
 def list_radius():
     """
@@ -104,7 +101,6 @@ def list_radius():
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
@@ -121,7 +117,6 @@ def delete_server(identifier=None):
 
 
 @radiusserver_blueprint.route('/test_request', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def test():
