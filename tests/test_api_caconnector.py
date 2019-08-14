@@ -111,17 +111,15 @@ class CAConnectorTestCase(MyApiTestCase):
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
 
+        # Only admins are allowed to access the /caconnector/ endpoints
         with self.app.test_request_context('/caconnector/',
                                            data={},
                                            method='GET',
                                            headers={'Authorization': at_user}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEquals(res.status_code, 401)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result["status"] is True, result)
-            value = result["value"]
-            self.assertEqual(len(value), 2)
-            self.assertEqual(value[0].get("data"), {})
+            self.assertIn("do not have the necessary role", result["error"]["message"])
 
     def test_06_delete_caconnector(self):
         with self.app.test_request_context('/caconnector/con1',

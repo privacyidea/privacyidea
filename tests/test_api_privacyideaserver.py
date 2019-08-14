@@ -45,6 +45,15 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
             self.assertEqual(server1.get("url"), "https://pi")
             self.assertEqual(server1.get("description"), "myServer")
 
+        # Listing privacyIDEA servers as a user is not allowed
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        with self.app.test_request_context('/privacyideaserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
         # delete server
         with self.app.test_request_context('/privacyideaserver/server1',
                                            method='DELETE',

@@ -1,12 +1,20 @@
 from __future__ import print_function
+
+import os
+
 import json
+
 from .base import MyApiTestCase
 
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, ACTION, SCOPE
 from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+from privacyidea.lib.caconnectors.localca import ATTR
+from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from .test_lib_resolver import LDAPDirectory, ldap3mock
+from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
 from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwords"
@@ -1009,3 +1017,170 @@ class APIConfigTestCase(MyApiTestCase):
         delete_policy("pol_write")
         delete_resolver(resolvername)
 
+    def test_22_list_radius_servers(self):
+        add_radius("local", "localhost", "foobar")
+        add_radius("remote", "remote.example.com", "secret", description="very far away")
+
+        # cannot access the RADIUS server names without authorization
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("Missing Authorization header", result["error"]["message"])
+
+        # if no admin policies are defined, admins can access the RADIUS servers
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEquals(set(result["value"]), {"local", "remote"})
+
+        # if an admin policy is defined and enrollRADIUS is not allowed, admins cannot access the RADIUS servers
+        set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("enrollRADIUS", result["error"]["message"])
+
+        # with an enrollRADIUS action, admins can access the RADIUS servers
+        set_policy("admin", scope=SCOPE.ADMIN, action=[ACTION.AUDIT, "enrollRADIUS"])
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEquals(set(result["value"]), {"local", "remote"})
+
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # without a user action, users can access the RADIUS servers
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEquals(set(result["value"]), {"local", "remote"})
+
+        # if a user policy is defined and enrollRADIUS is not allowed, users cannot access the RADIUS servers
+        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("enrollRADIUS", result["error"]["message"])
+
+        # with an enrollRADIUS action, users can access the RADIUS servers
+        set_policy("user", scope=SCOPE.USER, action="enrollRADIUS")
+        with self.app.test_request_context("/system/names/radius",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEquals(set(result["value"]), {"local", "remote"})
+
+        delete_policy("user")
+        delete_policy("admin")
+        delete_radius("local")
+        delete_radius("remote")
+
+    def test_23_list_ca_connectors(self):
+        cwd = os.getcwd()
+        save_caconnector({'type': 'local',
+                          'secret': 'value',
+                          'caconnector': 'localCA',
+                          "cakey": CAKEY,
+                          "cacert": CACERT,
+                          "openssl.cnf": OPENSSLCNF,
+                          "WorkingDir": cwd + "/" + WORKINGDIR,
+                          ATTR.TEMPLATE_FILE: "templates.yaml"})
+
+        def _check_caconnector_response(res):
+            result = json.loads(res.data.decode('utf8')).get("result")
+            value = result["value"]
+            self.assertEqual(len(value), 1)
+            self.assertEqual(value[0]["connectorname"], "localCA")
+            self.assertEqual(value[0]["data"], {})
+            self.assertEqual(set(value[0]["templates"].keys()), {"template3", "webserver", "user"})
+
+        # cannot access the CA connector names without authorization
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("Missing Authorization header", result["error"]["message"])
+
+        # if no admin policies are defined, admins can access the CA connectors
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            _check_caconnector_response(res)
+
+        # if an admin policy is defined and enrollCERTIFICATE is not allowed, admins cannot access the CA connectors
+        set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("enrollCERTIFICATE", result["error"]["message"])
+
+        # with an enrollCERTIFICATE action, admins can access the CA connectors
+        set_policy("admin", scope=SCOPE.ADMIN, action=[ACTION.AUDIT, "enrollCERTIFICATE"])
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            _check_caconnector_response(res)
+
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # without a user action, users can access the CA connectors
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            _check_caconnector_response(res)
+
+        # if a user policy is defined and enrollCERTIFICATE is not allowed, users cannot access the CA connectors
+        set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT)
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertIn("enrollCERTIFICATE", result["error"]["message"])
+
+        # with an enrollCERTIFICATE action, users can access the CA connectors
+        set_policy("user", scope=SCOPE.USER, action="enrollCERTIFICATE")
+        with self.app.test_request_context("/system/names/caconnector",
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            _check_caconnector_response(res)
+
+        delete_policy("user")
+        delete_policy("admin")
+        delete_caconnector("localCA")
