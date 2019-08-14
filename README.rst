@@ -98,7 +98,7 @@ If you want to setup a development environment start like this::
     source venv/bin/activate
     pip install -r requirements.txt
     
-You may additionally want to set up your environment for testing, by adding nose and the additional dependencies:
+You may additionally want to set up your environment for testing, by adding nose and the additional dependencies::
 
     pip install nose
     pip install -r tests/requirements.txt
@@ -145,7 +145,7 @@ as administrator.
 Run tests
 =========
 
-If you have followed the steps above to set up your environment for testing, running the test suite should be as easy as running nosetests(1) with the following options:
+If you have followed the steps above to set up your environment for testing, running the test suite should be as easy as running nosetests(1) with the following options::
 
     nosetests -v --with-coverage --cover-package=privacyidea --cover-html
 
