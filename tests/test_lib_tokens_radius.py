@@ -102,7 +102,7 @@ class RadiusTokenTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_04_do_request_success(self):
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_privacyidea_config("radius.dictfile", DICT_FILE)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
@@ -112,7 +112,7 @@ class RadiusTokenTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_05_do_request_fail(self):
-        radiusmock.setdata(success=False)
+        radiusmock.setdata(response=radiusmock.AccessReject)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
         otpcount = token.check_otp("123456")
@@ -120,7 +120,7 @@ class RadiusTokenTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_08_authenticate_local_pin(self):
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = RadiusTokenClass(db_token)
         # wrong PIN
@@ -136,7 +136,7 @@ class RadiusTokenTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_09_authenticate_radius_pin(self):
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         db_token = Token.query.filter(Token.serial == self.serial2).first()
         token = RadiusTokenClass(db_token)
         token.set_pin("")
@@ -149,7 +149,7 @@ class RadiusTokenTestCase(MyTestCase):
     def test_10_authenticate_system_radius_settings(self):
         set_privacyidea_config("radius.server", "my.other.radiusserver:1812")
         set_privacyidea_config("radius.secret", "testing123")
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         token = init_token({"type": "radius",
                             "radius.system_settings": True,
                             "radius.user": "user1",
@@ -163,7 +163,7 @@ class RadiusTokenTestCase(MyTestCase):
     @radiusmock.activate
     def test_11_RADIUS_request(self):
         set_privacyidea_config("radius.dictfile", DICT_FILE)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -178,7 +178,7 @@ class RadiusTokenTestCase(MyTestCase):
     @radiusmock.activate
     def test_12_non_ascii(self):
         set_privacyidea_config("radius.dictfile", DICT_FILE)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
