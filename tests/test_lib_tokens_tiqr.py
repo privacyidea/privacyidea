@@ -142,6 +142,7 @@ class OCRASuiteTestCase(MyTestCase):
         # Test, if this is a number
         i_c = int(c)
 
+
 KEY20 = "3132333435363738393031323334353637383930"
 KEY32 = "3132333435363738393031323334353637383930313233343536373839303132"
 KEY64 = "31323334353637383930313233343536373839303132333435363738393031323334" \
@@ -529,7 +530,22 @@ class TiQRTokenTestCase(MyApiTestCase):
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
-        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:[0-9]+")
+        # check the failed response count
+        fcnt1 = token.get_max_failcount() - token.get_failcount()
+        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt1))
+
+        # Try another wrong response
+        req.all_data = {"response": "67890",
+                        "userId": encoded_user_id,
+                        "sessionKey": session,
+                        "operation": "login"}
+        r = TiqrTokenClass.api_endpoint(req, g)
+        self.assertEqual(r[0], "plain")
+        # check the failed response count
+        fcnt2 = token.get_max_failcount() - token.get_failcount()
+        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt2))
+        # has the failcounter decreased?
+        self.assertEqual(fcnt1 - 1, fcnt2)
 
         # Check that the OTP status is still incorrect
         r = token.check_challenge_response(options={"transaction_id":
