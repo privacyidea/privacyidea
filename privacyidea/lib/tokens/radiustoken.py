@@ -154,6 +154,10 @@ class RadiusTokenClass(RemoteTokenClass):
         This method checks, if this is a request, that triggers a challenge.
         It depends on the way, the pin is checked - either locally or remote
 
+        communication with RADIUS server: yes
+        modification of options: The communication with the RADIUS server can
+            change the options, radius_state, radius_result, radius_message
+
         :param passw: password, which might be pin or pin+otp
         :type passw: string
         :param user: The user from the authentication request
@@ -186,6 +190,12 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         create a challenge, which is submitted to the user
 
+        This method is called after ``is_challenge_request`` has verified,
+        that a challenge needs to be created.
+
+        communication with RADIUS server: no
+        modification of options: no
+
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :return: tuple of (bool, message and data)
@@ -198,7 +208,7 @@ class RadiusTokenClass(RemoteTokenClass):
         if options is None:
             options = {}
         message = options.get('radius_message') or "Enter your RADIUS tokencode:"
-        state = options.get('radius_state')
+        state = binascii.hexlify(options.get('radius_state') or '')
         attributes = {'state': transactionid}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
@@ -216,6 +226,11 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         This method checks, if this is a request, that is the response to
         a previously sent challenge. But we do not query the RADIUS server.
+
+        This is the first method in the loop ``check_token_list``.
+
+        communication with RADIUS server: no
+        modification of options: The "radius_result" key is set to None
 
         :param passw: password, which might be pin or pin+otp
         :type passw: string
@@ -284,7 +299,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
-                    state = challengeobject.data
+                    state = binascii.unhexlify(challengeobject.data)
 
                     # challenge is still valid
                     radius_response = self._check_radius(passw, options=options, radius_state=state)
@@ -301,7 +316,7 @@ class RadiusTokenClass(RemoteTokenClass):
                         challengeobject.delete()
                         _, _, transaction_id, _ = self.create_challenge(options=options)
                         options["transaction_id"] = transaction_id
-                        otp_counter = 1
+                        otp_counter = -1
                         break
                     else:
                         otp_counter = -1
@@ -347,7 +362,12 @@ class RadiusTokenClass(RemoteTokenClass):
         This is only called after it is verified, that the upper level is no challenge-request
         or challenge-response
 
-        Here we contact the RADIUS server to validate the OtpVal.
+        The "options" are read-only in this method. They are not modified here. authenticate
+        is the last method in the loop ``check_token_list``.
+
+        communication with RADIUS server: yes, if is no previous "radius_result"
+            If there is a "radius" result in the options, we do not query the radius server
+        modification of options: options are not modified
 
         :param passw: the password / otp
         :param user: the requesting user
@@ -358,9 +378,8 @@ class RadiusTokenClass(RemoteTokenClass):
         """
         options = options or {}
         res = False
-        radius_response = AccessReject
         otp_counter = -1
-        reply = {'message': 'remote side denied access'}
+        reply = None
         otpval = passw
 
         # should we check the pin locally?

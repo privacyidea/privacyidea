@@ -133,7 +133,6 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.authenticate(self.otppin+"123456")
         self.assertTrue(r[0], r)
         self.assertTrue(r[1] >= 0, r)
-        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
 
     @radiusmock.activate
     def test_09_authenticate_radius_pin(self):
@@ -144,7 +143,6 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.authenticate("radiusPIN123456")
         self.assertTrue(r[0], r)
         self.assertTrue(r[1] >= 0, r)
-        self.assertTrue(r[2].get("message") == "matching 1 tokens", r)
 
     @radiusmock.activate
     def test_10_authenticate_system_radius_settings(self):
@@ -159,7 +157,6 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.authenticate("radiuspassword")
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 1)
-        self.assertEqual(r[2].get("message"), "matching 1 tokens")
 
     @radiusmock.activate
     def test_11_RADIUS_request(self):
@@ -174,7 +171,6 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.authenticate("radiuspassword")
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 1)
-        self.assertEqual(r[2].get("message"), "matching 1 tokens")
 
     @radiusmock.activate
     def test_12_non_ascii(self):
@@ -189,7 +185,6 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.authenticate(u"passwörd")
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 1)
-        self.assertEqual(r[2].get("message"), "matching 1 tokens")
 
     @radiusmock.activate
     def test_00_test_check_radius(self):
@@ -267,7 +262,7 @@ class RadiusTokenTestCase(MyTestCase):
                             "radius.user": u"nönäscii"})
 
         # Check if the remote PIN would create a RADIUS challenge
-        state1 = ["123456"]
+        state1 = [b"123456"]
         radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge,
                            response_data={"State": state1,
                                           "Reply_Message": ["Please provide more information."]})
@@ -310,8 +305,8 @@ class RadiusTokenTestCase(MyTestCase):
                             "radius.user": u"nönäscii"})
 
         # Check if the remote PIN would create a RADIUS challenge
-        state1 = ["123456"]
-        state2 = ["999999"]
+        state1 = [b"123456"]
+        state2 = [b"999999"]
         radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge,
                            response_data={"State": state1,
                                           "Reply_Message": ["Please provide more information."]})
@@ -343,8 +338,8 @@ class RadiusTokenTestCase(MyTestCase):
                                                              "Reply_Message": ["Please provide even more information."]})
         opts2 = {"transaction_id": transaction_id}
         r = token.check_challenge_response(passw="some_response", options=opts2)
-        # The answer is correct,
-        self.assertEqual(r, 1)
+        # The answer might be correct, but since the RADIUS server want to get more answers, we get a -1
+        self.assertEqual(r, -1)
         # but we get a new Challenge!
         self.assertEqual(opts2.get("radius_result"), radiusmock.AccessChallenge)
         self.assertEqual(opts2.get("radius_state"), state2[0])
