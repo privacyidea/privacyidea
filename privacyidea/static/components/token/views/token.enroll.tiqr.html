@@ -1,10 +1,8 @@
-<div ng-hide="form['tiqr.regServer']" translate class="bg-danger">
-    For TiQR tokens to work properly you need to set the
-    <a ui-sref="config.tokens({tokentype:'tiqr'})">TiQR Token Config</a>!
+<div ng-hide="form['tiqr.regServer']" translate class="ng-danger">
+	<div ng-hide="config.tokens({tokentype:'tiqr'})" class="ng-hide"> </div>
 </div>
 
 <p class="help-block" translate>
     The TiQR token is a Smartphone App token, which allows easy
     authentication by just scanning a QR Code during the authentication process.
 </p>
-
