@@ -3301,6 +3301,20 @@ class AChallengeResponse(MyApiTestCase):
             # No transaction_id
             self.assertIsNone(t)
 
+        # A second request tries to use the same transaction_id, but the RADIUS server
+        # responds with a Reject
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+
         # And finally a single shot authentication, no chal resp, no transaction_id
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
         with self.app.test_request_context('/validate/check',
