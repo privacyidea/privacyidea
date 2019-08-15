@@ -170,6 +170,7 @@ class RadiusTokenClass(RemoteTokenClass):
         if self.check_pin_local:
             # With a local PIN the challenge response is always a privacyIDEA challenge response!
             res = self.check_pin(passw)
+            return res
 
         else:
             state = options.get('radius_state')
@@ -179,8 +180,6 @@ class RadiusTokenClass(RemoteTokenClass):
                 res = self._check_radius(passw, options=options, radius_state=state)
 
             return res == AccessChallenge
-
-        return res
 
     @log_with(log)
     def create_challenge(self, transactionid=None, options=None):
@@ -382,9 +381,6 @@ class RadiusTokenClass(RemoteTokenClass):
 
         if radius_response == AccessAccept:
             res = True
-            reply = {'message': 'matching 1 tokens',
-                     'serial': self.get_serial(),
-                     'type': self.get_tokentype()}
             otp_counter = 1
 
         return res, otp_counter, reply
