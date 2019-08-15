@@ -487,8 +487,8 @@ class RadiusTokenClass(RemoteTokenClass):
             req["User-Password"] = req.PwCrypt(otpval)
 
             if radius_state:
-                req["State"] = str(radius_state)
-                log.info("Sending saved challenge to radius server: {0} ".format(radius_state))
+                req["State"] = radius_state
+                log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
 
             response = srv.SendPacket(req)
             # handle the RADIUS challenge
