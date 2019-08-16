@@ -30,6 +30,8 @@ import logging
 from oauth2client.service_account import ServiceAccountCredentials
 import requests
 import json
+import time
+import datetime
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
 SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
@@ -56,6 +58,11 @@ class FIREBASE_CONFIG:
 
 class FirebaseProvider(ISMSProvider):
 
+    def __init__(self, db_smsprovider_object=None, smsgateway=None):
+        ISMSProvider.__init__(self, db_smsprovider_object, smsgateway)
+        self.access_token_info = None
+        self.access_token_expires_at = 0
+
     def submit_message(self, firebase_token, data):
         """
         send a message to a registered Firebase client
@@ -73,12 +80,17 @@ class FirebaseProvider(ISMSProvider):
                 from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG),
                                        SCOPES)
 
-        access_token_info = credentials.get_access_token()
+        now = time.time()
+        if self.access_token_info is None or now > self.access_token_expires_at:
+            log.debug("Fetching a new access_token from firebase...")
+            # We either have no access_token or the one we have, has expired
+            self.access_token_info = credentials.get_access_token()
+            # Now we set the expiration date for the new access_token with a margin of 10 seconds
+            self.access_token_expires_at = now + self.access_token_info.expires_in - 10
+            readable_time = datetime.datetime.fromtimestamp(self.access_token_expires_at).isoformat()
+            log.debug(u"Setting the expiration of the new access_token to {0!s}.".format(readable_time))
 
-        # Should we do something with expires in?
-        # expires_in = access_token_info.expires_in
-
-        bearer_token = access_token_info.access_token
+        bearer_token = self.access_token_info.access_token
         headers = {
             'Authorization': u'Bearer {0!s}'.format(bearer_token),
             'Content-Type': 'application/json; UTF-8',
