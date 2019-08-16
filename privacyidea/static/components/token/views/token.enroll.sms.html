@@ -14,7 +14,7 @@
            name="dynamic_phone" id="dynamic_phone">
     <label for="dynamic_phone" translate>Read number dynamically from user source on each request.</label>
 </div>
-<div ng-hide="form.dynamic_phone" class="form-group">
+<div ng-hide="form.dynamic_phone || loggedInUser.role==='user'" class="form-group">
     <label for="phone" translate>Phone number</label>
     <input type="text"
            autofocus
