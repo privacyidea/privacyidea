@@ -1,4 +1,4 @@
-<div ng-hide="form['tiqr.regServer']" translate class="bg-danger">
+<div ng-hide="form['tiqr.regServer'] || loggedInUser.role==='user'" translate class="bg-danger">
     For TiQR tokens to work properly you need to set the
     <a ui-sref="config.tokens({tokentype:'tiqr'})">TiQR Token Config</a>!
 </div>
