@@ -59,6 +59,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
 from pyrad.client import Client
@@ -149,10 +150,12 @@ class RadiusTokenClass(RemoteTokenClass):
         self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
 
     @log_with(log)
+    @challenge_response_allowed
     def is_challenge_request(self, passw, user=None, options=None):
         """
         This method checks, if this is a request, that triggers a challenge.
-        It depends on the way, the pin is checked - either locally or remote
+        It depends on the way, the pin is checked - either locally or remotely.
+        In addition, the RADIUS token has to be configured to allow challenge response.
 
         communication with RADIUS server: yes
         modification of options: The communication with the RADIUS server can
