@@ -287,10 +287,15 @@ class RadiusTokenTestCase(MyTestCase):
         r = token.is_challenge_response("some_response", options={"transaction_id": transaction_id})
         self.assertTrue(r)
 
+        # Check what happens if the RADIUS server rejects the response
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        r = token.check_challenge_response(passw="some_response", options={"transaction_id": transaction_id})
+        self.assertLess(r, 0)
+
         # Now checking the response to the challenge and we issue a RADIUS request
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
         r = token.check_challenge_response(passw="some_response", options={"transaction_id": transaction_id})
-        self.assertTrue(r)
+        self.assertGreaterEqual(r, 0)
 
     @radiusmock.activate
     def test_15_multi_challenge_response_in_radius_server(self):
