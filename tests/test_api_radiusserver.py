@@ -71,7 +71,7 @@ class RADIUSServerTestCase(MyApiTestCase):
     @radiusmock.activate
     def test_02_send_test_email(self):
         set_privacyidea_config("radius.dictfile", DICT_FILE)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
 
         with self.app.test_request_context('/radiusserver/test_request',
                                            method='POST',
