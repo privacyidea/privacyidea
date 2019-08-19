@@ -72,13 +72,13 @@ def get_firebase_access_token(config_file_name):
         # If the type of the config is not class AccessToken or
         # if the token has expired
         credentials = ServiceAccountCredentials.from_json_keyfile_name(config_file_name, SCOPES)
-        log.debug("Fetching a new access_token from firebase...")
+        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
         access_token_info = credentials.get_access_token()
         # Now we set the expiration date for the new access_token with a margin of 10 seconds
         At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
         app_store[fbt][config_file_name] = At
         readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
-        log.debug(u"Setting the expiration of the new access_token to {0!s}.".format(readable_time))
+        log.debug(u"Setting the expiration for {!r} of the new access_token to {0!s}.".format(config_file_name, readable_time))
 
     return app_store[fbt][config_file_name].access_token
 
