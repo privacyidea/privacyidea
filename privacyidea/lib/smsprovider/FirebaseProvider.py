@@ -78,7 +78,7 @@ def get_firebase_access_token(config_file_name):
         At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
         app_store[fbt][config_file_name] = At
         readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
-        log.debug(u"Setting the expiration for {!r} of the new access_token to {0!s}.".format(config_file_name, readable_time))
+        log.debug(u"Setting the expiration for {!r} of the new access_token to {!s}.".format(config_file_name, readable_time))
 
     return app_store[fbt][config_file_name].access_token
 
