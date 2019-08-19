@@ -367,7 +367,8 @@ class RadiusTokenClass(RemoteTokenClass):
 
         communication with RADIUS server: yes, if is no previous "radius_result"
             If there is a "radius" result in the options, we do not query the radius server
-        modification of options: options are not modified
+        modification of options: options can be modified if we query the radius server.
+            However, this is not important since authenticate is the last call.
 
         :param passw: the password / otp
         :param user: the requesting user
