@@ -76,6 +76,8 @@ def get_firebase_access_token(config_file_name):
         access_token_info = credentials.get_access_token()
         # Now we set the expiration date for the new access_token with a margin of 10 seconds
         At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
+        # We do not use a lock here: The worst that could happen is that two threads
+        # fetch new auth tokens concurrently. In this case, one of them wins and is written to the dictionary.
         app_store[fbt][config_file_name] = At
         readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
         log.debug(u"Setting the expiration for {!r} of the new access_token to {!s}.".format(config_file_name, readable_time))
