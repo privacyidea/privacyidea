@@ -40,7 +40,6 @@ from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                delete_privacyideaserver,
                                                get_privacyideaservers)
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
-from privacyidea.api.auth import admin_required
 
 
 log = logging.getLogger(__name__)
@@ -49,7 +48,6 @@ privacyideaserver_blueprint = Blueprint('privacyideaserver_blueprint', __name__)
 
 
 @privacyideaserver_blueprint.route('/<identifier>', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def create(identifier=None):
@@ -101,7 +99,6 @@ def list_privacyidea():
 
 
 @privacyideaserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
@@ -118,7 +115,6 @@ def delete_server(identifier=None):
 
 
 @privacyideaserver_blueprint.route('/test_request', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def test():

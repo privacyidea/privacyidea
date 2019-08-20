@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-08-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow RADIUS challenge / response
+#             Credits to @droobah, who provided the first pull request
+#             https://github.com/privacyidea/privacyidea/pull/1389
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenkind
 #  2016-02-22 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -46,19 +50,22 @@ import logging
 import traceback
 import binascii
 from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.radiusserver import get_radius
+from privacyidea.models import Challenge
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
+from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
-
 
 optional = True
 required = False
@@ -99,7 +106,7 @@ class RadiusTokenClass(RemoteTokenClass):
                'title': 'RADIUS Token',
                'description': _('RADIUS: Forward authentication request to a '
                                 'RADIUS server.'),
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {},
@@ -113,6 +120,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         return ret
 
+    @log_with(log)
     def update(self, param):
         # New value
         radius_identifier = getParam(param, "radius.identifier")
@@ -137,10 +145,189 @@ class RadiusTokenClass(RemoteTokenClass):
         TokenClass.update(self, param)
         val = getParam(param, "radius.local_checkpin", optional) or 0
         self.add_tokeninfo("radius.local_checkpin", val)
-
         val = getParam(param, "radius.user", required)
         self.add_tokeninfo("radius.user", val)
         self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
+
+    @log_with(log)
+    @challenge_response_allowed
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        This method checks, if this is a request, that triggers a challenge.
+        It depends on the way, the pin is checked - either locally or remotely.
+        In addition, the RADIUS token has to be configured to allow challenge response.
+
+        communication with RADIUS server: yes
+        modification of options: The communication with the RADIUS server can
+            change the options, radius_state, radius_result, radius_message
+
+        :param passw: password, which might be pin or pin+otp
+        :type passw: string
+        :param user: The user from the authentication request
+        :type user: User object
+        :param options: dictionary of additional request parameters
+        :type options: dict
+
+        :return: true or false
+        """
+        if options is None:
+            options = {}
+
+        # should we check the pin locally?
+        if self.check_pin_local:
+            # With a local PIN the challenge response is always a privacyIDEA challenge response!
+            res = self.check_pin(passw)
+            return res
+
+        else:
+            state = options.get('radius_state')
+            # The pin is checked remotely
+            res = options.get('radius_result')
+            if res is None:
+                res = self._check_radius(passw, options=options, radius_state=state)
+
+            return res == AccessChallenge
+
+    @log_with(log)
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        create a challenge, which is submitted to the user
+
+        This method is called after ``is_challenge_request`` has verified,
+        that a challenge needs to be created.
+
+        communication with RADIUS server: no
+        modification of options: no
+
+        :param transactionid: the id of this challenge
+        :param options: the request context parameters / data
+        :return: tuple of (bool, message and data)
+                 bool, if submit was successful
+                 message is submitted to the user
+                 data is preserved in the challenge
+                 attributes - additional attributes, which are displayed in the
+                    output
+        """
+        if options is None:
+            options = {}
+        message = options.get('radius_message') or "Enter your RADIUS tokencode:"
+        state = binascii.hexlify(options.get('radius_state') or b'')
+        attributes = {'state': transactionid}
+        validity = int(get_from_config('DefaultChallengeValidityTime', 120))
+
+        db_challenge = Challenge(self.token.serial,
+                                 transaction_id=transactionid,
+                                 data=state,
+                                 challenge=message,
+                                 validitytime=validity)
+        db_challenge.save()
+        self.challenge_janitor()
+        return True, message, db_challenge.transaction_id, attributes
+
+    @log_with(log)
+    def is_challenge_response(self, passw, user=None, options=None):
+        """
+        This method checks, if this is a request, that is the response to
+        a previously sent challenge. But we do not query the RADIUS server.
+
+        This is the first method in the loop ``check_token_list``.
+
+        communication with RADIUS server: no
+        modification of options: The "radius_result" key is set to None
+
+        :param passw: password, which might be pin or pin+otp
+        :type passw: string
+        :param user: the requesting user
+        :type user: User object
+        :param options: dictionary of additional request parameters
+        :type options: dict
+        :return: true or false
+        :rtype: bool
+        """
+        if options is None:
+            options = {}
+
+        challenge_response = False
+
+        # clear the radius_result since this is the first function called in the chain
+        # this value will be utilized to ensure we do not _check_radius more than once in the loop
+        options.update({'radius_result': None})
+
+        # fetch the transaction_id
+        transaction_id = options.get('transaction_id')
+        if transaction_id is None:
+            transaction_id = options.get('state')
+
+        if transaction_id:
+            # get the challenges for this transaction ID
+            challengeobject_list = get_challenges(serial=self.token.serial,
+                                                  transaction_id=transaction_id)
+
+            for challengeobject in challengeobject_list:
+                if challengeobject.is_valid():
+                    challenge_response = True
+
+        return challenge_response
+
+    @log_with(log)
+    @check_token_locked
+    def check_challenge_response(self, user=None, passw=None, options=None):
+        """
+        This method verifies if there is a matching question for the given
+        passw and also verifies if the answer is correct.
+
+        It then returns the the otp_counter = 1
+
+        :param user: the requesting user
+        :type user: User object
+        :param passw: the password - in fact it is the answer to the question
+        :type passw: string
+        :param options: additional arguments from the request, which could
+                        be token specific. Usually "transaction_id"
+        :type options: dict
+        :return: return otp_counter. If -1, challenge does not match
+        :rtype: int
+        """
+        if options is None:
+            options = {}
+        otp_counter = -1
+
+        # fetch the transaction_id
+        transaction_id = options.get('transaction_id') or options.get('state')
+
+        # get the challenges for this transaction ID
+        if transaction_id is not None:
+            challengeobject_list = get_challenges(serial=self.token.serial,
+                                                  transaction_id=transaction_id)
+
+            for challengeobject in challengeobject_list:
+                if challengeobject.is_valid():
+                    state = binascii.unhexlify(challengeobject.data)
+
+                    # challenge is still valid
+                    radius_response = self._check_radius(passw, options=options, radius_state=state)
+                    if radius_response == AccessAccept:
+                        # We found the matching challenge,
+                        # and the RADIUS server returned AccessAccept
+                        challengeobject.delete()
+                        otp_counter = 1
+                        break
+                    elif radius_response == AccessChallenge:
+                        # The response was valid but triggered a new challenge
+                        # Note: The second challenge currently does not work correctly
+                        # see https://github.com/privacyidea/privacyidea/issues/1792
+                        challengeobject.delete()
+                        _, _, transaction_id, _ = self.create_challenge(options=options)
+                        options["transaction_id"] = transaction_id
+                        otp_counter = -1
+                        break
+                    else:
+                        otp_counter = -1
+                        # increase the received_count
+                        challengeobject.set_otp_status()
+
+        self.challenge_janitor()
+        return otp_counter
 
     @property
     def check_pin_local(self):
@@ -170,22 +357,91 @@ class RadiusTokenClass(RemoteTokenClass):
 
     @log_with(log)
     @check_token_locked
+    def authenticate(self, passw, user=None, options=None):
+        """
+        do the authentication on base of password / otp and user and
+        options, the request parameters.
+
+        This is only called after it is verified, that the upper level is no challenge-request
+        or challenge-response
+
+        The "options" are read-only in this method. They are not modified here. authenticate
+        is the last method in the loop ``check_token_list``.
+
+        communication with RADIUS server: yes, if is no previous "radius_result"
+            If there is a "radius" result in the options, we do not query the radius server
+        modification of options: options can be modified if we query the radius server.
+            However, this is not important since authenticate is the last call.
+
+        :param passw: the password / otp
+        :param user: the requesting user
+        :param options: the additional request parameters
+
+        :return: tuple of (success, otp_count - 0 or -1, reply)
+
+        """
+        options = options or {}
+        res = False
+        otp_counter = -1
+        reply = None
+        otpval = passw
+
+        # should we check the pin locally?
+        if self.check_pin_local:
+            (_res, pin, otpval) = self.split_pin_pass(passw, user,
+                                                      options=options)
+
+            if not self.check_pin(pin):
+                return False, -1, {'message': "Wrong PIN"}
+
+        # attempt to retrieve saved state/result
+        state = options.get('radius_state')
+        result = options.get('radius_result')
+        if result is None:
+            radius_response = self._check_radius(otpval, options=options, radius_state=state)
+        else:
+            radius_response = result
+
+        if radius_response == AccessAccept:
+            res = True
+            otp_counter = 1
+
+        return res, otp_counter, reply
+
+    @log_with(log)
+    @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
+        """
+        Originally check_otp returns an OTP counter. I.e. in a failed attempt
+        we return -1. In case of success we return 1
+        :param otpval:
+        :param counter:
+        :param window:
+        :param options:
+        :return:
+        """
+        res = self._check_radius(otpval, options=options)
+        if res == AccessAccept:
+            return 1
+        else:
+            return -1
+
+    @log_with(log)
+    @check_token_locked
+    def _check_radius(self, otpval, options=None, radius_state=None):
         """
         run the RADIUS request against the RADIUS server
 
         :param otpval: the OTP value
-        :param counter: The counter for counter based otp values
-        :type counter: int
-        :param window: a counter window
-        :type counter: int
         :param options: additional token specific options
         :type options: dict
         :return: counter of the matching OTP value.
-        :rtype: int
+        :rtype: AccessAccept, AccessReject, AccessChallenge
         """
-        otp_count = -1
-        options = options or {}
+        result = AccessReject
+        radius_message = None
+        if options is None:
+            options = {}
 
         radius_dictionary = None
         radius_identifier = self.get_tokeninfo("radius.identifier")
@@ -248,34 +504,40 @@ class RadiusTokenClass(RemoteTokenClass):
                                        NAS_Identifier=nas_identifier.encode('ascii'))
 
             req["User-Password"] = req.PwCrypt(otpval)
-            if "transactionid" in options:
-                req["State"] = str(options.get("transactionid"))
+
+            if radius_state:
+                req["State"] = radius_state
+                log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
 
             response = srv.SendPacket(req)
-            # TODO: handle the RADIUS challenge
-            """
+            # handle the RADIUS challenge
             if response.code == pyrad.packet.AccessChallenge:
-                opt = {}
-                for attr in response.keys():
-                    opt[attr] = response[attr]
-                res = False
-                log.debug("challenge returned %r " % opt)
                 # now we map this to a privacyidea challenge
-                if "State" in opt:
-                    reply["transactionid"] = opt["State"][0]
-                if "Reply-Message" in opt:
-                    reply["message"] = opt["Reply-Message"][0]
-            """
-            if response.code == pyrad.packet.AccessAccept:
-                log.info("Radiusserver %s granted "
-                         "access to user %s." % (r_server, radius_user))
-                otp_count = 0
+                if "State" in response:
+                    radius_state = response["State"][0]
+                if "Reply-Message" in response:
+                    radius_message = response["Reply-Message"][0]
+
+                result = AccessChallenge
+            elif response.code == pyrad.packet.AccessAccept:
+                radius_state = '<SUCCESS>'
+                radius_message = 'RADIUS authentication succeeded'
+                log.info(u"RADIUS server {0!s} granted "
+                         u"access to user {1!s}.".format(r_server, radius_user))
+                result = AccessAccept
             else:
-                log.warning("Radiusserver %s rejected "
-                            "access to user %s." % (r_server, radius_user))
+                radius_state = '<REJECTED>'
+                radius_message = 'RADIUS authentication failed'
+                log.debug(u'radius response code {0!s}'.format(response.code))
+                log.info(u"Radiusserver {0!s} "
+                         u"rejected access to user {1!s}.".format(r_server, radius_user))
+                result = AccessReject
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: {0!r}".format((ex)))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.info("{0!s}".format(traceback.format_exc()))
 
-        return otp_count
+        options.update({'radius_result': result})
+        options.update({'radius_state': radius_state})
+        options.update({'radius_message': radius_message})
+        return result

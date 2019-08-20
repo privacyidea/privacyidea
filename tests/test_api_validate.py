@@ -19,16 +19,18 @@ from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib import _
 
 import datetime
 import time
 import responses
-from . import smtpmock, ldap3mock
+from . import smtpmock, ldap3mock, radiusmock
 
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
+DICT_FILE="tests/testdata/dictionary"
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
@@ -3238,6 +3240,93 @@ class AChallengeResponse(MyApiTestCase):
         delete_policy("chalresp")
         remove_token("tok1")
         remove_token("tok2")
+
+    @radiusmock.activate
+    def test_11_validate_radiustoken(self):
+        # A RADIUS token with RADIUS challenge response
+        # remove all tokens of user Cornelius
+        user_obj = User("cornelius", self.realm1)
+        remove_token(user=user_obj)
+
+        r = add_radius(identifier="myserver", server="1.2.3.4",
+                       secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        token = init_token({"type": "radius",
+                            "serial": "rad1",
+                            "radius.identifier": "myserver",
+                            "radius.local_checkpin": False,
+                            "radius.user": u"nönäscii"},
+                           user=user_obj)
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "radiuspassword"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            transaction_id = data.get("detail").get("transaction_id")
+
+        # Now we send the response to this request but the wrong response!
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            t = data.get("detail").get("transaction_id")
+            # No transaction_id
+            self.assertIsNone(t)
+
+        # Finally we succeed
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+            t = data.get("detail").get("transaction_id")
+            # No transaction_id
+            self.assertIsNone(t)
+
+        # A second request tries to use the same transaction_id, but the RADIUS server
+        # responds with a Reject
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+
+        # And finally a single shot authentication, no chal resp, no transaction_id
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = json.loads(res.data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+        remove_token("rad1")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

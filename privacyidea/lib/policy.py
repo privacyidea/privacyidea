@@ -1576,7 +1576,7 @@ def get_static_policy_definitions(scope=None):
                                         'mainmenu': [MAIN_MENU.CONFIG],
                                         'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGREAD: {'type': 'bool',
-                                       'desc': _("Admin is allowed to read "
+                                       'desc': _("Admin is allowed to read event "
                                                  "handling configuration."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
@@ -1833,7 +1833,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.PASSTHRU_ASSIGN: {
                 'type': 'str',
-                'desc': _('This allows to automatically assign a within privacyIDEA, if the '
+                'desc': _('This allows to automatically assign a Token within privacyIDEA, if the '
                           'user was authenticated via passthru against a RADIUS server. The OTP value '
                           'is used to find the unassigned token in privacyIDEA. Enter the length of the OTP value '
                           'and where the PIN is set like 8:pin or pin:6.')

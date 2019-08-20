@@ -1184,6 +1184,7 @@ class APITokenTestCase(MyApiTestCase):
                               "CertificateDir": "",
                               "WorkingDir": cwd + "/" + WORKINGDIR})
 
+        # Enroll a certificate token with a CSR
         with self.app.test_request_context('/token/init',
                                            data={"type": "certificate",
                                                  "request": REQUEST,
@@ -1197,6 +1198,31 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             certificate = detail.get("certificate")
             self.assertTrue("-----BEGIN CERTIFICATE-----" in certificate)
+
+        # Enroll a certificate token, also generating a private key
+        with self.app.test_request_context('/token/init',
+                                           data={"type": "certificate",
+                                                 "genkey": "1",
+                                                 "user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "ca": "localCA"},
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result.get("value"))
+            detail = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertIn("pkcs12", detail)
+
+        # List tokens
+        with self.app.test_request_context('/token/?type=certificate',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertEqual(len(result["value"]["tokens"]), 2)
 
     def test_18_revoke_token(self):
         self._create_temp_token("RevToken")

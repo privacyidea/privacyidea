@@ -287,6 +287,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             // because the user might not be allowed to list RADIUS servers
             $scope.getRADIUSIdentifiers();
         }
+        if ($scope.form.type === "certificate") {
+            $scope.getCAConnectors();
+        }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
     };
@@ -496,14 +499,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // get the list of configured RADIUS server identifiers
     $scope.getRADIUSIdentifiers = function() {
-        ConfigFactory.getRadius(function(data){
+        ConfigFactory.getRadiusNames(function(data){
             $scope.radiusIdentifiers = data.result.value;
         });
     };
 
     // get the list of configured CA connectors
     $scope.getCAConnectors = function () {
-        ConfigFactory.getCAConnectors(function (data){
+        ConfigFactory.getCAConnectorNames(function (data){
             var CAConnectors = data.result.value;
             angular.forEach(CAConnectors, function(value, key){
                 $scope.CAConnectors.push(value.connectorname);
@@ -513,7 +516,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             //debug: console.log($scope.CAConnectors);
         });
     };
-    $scope.getCAConnectors();
 
     // If the user is admin, he can read the config.
     ConfigFactory.loadSystemConfig(function (data) {
