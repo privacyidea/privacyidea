@@ -16,6 +16,7 @@ Version 3.1, 2019-09-XX
     * RADIUS token supports a single AccessChallenge with the remote RADIUS server (#1790)
     * Improving Push token performance by reusing still valid access token (#1795)
     * Improving TiQR token: It returns the remaining attemps after a wrong PIN is given (#1777)
+    * Improving TiQR token: Make TiQR info URL configurable (#1782)
     * Enhance validate check logic in regards to serials and user names (#1768)
     * User may now have several TiQR tokens at the same time (#1739)
     * Do not increase fail counter when *checking* for an answered challenge (#1697)
@@ -30,6 +31,7 @@ Version 3.1, 2019-09-XX
     * Customize Web UI page title (#1624, #1243)
     * *search_on_enter* also applies to audit log (#1493)
     * Allow a welcome message in the Web UI if the user has no token (#1074)
+    * Do not display token configuration hints in the UI to normal users (#1789)
   * Management:
     * Add script to export OTP counters (#1728)
     * Allow many additional tags in email notifications: serial, user, givenname,
@@ -43,6 +45,7 @@ Version 3.1, 2019-09-XX
     * Allow to force a PIN on tokens in the privacyIDEA Authenticator App (#1295)
     * New policy *max_active_tokens_per_user* (#1241)
     * Add image url to the otpauth QR code, allow images in e.g. FreeOTP (#1228)
+    * Add MAC to PSKC token export (#1663)
   * Performance:
     * Make the serverpool in LDAP resolver persistant improving redundancy performance (#1396)
 
@@ -62,6 +65,7 @@ Version 3.1, 2019-09-XX
   * Web UI: Focus the filter entry field in tables, when the filter is activated (#1661)
   * Fix some broken links in UI (#1610)
   * Fix double listing in policy list (#1132)
+  * Remove additional empty line in audit log in case of an error (#1707)
 
 
 Version 3.0.2, 2019-06-17
