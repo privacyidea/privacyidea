@@ -3,6 +3,13 @@ Version 3.1, 2019-09-XX
   Features:
   * Allow user attributes in policy conditions (#1645)
   * Assign tokens and set old PIN during migration (#1619)
+  * Admins can only see tokens within the realm they are allowed to manage (#1713)
+    **Note**: During update a policy "pi-update-policy-b9131d0686eb" is added, which
+    gives admins the previous read rights on tokens.
+  * Add adminread policies for policies, events, resolvers, system, machineresolvers,
+    smtpserver, radiusserver, privacyidea server, periodic tasks, smsgateways.
+    **Note**: During update a policy "pi-update-policy-3d7f8b29cbb1" is added, which
+    gives read rights to all admins to provide backward compatibility (#1495)
 
   Enhancements:
   * Authentication and Challenge Response:
@@ -22,10 +29,9 @@ Version 3.1, 2019-09-XX
     * Allow user to change the token description (#1717)
     * Customize Web UI page title (#1624, #1243)
     * *search_on_enter* also applies to audit log (#1493)
-    * Allow a welcome message in the Web UI if the user has not token (#1074)
+    * Allow a welcome message in the Web UI if the user has no token (#1074)
   * Management:
     * Add script to export OTP counters (#1728)
-    * Admins can only see tokens within the realm they are allowed to manage (#1713)
     * Allow many additional tags in email notifications: serial, user, givenname,
       surname, username, userrealm, tokentype, recipient_givenname, recipient_surname,
       time, date (#1703)
@@ -34,10 +40,6 @@ Version 3.1, 2019-09-XX
     * /auth entries in the audit log now also fill in resolver and serial (#1593)
     * `pi-manage backup` also backs up the FreeRADIUS configuration (#1575)
     * Allow event handlers on /auth endpoint (#1567)
-    * Add adminread policies for policies, events, resolvers, system, machineresolvers,
-      smtpserver, radiusserver, privacyidea server, periodic tasks, smsgateways.
-      **Note**: During update a policy "pi-update-policy-3d7f8b29cbb1" is added, which
-      gives read rights to all admins to provide backward compatibility (#1495)
     * Allow to force a PIN on tokens in the privacyIDEA Authenticator App (#1295)
     * New policy *max_active_tokens_per_user* (#1241)
     * Add image url to the otpauth QR code, allow images in e.g. FreeOTP (#1228)
@@ -48,7 +50,7 @@ Version 3.1, 2019-09-XX
   * Improve the stability of the schema-update-script (#1760)
   * Rearrange update order in migration scripts (#1733)
   * Adapt privacyidea-token-janitor to run with the TokenOwner table (#1709)
-  * Reordering decorators and policy checks to avoid unnesseray error messages (#1751)
+  * Reordering decorators and policy checks to avoid unnecessary error messages (#1751)
   * Fix user enrollment for tokens that require certain read rights for RADIUS and 
     certificates by adding additional endpoint /system/names/... (#1749, #1748)
   * Use same transaction ID for all user tokens even with a  TiQR token (#1723)
