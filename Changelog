@@ -66,6 +66,7 @@ Version 3.1, 2019-09-XX
   * Fix some broken links in UI (#1610)
   * Fix double listing in policy list (#1132)
   * Remove additional empty line in audit log in case of an error (#1707)
+  * Fix enrollment of certificate tokens under Python 3 (#1799)
 
 
 Version 3.0.2, 2019-06-17
