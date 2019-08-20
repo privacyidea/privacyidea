@@ -1,6 +1,6 @@
 ---
-name: File a bug report
-about: ... if you experienced behavior that you did not expect
+name: Bug report
+about: File a bug report to help us improve future versions of privacyIDEA
 title: ''
 labels: possible bug
 assignees: ''
