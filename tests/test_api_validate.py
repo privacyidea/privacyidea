@@ -3264,7 +3264,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "radiuspassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             transaction_id = data.get("detail").get("transaction_id")
@@ -3278,7 +3278,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             t = data.get("detail").get("transaction_id")
@@ -3294,7 +3294,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
             t = data.get("detail").get("transaction_id")
@@ -3311,7 +3311,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
 
@@ -3323,7 +3323,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "correctPW"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
         remove_token("rad1")
