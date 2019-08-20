@@ -21,7 +21,7 @@ from privacyidea.lib.eventhandler.federationhandler import FederationEventHandle
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from flask import Request, Response
+from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
@@ -39,6 +39,7 @@ from privacyidea.lib.utils import is_true, to_unicode
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
+from privacyidea.app import PiResponseClass as Response
 
 
 class EventHandlerLibTestCase(MyTestCase):
