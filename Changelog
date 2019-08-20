@@ -7,9 +7,9 @@ Version 3.1, 2019-09-XX
     **Note**: During update a policy "pi-update-policy-b9131d0686eb" is added, which
     gives admins the previous read rights on tokens.
   * Add adminread policies for policies, events, resolvers, system, machineresolvers,
-    smtpserver, radiusserver, privacyidea server, periodic tasks, smsgateways.
+    smtpserver, radiusserver, privacyidea server, periodic tasks, smsgateways. (#1495)
     **Note**: During update a policy "pi-update-policy-3d7f8b29cbb1" is added, which
-    gives read rights to all admins to provide backward compatibility (#1495)
+    gives read rights to all admins to provide backward compatibility
 
   Enhancements:
   * Authentication and Challenge Response:
