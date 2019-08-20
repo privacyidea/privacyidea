@@ -35,7 +35,7 @@ from flask import (Blueprint,
                    request)
 from .lib.utils import getParam
 from ..lib.log import log_with
-from flask import g, jsonify, current_app, Response
+from flask import g, jsonify, current_app
 import logging
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.policy import PolicyClass
@@ -100,10 +100,10 @@ def token(ttype=None):
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
-        return Response(res[1], mimetype="text/{0!s}".format(res[0]))
+        return current_app.response_class(res[1], mimetype="text/{0!s}".format(res[0]))
     elif len(res) == 2:
-        return Response(json.dumps(res[1]),
+        return current_app.response_class(json.dumps(res[1]),
                         mimetype="application/{0!s}".format(res[0]))
     else:
-        return Response(res[1], mimetype="application/octet-binary",
+        return current_app.response_class(res[1], mimetype="application/octet-binary",
                         headers=res[2])

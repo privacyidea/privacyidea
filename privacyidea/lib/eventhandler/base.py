@@ -297,7 +297,7 @@ class BaseEventHandler(object):
     @staticmethod
     def _get_response_content(response):
         if response:
-            content = response.get_json(cache=False, force=True)
+            content = response.json
         else:
             # In Pre-Handling we have no response and no content
             content = {}

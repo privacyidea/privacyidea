@@ -35,8 +35,7 @@ import jwt
 import threading
 import six
 from flask import (jsonify,
-                   current_app,
-                   Response)
+                   current_app)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -187,7 +186,7 @@ def send_csv_result(obj, data_key="tokens",
             output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
-    return Response(output, mimetype=content_type)
+    return current_app.response_class(output, mimetype=content_type)
 
 
 @log_with(log)
