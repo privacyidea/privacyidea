@@ -202,9 +202,7 @@ We perform code reviews. Each pull request is reviewed by one or more team membe
 In the following, we call the requester of a pull request the *developer* and differentiate between *external contributors* and *team members*:
 
 * An external contributor can simply open a pull request. The team then decides on a reviewer and accordingly requests a review.
-* A team member explicitly requests a review from one or more other team members. In order to find a suitable reviewer, a developer may refer to the [development team list](Development-Team).
-
-Even after having created a pull request, the **developer is responsible for getting the pull request merged**. In particular, it is the developer's responsibility to choose a suitable reviewer. As the reviewer may not notice an incoming review request due to the high number of notifications, the developer is responsible for reminding the reviewer of pending review requests. If the reviewer is too busy to deal with the pull request, the developer chooses a different reviewer. 
+* A team member explicitly requests a review from one or more other team members. In order to find a suitable reviewer, a developer may refer to the [development team list](Development-Team). Even after having created a pull request, the **developer is responsible for getting the pull request merged**. In particular, it is the developer's responsibility to choose a suitable reviewer. As the reviewer may not notice an incoming review request due to the high number of notifications, the developer is responsible for reminding the reviewer of pending review requests. If the reviewer is too busy to deal with the pull request, the developer chooses a different reviewer.
 
 We *do not* request reviews from the whole team, because this makes it hard to assign responsibility.
 
@@ -214,7 +212,7 @@ The reviewer uses the github [code review features](https://github.com/features/
 
 ##### Merging a Pull Request
 
-If the reviewer approves a pull request, and if no other reviews have been requested (see below), the reviewer should merge (or rebase or squash and merge) the pull request. When the pull request is merged, the reviewer deletes the feature branch.
+If the reviewer approves a pull request, and if no other reviews have been requested (see below), the reviewer should merge (or rebase or squash and merge) the pull request. When the pull request is merged, the reviewer deletes the feature branch, if possible.
 
 ##### Multiple Reviewers
 
