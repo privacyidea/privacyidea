@@ -33,7 +33,7 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, b64encode_and_unicode
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
@@ -41,7 +41,6 @@ from privacyidea.lib.caconnector import get_caconnector_object
 from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
 from privacyidea.lib.decorators import check_token_locked
-import base64
 from privacyidea.lib import _
 
 optional = True
@@ -246,8 +245,7 @@ class CertificateTokenClass(TokenClass):
         privatekey = self.get_tokeninfo("privatekey")
         # If there is a private key, we dump a PKCS12
         if privatekey:
-            response_detail["pkcs12"] = base64.b64encode(
-                self._create_pkcs12_bin())
+            response_detail["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
 
         return response_detail
 
@@ -285,9 +283,7 @@ class CertificateTokenClass(TokenClass):
         token_dict = self.token.get()
 
         if "privatekey" in token_dict.get("info"):
-            token_dict["info"]["pkcs12"] = base64.b64encode(
-                self._create_pkcs12_bin())
-            #del(token_dict["privatekey"])
+            token_dict["info"]["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
 
         return token_dict
 

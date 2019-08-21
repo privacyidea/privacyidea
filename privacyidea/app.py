@@ -24,9 +24,10 @@ import os.path
 import logging
 import logging.config
 import sys
-from flask import Flask, request
+from flask import Flask, request, Response
 from privacyidea.lib import queue
 
+# we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
@@ -89,6 +90,21 @@ PI_LOGGING_CONFIG = {
                                 "level": logging.DEBUG}
                 }
 }
+
+
+class PiResponseClass(Response):
+    """Custom Response class overwriting the flask.Response.
+    To avoid caching problems with the json property in the Response class,
+    the property is overwritten using a non-caching approach.
+    """
+    @property
+    def json(self):
+        """This will contain the parsed JSON data if the mimetype indicates
+        JSON (:mimetype:`application/json`, see :meth:`is_json`), otherwise it
+        will be ``None``.
+        Caching of the json data is disabled.
+        """
+        return self.get_json(cache=False)
 
 
 def create_app(config_name="development",
@@ -172,6 +188,7 @@ def create_app(config_name="development",
     db.init_app(app)
     migrate = Migrate(app, db)
 
+    app.response_class = PiResponseClass
 
     try:
         # Try to read logging config from file
@@ -223,4 +240,3 @@ def create_app(config_name="development",
     queue.register_app(app)
 
     return app
-

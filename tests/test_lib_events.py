@@ -21,7 +21,7 @@ from privacyidea.lib.eventhandler.federationhandler import FederationEventHandle
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from flask import Request, Response
+from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
@@ -34,12 +34,12 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import is_true, to_unicode
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
-import json
+from privacyidea.app import PiResponseClass as Response
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -672,7 +672,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -712,7 +712,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -751,7 +751,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/serial")
 
@@ -844,7 +844,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/init")
 
@@ -2484,7 +2484,7 @@ class UserNotificationTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
 
         # Cleanup

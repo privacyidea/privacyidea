@@ -36,7 +36,6 @@ from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
@@ -45,7 +44,6 @@ from privacyidea.lib.utils import (compare_condition, compare_value_value,
 import datetime
 from dateutil.tz import tzlocal
 import re
-import json
 import logging
 from privacyidea.lib.tokenclass import DATE_FORMAT
 
@@ -299,7 +297,10 @@ class BaseEventHandler(object):
     @staticmethod
     def _get_response_content(response):
         if response:
-            content = json.loads(response.data)
+            if response.is_json:
+                content = response.json
+            else:
+                content = response.get_json(force=True, cache=False)
         else:
             # In Pre-Handling we have no response and no content
             content = {}
@@ -323,8 +324,7 @@ class BaseEventHandler(object):
         content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
-        serial = request.all_data.get("serial") or \
-                 content.get("detail", {}).get("serial")
+        serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None

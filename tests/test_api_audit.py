@@ -20,7 +20,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue(json_response.get("result").get("value").get(
                 "current") == 1, res)
@@ -42,7 +42,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 2)
@@ -52,7 +52,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 8)
@@ -67,7 +67,7 @@ class APIAuditTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 3)
@@ -82,7 +82,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             audit_list = json_response.get("result").get("value").get("auditdata")
@@ -109,7 +109,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 5)
@@ -121,7 +121,7 @@ class APIAuditTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 7)
@@ -150,7 +150,7 @@ class APIAuditTestCase(MyApiTestCase):
                                                                 'password': 'test'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             value = json_response.get("result").get("value")
             # Helpdesk user is allowed to view the audit log.
             self.assertTrue("auditlog" in value.get("rights"))
@@ -162,7 +162,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': helpdesk_authorization}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
@@ -178,7 +178,7 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data.decode('utf8'))
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")

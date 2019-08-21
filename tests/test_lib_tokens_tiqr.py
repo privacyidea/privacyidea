@@ -498,8 +498,8 @@ class TiQRTokenTestCase(MyApiTestCase):
                                                "pass": pin})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
             transaction_id = detail.get("transaction_id")
@@ -663,8 +663,8 @@ class TiQRTokenTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertTrue(result.get("status") is True, result)
             transaction_id = detail.get("transaction_id")
             # we've got two challenges with the same transaction ID

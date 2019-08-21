@@ -156,8 +156,6 @@ def offlinerefill():
     :param pass: the last password (maybe password+OTP) entered by the user
     :return:
     """
-    result = False
-    otps = {}
     serial = getParam(request.all_data, "serial", required)
     refilltoken = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
@@ -176,10 +174,10 @@ def offlinerefill():
                     otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                     refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                     response = send_result(True)
-                    content = json.loads(response.data)
+                    content = response.json
                     content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
                                                           "response": otps}]}
-                    response.data = json.dumps(content)
+                    response.set_data(json.dumps(content))
                     return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
 

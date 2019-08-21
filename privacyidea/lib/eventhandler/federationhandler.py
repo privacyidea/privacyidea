@@ -30,7 +30,7 @@ from privacyidea.lib import _
 import json
 import logging
 import requests
-from flask import Response
+from flask import current_app
 
 
 log = logging.getLogger(__name__)
@@ -165,20 +165,16 @@ class FederationEventHandler(BaseEventHandler):
                 # convert requests Response to werkzeug Response
                 response_dict = json.loads(r.text)
                 if "detail" in response_dict:
-                    if response_dict.get("detail") is None:
-                        # In case of exceptions we may not have a detail
-                        response_dict["detail"] = {"origin": url}
-                    else:
-                        response_dict.get("detail")["origin"] = url
+                    detail = response_dict.setdefault("detail", {})
+                    # In case of exceptions we may not have a detail
+                    detail["origin"] = url
                 # We will modify the response!
                 # We can not use flask.jsonify(response_dict) here, since we
                 # would work outside of application context!
-                options["response"] = Response()
+                options["response"] = current_app.response_class(json.dumps(response_dict),
+                                                                 mimetype="application/json")
                 options["response"].status_code = r.status_code
-                options["response"].content_type = "application/json"
-                options["response"].data = json.dumps(response_dict)
             else:
                 log.warning(u"Unsupported method: {0!r}".format(method))
 
         return True
-
