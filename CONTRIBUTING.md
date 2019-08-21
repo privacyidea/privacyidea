@@ -9,7 +9,7 @@ be really easy.
 
 You are using privacyIDEA in your network? Tell about it!
 Write a blog post, tell your friends or simply twitter about it.
-This will make privacyIDEA wider known and attract new contributors.
+This will make privacyIDEA wider known and attract new users and contributors.
 
 ## Talk to us
 
@@ -30,22 +30,17 @@ So you can make privacyIDEA better and earn karma points by
 sharing your experience and helping other, younger users.
 
 By doing so the developers have more time to develop and 
-improving your beloved project and hopefully allowing
-the developers to earn some money to make a living.
+improving your beloved project.
 
 So **you are "the community"**, go and help others!
 
 https://community.privacyidea.org
 
-## Money
+## Professional services
 
-This is an important part to contribute to privacyIDEA.
-To allow developers to work full time on privacyIDEA they
-have to make money. 
-
-One possibility to do this and also get rid of the NO-WARRANTY 
-label is to get privacyIDEA Enterprise Edition including a
-Service Level Agreement or corresponding consultancy.
+If you want to get rid of the NO-WARRANTY 
+label take a look at privacyIDEA Enterprise Edition including a
+Service Level Agreement or get professional consultancy:
 
 - consultancy 
   https://netknights.it/en/leistungen/one-time-services/
