@@ -275,7 +275,7 @@ class EventConfiguration(object):
         have one element.
 
         :param eventid: id of the event
-        :type eventid: int
+        :type eventid: int or None
         :return: list with one element
         """
         if eventid is not None:

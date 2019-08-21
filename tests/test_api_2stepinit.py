@@ -37,10 +37,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -67,7 +67,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
                           result.get("error").get("message"))
 
@@ -82,7 +82,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertIn('Malformed base32check data: Incorrect checksum',
                           result.get("error").get("message"))
 
@@ -94,7 +94,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -110,10 +110,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
             self.assertNotIn('2step', detail)
@@ -127,7 +127,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -167,10 +167,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -186,7 +186,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -205,7 +205,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("status"))
 
         client_component = b"correctsize" # 11 bytes
@@ -224,10 +224,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -240,7 +240,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -279,10 +279,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -300,7 +300,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("status"))
 
         client_component = b"correctsizeABCDE" # 16 bytes
@@ -319,10 +319,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -335,7 +335,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -372,10 +372,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey_bin = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -389,7 +389,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -409,10 +409,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -439,7 +439,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertIn('2stepinit is only to be used in the first initialization step',
                           result.get("error").get("message"))
 
@@ -454,7 +454,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertIn('Malformed base32check data: Incorrect checksum',
                           result.get("error").get("message"))
 
@@ -466,7 +466,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -482,10 +482,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
             self.assertNotIn('2step', detail)
@@ -499,7 +499,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -542,10 +542,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             server_component = binascii.unhexlify(otpkey_url.split("/")[2])
@@ -563,7 +563,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": wrong_otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
             self.assertEqual(result.get("detail").get("message"),
@@ -582,7 +582,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("status"))
 
         client_component = b"correctsize" # 11 bytes
@@ -601,10 +601,10 @@ class TwoStepInitTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -619,7 +619,7 @@ class TwoStepInitTestCase(MyApiTestCase):
                                                  "pass": otp_value}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 

@@ -45,7 +45,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1, result)
 
@@ -55,7 +55,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertEqual(len(result["value"]), 5)
             self.assertTrue("hostname" in result["value"][0])
@@ -69,7 +69,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertEqual(len(result["value"]), 4)
             self.assertTrue("hostname" in result["value"][0])
@@ -91,7 +91,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
 
@@ -112,7 +112,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEquals(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
             self.assertEquals(result['value']['deleted'], 0, result)
@@ -133,7 +133,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEquals(result["status"], True, result)
             self.assertEquals(result["value"]["added"], 0, result)
             self.assertGreaterEqual(result['value']['deleted'], 1, result)
@@ -156,7 +156,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEquals(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
             self.assertEquals(result['value']['deleted'], 0, result)
@@ -176,7 +176,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertEqual(len(result["value"]), 1)
             self.assertTrue(result["value"][0]["application"] == "luks")
@@ -186,7 +186,7 @@ class APIMachinesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertEqual(len(result["value"]), 1)
             self.assertTrue(result["value"][0]["application"] == "luks")
@@ -205,7 +205,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
 
@@ -232,7 +232,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
@@ -244,7 +244,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
@@ -260,7 +260,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
@@ -274,7 +274,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result["status"], True)
             sshkeys = result["value"].get("ssh")
             # No user DOMAIN\\testuser and no SSH keys
@@ -287,7 +287,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
 
@@ -311,7 +311,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             slot = result["value"].get("luks")[0].get("slot")
             self.assertEqual(slot, "1")
 
@@ -322,7 +322,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             slot = result["value"].get("luks")[0].get("slot")
             self.assertEqual(slot, "1")
             response = result["value"].get("luks")[0].get("response")
@@ -352,7 +352,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             offline_auth_item = result["value"].get("offline")[0]
             username = offline_auth_item.get("user")
             self.assertEqual(username, "cornelius")
@@ -371,7 +371,7 @@ class APIMachinesTestCase(MyApiTestCase):
                 method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8'))
+            result = res.json
             self.assertTrue(result['result']['status'])
             self.assertTrue(result['result']['value'])
             offline_auth_item = result["auth_items"]["offline"][0]

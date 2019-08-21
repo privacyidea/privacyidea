@@ -182,7 +182,7 @@ class PushTokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertNotEqual(res.status_code,  200)
-            error = json.loads(res.data.decode("utf8")).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
@@ -207,7 +207,7 @@ class PushTokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code,  200)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
             self.assertTrue("pushurl" in detail)
@@ -227,9 +227,9 @@ class PushTokenTestCase(MyTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 404, res)
-            status = json.loads(res.data.decode('utf8')).get("result").get("status")
+            status = res.json.get("result").get("status")
             self.assertFalse(status)
-            error = json.loads(res.data.decode('utf8')).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"),
                              "No token with this serial number in the rollout state 'clientwait'.")
 
@@ -242,9 +242,9 @@ class PushTokenTestCase(MyTestCase):
                                                  "enrollment_credential": "WRonG"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            status = json.loads(res.data.decode('utf8')).get("result").get("status")
+            status = res.json.get("result").get("status")
             self.assertFalse(status)
-            error = json.loads(res.data.decode('utf8')).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"),
                              "ERR905: Invalid enrollment credential. You are not authorized to finalize this token.")
 
@@ -257,7 +257,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             # still the same serial number
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), "enrolled")
@@ -316,7 +316,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 400, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"), "ERR401: Failed to submit "
@@ -358,7 +358,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
@@ -380,7 +380,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is false, the user has not answered the challenge, yet
             self.assertFalse(jsonresp.get("result").get("value"))
 
@@ -398,7 +398,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "state": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is True, since the challenge is marked resolved in the DB
         self.assertTrue(jsonresp.get("result").get("value"))
 
@@ -430,7 +430,7 @@ class PushTokenTestCase(MyTestCase):
                                                          "pass": "pushpin"}):
                     res = self.app.full_dispatch_request()
                     self.assertTrue(res.status_code == 200, res)
-                    jsonresp = json.loads(res.data.decode('utf8'))
+                    jsonresp = res.json
                     # We successfully authenticated! YEAH!
                     self.assertTrue(jsonresp.get("result").get("value"))
                     self.assertTrue(jsonresp.get("result").get("status"))
@@ -462,7 +462,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 # We fail to authenticate! Oh No!
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
@@ -526,7 +526,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
@@ -655,7 +655,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "state": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
 
@@ -703,7 +703,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 401)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)

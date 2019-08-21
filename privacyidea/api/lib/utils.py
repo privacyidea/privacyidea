@@ -27,7 +27,7 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode
 import time
 import logging
 import json
@@ -35,8 +35,7 @@ import jwt
 import threading
 import six
 from flask import (jsonify,
-                   current_app,
-                   Response)
+                   current_app)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -187,7 +186,7 @@ def send_csv_result(obj, data_key="tokens",
             output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
-    return Response(output, mimetype=content_type)
+    return current_app.response_class(output, mimetype=content_type)
 
 
 @log_with(log)
@@ -212,7 +211,7 @@ def get_all_params(param, body):
 
     # In case of serialized JSON data in the body, add these to the values.
     try:
-        json_data = json.loads(body)
+        json_data = json.loads(to_unicode(body))
         for k, v in json_data.items():
             return_param[k] = v
     except Exception as exx:

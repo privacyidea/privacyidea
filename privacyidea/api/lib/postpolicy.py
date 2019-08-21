@@ -169,15 +169,15 @@ def sign_response(request, response):
         response_object = response[0]
     else:
         response_object = response
-    try:
-        content = json.loads(response_object.data)
+    if response_object.is_json:
+        content = response_object.json
         nonce = request.all_data.get("nonce")
         if nonce:
             content["nonce"] = nonce
 
         content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
-        response_object.data = json.dumps(content)
-    except ValueError:
+        response_object.set_data(json.dumps(content))
+    else:
         # The response.data is no JSON (but CSV or policy export)
         # We do no signing in this case.
         log.info("We only sign JSON response data.")
@@ -201,8 +201,7 @@ def check_tokentype(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    content = json.loads(response.data)
-    tokentype = content.get("detail", {}).get("type")
+    tokentype = response.json.get("detail", {}).get("type")
     policy_object = g.policy_object
     user_object = request.User
     allowed_tokentypes = policy_object.get_action_values(
@@ -233,9 +232,8 @@ def check_serial(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    content = json.loads(response.data)
     policy_object = g.policy_object
-    serial = content.get("detail", {}).get("serial")
+    serial = response.json.get("detail", {}).get("serial")
     # get the serials from a policy definition
     allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
                                                       scope=SCOPE.AUTHZ,
@@ -267,8 +265,7 @@ def check_tokeninfo(request, response):
     :type response: Response object
     :return: A new modified response
     """
-    content = json.loads(response.data)
-    serial = content.get("detail", {}).get("serial")
+    serial = response.json.get("detail", {}).get("serial")
 
     if serial:
         tokeninfos_pol = g.policy_object.get_action_values(
@@ -310,7 +307,7 @@ def no_detail_on_success(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -323,7 +320,7 @@ def no_detail_on_success(request, response):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         del content["detail"]
-        response.data = json.dumps(content)
+        response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
@@ -339,7 +336,7 @@ def add_user_detail_to_response(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # Check for ADD USER IN RESPONSE
@@ -357,7 +354,6 @@ def add_user_detail_to_response(request, response):
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content["detail"]["user"] = ui
-        response.data = json.dumps(content)
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
@@ -370,9 +366,9 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the resolver and the realm
         content["detail"]["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
-        response.data = json.dumps(content)
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
+    response.set_data(json.dumps(content))
     return response
 
 
@@ -387,7 +383,7 @@ def no_detail_on_fail(request, response):
     :param response:
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     policy_object = g.policy_object
 
     # get the serials from a policy definition
@@ -400,7 +396,7 @@ def no_detail_on_fail(request, response):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
         del content["detail"]
-        response.data = json.dumps(content)
+        response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detailPol])
 
     return response
@@ -425,12 +421,11 @@ def save_pin_change(request, response, serial=None):
     :param action:
     :return:
     """
-    content = json.loads(response.data)
     policy_object = g.policy_object
     serial = serial or request.all_data.get("serial")
     if not serial:
         # No serial in request, so we look into the response
-        serial = content.get("detail", {}).get("serial")
+        serial = response.json.get("detail", {}).get("serial")
     if not serial:
         log.error("Can not determine serial number. Have no idea of any "
                   "realm!")
@@ -480,15 +475,14 @@ def offline_info(request, response):
     OTP.
 
     """
-    content = json.loads(response.data)
+    content = response.json
     # check if the authentication was successful
     if content.get("result").get("value") is True and g.client_ip:
         # If there is no remote address, we can not determine
         # offline information
         client_ip = netaddr.IPAddress(g.client_ip)
         # check if there is a MachineToken definition
-        detail = content.get("detail", {})
-        serial = detail.get("serial")
+        serial = content.get("detail", {}).get("serial")
         try:
             # if the hostname can not be identified, there might be no
             # offline definition!
@@ -498,7 +492,7 @@ def offline_info(request, response):
                                         challenge=request.all_data.get("pass"))
             if auth_items:
                 content["auth_items"] = auth_items
-                response.data = json.dumps(content)
+                response.set_data(json.dumps(content))
         except Exception as exx:
             log.info(exx)
     return response
@@ -512,7 +506,7 @@ def get_webui_settings(request, response):
     :param response: flask response object
     :return: the response
     """
-    content = json.loads(response.data)
+    content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
@@ -687,7 +681,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
-        response.data = json.dumps(content)
+        response.set_data(json.dumps(content))
     return response
 
 
@@ -702,7 +696,7 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
-    content = json.loads(response.data)
+    content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
         user_obj = request.User
@@ -723,7 +717,7 @@ def autoassign(request, response):
 
             # check if the user has no token
             if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
-                # Check is the token would match
+                # Check if the token would match
                 # get all unassigned tokens in the realm and look for
                 # a matching OTP:
                 realm_tokens = get_tokens(realm=user_obj.realm,
@@ -751,18 +745,12 @@ def autoassign(request, response):
                                 # Set the response to true
                                 content.get("result")["value"] = True
                                 # Set the serial number
-                                if not content.get("detail"):
-                                    content["detail"] = {}
-                                content.get("detail")["serial"] = \
-                                    token_obj.token.serial
-                                content.get("detail")["otplen"] = \
-                                    token_obj.token.otplen
-                                content.get("detail")["type"] = token_obj.type
-                                content.get("detail")["message"] = "Token " \
-                                                                   "assigned to " \
-                                                                   "user via " \
-                                                                   "Autoassignment"
-                                response.data = json.dumps(content)
+                                detail = content.setdefault("detail", {})
+                                detail["serial"] = token_obj.token.serial
+                                detail["otplen"] = token_obj.token.otplen
+                                detail["type"] = token_obj.type
+                                detail["message"] = "Token assigned to user via Autoassignment"
+                                response.set_data(json.dumps(content))
 
                                 g.audit_object.log(
                                     {"success": True,
@@ -787,9 +775,8 @@ def construct_radius_response(request, response):
     """
     if request.url_rule.rule == '/validate/radiuscheck':
         return_code = 400 # generic 400 error by default
-        content = json.loads(response.data)
-        if content['result']['status']:
-            if content['result']['value']:
+        if response.json['result']['status']:
+            if response.json['result']['value']:
                 # user was successfully authenticated
                 return_code = 204
         # send empty body
@@ -809,11 +796,10 @@ def mangle_challenge_response(request, response):
     :param response:
     :return:
     """
-    try:
-        content = json.loads(response.data)
-    except ValueError:
+    if not response.is_json:
         # This can happen with the validate/radiuscheck endpoint
         return response
+    content = response.json
     policy_object = g.policy_object
     user_obj = request.User
 
@@ -854,7 +840,7 @@ def mangle_challenge_response(request, response):
             message += footer
 
             content["detail"]["message"] = message
-            response.data = json.dumps(content)
+            response.set_data(json.dumps(content))
 
     return response
 
