@@ -120,7 +120,7 @@ would like to start with?
 If you are sending a pull request, please note the following:
 
 * often it is a good idea to **create an issue**, that describes
-  you problem or idea, which you want to solve with your
+  your problem or idea, which you want to solve with your
   pull request.
 * in your pull request refer to the issue.
 * describe your changes in the commit message.
@@ -182,7 +182,7 @@ For each planned release, we create a github milestone. We add issues to milesto
 
 ##### ``master`` branch
 
-Our ``master`` branch represents the current development state. Features are usually added there.
+Our ``master`` branch represents the current development state and, as a consequence, may be unstable. Features are usually added there.
 
 ##### Stable branches
 
@@ -190,7 +190,7 @@ For each minor version ``X.Y`` (e.g. 2.23, 3.0, ...), we create a *stable branch
 
 ##### Local Branches and Pull Requests
 
-We do not directly work on the ``master`` branch or the stable branches. Instead, we locally create new branches, diverging either from ``master`` or a stable branch. These branches are called ``123/some-shortname``, where "123" refers to an issue number, and "some-shortname" is a short description of the changes. If we are done developing a bugfix, a feature, or a reasonable part of a feature, we open a pull request (see below).
+We do not directly work on the ``master`` branch or the stable branches. Instead, we locally create new branches, diverging either from ``master`` or a stable branch. These branches are called ``123/some-shortname``, where ``123`` refers to an issue number, and ``some-shortname`` is a short description of the changes. If we are done developing a bugfix, a feature, or a reasonable part of a feature, we open a pull request (see below).
 
 ### Pull Requests and Code Reviews
 
@@ -209,9 +209,9 @@ In the following, we call the requester of a pull request the *developer* and di
 * An external contributor can simply open a pull request. The team then decides on a reviewer and accordingly requests a review.
 * A team member explicitly requests a review from one or more other team members. In order to find a suitable reviewer, a developer may refer to the [development team list](Development-Team).
 
-Even after having created a pull request, the **developer is responsible for getting the pull request merged**. In particular, the developer is responsible for choosing a suitable reviewer. As the reviewer may not notice an incoming review request due to the high notification load, the developer is responsible for reminding the reviewer of pending review requests. If the reviewer is too busy to deal with the pull request, the developer chooses a different reviewer. 
+Even after having created a pull request, the **developer is responsible for getting the pull request merged**. In particular, it is the developer's responsibility to choose a suitable reviewer. As the reviewer may not notice an incoming review request due to the high number of notifications, the developer is responsible for reminding the reviewer of pending review requests. If the reviewer is too busy to deal with the pull request, the developer chooses a different reviewer. 
 
-We *do not* request reviews from the whole team, because this makes it hard to delegate responsibility.
+We *do not* request reviews from the whole team, because this makes it hard to assign responsibility.
 
 ##### Reviewing Pull Requests
 
@@ -223,5 +223,4 @@ If the reviewer approves a pull request, and if no other reviews have been reque
 
 ##### Multiple Reviewers
 
-The developer may also request reviews from multiple team members. This makes sense if the PR spans across multiple architectural layers (e.g. backend *and* frontend), or if the developer wants both a functional (does the PR fix the bug?) and technical review (is the code review?). If a developer requests multiple reviews, the PR description should explicitly state if *all* reviews should be positive, or if *one* positive review is sufficient.
-
+The developer may also request reviews from multiple team members. This makes sense if the PR spans across multiple architectural layers (e.g. backend *and* frontend), or if the developer wants both a functional (does the PR fix the bug?) and technical review (is the code okay?). If a developer requests multiple reviews, the PR description should explicitly state if *all* reviews should be positive, or if *one* positive review is sufficient.
