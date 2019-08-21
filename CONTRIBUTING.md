@@ -21,7 +21,7 @@ https://community.privacyidea.org
 ### A word about community
 
 Community does not mean that some developers are responsible
-for solving all your problems. Read the AGPL! 
+for solving all your problems. Read the AGPL!
 **THIS SOFTWARE COMES WITH NO WARRANTY**
 
 As soon as you start using privacyIDEA you are becoming part of
@@ -29,7 +29,7 @@ the community and this also comes with some kind of responsibility.
 So you can make privacyIDEA better and earn karma points by
 sharing your experience and helping other, younger users.
 
-By doing so the developers have more time to develop and 
+By doing so the developers have more time to develop and
 improving your beloved project.
 
 So **you are "the community"**, go and help others!
@@ -38,21 +38,21 @@ https://community.privacyidea.org
 
 ## Professional services
 
-If you want to get rid of the NO-WARRANTY 
+If you want to get rid of the NO-WARRANTY
 label take a look at privacyIDEA Enterprise Edition including a
 Service Level Agreement or get professional consultancy:
 
-- consultancy 
+- consultancy
   https://netknights.it/en/leistungen/one-time-services/
-- privacyIDEA Enterprise Edition 
+- privacyIDEA Enterprise Edition
   https://netknights.it/en/leistungen/service-level-agreements/
 
 
 ## Tell us your ideas
 
 If you have a *new idea* you may submit a feature request.
-This should be a new idea that puts forward privacyIDEA and looks 
-at some things from a new angle. 
+This should be a new idea that puts forward privacyIDEA and looks
+at some things from a new angle.
 
 Submit an issue and describe your idea in the best possible details.
 
@@ -61,7 +61,7 @@ https://github.com/privacyidea/privacyidea/issues
 ## Translations
 
 If you have no programming skills you can still get involved
-directly with the software by providing translations into 
+directly with the software by providing translations into
 different languages.
 
 http://privacyidea.readthedocs.io/en/latest/faq/translation.html
@@ -87,7 +87,7 @@ Please include the following details:
 * The name and version of the problematic software component,
   and if possible
 
-  * the location of the issue and 
+  * the location of the issue and
   * the potential impact
 
 * A detailed description to reproduce the vulnerability and
@@ -100,7 +100,8 @@ sending an email to
 
    security@privacyidea.org
 
-or, if you want to stay anonymous/pseudonymous, you can upload your information to
+or, if you want to stay anonymous/pseudonymous, you can upload your information
+to
 
    https://lancelot.netknights.it/owncloud/s/a6sVvOT0Fb3utd9
 
@@ -120,7 +121,7 @@ If you are sending a pull request, please note the following:
 * in your pull request refer to the issue.
 * describe your changes in the commit message.
 * At the beginning of the file, add the date, your name,
-  your email address and a description of what you 
+  your email address and a description of what you
   changed in the file!
 * We try to stick to **PEP 8**. So please use sensible names, check your line
   breaks, comment your classes and functions...
@@ -136,13 +137,14 @@ If you are sending a pull request, please note the following:
   ``./pi-manage`` to create migration scripts. The migration scripts
   are located at ``migrations/versions/``.
   To create a migration script to update the database schema run:
-  
+
   ```
   ./pi-manage db migrate
   ```
 
   This will create a new file in ``migrations/versions/``. Edit the description
-  and put a *try-except* around the operations. Take a look at the other scripts.
+  and put a *try-except* around the operations. Take a look at the other
+scripts.
   Then you can run:
 
   ```
@@ -153,69 +155,115 @@ If you are sending a pull request, please note the following:
 
 ## Development Workflow
 
-The following section describes our development workflow: How do we handle issues, how do we develop privacyIDEA, how do we perform code reviews?
+The following section describes our development workflow: How do we handle
+issues, how do we develop privacyIDEA, how do we perform code reviews?
 
 ### Terminology
 
-In the following, *"we"* and *"team"* refers to the [privacyIDEA development team](https://github.com/orgs/privacyidea/people). *"External contributors"* refers to contributing developers from the community.
+In the following, *"we"* and *"team"* refers to the [privacyIDEA development
+team](https://github.com/orgs/privacyidea/people). *"External contributors"*
+refers to contributing developers from the community.
 
 ### Issues
 
 ##### Issue Templates
 
-We encourage external contributors to use one of the predefined issue templates for bugs and feature requests. In case of bug reports, external contributors as well as team members should describe their top-level intent, the expected behavior of the system, its actual behavior, and the steps taken to produce it.
+We encourage external contributors to use one of the predefined issue templates
+for bugs and feature requests. In case of bug reports, external contributors as
+well as team members should describe their top-level intent, the expected
+behavior of the system, its actual behavior, and the steps taken to produce it.
 
 ##### Assigning Issues
 
-The team member assigned to an issue is responsible for working on it, creating a pull request and getting the pull request reviewed and merged.
+The team member assigned to an issue is responsible for working on it, creating
+a pull request and getting the pull request reviewed and merged.
 
 ##### Milestones
 
-For each planned release, we create a github milestone. We add issues to milestones in order to keep track of features that should be implemented or bugs that should be fixed for the respective release. This also helps with creating the release changelog later.
+For each planned release, we create a github milestone. We add issues to
+milestones in order to keep track of features that should be implemented or
+bugs that should be fixed for the respective release. This also helps with
+creating the release changelog later.
 
 ### Branches
 
 ##### ``master`` branch
 
-Our ``master`` branch represents the current development state and, as a consequence, may be unstable. Features are usually added there.
+Our ``master`` branch represents the current development state and, as a
+consequence, may be unstable. Features are usually added there.
 
 ##### Stable branches
 
-For each minor version ``X.Y`` (e.g. 2.23, 3.0, ...), we create a *stable branch* called ``branch-X.Y``, e.g. [``branch-3.0``](https://github.com/privacyidea/privacyidea/tree/branch-3.0). Hotfixes for stable versions are usually added to the stable branches. Stable branches are then merged back into the master branch.
+For each minor version ``X.Y`` (e.g. 2.23, 3.0, ...), we create a *stable
+branch* called ``branch-X.Y``, e.g.
+[``branch-3.0``](https://github.com/privacyidea/privacyidea/tree/branch-3.0).
+Hotfixes for stable versions are usually added to the stable branches. Stable
+branches are then merged back into the master branch.
 
 ##### Local Branches and Pull Requests
 
-We do not directly work on the ``master`` branch or the stable branches. Instead, we locally create new branches, diverging either from ``master`` or a stable branch. These branches are called ``123/some-shortname``, where ``123`` refers to an issue number, and ``some-shortname`` is a short description of the changes. If we are done developing a bugfix, a feature, or a reasonable part of a feature, we open a pull request (see below).
+We do not directly work on the ``master`` branch or the stable branches.
+Instead, we locally create new branches, diverging either from ``master`` or a
+stable branch. These branches are called ``123/some-shortname``, where ``123``
+refers to an issue number, and ``some-shortname`` is a short description of the
+changes. If we are done developing a bugfix, a feature, or a reasonable part of
+a feature, we open a pull request (see below).
 
 ### Pull Requests and Code Reviews
 
 ##### PR descriptions
 
-We use github's *pull requests*. The pull request description mentions the issue that is being worked on (e.g. "Working on #xyz" or "Closes #xyz", see [keywords](https://help.github.com/en/articles/closing-issues-using-keywords)). The respective issue should be added to a milestone. This makes it easier to put together changelogs for new releases.
+We use github's *pull requests*. The pull request description mentions the
+issue that is being worked on (e.g. "Working on #xyz" or "Closes #xyz", see
+[keywords](https://help.github.com/en/articles/closing-issues-using-keywords)).
+The respective issue should be added to a milestone. This makes it easier to
+put together changelogs for new releases.
 
 ##### Code Reviews
 
-We perform code reviews. Each pull request is reviewed by one or more team members before it is merged.
+We perform code reviews. Each pull request is reviewed by one or more team
+members before it is merged.
 
 ##### Choosing a Reviewer
 
-In the following, we call the requester of a pull request the *developer* and differentiate between *external contributors* and *team members*:
+In the following, we call the requester of a pull request the *developer* and
+differentiate between *external contributors* and *team members*:
 
-* An external contributor can simply open a pull request. The team then decides on a reviewer and accordingly requests a review.
-* A team member explicitly requests a review from one or more other team members. In order to find a suitable reviewer, a developer may refer to the [development team list](Development-Team).
+* An external contributor can simply open a pull request. The team then decides
+on a reviewer and accordingly requests a review.
+* A team member explicitly requests a review from one or more other team
+members. In order to find a suitable reviewer, a developer may refer to the
+[development team list](Development-Team). Even after having created a pull
+request, the **developer is responsible for getting the pull request merged**.
+In particular, it is the developer's responsibility to choose a suitable
+reviewer. As the reviewer may not notice an incoming review request due to the
+high number of notifications, the developer is responsible for reminding the
+reviewer of pending review requests. If the reviewer is too busy to deal with
+the pull request, the developer chooses a different reviewer.
 
-Even after having created a pull request, the **developer is responsible for getting the pull request merged**. In particular, it is the developer's responsibility to choose a suitable reviewer. As the reviewer may not notice an incoming review request due to the high number of notifications, the developer is responsible for reminding the reviewer of pending review requests. If the reviewer is too busy to deal with the pull request, the developer chooses a different reviewer. 
-
-We *do not* request reviews from the whole team, because this makes it hard to assign responsibility.
+We *do not* request reviews from the whole team, because this makes it hard to
+assign responsibility.
 
 ##### Reviewing Pull Requests
 
-The reviewer uses the github [code review features](https://github.com/features/code-review/) to add comments and request changes. The developer addresses the remarks in the following commits and replies to the comments. If the reviewer is satisfied with the changes, the reviewer resolves the respective conversation.
+The reviewer uses the github [code review
+features](https://github.com/features/code-review/) to add comments and request
+changes. The developer addresses the remarks in the following commits and
+replies to the comments. If the reviewer is satisfied with the changes, the
+reviewer resolves the respective conversation.
 
 ##### Merging a Pull Request
 
-If the reviewer approves a pull request, and if no other reviews have been requested (see below), the reviewer should merge (or rebase or squash and merge) the pull request. When the pull request is merged, the reviewer deletes the feature branch.
+If the reviewer approves a pull request, and if no other reviews have been
+requested (see below), the reviewer should merge (or rebase or squash and
+merge) the pull request. When the pull request is merged, the reviewer deletes
+the feature branch, if possible.
 
 ##### Multiple Reviewers
 
-The developer may also request reviews from multiple team members. This makes sense if the PR spans across multiple architectural layers (e.g. backend *and* frontend), or if the developer wants both a functional (does the PR fix the bug?) and technical review (is the code okay?). If a developer requests multiple reviews, the PR description should explicitly state if *all* reviews should be positive, or if *one* positive review is sufficient.
+The developer may also request reviews from multiple team members. This makes
+sense if the PR spans across multiple architectural layers (e.g. backend *and*
+frontend), or if the developer wants both a functional (does the PR fix the
+bug?) and technical review (is the code okay?). If a developer requests
+multiple reviews, the PR description should explicitly state if *all* reviews
+should be positive, or if *one* positive review is sufficient.
