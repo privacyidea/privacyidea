@@ -180,6 +180,14 @@ maximum failcounter is reached. In such a case the user can not use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
 
+**rollout_state**
+
+This is the rollout_state of a token. A token can be rolled out in several steps
+like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
+token contains certain values like 'clientwait' or 'enrolled'.
+This way actions can be triggered, depending on the step during an enrollment
+process.
+
 **token_has_owner**
 
 The action is only triggered, if the token is or is not assigned to a user.
