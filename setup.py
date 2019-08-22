@@ -127,8 +127,6 @@ setup(
                  ['deploy/apache/privacyideaapp.wsgi',
                   'deploy/privacyidea/dictionary']),
                 ('share/man/man1', get_man_pages("tools")),
-                ('lib/privacyidea/authmodules/OTRS',
-                 ["authmodules/OTRS/privacyIDEA.pm"]),
                 ('lib/privacyidea/migrations',
                  ["migrations/alembic.ini",
                   "migrations/env.py",
