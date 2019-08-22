@@ -335,12 +335,13 @@ def export_user_data(token_list):
     for token_obj in token_list:
         user = token_obj.user
         if user:
-            uid = u"{0!s}|{1!s}|{2!s}|{3!s}|{4!s}".format(
+            uid = u"'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
                 user.info.get("username", ""),
                 user.info.get("givenname", ""),
                 user.info.get("surname", ""),
                 user.uid,
-                user.resolver
+                user.resolver,
+                user.realm
             )
         else:
             uid = u"N/A"
