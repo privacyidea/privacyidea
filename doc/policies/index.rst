@@ -46,7 +46,7 @@ Each policy can contain the following attributes:
   the policy is overwritten.
 
   .. note:: In the web UI and the API policies can only be created
-     with the characters 0-9, a-z, A-Z, "_" and ".".
+     with the characters 0-9, a-z, A-Z, "_", "-", " " and ".".
      On a library level or during migration scripts policies with
      other characters could be created.
 

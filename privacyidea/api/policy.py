@@ -40,7 +40,8 @@ from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
-                        send_result)
+                        send_result,
+                        check_policy_name)
 from ..lib.log import log_with
 from ..lib.policy import (set_policy,
                           PolicyClass, ACTION,
@@ -175,12 +176,7 @@ def set_policy_api(name=None):
     """
     res = {}
     param = request.all_data
-    if not re.match('^[a-zA-Z0-9_.]*$', name):
-        raise ParameterError(_("The name of the policy may only contain "
-                               "the characters a-zA-Z0-9_."))
-
-    if name.lower() == "check":
-        raise ParameterError(_("T'check' is an invalid policy name."))
+    check_policy_name(name)
 
     action = getParam(param, "action", required)
     scope = getParam(param, "scope", required)
