@@ -76,6 +76,7 @@ class CONDITION(object):
     REALM = "realm"
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
+    ROLLOUT_STATE = "rollout_state"
 
 
 class BaseEventHandler(object):
@@ -127,6 +128,10 @@ class BaseEventHandler(object):
         realms = get_realms()
         resolvers = get_resolver_list()
         cond = {
+            CONDITION.ROLLOUT_STATE: {
+                "type": "str",
+                "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'.")
+            },
             CONDITION.REALM: {
                 "type": "str",
                 "desc": _("The realm of the user, for which this event should apply."),
@@ -536,6 +541,11 @@ class BaseEventHandler(object):
                     # There is a condition, but we do not know it!
                     log.warning("Misconfiguration in your tokeninfo "
                                 "condition: {0!s}".format(cond))
+                    return False
+
+            if CONDITION.ROLLOUT_STATE in conditions:
+                cond = conditions.get(CONDITION.ROLLOUT_STATE)
+                if not cond == token_obj.token.rollout_state:
                     return False
 
         return True

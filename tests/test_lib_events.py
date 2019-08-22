@@ -467,6 +467,54 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertFalse(r)
 
+    def test_07_check_rollout_state(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        tok.token.rollout_state = "fakestate"
+        tok.token.save()
+
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "fakestate"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "otherstate"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        remove_token(serial)
+
 
 class CounterEventTestCase(MyTestCase):
 
