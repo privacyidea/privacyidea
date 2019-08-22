@@ -277,9 +277,14 @@ def check_policy_name(name):
     :param name: The name of the policy
     :return: Raises a ParameterError in case of an invalid name
     """
+    disallowed_patterns = [("^check$", re.IGNORECASE),
+                           ("^pi-update-policy-", re.IGNORECASE)]
+    for disallowed_pattern in disallowed_patterns:
+        if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
+            raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
+
     if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "
                                "the characters a-zA-Z0-9_.- "))
 
-    if name.lower() == "check":
-        raise ParameterError(_("T'check' is an invalid policy name."))
+

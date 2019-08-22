@@ -33,3 +33,12 @@ class UtilsTestCase(MyApiTestCase):
         self.assertNotEqual(ParameterError, check_policy_name, "check")
         # This is an invalid name
         self.assertNotEqual(ParameterError, check_policy_name, "~invalid name")
+
+        # some disallowed patterns:
+        self.assertNotEqual(ParameterError, check_policy_name, "Check")
+        self.assertNotEqual(ParameterError, check_policy_name, "pi-update-policy-something")
+        # Some patterns that work
+        check_policy_name("check this out.")
+        check_policy_name("my own pi-update-policy-something")
+        check_policy_name("pi-update-policysomething")
+
