@@ -33,6 +33,7 @@ Version 3.1, 2019-09-XX
     * Allow a welcome message in the Web UI if the user has no token (#1074)
     * Do not display token configuration hints in the UI to normal users (#1789)
   * Management:
+    * Event handlers allow rollout_state as condition (#1801)
     * Add script to export OTP counters (#1728)
     * Allow many additional tags in email notifications: serial, user, givenname,
       surname, username, userrealm, tokentype, recipient_givenname, recipient_surname,
