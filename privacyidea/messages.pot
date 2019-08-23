@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-08-13 17:38+0200\n"
+"POT-Creation-Date: 2019-08-23 14:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -806,118 +806,124 @@ msgstr ""
 msgid "please enter otp: "
 msgstr ""
 
-#: lib/eventhandler/base.py:132
-msgid "The realm of the user, for which this event should apply."
+#: lib/eventhandler/base.py:133
+msgid ""
+"The rollout_state of the token has a certain value like 'clientwait' or "
+"'enrolled'."
 msgstr ""
 
 #: lib/eventhandler/base.py:137
-msgid "The resolver of the user, for which this event should apply."
+msgid "The realm of the user, for which this event should apply."
 msgstr ""
 
 #: lib/eventhandler/base.py:142
+msgid "The resolver of the user, for which this event should apply."
+msgstr ""
+
+#: lib/eventhandler/base.py:147
 msgid "The realm of the token, for which this event should apply."
 msgstr ""
 
-#: lib/eventhandler/base.py:148
+#: lib/eventhandler/base.py:153
 msgid "The resolver of the token, for which this event should apply."
 msgstr ""
 
-#: lib/eventhandler/base.py:154
+#: lib/eventhandler/base.py:159
 msgid "The type of the token."
 msgstr ""
 
-#: lib/eventhandler/base.py:159
+#: lib/eventhandler/base.py:164
 msgid "The logged in user is of the following type."
 msgstr ""
 
-#: lib/eventhandler/base.py:164
+#: lib/eventhandler/base.py:169
 msgid "The result.value within the response is True or False."
 msgstr ""
 
-#: lib/eventhandler/base.py:170
+#: lib/eventhandler/base.py:175
 msgid "The result.status within the response is True or False."
 msgstr ""
 
-#: lib/eventhandler/base.py:176
+#: lib/eventhandler/base.py:181
 msgid "Check if the max failcounter of the token is reached."
 msgstr ""
 
-#: lib/eventhandler/base.py:182
+#: lib/eventhandler/base.py:187
 msgid "The token has a user assigned."
 msgstr ""
 
-#: lib/eventhandler/base.py:187
+#: lib/eventhandler/base.py:192
 msgid ""
 "The token has a user assigned, but the user does not exist in the "
 "userstore anymore."
 msgstr ""
 
-#: lib/eventhandler/base.py:193
+#: lib/eventhandler/base.py:198
 msgid "Check if the token is within its validity period."
 msgstr ""
 
-#: lib/eventhandler/base.py:198
+#: lib/eventhandler/base.py:203
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr ""
 
-#: lib/eventhandler/base.py:203
+#: lib/eventhandler/base.py:208
 msgid "Action is triggered, if the user has this number of tokens assigned."
 msgstr ""
 
-#: lib/eventhandler/base.py:208
+#: lib/eventhandler/base.py:213
 msgid ""
 "Action is triggered, if the counter of the token equals this setting. Can"
 " also be '>100' or '<99' for no exact match."
 msgstr ""
 
-#: lib/eventhandler/base.py:214
+#: lib/eventhandler/base.py:219
 msgid ""
 "Action is triggered, if the last authentication of the token is older "
 "than 7h, 10d or 1y."
 msgstr ""
 
-#: lib/eventhandler/base.py:219
+#: lib/eventhandler/base.py:224
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
 "100."
 msgstr ""
 
-#: lib/eventhandler/base.py:225
+#: lib/eventhandler/base.py:230
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
 "exactly 100."
 msgstr ""
 
-#: lib/eventhandler/base.py:232
+#: lib/eventhandler/base.py:237
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "difference between the tokeninfo field 'count_auth' and "
 "'count_auth_success is bigger than 100, less than 99 or exactly 100."
 msgstr ""
 
-#: lib/eventhandler/base.py:239
+#: lib/eventhandler/base.py:244
 msgid ""
 "This condition can check any arbitrary tokeninfo field. You need to enter"
 " something like '<fieldname> == <fieldvalue>', '<fieldname> > "
 "<fieldvalue>' or '<fieldname> < <fieldvalue>'"
 msgstr ""
 
-#: lib/eventhandler/base.py:246
+#: lib/eventhandler/base.py:251
 msgid ""
 "Here you can enter a regular expression. The condition only applies if "
 "the regular expression matches the detail->error->message in the "
 "response."
 msgstr ""
 
-#: lib/eventhandler/base.py:252
+#: lib/eventhandler/base.py:257
 msgid ""
 "Here you can enter a regular expression. The condition only applies if "
 "the regular expression matches the detail->message in the response."
 msgstr ""
 
-#: lib/eventhandler/base.py:258
+#: lib/eventhandler/base.py:263
 msgid "Trigger the action, if the client IP matches."
 msgstr ""
 
@@ -1117,55 +1123,55 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:149
+#: lib/smsprovider/FirebaseProvider.py:190
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:153
+#: lib/smsprovider/FirebaseProvider.py:194
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:157
+#: lib/smsprovider/FirebaseProvider.py:198
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:161
+#: lib/smsprovider/FirebaseProvider.py:202
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:166
+#: lib/smsprovider/FirebaseProvider.py:207
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:171
+#: lib/smsprovider/FirebaseProvider.py:212
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:176
+#: lib/smsprovider/FirebaseProvider.py:217
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:181
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:186
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
@@ -1300,7 +1306,7 @@ msgstr ""
 msgid "Number of users with tokens assigned"
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:153
+#: lib/tokens/certificatetoken.py:152
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
@@ -1476,7 +1482,7 @@ msgstr ""
 msgid "You need to provide at least %s answers."
 msgstr ""
 
-#: lib/tokens/radiustoken.py:100
+#: lib/tokens/radiustoken.py:107
 msgid "RADIUS: Forward authentication request to a RADIUS server."
 msgstr ""
 
