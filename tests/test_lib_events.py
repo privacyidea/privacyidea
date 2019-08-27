@@ -12,6 +12,7 @@ import os
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
+from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
@@ -56,6 +57,8 @@ class EventHandlerLibTestCase(MyTestCase):
                       conditions={},
                       options={"emailconfig": "themis",
                                "always": "immer"})
+        # retrieve the current config timestamp
+        current_timestamp = get_config_object().timestamp
 
         self.assertEqual(r, 2)
         # Update the first event
@@ -67,11 +70,19 @@ class EventHandlerLibTestCase(MyTestCase):
                       id=eid)
         self.assertEqual(r, eid)
 
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
+        current_timestamp = get_config_object().timestamp
+
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 2)
         # delete
         r = delete_event(eid)
         self.assertTrue(r)
+
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
+        current_timestamp = get_config_object().timestamp
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 1)
 
@@ -82,6 +93,8 @@ class EventHandlerLibTestCase(MyTestCase):
         n_eid = events[0].get("id")
         # Disable this event in the database
         enable_event(n_eid, False)
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
         # Reread event config from the database
         event_config = EventConfiguration()
         events = event_config.get_handled_events("token_init")
@@ -92,7 +105,6 @@ class EventHandlerLibTestCase(MyTestCase):
         event_config = EventConfiguration()
         events = event_config.get_handled_events("token_init")
         self.assertEqual(len(events), 1)
-
         # If eventid is None, then the whole list is returned
         r = event_config.get_event(None)
         self.assertEqual(r, event_config.events)

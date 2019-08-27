@@ -41,7 +41,7 @@ import threading
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp, Policy)
+                      save_config_timestamp, Policy, EventHandler)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from .crypto import encryptPassword
 from .crypto import decryptPassword
@@ -66,8 +66,8 @@ this.config = {}
 class SharedConfigClass(object):
     """
     A shared config class object is shared between threads and is supposed
-    to store the current configuration with resolvers, realms and policies,
-    along with the timestamp of the configuration.
+    to store the current configuration with resolvers, realms, policies
+    and event handler definitions along with the timestamp of the configuration.
 
     The method ``_reload_from_db()`` compares this timestamp against the
     timestamp in the database (while taking the PI_CHECK_RELOAD_CONFIG
@@ -85,6 +85,7 @@ class SharedConfigClass(object):
         self.realm = {}
         self.default_realm = None
         self.policies = []
+        self.events = []
         self.timestamp = None
 
     def _reload_from_db(self):
@@ -104,6 +105,7 @@ class SharedConfigClass(object):
                 realmconfig = {}
                 default_realm = None
                 policies = []
+                events = []
                 # Load system configuration
                 for sysconf in Config.query.all():
                     config[sysconf.Key] = {
@@ -140,6 +142,9 @@ class SharedConfigClass(object):
                 # Load all policies
                 for pol in Policy.query.all():
                     policies.append(pol.get())
+                # Load all events
+                for event in EventHandler.query.order_by(EventHandler.ordering):
+                    events.append(event.get())
                 # Finally, set the current timestamp
                 timestamp = datetime.datetime.now()
                 with self._config_lock:
@@ -148,6 +153,7 @@ class SharedConfigClass(object):
                     self.realm = realmconfig
                     self.default_realm = default_realm
                     self.policies = policies
+                    self.events = events
                     self.timestamp = timestamp
 
     def _clone(self):
@@ -161,6 +167,7 @@ class SharedConfigClass(object):
                 self.realm,
                 self.default_realm,
                 self.policies,
+                self.events,
                 self.timestamp
             )
 
@@ -177,17 +184,18 @@ class SharedConfigClass(object):
 class LocalConfigClass(object):
     """
     The Config_Object will contain all database configuration of system
-    config, resolvers, realms and policies.
+    config, resolvers, realms, policies and event handler definitions.
 
     It will be cloned from the shared config object at the beginning of the
     request and is supposed to stay alive and unchanged during the request.
     """
-    def __init__(self, config, resolver, realm, default_realm, policies, timestamp):
+    def __init__(self, config, resolver, realm, default_realm, policies, events, timestamp):
         self.config = config
         self.resolver = resolver
         self.realm = realm
         self.default_realm = default_realm
         self.policies = policies
+        self.events = events
         self.timestamp = timestamp
 
     def get_config(self, key=None, default=None, role="admin",
