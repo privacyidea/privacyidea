@@ -34,12 +34,13 @@ import logging
 import yaml
 import binascii
 import re
+import six
 
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
-from sqlalchemy import Integer
+from sqlalchemy import Integer, cast, String
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -356,9 +357,11 @@ class IdResolver (UserIdResolver):
     def _get_userid_filter(self, userId):
         column = getattr(self.TABLE, self.map.get("userid"))
         if isinstance(column.type, Integer):
-            return column == userId
+            # since our user ID is usually a string we need to cast
+            return column == int(userId)
         else:
-            return column.like(userId)
+            # otherwise we cast the column to string (in case of postgres UUIDs)
+            return cast(column, String).like(userId)
 
     def getUsername(self, userId):
         """
@@ -378,6 +381,7 @@ class IdResolver (UserIdResolver):
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
+        :rtype: str
         """
         userid = ""
 
@@ -395,7 +399,7 @@ class IdResolver (UserIdResolver):
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
-                userid = user["id"]
+                userid = str(user["id"])
         except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
 

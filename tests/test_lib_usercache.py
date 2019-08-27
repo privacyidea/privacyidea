@@ -440,7 +440,7 @@ class UserCacheTestCase(MyTestCase):
         # Now, query the user and populate the cache
         self.assertEqual(UserCache.query.count(), 0)
         user1 = User('wordpressuser', self.sql_realm)
-        self.assertEqual(user1.uid, 6)
+        self.assertEqual(user1.uid, '6')
         # Assert it was found in reso_b (as it does not have a phone number)!
         self.assertEqual(user1.resolver, 'reso_b')
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
@@ -458,7 +458,7 @@ class UserCacheTestCase(MyTestCase):
                          'reso_b')
         # Now, it should be located in reso_a!
         user2 = User('wordpressuser', self.sql_realm)
-        self.assertEqual(user2.uid, 6)
+        self.assertEqual(user2.uid, '6')
         self.assertEqual(user2.resolver, 'reso_a')
         # ... but the cache still contains entries for both!
         resolver_query = UserCache.query.filter(UserCache.username == 'wordpressuser',

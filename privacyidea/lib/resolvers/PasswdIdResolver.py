@@ -253,7 +253,7 @@ class IdResolver (UserIdResolver):
         :param userid: The userid in this resolver
         :type userid: string
         :return: username
-        :rtype: string
+        :rtype: str
         '''
         fields = self.descDict.get(userId)
         index = self.sF["username"]
@@ -269,7 +269,7 @@ class IdResolver (UserIdResolver):
         # We do not encode the LoginName anymore, as we are
         # storing unicode in nameDict now.
         if LoginName in self.nameDict:
-            return self.nameDict[LoginName]
+            return str(self.nameDict[LoginName])
         else:
             return ""
 
@@ -293,7 +293,7 @@ class IdResolver (UserIdResolver):
 
         return self.searchFields
 
-    def getUserList(self, searchDict):
+    def getUserList(self, searchDict=None):
         """
         get a list of all users matching the search criteria of the searchdict
 

@@ -182,7 +182,7 @@ class SQLResolverTestCase(MyTestCase):
 
         user = "cornelius"
         user_id = y.getUserId(user)
-        self.assertTrue(user_id == 3, user_id)
+        self.assertEqual(user_id, '3', user_id)
 
         rid = y.getResolverId()
         self.assertTrue(rid.startswith("sql."))
@@ -296,8 +296,9 @@ class SQLResolverTestCase(MyTestCase):
         stored_password = y.TABLE.filter_by(username="achmed").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
+        # we assume here the uid is of type int
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > self.num_users)
+        self.assertGreater(int(uid), self.num_users)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})

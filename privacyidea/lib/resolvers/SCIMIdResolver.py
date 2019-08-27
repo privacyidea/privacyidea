@@ -133,7 +133,7 @@ class IdResolver (UserIdResolver):
         #                                          ("userName", loginName)})
         #return res.get("Resources", [{}])[0].get("externalId")
         # It seems that the userName is the userId
-        return loginName
+        return str(loginName)
 
     def getUserList(self, searchDict=None):
         """

@@ -60,12 +60,13 @@ import logging
 import yaml
 import threading
 import functools
+import six
 
 from .UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
-from ldap3 import Server, Tls, Connection
+from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
@@ -76,7 +77,6 @@ import traceback
 from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
-from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.framework import get_app_local_store
 import datetime
@@ -87,7 +87,6 @@ from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
-from six import string_types
 
 CACHE = {}
 
@@ -539,7 +538,7 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if isinstance(ldap_v, string_types):
+                        if isinstance(ldap_v, six.string_types):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
@@ -573,6 +572,7 @@ class IdResolver (UserIdResolver):
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
+        :rtype: str
         """
         userid = ""
         self._bind()
@@ -626,11 +626,11 @@ class IdResolver (UserIdResolver):
                             LoginName))
 
         for entry in r:
-            userid = self._get_uid(entry, self.uidtype)
+            userid = str(self._get_uid(entry, self.uidtype))
 
         return userid
 
-    def getUserList(self, searchDict):
+    def getUserList(self, searchDict=None):
         """
         :param searchDict: A dictionary with search parameters
         :type searchDict: dict
