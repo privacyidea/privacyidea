@@ -61,8 +61,8 @@ def register_status():
 
     :return: JSON with value=True or value=False
     """
-    resolvername = Match.simple(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER,
-                                realm=None, user=None).action_values(unique=True)
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+        .action_values(unique=True)
     result = bool(resolvername)
     g.audit_object.log({"info": result,
                         "success": True})
@@ -118,22 +118,22 @@ def register_post():
                 options[key] = value
 
     # 0. check, if we can do the registration at all!
-    smtpconfig = Match.simple(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG,
-                              realm=None, user=None).action_values(unique=True)
+    smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG)\
+        .action_values(unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
-    realm = Match.simple(g, scope=SCOPE.REGISTER, action=ACTION.REALM,
-                         realm=None, user=None).action_values(unique=True)
+    realm = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REALM)\
+        .action_values(unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
         realm = get_default_realm
     else:
         # we use the first realm in the list
         realm = list(realm)[0]
-    resolvername = Match.simple(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER,
-                                realm=None, user=None).action_values(unique=True)
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+        .action_values(unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = list(resolvername)[0]
@@ -158,8 +158,8 @@ def register_post():
 
     smtpconfig = list(smtpconfig)[0]
     # Send the registration key via email
-    body = Match.simple(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY,
-                        realm=None, user=None).action_values(unique=True)
+    body = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY)\
+        .action_values(unique=True)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(
         smtpconfig, email,

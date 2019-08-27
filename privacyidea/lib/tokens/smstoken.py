@@ -501,8 +501,8 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.simple(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
-                                    realm=None, user=user_object if user_object else None).action_values(unique=True)
+            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
+                                  user=user_object if user_object else None).action_values(unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
@@ -524,8 +524,7 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autosmspol = Match.simple(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO,
-                                      realm=None, user=user_object).policies()
+            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO, user=user_object).policies()
             autosms = len(autosmspol) >= 1
 
         return autosms

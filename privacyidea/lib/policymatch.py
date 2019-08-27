@@ -86,52 +86,71 @@ class Match(object):
         return action_values
 
     @classmethod
-    def simple(cls, g, scope, action, realm, user):
+    def action_only(cls, g, scope, action):
         """
-        Simple policy matching with a scope, an action and optionally either a realm or a user.
-        :param g: ``flask.g`` object
+        Match policies solely based on a scope and an action.
+        :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param realm: the realm against which policies should be matched. Can be None.
-        :type realm: str or None
-        :param user: the user against which policies should be matched. Can be None.
-                     If a user is given, the argument ``realm`` *must* be None because
-                     the ``realm`` attribute of policies is matched against the user realm.
-        :type user: privacyidea.lib.user.User or None
         :rtype: ``Match``
         """
         if scope == SCOPE.ADMIN:
-            raise MatchingError("Match.simple cannot be used for policies with scope ADMIN")
-        if user is None:
-            # If the user is None, we might still have a realm
-            user_object = None
-            username = None
-            resolver = None
-        elif isinstance(user, User):
-            user_object = user
-            if realm is not None:
-                raise MatchingError("Conflicting matching parameters: realm/user")
-            # Username, realm and resolver will be extracted from the user_object parameter
-            username = None
-            realm = None
-            resolver = None
-        else:
-            raise MatchingError("Invalid user")
+            raise MatchingError("Match.action_only cannot be used for policies with scope ADMIN")
+        return cls(g, name=None, scope=scope, realm=None, active=True,
+                   resolver=None, user=None, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=None, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def realm(cls, g, scope, action, realm):
+        """
+        Match policies with a scope, an action and a realm (which must not be None).
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action
+        :param realm: the realm to match, must not be None
+        :rtype: ``Match``
+        """
+        if scope == SCOPE.ADMIN:
+            raise MatchingError("Match.realm cannot be used for policies with scope ADMIN")
         return cls(g, name=None, scope=scope, realm=realm, active=True,
-                   resolver=resolver, user=username, user_object=user_object,
+                   resolver=None, user=None, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=None, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def user(cls, g, scope, action, user):
+        """
+        Match policies with a scope, an action and a user object (which may be None).
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action
+        :param user: the user object to match. Might also be None, which means that the policy
+                     attributes ``user``, ``realm`` and ``resolver`` are ignored.
+        :type user: User or None
+        :rtype: ``Match``
+        """
+        if scope == SCOPE.ADMIN:
+            raise MatchingError("Match.user cannot be used for policies with scope ADMIN")
+        if not (user is None or isinstance(user, User)):
+            raise MatchingError("Invalid user")
+        # Username, realm and resolver will be extracted from the user_object parameter
+        return cls(g, name=None, scope=scope, realm=None, active=True,
+                   resolver=None, user=None, user_object=user,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
                    sort_by_priority=True)
 
     @classmethod
     def admin(cls, g, action, realm):
         """
-        Matching admin policies with an action and, optionally, a realm.
+        Match admin policies with an action and, optionally, a realm.
         Assumes that the currently logged-in user is an admin, and throws an error otherwise.
         Policies will be matched against the admin's username and adminrealm,
         and optionally also the provided realm.
         :param g: ``flask.g`` object
         :param action: the policy action
         :param realm: the realm against which policies should be matched. Can be None.
+        :type realm: str or None
         :rtype: ``Match``
         """
         username = g.logged_in_user["username"]

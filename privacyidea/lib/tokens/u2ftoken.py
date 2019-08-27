@@ -495,8 +495,8 @@ class U2fTokenClass(TokenClass):
                     # If not, we can raise a policy exception
                     g = options.get("g")
                     user_object = self.user
-                    allowed_certs_pols = Match.simple(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
-                                                      realm=None, user=user_object if user_object else None)\
+                    allowed_certs_pols = Match.user(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
+                                                    user=user_object if user_object else None)\
                         .action_values(unique=False)
                     for allowed_cert in allowed_certs_pols:
                         tag, matching, _rest = allowed_cert.split("/", 3)
@@ -540,8 +540,7 @@ class U2fTokenClass(TokenClass):
         app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
-        pol_facets = Match.simple(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS,
-                                  realm=None, user=None).action_values(unique=False)
+        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS).action_values(unique=False)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 

@@ -356,8 +356,7 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.simple(g, scope=SCOPE.AUTH, action=action,
-                                    realm=None, user=user_object if user_object else None)\
+            messages = Match.user(g, scope=SCOPE.AUTH, action=action, user=user_object if user_object else None)\
                 .action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
@@ -390,8 +389,7 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autoemailpol = Match.simple(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO,
-                                        realm=None, user=user_object).policies()
+            autoemailpol = Match.user(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO, user=user_object).policies()
             autosms = len(autoemailpol) >= 1
 
         return autosms
