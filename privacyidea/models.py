@@ -1759,7 +1759,6 @@ class EventHandler(MethodsMixin, db.Model):
         if self.id is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
         else:
             # update
             EventHandler.query.filter_by(id=self.id).update({
@@ -1772,7 +1771,8 @@ class EventHandler(MethodsMixin, db.Model):
                 "condition": self.condition,
                 "action": self.action
             })
-            db.session.commit()
+        save_config_timestamp()
+        db.session.commit()
         return self.id
 
     def delete(self):
@@ -1786,6 +1786,7 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerCondition) \
             .filter(EventHandlerCondition.eventhandler_id == ret) \
             .delete()
+        save_config_timestamp()
         db.session.commit()
         return ret
 
