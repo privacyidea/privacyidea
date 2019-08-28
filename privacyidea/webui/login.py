@@ -24,8 +24,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.queue import has_job_queue
-
 __doc__ = """This is the starting point for the single web application.
 Other html code is dynamically loaded via angularJS and located in
 /static/views/...
@@ -38,7 +36,8 @@ from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
+from privacyidea.lib.queue import has_job_queue
+from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -46,6 +45,17 @@ from privacyidea.lib.config import get_from_config, SYSCONF
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
 login_blueprint = Blueprint('login_blueprint', __name__)
+
+
+@login_blueprint.before_request
+def before_request():
+    """
+    This is executed before the request
+    """
+    g.policy_object = PolicyClass()
+    g.audit_object = None
+    # access_route contains the ip adresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
 @login_blueprint.route('/', methods=['GET'])
@@ -85,20 +95,13 @@ def single_page_application():
     if not hasattr(request, "all_data"):
         request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
-    policy_object = PolicyClass()
     realms = ""
-    client_ip = get_client_ip(request,
-                              get_from_config(SYSCONF.OVERRIDECLIENT))
-    realm_dropdown = policy_object.match_policies(action=ACTION.REALMDROPDOWN,
-                                                  scope=SCOPE.WEBUI,
-                                                  client=client_ip,
-                                                  active=True)
+    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN)\
+        .policies(write_to_audit_log=False)
     if realm_dropdown:
         try:
-            realm_dropdown_values = policy_object.get_action_values(
-                action=ACTION.REALMDROPDOWN,
-                scope=SCOPE.WEBUI,
-                client=client_ip)
+            realm_dropdown_values = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN)\
+                .action_values(unique=False, write_to_audit_log=False)
             # Use the realms from the policy.
             realms = ",".join(realm_dropdown_values)
         except AttributeError as ex:
@@ -117,33 +120,25 @@ def single_page_application():
     # Use policies to determine the customization of menu
     # and baseline. get_action_values returns an array!
     sub_state  = subscription_status()
-    customization_menu_file = policy_object.get_action_values(
-        allow_white_space_in_action=True,
-        action=ACTION.CUSTOM_MENU,
-        scope=SCOPE.WEBUI,
-        client=client_ip, unique=True)
+    customization_menu_file = Match.action_only(g, action=ACTION.CUSTOM_MENU,
+                                                scope=SCOPE.WEBUI)\
+        .action_values(unique=True, allow_white_space_in_action=True)
     if len(customization_menu_file) and list(customization_menu_file)[0] \
             and sub_state not in [1, 2]:
         customization_menu_file = list(customization_menu_file)[0]
     else:
         customization_menu_file = "templates/menu.html"
-    customization_baseline_file = policy_object.get_action_values(
-        allow_white_space_in_action=True,
-        action=ACTION.CUSTOM_BASELINE,
-        scope=SCOPE.WEBUI,
-        client=client_ip, unique=True)
+    customization_baseline_file = Match.action_only(g, action=ACTION.CUSTOM_BASELINE,
+                                                    scope=SCOPE.WEBUI)\
+        .action_values(unique=True, allow_white_space_in_action=True)
     if len(customization_baseline_file) and list(customization_baseline_file)[0] \
             and sub_state not in [1, 2]:
         customization_baseline_file = list(customization_baseline_file)[0]
     else:
         customization_baseline_file = "templates/baseline.html"
 
-    login_text = policy_object.get_action_values(
-        allow_white_space_in_action=True,
-        action=ACTION.LOGIN_TEXT,
-        scope=SCOPE.WEBUI,
-        client=client_ip, unique=True
-    )
+    login_text = Match.action_only(g, action=ACTION.LOGIN_TEXT, scope=SCOPE.WEBUI)\
+        .action_values(unique=True, allow_white_space_in_action=True)
     if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
         login_text = list(login_text)[0]
     else:

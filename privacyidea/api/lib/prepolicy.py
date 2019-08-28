@@ -430,14 +430,12 @@ def enroll_pin(request=None, action=None):
         username = g.logged_in_user.get("username")
         realm = getParam(request.all_data, "realm")
         adminrealm = g.logged_in_user.get("realm")
-    pin_pols = policy_object.match_policies(action=ACTION.ENROLLPIN,
-                                            scope=scope,
-                                            user=username,
-                                            realm=realm,
-                                            adminrealm=adminrealm,
-                                            client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
+    pin_pols = Match.generic(g, action=ACTION.ENROLLPIN,
+                             scope=scope,
+                             user=username,
+                             realm=realm,
+                             adminrealm=adminrealm,
+                             client=g.client_ip).policies()
     action_at_all = policy_object.list_policies(scope=scope, active=True)
 
     if action_at_all and not pin_pols:
@@ -600,14 +598,12 @@ def twostep_enrollment_parameters(request=None, action=None):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
         for parameter in parameters:
             action = u"{}_{}".format(token_type, parameter)
-            action_values = policy_object.get_action_values(action=action,
-                                                            scope=SCOPE.ENROLL,
-                                                            unique=True,
-                                                            user=user,
-                                                            realm=realm,
-                                                            client=g.client_ip,
-                                                            adminrealm=adminrealm,
-                                                            audit_data=g.audit_object.audit_data)
+            action_values = Match.generic(g, action=action,
+                                          scope=SCOPE.ENROLL,
+                                          user=user,
+                                          realm=realm,
+                                          client=g.client_ip,
+                                          adminrealm=adminrealm).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
 
@@ -973,15 +969,13 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(request.view_args.get("serial"),
                                         only_first_realm=True)
 
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          scope=scope,
-                                          resolver=resolver,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    action = Match.generic(g, action=action,
+                           user=username,
+                           realm=realm,
+                           scope=scope,
+                           resolver=resolver,
+                           client=g.client_ip,
+                           adminrealm=admin_realm).policies()
     action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
@@ -1051,16 +1045,14 @@ def check_token_init(request=None, action=None):
 
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          resolver=resolver,
-                                          scope=scope,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          user_object=user_object,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    action = Match.generic(g, action=action,
+                           user=username,
+                           realm=realm,
+                           resolver=resolver,
+                           scope=scope,
+                           client=g.client_ip,
+                           adminrealm=admin_realm,
+                           user_object=user_object).policies()
     action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR.get(role))
@@ -1162,27 +1154,11 @@ def is_remote_user_allowed(req):
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
-
-        # Check if the remote user is allowed
-        if "client_ip" not in g:
-            g.client_ip = get_client_ip(req,
-                                        get_from_config(SYSCONF.OVERRIDECLIENT))
-        if "policy_object" not in g:
-            g.policy_object = PolicyClass()
-        if "audit_object" in g:
-            audit_data = g.audit_object.audit_data
-        else:
-            audit_data = None
-
-        ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
-                                                         scope=SCOPE.WEBUI,
-                                                         user=loginname,
-                                                         realm=realm,
-                                                         client=g.client_ip,
-                                                         audit_data=audit_data)
-
-        res = bool(ruser_active)
-
+        res = Match.generic(g, action=ACTION.REMOTE_USER,
+                            scope=SCOPE.WEBUI,
+                            user=loginname,
+                            realm=realm,
+                            client=g.client_ip).any()
     return res
 
 
