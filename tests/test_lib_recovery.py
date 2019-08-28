@@ -2,7 +2,7 @@
 """
 This test file tests the lib/passwordreset.py
 """
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.error import privacyIDEAError
@@ -13,7 +13,7 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy, PolicyClass
 
 
 class RecoveryTestCase(MyTestCase):
@@ -82,18 +82,21 @@ class RecoveryTestCase(MyTestCase):
         self.assertTrue(len(added )> 0)
         self.assertEqual(len(failed), 0)
 
+        g = FakeFlaskG()
+        g.client_ip = "127.0.0.1"
+        g.policy_object = PolicyClass()
         # No user policy at all
-        r = is_password_reset()
+        r = is_password_reset(g)
         self.assertEqual(r, True)
 
         # create policy
         set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.PASSWORDRESET)
-        r = is_password_reset()
+        r = is_password_reset(g)
         self.assertEqual(r, True)
 
         # create policy that does not allow password_reset
         set_policy(name="pwrest", scope=SCOPE.USER, action=ACTION.DELETE)
-        r = is_password_reset()
+        r = is_password_reset(g)
         self.assertEqual(r, False)
 
     @smtpmock.activate

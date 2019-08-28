@@ -112,7 +112,7 @@ def single_page_application():
     try:
         if is_remote_user_allowed(request):
             remote_user = request.remote_user
-        password_reset = is_password_reset()
+        password_reset = is_password_reset(g)
         hsm_ready = True
     except HSMException:
         hsm_ready = False

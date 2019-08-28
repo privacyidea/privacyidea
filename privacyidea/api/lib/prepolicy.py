@@ -430,15 +430,13 @@ def enroll_pin(request=None, action=None):
         username = g.logged_in_user.get("username")
         realm = getParam(request.all_data, "realm")
         adminrealm = g.logged_in_user.get("realm")
-    pin_pols = Match.generic(g, action=ACTION.ENROLLPIN,
-                             scope=scope,
-                             user=username,
-                             realm=realm,
-                             adminrealm=adminrealm,
-                             client=g.client_ip).policies()
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-
-    if action_at_all and not pin_pols:
+    action_allowed = Match.generic(g, action=ACTION.ENROLLPIN,
+                                   scope=scope,
+                                   user=username,
+                                   realm=realm,
+                                   adminrealm=adminrealm,
+                                   client=g.client_ip).allowed()
+    if not action_allowed:
         # Not allowed to set a PIN during enrollment!
         if "pin" in request.all_data:
             del request.all_data["pin"]
@@ -870,12 +868,10 @@ def check_anonymous_user(request=None, action=None):
     """
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
-    policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
-    action = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).policies()
-    action_at_all = policy_object.list_policies(scope=SCOPE.USER, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR)
     return True
 
@@ -966,15 +962,14 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(request.view_args.get("serial"),
                                         only_first_realm=True)
 
-    action = Match.generic(g, action=action,
-                           user=username,
-                           realm=realm,
-                           scope=scope,
-                           resolver=resolver,
-                           client=g.client_ip,
-                           adminrealm=admin_realm).policies()
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.generic(g, action=action,
+                                   user=username,
+                                   realm=realm,
+                                   scope=scope,
+                                   resolver=resolver,
+                                   client=g.client_ip,
+                                   adminrealm=admin_realm).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -988,10 +983,8 @@ def check_token_upload(request=None, action=None):
     :return:
     """
     params = request.all_data
-    policy_object = g.policy_object
-    action = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).policies()
-    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).allowed()
+    if not action_allowed:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
     return True
@@ -1042,16 +1035,15 @@ def check_token_init(request=None, action=None):
 
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
-    action = Match.generic(g, action=action,
-                           user=username,
-                           realm=realm,
-                           resolver=resolver,
-                           scope=scope,
-                           client=g.client_ip,
-                           adminrealm=admin_realm,
-                           user_object=user_object).policies()
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.generic(g, action=action,
+                                   user=username,
+                                   realm=realm,
+                                   resolver=resolver,
+                                   scope=scope,
+                                   client=g.client_ip,
+                                   adminrealm=admin_realm,
+                                   user_object=user_object).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
