@@ -55,6 +55,8 @@ ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
+ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -1254,3 +1256,16 @@ def create_tag_dict(logged_in_user=None,
         tags = escaped_tags
 
     return tags
+
+
+def check_serial_valid(serial):
+    """
+    This function checks the given serial number for allowed values.
+    Raises an exception if the format of the serial number is not allowed
+
+    :param serial:
+    :return: True or Exception
+    """
+    if not re.match(ALLOWED_SERIAL, serial):
+        raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
+    return True

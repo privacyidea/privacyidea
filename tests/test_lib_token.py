@@ -1481,6 +1481,14 @@ class TokenTestCase(MyTestCase):
         # Check that we did not miss any tokens
         self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
 
+    def test_0057_check_invalid_serial(self):
+        # This is an invalid serial, which will trigger an exception
+        self.assertRaises(Exception, reset_token, "hans wurst")
+
+        self.assertRaises(Exception, init_token,
+                          {"serial": "invalid/chars",
+                           "genkey": 1})
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 

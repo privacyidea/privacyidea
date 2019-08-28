@@ -1782,6 +1782,18 @@ class APITokenTestCase(MyApiTestCase):
         remove_token("goog2")
         delete_policy('app_pin')
 
+    def test_31_invalid_serial(self):
+        # Run a test with an invalid serial
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": "invalid/character",
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertTrue("Invalid serial number" in result.get("error").get("message"))
+
 
 class API00TokenPerformance(MyApiTestCase):
 
