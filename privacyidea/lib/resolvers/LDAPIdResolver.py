@@ -82,7 +82,7 @@ from privacyidea.lib.framework import get_app_local_store
 import datetime
 
 from privacyidea.lib import _
-from privacyidea.lib.utils import to_utf8, to_unicode
+from privacyidea.lib.utils import to_utf8, to_unicode, convert_column_to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
@@ -418,7 +418,7 @@ class IdResolver (UserIdResolver):
                 # we strip the curly braces from objectGUID values.
                 # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
                 uid = uid.strip("{").strip("}")
-        return uid
+        return convert_column_to_unicode(uid)
 
     def _trim_user_id(self, userId):
         """
@@ -570,7 +570,7 @@ class IdResolver (UserIdResolver):
         resolve the loginname to the userid.
 
         :param LoginName: The login name from the credentials
-        :type LoginName: string
+        :type LoginName: str
         :return: UserId as found for the LoginName
         :rtype: str
         """
@@ -626,7 +626,7 @@ class IdResolver (UserIdResolver):
                             LoginName))
 
         for entry in r:
-            userid = str(self._get_uid(entry, self.uidtype))
+            userid = self._get_uid(entry, self.uidtype)
 
         return userid
 

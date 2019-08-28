@@ -45,7 +45,7 @@ import yaml
 import requests
 import base64
 from six.moves.urllib.parse import urlencode
-from privacyidea.lib.utils import to_bytes, to_unicode
+from privacyidea.lib.utils import to_bytes, to_unicode, convert_column_to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -124,6 +124,7 @@ class IdResolver (UserIdResolver):
     def getUserId(self, loginName):
         """
         returns the uid for a given loginname/username
+        :rtype: str
         """
         #res = {}
         #if self.access_token:
@@ -133,7 +134,7 @@ class IdResolver (UserIdResolver):
         #                                          ("userName", loginName)})
         #return res.get("Resources", [{}])[0].get("externalId")
         # It seems that the userName is the userId
-        return str(loginName)
+        return convert_column_to_unicode(loginName)
 
     def getUserList(self, searchDict=None):
         """

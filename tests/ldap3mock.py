@@ -57,7 +57,7 @@ except ImportError:
 import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
-from privacyidea.lib.utils import to_bytes
+from privacyidea.lib.utils import to_bytes, to_unicode
 
 DIRECTORY = "tests/testdata/tmp_directory"
 
@@ -357,7 +357,7 @@ class Connection(object):
             regex = "^{0}$".format(regex)
 
         for entry in candidates:
-            dn = entry.get("dn")
+            dn = to_unicode(entry.get("dn"))
 
             if attribute not in entry.get("attributes") or not dn.endswith(search_base):
                 continue
@@ -663,7 +663,7 @@ class Connection(object):
             if isinstance(search_filter, bytes):
                 # We need to convert to unicode otherwise pyparsing will not
                 # find the u"ö"
-                search_filter = search_filter.decode("utf-8")
+                search_filter = to_unicode(search_filter)
             expr = Connection._parse_filter()
             s_filter = expr.parseString(search_filter).asList()[0]
         except pyparsing.ParseBaseException as exx:
@@ -756,7 +756,7 @@ class Ldap3Mock(object):
         if authentication == ldap3.ANONYMOUS and user == "":
             correct_password = True
         for entry in self.directory:
-            if entry.get("dn") == user:
+            if to_unicode(entry.get("dn")) == user:
                 pw = entry.get("attributes").get("userPassword")
                 # password can be unicode
                 if to_bytes(pw) == to_bytes(password):

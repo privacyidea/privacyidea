@@ -34,7 +34,6 @@ import logging
 import yaml
 import binascii
 import re
-import six
 
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
@@ -47,7 +46,8 @@ import traceback
 import hashlib
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.utils import (is_true, censor_connect_string, to_utf8)
+from privacyidea.lib.utils import (is_true, censor_connect_string,
+                                   convert_column_to_unicode)
 from passlib.context import CryptContext
 from base64 import b64decode, b64encode
 from passlib.utils import h64
@@ -399,7 +399,7 @@ class IdResolver (UserIdResolver):
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
-                userid = str(user["id"])
+                userid = convert_column_to_unicode(user["id"])
         except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
 
