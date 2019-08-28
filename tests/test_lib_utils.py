@@ -21,7 +21,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    b64encode_and_unicode, create_png, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
-                                   check_ip_in_policy, split_pin_pass, create_tag_dict)
+                                   check_ip_in_policy, split_pin_pass, create_tag_dict,
+                                   check_serial_valid)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -681,3 +682,18 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(dict2["ua_string"], "&lt;b&gt;hello world&lt;/b&gt;")
         self.assertEqual(dict2["action"], "/validate/check")
         self.assertEqual(dict2["recipient_givenname"], u"&lt;b&gt;Sömeone&lt;/b&gt;")
+
+    def test_32_allowed_serial_numbers(self):
+        self.assertTrue(check_serial_valid("TOTP12345"))
+        # Blank is not allowed
+        self.assertRaises(Exception, check_serial_valid, "TOTP 12345")
+
+        # Minus and underscore is allowed
+        self.assertTrue(check_serial_valid("spass-123"))
+        self.assertTrue(check_serial_valid("spass_123"))
+        # Slash and backslash is not allowed
+        self.assertRaises(Exception, check_serial_valid, "spass/123")
+        self.assertRaises(Exception, check_serial_valid, "spass\\123")
+
+        # an empty serial is not allowed
+        self.assertRaises(Exception, check_serial_valid, "")
