@@ -31,7 +31,7 @@ Other html code is dynamically loaded via angularJS and located in
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
-                   current_app)
+                   current_app, g)
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
@@ -122,7 +122,7 @@ def single_page_application():
     sub_state  = subscription_status()
     customization_menu_file = Match.action_only(g, action=ACTION.CUSTOM_MENU,
                                                 scope=SCOPE.WEBUI)\
-        .action_values(unique=True, allow_white_space_in_action=True)
+        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(customization_menu_file) and list(customization_menu_file)[0] \
             and sub_state not in [1, 2]:
         customization_menu_file = list(customization_menu_file)[0]
@@ -130,7 +130,7 @@ def single_page_application():
         customization_menu_file = "templates/menu.html"
     customization_baseline_file = Match.action_only(g, action=ACTION.CUSTOM_BASELINE,
                                                     scope=SCOPE.WEBUI)\
-        .action_values(unique=True, allow_white_space_in_action=True)
+        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(customization_baseline_file) and list(customization_baseline_file)[0] \
             and sub_state not in [1, 2]:
         customization_baseline_file = list(customization_baseline_file)[0]
@@ -138,7 +138,7 @@ def single_page_application():
         customization_baseline_file = "templates/baseline.html"
 
     login_text = Match.action_only(g, action=ACTION.LOGIN_TEXT, scope=SCOPE.WEBUI)\
-        .action_values(unique=True, allow_white_space_in_action=True)
+        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
         login_text = list(login_text)[0]
     else:

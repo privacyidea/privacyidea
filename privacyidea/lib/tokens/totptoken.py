@@ -39,13 +39,14 @@ import logging
 import time
 import math
 import datetime
+
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import ACTION, SCOPE, Match
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib import _
 
@@ -631,8 +632,7 @@ class TotpTokenClass(HotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -642,46 +642,37 @@ class TotpTokenClass(HotpTokenClass):
         these values.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
-        :param client_ip: The client IP address
-        :type client_ip: basestring
         :return: default parameters
         """
         ret = {}
-        if logged_in_user.get("role") == ROLE.USER:
-            hashlib_pol = policy_object.get_action_values(
-                action="totp_hashlib",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
+        if g.logged_in_user.get("role") == ROLE.USER:
+            hashlib_pol = Match.generic(g,
+                                        action="totp_hashlib",
+                                        scope=SCOPE.USER,
+                                        user=g.logged_in_user.get("username"),
+                                        realm=g.logged_in_user.get("realm"),
+                                        client=g.client_ip).action_values(unique=True)
             if hashlib_pol:
                 ret["hashlib"] = list(hashlib_pol)[0]
 
-            timestep_pol = policy_object.get_action_values(
-                action="totp_timestep",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
+            timestep_pol = Match.generic(g,
+                                         action="totp_timestep",
+                                         scope=SCOPE.USER,
+                                         user=g.logged_in_user.get("username"),
+                                         realm=g.logged_in_user.get("realm"),
+                                         client=g.client_ip).action_values(unique=True)
             if timestep_pol:
                 ret["timeStep"] = list(timestep_pol)[0]
 
-            otplen_pol = policy_object.get_action_values(
-                action="totp_otplen",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
+            otplen_pol = Match.generic(g,
+                                       action="totp_otplen",
+                                       scope=SCOPE.USER,
+                                       user=g.logged_in_user.get("username"),
+                                       realm=g.logged_in_user.get("realm"),
+                                       client=g.client_ip).action_values(unique=True)
             if otplen_pol:
                 ret["otplen"] = list(otplen_pol)[0]
 

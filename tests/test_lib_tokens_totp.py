@@ -5,7 +5,8 @@ The lib.tokenclass depends on the DB model and lib.user
 """
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from mock import Mock
+from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
@@ -713,17 +714,17 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(r, "")
 
     def test_27_get_default_settings(self):
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = Mock()
         params = {}
-        logged_in_user = {"user": "hans",
-                          "realm": "default",
-                          "role": "user"}
+        g.logged_in_user = {"user": "hans",
+                            "realm": "default",
+                            "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="totp_hashlib=sha256,"
                                                     "totp_timestep=60,"
                                                     "totp_otplen=8")
-        pol = PolicyClass()
-        p = TotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         self.assertEqual(p.get("timeStep"), "60")

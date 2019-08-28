@@ -454,10 +454,7 @@ def init_token_defaults(request=None, action=None):
     params = request.all_data
     ttype = params.get("type") or "hotp"
     token_class = get_token_class(ttype)
-    default_settings = token_class.get_default_settings(params,
-                                                        g.logged_in_user,
-                                                        g.policy_object,
-                                                        g.client_ip)
+    default_settings = token_class.get_default_settings(g, params)
     log.debug("Adding default settings {0!s} for token type {1!s}".format(
         default_settings, ttype))
     request.all_data.update(default_settings)
