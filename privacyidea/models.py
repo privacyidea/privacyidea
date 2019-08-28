@@ -190,9 +190,7 @@ class Token(MethodsMixin, db.Model):
                             default=1000)
     rollout_state = db.Column(db.Unicode(10),
                               default=u'')
-    info = db.relationship('TokenInfo',
-                           lazy='dynamic',
-                           backref='info')
+    info_list = db.relationship('TokenInfo', lazy='select', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
 
@@ -649,10 +647,6 @@ class TokenInfo(MethodsMixin, db.Model):
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'), index=True)
-    # This creates an attribute "info_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='info_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'Key',
                                           name='tiix_2'),
@@ -795,6 +789,9 @@ class Realm(TimestampMethodsMixin, db.Model):
                      unique=True, nullable=False)
     default = db.Column(db.Boolean(), default=False)
     option = db.Column(db.Unicode(40), default=u'')
+    resolver_list = db.relationship('ResolverRealm',
+                                    lazy='select',
+                                    foreign_keys='ResolverRealm.realm_id')
     
     @log_with(log)
     def __init__(self, realm):
@@ -869,9 +866,6 @@ class CAConnectorConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    cacon = db.relationship('CAConnector',
-                            lazy='joined',
-                            backref='config_list')
     __table_args__ = (db.UniqueConstraint('caconnector_id',
                                           'Key',
                                           name='ccix_2'),
@@ -929,9 +923,12 @@ class Resolver(TimestampMethodsMixin, db.Model):
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
-    rconfig = db.relationship('ResolverConfig',
-                              lazy='joined',
-                              backref='resolver')
+    config_list = db.relationship('ResolverConfig',
+                                  lazy='select',
+                                  backref='resolver')
+    realm_list = db.relationship('ResolverRealm',
+                                 lazy='select',
+                                 foreign_keys='ResolverRealm.resolver_id')
     
     def __init__(self, name, rtype):
         self.name = name
@@ -967,10 +964,6 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    # This creates an attribute "config_list" in the Resolver object
-    reso = db.relationship('Resolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='rcix_2'),
@@ -1026,16 +1019,12 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
-    # this will create a "realm_list" in the resolver object
     resolver = db.relationship(Resolver,
                                lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id",
-                               backref="realm_list")
-    # this will create a "resolver_list" in the realm object
+                               foreign_keys="ResolverRealm.resolver_id")
     realm = db.relationship(Realm,
                             lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id",
-                            backref="resolver_list")
+                            foreign_keys="ResolverRealm.realm_id")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
@@ -1831,9 +1820,6 @@ class EventHandlerCondition(db.Model):
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.Unicode(2000), default=u'')
     comparator = db.Column(db.Unicode(255), default=u'equal')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='condition_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehcix_1'),
@@ -1879,9 +1865,6 @@ class EventHandlerOption(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='option_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehoix_1'),
@@ -1965,9 +1948,6 @@ class MachineResolverConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    reso = db.relationship('MachineResolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='mrcix_2'),
@@ -2081,7 +2061,7 @@ class SMSGateway(MethodsMixin, db.Model):
     providermodule = db.Column(db.Unicode(1024), nullable=False)
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
-                              backref='ref_smsgateway')
+                              backref='smsgw')
 
     def __init__(self, identifier, providermodule, description=None,
                  options=None):
@@ -2143,7 +2123,7 @@ class SMSGateway(MethodsMixin, db.Model):
         :return: dict
         """
         res = {}
-        for option in self.ref_option_list:
+        for option in self.options:
             res[option.Key] = option.Value
         return res
 
@@ -2174,9 +2154,6 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     Type = db.Column(db.Unicode(100), default=u'')
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
-    smsgw = db.relationship('SMSGateway',
-                            lazy='joined',
-                            backref='ref_option_list')
     __table_args__ = (db.UniqueConstraint('gateway_id',
                                           'Key',
                                           name='sgix_1'),
