@@ -41,7 +41,6 @@ from __future__ import (
 )
 
 from passlib.hash import ldap_salted_sha1
-from ast import literal_eval
 import uuid
 from ldap3.utils.conv import escape_bytes
 import ldap3
@@ -58,8 +57,6 @@ import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
 from privacyidea.lib.utils import to_bytes
-
-DIRECTORY = "tests/testdata/tmp_directory"
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -149,9 +146,8 @@ class Connection(object):
 
     def __init__(self, directory=None):
         if directory is None:
-                directory = []
-        import copy
-        self.directory = copy.deepcopy(directory)
+            directory = []
+        self.directory = directory
         self.bound = False
         self.start_tls_called = False
         self.extend = self.Extend(self)
@@ -179,87 +175,43 @@ class Connection(object):
         self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
-
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
             # Create a entry object for the new user
-            entry = {}
-            entry['dn'] = dn
-            entry['attributes'] = attributes
-            if object_class != None:
-                entry['attributes'].update( {'objectClass': object_class} )
+            entry = {'dn': dn, 'attributes': attributes}
+            if object_class is not None:
+                entry['attributes'].update({'objectClass': object_class})
         else:
             # User already exists
-            self.result["description"] = "failure"
-            self.result["result"] = 68
-            self.result["message"] = \
-                    "Error entryAlreadyExists for {0}".format(dn)
             return False
 
         # Add the user entry to the directory
         self.directory.append(entry)
 
-        # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
-            f.write(str(self.directory))
-
         return True
 
     def delete(self, dn, controls=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
-
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-            self.result["description"] = "failure"
-            self.result["result"] = 32
-            self.result["message"] = "Error no such object: {0}".format(dn)
             return False
 
         # Delete the entry object for the user
         self.directory.pop(index)
 
-        # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
-            f.write(str(self.directory))
-
         return True
 
     def modify(self, dn, changes, controls=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'modifyResponse'}
-
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
-            self.result["description"] = "failure"
-            self.result["result"] = 32
-            self.result["message"] = "Error no such object: {0!s}".format(dn)
             return False
 
         # extract the hash we are interested in
@@ -271,17 +223,9 @@ class Connection(object):
                 entry.pop(k)
             elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
                 entry[k] = v[1][0]
-            else:
-                self.result["result"] = 2
-                self.result["message"] = "Error bad/missing/not implemented" \
-                    "modify operation: %s" % k[1]
 
         # Place the attributes back into the directory hash
         self.directory[index]["attributes"] = entry
-
-        # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
-            f.write(str(self.directory))
 
         return True
 
@@ -454,8 +398,8 @@ class Connection(object):
     @staticmethod
     def _parse_filter():
         op = pyparsing.oneOf('! & |')
-        lpar  = pyparsing.Literal('(').suppress()
-        rpar  = pyparsing.Literal(')').suppress()
+        lpar = pyparsing.Literal('(').suppress()
+        rpar = pyparsing.Literal(')').suppress()
 
         k = pyparsing.Word(pyparsing.alphanums)
         # NOTE: We may need to expand on this list, but as this is not a real
@@ -468,8 +412,8 @@ class Connection(object):
 
         expr = pyparsing.Forward()
         atom = pyparsing.Group(lpar + op + expr + rpar) \
-                            | pyparsing.Combine(lpar + k + rel + v + rpar)
-        expr << atom + pyparsing.ZeroOrMore( expr )
+               | pyparsing.Combine(lpar + k + rel + v + rpar)
+        expr << atom + pyparsing.ZeroOrMore(expr)
 
         return expr
 
@@ -479,7 +423,7 @@ class Connection(object):
         deDuped = list()
         for entry in results:
             dn = entry.get("dn")
-            if not dn in found:
+            if dn not in found:
                 found[dn] = 1
                 deDuped.append(entry)
 
@@ -611,7 +555,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -656,8 +600,6 @@ class Connection(object):
                size_limit=0, paged_cookie=None):
         s_filter = list()
         candidates = list()
-        self.response = list()
-        self.result = dict()
 
         try:
             if isinstance(search_filter, bytes):
@@ -695,22 +637,10 @@ class Ldap3Mock(object):
 
     def setLDAPDirectory(self, directory=None):
         if directory is None:
-                self.directory = []
+            self.directory = []
         else:
-            try:
-                with open(DIRECTORY, 'w+') as f:
-                    f.write(str(directory))
-                    self.directory = directory
-            except OSError as e:
-                raise
-
-    def _load_data(self, directory):
-        try:
-            with open(directory, 'r') as f:
-                data = f.read()
-                return literal_eval(data)
-        except OSError as e:
-            raise
+            import copy
+            self.directory = copy.deepcopy(directory)
 
     @property
     def calls(self):
@@ -750,9 +680,6 @@ class Ldap3Mock(object):
         # check the password
         correct_password = False
         # Anonymous bind
-        # Reload the directory just in case a change has been made to
-        # user credentials
-        self.directory = self._load_data(DIRECTORY)
         if authentication == ldap3.ANONYMOUS and user == "":
             correct_password = True
         for entry in self.directory:
@@ -775,9 +702,8 @@ class Ldap3Mock(object):
         def unbound_on_Server(host, port,
                               use_ssl,
                               connect_timeout, *a, **kwargs):
-            return self._on_Server(host, port,
-                              use_ssl,
-                              connect_timeout, *a, **kwargs)
+            return self._on_Server(host, port, use_ssl,
+                                   connect_timeout, *a, **kwargs)
         self._server_mock = mock.MagicMock()
         self._server_mock.side_effect = unbound_on_Server
         self._patcher = mock.patch('ldap3.Server',
@@ -811,6 +737,7 @@ class Ldap3Mock(object):
 
     def get_server_mock(self):
         return self._server_mock
+
 
 # expose default mock namespace
 mock = _default_mock = Ldap3Mock()
