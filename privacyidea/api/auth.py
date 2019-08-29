@@ -51,6 +51,7 @@ import jwt
 from functools import wraps
 from datetime import (datetime,
                       timedelta)
+from privacyidea.api.lib import ui
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -286,19 +287,18 @@ def get_auth_token():
         g.audit_object.log({"success": True})
         request.User = user_obj
 
-    # If the HSM is not ready, we need to create the nonce in another way!
     hsm = init_hsm()
+    g.logged_in_user = {"username": loginname,
+                        "role": role,
+                        "realm": realm}
+    # If the HSM is not ready, we need to create the nonce in another way!
     if hsm.is_ready:
         nonce = geturandom(hex=True)
         # Add the role to the JWT, so that we can verify it internally
         # Add the authtype to the JWT, so that we could use it for access
         # definitions
-        rights = g.policy_object.ui_get_rights(role, realm, loginname,
-                                               g.client_ip)
-        menus = g.policy_object.ui_get_main_menus({"username": loginname,
-                                                   "role": role,
-                                                   "realm": realm},
-                                                  g.client_ip)
+        rights = ui.get_rights(g)
+        menus = ui.get_main_menus(g)
     else:
         import os
         nonce = hexlify_and_unicode(os.urandom(20))
@@ -380,8 +380,6 @@ def get_rights():
 
     :reqheader Authorization: The authorization token acquired by /auth request
     """
-    enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip,
-                                                            g.logged_in_user)
-
+    enroll_types = ui.get_enroll_tokentypes(g)
     g.audit_object.log({"success": True})
     return send_result(enroll_types)

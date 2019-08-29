@@ -869,158 +869,9 @@ class PolicyClass(object):
 
         return policy_values
 
-    @log_with(log)
-    def ui_get_main_menus(self, logged_in_user, client=None):
-        """
-        Get the list of allowed main menus derived from the policies for the
-        given user - admin or normal user.
-        It fetches all policies for this user and compiles a list of allowed
-        menus to display or hide in the UI.
 
-        :param logged_in_user: The logged in user, a dictionary with keys
-            "username", "realm" and "role".
-        :param client: The IP address of the client
-        :return: A list of MENUs to be displayed
-        """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
-        role = logged_in_user.get("role")
-        user_rights = self.ui_get_rights(role,
-                                         logged_in_user.get("realm"),
-                                         logged_in_user.get("username"),
-                                         client)
-        main_menus = []
-        static_rights = get_static_policy_definitions(role)
-        enroll_rights = get_dynamic_policy_definitions(role)
-        static_rights.update(enroll_rights)
-        for r in user_rights:
-            menus = static_rights.get(r, {}).get("mainmenu", [])
-            main_menus.extend(menus)
 
-        main_menus = list(set(main_menus))
-        return main_menus
 
-    @log_with(log)
-    def ui_get_rights(self, scope, realm, username, client=None):
-        """
-        Get the rights derived from the policies for the given realm and user.
-        Works for admins and normal users.
-        It fetches all policies for this user and compiles a maximum list of
-        allowed rights, that can be used to hide certain UI elements.
-
-        :param scope: Can be SCOPE.ADMIN or SCOPE.USER
-        :param realm: Is either user users realm or the adminrealm
-        :param username: The loginname of the user
-        :param client: The HTTP client IP
-        :return: A list of actions
-        """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
-        rights = set()
-        if scope == SCOPE.ADMIN:
-            # If the logged-in user is an admin, we match for username/adminrealm only
-            match_username = username
-            user_object = None
-            adminrealm = realm
-        elif scope == SCOPE.USER:
-            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
-            match_username = None
-            adminrealm = None
-            user_object = User(username, realm)
-        else:
-            raise PolicyError(u"Unknown scope: {}".format(scope))
-        pols = self.match_policies(scope=scope,
-                                   user=match_username,
-                                   user_object=user_object,
-                                   adminrealm=adminrealm,
-                                   active=True,
-                                   client=client)
-        for pol in pols:
-            for action, action_value in pol.get("action").items():
-                if action_value:
-                    rights.add(action)
-                    # if the action has an actual non-boolean value, return it
-                    if isinstance(action_value, string_types):
-                        rights.add(u"{}={}".format(action, action_value))
-        # check if we have policies at all:
-        pols = self.list_policies(scope=scope, active=True)
-        if not pols:
-            # We do not have any policies in this scope, so we return all
-            # possible actions in this scope.
-            log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope)
-            rights.update(get_dynamic_policy_definitions(scope))
-        rights = list(rights)
-        log.debug("returning the admin rights: {0!s}".format(rights))
-        return rights
-
-    @log_with(log)
-    def ui_get_enroll_tokentypes(self, client, logged_in_user):
-        """
-        Return a dictionary of the allowed tokentypes for the logged in user.
-        This used for the token enrollment UI.
-
-        It looks like this:
-
-           {"hotp": "HOTP: event based One Time Passwords",
-            "totp": "TOTP: time based One Time Passwords",
-            "spass": "SPass: Simple Pass token. Static passwords",
-            "motp": "mOTP: classical mobile One Time Passwords",
-            "sshkey": "SSH Public Key: The public SSH key",
-            "yubikey": "Yubikey AES mode: One Time Passwords with Yubikey",
-            "remote": "Remote Token: Forward authentication request to another server",
-            "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
-            "radius": "RADIUS: Forward authentication request to a RADIUS server",
-            "email": "EMail: Send a One Time Passwort to the users email address",
-            "sms": "SMS: Send a One Time Password to the users mobile phone",
-            "certificate": "Certificate: Enroll an x509 Certificate Token."}
-
-        :param client: Client IP address
-        :type client: basestring
-        :param logged_in_user: The Dict of the logged in user
-        :type logged_in_user: dict
-        :return: list of token types, the user may enroll
-        """
-        from privacyidea.lib.auth import ROLE
-        enroll_types = {}
-        role = logged_in_user.get("role")
-        if role == ROLE.ADMIN:
-            # If the logged-in user is an admin, we match for username/adminrealm
-            user_name = logged_in_user.get("username")
-            user_object = None
-            admin_realm = logged_in_user.get("realm")
-        else:
-            # If the logged-in user is a user, we pass an user object to allow matching for userinfo attributes
-            user_name = None
-            user_object = User(logged_in_user.get("username"),
-                               logged_in_user.get("realm"))
-            admin_realm = None
-        # check, if we have a policy definition at all.
-        pols = self.list_policies(scope=role, active=True)
-        tokenclasses = get_token_classes()
-        for tokenclass in tokenclasses:
-            # Check if the tokenclass is ui enrollable for "user" or "admin"
-            if role in tokenclass.get_class_info("ui_enroll"):
-                enroll_types[tokenclass.get_class_type()] = \
-                    tokenclass.get_class_info("description")
-
-        if pols:
-            # admin policies or user policies are set, so we need to
-            # test, which tokens are allowed to be enrolled for this user
-            filtered_enroll_types = {}
-            for tokentype in enroll_types.keys():
-                # determine, if there is a enrollment policy for this very type
-                typepols = self.match_policies(scope=role, client=client,
-                                               user=user_name,
-                                               user_object=user_object,
-                                               active=True,
-                                               action="enroll"+tokentype.upper(),
-                                               adminrealm=admin_realm)
-                if typepols:
-                    # If there is no policy allowing the enrollment of this
-                    # tokentype, it is deleted.
-                    filtered_enroll_types[tokentype] = enroll_types[tokentype]
-            enroll_types = filtered_enroll_types
-
-        return enroll_types
 
 # --------------------------------------------------------------------------
 #
@@ -2323,3 +2174,20 @@ class Match(object):
                    resolver=None, user=username, user_object=None,
                    client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
                    sort_by_priority=True)
+
+    @classmethod
+    def generic(cls, g, scope, realm, resolver=None, user=None, user_object=None,
+                client=None, action=None, adminrealm=None, time=None,
+                active=True, sort_by_priority=True):
+        """
+        Low-level legacy policy matching interface: Search for active policies and return
+        them sorted by priority. All parameters that should be used for matching have to
+        be passed explicitly.
+        The client IP has to be passed explicitly.
+        See ``PolicyClass.match_policies`` for details.
+        :rtype: ``Match``
+        """
+        return cls(g, name=None, scope=scope, realm=realm, active=active,
+                   resolver=resolver, user=user, user_object=user_object,
+                   client=client, action=action, adminrealm=adminrealm, time=time,
+                   sort_by_priority=sort_by_priority)
