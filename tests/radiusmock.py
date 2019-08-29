@@ -28,7 +28,6 @@ from __future__ import (
 )
 
 import six
-from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 
 if six.PY2:
     try:
@@ -38,12 +37,11 @@ if six.PY2:
 else:
     from io import BytesIO as BufferIO
 
-import inspect
 from collections import namedtuple, Sequence, Sized
-from functools import update_wrapper
 from pyrad import packet
 from pyrad.client import Timeout
 from pyrad.packet import AccessChallenge, AccessReject, AccessAccept
+from .mockutils import get_wrapped
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -52,30 +50,6 @@ def wrapper%(signature)s:
     with radiusmock:
         return func%(funcargs)s
 """
-
-
-def get_wrapped(func, wrapper_template, evaldict):
-    # Preserve the argspec for the wrapped function so that testing
-    # tools such as pytest can continue to use their fixture injection.
-    args, a, kw, defaults = inspect.getargspec(func)
-    values = args[-len(defaults):] if defaults else None
-
-    signature = inspect.formatargspec(args, a, kw, defaults)
-    is_bound_method = hasattr(func, '__self__')
-    if is_bound_method:
-        args = args[1:]     # Omit 'self'
-    callargs = inspect.formatargspec(args, a, kw, values,
-                                     formatvalue=lambda v: '=' + v)
-
-    ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
-
-    wrapper = evaldict['wrapper']
-
-    update_wrapper(wrapper, func)
-    if is_bound_method:
-        wrapper = wrapper.__get__(func.__self__, type(func.__self__))
-    return wrapper
 
 
 class CallList(Sequence, Sized):

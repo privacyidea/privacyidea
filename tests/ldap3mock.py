@@ -46,17 +46,15 @@ from ldap3.utils.conv import escape_bytes
 import ldap3
 import re
 import pyparsing
-import six
 
 try:
     from six import cStringIO as BufferIO
 except ImportError:
     from six import StringIO as BufferIO
 
-import inspect
 from collections import namedtuple, Sequence, Sized
-from functools import update_wrapper
 from privacyidea.lib.utils import to_bytes
+from .mockutils import get_wrapped
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -71,30 +69,6 @@ def _convert_objectGUID(item):
     item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
     item = escape_bytes(item)
     return item
-
-
-def get_wrapped(func, wrapper_template, evaldict):
-    # Preserve the argspec for the wrapped function so that testing
-    # tools such as pytest can continue to use their fixture injection.
-    args, a, kw, defaults = inspect.getargspec(func)
-    values = args[-len(defaults):] if defaults else None
-
-    signature = inspect.formatargspec(args, a, kw, defaults)
-    is_bound_method = hasattr(func, '__self__')
-    if is_bound_method:
-        args = args[1:]     # Omit 'self'
-    callargs = inspect.formatargspec(args, a, kw, values,
-                                     formatvalue=lambda v: '=' + v)
-
-    ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
-
-    wrapper = evaldict['wrapper']
-
-    update_wrapper(wrapper, func)
-    if is_bound_method:
-        wrapper = wrapper.__get__(func.__self__, type(func.__self__))
-    return wrapper
 
 
 class CallList(Sequence, Sized):
@@ -152,11 +126,10 @@ class Connection(object):
         self.start_tls_called = False
         self.extend = self.Extend(self)
 
-        self.operation = {
-                    "!" : self._search_not,
-                    "&" : self._search_and,
-                    "|" : self._search_or,
-            }
+        self.operation = {"!": self._search_not,
+                          "&": self._search_and,
+                          "|": self._search_or,
+                          }
 
     def set_directory(self, directory):
         self.directory = directory
@@ -175,6 +148,12 @@ class Connection(object):
         self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
+        self.result = {'dn': '',
+                       'referrals': None,
+                       'description': 'success',
+                       'result': 0,
+                       'message': '',
+                       'type': 'addResponse'}
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
@@ -186,6 +165,9 @@ class Connection(object):
                 entry['attributes'].update({'objectClass': object_class})
         else:
             # User already exists
+            self.result["description"] = "failure"
+            self.result["result"] = 68
+            self.result["message"] = "Error entryAlreadyExists for {0}".format(dn)
             return False
 
         # Add the user entry to the directory
@@ -194,11 +176,20 @@ class Connection(object):
         return True
 
     def delete(self, dn, controls=None):
+        self.result = {'dn': '',
+                       'referrals': None,
+                       'description': 'success',
+                       'result': 0,
+                       'message': '',
+                       'type': 'addResponse'}
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
+            self.result["description"] = "failure"
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: {0}".format(dn)
             return False
 
         # Delete the entry object for the user
@@ -207,11 +198,20 @@ class Connection(object):
         return True
 
     def modify(self, dn, changes, controls=None):
+        self.result = {'dn': '',
+                       'referrals': None,
+                       'description': 'success',
+                       'result': 0,
+                       'message': '',
+                       'type': 'modifyResponse'}
         # Check to see if the user exists in the directory
         try:
             index = self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
+            self.result["description"] = "failure"
+            self.result["result"] = 32
+            self.result["message"] = "Error no such object: {0!s}".format(dn)
             return False
 
         # extract the hash we are interested in
@@ -223,6 +223,10 @@ class Connection(object):
                 entry.pop(k)
             elif v[0] == "MODIFY_REPLACE" or v[0] == "MODIFY_ADD":
                 entry[k] = v[1][0]
+            else:
+                self.result["result"] = 2
+                self.result["message"] = "Error bad/missing/not implemented " \
+                                         "modify operation: {0!s}".format(k[1])
 
         # Place the attributes back into the directory hash
         self.directory[index]["attributes"] = entry
@@ -292,10 +296,9 @@ class Connection(object):
     @staticmethod
     def _match_equal_to(search_base, attribute, value, candidates):
         matches = list()
-        match_using_regex = False
+        regex = None
 
         if "*" in value:
-            match_using_regex = True
             #regex = check_escape(value)
             regex = value.replace('*', '.*')
             regex = "^{0}$".format(regex)
@@ -312,7 +315,7 @@ class Connection(object):
                     if attribute == "objectGUID":
                         item = _convert_objectGUID(item)
 
-                    if match_using_regex:
+                    if regex:
                         m = re.match(regex, str(item), re.I)
                         if m:
                             entry["type"] = "searchResEntry"
@@ -326,7 +329,7 @@ class Connection(object):
                 if attribute == "objectGUID":
                     values_from_directory = _convert_objectGUID(values_from_directory)
 
-                if match_using_regex:
+                if regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if m:
                         entry["type"] = "searchResEntry"
@@ -348,10 +351,9 @@ class Connection(object):
     @staticmethod
     def _match_notequal_to(search_base, attribute, value, candidates):
         matches = list()
-        match_using_regex = False
+        regex = None
 
         if "*" in value:
-            match_using_regex = True
             #regex = check_escape(value)
             regex = value.replace('*', '.*')
             regex = "^{0}$".format(regex)
@@ -369,7 +371,7 @@ class Connection(object):
                     if attribute == "objectGUID":
                         item = _convert_objectGUID(item)
 
-                    if match_using_regex:
+                    if regex:
                         m = re.match(regex, str(item), re.I)
                         if m:
                             found = True
@@ -383,7 +385,7 @@ class Connection(object):
                 if attribute == "objectGUID":
                     values_from_directory = _convert_objectGUID(values_from_directory)
 
-                if match_using_regex:
+                if regex:
                     m = re.match(regex, str(values_from_directory), re.I)
                     if not m:
                         entry["type"] = "searchResEntry"
@@ -451,7 +453,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -477,20 +479,20 @@ class Connection(object):
             if ">=" in item:
                 k, v = item.split(">=")
                 candidates = Connection._match_less_than(base, k, v,
-                                                            self.directory)
+                                                         self.directory)
             elif "<=" in item:
                 k, v = item.split("<=")
                 candidates = Connection._match_greater_than(base, k, v,
-                                                         self.directory)
+                                                            self.directory)
             # Emulate AD functionality, same as "="
             elif "~=" in item:
                 k, v = item.split("~=")
                 candidates = Connection._match_notequal_to(base, k, v,
-                                                         self.directory)
+                                                           self.directory)
             elif "=" in item:
                 k, v = item.split("=")
                 candidates = Connection._match_notequal_to(base, k, v,
-                                                         self.directory)
+                                                           self.directory)
         return candidates
 
     def _search_and(self, base, search_filter, candidates=None):
@@ -504,7 +506,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -537,11 +539,11 @@ class Connection(object):
             elif "~=" in item:
                 k, v = item.split("~=")
                 candidates = Connection._match_equal_to(base, k, v,
-                                                         candidates)
+                                                        candidates)
             elif "=" in item:
                 k, v = item.split("=")
                 candidates = Connection._match_equal_to(base, k, v,
-                                                         candidates)
+                                                        candidates)
         return candidates
 
     def _search_or(self, base, search_filter, candidates=None):
@@ -579,11 +581,11 @@ class Connection(object):
             if ">=" in item:
                 k, v = item.split(">=")
                 candidates += Connection._match_greater_than_or_equal(base, k, v,
-                                                             self.directory)
+                                                                      self.directory)
             elif "<=" in item:
                 k, v = item.split("<=")
                 candidates += Connection._match_less_than_or_equal(base, k, v,
-                                                          self.directory)
+                                                                   self.directory)
             # Emulate AD functionality, same as "="
             elif "~=" in item:
                 k, v = item.split("~=")
@@ -600,6 +602,8 @@ class Connection(object):
                size_limit=0, paged_cookie=None):
         s_filter = list()
         candidates = list()
+        self.response = list()
+        self.result = dict()
 
         try:
             if isinstance(search_filter, bytes):
