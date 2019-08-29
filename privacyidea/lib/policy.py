@@ -847,7 +847,7 @@ class PolicyClass(object):
         :param audit_data: This is a dictionary, that can take audit_data in the g object.
             If set, this dictionary will be filled with the list of triggered policynames in the
             key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
-            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
+            found policy will be used. It could make less sense with an action like ACTION.LASTAUTH - where
             the value of the action needs to be evaluated in a more special case.
         :rtype: dict
         """
