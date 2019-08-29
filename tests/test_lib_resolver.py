@@ -182,7 +182,7 @@ class SQLResolverTestCase(MyTestCase):
 
         user = "cornelius"
         user_id = y.getUserId(user)
-        self.assertTrue(user_id == 3, user_id)
+        self.assertEqual(user_id, '3', user_id)
 
         rid = y.getResolverId()
         self.assertTrue(rid.startswith("sql."))
@@ -296,8 +296,9 @@ class SQLResolverTestCase(MyTestCase):
         stored_password = y.TABLE.filter_by(username="achmed").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
+        # we assume here the uid is of type int
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > self.num_users)
+        self.assertGreater(int(uid), self.num_users)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
@@ -1627,7 +1628,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel".encode('utf8')
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1681,7 +1682,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1734,11 +1735,11 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         username = "cko@o"
         user_id = y.getUserId(username)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
     @ldap3mock.activate
     def test_28_LDAP_multivalues(self):
@@ -1766,7 +1767,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
         info = y.getUserInfo(user_id)
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
