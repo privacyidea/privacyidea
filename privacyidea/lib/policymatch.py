@@ -19,6 +19,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+High-level API for matching policies. This module provides a class ``Match``,
+which encapsulates a policy matching operation. ``Match`` objects are created
+using several classmethods which represent different flavors of matching
+operations: For example, there are classmethods for matching policies based
+on a user realm, or based on a user object.
+
+In addition, the ``Match`` object performs postprocessing of matching results,
+e.g. by extracing action values from the matching policies. Finally, it writes
+the matched policies to the audit log (though this can be disabled).
+
+This module is tested in ``test_lib_policymatch.py``.
+"""
+
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ServerError
 from privacyidea.lib.policy import SCOPE
