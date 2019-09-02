@@ -2499,15 +2499,29 @@ class Subscription(MethodsMixin, db.Model):
 class EventCounter(db.Model):
     """
     This table stores counters of the event handler "Counter".
+
+    Note that an event counter name does *not* correspond to just one,
+    but rather *several* table rows, because we store event counters
+    for each privacyIDEA node separately.
+    This is intended to improve the performance of replicated setups,
+    because each privacyIDEA node then only writes to its own "private"
+    table row. This way, we avoid locking issues that would occur
+    if all nodes write to the same table row.
     """
     __tablename__ = 'eventcounter'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, Sequence("eventcounter_seq"), primary_key=True)
+    counter_name = db.Column(db.Unicode(80), nullable=False)
     counter_value = db.Column(db.Integer, default=0)
+    node = db.Column(db.Unicode(255), nullable=False)
+    __table_args__ = (db.UniqueConstraint('counter_name',
+                                          'node',
+                                          name='evctr_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
-    def __init__(self, name, value=0):
+    def __init__(self, name, value=0, node=""):
         self.counter_value = value
         self.counter_name = name
+        self.node = node
         self.save()
 
     def save(self):
@@ -2529,25 +2543,12 @@ class EventCounter(db.Model):
         self.counter_value = self.counter_value + 1
         self.save()
 
-    def decrease(self, allow_negative=False):
+    def decrease(self):
         """
-        Decrease the value of a counter, stop at zero if allow_negative not given
-        :param allow_negative:
+        Decrease the value of a counter.
         :return:
         """
-        if self.counter_value <= 0 and not allow_negative:
-            # set counter to zero
-            self.counter_value = 0
-        else:
-            self.counter_value = self.counter_value - 1
-        self.save()
-
-    def reset(self):
-        """
-        Reset the value of a counter
-        :return:
-        """
-        self.counter_value = 0
+        self.counter_value = self.counter_value - 1
         self.save()
 
 

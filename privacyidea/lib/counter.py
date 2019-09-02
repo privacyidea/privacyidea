@@ -23,7 +23,10 @@
 """
 This module is used to modify counters in the database
 """
-from privacyidea.models import EventCounter
+from sqlalchemy import func
+
+from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.models import EventCounter, db
 
 
 def increase(counter_name):
@@ -34,12 +37,25 @@ def increase(counter_name):
     :param counter_name: The name/identifier of the counter
     :return: the new integer value of the counter
     """
-    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
+    # If there is no table row for the current node, create one.
+    node = get_privacyidea_node()
+    counter = EventCounter.query.filter_by(counter_name=counter_name, node=node).first()
     if not counter:
-        counter = EventCounter(counter_name, 0)
+        counter = EventCounter(counter_name, 0, node=node)
         counter.save()
     counter.increase()
-    return counter.counter_value
+    # In order to return the new table value, we have to sum all rows of all nodes
+    return read(counter_name)
+
+
+def _reset_counter_on_all_nodes(counter_name):
+    """
+    Reset all EventCounter rows that set a value for ``counter_name`` to zero,
+    regardless of the node column.
+    :param counter_name:  The name/identifier of the counter
+    """
+    EventCounter.query.filter_by(counter_name=counter_name).update({'counter_value': 0})
+    db.session.commit()
 
 
 def decrease(counter_name, allow_negative=False):
@@ -52,12 +68,19 @@ def decrease(counter_name, allow_negative=False):
     :param allow_negative: Whether the counter can become negative
     :return: the new integer value of the counter
     """
-    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
+    node = get_privacyidea_node()
+    counter = EventCounter.query.filter_by(counter_name=counter_name, node=node).first()
     if not counter:
-        counter = EventCounter(counter_name, 0)
+        counter = EventCounter(counter_name, 0, node=node)
         counter.save()
-    counter.decrease(allow_negative)
-    return counter.counter_value
+    # We are allowed to decrease the current counter object only if the overall
+    # counter value is positive (because individual rows may be negative then),
+    # or if we allow negative values. Otherwise, we need to reset all rows of all nodes.
+    if read(counter_name) > 0 or allow_negative:
+        counter.decrease()
+    else:
+        _reset_counter_on_all_nodes(counter_name)
+    return read(counter_name)
 
 
 def reset(counter_name):
@@ -67,11 +90,13 @@ def reset(counter_name):
     :param counter_name: The name/identifier of the counter
     :return:
     """
-    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
-    if not counter:
-        counter = EventCounter(counter_name, 0)
+    node = get_privacyidea_node()
+    counters = EventCounter.query.filter_by(counter_name=counter_name).count()
+    if not counters:
+        counter = EventCounter(counter_name, 0, node=node)
         counter.save()
-    counter.reset()
+    else:
+        _reset_counter_on_all_nodes(counter_name)
 
 
 def read(counter_name):
@@ -82,8 +107,5 @@ def read(counter_name):
     :param counter_name: The name of the counter
     :return: The value of the counter
     """
-    counter = EventCounter.query.filter_by(counter_name=counter_name).first()
-    if not counter:
-        return None
-    else:
-        return counter.counter_value
+    return db.session.query(func.sum(EventCounter.counter_value))\
+        .filter(EventCounter.counter_name == counter_name).one()[0]
