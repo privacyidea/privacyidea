@@ -10,6 +10,17 @@ from privacyidea.lib.counter import increase, decrease, reset, read
 from privacyidea.models import EventCounter
 
 
+def increase_and_read(name):
+    """ helper function that increases the event counter and returns the new value """
+    increase(name)
+    return read(name)
+
+
+def decrease_and_read(name, allow_negative=False):
+    """ helper function that decreases the event counter and returns the new value """
+    decrease(name, allow_negative=allow_negative)
+    return read(name)
+
 class CounterTestCase(MyTestCase):
     """
     Test the counter module
@@ -22,20 +33,20 @@ class CounterTestCase(MyTestCase):
         pass
 
     def test_00_create_and_increase(self):
-        r = increase("hallo_counter")
+        r = increase_and_read("hallo_counter")
         self.assertEqual(r, 1)
 
-        r = increase("counter2")
+        r = increase_and_read("counter2")
         self.assertEqual(r, 1)
 
-        r = increase("hallo_counter")
+        r = increase_and_read("hallo_counter")
         self.assertEqual(r, 2)
 
         counter = EventCounter.query.filter_by(counter_name="hallo_counter").first()
         self.assertEqual(counter.counter_value, 2)
 
     def test_01_increase_and_decrease(self):
-        r = increase("hallo_counter1")
+        r = increase_and_read("hallo_counter1")
         self.assertEqual(r, 1)
 
         for x in range(1, 5):
@@ -44,7 +55,7 @@ class CounterTestCase(MyTestCase):
         counter = EventCounter.query.filter_by(counter_name="hallo_counter1").first()
         self.assertEqual(counter.counter_value, 5)
 
-        r = decrease("hallo_counter1")
+        r = decrease_and_read("hallo_counter1")
         self.assertEqual(r, 4)
 
         for x in range(1, 8):
@@ -60,7 +71,7 @@ class CounterTestCase(MyTestCase):
         self.assertEqual(r, None)
 
     def test_02_decrease_beyond_zero(self):
-        r = increase("hallo_counter2")
+        r = increase_and_read("hallo_counter2")
         self.assertEqual(r, 1)
 
         for x in range(1, 8):
@@ -70,7 +81,7 @@ class CounterTestCase(MyTestCase):
         self.assertEqual(counter.counter_value, -6)
 
     def test_03_decrease_and_reset(self):
-        r = decrease("hallo_counter3", allow_negative=True)
+        r = decrease_and_read("hallo_counter3", allow_negative=True)
         self.assertEqual(r, -1)
 
         reset("hallo_counter3")
@@ -98,7 +109,7 @@ class CounterTestCase(MyTestCase):
                 increase("ctrA")
             increase("ctrB")
         with _set_node("node2"):
-            r = increase("ctrB")
+            r = increase_and_read("ctrB")
             self.assertEqual(r, 2)
 
         # sums are correct ...

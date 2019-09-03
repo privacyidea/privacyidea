@@ -35,7 +35,7 @@ def increase(counter_name):
     If the counter does not exist yet, create the counter.
 
     :param counter_name: The name/identifier of the counter
-    :return: the new integer value of the counter
+    :return: None
     """
     # If there is no table row for the current node, create one.
     node = get_privacyidea_node()
@@ -44,8 +44,6 @@ def increase(counter_name):
         counter = EventCounter(counter_name, 0, node=node)
         counter.save()
     counter.increase()
-    # In order to return the new table value, we have to sum all rows of all nodes
-    return read(counter_name)
 
 
 def _reset_counter_on_all_nodes(counter_name):
@@ -67,7 +65,7 @@ def decrease(counter_name, allow_negative=False):
     :param counter_name: The name/identifier of the counter
     :param allow_negative: Whether the counter can become negative. Note that even if this flag is not set,
                            the counter may become negative due to concurrent queries.
-    :return: the new integer value of the counter
+    :return: None
     """
     node = get_privacyidea_node()
     counter = EventCounter.query.filter_by(counter_name=counter_name, node=node).first()
@@ -81,7 +79,6 @@ def decrease(counter_name, allow_negative=False):
         counter.decrease()
     else:
         _reset_counter_on_all_nodes(counter_name)
-    return read(counter_name)
 
 
 def reset(counter_name):

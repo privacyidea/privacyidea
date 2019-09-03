@@ -2527,7 +2527,6 @@ class EventCounter(db.Model):
     def save(self):
         db.session.add(self)
         db.session.commit()
-        return self.counter_name
 
     def delete(self):
         ret = self.counter_name
