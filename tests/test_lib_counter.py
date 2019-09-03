@@ -2,6 +2,8 @@
 This tests the files
   lib/counter.py
 """
+import mock
+from contextlib import contextmanager
 
 from .base import MyTestCase
 from privacyidea.lib.counter import increase, decrease, reset, read
@@ -81,3 +83,62 @@ class CounterTestCase(MyTestCase):
 
         counter = EventCounter.query.filter_by(counter_name="hallo_counter4").first()
         self.assertEqual(counter.counter_value, 0)
+
+    def test_05_multiple_nodes(self):
+        @contextmanager
+        def _set_node(node):
+            """ context manager that sets the current node name """
+            with mock.patch("privacyidea.lib.counter.get_privacyidea_node") as mock_node:
+                mock_node.return_value = node
+                yield
+
+        # two nodes node1 and node2, two counters ctrA and ctrB
+        with _set_node("node1"):
+            for _ in range(3):
+                increase("ctrA")
+            increase("ctrB")
+        with _set_node("node2"):
+            r = increase("ctrB")
+            self.assertEqual(r, 2)
+
+        # sums are correct ...
+        self.assertEqual(read("ctrA"), 3)
+        self.assertEqual(read("ctrB"), 2)
+        # ... and each node has written to its own row
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrA", node="node1").one().counter_value, 3)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrA", node="node2").all(), [])
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node1").one().counter_value, 1)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node2").one().counter_value, 1)
+
+        # decreasing ctrB on node2 by 2 creates a row with negative value, even if allow_negative=False
+        with _set_node("node2"):
+            for _ in range(2):
+                decrease("ctrB", allow_negative=False)
+
+        self.assertEqual(read("ctrB"), 0)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node1").one().counter_value, 1)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node2").one().counter_value, -1)
+
+        # decreasing below the sum of 0 causes all values to be reset
+        with _set_node("node2"):
+            decrease("ctrB", allow_negative=False)
+
+        self.assertEqual(read("ctrB"), 0)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node1").one().counter_value, 0)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node2").one().counter_value, 0)
+
+        # decreasing with allow_negative=True works
+        with _set_node("node1"):
+            decrease("ctrB", allow_negative=True)
+        with _set_node("node2"):
+            decrease("ctrB", allow_negative=True)
+
+        self.assertEqual(read("ctrB"), -2)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node1").one().counter_value, -1)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node2").one().counter_value, -1)
+
+        # resetting resets all rows
+        reset("ctrB")
+        self.assertEqual(read("ctrB"), 0)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node1").one().counter_value, 0)
+        self.assertEqual(EventCounter.query.filter_by(counter_name="ctrB", node="node2").one().counter_value, 0)
