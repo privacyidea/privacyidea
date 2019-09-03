@@ -40,6 +40,7 @@ class NewEventCounter(Base):
                                           name='evctr_1'),
                       {'mysql_row_format': 'DYNAMIC'})
 
+
 def dialect_supports_sequences():
     migration_context = context.get_context()
     return migration_context.dialect.supports_sequences
@@ -54,7 +55,7 @@ def upgrade():
 
     try:
         # Step 1: Create sequence on Postgres
-        seq = sa.Sequence('tokenowner_seq')
+        seq = sa.Sequence('eventcounter_seq')
         try:
             create_seq(seq)
         except Exception as _e:
@@ -77,12 +78,15 @@ def upgrade():
                                       counter_value=old_ctr.counter_value,
                                       node=node)
             session.add(new_ctr)
-            print("Migrating counter {}={} on node={} ...".format(new_ctr.counter_name, new_ctr.counter_value, node))
+            print("Migrating counter {!r}={} on node={!r} ...".format(new_ctr.counter_name,
+                                                                      new_ctr.counter_value,
+                                                                      node))
         session.commit()
         # Step 4: Remove eventcounter
         op.drop_table("eventcounter")
         op.rename_table("eventcounter_new", "eventcounter")
     except Exception as exx:
+        session.rollback()
         print("Could not migrate table 'eventcounter'")
         print (exx)
 

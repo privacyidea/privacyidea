@@ -65,7 +65,8 @@ def decrease(counter_name, allow_negative=False):
     Also checks whether the counter is allowed to become negative.
 
     :param counter_name: The name/identifier of the counter
-    :param allow_negative: Whether the counter can become negative
+    :param allow_negative: Whether the counter can become negative. Note that even if this flag is not set,
+                           the counter may become negative due to concurrent queries.
     :return: the new integer value of the counter
     """
     node = get_privacyidea_node()
