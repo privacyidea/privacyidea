@@ -345,6 +345,23 @@ not occur within 5 minutes, the credentials can not be used anymore.
 In future implementations the caching of the credentials could also be
 dependent on the clients IP address and the user agent.
 
+.. note:: Cache entries are written to the database table ``authcache``. Please note
+   that expired entries are automatically deleted only when the user
+   attempts to log in with the same expired credentials again. In all other cases,
+   expired entries need to be deleted from this table manually by running::
+
+      pi-manage authcache cleanup --minutes MIN
+
+   which deletes all cache entries whose last authentication has occurred at least
+   ``MIN`` minutes ago. As an example::
+
+      pi-manage authcache cleanup --minutes 300
+
+   will delete all authentication cache entries whose last authentication happened more
+   than 5 hours ago.
+
+   It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
+
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
