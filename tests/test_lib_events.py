@@ -946,8 +946,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data).get("detail").get("error"), 1)
-        self.assertNotIn("message", json.loads(resp.data).get("detail"))
+        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("error"), 1)
+        self.assertNotIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
 
         # delete JSON pointer with one component
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -961,8 +961,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data).get("detail"))
-        self.assertNotIn("result", json.loads(resp.data))
+        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
+        self.assertNotIn("result", json.loads(resp.data.decode("utf-8")))
 
         # JSON pointer with more than 3 components not supported
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -976,8 +976,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data).get("detail"))
-        self.assertIn("result", json.loads(resp.data))
+        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
+        self.assertIn("result", json.loads(resp.data.decode("utf-8")))
 
         # Invalid JSON pointer will cause a log warning but will not change the response
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -991,8 +991,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data).get("detail"))
-        self.assertIn("result", json.loads(resp.data))
+        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
+        self.assertIn("result", json.loads(resp.data.decode("utf-8")))
 
     def test_02_add_response(self):
 
@@ -1023,7 +1023,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data).get("detail").get("something"), "special")
+        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("something"), "special")
 
         # change JSON pointer with two components
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1039,7 +1039,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data).get("detail").get("message"), "special")
+        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("message"), "special")
 
         # add the components, that do not yet exist
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1055,7 +1055,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data).get("comp1").get("comp2").get("comp3"), True)
+        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("comp1").get("comp2").get("comp3"), True)
 
         # JSON pointer with more than 3 components not supported
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1071,7 +1071,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
-        self.assertNotIn("comp1", json.loads(resp.data))
+        self.assertNotIn("comp1", json.loads(resp.data.decode("utf-8")))
 
 
 class TokenEventTestCase(MyTestCase):
