@@ -66,7 +66,7 @@ def get_eventhandling(eventid=None):
         res = AVAILABLE_EVENTS
     elif eventid == "handlermodules":
         # TODO: We need to provide a dynamic list of event handlers
-        res = ["UserNotification", "Token", "Federation", "Script", "Counter"]
+        res = ["UserNotification", "Token", "Federation", "Script", "Counter", "ResponseMangler"]
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
