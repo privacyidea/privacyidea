@@ -659,21 +659,21 @@ class TokenModelTestCase(MyTestCase):
         gw.delete()
 
     def test_21_add_update_delete_clientapp(self):
-        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
-                                clienttype="PAM").save()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        ClientApplication(ip="1.2.3.4", hostname="host1",
+                          clienttype="PAM", node="localnode").save()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertEqual(c.hostname, "host1")
         self.assertEqual(c.ip, "1.2.3.4")
         self.assertEqual(c.clienttype, "PAM")
         t1 = c.lastseen
 
-        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
-                              clienttype="PAM").save()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        ClientApplication(ip="1.2.3.4", hostname="host1",
+                          clienttype="PAM", node="localnode").save()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertTrue(c.lastseen > t1)
 
-        ClientApplication.query.filter(ClientApplication.id == cid).delete()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        ClientApplication.query.filter(ClientApplication.id == c.id).delete()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertEqual(c, None)
 
     def test_22_subscription(self):

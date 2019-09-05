@@ -2405,35 +2405,33 @@ class ClientApplication(MethodsMixin, db.Model):
     hostname = db.Column(db.Unicode(255))
     clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
     lastseen = db.Column(db.DateTime)
+    node = db.Column(db.Unicode(255), nullable=False)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
+                                          'node',
                                           name='caix'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def save(self):
         clientapp = ClientApplication.query.filter(
             ClientApplication.ip == self.ip,
-            ClientApplication.clienttype == self.clienttype).first()
+            ClientApplication.clienttype == self.clienttype,
+            ClientApplication.node == self.node).first()
         self.lastseen = datetime.now()
         if clientapp is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
-            ret = self.id
         else:
             # update
             values = {"lastseen": self.lastseen}
             if self.hostname is not None:
                 values["hostname"] = self.hostname
-            ClientApplication.query.filter(
-                ClientApplication.id == clientapp.id).update(values)
-            ret = clientapp.id
+            ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
         db.session.commit()
-        return ret
 
     def __repr__(self):
-        return "<ClientApplication [{0!s}][{1!s}:{2!s}]>".format(
-            self.id, self.ip, self.clienttype)
+        return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
+            self.id, self.ip, self.clienttype, self.node)
 
 
 class Subscription(MethodsMixin, db.Model):
