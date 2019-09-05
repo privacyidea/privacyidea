@@ -337,10 +337,13 @@ class BaseEventHandler(object):
         if serial:
             # We have determined the serial number from the request.
             token_obj_list = get_tokens(serial=serial)
-        else:
+        elif user:
             # We have to determine the token via the user object. But only if
             #  the user has only one token
             token_obj_list = get_tokens(user=user)
+        else:
+            token_obj_list = []
+
         if len(token_obj_list) == 1:
             # There is a token involved, so we determine it's resolvers and realms
             token_obj = token_obj_list[0]
