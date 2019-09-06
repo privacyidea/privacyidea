@@ -159,17 +159,20 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.federationhandler import \
         FederationEventHandler
     from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+    from privacyidea.lib.eventhandler.requestmangler import RequestManglerHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
-    if handlername == "Token":
+    elif handlername == "Token":
         h_obj = TokenEventHandler()
-    if handlername == "Script":
+    elif handlername == "Script":
         h_obj = ScriptEventHandler()
-    if handlername == "Federation":
+    elif handlername == "Federation":
         h_obj = FederationEventHandler()
-    if handlername == "Counter":
+    elif handlername == "Counter":
         h_obj = CounterEventHandler()
+    elif handlername == "RequestMangler":
+        h_obj = RequestManglerHandler()
     return h_obj
 
 

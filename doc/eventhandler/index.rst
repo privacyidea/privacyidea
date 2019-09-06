@@ -307,3 +307,4 @@ Available Handler Modules
    scripthandler
    counterhandler
    federationhandler
+   requestmangler
