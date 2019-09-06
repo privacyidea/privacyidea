@@ -144,7 +144,7 @@ def delete_user(resolvername=None, username=None):
 @user_blueprint.route('/', methods=['POST'])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.ADDUSER)
-@event("user_create", request, g)
+@event("user_add", request, g)
 def create_user_api():
     """
     Create a new user in the given resolver.
