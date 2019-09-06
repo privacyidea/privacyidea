@@ -54,9 +54,9 @@ import json
 import re
 import netaddr
 from privacyidea.lib.crypto import Sign
-from privacyidea.api.lib.utils import get_all_params, getParam
+from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.user import (split_user, User)
+from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import subscription_status
 

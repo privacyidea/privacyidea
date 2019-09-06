@@ -10,6 +10,7 @@ PWFILE2 = "tests/testdata/passwords"
 
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
@@ -17,7 +18,7 @@ from privacyidea.lib.user import (User, create_user,
                                   split_user,
                                   get_user_from_param)
 from . import ldap3mock
-from .test_lib_resolver import objectGUIDs, LDAPDirectory_small
+from .test_lib_resolver import LDAPDirectory_small
 
 
 class UserTestCase(MyTestCase):
@@ -167,8 +168,10 @@ class UserTestCase(MyTestCase):
         # The user is not split, since there is no real "non_existing_realm.com"
         user = split_user("user@non_existing_realm.com")
         self.assertEqual(user, ("user@non_existing_realm.com", ""))
-        
+
     def test_09_get_user_from_param(self):
+        # enable splitAtSign
+        set_privacyidea_config("splitAtSign", "1")
         user = get_user_from_param({"user": "cornelius"})
         self.assertTrue(user.realm == self.realm1, user)
         self.assertTrue(user.resolver == self.resolvername1, user)
@@ -199,7 +202,27 @@ class UserTestCase(MyTestCase):
                  "realm": self.realm2}
         user = get_user_from_param(param)
         self.assertEqual("{0!s}".format(user), "<cornelius.resolver1@realm2>")
-        
+
+        # test with splitAtSign set to '0'
+#        set_privacyidea_config("splitAtSign", "0")
+#        user, realm = split_user("user@realm1")
+#        self.assertEqual(user, "user@realm1", (user, realm))
+#        self.assertEqual(realm, "", (user, realm))
+#
+#        user = split_user("user")
+#        self.assertTrue(user == ("user", ""), user)
+#
+#        user, realm = split_user("user@email@realm1")
+#        self.assertEqual(user, "user@email@realm1", user)
+#        self.assertEqual(realm, "", realm)
+#
+#        user, realm = split_user("realm1\\user")
+#        self.assertEqual(user, "user", user)
+#        self.assertEqual(realm, "realm1", realm)
+#
+#        # reset splitAtSign setting
+#        set_privacyidea_config("splitAtSign", "1")
+
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",
                                     [self.resolvername3])
@@ -225,8 +248,7 @@ class UserTestCase(MyTestCase):
         resolver_sF = sF.get(self.resolvername1)
         self.assertTrue("username" in resolver_sF, resolver_sF)
         self.assertTrue("userid" in resolver_sF, resolver_sF)
-        
-        
+
     def test_12_resolver_priority(self):
         # Test the priority of resolvers.
         # we create resolvers with the same user in it. Depending on the
@@ -351,8 +373,8 @@ class UserTestCase(MyTestCase):
         delete_realm("sort_realm")
 
     def test_17_check_nonascii_user(self):
-        realm = "sqlrealm"
-        resolver = "SQL1"
+        realm = u"sqlrealm"
+        resolver = u"SQL1"
         parameters = self.parameters
         parameters["resolver"] = resolver
         parameters["type"] = "sqlresolver"
@@ -366,7 +388,7 @@ class UserTestCase(MyTestCase):
 
         # check non-ascii password of non-ascii user
         self.assertFalse(User(login=u"nönäscii",
-                             realm=realm).check_password("wrong"))
+                              realm=realm).check_password("wrong"))
         self.assertTrue(User(login=u"nönäscii",
                              realm=realm).check_password(u"sömepassword"))
 
@@ -379,6 +401,16 @@ class UserTestCase(MyTestCase):
             self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
             self.assertEqual(six.text_type(user_object).encode('utf8'),
                              b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+        # also check the User object representation
+        user_repr = repr(user_object)
+        if six.PY2:
+            self.assertEqual("User(login=u'n\\xf6n\\xe4scii', "
+                             "realm=u'sqlrealm', resolver=u'SQL1')",
+                             user_repr, user_repr)
+        else:
+            self.assertEqual("User(login='nönäscii', "
+                             "realm='sqlrealm', resolver='SQL1')",
+                             user_repr, user_repr)
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):
