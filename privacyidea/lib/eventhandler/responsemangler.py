@@ -4,7 +4,7 @@
 #             Initial writup
 #
 # License:  AGPLv3
-# (c) 2016. Cornelius Kölbel
+# (c) 2019. Cornelius Kölbel
 #
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,23 +27,11 @@ The key is identified by a JSON Pointer
 (see https://tools.ietf.org/html/rfc6901)
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.token import (get_token_types, set_validity_period_end,
-                                   set_validity_period_start)
-from privacyidea.lib.realm import get_realms
-from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo,
-                                   set_failcounter, delete_tokeninfo)
-from privacyidea.lib.utils import (parse_date, is_true,
-                                   parse_time_offset_from_now)
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
+from privacyidea.lib.utils import is_true
 from privacyidea.lib import _
 import json
 import logging
-import datetime
-import yaml
-from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
+
 
 log = logging.getLogger(__name__)
 

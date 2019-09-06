@@ -163,15 +163,15 @@ def get_handler_object(handlername):
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
-    if handlername == "Token":
+    elif handlername == "Token":
         h_obj = TokenEventHandler()
-    if handlername == "Script":
+    elif handlername == "Script":
         h_obj = ScriptEventHandler()
-    if handlername == "Federation":
+    elif handlername == "Federation":
         h_obj = FederationEventHandler()
-    if handlername == "Counter":
+    elif handlername == "Counter":
         h_obj = CounterEventHandler()
-    if handlername == "ResponseMangler":
+    elif handlername == "ResponseMangler":
         h_obj = ResponseManglerHandler()
     return h_obj
 
