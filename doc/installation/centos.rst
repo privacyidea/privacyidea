@@ -74,17 +74,17 @@ If this should be a pinned installation (that is the environment we use to build
 we need to install some pinned dependencies first. They should match the version of the targeted
 privacyIDEA::
 
-        (privacyidea) $ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.0.2/requirements.txt
+        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.0.2/requirements.txt
 
 Then just install the targeted privacyIDEA version with::
 
-        (privacyidea) $ pip install privacyidea==3.0.2
+        (privacyidea)$ pip install privacyidea==3.0.2
 
 Setting up privacyIDEA
 ^^^^^^^^^^^^^^^^^^^^^^
 
-In order to setup privacyIDEA a configuration is expected in ``/etc/privacyidea/pi.cfg``. It
-should look something like this::
+In order to setup privacyIDEA a configuration file must be added in
+``/etc/privacyidea/pi.cfg``. It should look something like this::
 
     import logging
     # The realm, where users are allowed to login as administrators
@@ -107,26 +107,37 @@ should look something like this::
     PI_LOGFILE = '/var/log/privacyidea/privacyidea.log'
     PI_LOGLEVEL = logging.INFO
 
-Make sure the configuration file is not world readable (``$ chmod 640 /etc/privacyidea/pi.cfg``).
+Make sure the configuration file is not world readable:
+
+.. code-block:: bash
+
+    (privacyidea)$ chmod 640 /etc/privacyidea/pi.cfg
+
 More information on the configuration parameters can be found in :ref:`cfgfile`.
 
-In order to secure the installation a new ``PI_PEPPER`` and ``SECRET_KEY`` must be generated::
+In order to secure the installation a new ``PI_PEPPER`` and ``SECRET_KEY`` must be generated:
 
-    (privacyidea) $ PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    (privacyidea) $ echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
-    (privacyidea) $ SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    (privacyidea) $ echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
+.. code-block:: bash
 
-From now on the ``pi-manage``-tool can be used to configure and manage the privacyIDEA server::
+    (privacyidea)$ PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+    (privacyidea)$ echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
+    (privacyidea)$ SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+    (privacyidea)$ echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
 
-    (privacyidea) $ pi-manage create_enckey  # encryption key for the database
-    (privacyidea) $ pi-manage create_audit_keys  # key for verification of audit log entries
-    (privacyidea) $ pi-manage createdb  # create the database structure
-    (privacyidea) $ pi-manage db stamp head -d lib/privacyidea/migrations/  # stamp the db
+From now on the ``pi-manage``-tool can be used to configure and manage the privacyIDEA server:
 
-An administrative account is needed to configure and maintain privacyIDEA::
+.. code-block:: bash
 
-    (privacyidea) $ pi-manage admin add <admin-user>
+    (privacyidea)$ pi-manage create_enckey  # encryption key for the database
+    (privacyidea)$ pi-manage create_audit_keys  # key for verification of audit log entries
+    (privacyidea)$ pi-manage createdb  # create the database structure
+    (privacyidea)$ pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/  # stamp the db
+
+An administrative account is needed to configure and maintain privacyIDEA:
+
+.. code-block:: bash
+
+    (privacyidea)$ pi-manage admin add <admin-user>
 
 Setting up the Apache webserver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -163,8 +174,9 @@ And we need a corresponding ``wsgi``-script file in ``/etc/privacyidea/``::
     $ cd /etc/privacyidea
     $ curl -O https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyideaapp.wsgi
 
-After a ``$ systemctl restart httpd`` everything should be up and running.
-You can log in with Your admin user at ``https://<privacyidea ip>`` and start
+After a restart of the apache webserver (:code:`$ systemctl restart httpd`)
+everything should be up and running.
+You can log in with Your admin user at ``https://<privacyidea server>`` and start
 enrolling tokens.
 
 .. _rpm_installation:
