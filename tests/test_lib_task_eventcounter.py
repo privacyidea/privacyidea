@@ -2,8 +2,8 @@
 This tests the files
   lib/task/eventcounter.py
 """
-
 from .base import MyTestCase
+from .test_lib_counter import increase_and_read
 from privacyidea.lib.counter import increase, read
 from privacyidea.lib.monitoringstats import get_values
 
@@ -20,13 +20,13 @@ class TaskEventCounterTestCase(MyTestCase):
         pass
 
     def test_00_read_eventcounter_to_monitoringstats(self):
-        r = increase("counter1")
+        r = increase_and_read("counter1")
         self.assertEqual(r, 1)
 
-        r = increase("counter2")
+        r = increase_and_read("counter2")
         self.assertEqual(r, 1)
 
-        r = increase("counter1")
+        r = increase_and_read("counter1")
         self.assertEqual(r, 2)
 
         r = read("counter1")
