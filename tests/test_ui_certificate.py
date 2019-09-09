@@ -48,6 +48,7 @@ class WebUICertificateTestCase(MyTestCase):
                                                          "token")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/html', res)
             # Check the form
             self.assertTrue(b"privacyIDEA Certificate Request" in res.data)
             self.assertTrue(b"Key strength" in res.data)

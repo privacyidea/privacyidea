@@ -17,6 +17,7 @@ class LoginUITestCase(MyTestCase):
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/html', res)
             self.assertTrue(b"/static/templates/baseline.html" in res.data)
             self.assertTrue(b"/static/templates/menu.html" in res.data)
 
@@ -25,6 +26,7 @@ class LoginUITestCase(MyTestCase):
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/html', res)
             self.assertTrue(b"The privacyIDEA WebUI is deactivated." in res.data)
         self.app.config['PI_UI_DEACTIVATED'] = False
 

@@ -34,33 +34,29 @@ __doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
-                   request,
-                   url_for)
+                   request)
 from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
                         send_result,
-                        check_policy_name)
+                        check_policy_name, send_file)
 from ..lib.log import log_with
-from ..lib.policy import (set_policy,
-                          PolicyClass, ACTION,
+from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
-                          enable_policy, get_policy_condition_sections, get_policy_condition_comparators)
+                          enable_policy, get_policy_condition_sections,
+                          get_policy_condition_comparators)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode, is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
-from flask import (g,
-                    make_response)
-from flask_babel import gettext as _
+from flask import g
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 
 import logging
-import re
 
 
 log = logging.getLogger(__name__)
@@ -287,10 +283,7 @@ def get_policy(name=None, export=None):
     else:
         # We want to export all policies
         pol = P.list_policies()
-        response = make_response(export_policies(pol))
-        response.headers["Content-Disposition"] = ("attachment; "
-                                                   "filename=%s" % export)
-        ret = response
+        ret = send_file(export_policies(pol), export)
 
     g.audit_object.log({"success": True,
                         'info': u"name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})

@@ -148,6 +148,12 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     return ret
 
 
+def send_file(output, filename):
+    content_type = "application/force-download"
+    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
+    return current_app.response_class(output, headers=headers, mimetype=content_type)
+
+
 def send_csv_result(obj, data_key="tokens",
                     filename="privacyidea-tokendata.csv"):
     """
@@ -169,8 +175,6 @@ def send_csv_result(obj, data_key="tokens",
     :rtype: Response object
     """
     delim = "'"
-    content_type = "application/force-download"
-    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
     output = u""
     # Do the header
     for k, _v in obj.get(data_key, {})[0].items():
@@ -187,7 +191,7 @@ def send_csv_result(obj, data_key="tokens",
             output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
-    return current_app.response_class(output, mimetype=content_type)
+    return send_file(output, filename)
 
 
 @log_with(log)

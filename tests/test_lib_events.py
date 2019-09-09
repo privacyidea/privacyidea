@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 This file contains the event handlers tests. It tests:
 
@@ -145,7 +147,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         events = BaseEventHandler().events
         self.assertEqual(events, ["*"])
 
-        base_handler =  BaseEventHandler()
+        base_handler = BaseEventHandler()
         r = base_handler.check_condition({})
         self.assertTrue(r)
 

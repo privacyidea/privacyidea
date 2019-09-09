@@ -58,7 +58,8 @@ def single_page_application():
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
-        return render_template("deactivated.html")
+        return current_app.response_class(render_template("deactivated.html"),
+                                          mimetype='text/html')
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
@@ -149,21 +150,21 @@ def single_page_application():
     else:
         login_text = ""
 
-    return render_template("index.html", instance=instance,
-                           backendUrl=backend_url,
-                           browser_lang=browser_lang,
-                           remote_user=remote_user,
-                           theme=theme,
-                           password_reset=password_reset,
-                           hsm_ready=hsm_ready,
-                           has_job_queue=str(has_job_queue()),
-                           customization=customization,
-                           custom_css=custom_css,
-                           customization_menu_file=customization_menu_file,
-                           customization_baseline_file=customization_baseline_file,
-                           realms=realms,
-                           external_links=external_links,
-                           login_text=login_text,
-                           logo=logo,
-                           page_title=page_title)
-
+    return current_app.response_class(render_template("index.html", instance=instance,
+                                                      backendUrl=backend_url,
+                                                      browser_lang=browser_lang,
+                                                      remote_user=remote_user,
+                                                      theme=theme,
+                                                      password_reset=password_reset,
+                                                      hsm_ready=hsm_ready,
+                                                      has_job_queue=str(has_job_queue()),
+                                                      customization=customization,
+                                                      custom_css=custom_css,
+                                                      customization_menu_file=customization_menu_file,
+                                                      customization_baseline_file=customization_baseline_file,
+                                                      realms=realms,
+                                                      external_links=external_links,
+                                                      login_text=login_text,
+                                                      logo=logo,
+                                                      page_title=page_title),
+                                      mimetype='text/html')

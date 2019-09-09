@@ -25,7 +25,7 @@ This code is tested in test_ui_certificate.py
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, request)
+from flask import (Blueprint, render_template, request, current_app)
 from privacyidea.api.lib.utils import (get_all_params,
                                        verify_auth_token)
 
@@ -58,9 +58,11 @@ def cert_form():
     backend_url = ""
     authtoken = request.all_data.get("authtoken")
     ca = request.all_data.get("ca")
-    return render_template("cert_request_form.html", instance=instance,
-                           backendUrl=backend_url, ca=ca,
-                           authtoken=authtoken)
+    return current_app.response_class(render_template("cert_request_form.html",
+                                                      instance=instance,
+                                                      backendUrl=backend_url, ca=ca,
+                                                      authtoken=authtoken),
+                                      mimetype='text/html')
 
 
 @cert_blueprint.route('/enroll', methods=['POST'])
