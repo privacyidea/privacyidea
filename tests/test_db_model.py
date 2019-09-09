@@ -667,6 +667,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(c.clienttype, "PAM")
         t1 = c.lastseen
 
+        self.assertIn("localnode", repr(c))
+
         ClientApplication(ip="1.2.3.4", hostname="host1",
                           clienttype="PAM", node="localnode").save()
         c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
