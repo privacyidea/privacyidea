@@ -153,8 +153,9 @@ class RequestManglerHandler(BaseEventHandler):
                     if not match_parameter:
                         # simple setting a parameter
                         request.all_data[parameter] = value
-                    elif match_pattern:
-                        # setting a parameter depending on another value
+                    elif match_pattern and match_parameter in request.all_data:
+                        # setting a parameter depending on another value,
+                        # but only set it, if match_parameter exists
                         m = re.match(match_pattern, request.all_data.get(match_parameter))
                         if m:
                             # Now we set the new value with the matching tuple

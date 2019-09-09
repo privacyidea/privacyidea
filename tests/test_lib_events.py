@@ -1040,6 +1040,25 @@ class RequestManglerTestCase(MyTestCase):
         self.assertTrue(res)
         self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
 
+        # The request does not contain the match_parameter, thus the
+        # parameter in question will not be modified
+        req.all_data = {"user": "givenname.surname@company.com" }
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{0}@newcompany.com",
+                                        "match_parameter": "username",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The name is still the old one - since there was nothing to match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
 
 class TokenEventTestCase(MyTestCase):
 
