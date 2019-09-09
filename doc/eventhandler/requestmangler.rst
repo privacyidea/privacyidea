@@ -10,8 +10,8 @@ the request parameters of an HTTP request.
 This way privacyIDEA can change the data that is processed within the request.
 
 Usually this handler is used in the **pre** location. However there might be occasions
-when you want to modify paramters only *before* passing them to the next handler. In this case
-you can also use the RequestMangler handler in the **post** location.
+when you want to modify parameters only *before* passing them to the next **post** handler.
+In this case you can also use the RequestMangler handler in the **post** location.
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
@@ -24,12 +24,12 @@ This action simply deletes the given parameter from the request.
 E.g. you could in certain cases delete the ``transaction_id`` from a
 ``/validate/check`` request. This way you would render challenge response inactive.
 
-add
+set
 ...
 
 This action is used to add or modify additional request parameters.
 
-You can set a parameter with the value or substrings of another paramter.
+You can set a parameter with the value or substrings of another parameter.
 
 This is why this action takes the additional options *value*, *match_parameter* and *match_pattern*.
 
@@ -43,40 +43,40 @@ If you can to set a parameter based on the value of another parameter, you can u
 
 **Example 1**
 
-To set the realm based on the user parameter:
+To set the realm based on the user parameter::
 
    parameter: realm
    match_parameter: user
    match_pattern: .*@(.*)
    value: {0}
 
-A request like:
+A request like::
 
    user=surname.givenname@example.com
    realm=
 
-with an empty realm will be modified to:
+with an empty realm will be modified to::
 
    user=surname.givenname@example.com
    realm=example.com
 
-since, the pattern <pre>.*@(.*)</pre> will match the email address and extract the domain after the "@"
+since, the pattern ``.*@(.*)`` will match the email address and extract the domain after the "@"
 sign. The python tag "{0}" will be replaced with the matching domainname.
 
 **Example 2**
 
-To simply change the domain name in the very same parameter:
+To simply change the domain name in the very same parameter::
 
    paramter: user
    match_parameter: user
    match_pattern: (.*)@example.com
    value: {0}@newcompany.com
 
-A request like:
+A request like::
 
    user=surname.givenname@example.com
 
-will be modified to
+will be modified to::
 
    user=surname.givenname@newcompany.com
 
