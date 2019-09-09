@@ -338,7 +338,7 @@ def check():
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": result,
                         "serial": serial or details.get("serial"),
-                        "tokentype": details.get("type")})
+                        "token_type": details.get("type")})
     return send_result(result, details=details)
 
 
@@ -437,7 +437,7 @@ def samlcheck():
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": auth,
                         "serial": details.get("serial"),
-                        "tokentype": details.get("type"),
+                        "token_type": details.get("type"),
                         "user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
