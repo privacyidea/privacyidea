@@ -159,7 +159,7 @@ If you found a security vulnerability please report it to
 security@privacyidea.org.
 
 You can find detailed information about contributing here:
-https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.rst
+https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.md
 
 Code structure
 ==============
