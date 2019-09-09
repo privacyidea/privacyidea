@@ -915,7 +915,7 @@ class RequestManglerTestCase(MyTestCase):
     def test_01_delete_request_parameter(self):
         actions = RequestManglerHandler().actions
         self.assertTrue("delete" in actions, actions)
-        self.assertTrue("add" in actions, actions)
+        self.assertTrue("set" in actions, actions)
 
         pos = RequestManglerHandler().allowed_positions
         self.assertEqual(set(pos), {"post", "pre"})
@@ -959,7 +959,7 @@ class RequestManglerTestCase(MyTestCase):
         self.assertNotIn("doesnotexist", req.all_data)
         self.assertTrue(res)
 
-    def test_02_add_parameter(self):
+    def test_02_set_parameter(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
         builder = EnvironBuilder(method='POST',
@@ -983,7 +983,7 @@ class RequestManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = RequestManglerHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("simpleadd", req.all_data.get("newone"))
 
@@ -997,7 +997,7 @@ class RequestManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = RequestManglerHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("FUN007", req.all_data.get("serial"))
 
@@ -1016,7 +1016,7 @@ class RequestManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = RequestManglerHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("company.com", req.all_data.get("realm"))
         self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
@@ -1036,7 +1036,7 @@ class RequestManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = RequestManglerHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
 

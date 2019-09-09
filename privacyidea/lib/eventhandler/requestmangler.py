@@ -49,7 +49,7 @@ class ACTION_TYPE(object):
     """
     Allowed actions
     """
-    ADD = "add"
+    SET = "set"
     DELETE = "delete"
 
 
@@ -99,7 +99,7 @@ class RequestManglerHandler(BaseEventHandler):
                              "required": True,
                              "description": _("The parameter that should be deleted.")}
                         },
-                   ACTION_TYPE.ADD:
+                   ACTION_TYPE.SET:
                        {"parameter":
                             {"type": "str",
                              "required": True,
@@ -144,7 +144,7 @@ class RequestManglerHandler(BaseEventHandler):
             if action.lower() == ACTION_TYPE.DELETE:
                 if parameter in request.all_data:
                     del(request.all_data[parameter])
-            elif action.lower() == ACTION_TYPE.ADD:
+            elif action.lower() == ACTION_TYPE.SET:
                 value = handler_options.get("value")
                 match_parameter = handler_options.get("match_parameter")
                 match_pattern = handler_options.get("match_pattern")
