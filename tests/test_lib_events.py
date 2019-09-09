@@ -1059,6 +1059,26 @@ class RequestManglerTestCase(MyTestCase):
         # The name is still the old one - since there was nothing to match
         self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
 
+        # Do some nasty replacing, that will not work out
+        # We require two tags, but only have one!
+        req.all_data = {"user": "givenname.surname@company.com"}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{1} <{0}@newcompany.com>",
+                                        "match_parameter": "user",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The user was not modified, since the number of tags did not match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
 
 class TokenEventTestCase(MyTestCase):
 

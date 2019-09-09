@@ -159,6 +159,10 @@ class RequestManglerHandler(BaseEventHandler):
                         m = re.match(match_pattern, request.all_data.get(match_parameter))
                         if m:
                             # Now we set the new value with the matching tuple
-                            request.all_data[parameter] = value.format(*m.groups())
+                            try:
+                                request.all_data[parameter] = value.format(*m.groups())
+                            except IndexError:
+                                log.warning(u"The number of found tags ({0!r}) "
+                                            u"do not match the required number ({1!r}).".format(m.groups(), value))
 
         return ret
