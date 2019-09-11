@@ -52,7 +52,8 @@ def create_seq(seq):
 
 
 def upgrade():
-
+    bind = op.get_bind()
+    session = orm.Session(bind=bind)
     try:
         # Step 1: Create sequence on Postgres
         seq = sa.Sequence('eventcounter_seq')
@@ -71,8 +72,6 @@ def upgrade():
                         )
         # Step 3: Migrate data from eventcounter to eventcounter_new
         node = get_privacyidea_node()
-        bind = op.get_bind()
-        session = orm.Session(bind=bind)
         for old_ctr in session.query(OldEventCounter).all():
             new_ctr = NewEventCounter(counter_name=old_ctr.counter_name,
                                       counter_value=old_ctr.counter_value,
