@@ -148,8 +148,8 @@ class RequestManglerHandler(BaseEventHandler):
                 value = handler_options.get("value")
                 match_parameter = handler_options.get("match_parameter")
                 match_pattern = handler_options.get("match_pattern")
-                if value:
-                    # We only take action, if we have a value
+                if value is not None:
+                    # We only take action, if we have a value, even an empty string "".
                     if not match_parameter:
                         # simple setting a parameter
                         request.all_data[parameter] = value
