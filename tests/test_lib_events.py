@@ -996,7 +996,7 @@ class ResponseManglerTestCase(MyTestCase):
 
         # What happens if we have a non-json response, like in GET /token?outform=csv
         # Nothing is changed!
-        csv = """column1, column2, column3
+        csv = b"""column1, column2, column3
         column1, column2, column3
         """
         resp.data = csv
