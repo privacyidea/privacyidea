@@ -19,7 +19,7 @@ from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIP
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
-from privacyidea.lib.eventhandler.requestmangler import RequestManglerHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -913,11 +913,11 @@ class FederationEventTestCase(MyTestCase):
 class RequestManglerTestCase(MyTestCase):
 
     def test_01_delete_request_parameter(self):
-        actions = RequestManglerHandler().actions
+        actions = RequestManglerEventHandler().actions
         self.assertTrue("delete" in actions, actions)
         self.assertTrue("set" in actions, actions)
 
-        pos = RequestManglerHandler().allowed_positions
+        pos = RequestManglerEventHandler().allowed_positions
         self.assertEqual(set(pos), {"post", "pre"})
 
         g = FakeFlaskG()
@@ -941,7 +941,7 @@ class RequestManglerTestCase(MyTestCase):
                                        {"parameter": "deleteme"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertNotIn("deleteme", req.all_data)
         self.assertTrue(res)
@@ -954,7 +954,7 @@ class RequestManglerTestCase(MyTestCase):
                                        {"parameter": "doesnotexist"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertNotIn("doesnotexist", req.all_data)
         self.assertTrue(res)
@@ -982,7 +982,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "value": "simpleadd"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("simpleadd", req.all_data.get("newone"))
@@ -996,7 +996,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "value": "FUN007"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("FUN007", req.all_data.get("serial"))
@@ -1015,7 +1015,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "match_pattern": ".*@(.*)"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("company.com", req.all_data.get("realm"))
@@ -1034,7 +1034,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "match_pattern": ".*@company.com"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         # The realm is not changed!
@@ -1054,7 +1054,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "match_pattern": "(.*)@company.com"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
@@ -1072,7 +1072,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "match_pattern": "(.*)@company.com"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         # The name is still the old one - since there was nothing to match
@@ -1092,7 +1092,7 @@ class RequestManglerTestCase(MyTestCase):
                                         "match_pattern": "(.*)@company.com"}
                                    }
                    }
-        r_handler = RequestManglerHandler()
+        r_handler = RequestManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
         # The user was not modified, since the number of tags did not match
