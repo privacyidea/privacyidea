@@ -40,7 +40,7 @@ class ACTION_TYPE(object):
     """
     Allowed actions
     """
-    ADD = "add"
+    SET = "set"
     DELETE = "delete"
 
 
@@ -81,11 +81,11 @@ class ResponseManglerEventHandler(BaseEventHandler):
                              "description": _("The JSON pointer (key) that should be deleted. Please "
                                               "specify in the format '/detail/message'.")}
                         },
-                   ACTION_TYPE.ADD:
+                   ACTION_TYPE.SET:
                        {"JSON pointer":
                             {"type": "str",
                              "required": True,
-                             "description": _("The JSON pointer (key) that should be added. "
+                             "description": _("The JSON pointer (key) that should be set. "
                                               "Please specify in the format '/detail/message'.")
                              },
                         "type":
@@ -97,7 +97,7 @@ class ResponseManglerEventHandler(BaseEventHandler):
                         "value":
                             {"type": "str",
                              "required": True,
-                             "description": _("The value of the JSON key that should be added.")
+                             "description": _("The value of the JSON key that should be set.")
                             }
                         }
                    }
@@ -137,7 +137,7 @@ class ResponseManglerEventHandler(BaseEventHandler):
                 options.get("response").data = json.dumps(content)
             except KeyError:
                 log.warning("Can not delete response JSON Pointer {0!s}.".format(json_pointer))
-        elif action.lower() == ACTION_TYPE.ADD:
+        elif action.lower() == ACTION_TYPE.SET:
             try:
                 if type == "integer":
                     value = int(value)
@@ -159,6 +159,6 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     log.warning("JSON pointer of length {0!s} not supported.".format(len(comp)))
                 options.get("response").data = json.dumps(content)
             except KeyError:
-                log.warning("Can not add JSON Pointer {0!s}.".format(json_pointer))
+                log.warning("Can not set JSON Pointer {0!s}.".format(json_pointer))
 
         return ret

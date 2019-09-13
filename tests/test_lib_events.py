@@ -916,7 +916,7 @@ class ResponseManglerTestCase(MyTestCase):
     def test_01_delete_response(self):
         actions = ResponseManglerEventHandler().actions
         self.assertTrue("delete" in actions, actions)
-        self.assertTrue("add" in actions, actions)
+        self.assertTrue("set" in actions, actions)
 
         pos = ResponseManglerEventHandler().allowed_positions
         self.assertEqual(set(pos), {"post"})
@@ -994,7 +994,7 @@ class ResponseManglerTestCase(MyTestCase):
         self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
         self.assertIn("result", json.loads(resp.data.decode("utf-8")))
 
-    def test_02_add_response(self):
+    def test_02_set_response(self):
 
         g = FakeFlaskG()
         audit_object = FakeAudit()
@@ -1021,7 +1021,7 @@ class ResponseManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = ResponseManglerEventHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("something"), "special")
 
@@ -1037,7 +1037,7 @@ class ResponseManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = ResponseManglerEventHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("message"), "special")
 
@@ -1053,7 +1053,7 @@ class ResponseManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = ResponseManglerEventHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("comp1").get("comp2").get("comp3"), True)
 
@@ -1069,7 +1069,7 @@ class ResponseManglerTestCase(MyTestCase):
                                    }
                    }
         r_handler = ResponseManglerEventHandler()
-        res = r_handler.do("add", options=options)
+        res = r_handler.do("set", options=options)
         self.assertTrue(res)
         self.assertNotIn("comp1", json.loads(resp.data.decode("utf-8")))
 

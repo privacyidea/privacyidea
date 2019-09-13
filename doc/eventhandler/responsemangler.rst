@@ -33,7 +33,7 @@ This way the QR code could be used internally, but could be hidden from
 the administrator.
 
 
-add
+set
 ...
 
 This action is used to add additional pointers to the JSON response
