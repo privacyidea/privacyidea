@@ -17,7 +17,7 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
-from privacyidea.lib.eventhandler.responsemangler import ResponseManglerHandler
+from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
@@ -914,11 +914,11 @@ class FederationEventTestCase(MyTestCase):
 class ResponseManglerTestCase(MyTestCase):
 
     def test_01_delete_response(self):
-        actions = ResponseManglerHandler().actions
+        actions = ResponseManglerEventHandler().actions
         self.assertTrue("delete" in actions, actions)
         self.assertTrue("add" in actions, actions)
 
-        pos = ResponseManglerHandler().allowed_positions
+        pos = ResponseManglerEventHandler().allowed_positions
         self.assertEqual(set(pos), {"post"})
 
         g = FakeFlaskG()
@@ -943,7 +943,7 @@ class ResponseManglerTestCase(MyTestCase):
                                        {"JSON pointer": "/detail/message"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("error"), 1)
@@ -958,7 +958,7 @@ class ResponseManglerTestCase(MyTestCase):
                                        {"JSON pointer": "/result"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
         self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
@@ -973,7 +973,7 @@ class ResponseManglerTestCase(MyTestCase):
                                        {"JSON pointer": "/comp1/comp2/comp3/com4"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
         self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
@@ -988,7 +988,7 @@ class ResponseManglerTestCase(MyTestCase):
                                        {"JSON pointer": "/notexist"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
         self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
@@ -1020,7 +1020,7 @@ class ResponseManglerTestCase(MyTestCase):
                                         "type": "string"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("something"), "special")
@@ -1036,7 +1036,7 @@ class ResponseManglerTestCase(MyTestCase):
                                         "type": "string"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("message"), "special")
@@ -1052,7 +1052,7 @@ class ResponseManglerTestCase(MyTestCase):
                                         "type": "bool"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
         self.assertEqual(json.loads(resp.data.decode("utf-8")).get("comp1").get("comp2").get("comp3"), True)
@@ -1068,7 +1068,7 @@ class ResponseManglerTestCase(MyTestCase):
                                         "type": "integer"}
                                    }
                    }
-        r_handler = ResponseManglerHandler()
+        r_handler = ResponseManglerEventHandler()
         res = r_handler.do("add", options=options)
         self.assertTrue(res)
         self.assertNotIn("comp1", json.loads(resp.data.decode("utf-8")))

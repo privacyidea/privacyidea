@@ -44,7 +44,7 @@ class ACTION_TYPE(object):
     DELETE = "delete"
 
 
-class ResponseManglerHandler(BaseEventHandler):
+class ResponseManglerEventHandler(BaseEventHandler):
     """
     An Eventhandler needs to return a list of actions, which it can handle.
 
