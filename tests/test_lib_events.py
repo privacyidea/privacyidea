@@ -994,6 +994,24 @@ class ResponseManglerTestCase(MyTestCase):
         self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
         self.assertIn("result", json.loads(resp.data.decode("utf-8")))
 
+        # What happens if we have a non-json response, like in GET /token?outform=csv
+        # Nothing is changed!
+        csv = """column1, column2, column3
+        column1, column2, column3
+        """
+        resp.data = csv
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/notexist"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.data, csv)
+
     def test_02_set_response(self):
 
         g = FakeFlaskG()

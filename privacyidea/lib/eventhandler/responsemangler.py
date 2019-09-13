@@ -115,7 +115,14 @@ class ResponseManglerEventHandler(BaseEventHandler):
         """
         ret = True
         response = options.get("response")
-        content = self._get_response_content(response)
+        try:
+            content = self._get_response_content(response)
+        except Exception:
+            # The body could not be decoded to JSON. Actually this would be
+            # a BadRequest, but we refrain from importing from werkzeug, here.
+            log.info("The body could not be decoded to JSON.")
+            # Early exist
+            return ret
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
