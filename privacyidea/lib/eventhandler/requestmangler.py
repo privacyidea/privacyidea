@@ -156,6 +156,12 @@ class RequestManglerHandler(BaseEventHandler):
                     elif match_pattern and match_parameter in request.all_data:
                         # setting a parameter depending on another value,
                         # but only set it, if match_parameter exists
+                        """
+                        Note: Beware user supplied  format-string like "match_pattern", it can
+                        be dangerous: http://lucumr.pocoo.org/2016/12/29/careful-with-str-format/
+                        but in our case it is fine because no objects are involved, as m.groups() 
+                        always returns a tuple of strings
+                        """
                         m = re.match("^" + match_pattern + "$", request.all_data.get(match_parameter))
                         if m:
                             # Now we set the new value with the matching tuple
