@@ -1021,6 +1021,25 @@ class RequestManglerTestCase(MyTestCase):
         self.assertEqual("company.com", req.all_data.get("realm"))
         self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
 
+        # Only match the complete value, not a subvalue
+        req.all_data = {"user": "givenname.surname@company.company",
+                        "realm": ""}
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "realm",
+                                        "value": "newrealm",
+                                        "match_parameter": "user",
+                                        "match_pattern": ".*@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The realm is not changed!
+        self.assertEqual("", req.all_data.get("realm"))
+
         # Now we change the parameter itself.
         # Change company.com of a user to newcompany.com
         req.all_data = {"user": "givenname.surname@company.com"}

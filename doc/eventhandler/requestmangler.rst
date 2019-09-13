@@ -31,7 +31,8 @@ This action is used to add or modify additional request parameters.
 
 You can set a parameter with the value or substrings of another parameter.
 
-This is why this action takes the additional options *value*, *match_parameter* and *match_pattern*.
+This is why this action takes the additional options *value*, *match_parameter* and
+*match_pattern*. *match_pattern* always needs to match the *complete* value of the *match_parameter*.
 
 If you simply want to set a parameter to a fixed value you only need the options:
 
@@ -80,6 +81,8 @@ will be modified to::
 
    user=surname.givenname@newcompany.com
 
+.. note:: The *match_pattern* in the above example will not match "surname.givenname@example.company",
+   since it always matches the complete value as mentioned above.
 
 Code
 ~~~~
