@@ -2868,3 +2868,63 @@ class UserNotificationTestCase(MyTestCase):
                          "+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq"
                          "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
                          "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
+
+    def test_21_save_notification(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "OATH123456",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "spooldirectory": "tests/testdata",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("savefile", options=options)
+        self.assertTrue(res)
+        # check, if the file was written with the correct contents
+        with open("tests/testdata/testOATH123456.txt") as f:
+            l = f.read()
+        self.assertEqual(l, "OATH123456, Cornelius")
+        os.remove("tests/testdata/testOATH123456.txt")
+
+        # Check what happens if the file can not be written
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "spooldirectory": "/var/lib/doesnotexist",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        un_handler = UserNotificationEventHandler()
+        un_handler.do("savefile", options=options)
+        # Check the log file for an error. There might be faster possibilities but more robust
+        with open("privacyidea.log") as f:
+            lines = f.read().splitlines()
+            last_line = lines[-1]
+        self.assertIn("Failed to write notification file: [Errno 2] No such file or directory", last_line)
