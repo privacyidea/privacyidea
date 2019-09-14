@@ -361,7 +361,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 random = get_alphanum_str(16)
                 filename = filename.format(random=random, **tags)
                 try:
-                    with open(spooldir + "/" + filename, "wb") as f:
+                    with open(spooldir + "/" + filename, "w") as f:
                         f.write(body)
                 except Exception as err:
                     log.error(u"Failed to write notification file: {0!s}".format(err))
