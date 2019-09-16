@@ -932,7 +932,7 @@ class ResponseManglerTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SPASS01", "type": "spass"}
-        resp = Response()
+        resp = Response(mimetype='application/json')
 
         # delete JSON pointer with two components
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -946,8 +946,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("error"), 1)
-        self.assertNotIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
+        self.assertEqual(resp.json["detail"]["error"], 1)
+        self.assertNotIn("message", resp.json["detail"])
 
         # delete JSON pointer with one component
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -961,23 +961,39 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
-        self.assertNotIn("result", json.loads(resp.data.decode("utf-8")))
+        self.assertIn("message", resp.json["detail"])
+        self.assertNotIn("result", resp.json)
 
-        # JSON pointer with more than 3 components not supported
-        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        # delete JSON pointer with three components
+        resp.data = """{"result": {"value": true}, "detail": {"data": {"Du": "Da"}, "error": 1}}"""
         options = {"g": g,
                    "request": req,
                    "response": resp,
                    "handler_def": {"options":
-                                       {"JSON pointer": "/comp1/comp2/comp3/com4"}
+                                       {"JSON pointer": "/detail/data/Du"}
                                    }
                    }
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
-        self.assertIn("result", json.loads(resp.data.decode("utf-8")))
+        self.assertIn("error", resp.json["detail"])
+        self.assertNotIn("Du", resp.json["detail"]["data"])
+
+        # JSON pointer with more than 3 components not supported
+        resp.data = """{"result": {"value": true},
+                        "detail": {"message": {"comp1": {"comp2": "test"}}, "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/message/comp1/comp2"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertIn("comp2", resp.json["detail"]["message"]["comp1"])
+        self.assertIn("result", resp.json)
 
         # Invalid JSON pointer will cause a log warning but will not change the response
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -991,8 +1007,8 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("delete", options=options)
         self.assertTrue(res)
-        self.assertIn("message", json.loads(resp.data.decode("utf-8")).get("detail"))
-        self.assertIn("result", json.loads(resp.data.decode("utf-8")))
+        self.assertIn("message", resp.json["detail"])
+        self.assertIn("result", resp.json)
 
         # What happens if we have a non-json response, like in GET /token?outform=csv
         # Nothing is changed!
@@ -1025,7 +1041,23 @@ class ResponseManglerTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SPASS01", "type": "spass"}
-        resp = Response()
+        resp = Response(mimetype='application/json')
+
+        # add JSON pointer with one component
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/something",
+                                        "value": "special",
+                                        "type": "string"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["something"], "special")
 
         # add JSON pointer with two components
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1041,7 +1073,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("something"), "special")
+        self.assertEqual(resp.json["detail"]["something"], "special")
 
         # change JSON pointer with two components
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1057,7 +1089,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("detail").get("message"), "special")
+        self.assertEqual(resp.json["detail"]["message"], "special")
 
         # add the components, that do not yet exist
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1073,7 +1105,7 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
-        self.assertEqual(json.loads(resp.data.decode("utf-8")).get("comp1").get("comp2").get("comp3"), True)
+        self.assertEqual(resp.json["comp1"]["comp2"]["comp3"], True)
 
         # JSON pointer with more than 3 components not supported
         resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
@@ -1089,7 +1121,23 @@ class ResponseManglerTestCase(MyTestCase):
         r_handler = ResponseManglerEventHandler()
         res = r_handler.do("set", options=options)
         self.assertTrue(res)
-        self.assertNotIn("comp1", json.loads(resp.data.decode("utf-8")))
+        self.assertNotIn("comp1", resp.json)
+
+        # Wrong type declaration
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/comp1/comp2",
+                                        "value": "notint",
+                                        "type": "integer"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["comp1"]["comp2"], "notint")
 
 
 class TokenEventTestCase(MyTestCase):
