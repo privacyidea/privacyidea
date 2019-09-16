@@ -152,20 +152,18 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     value = is_true(value)
             except ValueError:
                 log.warning("Failed to convert value")
-            try:
-                if len(comp) == 1:
-                    content[comp[0]] = value
-                elif len(comp) == 2:
-                    content[comp[0]] = content.get(comp[0]) or {}
-                    content[comp[0]][comp[1]] = value
-                elif len(comp) == 3:
-                    content[comp[0]] = content.get(comp[0]) or {}
-                    content[comp[0]][comp[1]] = content[comp[0]].get(comp[1]) or {}
-                    content[comp[0]][comp[1]][comp[2]] = value
-                else:
-                    log.warning("JSON pointer of length {0!s} not supported.".format(len(comp)))
-                options.get("response").data = json.dumps(content)
-            except KeyError:
-                log.warning("Can not set JSON Pointer {0!s}.".format(json_pointer))
+
+            if len(comp) == 1:
+                content[comp[0]] = value
+            elif len(comp) == 2:
+                content[comp[0]] = content.get(comp[0]) or {}
+                content[comp[0]][comp[1]] = value
+            elif len(comp) == 3:
+                content[comp[0]] = content.get(comp[0]) or {}
+                content[comp[0]][comp[1]] = content[comp[0]].get(comp[1]) or {}
+                content[comp[0]][comp[1]][comp[2]] = value
+            else:
+                log.warning("JSON pointer of length {0!s} not supported.".format(len(comp)))
+            options.get("response").data = json.dumps(content)
 
         return ret
