@@ -282,3 +282,12 @@ class AuditTestCase(MyTestCase):
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
+
+    def test_10_check_tokentype(self):
+        # Add a tokentype
+        self.Audit.log({"action": "test10", "tokentype": "spass"})
+        self.Audit.finalize_log()
+        audit_log = self.Audit.search({"action": "test10"})
+        self.assertEqual(audit_log.total, 1)
+        # The tokentype was actually written as token_type
+        self.assertEqual(audit_log.auditdata[0].get("token_type"), "spass")
