@@ -20,6 +20,7 @@ from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -909,6 +910,195 @@ class FederationEventTestCase(MyTestCase):
         response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/init")
+
+
+class RequestManglerTestCase(MyTestCase):
+
+    def test_01_delete_request_parameter(self):
+        actions = RequestManglerEventHandler().actions
+        self.assertTrue("delete" in actions, actions)
+        self.assertTrue("set" in actions, actions)
+
+        pos = RequestManglerEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post", "pre"})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "deleteme": "topsecret"}
+        resp = Response()
+
+        # Request
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "deleteme"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertNotIn("deleteme", req.all_data)
+        self.assertTrue(res)
+
+        # Delete a non-existing value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "doesnotexist"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertNotIn("doesnotexist", req.all_data)
+        self.assertTrue(res)
+
+    def test_02_set_parameter(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+
+        # simple add a parameter with a fixed value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "newone",
+                                        "value": "simpleadd"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("simpleadd", req.all_data.get("newone"))
+
+        # overwrite an existing parameter with a fixed value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "serial",
+                                        "value": "FUN007"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("FUN007", req.all_data.get("serial"))
+
+        # Change a parameter with the part of another parameter
+        req.all_data = {"user": "givenname.surname@company.com",
+                        "realm": ""}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "realm",
+                                        "value": "{0}",
+                                        "match_parameter": "user",
+                                        "match_pattern": ".*@(.*)"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("company.com", req.all_data.get("realm"))
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+        # Only match the complete value, not a subvalue
+        req.all_data = {"user": "givenname.surname@company.company",
+                        "realm": ""}
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "realm",
+                                        "value": "newrealm",
+                                        "match_parameter": "user",
+                                        "match_pattern": ".*@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The realm is not changed!
+        self.assertEqual("", req.all_data.get("realm"))
+
+        # Now we change the parameter itself.
+        # Change company.com of a user to newcompany.com
+        req.all_data = {"user": "givenname.surname@company.com"}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{0}@newcompany.com",
+                                        "match_parameter": "user",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
+
+        # The request does not contain the match_parameter, thus the
+        # parameter in question will not be modified
+        req.all_data = {"user": "givenname.surname@company.com" }
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{0}@newcompany.com",
+                                        "match_parameter": "username",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The name is still the old one - since there was nothing to match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+        # Do some nasty replacing, that will not work out
+        # We require two tags, but only have one!
+        req.all_data = {"user": "givenname.surname@company.com"}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{1} <{0}@newcompany.com>",
+                                        "match_parameter": "user",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The user was not modified, since the number of tags did not match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
 
 
 class ResponseManglerTestCase(MyTestCase):
