@@ -353,7 +353,7 @@ def test(tokentype=None):
     tokenc = get_token_class(tokentype)
     res, description = tokenc.test_config(request.all_data)
     g.audit_object.log({"success": 1,
-                        "tokentype": tokentype})
+                        "token_type": tokentype})
     return send_result(res, details={"message": description})
 
 

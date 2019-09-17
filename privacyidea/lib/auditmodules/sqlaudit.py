@@ -223,6 +223,11 @@ class Audit(AuditBase):
             self.audit_data["policies"] = ",".join(self.audit_data.get("policies",[]))
             if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
                 self._truncate_data()
+            if "tokentype" in self.audit_data:
+                log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "
+                            "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
+                if not "token_type" in self.audit_data:
+                    self.audit_data["token_type"] = self.audit_data.get("tokentype")
             le = LogEntry(action=self.audit_data.get("action"),
                           success=int(self.audit_data.get("success", 0)),
                           serial=self.audit_data.get("serial"),
