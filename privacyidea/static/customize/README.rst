@@ -63,7 +63,7 @@ CSS customization can be enabled using the ``PI_CUSTOM_CSS``-setting in ``pi.cfg
 **Example**
 
 PrivacyIDEA's UI was recently update to better utilize the available screen real-estate of large devices. If you prefer
-the old look, you can limit the width of the app by overriding the relevant. Simply set ``PI_CUSTOM_CSS = True`` in
+the old look, you can limit the width of the app by overriding the relevant parts. Simply set ``PI_CUSTOM_CSS = True`` in
 your ``pi.cfg`` and add a file called ``css/custom.css``, with the following content:
 
     @media (min-width: 1440px) { .container { width: 1400px!important; } }
