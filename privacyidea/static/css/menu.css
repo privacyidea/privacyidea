@@ -37,7 +37,7 @@ body {
 }
 
 /* Condense the menu on small tablets and when the browser covers only half of the screen */
-@media (max-width: 1023px) {
+@media (max-width: 1199px) {
     .navbar-fixed-top ul.navbar-nav > li > a > translate {
         display: none;
     }
