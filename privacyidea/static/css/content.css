@@ -50,3 +50,10 @@ select.ng-invalid:focus:not(#username):not(#password){
 *[ng-click] {
   cursor: pointer;
 }
+
+/* Utilize the available screen real-estate on large screens. */
+@media (min-width: 1440px) {
+    .container {
+        width: 95%;
+    }
+}
