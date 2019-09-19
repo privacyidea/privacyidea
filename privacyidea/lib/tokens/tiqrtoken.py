@@ -453,7 +453,6 @@ class TiqrTokenClass(OcraTokenClass):
         if transaction_id is not None:
             challengeobject_list = get_challenges(serial=self.token.serial,
                                                   transaction_id=transaction_id)
-
             for challengeobject in challengeobject_list:
                 # check if we are still in time.
                 if challengeobject.is_valid():

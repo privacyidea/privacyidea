@@ -76,6 +76,9 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
                         });
                         $scope.auditdata.auditdata[key].policies = uniquePolnameList;
                     }
+                    if (auditentry.serial != null) {
+                        auditentry.serial_list = auditentry.serial.split(",");
+                    }
                 });
             });
         }

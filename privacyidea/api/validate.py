@@ -71,7 +71,7 @@ from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens)
+                                   check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -96,6 +96,7 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
@@ -539,3 +540,56 @@ def trigger_challenge():
 
     return send_result(result_obj, details=details)
 
+
+@validate_blueprint.route('/polltransaction', methods=['GET'])
+@prepolicy(mangle, request=request)
+@CheckSubscription(request)
+@prepolicy(api_key_required, request=request)
+def poll_transaction():
+    """
+    Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
+    has been answered. In this case, return true. If this is not the case, return false.
+    This endpoint also returns false if no challenge with the given transaction ID exists.
+
+    This is mostly useful for out-of-band tokens that should poll this endpoint
+    to determine when to send an authentication request to ``/validate/check``.
+
+    :jsonparam transaction_id: a transaction ID
+    """
+    transaction_id = getParam(request.all_data, "transaction_id", required)
+    # Fetch a list of challenges with the given transaction ID
+    # and determine whether it contains at least one non-expired answered challenge.
+    matching_challenges = get_challenges(transaction_id=transaction_id)
+    answered_challenges = extract_answered_challenges(matching_challenges)
+
+    if answered_challenges:
+        result = True
+        log_challenges = answered_challenges
+    else:
+        result = False
+        log_challenges = matching_challenges
+
+    # We now determine the information that should be written to the audit log:
+    # * If there are no answered valid challenges, we log all token serials of challenges matching
+    #   the transaction ID and the corresponding token owner
+    # * If there are any answered valid challenges, we log their token serials and the corresponding user
+    if log_challenges:
+        g.audit_object.log({
+            "serial": ",".join(challenge.serial for challenge in log_challenges),
+        })
+        # The token owner should be the same for all matching transactions
+        user = get_one_token(serial=log_challenges[0].serial).user
+        if user:
+            g.audit_object.log({
+                "user": user.login,
+                "resolver": user.resolver,
+                "realm": user.realm,
+            })
+
+    # In any case, we log the transaction ID
+    g.audit_object.log({
+        "info": u"transaction_id: {}".format(transaction_id),
+        "success": result
+    })
+
+    return send_result(result)
