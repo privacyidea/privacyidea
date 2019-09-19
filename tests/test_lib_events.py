@@ -6,6 +6,8 @@ lib/event.py (the decorator)
 """
 import email
 
+import mock
+
 from . import smtpmock
 import responses
 import os
@@ -2899,7 +2901,9 @@ class UserNotificationTestCase(MyTestCase):
                                         "body": "{serial}, {user}"}
                                    }
                    }
-
+        # remove leftover file from the last test run, if any
+        if os.path.exists("tests/testdata/testOATH123456.txt"):
+            os.remove("tests/testdata/testOATH123456.txt")
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("savefile", options=options)
         self.assertTrue(res)
@@ -2920,12 +2924,10 @@ class UserNotificationTestCase(MyTestCase):
                    }
 
         un_handler = UserNotificationEventHandler()
-        un_handler.do("savefile", options=options)
-        # Check the log file for an error. There might be faster possibilities but more robust
-        with open("privacyidea.log") as f:
-            lines = f.read().splitlines()
-            last_line = lines[-1]
-        self.assertIn("Cannot write outside of spooldir tests/testdata/!", last_line)
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
 
         # Check what happens if the file can not be written
         options = {"g": g,
@@ -2942,11 +2944,14 @@ class UserNotificationTestCase(MyTestCase):
             f.write("empty")
         os.chmod("tests/testdata/testOATH123456.txt", 0o400)
         un_handler = UserNotificationEventHandler()
-        un_handler.do("savefile", options=options)
-        # Check the log file for an error. There might be faster possibilities but more robust
-        with open("privacyidea.log") as f:
-            lines = f.read().splitlines()
-            last_line = lines[-1]
-        self.assertIn("Failed to write notification file", last_line)
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            call_args = mock_log.call_args
+            # ensure log.error was actually called ...
+            self.assertIsNotNone(call_args)
+            # ... with the right message
+            self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
+
         os.remove("tests/testdata/testOATH123456.txt")
 
