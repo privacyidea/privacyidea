@@ -54,3 +54,4 @@ SQLAlchemy==1.3.0
 sqlsoup==0.9.1
 urllib3==1.24.3
 Werkzeug==0.14.1
+flask-versioned==0.9.4.post20101221
