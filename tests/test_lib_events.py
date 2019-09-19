@@ -2940,7 +2940,7 @@ class UserNotificationTestCase(MyTestCase):
         # create a file, that is not writable
         with open("tests/testdata/testOATH123456.txt", "w") as f:
             f.write("empty")
-        os.chmod("tests/testdata/testOATH123456.txt", 0x400)
+        os.chmod("tests/testdata/testOATH123456.txt", 0o400)
         un_handler = UserNotificationEventHandler()
         un_handler.do("savefile", options=options)
         # Check the log file for an error. There might be faster possibilities but more robust
