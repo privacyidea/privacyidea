@@ -31,6 +31,10 @@ With the ``authentication`` policies :ref:`policy_push_text_on_mobile`
 and :ref:`policy_push_title_on_mobile` you can define
 the contents of the push notification.
 
+If you want to use push tokens with legacy applications that are not yet set up to be compatible with out-of-band
+tokens, you can set the ``authentication`` policy :ref:`policy_push_wait`. Please note, that setting this policy can
+interfere with other tokentypes and will impact performance, as detailed in the documentation for ``push_wait``.
+
 Enrollment
 ~~~~~~~~~~
 
