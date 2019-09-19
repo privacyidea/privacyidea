@@ -2896,7 +2896,6 @@ class UserNotificationTestCase(MyTestCase):
                    "response": resp,
                    "handler_def": {"options":
                                        {"filename": "test{serial}.txt",
-                                        "spooldirectory": "tests/testdata",
                                         "body": "{serial}, {user}"}
                                    }
                    }
@@ -2910,13 +2909,12 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(l, "OATH123456, Cornelius")
         os.remove("tests/testdata/testOATH123456.txt")
 
-        # Check what happens if the file can not be written
+        # Check what happens if we try to write outside of spooldir
         options = {"g": g,
                    "request": req,
                    "response": resp,
                    "handler_def": {"options":
-                                       {"filename": "test{serial}.txt",
-                                        "spooldirectory": "/var/lib/doesnotexist",
+                                       {"filename": "../../../test{serial}.txt",
                                         "body": "{serial}, {user}"}
                                    }
                    }
@@ -2927,4 +2925,28 @@ class UserNotificationTestCase(MyTestCase):
         with open("privacyidea.log") as f:
             lines = f.read().splitlines()
             last_line = lines[-1]
-        self.assertIn("Failed to write notification file: [Errno 2] No such file or directory", last_line)
+        self.assertIn("Cannot write outside of spooldir tests/testdata/!", last_line)
+
+        # Check what happens if the file can not be written
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        # create a file, that is not writable
+        with open("tests/testdata/testOATH123456.txt", "w") as f:
+            f.write("empty")
+        os.chmod("tests/testdata/testOATH123456.txt", 0x400)
+        un_handler = UserNotificationEventHandler()
+        un_handler.do("savefile", options=options)
+        # Check the log file for an error. There might be faster possibilities but more robust
+        with open("privacyidea.log") as f:
+            lines = f.read().splitlines()
+            last_line = lines[-1]
+        self.assertIn("Failed to write notification file", last_line)
+        os.remove("tests/testdata/testOATH123456.txt")
+

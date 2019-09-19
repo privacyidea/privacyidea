@@ -51,7 +51,7 @@ from privacyidea.lib.utils import create_tag_dict
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 import logging
-import datetime
+import os
 
 log = logging.getLogger(__name__)
 
@@ -184,12 +184,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                        "this user."),
                                       "value": [NOTIFY_TYPE.TOKENOWNER]}
                                },
-                   "savefile": {"spooldirectory":
-                                    {"type": "str",
-                                     "required": True,
-                                     "description": _("Save the notification file to "
-                                                      "this directory.")},
-                                "body":
+                   "savefile": {"body":
                                     {"type": "text",
                                      "required": True,
                                      "description": _("This is the template content of "
@@ -356,15 +351,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                                 "{0}".format(recipient))
 
             elif action.lower() == "savefile":
-                spooldir = handler_options.get("spooldirectory", ".")
+                spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",
+                                                "/var/lib/privacyidea/notifications/")
                 filename = handler_options.get("filename")
                 random = get_alphanum_str(16)
-                filename = filename.format(random=random, **tags)
-                try:
-                    with open(spooldir + "/" + filename, "w") as f:
-                        f.write(body)
-                except Exception as err:
-                    log.error(u"Failed to write notification file: {0!s}".format(err))
+                filename = filename.format(random=random, **tags).lstrip(os.path.sep)
+                outfile = os.path.normpath(os.path.join(spooldir, filename))
+                if not outfile.startswith(spooldir):
+                    log.error(u'Cannot write outside of spooldir {0!s}!'.format(spooldir))
+                else:
+                    try:
+                        with open(outfile, "w") as f:
+                            f.write(body)
+                    except Exception as err:
+                        log.error(u"Failed to write notification file: {0!s}".format(err))
 
             elif action.lower() == "sendsms":
                 smsconfig = handler_options.get("smsconfig")

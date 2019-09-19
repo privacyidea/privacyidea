@@ -46,11 +46,10 @@ savefile
 The *savefile* action saves a file to a spool directory.
 Each time the event handler is triggered a new file is saved.
 
-**spooldirectory**
-
-  * *required* option
-  * The directory where all files are written to. It must
-    be writable for privacyidea.
+In the ``pi.cfg`` file you can use the setting ``PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY``
+to configure a spool directory, where the notification files will be written.
+The default file location is ``/var/lib/privacyidea/notifications/``.
+The directory needs to be writable for the user *privacyidea*.
 
 **filename**
 
