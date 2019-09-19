@@ -25,6 +25,7 @@ import logging
 import logging.config
 import sys
 from flask import Flask, request, Response
+from flaskext.versioned import Versioned
 from privacyidea.lib import queue
 
 # we need this import to add the before/after request function to the blueprints
@@ -139,6 +140,9 @@ def create_app(config_name="development",
                 template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
+
+    # Set up flask-versioned
+    versioned = Versioned(app, format='%(path)s?v=%(version)s');
 
     try:
         # Try to load the given config_file.
