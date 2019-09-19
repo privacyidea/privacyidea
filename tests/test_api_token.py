@@ -1794,6 +1794,47 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue("Invalid serial number" in result.get("error").get("message"))
 
+    def test_32_set_random_pin(self):
+        t = init_token({"genkey": 1})
+        self.assertEqual(t.token.tokentype, "hotp")
+
+        # We get an error, if there is no policy
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertIn("You need to specify an enrollment policy 'otp_pin_random'",
+                          result.get("error").get("message"))
+
+        # at least we need a otppinrandom policy (but not with lenght 0
+        set_policy("pinpolrandom", scope=SCOPE.ENROLL, action="{0!s}=0".format(ACTION.OTPPINRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertIn("We have an empty PIN. Please check you policy 'otp_pin_random'.",
+                          result.get("error").get("message"))
+
+        # at least we need a otppinrandom policy
+        set_policy("pinpolrandom", scope=SCOPE.ENROLL, action="{0!s}=10".format(ACTION.OTPPINRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertEqual(10, len(detail.get("pin")))
+
 
 class API00TokenPerformance(MyApiTestCase):
 

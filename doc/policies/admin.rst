@@ -120,6 +120,14 @@ type: bool
 If the ``setpin`` action is defined, the administrator
 is allowed to set the OTP PIN of a token.
 
+setrandompin
+~~~~~~~~~~~~
+
+type: bool
+
+If the ``setrandompin`` action is defined, the administrator
+is allowed to call the endpoint, that sets a random token PIN.
+
 enrollpin
 ~~~~~~~~~
 

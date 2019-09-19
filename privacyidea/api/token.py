@@ -671,6 +671,41 @@ def setpin_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/setrandompin', methods=['POST'])
+@token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETRANDOMPIN)
+@prepolicy(init_random_pin, request, action="setrandompin")
+@prepolicy(encrypt_pin, request)
+@postpolicy(save_pin_change, request)
+@event("token_setrandompin", request, g)
+@log_with(log)
+def setrandompin_api(serial=None):
+    """
+    Set the OTP PIN for a specific token to a random value.
+
+    The token is identified by the unique serial number.
+
+    :jsonparam basestring serial: the serial number of the single
+        token to reset
+    :return: In "value" returns the number of PINs set.
+        The detail-section contains the key "pin" with the set PIN.
+    :rtype: json object
+    """
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
+    user = request.User
+    encrypt_pin = getParam(request.all_data, "encryptpin")
+    pin = getParam(request.all_data, "pin")
+    if not pin:
+        raise TokenAdminError("We have an empty PIN. Please check you policy 'otp_pin_random'.")
+
+    g.audit_object.add_to_log({'action_detail': "otppin, "})
+    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)
+    g.audit_object.log({"success": True})
+    return send_result(res, details={"pin": pin})
+
+
 @token_blueprint.route('/description', methods=['POST'])
 @token_blueprint.route('/description/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)

@@ -64,7 +64,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.error import PolicyError, RegistrationError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
@@ -133,7 +133,8 @@ class prepolicy(object):
 
 def init_random_pin(request=None, action=None):
     """
-    This policy function is to be used as a decorator in the API init function.
+    This policy function is to be used as a decorator in the API init function
+    and setrandom_pin function.
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
@@ -151,6 +152,9 @@ def init_random_pin(request=None, action=None):
                                                unique=True,
                                                audit_data=g.audit_object.audit_data)
 
+    if action=="setrandompin" and len(pin_pols) == 0:
+        # We do this to avoid that an admin sets a random PIN manually!
+        raise TokenAdminError("You need to specify an enrollment policy 'otp_pin_random'.")
     if len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))

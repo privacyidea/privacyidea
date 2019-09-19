@@ -286,6 +286,7 @@ class ACTION(object):
     SET = "set"
     SETDESCRIPTION = "setdescription"
     SETPIN = "setpin"
+    SETRANDOMPIN = "setrandompin"
     SETREALM = "setrealm"
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
@@ -1273,6 +1274,10 @@ def get_static_policy_definitions(scope=None):
                                 'tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('Admin is allowed to set a random OTP PIN of tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
             ACTION.SETTOKENINFO: {'type': 'bool',
                                'desc': _('Admin is allowed to manually set and delete token info.'),
                                'mainmenu': [MAIN_MENU.TOKENS],
@@ -1663,6 +1668,10 @@ def get_static_policy_definitions(scope=None):
                                       "PIN of his tokens."),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('The user is allowed to set a random OTP PIN of his tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.PIN},
             ACTION.SETDESCRIPTION: {'type': 'bool',
                                     'desc': _('The user is allowed to set the token description.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
