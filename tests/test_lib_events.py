@@ -6,6 +6,8 @@ lib/event.py (the decorator)
 """
 import email
 
+import mock
+
 from . import smtpmock
 import responses
 import os
@@ -3289,3 +3291,88 @@ class UserNotificationTestCase(MyTestCase):
                          "+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq"
                          "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
                          "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
+
+    def test_21_save_notification(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "OATH123456",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+        # remove leftover file from the last test run, if any
+        if os.path.exists("tests/testdata/testOATH123456.txt"):
+            os.remove("tests/testdata/testOATH123456.txt")
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("savefile", options=options)
+        self.assertTrue(res)
+        # check, if the file was written with the correct contents
+        with open("tests/testdata/testOATH123456.txt") as f:
+            l = f.read()
+        self.assertEqual(l, "OATH123456, Cornelius")
+        os.remove("tests/testdata/testOATH123456.txt")
+
+        # Check what happens if we try to write outside of spooldir
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "../../../test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        un_handler = UserNotificationEventHandler()
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
+
+        # Check what happens if the file can not be written
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        # create a file, that is not writable
+        with open("tests/testdata/testOATH123456.txt", "w") as f:
+            f.write("empty")
+        os.chmod("tests/testdata/testOATH123456.txt", 0o400)
+        un_handler = UserNotificationEventHandler()
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            call_args = mock_log.call_args
+            # ensure log.error was actually called ...
+            self.assertIsNotNone(call_args)
+            # ... with the right message
+            self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
+
+        os.remove("tests/testdata/testOATH123456.txt")
+
