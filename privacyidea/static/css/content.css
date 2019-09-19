@@ -57,3 +57,13 @@ select.ng-invalid:focus:not(#username):not(#password){
         width: 95%;
     }
 }
+
+/* Style checkboxes to match up with their labels */
+input[type="radio"],
+input[type="checkbox"] {
+    margin-bottom: 5px;
+    vertical-align: bottom;
+
+    /* 14px font-size * 1.42857143 line-height */
+    height: 20px;
+}
