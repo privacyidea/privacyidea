@@ -530,12 +530,14 @@ def trigger_challenge():
     create_challenges_from_tokens(chal_resp_tokens, details, options)
     result_obj = len(details.get("multi_challenge"))
 
+    challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
     g.audit_object.log({
         "user": user.login,
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
-        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj))
+        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj)),
+        "serial": ",".join(challenge_serials),
     })
 
     return send_result(result_obj, details=details)

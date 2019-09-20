@@ -176,6 +176,22 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
 
+    def find_most_recent_audit_entry(self, **filter_data):
+        """
+        Given audit log entry filters, return the most recent entry matching the criteria,
+        or raise an IndexError if there is no such entry.
+        This is useful for testing the audit log behavior.
+        """
+        sorted_filter = filter_data.copy()
+        sorted_filter["sortorder"] = "desc"
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data=sorted_filter,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            # return the last entry
+            return res.json["result"]["value"]["auditdata"][0]
+
 
 class OverrideConfigTestCase(MyTestCase):
     """
