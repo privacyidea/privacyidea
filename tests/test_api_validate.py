@@ -3352,6 +3352,11 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
             self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
 
+        # Check that serials are written to the audit log
+        entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge*")
+        self.assertIn("tok1", entry["serial"])
+        self.assertIn("tok2", entry["serial"])
+
         # add a really old expired challenge for tok1
         old_transaction_id = "1111111111"
         old_challenge = Challenge(serial="tok1", transaction_id=old_transaction_id, challenge="")
@@ -3374,16 +3379,6 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(res.json["result"]["status"])
             self.assertIn("Missing parameter: 'transaction_id'", res.json["result"]["error"]["message"])
 
-        def _find_most_recent_polltransaction_in_audit():
-            with self.app.test_request_context('/audit/',
-                                               method='GET',
-                                               data={"action": "*/validate/polltransaction*",
-                                                     "sortorder": "desc"},
-                                               headers={"Authorization": self.at}):
-                res = self.app.full_dispatch_request()
-                # return the last entry
-                return res.json["result"]["value"]["auditdata"][0]
-
         # wildcards do not work
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            data={"transaction_id": "*"}):
@@ -3401,7 +3396,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"])
 
         # check audit log
-        entry = _find_most_recent_polltransaction_in_audit()
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(entry["info"], "transaction_id: 123456")
         self.assertEqual(entry["serial"], None)
         self.assertEqual(entry["user"], None)
@@ -3415,7 +3410,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"])
 
         # but audit log contains both serials and the user
-        entry = _find_most_recent_polltransaction_in_audit()
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
         self.assertIn("tok1", entry["serial"])
         self.assertIn("tok2", entry["serial"])
@@ -3433,7 +3428,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"])
 
         # and the audit log contains no serials and the user
-        entry = _find_most_recent_polltransaction_in_audit()
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(entry["info"], "transaction_id: {}".format(old_transaction_id))
         self.assertEqual(entry["serial"], None)
         self.assertFalse(entry["success"])
@@ -3450,7 +3445,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.json["result"]["status"])
             self.assertTrue(res.json["result"]["value"])
 
-        entry = _find_most_recent_polltransaction_in_audit()
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
         # tok2 is not written to the audit log
         self.assertEqual(entry["serial"], "tok1")
