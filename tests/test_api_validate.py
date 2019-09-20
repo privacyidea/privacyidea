@@ -3437,9 +3437,9 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(entry["resolver"], "resolver1")
         self.assertEqual(entry["realm"], self.realm1)
 
-        # polling the transaction again gives the same result
-        with self.app.test_request_context("/validate/polltransaction", method="GET",
-                                           data={"transaction_id": transaction_id}):
+        # polling the transaction again gives the same result, even with the more REST-y endpoint
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
+                                           data={}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json["result"]["status"])
@@ -3449,7 +3449,7 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("tok2")
 
         # polling the transaction now gives false
-        with self.app.test_request_context("/validate/polltransaction", method="GET",
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
                                            data={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)

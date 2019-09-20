@@ -542,10 +542,11 @@ def trigger_challenge():
 
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
+@validate_blueprint.route('/polltransaction/<transaction_id>', methods=['GET'])
 @prepolicy(mangle, request=request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
-def poll_transaction():
+def poll_transaction(transaction_id=None):
     """
     Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
     has been answered. In this case, return true. If this is not the case, return false.
@@ -556,7 +557,8 @@ def poll_transaction():
 
     :jsonparam transaction_id: a transaction ID
     """
-    transaction_id = getParam(request.all_data, "transaction_id", required)
+    if transaction_id is None:
+        transaction_id = getParam(request.all_data, "transaction_id", required)
     # Fetch a list of challenges with the given transaction ID
     # and determine whether it contains at least one non-expired answered challenge.
     matching_challenges = get_challenges(transaction_id=transaction_id)
