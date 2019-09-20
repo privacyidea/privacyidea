@@ -3352,6 +3352,14 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
             self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
 
+        # add a really old expired challenge for tok1
+        old_transaction_id = "1111111111"
+        old_challenge = Challenge(serial="tok1", transaction_id=old_transaction_id, challenge="")
+        old_challenge_timestamp = datetime.datetime.now() - datetime.timedelta(days=3)
+        old_challenge.timestamp = old_challenge_timestamp
+        old_challenge.expiration = old_challenge_timestamp + datetime.timedelta(minutes=120)
+        old_challenge.save()
+
         # Check behavior of the polltransaction endpoint
         # POST is not allowed
         with self.app.test_request_context("/validate/polltransaction", method="POST"):
@@ -3415,6 +3423,20 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(entry["user"], "cornelius")
         self.assertEqual(entry["resolver"], "resolver1")
         self.assertEqual(entry["realm"], self.realm1)
+
+        # polling the expired transaction returns false
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": old_transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # and the audit log contains no serials and the user
+        entry = _find_most_recent_polltransaction_in_audit()
+        self.assertEqual(entry["info"], "transaction_id: {}".format(old_transaction_id))
+        self.assertEqual(entry["serial"], None)
+        self.assertFalse(entry["success"])
 
         # Mark one challenge as answered
         Challenge.query.filter_by(serial="tok1", transaction_id=transaction_id).update({"otp_valid": True})

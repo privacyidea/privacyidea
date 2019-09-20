@@ -559,9 +559,10 @@ def poll_transaction(transaction_id=None):
     """
     if transaction_id is None:
         transaction_id = getParam(request.all_data, "transaction_id", required)
-    # Fetch a list of challenges with the given transaction ID
+    # Fetch a list of non-exired challenges with the given transaction ID
     # and determine whether it contains at least one non-expired answered challenge.
-    matching_challenges = get_challenges(transaction_id=transaction_id)
+    matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
+                           if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
 
     if answered_challenges:
