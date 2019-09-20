@@ -384,11 +384,27 @@ class PushTokenTestCase(MyTestCase):
             # Result-Value is false, the user has not answered the challenge, yet
             self.assertFalse(jsonresp.get("result").get("value"))
 
+        # As the challenge has not been answered yet, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
         # Now the smartphone communicates with the backend and the challenge in the database table
         # is marked as answered successfully.
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,
                                               transaction_id=transaction_id)
         challengeobject_list[0].set_otp_status(True)
+
+        # As the challenge has been answered, the /validate/polltransaction endpoint returns true
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -401,6 +417,15 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True, since the challenge is marked resolved in the DB
         self.assertTrue(jsonresp.get("result").get("value"))
+
+        # As the challenge does not exist anymore, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+        self.assertEqual(get_challenges(serial=tokenobj.token.serial), [])
 
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         # Do single shot auth with waiting

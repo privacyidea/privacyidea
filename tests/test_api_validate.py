@@ -4,7 +4,7 @@ import json
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.models import (Token, Challenge, AuthCache)
+from privacyidea.models import (Token, Challenge, AuthCache, db)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
@@ -3327,6 +3327,156 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
         remove_token("rad1")
+
+    def test_12_polltransaction(self):
+        # Assign token to user:
+        r = init_token({"serial": "tok1", "type": "hotp", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+        r = init_token({"serial": "tok2", "type": "tiqr", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertEqual(data.get("result").get("value"), 2)
+            # The two challenges should be the same
+            multichallenge = data.get("detail").get("multi_challenge")
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
+            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+
+        # add a really old expired challenge for tok1
+        old_transaction_id = "1111111111"
+        old_challenge = Challenge(serial="tok1", transaction_id=old_transaction_id, challenge="")
+        old_challenge_timestamp = datetime.datetime.now() - datetime.timedelta(days=3)
+        old_challenge.timestamp = old_challenge_timestamp
+        old_challenge.expiration = old_challenge_timestamp + datetime.timedelta(minutes=120)
+        old_challenge.save()
+
+        # Check behavior of the polltransaction endpoint
+        # POST is not allowed
+        with self.app.test_request_context("/validate/polltransaction", method="POST"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 405)
+
+        # transaction_id is required
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            self.assertFalse(res.json["result"]["status"])
+            self.assertIn("Missing parameter: 'transaction_id'", res.json["result"]["error"]["message"])
+
+        def _find_most_recent_polltransaction_in_audit():
+            with self.app.test_request_context('/audit/',
+                                               method='GET',
+                                               data={"action": "*/validate/polltransaction*",
+                                                     "sortorder": "desc"},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                # return the last entry
+                return res.json["result"]["value"]["auditdata"][0]
+
+        # wildcards do not work
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": "*"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # a non-existent transaction_id just returns false
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # check audit log
+        entry = _find_most_recent_polltransaction_in_audit()
+        self.assertEqual(entry["info"], "transaction_id: 123456")
+        self.assertEqual(entry["serial"], None)
+        self.assertEqual(entry["user"], None)
+
+        # polling the transaction returns false, because no challenge has been answered
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # but audit log contains both serials and the user
+        entry = _find_most_recent_polltransaction_in_audit()
+        self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
+        self.assertIn("tok1", entry["serial"])
+        self.assertIn("tok2", entry["serial"])
+        self.assertFalse(entry["success"])
+        self.assertEqual(entry["user"], "cornelius")
+        self.assertEqual(entry["resolver"], "resolver1")
+        self.assertEqual(entry["realm"], self.realm1)
+
+        # polling the expired transaction returns false
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": old_transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # and the audit log contains no serials and the user
+        entry = _find_most_recent_polltransaction_in_audit()
+        self.assertEqual(entry["info"], "transaction_id: {}".format(old_transaction_id))
+        self.assertEqual(entry["serial"], None)
+        self.assertFalse(entry["success"])
+
+        # Mark one challenge as answered
+        Challenge.query.filter_by(serial="tok1", transaction_id=transaction_id).update({"otp_valid": True})
+        db.session.commit()
+
+        # polling the transaction returns true, because the challenge has been answered
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
+
+        entry = _find_most_recent_polltransaction_in_audit()
+        self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
+        # tok2 is not written to the audit log
+        self.assertEqual(entry["serial"], "tok1")
+        self.assertTrue(entry["success"])
+        self.assertEqual(entry["user"], "cornelius")
+        self.assertEqual(entry["resolver"], "resolver1")
+        self.assertEqual(entry["realm"], self.realm1)
+
+        # polling the transaction again gives the same result, even with the more REST-y endpoint
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
+                                           data={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
+
+        remove_token("tok1")
+        remove_token("tok2")
+
+        # polling the transaction now gives false
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
