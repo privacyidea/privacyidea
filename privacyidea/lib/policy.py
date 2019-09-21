@@ -1737,7 +1737,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
-                'value': list(range(0, 32)),
+                'value': list(range(1, 32)),
                 "desc": _("Set a random OTP PIN with this length for a "
                           "token."),
                 'group': GROUP.PIN},

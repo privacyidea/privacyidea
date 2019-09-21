@@ -362,6 +362,22 @@
             </td>
         </tr>
 
+        <tr ng-hide="token.locked || !checkRight('setrandompin')">
+            <td>
+            </td>
+            <td>
+                {{ randomPin }}
+            </td>
+            <td>
+                <button class="btn btn-primary"
+                        id="setRandomPinButton"
+                        ng-click="setRandomPin()">
+                    <span class="glyphicon glyphicon-pushpin"></span>
+                    <span translate>Set random PIN</span>
+                </button>
+            </td>
+        </tr>
+
         <tr ng-hide="token.locked">
             <td><input type="checkbox" ng-model="showPassword"
                        id="showPassword"><label for="showPassword"

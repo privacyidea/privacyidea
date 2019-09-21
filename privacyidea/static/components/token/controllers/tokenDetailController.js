@@ -194,6 +194,19 @@ myApp.controller("tokenDetailController", function ($scope,
         TokenFactory.delete($scope.tokenSerial, $scope.return_to);
     };
 
+    $scope.setRandomPin = function () {
+        TokenFactory.setrandompin($scope.tokenSerial, function (data) {
+                if (data.result.value >= 1) {
+                    inform.add(gettextCatalog.getString("PIN set successfully."),
+                        {type: "info", ttl: 5000})
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to set PIN."),
+                        {type: "danger", ttl: 10000})
+                }
+                $scope.randomPin = data.detail.pin;
+            });
+    };
+
     $scope.setPin = function () {
         TokenFactory.setpin($scope.tokenSerial, "otppin",
             $scope.pin1, function (data) {
