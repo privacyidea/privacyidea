@@ -98,6 +98,9 @@ The body may contain the following tags
   * {client_ip} the client IP of the client, which issued the original request.
   * {ua_browser} the user agent of the client, which issued the original request.
   * {ua_string} the complete user agent string (including version number), which issued the original request.
+  * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
+    PIN from the response using the *response mangler*.
+
 
 
 
