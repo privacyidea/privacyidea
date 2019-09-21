@@ -40,7 +40,8 @@ You can attach token actions like enable, disable, delete, unassign,... of the
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
-                                   set_validity_period_start)
+                                   set_validity_period_start, set_pin)
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
@@ -50,11 +51,10 @@ from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.lib import _
-import json
 import logging
 import datetime
 import yaml
-from dateutil.parser import parse as parse_date_string
+import json
 from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
@@ -76,6 +76,7 @@ class ACTION_TYPE(object):
     SET_TOKENINFO = "set tokeninfo"
     SET_FAILCOUNTER = "set failcounter"
     DELETE_TOKENINFO = "delete tokeninfo"
+    SET_RANDOM_PIN = "set random pin"
 
 
 class VALIDITY(object):
@@ -134,6 +135,13 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.UNASSIGN: {},
                    ACTION_TYPE.DISABLE: {},
                    ACTION_TYPE.ENABLE: {},
+                   ACTION_TYPE.SET_RANDOM_PIN: {
+                       "length":
+                           {"type": "int",
+                            "required": True,
+                            "description": _("the length of the random PIN."),
+                            "value": range(1,32)}
+                   },
                    ACTION_TYPE.INIT:
                        {"tokentype":
                             {"type": "str",
@@ -278,6 +286,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_COUNTWINDOW,
                               ACTION_TYPE.SET_TOKENINFO,
                               ACTION_TYPE.SET_FAILCOUNTER,
+                              ACTION_TYPE.SET_RANDOM_PIN,
                               ACTION_TYPE.DELETE_TOKENINFO]:
             if serial:
                 log.info("{0!s} for token {1!s}".format(action, serial))
@@ -289,6 +298,13 @@ class TokenEventHandler(BaseEventHandler):
                         serial, realm))
                     # Add the token realm
                     set_realms(serial, [realm], add=not only_realm)
+                elif action.lower() == ACTION_TYPE.SET_RANDOM_PIN:
+                    # If for any reason we have no value, we default to 6
+                    length = int(handler_options.get("length") or 6)
+                    pin = generate_password(size=length)
+                    if set_pin(serial, pin):
+                        content.setdefault("detail", {})["pin"] = pin
+                        options.get("response").data = json.dumps(content)
                 elif action.lower() == ACTION_TYPE.DELETE:
                     remove_token(serial=serial)
                 elif action.lower() == ACTION_TYPE.DISABLE:
