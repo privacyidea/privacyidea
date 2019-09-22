@@ -22,14 +22,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("auditController", function (AuditFactory, $scope,
+myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
                                               $stateParams, $http,
                                               AuthFactory, instanceUrl,
-                                              $location) {
+                                              $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
+    var df = gettextCatalog.getString("yyyy-MM-dd HH:mm:ss");
+    $scope.dateFormat = df;
 
     // If the state is called with some filter values
     if ($stateParams.serial) {
@@ -58,23 +60,28 @@ myApp.controller("auditController", function (AuditFactory, $scope,
         //debug: console.log($scope.params);
     };
 
-    $scope.getAuditList = function () {
-        $scope.getParams();
-        AuditFactory.get($scope.params, function(data) {
-            $scope.auditdata = data.result.value;
-            // We split the policies, which come as comma separated string to an array.
-            angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
-                if ($scope.auditdata.auditdata[key].policies != null) {
-                    var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
-                    // Duplicates in a repeater are not allowed!
-                    var uniquePolnameList = [];
-                    angular.forEach(polname_list, function(pol, i){
-                        if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
-                    });
-                    $scope.auditdata.auditdata[key].policies = uniquePolnameList;
-                }
+    $scope.getAuditList = function (live_search) {
+        if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
+            $scope.getParams();
+            AuditFactory.get($scope.params, function(data) {
+                $scope.auditdata = data.result.value;
+                // We split the policies, which come as comma separated string to an array.
+                angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
+                    if ($scope.auditdata.auditdata[key].policies != null) {
+                        var polname_list = $scope.auditdata.auditdata[key].policies.split(",");
+                        // Duplicates in a repeater are not allowed!
+                        var uniquePolnameList = [];
+                        angular.forEach(polname_list, function(pol, i){
+                            if(uniquePolnameList.includes(pol) === false) uniquePolnameList.push(pol);
+                        });
+                        $scope.auditdata.auditdata[key].policies = uniquePolnameList;
+                    }
+                    if (auditentry.serial != null) {
+                        auditentry.serial_list = auditentry.serial.split(",");
+                    }
+                });
             });
-        });
+        }
     };
 
     // Change the pagination

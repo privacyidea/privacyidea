@@ -165,7 +165,7 @@
             </div>
         </div>
 
-        <div class="text-center">
+        <div class="text-center" ng-show="checkRight('caconnectorwrite')">
             <button ng-click="setCAConnector()"
                     ng-disabled="forAddLocal.$invalid"
                     class="btn btn-primary" translate>Save CA

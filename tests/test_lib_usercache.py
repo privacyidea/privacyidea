@@ -71,8 +71,20 @@ class UserCacheTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
     def test_00_set_config(self):
-        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        # Save wrong data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, "wrong")
+        exp_delta = get_cache_time()
+        self.assertEqual(exp_delta, timedelta(seconds=0))
+        self.assertFalse(is_cache_enabled())
 
+        # Save empty data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, "")
+        exp_delta = get_cache_time()
+        self.assertEqual(exp_delta, timedelta(seconds=0))
+        self.assertFalse(is_cache_enabled())
+
+        # Save real data in EXPIRATION_SECONDS
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
         exp_delta = get_cache_time()
         self.assertEqual(exp_delta, timedelta(seconds=600))
         self.assertTrue(is_cache_enabled())
@@ -428,7 +440,7 @@ class UserCacheTestCase(MyTestCase):
         # Now, query the user and populate the cache
         self.assertEqual(UserCache.query.count(), 0)
         user1 = User('wordpressuser', self.sql_realm)
-        self.assertEqual(user1.uid, 6)
+        self.assertEqual(user1.uid, '6')
         # Assert it was found in reso_b (as it does not have a phone number)!
         self.assertEqual(user1.resolver, 'reso_b')
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
@@ -446,7 +458,7 @@ class UserCacheTestCase(MyTestCase):
                          'reso_b')
         # Now, it should be located in reso_a!
         user2 = User('wordpressuser', self.sql_realm)
-        self.assertEqual(user2.uid, 6)
+        self.assertEqual(user2.uid, '6')
         self.assertEqual(user2.resolver, 'reso_a')
         # ... but the cache still contains entries for both!
         resolver_query = UserCache.query.filter(UserCache.username == 'wordpressuser',

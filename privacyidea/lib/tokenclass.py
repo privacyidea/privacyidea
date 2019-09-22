@@ -98,7 +98,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
-                                   parse_legacy_time)
+                                   parse_legacy_time, split_pin_pass)
 from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
 
@@ -124,12 +124,19 @@ class TOKENKIND(object):
     VIRTUAL = "virtual"
 
 
+class TOKENMODE(object):
+    AUTHENTICATE = 'authenticate'
+    CHALLENGE = 'challenge'
+    # If the challenge is answered out of band
+    OUTOFBAND = 'outofband'
+
+
 class TokenClass(object):
 
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = ['authenticate', 'challenge']
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
 
     @log_with(log)
     def __init__(self, db_token):
@@ -162,6 +169,10 @@ class TokenClass(object):
         tokentype = u'' + tokentype
         self.type = tokentype
         self.token.tokentype = tokentype
+
+    @classmethod
+    def is_outofband(cls):
+        return TOKENMODE.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():
@@ -625,6 +636,23 @@ class TokenClass(object):
     def is_active(self):
         return self.token.active
 
+    def is_fit_for_challenge(self, messages, options=None):
+        """
+        This method is called if a cryptographically matching response to a challenge was found.
+        This method may implement final checks, if there is anything that should deny the
+        success of the authentication with the response to the challenge.
+
+        The options dictionary can also contain the transaction_id, so even the
+        challenge table for this token can be used for checking.
+
+        :param options:
+        :type options: dict
+        :param messages: This is a list of messages. This method can append new information to this message list.
+        :type messages: list
+        :return: True or False
+        """
+        return self.check_all(messages)
+
     def get_failcount(self):
         return self.token.failcount
 
@@ -1023,11 +1051,12 @@ class TokenClass(object):
         self.set_count_auth(count)
         return count
 
-    def check_failcount(self):
+    def check_reset_failcount(self):
         """
-        Checks if the failcounter is exceeded. It returns True, if the
-        failcounter is less than maxfail
-        :return: True or False
+        Checks if we should reset the failcounter due to the
+        FAILCOUNTER_CLEAR_TIMEOUT
+
+        :return: True, if the failcounter was resetted
         """
         timeout = 0
         try:
@@ -1036,33 +1065,41 @@ class TokenClass(object):
             log.warning("Misconfiguration. Error retrieving "
                         "failcounter_clear_timeout: "
                         "{0!s}".format(exx))
-        if timeout and self.token.failcount > 0:
+        if timeout and self.token.failcount == self.get_max_failcount():
             now = datetime.datetime.now(tzlocal())
             lastfail = self.get_tokeninfo(FAILCOUNTER_EXCEEDED)
             if lastfail is not None:
                 failcounter_exceeded = parse_legacy_time(lastfail, return_date=True)
                 if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
                     self.reset()
+                    return True
+        return False
 
+    def check_failcount(self):
+        """
+        Checks if the failcounter is exceeded. It returns True, if the
+        failcounter is less than maxfail
+        :return: True or False
+        """
         return self.token.failcount < self.token.maxfail
 
     def check_auth_counter(self):
         """
         This function checks the count_auth and the count_auth_success.
-        If the count_auth is less than count_auth_max
-        and count_auth_success is less than count_auth_success_max
+        If the counters are less or equal than the maximum allowed counters
         it returns True. Otherwise False.
         
         :return: success if the counter is less than max
         :rtype: bool
         """
-        if self.get_count_auth_max() != 0 and self.get_count_auth() >= \
-                self.get_count_auth_max():
+        count_auth = self.get_count_auth()
+        count_auth_max = self.get_count_auth_max()
+        count_auth_success = self.get_count_auth_success()
+        count_auth_success_max = self.get_count_auth_success_max()
+        if count_auth_max != 0 and count_auth >= count_auth_max:
             return False
 
-        if self.get_count_auth_success_max() != 0 and  \
-                        self.get_count_auth_success() >=  \
-                        self.get_count_auth_success_max():
+        if count_auth_success_max != 0 and count_auth_success >= count_auth_success_max:
             return False
 
         return True
@@ -1209,17 +1246,7 @@ class TokenClass(object):
         # The database field is always an integer
         otplen = self.token.otplen
         log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
-        if get_prepend_pin():
-            pin = passw[0:-otplen]
-            otpval = passw[-otplen:]
-            log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                        len(otpval)))
-        else:
-            pin = passw[otplen:]
-            otpval = passw[0:otplen]
-            log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                       len(otpval)))
-
+        pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
         return True, pin, otpval
 
     def status_validation_fail(self):
@@ -1361,8 +1388,12 @@ class TokenClass(object):
         """
         options = options or {}
         challenge_response = False
-        if "state" in options or "transaction_id" in options:
-            challenge_response = True
+        transaction_id = options.get("transaction_id") or options.get("state")
+        if transaction_id:
+            # Now we also need to check, if the transaction_id is an entry to the
+            # serial number of this token
+            chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
+            challenge_response = bool(chals)
 
         return challenge_response
 

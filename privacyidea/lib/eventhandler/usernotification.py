@@ -47,9 +47,11 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
+from privacyidea.lib.utils import create_tag_dict
+from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 import logging
-import datetime
+import os
 
 log = logging.getLogger(__name__)
 
@@ -181,7 +183,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                                       "description": _("Send notification to "
                                                        "this user."),
                                       "value": [NOTIFY_TYPE.TOKENOWNER]}
-                               }
+                               },
+                   "savefile": {"body":
+                                    {"type": "text",
+                                     "required": True,
+                                     "description": _("This is the template content of "
+                                                      "the new file. Can contain the tags "
+                                                      "as specified in the documentation.")},
+                                "filename":
+                                    {"type": "str",
+                                     "required": True,
+                                     "description": _("The filename of the notification. Existing files "
+                                                      "are overwritten. The name can contain tags as specified "
+                                                      "in the documentation and can also contain the tag {random}.")}
+                   }
                    }
         return actions
 
@@ -274,7 +289,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             log.warning("Was not able to determine the recipient for the user "
                         "notification: {0!s}".format(handler_def))
 
-        if recipient:
+        if recipient or action.lower() == "savefile":
+            # In case of "savefile" we do not need a recipient
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
             subject = handler_options.get("subject") or \
@@ -296,28 +312,18 @@ class UserNotificationEventHandler(BaseEventHandler):
                 token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
 
-            time = datetime.datetime.now().strftime("%H:%M:%S")
-            date = datetime.datetime.now().strftime("%Y-%m-%d")
-            tags = dict(admin=logged_in_user.get("username"),
-                        realm=logged_in_user.get("realm"),
-                        action=request.path,
-                        serial=serial,
-                        url=request.url_root,
-                        user=tokenowner.info.get("givenname"),
-                        surname=tokenowner.info.get("surname"),
-                        givenname=recipient.get("givenname"),
-                        username=tokenowner.login,
-                        userrealm=tokenowner.realm,
-                        tokentype=tokentype,
-                        registrationcode=registrationcode,
-                        recipient_givenname=recipient.get("givenname"),
-                        recipient_surname=recipient.get("surname"),
-                        googleurl_value=googleurl_value,
-                        time=time,
-                        date=date,
-                        client_ip=g.client_ip,
-                        ua_browser=request.user_agent.browser,
-                        ua_string=request.user_agent.string)
+            tags = create_tag_dict(logged_in_user=logged_in_user,
+                                   request=request,
+                                   client_ip=g.client_ip,
+                                   googleurl_value=googleurl_value,
+                                   recipient=recipient,
+                                   tokenowner=tokenowner,
+                                   serial=serial,
+                                   tokentype=tokentype,
+                                   registrationcode=registrationcode,
+                                   escape_html=action.lower() == "sendmail" and
+                                               handler_options.get("mimetype", "").lower() == "html")
+
             body = body.format(googleurl_img=googleurl_img,
                                **tags)
             subject = subject.format(**tags)
@@ -343,6 +349,22 @@ class UserNotificationEventHandler(BaseEventHandler):
                 else:
                     log.warning("Failed to send a notification email to user "
                                 "{0}".format(recipient))
+
+            elif action.lower() == "savefile":
+                spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",
+                                                "/var/lib/privacyidea/notifications/")
+                filename = handler_options.get("filename")
+                random = get_alphanum_str(16)
+                filename = filename.format(random=random, **tags).lstrip(os.path.sep)
+                outfile = os.path.normpath(os.path.join(spooldir, filename))
+                if not outfile.startswith(spooldir):
+                    log.error(u'Cannot write outside of spooldir {0!s}!'.format(spooldir))
+                else:
+                    try:
+                        with open(outfile, "w") as f:
+                            f.write(body)
+                    except Exception as err:
+                        log.error(u"Failed to write notification file: {0!s}".format(err))
 
             elif action.lower() == "sendsms":
                 smsconfig = handler_options.get("smsconfig")

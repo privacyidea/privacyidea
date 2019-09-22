@@ -44,6 +44,26 @@ to enable tokens in the user-realm *sales*.
 The following actions are available in the scope
 *admin*:
 
+tokenlist
+~~~~~~~~~
+
+type: bool
+
+This allows the administrator to list existing tokens in the specified user realm.
+Note, that the resolver in this policy is ignored.
+
+If the policy with the action ``tokenlist`` is not bound to any user realm, this acts
+as a wild card and the admin is allowed to list all tokens.
+
+If the action ``tokenlist`` is not active, but admin policies exist, then the admin
+is not allowed to list any tokens.
+
+.. note:: As with all boolean policies, multiple *tokenlist* policies add up to
+   create the resulting rights of the administrator.
+   So if there are multiple matching policies for different realms,
+   the admin will have list rights on all mentioned realms
+   independent on the priority of the policies.
+
 init
 ~~~~
 
@@ -123,9 +143,9 @@ This is the maximum allowed PIN length the admin is allowed to
 use when setting the OTP PIN.
 
 .. note:: There can be token type specific policies like
-``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
-``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
-priority of the common PIN policy.
+   ``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
+   ``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
+   priority of the common PIN policy.
 
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
@@ -391,12 +411,98 @@ type: bool
 To be able to define new :ref:`smtpserver` or delete existing ones, the
 administrator needs this rights ``smtpserver_write``.
 
+smtpserver_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the smtpserver configuration.
+
+smsgateway_write
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+To be able to define new :ref:`smsgateway` or delete existing ones, the
+administrator needs the right ``smsgateway_write``.
+
+smsgateway_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the smsgateway configuration.
+
+periodictask_write
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete periodictask definitions.
+
+periodictask_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the periodictask definitions.
+
 eventhandling_write
 ~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the admiinstrator to configure :ref:`eventhandler`.
+Allow the administrator to configure :ref:`eventhandler`.
+
+eventhandling_read
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read event handlers.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read event handlers, will allow the
+   administrator to see all event handler definitions.
+
+
+policywrite, policyread, policydelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete policies.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read policies, will allow the
+   administrator to see all policies.
+
+resolverwrite, resolverread, resolverdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete user resolvers and realms.
+
+.. note:: Currently the policies do not take into account resolvers,
+   or realms. Having the right to read resolvers, will allow the
+   administrator to see all resolvers and realms.
+
+mresolverwrite, mresolverread, mresolverdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete machine resolvers.
+
+
+configwrite, configread, configdelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete system configuration.
+
 
 auditlog
 ~~~~~~~~

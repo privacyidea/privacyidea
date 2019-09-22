@@ -58,6 +58,7 @@ resolver_blueprint = Blueprint('resolver_blueprint', __name__)
 @resolver_blueprint.route('/', methods=['GET'])
 @resolver_blueprint.route('/<resolver>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.RESOLVERREAD)
 def get_resolvers(resolver=None):
     """
     returns a json list of the specified resolvers.

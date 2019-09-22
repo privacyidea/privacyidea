@@ -66,7 +66,7 @@ def single_page_application():
     customization = current_app.config.get("PI_CUSTOMIZATION",
                                            "/static/customize/")
     customization = customization.strip('/')
-    # TODO: we should add the CSS into PI_CUSTOMZATION/css
+    custom_css = customization + "/css/custom.css" if current_app.config.get("PI_CUSTOM_CSS") else ""
     # Enrollment-Wizard:
     #    PI_CUSTOMIZATION/views/includes/token.enroll.pre.top.html
     #    PI_CUSTOMIZATION/views/includes/token.enroll.pre.bottom.html
@@ -77,6 +77,8 @@ def single_page_application():
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
     browser_lang = request.accept_languages.best_match(["en", "de", "de-DE"], default="en").split("-")[0]
+    # The page title can be configured in pi.cfg
+    page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
@@ -87,10 +89,10 @@ def single_page_application():
     realms = ""
     client_ip = get_client_ip(request,
                               get_from_config(SYSCONF.OVERRIDECLIENT))
-    realm_dropdown = policy_object.get_policies(action=ACTION.REALMDROPDOWN,
-                                                scope=SCOPE.WEBUI,
-                                                client=client_ip,
-                                                active=True)
+    realm_dropdown = policy_object.match_policies(action=ACTION.REALMDROPDOWN,
+                                                  scope=SCOPE.WEBUI,
+                                                  client=client_ip,
+                                                  active=True)
     if realm_dropdown:
         try:
             realm_dropdown_values = policy_object.get_action_values(
@@ -103,8 +105,6 @@ def single_page_application():
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
             realms = ",".join(get_realms())
-        if realms:
-            realms = "," + realms
 
     try:
         if is_remote_user_allowed(request):
@@ -158,10 +158,12 @@ def single_page_application():
                            hsm_ready=hsm_ready,
                            has_job_queue=str(has_job_queue()),
                            customization=customization,
+                           custom_css=custom_css,
                            customization_menu_file=customization_menu_file,
                            customization_baseline_file=customization_baseline_file,
                            realms=realms,
                            external_links=external_links,
                            login_text=login_text,
-                           logo=logo)
+                           logo=logo,
+                           page_title=page_title)
 

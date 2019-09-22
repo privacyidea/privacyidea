@@ -15,10 +15,10 @@ getToken....
 """
 from .base import MyTestCase, FakeAudit
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
-from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
+from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
 import datetime
@@ -1125,6 +1125,29 @@ class TokenTestCase(MyTestCase):
         self.assertFalse(r)
         self.assertTrue("message" in r_dict)
         self.assertTrue("transaction_id" in r_dict)
+        transaction_id = r_dict.get("transaction_id")
+
+        # Now we try authenticate:
+        r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
+                                     options={"transaction_id": transaction_id})
+        self.assertTrue(r)
+
+        # New challenge
+        r, r_dict = check_token_list([token_a, token_b], pin, user)
+        self.assertTrue("transaction_id" in r_dict)
+        transaction_id = r_dict.get("transaction_id")
+
+        # Now we run a bunch of failing responses to the challenge
+        for i in range(0, 10):
+            r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
+                                         options={"transaction_id": transaction_id})
+            self.assertFalse(r)
+        # Now we try the next value, which fails
+        r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[2], user,
+                                     options={"transaction_id": transaction_id})
+        self.assertFalse(r)
+        self.assertEqual(r_dict.get("message"), "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
+
         remove_token("CR2A")
         remove_token("CR2B")
         delete_policy("test48")
@@ -1458,6 +1481,53 @@ class TokenTestCase(MyTestCase):
         # Check that we did not miss any tokens
         self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
 
+    def test_0057_check_invalid_serial(self):
+        # This is an invalid serial, which will trigger an exception
+        self.assertRaises(Exception, reset_token, "hans wurst")
+
+        self.assertRaises(Exception, init_token,
+                          {"serial": "invalid/chars",
+                           "genkey": 1})
+
+
+class TokenOutOfBandTestCase(MyTestCase):
+
+    def test_00_create_realms(self):
+        self.setUp_user_realms()
+
+    def test_01_failcounter_no_increase(self):
+        # The fail counter for tiqr tokens will not increase, since this
+        # is a tokenmode outofband.
+        user = User(login="cornelius", realm=self.realm1)
+        pin1 = "pin1"
+        token1 = init_token({"serial": pin1, "pin": pin1,
+                             "type": "tiqr", "genkey": 1}, user=user)
+
+        r = token1.get_failcount()
+        self.assertEqual(r, 0)
+
+        r, r_dict = check_token_list([token1], pin1, user=user, options={})
+        self.assertFalse(r)
+        transaction_id = r_dict.get("transaction_id")
+
+        # Now we check the status of the challenge several times and verify that the
+        # failcounter is not increased:
+        for i in range(1, 10):
+            r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
+            self.assertFalse(r)
+            self.assertEqual(r_dict.get("type"), "tiqr")
+
+        r = token1.get_failcount()
+        self.assertEqual(r, 0)
+
+        # Now set the challenge to be answered and recheck:
+        Challenge.query.filter(Challenge.transaction_id == transaction_id).update({"otp_valid": 1})
+        r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
+        self.assertTrue(r)
+        self.assertEqual(r_dict.get("message"), "Found matching challenge")
+
+        remove_token(pin1)
+
 
 class TokenFailCounterTestCase(MyTestCase):
     """
@@ -1617,3 +1687,87 @@ class TokenFailCounterTestCase(MyTestCase):
         # Clean up
         remove_token(pin1)
         remove_token(pin2)
+
+    def test_05_reset_failcounter(self):
+        tok = init_token({"type": "hotp",
+                          "serial": "test05",
+                          "otpkey": self.otpkey})
+        # Set failcounter clear timeout to 1 minute
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        tok.token.count = 10
+        tok.set_pin("hotppin")
+        tok.set_failcount(10)
+        exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
+        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+
+        # OTP value #11
+        res, reply = check_token_list([tok], "hotppin481090")
+        self.assertTrue(res)
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
+        remove_token("test05")
+
+    def test_06_reset_failcounter_out_of_sync(self):
+        # Reset fail counter of a token that is out of sync
+        # The fail counter will reset, even if the token is out of sync, since the
+        # autoresync is handled in the tokenclass.authenticate.
+        tok = init_token({"type": "hotp",
+                          "serial": "test06",
+                          "otpkey": self.otpkey})
+
+        set_privacyidea_config("AutoResyncTimeout", "300")
+        set_privacyidea_config("AutoResync", 1)
+
+        tok.set_pin("hotppin")
+        tok.set_count_window(2)
+
+        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[0]))
+        self.assertTrue(res)
+
+        # Now we set the failoucnter and the exceeded time.
+        tok.set_failcount(10)
+        exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
+        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+
+        # authentication with otp value #3 will fail
+        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[3]))
+        self.assertFalse(res)
+
+        # authentication with otp value #4 will resync and succeed
+        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[4]))
+        self.assertTrue(res)
+        self.assertEqual(tok.get_failcount(), 0)
+
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
+        delete_privacyidea_config("AutoResyncTimeout")
+        delete_privacyidea_config("AutoResync")
+        remove_token("test06")
+
+    def test_07_reset_failcounter_on_pin_only(self):
+        tok = init_token({"type": "hotp",
+                          "serial": "test07",
+                          "otpkey": self.otpkey})
+        # Set failcounter clear timeout to 1 minute
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        tok.token.count = 10
+        tok.set_pin("hotppin")
+        tok.set_failcount(10)
+        exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
+        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+
+        # by default, correct PIN + wrong OTP value does not reset the failcounter
+        res, reply = check_token_list([tok], "hotppin123456")
+        self.assertEqual(tok.get_failcount(), 10)
+        self.assertFalse(res)
+        # with the corresponding config option ...
+        set_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, "True")
+        # ... correct PIN + wrong OTP resets the failcounter ...
+        res, reply = check_token_list([tok], "hotppin123456")
+        self.assertEqual(tok.get_failcount(), 0)
+        # ... but authentication still fails
+        self.assertFalse(res)
+
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
+        delete_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY)
+        remove_token("test07")
+

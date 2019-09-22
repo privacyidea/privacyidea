@@ -8,7 +8,8 @@
                             translate>List SMTP server definitions</a></li>
                 <li role="presentation"
                     >
-                    <a ui-sref="config.smtp.edit" translate>
+                    <a ui-sref="config.smtp.edit" translate
+                       ng-show="checkRight('smtpserver_write')">
                         New SMTP server
                     </a>
 

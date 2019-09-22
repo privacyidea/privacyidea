@@ -53,29 +53,33 @@ import string
 import binascii
 import six
 import ctypes
-from Crypto.Hash import SHA256 as HashFunc
-from Crypto.Cipher import AES
-from Crypto.PublicKey import RSA
+
 import base64
-try:
-    from Crypto.Signature import pkcs1_15
-    SIGN_WITH_RSA = False
-except ImportError:
-    # Bummer the version of PyCrypto has no PKCS1_15
-    SIGN_WITH_RSA = True
-import passlib.hash
 import traceback
-from six import PY2, text_type
+from six import PY2
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
-from privacyidea.lib.utils import to_unicode, to_bytes, hexlify_and_unicode, b64encode_and_unicode
+from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
+                                   b64encode_and_unicode)
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
+
+import passlib.hash
+if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
+elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
+    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
+else:
+    raise Exception("No password hashing method available")
 
 if not PY2:
     long = int
@@ -93,8 +97,8 @@ class SecretObj(object):
         self.preserve = preserve
 
     def getKey(self):
-        log.warning('Requesting secret key '
-                    '- verify the usage scope and zero + free ')
+        log.info('Requesting secret key '
+                 '- verify the usage scope and zero + free ')
         return decrypt(self.val, self.iv)
 
     def getPin(self):
@@ -111,16 +115,18 @@ class SecretObj(object):
         self._clearKey_(preserve=self.preserve)
         return h
 
-    def aes_decrypt(self, data_input):
+    def aes_ecb_decrypt(self, enc_data):
         '''
-        support inplace aes decryption for the yubikey
+        support inplace aes decryption for the yubikey (mode ECB)
 
-        :param data_input: data, that should be decrypted
+        :param enc_data: data, that should be decrypted
         :return: the decrypted data
         '''
         self._setupKey_()
-        aes = AES.new(self.bkey, AES.MODE_ECB)
-        msg_bin = aes.decrypt(data_input)
+        backend = default_backend()
+        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(), backend=backend)
+        decryptor = cipher.decryptor()
+        msg_bin = decryptor.update(enc_data) + decryptor.finalize()
         self._clearKey_(preserve=self.preserve)
         return msg_bin
 
@@ -174,7 +180,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = passlib.hash.pbkdf2_sha512.hash(key + password)
+    pw_dig = hash_admin_pw(key + password)
     return pw_dig
 
 
@@ -311,70 +317,75 @@ def decryptPin(cryptPin):
 
 
 @log_with(log, log_entry=False)
-def encrypt(data, iv, id=0):
-    '''
+def encrypt(data, iv, key_id=0):
+    """
     encrypt a variable from the given input with an initialisation vector
 
-    :param data: buffer, which contains the value
-    :type  data: bytes or str
-    :param iv:   initialisation vector
-    :type  iv:   bytes or str
-    :param id:   contains the key id of the keyset which should be used
-    :type  id:   int
-    :return:     encrypted and hexlified data
+    :param data:   buffer, which contains the value
+    :type  data:   bytes or str
+    :param iv:     initialisation vector
+    :type  iv:     bytes or str
+    :param key_id: contains the key id of the keyset which should be used
+    :type  key_id: int
+    :return: encrypted and hexlified data
     :rtype: str
-
-    '''
+    """
     hsm = get_hsm()
-    ret = hsm.encrypt(to_bytes(data), to_bytes(iv), id)
+    ret = hsm.encrypt(to_bytes(data), to_bytes(iv), key_id=key_id)
     return hexlify_and_unicode(ret)
 
 
 @log_with(log, log_exit=False)
-def decrypt(input, iv, id=0):
-    '''
-    decrypt a variable from the given input with an initialiation vector
+def decrypt(enc_data, iv, key_id=0):
+    """
+    decrypt a variable from the given input with an initialisation vector
 
-    :param input: buffer, which contains the crypted value
-    :type  input: bytes or str
-    :param iv:    initialisation vector
-    :type  iv:    bytes or str
-    :param id:    contains the key id of the keyset which should be used
-    :type  id:    int
-    :return:      decrypted buffer
+    :param enc_data: buffer, which contains the crypted value
+    :type  enc_data: bytes or str
+    :param iv:       initialisation vector
+    :type  iv:       bytes or str
+    :param key_id:   contains the key id of the keyset which should be used
+    :type  key_id:   int
+    :return: decrypted buffer
     :rtype: bytes
-    '''
+    """
     hsm = get_hsm()
-    res = hsm.decrypt(to_bytes(input), to_bytes(iv), id)
+    res = hsm.decrypt(to_bytes(enc_data), to_bytes(iv), key_id=key_id)
     return res
 
 
 @log_with(log, log_exit=False)
-def aes_decrypt(key, iv, cipherdata, mode=AES.MODE_CBC):
+def aes_cbc_decrypt(key, iv, enc_data):
     """
-    Decrypts the given cipherdata with the key/iv.
+    Decrypts the given cipherdata with AES (CBC Mode) using the key/iv.
+
+    Attention: This function returns the decrypted data as is, without removing
+    any padding. The calling function must take care of this!
 
     :param key: The encryption key
     :type key: bytes
     :param iv: The initialization vector
     :type iv: bytes
-    :param cipherdata: The cipher text
-    :type cipherdata: binary string
+    :param enc_data: The cipher text
+    :type enc_data: binary string
     :param mode: The AES MODE
     :return: plain text in binary data
     :rtype: bytes
     """
-    aes = AES.new(key, mode, iv)
-    output = aes.decrypt(cipherdata)
-    padding = six.indexbytes(output, len(output) - 1)
-    # remove padding
-    output = output[0:-padding]
+    backend = default_backend()
+    mode = modes.CBC(iv)
+    cipher = Cipher(algorithms.AES(key), mode=mode, backend=backend)
+    decryptor = cipher.decryptor()
+    output = decryptor.update(enc_data) + decryptor.finalize()
     return output
 
 
-def aes_encrypt(key, iv, data, mode=AES.MODE_CBC):
+def aes_cbc_encrypt(key, iv, data):
     """
-    encrypts the given data with key/iv
+    encrypts the given data with AES (CBC Mode) using key/iv.
+
+    Attention: This function expects correctly padded input data (multiple of
+    AES block size). The calling function must take care of this!
 
     :param key: The encryption key
     :type key: binary string
@@ -386,11 +397,13 @@ def aes_encrypt(key, iv, data, mode=AES.MODE_CBC):
     :return: plain text in binary data
     :rtype: bytes
     """
-    aes = AES.new(key, mode, iv)
-    # pad data
-    num_pad = aes.block_size - (len(data) % aes.block_size)
-    data = data + six.int2byte(num_pad) * num_pad
-    output = aes.encrypt(data)
+    assert len(data) % (algorithms.AES.block_size // 8) == 0
+    # do the encryption
+    backend = default_backend()
+    mode = modes.CBC(iv)
+    cipher = Cipher(algorithms.AES(key), mode=mode, backend=backend)
+    encryptor = cipher.encryptor()
+    output = encryptor.update(data) + encryptor.finalize()
     return output
 
 
@@ -407,25 +420,33 @@ def aes_encrypt_b64(key, data):
     :return: base64 encrypted output, containing IV and encrypted data
     :rtype: str
     """
+    # pad data
+    padder = padding.PKCS7(algorithms.AES.block_size).padder()
+    padded_data = padder.update(data) + padder.finalize()
     iv = geturandom(16)
-    encdata = aes_encrypt(key, iv, data)
+    encdata = aes_cbc_encrypt(key, iv, padded_data)
     return b64encode_and_unicode(iv + encdata)
 
 
-def aes_decrypt_b64(key, data_b64):
+def aes_decrypt_b64(key, enc_data_b64):
     """
     This function decrypts base64 encoded data (containing the IV)
     using AES-128-CBC. Used for PSKC
 
     :param key: binary key
-    :param data_b64: base64 encoded data (IV + encdata)
-    :type data_b64: str
+    :param enc_data_b64: base64 encoded data (IV + encdata)
+    :type enc_data_b64: str
     :return: encrypted data
     """
-    data_bin = base64.b64decode(data_b64)
+    data_bin = base64.b64decode(enc_data_b64)
     iv = data_bin[:16]
     encdata = data_bin[16:]
-    output = aes_decrypt(key, iv, encdata)
+    padded_data = aes_cbc_decrypt(key, iv, encdata)
+
+    # remove padding
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+    output = unpadder.update(padded_data) + unpadder.finalize()
+
     return output
 
 
@@ -617,35 +638,55 @@ def zerome(bufferObject):
     return
 
 
+def _slow_rsa_verify_raw(key, sig, msg):
+    assert isinstance(sig, six.integer_types)
+    assert isinstance(msg, six.integer_types)
+    if hasattr(key, 'public_numbers'):
+        pn = key.public_numbers()
+    elif hasattr(key, 'private_numbers'):  # pragma: no cover
+        pn = key.private_numbers().public_numbers
+    else:  # pragma: no cover
+        raise TypeError('No public key')
+
+    # compute m**d (mod n)
+    return msg == pow(sig, pn.e, pn.n)
+
+
 class Sign(object):
     """
     Signing class that is used to sign Audit Entries and to sign API responses.
     """
-    def __init__(self, private_file, public_file):
+    sig_ver = 'rsa_sha256_pss'
+
+    def __init__(self, private_key=None, public_key=None):
         """
-        :param private_file: The privacy Key file
-        :type private_file: filename
-        :param public_file:  The public key file
-        :type public_file: filename
+        :param private_key: The private Key data in PEM format
+        :type private_key: bytes or None
+        :param public_key:  The public key data in PEM format
+        :type public_key: bytes or None
         :return: Sign Object
         """
-        self.private = ""
-        self.public = ""
-        try:
-            f = open(private_file, "r")
-            self.private = f.read()
-            f.close()
-        except Exception as e:
-            log.error("Error reading private key {0!s}: ({1!r})".format(private_file, e))
-            raise e
+        self.private = None
+        self.public = None
+        backend = default_backend()
+        if private_key:
+            try:
+                self.private = serialization.load_pem_private_key(private_key,
+                                                                  password=None,
+                                                                  backend=backend)
+            except Exception as e:
+                log.error("Error loading private key: ({0!r})".format(e))
+                log.debug(traceback.format_exc())
+                raise e
 
-        try:
-            f = open(public_file, "r")
-            self.public = f.read()
-            f.close()
-        except Exception as e:
-            log.error("Error reading public key {0!s}: ({1!r})".format(public_file, e))
-            raise e
+        if public_key:
+            try:
+                self.public = serialization.load_pem_public_key(public_key,
+                                                                backend=backend)
+            except Exception as e:
+                log.error("Error loading public key: ({0!r})".format(e))
+                log.debug(traceback.format_exc())
+                raise e
 
     def sign(self, s):
         """
@@ -653,45 +694,70 @@ class Sign(object):
 
         :param s: String to sign
         :type s: str
-        :return: The signature of the string
-        :rtype: long
+        :return: The hexlified and versioned signature of the string
+        :rtype: str
         """
-        if isinstance(s, text_type):
-            s = s.encode('utf8')
-        RSAkey = RSA.importKey(self.private)
-        if SIGN_WITH_RSA:
-            hashvalue = HashFunc.new(s).digest()
-            signature = RSAkey.sign(hashvalue, 1)
-        else:
-            hashvalue = HashFunc.new(s)
-            signature = pkcs1_15.new(RSAkey).sign(hashvalue)
-        s_signature = str(signature[0])
-        return s_signature
+        if not self.private:
+            log.info('Could not sign message {0!s}, no private key!'.format(s))
+            # TODO: should we throw an exception in this case?
+            return ''
 
-    def verify(self, s, signature):
+        signature = self.private.sign(
+            to_bytes(s),
+            asym_padding.PSS(
+                mgf=asym_padding.MGF1(hashes.SHA256()),
+                salt_length=asym_padding.PSS.MAX_LENGTH),
+            hashes.SHA256())
+        res = ':'.join([self.sig_ver, hexlify_and_unicode(signature)])
+        return res
+
+    def verify(self, s, signature, verify_old_sigs=False):
         """
         Check the signature of the string s
 
         :param s: String to check
-        :type s: str
+        :type s: str or bytes
         :param signature: the signature to compare
-        :type signature: str
+        :type signature: str or int
+        :param verify_old_sigs: whether to check for old style signatures as well
+        :type verify_old_sigs: bool
+        :return: True if the signature is valid, false otherwise.
+        :rtype: bool
         """
-        if isinstance(s, text_type):
-            s = s.encode('utf8')
         r = False
+        if not self.public:
+            log.info('Could not verify signature for message {0!s}, '
+                     'no public key!'.format(s))
+            return r
+
+        sver = ''
         try:
-            RSAkey = RSA.importKey(self.public)
-            signature = long(signature)
-            if SIGN_WITH_RSA:
-                hashvalue = HashFunc.new(s).digest()
-                r = RSAkey.verify(hashvalue, (signature,))
+            sver, signature = six.text_type(signature).split(':')
+        except ValueError:
+            # if the signature does not contain a colon we assume an old style signature.
+            pass
+
+        try:
+            if sver == self.sig_ver:
+                self.public.verify(
+                    binascii.unhexlify(signature),
+                    to_bytes(s),
+                    asym_padding.PSS(
+                        mgf=asym_padding.MGF1(hashes.SHA256()),
+                        salt_length=asym_padding.PSS.MAX_LENGTH),
+                    hashes.SHA256())
+                r = True
             else:
-                hashvalue = HashFunc.new(s)
-                pkcs1_15.new(RSAkey).verify(hashvalue, signature)
-        except Exception as _e:  # pragma: no cover
+                if verify_old_sigs:
+                    int_s = int(binascii.hexlify(sha256(to_bytes(s)).digest()), 16)
+                    r = _slow_rsa_verify_raw(self.public, int(signature), int_s)
+                else:
+                    log.debug('Could not verify old style signature {0!s} '
+                              'for data {1:s}'.format(signature, s))
+        except Exception:
             log.error("Failed to verify signature: {0!r}".format(s))
             log.debug("{0!s}".format(traceback.format_exc()))
+
         return r
 
 
@@ -713,7 +779,6 @@ def create_hsm_object(config):
     package_name, class_name = hsm_module_name.rsplit(".", 1)
     hsm_class = get_module_class(package_name, class_name, "setup_module")
     log.info("initializing HSM class: {0!s}".format(hsm_class))
-    hsm_parameters = {}
     if class_name == "DefaultSecurityModule":
         hsm_parameters = {"file": config.get("PI_ENCFILE")}
     else:

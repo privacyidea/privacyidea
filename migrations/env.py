@@ -1,10 +1,12 @@
 from __future__ import with_statement
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine.url import make_url
 from logging.config import fileConfig
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+
 config = context.config
 
 # Interpret the config file for Python logging.
@@ -16,7 +18,23 @@ fileConfig(config.config_file_name)
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from flask import current_app
-config.set_main_option('sqlalchemy.url', current_app.config.get('SQLALCHEMY_DATABASE_URI'))
+
+
+def set_database_url(config):
+    url = current_app.config.get('SQLALCHEMY_DATABASE_URI')
+    try:
+        # In case of MySQL, add ``charset=utf8`` to the parameters (if no charset is set),
+        # because this is what Flask-SQLAlchemy does
+        if url.startswith("mysql"):
+            parsed_url = make_url(url)
+            parsed_url.query.setdefault("charset", "utf8")
+            url = str(parsed_url)
+    except Exception as exx:
+        print(u"Attempted to set charset=utf8 on connection, but failed: {}".format(exx))
+    config.set_main_option('sqlalchemy.url', url)
+
+
+set_database_url(config)
 target_metadata = current_app.extensions['migrate'].db.metadata
 
 # other values from the config, defined by the needs of env.py,

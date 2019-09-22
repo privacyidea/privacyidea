@@ -47,7 +47,7 @@ webservice!
 import logging
 
 from .log import log_with
-from .config import (get_resolver_types, get_resolver_classes, update_config_object)
+from .config import (get_resolver_types, get_resolver_classes, get_config_object)
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.framework import get_request_local_store
 from ..models import (Resolver,
@@ -143,8 +143,7 @@ def save_resolver(params):
         if t not in data:
             _missing = True
     if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(
-                        unicode(params)))
+        raise Exception("type or description without necessary data! {0!s}".format(params))
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
@@ -194,8 +193,7 @@ def get_resolver_list(filter_resolver_type=None,
     :type censor: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
-    # We need to check if we need to update the config object
-    config_object = update_config_object()
+    config_object = get_config_object()
     if censor:
         resolvers = copy.deepcopy(config_object.resolver)
     else:

@@ -1,17 +1,14 @@
-# Authors in version 3.0
+# Authors in version 3.1
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-Paul Lettich <paul.lettich@netknights.it>
 Friedrich Weber <friedrich.weber@netknights.it>
+Paul Lettich <paul.lettich@netknights.it>
+Jean-Pierre <jean-pierre.hoehmann@netknights.it>
+Micha Preußer <micha.preusser@netknights.it>
+Tamaro <tamaro.skaljic@netknights.it>
+Bas van der Vlies <bas.vandervlies@surfsara.nl>
 Pavol Ipoth <pavol.ipoth@telekom.com>
-Micha Preußer <mail@mpreusser.de>
-M. Maraun <maraun@web.de>
-Ryan Williams <rdw@appnexus.com>
-Josef Wuebbels <josef.wuebbels@t-systems.com>
-Viktor Blesak <viktor.blesak@pan-net.eu>
-Voyrx
-blsho
-renini <r.r.arends@hr.nl>
+droobah <bananaboat@gmail.com>
 
 # Overall authors
 
@@ -66,6 +63,9 @@ mjbecker <39964311+mjbecker@users.noreply.github.com>
 quynh-axiadids <quynh@axiadids.com>
 renini <r.r.arends@hr.nl>
 root <root@Svr040.livingston.nhsscotland.com>
+Tamaro <tamaro.skaljic@netknights.it>
+Bas van der Vlies <bas.vandervlies@surfsara.nl>
+droobah <bananaboat@gmail.com>
 
 Created using
 git shortlog -sne 9403cd299bed9de846631da56e80362553667bad.. | cut -f 2,3 

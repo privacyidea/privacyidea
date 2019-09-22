@@ -40,11 +40,4 @@ jobs:
           name: run setup.py build
           command: |
             . venv/bin/activate
-            python setup.py install
-            make builddeb-nosign
-
-      - run:
-          name: run ubuntu package build
-          command: |
-            . venv/bin/activate
-            make builddeb-nosign
+            python setup.py build

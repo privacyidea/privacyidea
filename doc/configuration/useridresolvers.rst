@@ -111,7 +111,7 @@ The ``LoginName attribute`` is the attribute that holds the loginname. It
 can be changed to your needs.
 
 Starting with version 2.20 you can provide a list of attributes in
-``LoginName Attribute`` like:
+``LoginName Attribute`` like::
 
     sAMAccountName, userPrincipalName
 
@@ -136,7 +136,7 @@ The above attributes are used for privacyIDEA's normal functionality and are
 listed in the userview. However, with a SAML authentication request user
 attributes can be returned. (see :ref:`return_saml_attributes`). To return
 arbitrary attributes from the LDAP you can add additional keys to the
-attribute mapping with a key, you make up and the LDAP attribute like:
+attribute mapping with a key, you make up and the LDAP attribute like::
 
    "homedir": "homeDirectory",
    "studentID": "objectGUID"
@@ -176,6 +176,20 @@ are unnecessary.
 The ``CACHE_TIMEOUT`` configures a short living per process cache for LDAP users.
 The cache is not shared between different Python processes, if you are running more processes
 in Apache or Nginx. You can set this to ``0`` to deactivate this cache.
+
+The *Server pool retry rounds* and *Server pool skip timeout* settings configure the behavior of
+the LDAP server pool. When establishing a LDAP connection, the resolver uses a round-robin
+strategy to select a LDAP server from the pool. If the current server is not reachable, it is removed
+from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
+If no server from the pool is reachable, the servers are queried again from the beginning. If
+a reachable server has not been found after the number of rounds specified in the *retry rounds*,
+the request fails.
+
+By default, knowledge about unavailable pool servers is not persisted between requests.
+Consequently, a new request may retry to reach unavailable servers, even though the *skip timeout*
+has not passed yet. If the *Per-process server pool* is enabled, knowledge about unavailable
+servers is persisted within each process. This setting may improve performance in situations in
+which a LDAP server from the pool is down for extended periods of time.
 
 TLS certificates
 ~~~~~~~~~~~~~~~~

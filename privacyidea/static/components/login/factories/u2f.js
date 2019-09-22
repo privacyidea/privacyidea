@@ -65,7 +65,8 @@ angular.module("privacyideaAuth")
                     var appId = signRequests[0].appId;
                     var challenge = signRequests[0].challenge;
                     var registeredKeys = [];
-                    for (let signRequest of signRequests) {
+                    for (var i = 0; i < signRequests.length; i++) {
+                        var signRequest = signRequests[i];
                         registeredKeys.push({
                             version: signRequest.version,
                             keyHandle: signRequest.keyHandle

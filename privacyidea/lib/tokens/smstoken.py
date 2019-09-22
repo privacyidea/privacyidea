@@ -498,20 +498,14 @@ class SmsTokenClass(HotpTokenClass):
         """
         message = "<otp>"
         g = options.get("g")
-        username = None
-        realm = None
         user_object = options.get("user")
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
         if g:
             clientip = options.get("clientip")
             policy_object = g.policy_object
             messages = policy_object.\
                 get_action_values(action=SMSACTION.SMSTEXT,
                                   scope=SCOPE.AUTH,
-                                  realm=realm,
-                                  user=username,
+                                  user_object=user_object if user_object else None,
                                   client=clientip,
                                   unique=True,
                                   allow_white_space_in_action=True,
@@ -546,12 +540,12 @@ class SmsTokenClass(HotpTokenClass):
             clientip = options.get("clientip")
             policy_object = g.policy_object
             autosmspol = policy_object.\
-                get_policies(action=SMSACTION.SMSAUTO,
-                             scope=SCOPE.AUTH,
-                             realm=realm,
-                             user=username,
-                             client=clientip, active=True,
-                             audit_data=g.audit_object.audit_data)
+                match_policies(action=SMSACTION.SMSAUTO,
+                               scope=SCOPE.AUTH,
+                               realm=realm,
+                               user=username,
+                               client=clientip, active=True,
+                               audit_data=g.audit_object.audit_data)
             autosms = len(autosmspol) >= 1
 
         return autosms

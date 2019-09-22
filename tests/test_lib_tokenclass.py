@@ -163,6 +163,15 @@ class TokenBaseTestCase(MyTestCase):
         
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
+
+        # Set token to be active
+        token.token.active = True
+        # Set failcounter high
+        token.token.failcount = 13
+        r = token.is_fit_for_challenge([])
+        self.assertFalse(r)
+        # reset failcount
+        token.token.failcount = 8
         
         self.assertTrue(token.get_user_id() == token.token.owners.first().user_id)
         
@@ -528,6 +537,7 @@ class TokenBaseTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)
+        transaction_id = "123456789"
 
         db_token.set_pin("test")
         # No challenge request
@@ -548,12 +558,20 @@ class TokenBaseTestCase(MyTestCase):
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test123456",
-                                            options={"transaction_id": "123456789"})
-        self.assertTrue(resp, resp)
+                                            options={"transaction_id": transaction_id})
+        # The token has not DB entry in the challenges table
+        self.assertFalse(resp)
+
+        # Create a challenge
+        C = Challenge(serial=self.serial1, transaction_id=transaction_id, challenge="12")
+        C.save()
+        resp = token.is_challenge_response(User(login="cornelius",
+                                                realm=self.realm1),
+                                           "test123456",
+                                           options={"transaction_id": transaction_id})
+        self.assertTrue(resp)
 
         # test if challenge is valid
-        C = Challenge("S123455", transaction_id="tid", challenge="Who are you?")
-        C.save()
         self.assertTrue(C.is_valid())
 
     def test_19_pin_otp_functions(self):
@@ -834,14 +852,14 @@ class TokenBaseTestCase(MyTestCase):
                            datetime.timedelta(minutes=3)).strftime(DATE_FORMAT)
         token_obj.add_tokeninfo(FAILCOUNTER_EXCEEDED, failed_recently)
 
-        r = token_obj.check_failcount()
+        r = token_obj.check_reset_failcount()
         # the fail is only 3 minutes ago, so we will not reset and check will
         #  be false
         self.assertFalse(r)
 
         # Set the timeout to a shorter value
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 2)
-        r = token_obj.check_failcount()
+        r = token_obj.check_reset_failcount()
         # The fail is longer ago.
         self.assertTrue(r)
 

@@ -14,7 +14,7 @@ to manage.
 
 You can select one of the realms in the left drop down box. The administrator
 will only see the realms in the drop down box, that he is allowed to manage.
-**(TODO)** No migrated, yet.
+
 
 .. figure:: user-view.png
    :width: 500

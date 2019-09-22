@@ -48,7 +48,7 @@ import crypt
 import codecs
 import six
 
-from privacyidea.lib.utils import to_bytes
+from privacyidea.lib.utils import to_bytes, convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
@@ -253,7 +253,7 @@ class IdResolver (UserIdResolver):
         :param userid: The userid in this resolver
         :type userid: string
         :return: username
-        :rtype: string
+        :rtype: str
         '''
         fields = self.descDict.get(userId)
         index = self.sF["username"]
@@ -265,11 +265,12 @@ class IdResolver (UserIdResolver):
 
         :param LoginName: the login of the user (as unicode)
         :return: the userId
+        :rtype: str
         """
         # We do not encode the LoginName anymore, as we are
         # storing unicode in nameDict now.
         if LoginName in self.nameDict:
-            return self.nameDict[LoginName]
+            return convert_column_to_unicode(self.nameDict[LoginName])
         else:
             return ""
 
@@ -293,7 +294,7 @@ class IdResolver (UserIdResolver):
 
         return self.searchFields
 
-    def getUserList(self, searchDict):
+    def getUserList(self, searchDict=None):
         """
         get a list of all users matching the search criteria of the searchdict
 

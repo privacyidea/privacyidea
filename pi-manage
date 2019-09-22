@@ -58,8 +58,11 @@ from getpass import getpass
 import gnupg
 import yaml
 import contextlib
-
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 import flask
+from six.moves import shlex_quote
 
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -88,7 +91,6 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import cleanup as authcache_cleanup
 from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
-from Crypto.PublicKey import RSA
 import jwt
 import ast
 
@@ -246,12 +248,16 @@ def change(username, email=None, password_prompt=False):
 @backup_manager.command
 def create(directory="/var/lib/privacyidea/backup/",
            conf_dir="/etc/privacyidea/",
+           radius_directory=None,
            enckey=False):
     """
     Create a new backup of the database and the configuration. The default
     does not include the encryption key. Use the 'enckey' option to also
     backup the encryption key. Then you should make sure, that the backups
     are stored safely.
+
+    If you want to also include the RADIUS configuration into the backup
+    specify a directory using 'radius_directory'.
     """
     CONF_DIR = conf_dir
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
@@ -274,17 +280,20 @@ def create(directory="/var/lib/privacyidea/backup/",
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        m = re.match(".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
         database = m.groups()[3]
+        # We strip parameters, but we do not use them
+        _parameters = m.groups()[4]
         defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
         _write_mysql_defaults(defaults_file, username, password)
         call("mysqldump --defaults-file=%s -h %s %s > %s" % (
-            defaults_file,
-            datahost,
-            database, sqlfile), shell=True)
+            shlex_quote(defaults_file),
+            shlex_quote(datahost),
+            shlex_quote(database),
+            shlex_quote(sqlfile)), shell=True)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
@@ -292,6 +301,11 @@ def create(directory="/var/lib/privacyidea/backup/",
 
     backup_call = ["tar", "-zcf",
                    backup_file, CONF_DIR, sqlfile]
+
+    if radius_directory:
+        # Simply append the radius directory to the backup command
+        backup_call.append(radius_directory)
+
     if not enckey:
         # Exclude enckey from backup
         backup_call.append("--exclude={0!s}".format(enc_file))
@@ -384,10 +398,10 @@ def restore(backup_file):
         _write_mysql_defaults(defaults_file, username, password)
         # Rewriting database
         print("Restoring database.")
-        call("mysql --defaults-file=%s -h %s %s < %s" % (defaults_file,
-                                                         datahost,
-                                                         database,
-                                                         sqlfile), shell=True)
+        call("mysql --defaults-file=%s -h %s %s < %s" % (shlex_quote(defaults_file),
+                                                         shlex_quote(datahost),
+                                                         shlex_quote(database),
+                                                         shlex_quote(sqlfile)), shell=True)
         os.unlink(sqlfile)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
@@ -441,7 +455,7 @@ def create_enckey():
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    with open(filename, "w") as f:
+    with open(filename, "wb") as f:
         f.write(DefaultSecurityModule.random(96))
 
     print("Encryption key written to %s" % filename)
@@ -481,14 +495,22 @@ def create_audit_keys(keysize=2048):
         print("The file \n\t%s\nalready exist. We do not overwrite it!" %
               filename)
         sys.exit(1)
-    new_key = RSA.generate(keysize, e=65537)
-    public_key = new_key.publickey().exportKey("PEM")
-    private_key = new_key.exportKey("PEM")
-    with open(filename, "w") as f:
-        f.write(private_key)
+    new_key = rsa.generate_private_key(public_exponent=65537,
+                                       key_size=keysize,
+                                       backend=default_backend())
+    priv_pem = new_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
+    with open(filename, "wb") as f:
+        f.write(priv_pem)
 
-    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "w") as f:
-        f.write(public_key)
+    pub_key = new_key.public_key()
+    pub_pem = pub_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+    with open(app.config.get("PI_AUDIT_KEY_PUBLIC"), "wb") as f:
+        f.write(pub_pem)
 
     print("Signing keys written to %s and %s" %
           (filename, app.config.get("PI_AUDIT_KEY_PUBLIC")))
@@ -1021,7 +1043,7 @@ def list_policies():
     list the policies
     """
     pol_cls = PolicyClass()
-    policies = pol_cls.get_policies()
+    policies = pol_cls.list_policies()
     print("Active \t Name \t Scope")
     print(40*"=")
     for policy in policies:
@@ -1063,12 +1085,12 @@ def delete(name):
 def p_export(filename=None):
     """
     Export all policies to a file.
-    If the filename is omitted, the policies are written to stdout.    
+    If the filename is omitted, the policies are written to stdout.
     """
     import pprint
     pp = pprint.PrettyPrinter(indent=4)
     pol_cls = PolicyClass()
-    policies = pol_cls.get_policies()
+    policies = pol_cls.list_policies()
     pol_str = pp.pformat(policies)
     if filename:
         with open(filename, 'w') as f:
@@ -1081,13 +1103,13 @@ def p_export(filename=None):
 def p_import(filename, cleanup=False):
     """
     Import the policies from a file.
-    If 'cleanup' is specified the existing policies are deleted before the 
+    If 'cleanup' is specified the existing policies are deleted before the
     policies from the file are imported.
     """
     if cleanup:
         print("Cleanup old policies.")
         pol_cls = PolicyClass()
-        policies = pol_cls.get_policies()
+        policies = pol_cls.list_policies()
         for policy in policies:
             name = policy.get("name")
             r = delete_policy(name)
@@ -1118,10 +1140,10 @@ def p_import(filename, cleanup=False):
 def create(name, scope, action, filename=None):
     """
     create a new policy. 'FILENAME' must contain a dictionary and its content
-    takes precedence over CLI parameters. 
+    takes precedence over CLI parameters.
     I.e. if you are specifying a FILENAME,
     the parameters name, scope and action need to be specified, but are ignored.
-    
+
     Note: This will only create one policy per file.
     """
     if filename:
@@ -1130,6 +1152,14 @@ def create(name, scope, action, filename=None):
                 contents = f.read()
 
             params = ast.literal_eval(contents)
+
+            if params.get("name") and params.get("name") != name:
+                print("Found name '{0!s}' in file, will use that instead of "
+                      "'{1!s}'.".format(params.get("name"), name))
+            else:
+                print("name not defined in file, will use the cli value "
+                      "{0!s}.".format(name))
+                params["scope"] = name
 
             if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
@@ -1147,7 +1177,8 @@ def create(name, scope, action, filename=None):
                       "{0!s}.".format(action))
                 params["action"] = action
 
-            r = set_policy(name, scope=params.get("scope"),
+            r = set_policy(params.get("name"),
+                           scope=params.get("scope"),
                            action=params.get("action"),
                            realm=params.get("realm"),
                            resolver=params.get("resolver"),

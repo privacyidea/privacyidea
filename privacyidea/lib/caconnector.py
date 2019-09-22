@@ -149,13 +149,15 @@ def get_caconnector_list(filter_caconnector_type=None,
              "type": conn.catype}
         # Add the connector configuration
         data = {}
+        for conf in conn.caconfig:
+            value = conf.Value
+            if conf.Type == "password":
+                value = decryptPassword(value)
+            data[conf.Key] = value
         if return_config:
-            for conf in conn.caconfig:
-                value = conf.Value
-                if conf.Type == "password":
-                    value = decryptPassword(value)
-                data[conf.Key] = value
-        c["data"] = data
+            c["data"] = data
+        else:
+            c["data"] = {}
 
         # Also add templates
         c_obj_class = get_caconnector_class(conn.catype)
@@ -164,7 +166,7 @@ def get_caconnector_list(filter_caconnector_type=None,
                 "unknown CA connector class {0!s} ".format(conn.name))
         else:
             # create the resolver instance and load the config
-            c_obj = c_obj_class(conn.name, c.get("data"))
+            c_obj = c_obj_class(conn.name, data)
             if c_obj:
                 c["templates"] = templates = c_obj.get_templates()
 

@@ -40,16 +40,17 @@ from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
-                        send_result)
+                        send_result,
+                        check_policy_name)
 from ..lib.log import log_with
 from ..lib.policy import (set_policy,
                           PolicyClass, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
-                          enable_policy)
+                          enable_policy, get_policy_condition_sections, get_policy_condition_comparators)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import (g,
@@ -126,6 +127,13 @@ def set_policy_api(name=None):
     :jsonparam active: bool, whether this policy is active or not
     :jsonparam check_all_resolvers: bool, whether all all resolvers in which
         the user exists should be checked with this policy.
+    :jsonparam conditions: a (possibly empty) list of conditions of the policy.
+        Each condition is encoded as a list with 5 elements:
+        ``[section (string), key (string), comparator (string), value (string), active (boolean)]``
+        Hence, the ``conditions`` parameter expects a list of lists.
+        When privacyIDEA checks if a defined policy should take effect,
+        *all* conditions of the policy must be fulfilled for the policy to match.
+        Note that the order of conditions is not guaranteed to be preserved.
 
     :return: a json result with success or error
 
@@ -168,12 +176,7 @@ def set_policy_api(name=None):
     """
     res = {}
     param = request.all_data
-    if not re.match('^[a-zA-Z0-9_.]*$', name):
-        raise ParameterError(_("The name of the policy may only contain "
-                               "the characters a-zA-Z0-9_."))
-
-    if name.lower() == "check":
-        raise ParameterError(_("T'check' is an invalid policy name."))
+    check_policy_name(name)
 
     action = getParam(param, "action", required)
     scope = getParam(param, "scope", required)
@@ -186,6 +189,7 @@ def set_policy_api(name=None):
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
     priority = int(getParam(param, "priority", optional, default=1))
+    conditions = getParam(param, "conditions", optional)
 
     g.audit_object.log({'action_detail': name,
                         'info': u"{0!s}".format(param)})
@@ -193,7 +197,7 @@ def set_policy_api(name=None):
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
                      check_all_resolvers=check_all_resolvers or False,
-                     priority=priority)
+                     priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret
@@ -206,6 +210,7 @@ def set_policy_api(name=None):
 @policy_blueprint.route('/<name>', methods=['GET'])
 @policy_blueprint.route('/export/<export>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.POLICYREAD)
 def get_policy(name=None, export=None):
     """
     this function is used to retrieve the policies that you
@@ -270,17 +275,18 @@ def get_policy(name=None, export=None):
     realm = getParam(param, "realm")
     scope = getParam(param, "scope")
     active = getParam(param, "active")
+    if active is not None:
+        active = is_true(active)
 
     P = g.policy_object
     if not export:
         log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
 
-        pol = P.get_policies(name=name, realm=realm, scope=scope,
-                             active=active, all_times=True)
+        pol = P.list_policies(name=name, realm=realm, scope=scope, active=active)
         ret = send_result(pol)
     else:
         # We want to export all policies
-        pol = P.get_policies()
+        pol = P.list_policies()
         response = make_response(export_policies(pol))
         response.headers["Content-Disposition"] = ("attachment; "
                                                    "filename=%s" % export)
@@ -484,9 +490,9 @@ def check_policy_api():
     resolver = getParam(param, "resolver", optional)
 
     P = g.policy_object
-    policies = P.get_policies(user=user, realm=realm, resolver=resolver,
-                              scope=scope, action=action, client=client,
-                              active=True)
+    policies = P.match_policies(user=user, realm=realm, resolver=resolver,
+                                scope=scope, action=action, client=client,
+                                active=True)
     if policies:
         res["allowed"] = True
         res["policy"] = policies
@@ -515,6 +521,13 @@ def get_policy_defs(scope=None):
     definitions, that can
     be used to define your policies.
 
+    If the given scope is "conditions", this returns a dictionary with the following keys:
+     * ``"sections"``, containing a dictionary mapping each condition section name to a dictionary with
+       the following keys:
+         * ``"description"``, a human-readable description of the section
+     * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
+         * ``"description"``, a human-readable description of the comparator
+
     :query scope: if given, the function will only return policy
                   definitions for the given scope.
 
@@ -522,17 +535,27 @@ def get_policy_defs(scope=None):
         action types. The top level key is the scope.
     :rtype: dict
     """
-    static_pol = get_static_policy_definitions()
-    dynamic_pol = get_dynamic_policy_definitions()
 
-    # combine static and dynamic policies
-    keys = list(static_pol) + list(dynamic_pol)
-    pol = {k: dict(list(static_pol.get(k, {}).items())
-                   + list(dynamic_pol.get(k, {}).items())) for k in keys}
+    if scope == 'conditions':
+        # special treatment: get descriptions of conditions
+        section_descriptions = get_policy_condition_sections()
+        comparator_descriptions = get_policy_condition_comparators()
+        result = {
+            "sections": section_descriptions,
+            "comparators": comparator_descriptions,
+        }
+    else:
+        static_pol = get_static_policy_definitions()
+        dynamic_pol = get_dynamic_policy_definitions()
 
-    if scope:
-        pol = pol.get(scope)
+        # combine static and dynamic policies
+        keys = list(static_pol) + list(dynamic_pol)
+        result = {k: dict(list(static_pol.get(k, {}).items())
+                          + list(dynamic_pol.get(k, {}).items())) for k in keys}
+
+        if scope:
+            result = result.get(scope)
 
     g.audit_object.log({"success": True,
                         'info': scope})
-    return send_result(pol)
+    return send_result(result)

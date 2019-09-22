@@ -244,7 +244,7 @@ via the Google Firebase service and this is used for the :ref:`push_token`.
 
    This is the URL of your privacyIDEA server, which the push App should
    connect to for the second registration step.
-   This URL usually ends with ``/type/push``. Note, that the FQDN
+   This URL usually ends with ``/ttype/push``. Note, that the FQDN
    of your privacyIDEA server could be different for the smartphone
    App to connect to, than you usually use for connecting via the
    Web interface.

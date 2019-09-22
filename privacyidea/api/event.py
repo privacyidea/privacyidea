@@ -49,6 +49,7 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 @eventhandling_blueprint.route('', methods=['GET'])
 @eventhandling_blueprint.route('/<eventid>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.EVENTHANDLINGREAD)
 def get_eventhandling(eventid=None):
     """
     returns a json list of the event handling configuration
@@ -66,6 +67,8 @@ def get_eventhandling(eventid=None):
     elif eventid == "handlermodules":
         # TODO: We need to provide a dynamic list of event handlers
         res = ["UserNotification", "Token", "Federation", "Script", "Counter"]
+        res.append("RequestMangler")
+        res.append("ResponseMangler")
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
@@ -86,6 +89,7 @@ def get_module_positions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.allowed_positions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 
@@ -103,6 +107,7 @@ def get_module_actions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.actions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 
@@ -120,6 +125,7 @@ def get_module_conditions(handlermodule=None):
     h_obj = get_handler_object(handlermodule)
     if h_obj:
         ret = h_obj.conditions
+    g.audit_object.log({"success": True})
     return send_result(ret)
 
 

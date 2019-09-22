@@ -18,7 +18,12 @@
             <td>
                 <input type="number" ng-model="policy.priority"
                        class="form-control" min="1"
+                       ng-show="checkRight('policywrite')"
                        ng-change="priorityChanged(policy)" />
+                </span>
+                <span ng-show="!checkRight('policywrite')">
+                    {{ policy.priority }}
+                </span>
             </td>
             <td>
                 <span ng-show="policy.active"

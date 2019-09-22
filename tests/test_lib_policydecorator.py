@@ -294,7 +294,7 @@ class LibPolicyTestCase(MyTestCase):
                          u"against userstore due to 'pol1'")
 
         # Now set a PASSTHRU policy to a RADIUS config (new style)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
@@ -659,7 +659,7 @@ class LibPolicyTestCase(MyTestCase):
                          u"against userstore due to 'pol1'")
 
         # Now add a PASSTHRU policy to a RADIUS config
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol2",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
@@ -677,7 +677,6 @@ class LibPolicyTestCase(MyTestCase):
 
         # Lower pol1 priority
         set_policy(name="pol1", priority=2)
-        g.policy_object.reload_from_db()
 
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
@@ -686,7 +685,6 @@ class LibPolicyTestCase(MyTestCase):
 
         # Lower pol2 priority
         set_policy(name="pol2", priority=3)
-        g.policy_object.reload_from_db()
 
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
@@ -697,21 +695,18 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol3",
                    scope=SCOPE.AUTH,
                    action=ACTION.PASSTHRU)
-        g.policy_object.reload_from_db()
 
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
                          u"against userstore due to 'pol3'")
         set_policy(name="pol3", priority=2)
-        g.policy_object.reload_from_db()
 
         # They will conflict, because they use the same priority
         with self.assertRaises(PolicyError):
             auth_user_passthru(check_user_pass, user, passw, options=options)
 
         delete_policy("pol3")
-        g.policy_object.reload_from_db()
 
         # Now assign a token to the user. If the user has a token and the
         # passthru policy is set, the user must not be able to authenticate
@@ -752,7 +747,6 @@ class LibPolicyTestCase(MyTestCase):
         # lower pol2 priority
         set_policy(name="pol2",
                    priority=3)
-        g.policy_object.reload_from_db()
 
         # NONE with empty PIN -> success
         r = auth_otppin(self.fake_check_otp, None,
@@ -772,7 +766,6 @@ class LibPolicyTestCase(MyTestCase):
 
         # increase pol2 priority
         set_policy(name="pol2", priority=1)
-        g.policy_object.reload_from_db()
 
         r = auth_otppin(self.fake_check_otp, None,
                         "FAKE", options=options,
@@ -823,3 +816,58 @@ class LibPolicyTestCase(MyTestCase):
         # Clean up
         remove_token(pin1)
         remove_token(pin2)
+
+    @radiusmock.activate
+    def test_16_passthru_assign(self):
+        user = User("cornelius", realm="r1")
+        passw = "{0!s}test".format(self.valid_otp_values[1])
+        options = {}
+        # remove all tokens of cornelius
+        remove_token(user=user)
+
+        # create unassigned tokens in realm r1
+        init_token({"type": "hotp",
+                    "otpkey": "00"*20,
+                    "serial": "TOKFAIL"}, tokenrealms=["r1"])
+        init_token({"type": "hotp",
+                    "otpkey": self.otpkey,
+                    "serial": "TOKMATCH"}, tokenrealms=["r1"])
+
+        # A user with no tokens will fail to authenticate
+        self.assertEqual(get_tokens(user=user, count=True), 0)
+        rv = auth_user_passthru(check_user_pass, user, passw, options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "The user has no tokens assigned")
+
+        # Now add a PASSTHRU policy to a RADIUS config
+        radiusmock.setdata(response=radiusmock.AccessAccept)
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
+        r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
+                       dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        set_policy(name="pol2",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=6:pin:1234".format(ACTION.PASSTHRU_ASSIGN))
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        options = {"g": g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertTrue(u"against RADIUS server radiusconfig1 due to 'pol1'" in rv[1].get("message"))
+        self.assertTrue(u"autoassigned TOKMATCH" in rv[1].get("message"))
+
+        # Check if the token is assigned and can authenticate
+        r = check_user_pass(User("cornelius", "r1"), "test{0!s}".format(self.valid_otp_values[2]))
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("serial"), "TOKMATCH")
+
+        remove_token("TOKFAIL")
+        remove_token("TOKMATCH")
+        delete_policy("pol1")
+        delete_policy("pol2")

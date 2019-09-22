@@ -58,13 +58,15 @@ The file is tested in tests/test_lib_resolver.py
 
 import logging
 import yaml
+import threading
 import functools
+import six
 
 from .UserIdResolver import UserIdResolver
 
 import ldap3
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
-from ldap3 import Server, Tls, Connection
+from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
@@ -75,17 +77,16 @@ import traceback
 from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
-from privacyidea.lib.crypto import urandom, geturandom
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.framework import get_app_local_store
 import datetime
 
 from privacyidea.lib import _
-from privacyidea.lib.utils import to_utf8, to_unicode
+from privacyidea.lib.utils import to_utf8, to_unicode, convert_column_to_unicode
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
-from six import string_types
 
 CACHE = {}
 
@@ -108,6 +109,33 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
     DEFAULT_CA_FILE = "/etc/ssl/certs/ca-bundle.crt"
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
+
+
+class LockingServerPool(ldap3.ServerPool):
+    """
+    A ``ServerPool`` subclass that uses a RLock to synchronize invocations of
+    ``initialize``, ``get_server`` and ``get_current_server``.
+
+    We synchronize invocations to rule out race conditions when multiple threads
+    try to manipulate the server pool state concurrently.
+
+    We use a ``RLock`` instead of a simple ``Lock`` to avoid locking ourselves.
+    """
+    def __init__(self, *args, **kwargs):
+        ldap3.ServerPool.__init__(self, *args, **kwargs)
+        self._lock = threading.RLock()
+
+    def initialize(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.initialize(self, connection)
+
+    def get_server(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.get_server(self, connection)
+
+    def get_current_server(self, connection):
+        with self._lock:
+            return ldap3.ServerPool.get_current_server(self, connection)
 
 
 def get_ad_timestamp_now():
@@ -273,6 +301,7 @@ class IdResolver (UserIdResolver):
         self.cache_timeout = 120
         self.tls_context = None
         self.start_tls = False
+        self.serverpool_persistent = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
         self.serverpool = None
@@ -298,11 +327,7 @@ class IdResolver (UserIdResolver):
             bind_user = self._getDN(uid)
 
         if not self.serverpool:
-            self.serverpool = self.get_serverpool(self.uri, self.timeout,
-                                                  get_info=ldap3.NONE,
-                                                  tls_context=self.tls_context,
-                                                  rounds=self.serverpool_rounds,
-                                                  exhaust=self.serverpool_skip)
+            self.serverpool = self.get_serverpool_instance(get_info=ldap3.NONE)
 
         try:
             log.debug("Authtype: {0!r}".format(self.authtype))
@@ -393,7 +418,7 @@ class IdResolver (UserIdResolver):
                 # we strip the curly braces from objectGUID values.
                 # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
                 uid = uid.strip("{").strip("}")
-        return uid
+        return convert_column_to_unicode(uid)
 
     def _trim_user_id(self, userId):
         """
@@ -445,11 +470,7 @@ class IdResolver (UserIdResolver):
     def _bind(self):
         if not self.i_am_bound:
             if not self.serverpool:
-                self.serverpool = self.get_serverpool(self.uri, self.timeout,
-                                              get_info=self.get_info,
-                                              tls_context=self.tls_context,
-                                              rounds=self.serverpool_rounds,
-                                              exhaust=self.serverpool_skip)
+                self.serverpool = self.get_serverpool_instance(self.get_info)
             self.l = self.create_connection(authtype=self.authtype,
                                             server=self.serverpool,
                                             user=self.binddn,
@@ -517,7 +538,7 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if isinstance(ldap_v, string_types):
+                        if isinstance(ldap_v, six.string_types):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
@@ -549,8 +570,9 @@ class IdResolver (UserIdResolver):
         resolve the loginname to the userid.
 
         :param LoginName: The login name from the credentials
-        :type LoginName: string
+        :type LoginName: str
         :return: UserId as found for the LoginName
+        :rtype: str
         """
         userid = ""
         self._bind()
@@ -608,7 +630,7 @@ class IdResolver (UserIdResolver):
 
         return userid
 
-    def getUserList(self, searchDict):
+    def getUserList(self, searchDict=None):
         """
         :param searchDict: A dictionary with search parameters
         :type searchDict: dict
@@ -753,6 +775,7 @@ class IdResolver (UserIdResolver):
                                    ca_certs_file=self.tls_ca_file)
         else:
             self.tls_context = None
+        self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
         # The configuration might have changed. We reset the serverpool
@@ -803,8 +826,8 @@ class IdResolver (UserIdResolver):
         return server, port, ssl
 
     @classmethod
-    def get_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
-                       exhaust=SERVERPOOL_SKIP):
+    def create_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
+                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -826,13 +849,14 @@ class IdResolver (UserIdResolver):
             before giving up
         :param exhaust: The seconds, for how long a non-reachable server should be
             removed from the serverpool
+        :param pool_cls: ``ldap3.ServerPool`` subclass that should be instantiated
         :return: Server Pool
-        :rtype: LDAP3 Server Pool Instance
+        :rtype: serverpool_cls
         """
         get_info = get_info or ldap3.SCHEMA
-        server_pool = ldap3.ServerPool(None, ldap3.ROUND_ROBIN,
-                                       active=rounds,
-                                       exhaust=exhaust)
+        server_pool = pool_cls(None, ldap3.ROUND_ROBIN,
+                               active=rounds,
+                               exhaust=exhaust)
         for uri in urilist.split(","):
             uri = uri.strip()
             host, port, ssl = cls.split_uri(uri)
@@ -844,6 +868,56 @@ class IdResolver (UserIdResolver):
             server_pool.add(server)
             log.debug("Added {0!s}, {1!s}, {2!s} to server pool.".format(host, port, ssl))
         return server_pool
+
+    def get_serverpool_instance(self, get_info=None):
+        """
+        Return a ``ServerPool`` instance that should be used. If ``SERVERPOOL_PERSISTENT``
+        is enabled, invoke ``get_persistent_serverpool`` to retrieve a per-process
+        server pool instance. If it is not enabled, invoke ``create_serverpool``
+        to retrieve a per-request server pool instance.
+        :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
+        :return: a ``ServerPool``/``LockingServerPool`` instance
+        """
+        if self.serverpool_persistent:
+            return self.get_persistent_serverpool(get_info)
+        else:
+            return self.create_serverpool(self.uri, self.timeout, get_info,
+                                          self.tls_context, self.serverpool_rounds, self.serverpool_skip)
+
+    def get_persistent_serverpool(self, get_info=None):
+        """
+        Return a process-level instance of ``LockingServerPool`` for the current LDAP resolver
+        configuration. Retrieve it from the app-local store. If such an instance does not exist
+        yet, create one.
+        :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
+        :return: a ``LockingServerPool`` instance
+        """
+        if not get_info:
+            get_info = ldap3.SCHEMA
+        pools = get_app_local_store().setdefault('ldap_server_pools', {})
+        # Create a hashable tuple that describes the current server pool configuration
+        pool_description = (self.uri,
+                            self.timeout,
+                            get_info,
+                            repr(self.tls_context),  # this is the string representation of the TLS context
+                            self.serverpool_rounds,
+                            self.serverpool_skip)
+        if pool_description not in pools:
+            log.debug("Creating a persistent server pool instance for {!r} ...".format(pool_description))
+            # Create a suitable instance of ``LockingServerPool``
+            server_pool = self.create_serverpool(self.uri, self.timeout, get_info,
+                                                 self.tls_context, self.serverpool_rounds, self.serverpool_skip,
+                                                 pool_cls=LockingServerPool)
+            # It may happen that another thread tries to add an instance to the dictionary concurrently.
+            # However, only one of them will win, and the other ``LockingServerPool`` instance will be
+            # garbage-collected eventually.
+            return pools.setdefault(pool_description, server_pool)
+        else:
+            # If there is already a ``LockingServerPool`` instance, return it.
+            # We never remove instances from the dictionary, so a ``KeyError`` cannot occur.
+            # As a side effect, when we change the LDAP Id resolver configuration,
+            # outdated ``LockingServerPool`` instances will survive until the next server restart.
+            return pools[pool_description]
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -881,6 +955,7 @@ class IdResolver (UserIdResolver):
                                 'CACHE_TIMEOUT': 'int',
                                 'SERVERPOOL_ROUNDS': 'int',
                                 'SERVERPOOL_SKIP': 'int',
+                                'SERVERPOOL_PERSISTENT': 'bool',
                                 'OBJECT_CLASSES': 'string',
                                 'DN_TEMPLATE': 'string'}
         return {typ: descriptor}
@@ -920,11 +995,11 @@ class IdResolver (UserIdResolver):
             tls_context = None
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
         try:
-            server_pool = cls.get_serverpool(ldap_uri, timeout,
-                                             tls_context=tls_context,
-                                             get_info=get_info,
-                                             rounds=serverpool_rounds,
-                                             exhaust=serverpool_skip)
+            server_pool = cls.create_serverpool(ldap_uri, timeout,
+                                                tls_context=tls_context,
+                                                get_info=get_info,
+                                                rounds=serverpool_rounds,
+                                                exhaust=serverpool_skip)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                           AUTHTYPE.SIMPLE),
                                       server=server_pool,

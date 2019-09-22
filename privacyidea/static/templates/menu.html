@@ -13,7 +13,7 @@
     <div class="container">
         <a class="navbar-brand" ui-sref="token.list">
             <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
-                         width="28px">
+                 class="pilogo" alt="privacyIDEA">
         </a>
         <button type="button" class="navbar-toggle"
                 data-toggle="collapse" data-target=".myMainNavbar"
@@ -72,7 +72,7 @@
                 <li ng-class="{active: $state.includes('audit')}"
                     ng-show="loggedInUser.role &&
                             checkMainMenu('audit')">
-                    <a ui-sref="audit">
+                    <a ui-sref="audit.log">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
                         <translate>Audit</translate>
@@ -81,7 +81,7 @@
                 <li ng-class="{active: $state.includes('component')}"
                     ng-show="loggedInUser.role == 'admin' &&
                             checkMainMenu('components')">
-                    <a ui-sref="component">
+                    <a ui-sref="component.clienttype">
                         <span class="glyphicon glyphicon-calendar"
                               aria-hidden="true"></span>
                         <translate>Components</translate>
@@ -124,12 +124,14 @@
                         </button>
                         <ul class="dropdown-menu">
                             <li><a href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
-				target="documentation" translate>
+				                   target="documentation" translate>
                                 Online Documentation</a></li>
-                            <li><a href="https://community.privacyidea.org"
-				target="_external" translate>Community</a></li>
-                            <li><a href="https://netknights.it/leistungen/support/"
-				target="_external" translate
+                            <li ng-show="piExternalLinks !== 'False'">
+                                <a href="https://community.privacyidea.org"
+				                   target="_external" translate>Community</a></li>
+                            <li ng-show="piExternalLinks !== 'False'">
+                                <a href="{{ privacyideaSupportLink }}"
+				                   target="_external" translate
 				>Support</a></li>
                             <li class="divider"></li>
                             <li ng-click="lock_screen()">

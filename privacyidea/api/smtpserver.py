@@ -87,6 +87,7 @@ def create(identifier=None):
 
 @smtpserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.SMTPSERVERREAD)
 def list_smtpservers():
     """
     This call gets the list of SMTP server definitions

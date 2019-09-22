@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-sm-6" ng-show="enrolledToken.rollout_state === 'enrolled'">
         <p translate>
-            Congratulations. Your PUSH token {{ enrolledToken.serial }} was successfully enrolled.
+            Please note, that your smartphone needs internet access during the authentication process.
         </p>
     </div>
     <div class="col-sm-6" ng-show="enrolledToken.rollout_state === 'clientwait'">
@@ -10,8 +10,6 @@
         </p>
         <img width="{{ qrCodeWidth }}"
              ng-src="{{ enrolledToken.pushurl.img }}"/>
-        <!-- TODO: Remove this -->
-        <b>{{ enrolledToken.pushurl.value }}</b>
     </div>
 
     <div class="col-sm-4 pull-right" ng-show="enrolledToken.rollout_state === 'clientwait'">
@@ -23,4 +21,3 @@
         </p>
     </div>
 </div>
->

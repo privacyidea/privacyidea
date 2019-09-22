@@ -23,27 +23,11 @@ privacyidea-pip-update
     """)
 
 
-def get_installed_packages():
-    """
-    Get a list of names of all locally installed packages by
-    parsing the output of ``pip freeze --local --all``.
-    """
-    packages = []
-    pip_output = check_output(PIP_EXECUTABLE + ["freeze", "--local", "--all"])
-    for line in pip_output.splitlines():
-        line = line.strip()
-        if b"==" in line:
-            package_name = line.split(b"==", 1)[0]
-            packages.append(package_name)
-    return packages
-
-
-def update():
-    for package_name in get_installed_packages():
-        call(PIP_EXECUTABLE + ["install", "--upgrade", package_name])
-    # Now we need again to upgrade privacyIDEA, so that we get pinned
-    # dependencies like ldap3 or pyasn1. This call will downgrade packages
+def update(environment):
     call(PIP_EXECUTABLE + ["install", "--upgrade", "privacyidea"])
+    # Now we need to run the new requirements of privacyidea
+    # dependencies like ldap3 or pyasn1. This call could downgrade packages
+    call(PIP_EXECUTABLE + ["install", "-r", "{0!s}/lib/privacyidea/requirements.txt".format(environment)])
 
 
 def update_db_schema(environment, skip_stamp=False):
@@ -84,7 +68,7 @@ def main():
             sys.exit(2)
 
     if force:
-        update()
+        update(environment)
     else:
         answer = False
         res = 'n'
@@ -94,7 +78,7 @@ def main():
             answer = res.lower() in ['y', 'n', '']
 
         if res.lower() == 'y':
-            update()
+            update(environment)
             if not no_schema:
                 update_db_schema(environment, skip_stamp)
         else:

@@ -7,25 +7,28 @@
     <meta name="description" content="">
     <meta name="author" content="Cornelius Kölbel" >
     <link rel="icon" type="image/png" href="{{ instance }}/static/favicon.png">
+    <link href="{{ instance }}/static/contrib/css/bootstrap.css" rel="stylesheet">
     <!-- Custom styles for this template -->
     <link href="{{ instance }}/static/css/signin.css" rel="stylesheet">
+    <link href="{{ instance }}/static/css/menu.css" rel="stylesheet">
+    <link href="{{ instance }}/static/css/content.css" rel="stylesheet">
     <link href="{{ instance }}/static/css/table-ui.css" rel="stylesheet">
+    <link href="{{ instance }}/static/css/baseline.css" rel="stylesheet">
     <link href="{{ instance }}/static/contrib/css/animate.css" rel="stylesheet">
-    <link href="{{ instance }}/static/css/navbar-fixed-top.css" rel="stylesheet">
     <link href="{{ instance }}/static/contrib/css/angular-multi-select.css"
           rel="stylesheet"/>
     <link href="{{ instance }}/static/contrib/css/angular-inform.css"
           rel="stylesheet"/>
     <link href="{{ instance }}/static/contrib/css/hotkeys.min.css"
           rel="stylesheet"/>
-    <link href="{{ instance }}/static/contrib/css/bootstrap.css" rel="stylesheet">
     <link href="{{ instance }}{{ theme }}" rel="stylesheet"/>
+    {% if custom_css %}<link href="{{ instance }}{{ custom_css }}" rel="stylesheet"/>{% endif %}
 
     <script type="application/javascript">
         // Pass the browser Language to our Javascript code
         var browserLanguage = "{{ browser_lang }}";
     </script>
-    <title idle-disabled="true">privacyIDEA Authentication System</title>
+    <title idle-disabled="true">{{ page_title }}</title>
 
 </head>
 <body ng-controller="mainController">

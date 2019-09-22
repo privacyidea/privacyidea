@@ -1,0 +1,21 @@
+body {
+    padding-bottom: 70px;
+}
+
+body > .container > .slide > .well {
+    margin-bottom: 0;
+}
+
+#baseline {
+    /* 50px baseline + 1px border */
+    height: 51px;
+}
+
+/* Add some protected space around floating input elements to keep them from clashing with the baseline. */
+.multiSelect .checkboxLayer::after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 70px;
+}

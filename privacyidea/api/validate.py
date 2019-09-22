@@ -71,16 +71,16 @@ from ..lib.decorators import (check_user_or_serial_in_request)
 from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens)
+                                   check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF, update_config_object)
+                                    SYSCONF, ensure_no_config_object)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action)
+                                           check_base_action, pushtoken_wait)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -92,12 +92,11 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
-from privacyidea.api.auth import jwtauth
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
@@ -118,7 +117,7 @@ def before_request():
     """
     This is executed before the request
     """
-    update_config_object()
+    ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
@@ -143,26 +142,6 @@ def before_request():
                         "info": ""})
 
 
-@validate_blueprint.after_request
-@register_blueprint.after_request
-@recover_blueprint.after_request
-@jwtauth.after_request
-@postrequest(sign_response, request=request)
-def after_request(response):
-    """
-    This function is called after a request
-    :return: The response
-    """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g:
-        g.audit_object.finalize_log()
-
-    # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
-    return response
-
-
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
 @check_user_or_serial_in_request(request)
 @event("validate_offlinerefill", request, g)
@@ -178,8 +157,6 @@ def offlinerefill():
     :param pass: the last password (maybe password+OTP) entered by the user
     :return:
     """
-    result = False
-    otps = {}
     serial = getParam(request.all_data, "serial", required)
     refilltoken = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
@@ -198,10 +175,10 @@ def offlinerefill():
                     otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
                     refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
                     response = send_result(True)
-                    content = json.loads(response.data)
+                    content = response.json
                     content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
                                                           "response": otps}]}
-                    response.data = json.dumps(content)
+                    response.set_data(json.dumps(content))
                     return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
 
@@ -218,6 +195,7 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
@@ -344,6 +322,10 @@ def check():
                         "realm": user.realm})
 
     if serial:
+        if user:
+            # check if the given token belongs to the user
+            if not get_tokens(user=user, serial=serial, count=True):
+                raise ParameterError('Given serial does not belong to given user!')
         if not otp_only:
             result, details = check_serial_pass(serial, password, options=options)
         else:
@@ -355,7 +337,7 @@ def check():
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": result,
                         "serial": serial or details.get("serial"),
-                        "tokentype": details.get("type")})
+                        "token_type": details.get("type")})
     return send_result(result, details=details)
 
 
@@ -367,6 +349,7 @@ def check():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
@@ -453,7 +436,7 @@ def samlcheck():
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": auth,
                         "serial": details.get("serial"),
-                        "tokentype": details.get("type"),
+                        "token_type": details.get("type"),
                         "user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
@@ -547,13 +530,71 @@ def trigger_challenge():
     create_challenges_from_tokens(chal_resp_tokens, details, options)
     result_obj = len(details.get("multi_challenge"))
 
+    challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
     g.audit_object.log({
         "user": user.login,
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
-        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj))
+        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj)),
+        "serial": ",".join(challenge_serials),
     })
 
     return send_result(result_obj, details=details)
 
+
+@validate_blueprint.route('/polltransaction', methods=['GET'])
+@validate_blueprint.route('/polltransaction/<transaction_id>', methods=['GET'])
+@prepolicy(mangle, request=request)
+@CheckSubscription(request)
+@prepolicy(api_key_required, request=request)
+def poll_transaction(transaction_id=None):
+    """
+    Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
+    has been answered. In this case, return true. If this is not the case, return false.
+    This endpoint also returns false if no challenge with the given transaction ID exists.
+
+    This is mostly useful for out-of-band tokens that should poll this endpoint
+    to determine when to send an authentication request to ``/validate/check``.
+
+    :jsonparam transaction_id: a transaction ID
+    """
+    if transaction_id is None:
+        transaction_id = getParam(request.all_data, "transaction_id", required)
+    # Fetch a list of non-exired challenges with the given transaction ID
+    # and determine whether it contains at least one non-expired answered challenge.
+    matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)
+                           if challenge.is_valid()]
+    answered_challenges = extract_answered_challenges(matching_challenges)
+
+    if answered_challenges:
+        result = True
+        log_challenges = answered_challenges
+    else:
+        result = False
+        log_challenges = matching_challenges
+
+    # We now determine the information that should be written to the audit log:
+    # * If there are no answered valid challenges, we log all token serials of challenges matching
+    #   the transaction ID and the corresponding token owner
+    # * If there are any answered valid challenges, we log their token serials and the corresponding user
+    if log_challenges:
+        g.audit_object.log({
+            "serial": ",".join(challenge.serial for challenge in log_challenges),
+        })
+        # The token owner should be the same for all matching transactions
+        user = get_one_token(serial=log_challenges[0].serial).user
+        if user:
+            g.audit_object.log({
+                "user": user.login,
+                "resolver": user.resolver,
+                "realm": user.realm,
+            })
+
+    # In any case, we log the transaction ID
+    g.audit_object.log({
+        "info": u"transaction_id: {}".format(transaction_id),
+        "success": result
+    })
+
+    return send_result(result)

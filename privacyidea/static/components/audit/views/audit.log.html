@@ -24,55 +24,68 @@
                 <th translate>number</th>
                 <th class="pifilter"><translate>date</translate>
                     <pi-filter ng-model="dateFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>success</translate>
                     <pi-filter ng-model="successFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
-                               ng-change="getAuditList()"></pi-filter>
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return"></pi-filter>
                 </th>
                 <th class="pifilter"><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>user</translate>
                     <pi-filter ng-model="userFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>realm</translate>
                     <pi-filter ng-model="realmFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>resolver</translate>
                     <pi-filter ng-model="resolverFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th class="pifilter"><translate>policies</translate>
+                <th class="pifilter" ng-if="loggedInUser.role == 'admin'"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th class="pifilter"><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th translate>sig_check</th>
                 <th translate>missing_line</th>
@@ -80,7 +93,8 @@
                 <th translate>log level</th>
                 <th class="pifilter"><translate>privacyidea server</translate>
                     <pi-filter ng-model="serverFilter"
-                               ng-change="getAuditList()">
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
             </tr>
             </thead>
@@ -93,18 +107,24 @@
                 {{ audit.success }}
             </span></td>
                 <td>{{ audit.action_detail }}</td>
-                <td><a ui-sref="token.details({tokenSerial:audit.serial})"
+                <td>
+                    <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
                        ng-click="$rootScope.returnTo=audit;">
-                    {{ audit.serial }}</a></td>
+                    {{ serial }}</a>
+                </td>
                 <td>{{ audit.token_type }}</td>
                 <td>{{ audit.administrator }}</td>
                 <td><a ui-sref="user.details({username:audit.user,
                 realmname:audit.realm})">
                     {{ audit.user }}</a></td>
-                <td><a ui-sref="config.realms.list">{{ audit.realm }}</a></td>
-                <td><a ui-sref="config.resolvers.list">
-                    {{ audit.resolver }}</a></td>
-                <td><span ng-repeat="policy in audit.policies">
+                <td><a ng-if="loggedInUser.role == 'admin'" ui-sref="config.realms.list">{{ audit.realm }}</a>
+                    <span ng-if="loggedInUser.role == 'user'">{{ audit.realm }}</span>
+                </td>
+                <td><a ng-if="loggedInUser.role == 'admin'" ui-sref="config.resolvers.list">{{ audit.resolver }}</a>
+                    <span ng-if="loggedInUser.role == 'user'">{{ audit.resolver }}</span>
+                </td>
+                <td ng-if="loggedInUser.role == 'admin'">
+                    <span ng-repeat="policy in audit.policies">
                         <span ng-if="policy.endsWith('+')">
                             {{ policy }}
                         </span>

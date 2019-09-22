@@ -27,16 +27,16 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode
 import time
 import logging
 import json
 import jwt
 import threading
 import six
+import re
 from flask import (jsonify,
-                   current_app,
-                   Response)
+                   current_app)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
@@ -47,7 +47,7 @@ optional = True
 required = False
 
 
-def getParam(param, key, optional=True, default=None, allow_empty=True):
+def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
     """
     returns a parameter from the request parameters.
     
@@ -62,6 +62,8 @@ def getParam(param, key, optional=True, default=None, allow_empty=True):
                     contained in the param.
     :param allow_empty: Set to False is the parameter is a string and is
         not allowed to be empty
+    :param allowed_values: A list of allowed values. If another value is given,
+        then the default value is returned
     :type allow_empty: bool
     
     :return: the value (literal) of the parameter if exists or nothing
@@ -78,6 +80,9 @@ def getParam(param, key, optional=True, default=None, allow_empty=True):
 
     if not allow_empty and ret == "":
         raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
+
+    if allowed_values and ret not in allowed_values:
+            ret = default
 
     return ret
 
@@ -182,7 +187,7 @@ def send_csv_result(obj, data_key="tokens",
             output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
-    return Response(output, mimetype=content_type)
+    return current_app.response_class(output, mimetype=content_type)
 
 
 @log_with(log)
@@ -207,7 +212,7 @@ def get_all_params(param, body):
 
     # In case of serialized JSON data in the body, add these to the values.
     try:
-        json_data = json.loads(body)
+        json_data = json.loads(to_unicode(body))
         for k, v in json_data.items():
             return_param[k] = v
     except Exception as exx:
@@ -263,3 +268,23 @@ def verify_auth_token(auth_token, required_role=None):
                         "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
+
+
+def check_policy_name(name):
+    """
+    This function checks, if the given name is a valid policy name.
+
+    :param name: The name of the policy
+    :return: Raises a ParameterError in case of an invalid name
+    """
+    disallowed_patterns = [("^check$", re.IGNORECASE),
+                           ("^pi-update-policy-", re.IGNORECASE)]
+    for disallowed_pattern in disallowed_patterns:
+        if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
+            raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
+
+    if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
+        raise ParameterError(_("The name of the policy may only contain "
+                               "the characters a-zA-Z0-9_.- "))
+
+

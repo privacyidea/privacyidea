@@ -88,7 +88,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            u2ftoken_allowed, u2ftoken_verify_cert,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config)
+                                           sms_identifiers, pushtoken_add_config,
+                                           check_admin_tokenlist)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -292,10 +293,10 @@ def init():
 
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
-@admin_required
 def get_challenges_api(serial=None):
     """
     This endpoint returns the active challenges in the database or returns
@@ -307,6 +308,8 @@ def get_challenges_api(serial=None):
     :query sortdir: asc/desc
     :query page: request a certain page
     :query pagesize: limit the number of returned tokens
+    :query transaction_id: only returns challenges for this
+        transaction_id. This is useful when working with push or tiqr tokens.
     :return: json
     """
     param = request.all_data
@@ -314,14 +317,17 @@ def get_challenges_api(serial=None):
     sort = getParam(param, "sortby", optional, default="timestamp")
     sdir = getParam(param, "sortdir", optional, default="asc")
     psize = int(getParam(param, "pagesize", optional, default=15))
+    transaction_id = getParam(param, "transaction_id", optional)
     g.audit_object.log({"serial": serial})
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
+                                         transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
     return send_result(challenges)
 
 
 @token_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_tokenlist, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -375,14 +381,10 @@ def list_api():
     if ufields:
         user_fields = [u.strip() for u in ufields.split(",")]
 
-    # filterRealm determines, which realms the admin would be allowed to see
-    filterRealm = ["*"]
-    # TODO: Userfields
-
-    # If the admin wants to see only one realm, then do it:
-    if realm and (realm in filterRealm or '*' in filterRealm):
-        filterRealm = [realm]
-    g.audit_object.log({'info': "realm: {0!s}".format((filterRealm))})
+    # allowed_realms determines, which realms the admin would be allowed to see
+    # In certain cases like for users, we do not have allowed_realms
+    allowed_realms = getattr(request, "pi_allowed_realms", None)
+    g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
@@ -391,7 +393,7 @@ def list_api():
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid)
+                                 userid=userid, allowed_realms=allowed_realms)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
@@ -488,6 +490,7 @@ def revoke_api(serial=None):
 
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
+@prepolicy(check_max_token_user, request)
 @prepolicy(check_base_action, request, action=ACTION.ENABLE)
 @event("token_enable", request, g)
 @log_with(log)
@@ -668,12 +671,37 @@ def setpin_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/description', methods=['POST'])
+@token_blueprint.route('/description/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
+@event("token_set", request, g)
+@log_with(log)
+def set_description_api(serial=None):
+    """
+    This endpoint can be used by the user or by the admin to set
+    the description of a token.
+
+    :jsonparam basestring description: The description for the token
+    :param serial:
+    :return:
+    """
+    user = request.User
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
+    description = getParam(request.all_data, "description", optional=required)
+    g.audit_object.add_to_log({'action_detail': u"description={0!r}".format(description)})
+    res = set_description(serial, description, user=user)
+    g.audit_object.log({"success": True})
+    return send_result(res)
+
+
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SET)
 @event("token_set", request, g)
 @log_with(log)
-@admin_required
 def set_api(serial=None):
     """
     This API is only to be used by the admin!
@@ -772,11 +800,11 @@ def set_api(serial=None):
 
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
 @event("token_realm", request, g)
-@admin_required
 def tokenrealm_api(serial=None):
     """
     Set the realms of a token.
@@ -806,10 +834,10 @@ def tokenrealm_api(serial=None):
 
 
 @token_blueprint.route('/load/<filename>', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_token_upload, request)
 @event("token_load", request, g)
-@admin_required
 def loadtokens_api(filename=None):
     """
     The call imports the given file containing token definitions.
@@ -911,10 +939,10 @@ def loadtokens_api(filename=None):
 
 
 @token_blueprint.route('/copypin', methods=['POST'])
+@admin_required
 @log_with(log)
 @prepolicy(check_base_action, request, action=ACTION.COPYTOKENPIN)
 @event("token_copypin", request, g)
-@admin_required
 def copypin_api():
     """
     Copy the token PIN from one token to the other.
@@ -934,10 +962,10 @@ def copypin_api():
 
 
 @token_blueprint.route('/copyuser', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.COPYTOKENUSER)
 @event("token_copyuser", request, g)
 @log_with(log)
-@admin_required
 def copyuser_api():
     """
     Copy the token user from one token to the other.
@@ -993,10 +1021,10 @@ def lost_api(serial=None):
 
 
 @token_blueprint.route('/getserial/<otp>', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
 @event("token_getserial", request, g)
 @log_with(log)
-@admin_required
 def get_serial_by_otp_api(otp=None):
     """
     Get the serial number for a given OTP value.
@@ -1047,10 +1075,10 @@ def get_serial_by_otp_api(otp=None):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
-@admin_required
 def set_tokeninfo_api(serial, key):
     """
     Add a specific tokeninfo entry to a token. Already existing entries
@@ -1071,10 +1099,10 @@ def set_tokeninfo_api(serial, key):
 
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
-@admin_required
 def delete_tokeninfo_api(serial, key):
     """
     Delete a specific tokeninfo entry of a token.

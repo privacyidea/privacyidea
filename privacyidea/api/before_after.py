@@ -38,9 +38,11 @@ from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
-from privacyidea.api.auth import (user_required, admin_required)
-from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
+from privacyidea.api.auth import (user_required, admin_required, jwtauth)
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
 from privacyidea.lib.token import get_token_type
+from privacyidea.api.ttype import ttype_blueprint
+from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
 from .policy import policy_blueprint
 from .realm import realm_blueprint
@@ -91,10 +93,7 @@ def teardown_request(exc):
 @token_blueprint.before_request
 @audit_blueprint.before_request
 @user_blueprint.before_request
-@caconnector_blueprint.before_request
 @system_blueprint.before_request
-@radiusserver_blueprint.before_request
-@privacyideaserver_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -111,6 +110,9 @@ def before_user_request():
 @eventhandling_blueprint.before_request
 @periodictask_blueprint.before_request
 @smsgateway_blueprint.before_request
+@radiusserver_blueprint.before_request
+@caconnector_blueprint.before_request
+@privacyideaserver_blueprint.before_request
 @client_blueprint.before_request
 @subscriptions_blueprint.before_request
 @monitoring_blueprint.before_request
@@ -129,7 +131,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    update_config_object()
+    ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
@@ -211,12 +213,18 @@ def before_request():
 @machineresolver_blueprint.after_request
 @caconnector_blueprint.after_request
 @smtpserver_blueprint.after_request
+@eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
 @subscriptions_blueprint.after_request
 @monitoring_blueprint.after_request
+@ttype_blueprint.after_request
+@validate_blueprint.after_request
+@register_blueprint.after_request
+@recover_blueprint.after_request
+@jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -225,7 +233,7 @@ def after_request(response):
     """
     # In certain error cases the before_request was not handled
     # completely so that we do not have an audit_object
-    if "audit_object" in g:
+    if "audit_object" in g and g.audit_object.audit_data:
         g.audit_object.finalize_log()
 
     # No caching!
@@ -243,6 +251,7 @@ def after_request(response):
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
 @smtpserver_blueprint.app_errorhandler(AuthError)
+@eventhandling_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
 @monitoring_blueprint.app_errorhandler(AuthError)
 @postrequest(sign_response, request=request)
@@ -275,6 +284,7 @@ def auth_error(error):
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
 @smtpserver_blueprint.app_errorhandler(PolicyError)
+@eventhandling_blueprint.app_errorhandler(PolicyError)
 @register_blueprint.app_errorhandler(PolicyError)
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
@@ -297,6 +307,7 @@ def policy_error(error):
 @audit_blueprint.app_errorhandler(ResourceNotFoundError)
 @application_blueprint.app_errorhandler(ResourceNotFoundError)
 @smtpserver_blueprint.app_errorhandler(ResourceNotFoundError)
+@eventhandling_blueprint.app_errorhandler(ResourceNotFoundError)
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
 @subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -322,6 +333,7 @@ def resource_not_found_error(error):
 @audit_blueprint.app_errorhandler(privacyIDEAError)
 @application_blueprint.app_errorhandler(privacyIDEAError)
 @smtpserver_blueprint.app_errorhandler(privacyIDEAError)
+@eventhandling_blueprint.app_errorhandler(privacyIDEAError)
 @register_blueprint.app_errorhandler(privacyIDEAError)
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
@@ -349,6 +361,7 @@ def privacyidea_error(error):
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
 @smtpserver_blueprint.app_errorhandler(500)
+@eventhandling_blueprint.app_errorhandler(500)
 @register_blueprint.app_errorhandler(500)
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)

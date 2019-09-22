@@ -163,6 +163,16 @@
         </div>
     </div>
     <div class="form-group">
+        <label for="sizelimit" class="col-sm-3 control-label"
+                translate>Size Limit</label>
+
+        <div class="col-sm-3">
+            <input name="sizelimit" class="form-control"
+                   ng-model="params.SIZELIMIT" required
+                   placeholder="500"/>
+        </div>
+    </div>
+    <div class="form-group">
         <label for="serverpool-rounds" class="col-sm-3 control-label"
                 translate>Server pool retry rounds</label>
 
@@ -181,13 +191,16 @@
         </div>
     </div>
     <div class="form-group">
-        <label for="sizelimit" class="col-sm-3 control-label"
-                translate>Size Limit</label>
-
-        <div class="col-sm-3">
-            <input name="sizelimit" class="form-control"
-                   ng-model="params.SIZELIMIT" required
-                   placeholder="500"/>
+        <label for="serverpool-persistent" class="col-sm-3 control-label" translate>
+            Per-process server pool
+        </label>
+        <div class="col-sm-9">
+            <input name="serverpool-persistent"
+                   ng-model="params.SERVERPOOL_PERSISTENT"
+                   type="checkbox" />
+            <p class="help-block" translate>
+                This setting activates a LDAP server pool that is persisted between requests.
+            </p>
         </div>
     </div>
     <div class="form-group">
@@ -315,6 +328,7 @@
                 translate>Test LDAP Resolver
         </button>
         <button ng-click="setLDAPResolver()"
+                ng-show="checkRight('resolverwrite')"
                 ng-disabled="formResolverAddLdap.$invalid"
                 class="btn btn-primary"
                 translate>Save resolver

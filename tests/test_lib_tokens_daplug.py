@@ -427,16 +427,19 @@ class DaplugTokenTestCase(MyTestCase):
                                                 realm=self.realm1),
                                             "test"+_digi2daplug("123456"))
         self.assertFalse(resp, resp)
+
+        transaction_id = "123456789"
+        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        C.save()
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test"+_digi2daplug("123456"),
                                             options={"transaction_id":
-                                                         "123456789"})
+                                                         transaction_id})
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        C = Challenge("S123455", transaction_id="tid", challenge="Who are you?")
-        C.save()
+        C.is_valid()
 
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

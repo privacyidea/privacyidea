@@ -23,6 +23,7 @@ class Config(object):
     # PI_LOGO = "otherlogo.png"
     # PI_AUDIT_SQL_URI = sqlite://
     PI_VASCO_LIBRARY = None
+    PI_CUSTOM_CSS = False
 
 
 class DevelopmentConfig(Config):
@@ -49,6 +50,7 @@ class TestingConfig(Config):
     PI_GNUPG_HOME = "tests/testdata/gpg"
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
+    PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"
     PI_NODE = "Node1"
     PI_NODES = ["Node2"]
     PI_ENGINE_REGISTRY_CLASS = "null"

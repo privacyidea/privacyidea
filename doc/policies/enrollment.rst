@@ -48,6 +48,17 @@ Limit the maximum number of tokens per user in this realm.
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
 
+max_active_token_per_user
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Limit the maximum number of active tokens per user.
+
+.. note:: Inactive tokens will not be taken into account.
+   If the token already exists, it can be recreated if the token
+   is already active.
+
 tokenissuer
 ~~~~~~~~~~~
 
@@ -306,7 +317,23 @@ The ``difficulty`` is a parameter for the key generation.
 In the implementation in version 2.21 PBKDF2 is used. In this case the ``difficulty``
 specifies the number of rounds.
 
-This is new in version 2.21
+This is new in version 2.21.
+
+.. _force_app_pin:
+
+.. hotp_force_app_pin, totp_force_app_pin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+During enrollment of a privacyIDEA Authenticator smartphone app this policy is used
+to force the user to protect the token with a PIN.
+
+.. note:: This only works with the privacyIDEA Authenticator.
+   This policy has no effect, if the QR code is scanned with other smartphone apps.
+
+This is new in version 3.1.
+
 
 .. _policy_firebase_config:
 
@@ -322,4 +349,4 @@ The administrator can create several connections to the Firebase service
 This way even different Firebase configurations could be
 used depending on the user's realm or the IP address.
 
-This is new in version 3.0
+This is new in version 3.0.

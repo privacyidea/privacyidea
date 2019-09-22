@@ -14,11 +14,12 @@ from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import mock
+import ldap3
 import responses
 import datetime
 import uuid
 import pytest
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
+from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
@@ -181,7 +182,7 @@ class SQLResolverTestCase(MyTestCase):
 
         user = "cornelius"
         user_id = y.getUserId(user)
-        self.assertTrue(user_id == 3, user_id)
+        self.assertEqual(user_id, '3', user_id)
 
         rid = y.getResolverId()
         self.assertTrue(rid.startswith("sql."))
@@ -295,8 +296,9 @@ class SQLResolverTestCase(MyTestCase):
         stored_password = y.TABLE.filter_by(username="achmed").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
+        # we assume here the uid is of type int
         uid = y.getUserId("achmed")
-        self.assertTrue(uid > self.num_users)
+        self.assertGreater(int(uid), self.num_users)
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
@@ -1128,28 +1130,39 @@ class LDAPResolverTestCase(MyTestCase):
     def test_07_get_serverpool(self):
         timeout = 5
         urilist = "ldap://themis"
-        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout)
         self.assertEqual(len(server_pool), 1)
         self.assertEqual(server_pool.active, SERVERPOOL_ROUNDS)
         self.assertEqual(server_pool.exhaust, SERVERPOOL_SKIP)
         self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
 
         urilist = "ldap://themis, ldap://server2"
-        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout)
         self.assertEqual(len(server_pool), 2)
         self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
         self.assertEqual(server_pool.servers[1].name, "ldap://server2:389")
 
         urilist = "ldap://themis, ldaps://server2"
-        server_pool = LDAPResolver.get_serverpool(urilist, timeout)
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout)
         self.assertEqual(len(server_pool), 2)
         self.assertEqual(server_pool.servers[0].name, "ldap://themis:389")
         self.assertEqual(server_pool.servers[1].name, "ldaps://server2:636")
 
         urilist = "ldap://themis, ldaps://server2"
-        server_pool = LDAPResolver.get_serverpool(urilist, timeout,
-                                                  rounds=5,
-                                                  exhaust=60)
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout,
+                                                     rounds=5,
+                                                     exhaust=60)
+        self.assertEqual(len(server_pool), 2)
+        self.assertEqual(server_pool.active, 5)
+        self.assertEqual(server_pool.exhaust, 60)
+        self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
+
+        urilist = "ldap://themis, ldaps://server2"
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout,
+                                                     rounds=5,
+                                                     exhaust=60,
+                                                     pool_cls=LockingServerPool)
+        self.assertIs(type(server_pool), LockingServerPool)
         self.assertEqual(len(server_pool), 2)
         self.assertEqual(server_pool.active, 5)
         self.assertEqual(server_pool.exhaust, 60)
@@ -1615,7 +1628,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel".encode('utf8')
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1669,7 +1682,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1722,11 +1735,11 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
         username = "cko@o"
         user_id = y.getUserId(username)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
 
     @ldap3mock.activate
     def test_28_LDAP_multivalues(self):
@@ -1754,7 +1767,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = u"kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
         info = y.getUserInfo(user_id)
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
@@ -2036,6 +2049,61 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(c.get("BINDPW"), "ldaptest")
         r = delete_resolver("testname1")
         self.assertTrue(r)
+
+    @ldap3mock.activate
+    def test_35_persistent_serverpool(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {'LDAPURI': 'ldap://localhost, ldap://127.0.0.1, ldap://127.0.1.1',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn", "phone": "telephoneNumber", '
+                                  '"mobile" : "mobile", "email": "mail", '
+                                  '"surname" : "sn", "givenname": "givenName" }',
+                      'UIDTYPE': 'DN',
+                      'CACHE_TIMEOUT': '0', # to disable the per-process cache
+                      'resolver': 'testpool',
+                      'type': 'ldapresolver'}
+        y1 = LDAPResolver()
+        y1.loadConfig(params)
+        y2 = LDAPResolver()
+        y2.loadConfig(params)
+        # Make a query, so that a ServerPool is instantiated
+        y1.getUserId('bob')
+        y2.getUserId('bob')
+        # We haven't configured a persistent serverpool, so every resolver has its own ServerPool
+        self.assertIs(type(y1.serverpool), ldap3.ServerPool)
+        self.assertIs(type(y2.serverpool), ldap3.ServerPool)
+        self.assertIsNot(y1.serverpool, y2.serverpool)
+        # Now, we configure a persistent serverpool
+        params["SERVERPOOL_PERSISTENT"] = "true"
+        y3 = LDAPResolver()
+        y3.loadConfig(params)
+        y4 = LDAPResolver()
+        y4.loadConfig(params)
+        y3.getUserId('bob')
+        y4.getUserId('bob')
+        # The resolvers share a ServerPool
+        self.assertIs(type(y3.serverpool), LockingServerPool)
+        self.assertIs(type(y4.serverpool), LockingServerPool)
+        self.assertIs(y3.serverpool, y4.serverpool)
+
+    def test_36_locking_serverpool(self):
+        # check that the LockingServerPool correctly forwards all relevant method calls
+        pool = LockingServerPool()
+        pool.add(ldap3.Server('server1'))
+        pool.add(ldap3.Server('server2'))
+        with mock.patch('ldap3.ServerPool.initialize') as mock_method:
+            pool.initialize(None)
+            mock_method.assert_called_once()
+        with mock.patch('ldap3.ServerPool.get_server') as mock_method:
+            pool.get_server(None)
+            mock_method.assert_called_once()
+        with mock.patch('ldap3.ServerPool.get_current_server') as mock_method:
+            pool.get_current_server(None)
+            mock_method.assert_called_once()
 
 class BaseResolverTestCase(MyTestCase):
 

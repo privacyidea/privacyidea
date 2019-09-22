@@ -80,12 +80,12 @@ from six.moves.urllib.parse import quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_one_token
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
 from privacyidea.lib.user import get_user_from_param
@@ -115,6 +115,7 @@ class TiqrTokenClass(OcraTokenClass):
     """
     The TiQR Token implementation.
     """
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
 
     @staticmethod
     def get_class_type():
@@ -223,8 +224,8 @@ class TiqrTokenClass(OcraTokenClass):
 
         return response_detail
 
-    @staticmethod
-    def api_endpoint(request, g):
+    @classmethod
+    def api_endpoint(cls, request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
@@ -246,10 +247,8 @@ class TiqrTokenClass(OcraTokenClass):
             serial = getParam(params, "serial", required)
             # The user identifier is displayed in the App
             # We need to set the user ID
-            tokens = get_tokens(serial=serial)
-            if not tokens:  # pragma: no cover
-                raise ParameterError("No token with serial {0!s}".format(serial))
-            user_identifier, user_displayname = tokens[0].get_user_displayname()
+            token = get_one_token(serial=serial, tokentype="tiqr")
+            user_identifier, user_displayname = token.get_user_displayname()
 
             service_identifier = get_from_config("tiqr.serviceIdentifier") or\
                                  "org.privacyidea"
@@ -259,11 +258,13 @@ class TiqrTokenClass(OcraTokenClass):
             reg_server = get_from_config("tiqr.regServer")
             auth_server = get_from_config("tiqr.authServer") or reg_server
             logo_url = get_from_config("tiqr.logoUrl")
+            info_url = get_from_config("tiqr.infoUrl") or \
+                    "https://www.privacyidea.org"
 
             service = {"displayName": service_displayname,
                        "identifier": service_identifier,
                        "logoUrl": logo_url,
-                       "infoUrl": "https://www.privacyidea.org",
+                       "infoUrl": info_url,
                        "authenticationUrl":
                            "{0!s}".format(auth_server),
                        "ocraSuite": ocrasuite,
@@ -300,16 +301,16 @@ class TiqrTokenClass(OcraTokenClass):
             # The secret needs to be stored in the token object.
             # We take the token "serial" and check, if it contains the "session"
             # in the tokeninfo.
-            enroll_tokens = get_tokens(serial=serial)
-            if len(enroll_tokens) == 1:
-                if enroll_tokens[0].get_tokeninfo("session") == session:
-                    # save the secret
-                    enroll_tokens[0].set_otpkey(secret)
-                    # delete the session
-                    enroll_tokens[0].del_tokeninfo("session")
-                    res = "OK"
-                else:
-                    raise ParameterError("Invalid Session")
+            enroll_token = get_one_token(serial=serial, tokentype="tiqr")
+            tokeninfo_session = enroll_token.get_tokeninfo("session")
+            if tokeninfo_session and tokeninfo_session == session:
+                # save the secret
+                enroll_token.set_otpkey(secret)
+                # delete the session
+                enroll_token.del_tokeninfo("session")
+                res = "OK"
+            else:
+                raise ParameterError("Invalid Session")
 
             return "plain", res
         elif action == API_ACTIONS.AUTHENTICATION:
@@ -322,22 +323,31 @@ class TiqrTokenClass(OcraTokenClass):
             # The sessionKey is stored in the db_challenge.transaction_id
             # We need to get the token serial for this sessionKey
             challenges = get_challenges(transaction_id=session)
-            # We found exactly one challenge
-            if (len(challenges) == 1 and challenges[0].is_valid() and
-                        challenges[0].otp_valid is False):
-                # Challenge is still valid (time has not passed) and no
+            # We found several challenges with the given transaction ID,
+            # and some of the challenges may belong to other tokens.
+            # We only handle the TiQR tokens.
+            for challenge in challenges:
+                if challenge.is_valid() and challenge.otp_valid is False:
+                    # Challenge is still valid (time has not passed) and no
                     # correct response was given.
-                    serial = challenges[0].serial
-                    tokens = get_tokens(serial=serial)
-                    if len(tokens) == 1:
-                        # We found exactly the one token
-                        res = "INVALID_RESPONSE"
-                        r = tokens[0].verify_response(
-                            challenge=challenges[0].challenge, passw=passw)
+                    token = get_one_token(serial=challenge.serial)
+                    if token.type.lower() == "tiqr":
+                        # We found a TiQR token with a valid challenge with the given transaction ID
+                        r = token.verify_response(
+                            challenge=challenge.challenge, passw=passw)
                         if r > 0:
                             res = "OK"
                             # Mark the challenge as answered successfully.
-                            challenges[0].set_otp_status(True)
+                            challenge.set_otp_status(True)
+                            # We have found a valid TiQR token transaction, we break out of the loop
+                            break
+                        else:
+                            # Send back how may retries there are left for the token is blocked
+                            token.inc_failcount()
+                            fail = token.get_failcount()
+                            maxfail = token.get_max_failcount()
+                            res = "INVALID_RESPONSE:{0!s}".format(maxfail - fail)
+                            break
 
             cleanup_challenges()
 
@@ -377,6 +387,8 @@ class TiqrTokenClass(OcraTokenClass):
 
         service_identifier = get_from_config("tiqr.serviceIdentifier") or \
                              "org.privacyidea"
+        service_displayname = get_from_config("tiqr.serviceDisplayname") or \
+                              "privacyIDEA"
 
         # Get the OCRASUITE from the token information
         ocrasuite = self.get_tokeninfo("ocrasuite") or OCRA_DEFAULT_SUITE
@@ -386,7 +398,7 @@ class TiqrTokenClass(OcraTokenClass):
 
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
-                                 transaction_id=None,
+                                 transaction_id=transactionid,
                                  challenge=challenge,
                                  data=None,
                                  session=options.get("session"),
@@ -395,11 +407,13 @@ class TiqrTokenClass(OcraTokenClass):
 
         # Encode the user to UTF-8 and quote the result
         encoded_user_identifier = quote_plus(user_identifier.encode('utf-8'))
-        authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}".format(
+        authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}/{4!s}".format(
                                               encoded_user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,
-                                              challenge)
+                                              challenge,
+                                              service_displayname
+                                              )
         attributes = {"img": create_img(authurl, width=250),
                       "value": authurl,
                       "poll": True,
@@ -439,7 +453,6 @@ class TiqrTokenClass(OcraTokenClass):
         if transaction_id is not None:
             challengeobject_list = get_challenges(serial=self.token.serial,
                                                   transaction_id=transaction_id)
-
             for challengeobject in challengeobject_list:
                 # check if we are still in time.
                 if challengeobject.is_valid():

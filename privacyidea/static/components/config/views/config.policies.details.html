@@ -151,6 +151,7 @@
             <div class="input-group">
                 <input type="text" ng-model="action_filter"
                    placeholder="{{ 'filter action...'|translate }}"
+                   ng-change="isOpen = (action_filter.length > 0)"
                    class="form-control"
                    aria-describedby="filter-delete">
                 <span class="input-group-addon" id="filter-delete"
@@ -161,13 +162,14 @@
             <div ng-show="isActionValues">
                 <accordion close-others="false">
                     <accordion-group
+                            is-open="isOpen"
                             heading="{{ actionGroup || 'miscellaneous'}}"
                                 ng-repeat="actionGroup in actionGroups">
                         <table class="table table-hover">
                             <tr ng-repeat="action in actions"
                                 ng-show="(actionCheckBox[action.name] ||
                                     !onlySelectedVisible) &&
-                                    action.name.match(action_filter) !== null"
+                                    action.name.toLowerCase().match(action_filter.toLowerCase()) !== null"
                                 ng-if="action.group===null || actionGroup===action.group">
                                 <td>
                                     <label for="cb_{{ action.name }}">
@@ -336,6 +338,14 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <label for="policy-conditions" class="col-sm-3 control-label"
+               translate>Additional conditions</label>
+
+        <div class="col-sm-9">
+            <pi-policy-conditions conditions="params.conditions" defs="policyConditionDefs"></pi-policy-conditions>
+        </div>
+    </div>
 
     <div class="text-center"
          ng-show="checkRight('policywrite')">

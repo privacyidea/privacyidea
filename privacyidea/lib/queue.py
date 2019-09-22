@@ -53,6 +53,7 @@ class JobCollector(object):
     def register_job(self, name, func, args, kwargs):
         """
         Register a job with the collector.
+
         :param name: unique name of the job
         :param func: function of the job
         :param args: arguments passed to the job queue's ``register_job`` method
@@ -69,6 +70,7 @@ class JobCollector(object):
         Register all collected jobs with this application.
         This instance is shared between threads!
         This function should only be called once per process.
+
         :param app: privacyIDEA app
         """
         with app.app_context():
@@ -144,6 +146,7 @@ def wrap_job(name, result):
     The returned function will always return ``result``.
     This assumes that a queue is configured! Otherwise, calling the
     resulting function will fail with a ServerError.
+
     :return: a function
     """
     def caller(*args, **kwargs):

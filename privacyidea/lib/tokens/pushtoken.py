@@ -40,8 +40,8 @@ from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.models import Challenge
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
+from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
@@ -57,22 +57,25 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
-
+import time
 
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
-DEFAULT_MOBILE_TEXT = _("Do you want to confirm login?")
+DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 
+DELAY = 1.0
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
     MOBILE_TEXT = "push_text_on_mobile"
     MOBILE_TITLE = "push_title_on_mobile"
+    SSL_VERIFY = "push_ssl_verify"
+    WAIT = "push_wait"
 
 
 def strip_key(key):
@@ -170,10 +173,12 @@ class PushTokenClass(TokenClass):
     https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
 
     """
+    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type(u"push")
-        self.mode = ['challenge']
+        self.mode = ['challenge', 'authenticate']
         self.hKeyRequired = False
 
 
@@ -217,6 +222,12 @@ class PushTokenClass(TokenClass):
                            'group': "PUSH",
                            'value': [gw.identifier for gw in gws]
                        },
+                       PUSH_ACTION.SSL_VERIFY: {
+                           'type': 'str',
+                           'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
+                           'group':  "PUSH",
+                           'value': ["0", "1"]
+                       }
                    },
                    SCOPE.AUTH: {
                        PUSH_ACTION.MOBILE_TEXT: {
@@ -228,7 +239,19 @@ class PushTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _('The title of the notification, the user sees on his mobile phone.'),
                            'group': 'PUSH'
+                       },
+                       PUSH_ACTION.SSL_VERIFY: {
+                           'type': 'str',
+                           'desc': _('The smartphone needs to verify SSL during authentication. (default 1)'),
+                           'group': "PUSH",
+                           'value': ["0", "1"]
+                       },
+                       PUSH_ACTION.WAIT: {
+                           'type': 'int',
+                           'desc': _('Wait for number of seconds for the user to confirm the challenge in the first request.'),
+                           'group': "PUSH"
                        }
+
                    }
                },
         }
@@ -309,6 +332,7 @@ class PushTokenClass(TokenClass):
         user = user or User()
         tokenlabel = params.get("tokenlabel", "<s>")
         tokenissuer = params.get("tokenissuer", "privacyIDEA")
+        sslverify = getParam(params, PUSH_ACTION.SSL_VERIFY, allowed_values=["0", "1"], default="1")
         # Add rollout state the response
         response_detail['rollout_state'] = self.token.rollout_state
 
@@ -324,10 +348,13 @@ class PushTokenClass(TokenClass):
                 raise ParameterError("Unknown Firebase configuration!")
             fb_options = firebase_configs[0].option_dict
             for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
-                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY]:
+                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
+                      FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
                 extra_data[k] = fb_options.get(k)
-            # TODO this allows to upgrade our crypto
+            # this allows to upgrade our crypto
             extra_data["v"] = 1
+            extra_data["serial"] = self.get_serial()
+            extra_data["sslverify"] = sslverify
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
                                            user=user.login,
@@ -385,7 +412,7 @@ class PushTokenClass(TokenClass):
         serial = getParam(request.all_data, "serial", optional=False)
 
         if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
-            # Do the 2nd step of the enrollment
+            log.debug("Do the 2nd step of the enrollment.")
             try:
                 token_obj = get_one_token(serial=serial,
                                           tokentype="push",
@@ -398,6 +425,7 @@ class PushTokenClass(TokenClass):
             details = token_obj.get_init_detail(init_detail_dict)
             result = True
         elif serial and "nonce" in request.all_data and "signature" in request.all_data:
+            log.debug("Handling the authentication response from the smartphone.")
             challenge = getParam(request.all_data, "nonce")
             serial = getParam(request.all_data, "serial")
             signature = getParam(request.all_data, "signature")
@@ -405,8 +433,10 @@ class PushTokenClass(TokenClass):
             # get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
             pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-            if not pubkey_pem.startswith("-----"):
-                pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
+            # The public key of the smartphone was probably sent as urlsafe:
+            pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
+            # The public key was sent without any header
+            pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
             # Do the 2nd step of the authentication
             # Find valid challenges
             challengeobject_list = get_challenges(serial=serial, challenge=challenge)
@@ -423,7 +453,9 @@ class PushTokenClass(TokenClass):
                                           padding.PKCS1v15(),
                                           hashes.SHA256())
                         # The signature was valid
+                        log.debug("Found matching challenge {0!s}.".format(chal))
                         chal.set_otp_status(True)
+                        chal.save()
                         result = True
                     except InvalidSignature as e:
                         pass
@@ -446,6 +478,9 @@ class PushTokenClass(TokenClass):
 
         :return: returns true or false
         """
+        if options.get(PUSH_ACTION.WAIT):
+            # We have a push_wait in the parameters
+            return False
         return self.check_pin(passw, user=user, options=options)
 
     def create_challenge(self, transactionid=None, options=None):
@@ -474,6 +509,11 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
+        sslverify = get_action_values_from_options(SCOPE.AUTH,
+                                                   PUSH_ACTION.SSL_VERIFY,
+                                                   options) or "1"
+        sslverify = getParam({"sslverify": sslverify}, "sslverify", allowed_values=["0", "1"], default="1")
+
         attributes = None
         data = None
         challenge = b32encode_and_unicode(geturandom())
@@ -483,7 +523,7 @@ class PushTokenClass(TokenClass):
             fb_gateway = create_sms_instance(fb_identifier)
             url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
             message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
-                                                   PUSH_ACTION.MOBILE_TITLE,
+                                                   PUSH_ACTION.MOBILE_TEXT,
                                                    options) or DEFAULT_MOBILE_TEXT
             title = get_action_values_from_options(SCOPE.AUTH,
                                                    PUSH_ACTION.MOBILE_TITLE,
@@ -492,10 +532,11 @@ class PushTokenClass(TokenClass):
                                "question": message_on_mobile,
                                "serial": self.token.serial,
                                "title": title,
+                               "sslverify": sslverify,
                                "url": url}
             # Create the signature.
             # value to string
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}".format(**smartphone_data)
+            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
 
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
             privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey), None, default_backend())
@@ -531,6 +572,48 @@ class PushTokenClass(TokenClass):
         db_challenge.save()
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, attributes
+
+    @check_token_locked
+    def authenticate(self, passw, user=None, options=None):
+        """
+        High level interface which covers the check_pin and check_otp
+        This is the method that verifies single shot authentication.
+        The challenge is send to the smartphone app and privacyIDEA
+        waits for the response to arrive.
+
+        :param passw: the password which could be pin+otp value
+        :type passw: string
+        :param user: The authenticating user
+        :type user: User object
+        :param options: dictionary of additional request parameters
+        :type options: dict
+
+        :return: returns tuple of
+                 1. true or false for the pin match,
+                 2. the otpcounter (int) and the
+                 3. reply (dict) that will be added as
+                    additional information in the JSON response
+                    of ``/validate/check``.
+        :rtype: tuple
+        """
+        otp_counter = -1
+        reply = None
+        pin_match = self.check_pin(passw, user=user, options=options)
+        if pin_match:
+            waiting = int(options.get(PUSH_ACTION.WAIT, 20))
+            # Trigger the challenge
+            _t, _m, transaction_id, _attr = self.create_challenge(options=options)
+            # now we need to check and wait for the response to be answered in the challenge table
+            starttime = time.time()
+            while True:
+                db.session.commit()
+                otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
+                elapsed_time = time.time() - starttime
+                if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
+                    break
+                time.sleep(DELAY - (elapsed_time % DELAY))
+
+        return pin_match, otp_counter, reply
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):

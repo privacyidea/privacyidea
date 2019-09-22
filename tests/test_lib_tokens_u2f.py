@@ -148,7 +148,7 @@ class U2FTokenTestCase(MyTestCase):
         version = registerRequest.get("version")
         self.assertEqual(version, "U2F_V2")
         challenge = registerRequest.get("challenge")
-        self.assertEqual(len(challenge), 44)
+        self.assertEqual(len(challenge), 43)
 
         # Init step 2
         token = init_token({"type": "u2f",

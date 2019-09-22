@@ -59,6 +59,18 @@ status=REPLAYED_OTP"""
 
     @responses.activate
     def test_04_check_otp_success(self):
+        responses.add(responses.GET, YUBICO_URL,
+                      body=self.success_body)
+
+        db_token = Token.query.filter(Token.serial == self.serial1).first()
+        token = YubicoTokenClass(db_token)
+        otpcount = token.check_otp("vvbgidlghkhgndujklhhudbcuttkcklhvjktrjrt")
+        # Nonce and hash do not match
+        self.assertTrue(otpcount == -2, otpcount)
+
+    @responses.activate
+    def test_04_check_otp_success_with_post_request(self):
+        set_privacyidea_config("yubico.do_post", True)
         responses.add(responses.POST, YUBICO_URL,
                       body=self.success_body)
 
@@ -67,6 +79,8 @@ status=REPLAYED_OTP"""
         otpcount = token.check_otp("vvbgidlghkhgndujklhhudbcuttkcklhvjktrjrt")
         # Nonce and hash do not match
         self.assertTrue(otpcount == -2, otpcount)
+        set_privacyidea_config("yubico.do_post", False)
+
 
     @responses.activate
     def test_05_check_otp_fail(self):

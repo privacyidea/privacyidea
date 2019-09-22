@@ -14,13 +14,15 @@
                     <a ui-sref="config.caconnector.edit" translate>
                         Edit CA Connector {{ connectorname }}</a></li>
 
-                <li class="nav nav-pills nav-header" translate>
+                <li class="nav nav-pills nav-header" translate
+                    ng-show="checkRight('caconnectorwrite')">
                     New Connectors</li>
                 <!-- Here we can get all connectors and iterated over
                      the resolver types.
                 -->
                 <li ng-repeat="connectortype in availableCAConnectorTypes"
                         role="presentation"
+                    ng-show="checkRight('caconnectorwrite')"
                     ng-class="{active:
                     $state.includes('config.caconnectors.add'+connectortype) }">
                     <a ui-sref="config.caconnectors.add{{ connectortype }}"

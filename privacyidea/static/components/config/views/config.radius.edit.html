@@ -113,7 +113,8 @@
         </div>
     </div>
 
-    <div class="text-center">
+    <div class="text-center"
+         ng-show="checkRight('radiusserver_write')">
         <button ng-click="saveRadiusServer()"
                 ng-disabled="formRadius.$invalid"
                 class="btn btn-primary"

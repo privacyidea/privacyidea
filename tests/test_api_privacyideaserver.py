@@ -29,7 +29,7 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
         # list servers
@@ -38,12 +38,21 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 1)
             server1 = server_list.get("server1")
             self.assertEqual(server1.get("url"), "https://pi")
             self.assertEqual(server1.get("description"), "myServer")
+
+        # Listing privacyIDEA servers as a user is not allowed
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        with self.app.test_request_context('/privacyideaserver/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
 
         # delete server
         with self.app.test_request_context('/privacyideaserver/server1',
@@ -58,7 +67,7 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 0)
 
@@ -89,5 +98,5 @@ class PrivacyIDEAServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("value"), True)

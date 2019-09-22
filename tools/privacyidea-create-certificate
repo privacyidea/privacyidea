@@ -5,6 +5,8 @@ import os
 import sys
 from getopt import getopt, GetoptError
 from subprocess import call
+from six.moves import shlex_quote
+
 
 __version__ = '0.1'
 CONFIG_FILE = "/etc/apache2/sites-available/privacyidea"
@@ -37,7 +39,7 @@ def create_keys(file):
 
     if key and cert:
         command = "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s " \
-                  "-days 1000 -subj /CN=privacyideaserver -nodes" % (key, cert)
+                  "-days 1000 -subj /CN=privacyideaserver -nodes" % (shlex_quote(key), shlex_quote(cert))
         r = call(command, shell=True)
         if r == 0:
             print("created key and cert...")

@@ -47,7 +47,8 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token, import_token)
+                                   unassign_token, import_token,
+                                   get_tokens_paginated_generator)
 from privacyidea.app import create_app
 from flask_script import Manager
 import re
@@ -312,12 +313,13 @@ def export_token_data(token_list):
     for token_obj in token_list:
         token_data = [u"{0!s}".format(token_obj.token.serial),
                       u"{0!s}".format(token_obj.token.tokentype)]
-        if token_obj.user:
-            token_data.append(u"{0!s}".format(token_obj.user.info.get("username", "")))
-            token_data.append(u"{0!s}".format(token_obj.user.info.get("givenname", "")))
-            token_data.append(u"{0!s}".format(token_obj.user.info.get("surname", "")))
-            token_data.append(u"{0!s}".format(token_obj.user.info.get("userid")))
-            token_data.append(u"{0!s}".format(token_obj.token.resolver))
+        user = token_obj.user
+        if user:
+            token_data.append(u"{0!s}".format(user.info.get("username", "")))
+            token_data.append(u"{0!s}".format(user.info.get("givenname", "")))
+            token_data.append(u"{0!s}".format(user.info.get("surname", "")))
+            token_data.append(u"{0!s}".format(user.uid))
+            token_data.append(u"{0!s}".format(user.resolver))
         tokens.append(token_data)
     return tokens
 
@@ -331,13 +333,15 @@ def export_user_data(token_list):
     """
     users = {}
     for token_obj in token_list:
-        if token_obj.user:
-            uid = u"{0!s}|{1!s}|{2!s}|{3!s}|{4!s}".format(
-                token_obj.user.info.get("username", ""),
-                token_obj.user.info.get("givenname", ""),
-                token_obj.user.info.get("surname", ""),
-                token_obj.user.info.get("userid", ""),
-                token_obj.token.resolver
+        user = token_obj.user
+        if user:
+            uid = u"'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
+                user.info.get("username", ""),
+                user.info.get("givenname", ""),
+                user.info.get("surname", ""),
+                user.uid,
+                user.resolver,
+                user.realm
             )
         else:
             uid = u"N/A"

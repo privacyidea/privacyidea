@@ -1,21 +1,66 @@
 # Update Notes
 
+## Update from 3.0 to 3.1
+
+* Policies
+
+  In the scope admin a new action "tokenlist" was added. This
+  action assures, that admins can only list tokens in certain realms.
+  Without this action, and administrator can not view any tokens.
+  To allow all administrators to still list tokens, during migration
+  from 3.0 to 3.1 a new policy **pi-update-policy-b9131d0686eb** is
+  automatically created.
+
+  After the update you might want to review this policy and the
+  token list rights of your administrators.
+
+  **Note**, that due to the naming of this auto-generated policy, it is
+  not possible to modify this policy. You can still disable and enable
+  or delete this policy.
+
 ## Update from 2.23 to 3.0
 
-A lot of changes will be introduced in privacyIDEA 3.0, most notably the
-Python 3 compatibility.
+* Database
+
+  **WARNING**: Be sure to run a backup of your database before upgrading!
+  The database schema in regards to the token assignment is changed.
+  The token assignment is moved from the table "token" to the table
+  "tokenowner". The user columns in the "token" table are deleted and
+  migrated to the "tokenowner" table.   
+
+* The packaging for ubuntu has changed. While privacyIDEA 2.23 was
+  installed into the system environment, the ubuntu packages 
+  starting with privacyIDEA 3.0 will install the software in the
+  Python virtual environment at /opt/privacyidea.
+  However, the debian package update process will take care of this.
+
+  But this also means that the apache configuration was changed slightly.
+  In /etc/apache2/sites-available/privacyidea.conf a line
+  "WSGIPythonHome /opt/privacyidea"
+  was added.
+  Unless you modified the file privacyidea.conf, the update process
+  will take care of this automatically.
 
 * Package dependencies:
+
+  A lot of changes will be introduced in privacyIDEA 3.0, most notably the
+  Python 3 compatibility.
+
   * Removed packages:
     * matplotlib
     * pandas
+    * PyCrypto
   * Added packages:
     * cryptography (2.4.2)
   * Updated packages:
     * smpplib (0.1 -> 2.0)
     * pytest (3.6.0 -> 3.6.1)
     * requests (2.18.4 -> 2.20.0)
+    * PyYAML (3.12 -> 5.1)
 
+* Due to the switch from PyCrypto to cryptography, the calculation of signatures
+  changed. In order to be able to verify old audit entry signatures,
+   PI_CHECK_OLD_SIGNATURES must be set to "True" in your pi.cfg.
 
 ## Update from 2.22 to 2.23
 

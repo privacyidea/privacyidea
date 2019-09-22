@@ -53,7 +53,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             TokenFactory.getTokens(function (data) {
                 if (data) {
                     $scope.tokendata = data.result.value;
-                    //debug: console.log($scope.tokendata);
                 }
             }, $scope.params);
         }
@@ -283,6 +282,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         } else {
             $scope.form.genkey = true;
         }
+        if ($scope.form.type === "radius") {
+            // only load RADIUS servers when the user actually tries to enroll a RADIUS token,
+            // because the user might not be allowed to list RADIUS servers
+            $scope.getRADIUSIdentifiers();
+        }
+        if ($scope.form.type === "certificate") {
+            $scope.getCAConnectors();
+        }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
     };
@@ -492,15 +499,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     // get the list of configured RADIUS server identifiers
     $scope.getRADIUSIdentifiers = function() {
-        ConfigFactory.getRadius(function(data){
+        ConfigFactory.getRadiusNames(function(data){
             $scope.radiusIdentifiers = data.result.value;
         });
     };
-    $scope.getRADIUSIdentifiers();
 
     // get the list of configured CA connectors
     $scope.getCAConnectors = function () {
-        ConfigFactory.getCAConnectors(function (data){
+        ConfigFactory.getCAConnectorNames(function (data){
             var CAConnectors = data.result.value;
             angular.forEach(CAConnectors, function(value, key){
                 $scope.CAConnectors.push(value.connectorname);
@@ -510,7 +516,6 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             //debug: console.log($scope.CAConnectors);
         });
     };
-    $scope.getCAConnectors();
 
     // If the user is admin, he can read the config.
     ConfigFactory.loadSystemConfig(function (data) {

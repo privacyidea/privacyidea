@@ -49,9 +49,11 @@ storage.
 """
 
 import logging
-log = logging.getLogger(__name__)
+import traceback
 from privacyidea.lib.log import log_with
 import socket
+
+log = logging.getLogger(__name__)
 
 
 class Paginate(object):
@@ -135,22 +137,16 @@ class Audit(object):  # pragma: no cover
         :type priv: string with filename
         :return: None
         """
-
         try:
-            f = open(priv, "r")
-            self.private = f.read()
-            f.close()
+            with open(priv, "rb") as privkey_file:
+                self.private = privkey_file.read()
+            with open(pub, 'rb') as pubkey_file:
+                self.public = pubkey_file.read()
         except Exception as e:
-            log.error("Error reading private key {0!s}: ({1!r})".format(priv, e))
+            log.error("Error reading key file: {0!r})".format(e))
+            log.debug(traceback.format_exc())
             raise e
 
-        try:
-            f = open(pub, "r")
-            self.public = f.read()
-            f.close()
-        except Exception as e:
-            log.error("Error reading public key {0!s}: ({1!r})".format(pub, e))
-            raise e
 
     def get_audit_id(self):
         return self.name

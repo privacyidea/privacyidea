@@ -36,7 +36,6 @@ from privacyidea.lib.config import get_token_types
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
@@ -45,7 +44,6 @@ from privacyidea.lib.utils import (compare_condition, compare_value_value,
 import datetime
 from dateutil.tz import tzlocal
 import re
-import json
 import logging
 from privacyidea.lib.tokenclass import DATE_FORMAT
 
@@ -76,6 +74,7 @@ class CONDITION(object):
     REALM = "realm"
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
+    ROLLOUT_STATE = "rollout_state"
 
 
 class BaseEventHandler(object):
@@ -127,25 +126,29 @@ class BaseEventHandler(object):
         realms = get_realms()
         resolvers = get_resolver_list()
         cond = {
+            CONDITION.ROLLOUT_STATE: {
+                "type": "str",
+                "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'.")
+            },
             CONDITION.REALM: {
                 "type": "str",
-                "desc": _("The user realm, for which this event should apply."),
+                "desc": _("The realm of the user, for which this event should apply."),
                 "value": list(realms)
             },
             CONDITION.RESOLVER: {
                 "type": "str",
-                "desc": _("The user resolver, for which this event should apply."),
+                "desc": _("The resolver of the user, for which this event should apply."),
                 "value": list(resolvers)
             },
             CONDITION.TOKENREALM: {
                 "type": "multi",
-                "desc": _("The token realm, for which this event should "
+                "desc": _("The realm of the token, for which this event should "
                           "apply."),
                 "value": [{"name": r} for r in realms]
             },
             CONDITION.TOKENRESOLVER: {
                 "type": "multi",
-                "desc": _("The token resolver, for which this event should "
+                "desc": _("The resolver of the token, for which this event should "
                           "apply."),
                 "value": [{"name": r} for r in resolvers]
             },
@@ -275,29 +278,34 @@ class BaseEventHandler(object):
 
     @staticmethod
     def _get_tokenowner(request):
-        user = request.User
-        serial = request.all_data.get("serial")
-        if user.is_empty() and serial:
-            # maybe the user is empty, but a serial was passed.
-            # Then we determine the user by the serial
-            try:
-                user = get_token_owner(serial) or User()
-            except Exception as exx:
+        user = User()
+        if hasattr(request, "User"):
+            user = request.User
+            serial = request.all_data.get("serial")
+            if user.is_empty() and serial:
+                # maybe the user is empty, but a serial was passed.
+                # Then we determine the user by the serial
+                try:
+                    user = get_token_owner(serial) or User()
+                except Exception as exx:
+                    user = User()
+                    # This can happen for orphaned tokens.
+                    log.info("Could not determine tokenowner for {0!s}. Maybe the "
+                             "user does not exist anymore.".format(serial))
+                    log.debug(exx)
+            # If the user does not exist, we set an empty user
+            if not user.exist():
                 user = User()
-                # This can happen for orphaned tokens.
-                log.info("Could not determine tokenowner for {0!s}. Maybe the "
-                         "user does not exist anymore.".format(serial))
-                log.debug(exx)
-        # If the user does not exist, we set an empty user
-        if not user.exist():
-            user = User()
 
         return user
 
     @staticmethod
     def _get_response_content(response):
         if response:
-            content = json.loads(response.data)
+            if response.is_json:
+                content = response.json
+            else:
+                content = response.get_json(force=True, cache=False)
         else:
             # In Pre-Handling we have no response and no content
             content = {}
@@ -321,8 +329,7 @@ class BaseEventHandler(object):
         content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
-        serial = request.all_data.get("serial") or \
-                 content.get("detail", {}).get("serial")
+        serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
         tokenrealms = []
         tokenresolvers = []
         tokentype = None
@@ -330,10 +337,13 @@ class BaseEventHandler(object):
         if serial:
             # We have determined the serial number from the request.
             token_obj_list = get_tokens(serial=serial)
-        else:
+        elif user:
             # We have to determine the token via the user object. But only if
             #  the user has only one token
             token_obj_list = get_tokens(user=user)
+        else:
+            token_obj_list = []
+
         if len(token_obj_list) == 1:
             # There is a token involved, so we determine it's resolvers and realms
             token_obj = token_obj_list[0]
@@ -534,6 +544,11 @@ class BaseEventHandler(object):
                     # There is a condition, but we do not know it!
                     log.warning("Misconfiguration in your tokeninfo "
                                 "condition: {0!s}".format(cond))
+                    return False
+
+            if CONDITION.ROLLOUT_STATE in conditions:
+                cond = conditions.get(CONDITION.ROLLOUT_STATE)
+                if not cond == token_obj.token.rollout_state:
                     return False
 
         return True

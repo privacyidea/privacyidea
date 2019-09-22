@@ -138,6 +138,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.set = function (key, value) {
         TokenFactory.set($scope.tokenSerial, key, value, $scope.get);
     };
+    $scope.setdescription = function (description) {
+        TokenFactory.set_description($scope.tokenSerial, description, $scope.get);
+    };
     $scope.reset = function () {
         TokenFactory.reset($scope.tokenSerial, $scope.get);
     };

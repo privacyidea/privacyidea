@@ -3,6 +3,7 @@
         <div class="pa-sidebar panel">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"
+                    ng-show="checkRight('eventhandling_read')"
                     ng-class="{ active: $state.includes('config.events.list')}">
                     <a ui-sref="config.events.list" translate>
                         All Event Handlers</a></li>

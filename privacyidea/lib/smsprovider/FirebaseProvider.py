@@ -23,12 +23,16 @@ Firebase Cloud Messaging Service.
 This provider is used for the push token and can be used for SMS tokens.
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
+from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib import _
 import logging
 from oauth2client.service_account import ServiceAccountCredentials
 import requests
 import json
+import time
+import datetime
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
 SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
@@ -41,17 +45,64 @@ SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
 log = logging.getLogger(__name__)
 
 
+class AccessToken(object):
+
+    def __init__(self, access_token, validity):
+        self.access_token = access_token
+        self.expires_at = time.time() + validity - 10
+
+
+def get_firebase_access_token(config_file_name):
+    """
+    This returns the access token for a given JSON config file name
+
+    :param config_file_name:
+    :return:
+    """
+    fbt = "firebase_token"
+    now = time.time()
+    app_store = get_app_local_store()
+
+    if fbt not in app_store or not isinstance(app_store[fbt], dict):
+        # initialize the firebase_token in the app_store as dict
+        app_store[fbt] = {}
+
+    if not isinstance(app_store[fbt].get(config_file_name), AccessToken) or \
+            now > app_store[fbt].get(config_file_name).expires_at:
+        # If the type of the config is not class AccessToken or
+        # if the token has expired
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(config_file_name, SCOPES)
+        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
+        access_token_info = credentials.get_access_token()
+        # Now we set the expiration date for the new access_token with a margin of 10 seconds
+        At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
+        # We do not use a lock here: The worst that could happen is that two threads
+        # fetch new auth tokens concurrently. In this case, one of them wins and is written to the dictionary.
+        app_store[fbt][config_file_name] = At
+        readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
+        log.debug(u"Setting the expiration for {!r} of the new access_token to {!s}.".format(config_file_name, readable_time))
+
+    return app_store[fbt][config_file_name].access_token
+
+
 class FIREBASE_CONFIG:
     REGISTRATION_URL = "registration URL"
     TTL = "time to live"
-    JSON_CONFG = "JSON config file"
+    JSON_CONFIG = "JSON config file"
     PROJECT_ID = "projectid"
     PROJECT_NUMBER = "projectnumber"
     APP_ID = "appid"
     API_KEY = "apikey"
+    APP_ID_IOS = "appidios"
+    API_KEY_IOS = "apikeyios"
 
 
 class FirebaseProvider(ISMSProvider):
+
+    def __init__(self, db_smsprovider_object=None, smsgateway=None):
+        ISMSProvider.__init__(self, db_smsprovider_object, smsgateway)
+        self.access_token_info = None
+        self.access_token_expires_at = 0
 
     def submit_message(self, firebase_token, data):
         """
@@ -66,16 +117,9 @@ class FirebaseProvider(ISMSProvider):
         """
         res = False
 
-        credentials = ServiceAccountCredentials.\
-                from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFG),
-                                       SCOPES)
+        bearer_token = get_firebase_access_token(self.smsgateway.option_dict.get(
+            FIREBASE_CONFIG.JSON_CONFIG))
 
-        access_token_info = credentials.get_access_token()
-
-        # Should we do something with expires in?
-        # expires_in = access_token_info.expires_in
-
-        bearer_token = access_token_info.access_token
         headers = {
             'Authorization': u'Bearer {0!s}'.format(bearer_token),
             'Content-Type': 'application/json; UTF-8',
@@ -98,6 +142,38 @@ class FirebaseProvider(ISMSProvider):
 
         return res
 
+    def check_configuration(self):
+        """
+        This method checks the sanity of the configuration of this provider.
+        If there is a configuration error, than an exception is raised.
+        :return:
+        """
+        json_file = self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG)
+        server_config = None
+        with open(json_file) as f:
+            server_config = json.load(f)
+        if server_config:
+            if server_config.get("type") != "service_account":
+                raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")
+            project_id = self.smsgateway.option_dict.get(FIREBASE_CONFIG.PROJECT_ID)
+            if server_config.get("project_id") != project_id:
+                raise ConfigAdminError(description="The project_id you entered does not match the project_id from the JSON file.")
+
+        else:
+            raise ConfigAdminError(description="Please check your configuration. Can not load JSON file.")
+
+        # We need at least
+        #         FIREBASE_CONFIG.API_KEY_IOS and FIREBASE_CONFIG.APP_ID_IOS
+        # or
+        #         FIREBASE_CONFIG.API_KEY and FIREBASE_CONFIG.APP_ID
+        android_configured = bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.APP_ID)) and \
+                             bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.API_KEY))
+        ios_configured = bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.APP_ID_IOS)) and \
+                             bool(self.smsgateway.option_dict.get(FIREBASE_CONFIG.API_KEY_IOS))
+        if not android_configured and not ios_configured:
+            raise ConfigAdminError(description="You need to at least configure either app_id and api_key or"
+                                               " app_id_ios and api_key_ios.")
+
     @classmethod
     def parameters(cls):
         """
@@ -115,7 +191,7 @@ class FirebaseProvider(ISMSProvider):
                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')},
                       FIREBASE_CONFIG.TTL: {
                           "required": True,
-                          "description": _('How long should the second step of the enrollment be accepted (in seconds).')
+                          "description": _('The second enrollment step must be completed within this time (in minutes).')
                       },
                       FIREBASE_CONFIG.PROJECT_ID: {
                           "required": True,
@@ -127,16 +203,26 @@ class FirebaseProvider(ISMSProvider):
                               "The project number, that the client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.APP_ID: {
-                          "required": True,
+                          "required": False,
                           "description": _(
-                              "The APP ID, that the client should use. Get it from your Firebase console.")
+                              "The App ID, that the Android client should use. Get it from your Firebase console.")
                       },
                       FIREBASE_CONFIG.API_KEY: {
-                          "required": True,
+                          "required": False,
                           "description": _(
-                              "The API KEY, that the client should use. Get it from your Firebase console.")
+                              "The API Key, that the Android client should use. Get it from your Firebase console.")
                       },
-                      FIREBASE_CONFIG.JSON_CONFG: {
+                      FIREBASE_CONFIG.APP_ID_IOS:{
+                          "required": False,
+                          "description": _(
+                              "The App ID, that the iOS client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.API_KEY_IOS: {
+                          "required": False,
+                          "description": _(
+                              "The API Key, that the iOS client should use. Get it from your Firebase console.")
+                      },
+                      FIREBASE_CONFIG.JSON_CONFIG: {
                           "required": True,
                           "description": _("The filename of the JSON config file, that allows privacyIDEA to talk"
                                            " to the Firebase REST API.")

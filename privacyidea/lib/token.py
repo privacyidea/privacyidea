@@ -75,14 +75,14 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
                                 MachineToken, TokenInfo, TokenOwner)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin)
+                                    get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 from privacyidea.lib.realm import realm_is_defined
@@ -140,7 +140,7 @@ def create_tokenclass_object(db_token):
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                         serial_exact=None, serial_wildcard=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -189,6 +189,11 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                                           TokenRealm.realm_id == Realm.id,
                                           TokenRealm.token_id ==
                                           Token.id)).distinct()
+
+    if allowed_realms is not None:
+        sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
+                                          TokenRealm.realm_id == Realm.id,
+                                          TokenRealm.token_id == Token.id)).distinct()
 
     stripped_resolver = None if resolver is None else resolver.strip("*")
     stripped_userid = None if userid is None else userid.strip("*")
@@ -413,7 +418,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None):
+                page=1, description=None, userid=None, allowed_realms=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -443,6 +448,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type psize: int
     :param page: The number of the page to view. Starts with 1 ;-)
     :type page: int
+    :param allowed_realms: A list of realms, that the admin is allowed to see
+    :type allowed_realms: list
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
@@ -451,7 +458,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 serial_wildcard=serial, active=active,
                                 resolver=resolver,
                                 rollout_state=rollout_state,
-                                description=description, userid=userid)
+                                description=description, userid=userid,
+                                allowed_realms=allowed_realms)
 
     if isinstance(sortby, string_types):
         # convert the string to a Token column
@@ -966,6 +974,7 @@ def init_token(param, user=None, tokenrealms=None,
 
     tokentype = param.get("type") or "hotp"
     serial = param.get("serial") or gen_serial(tokentype, param.get("prefix"))
+    check_serial_valid(serial)
     realms = []
 
     # unsupported tokentype
@@ -2082,7 +2091,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     valid_token_list = []
 
     # Remove locked tokens from tokenobject_list
-    if len(tokenobject_list) > 1:
+    if len(tokenobject_list) > 0:
         tokenobject_list = [token for token in tokenobject_list if not token.is_revoked()]
 
         if len(tokenobject_list) == 0:
@@ -2160,10 +2169,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
-            if increase_auth_counters:
-                token_obj.inc_count_auth_success()
-            # Check if the max auth is succeeded
+            # Reset the failcounter, if there is a timeout set
+            token_obj.check_reset_failcount()
+            # Check if the max auth is succeeded.
+            # We need to set the offsets, since we are in the n+1st authentication.
             if token_obj.check_all(message_list):
+                if increase_auth_counters:
+                    token_obj.inc_count_auth_success()
+
                 # The token is active and the auth counters are ok.
                 res = True
                 if not reply_dict.get("type"):
@@ -2200,12 +2213,21 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     elif challenge_response_token_list:
         # The RESPONSE for a previous request of a challenge response token was
         # found.
+        matching_challenge = False
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
                 reply_dict["serial"] = tokenobject.token.serial
-                if tokenobject.is_active():
-                    # OTP matches
+                matching_challenge = True
+                messages = []
+                if not tokenobject.is_fit_for_challenge(messages, options=options):
+                    messages.insert(0, "Challenge matches, but token is not fit for challenge")
+                    reply_dict["message"] = ". ".join(messages)
+                    log.info("Received a valid response to a "
+                             "challenge for a non-fit token {0!s}. {1!s}".format(tokenobject.token.serial,
+                                                                                 reply_dict["message"]))
+                else:
+                    # Challenge matches, token is active and token is fit for challenge
                     res = True
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
@@ -2222,11 +2244,21 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
-                else:  # pragma: no cover
-                    # usually check_challenge response would return "False" in case of inactive tokens
-                    reply_dict["message"] = "Challenge matches, but token is inactive."
-                    log.info("Received a valid response to a "
-                             "challenge for inactive token {0!s}".format(tokenobject.token.serial))
+
+        if not res:
+            # We did not find any successful response, so we need to increase the
+            # failcounters
+            for token_obj in challenge_response_token_list:
+                if not token_obj.is_outofband():
+                    token_obj.inc_failcount()
+            if not matching_challenge:
+                if len(challenge_response_token_list) == 1:
+                    reply_dict["serial"] = challenge_response_token_list[0].token.serial
+                    reply_dict["type"] = challenge_response_token_list[0].token.tokentype
+                    reply_dict["message"] = "Response did not match the challenge."
+                else:
+                    reply_dict["message"] = "Response did not match for " \
+                                            "{0!s} tokens.".format(len(challenge_response_token_list))
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
@@ -2235,6 +2267,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         if len(active_challenge_token) == 0:
             reply_dict["message"] = "No active challenge response token found"
         else:
+            for token_obj in challenge_request_token_list:
+                token_obj.check_reset_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
@@ -2243,6 +2277,8 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # So we increase the failcounter. Return failure.
         for tokenobject in pin_matching_token_list:
             tokenobject.inc_failcount()
+            if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
+                tokenobject.check_reset_failcount()
             reply_dict["message"] = "wrong otp value"
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was

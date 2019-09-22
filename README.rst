@@ -15,15 +15,19 @@ privacyIDEA
 
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
-..    :target: https://pypi.python.org/pypi/privacyidea/
+..    :target: https://pypi.python.org/pypi/privacyIDEA/
     
 .. image:: https://img.shields.io/pypi/v/privacyidea.svg
     :alt: Latest Version
-    :target: https://pypi.python.org/pypi/privacyidea/
-    
+    :target: https://pypi.python.org/pypi/privacyIDEA/#history
+
+.. image:: https://img.shields.io/pypi/pyversions/privacyidea.svg
+    :alt: PyPI - Python Version
+    :target: https://pypi.python.org/pypi/privacyIDEA/
+
 .. image:: https://img.shields.io/github/license/privacyidea/privacyidea.svg
     :alt: License
-    :target: https://pypi.python.org/pypi/privacyidea/
+    :target: https://pypi.python.org/pypi/privacyIDEA/
     
 .. image:: https://readthedocs.org/projects/privacyidea/badge/?version=master
     :alt: Documentation
@@ -93,6 +97,11 @@ If you want to setup a development environment start like this::
     virtualenv venv
     source venv/bin/activate
     pip install -r requirements.txt
+    
+You may additionally want to set up your environment for testing, by adding nose and the additional dependencies::
+
+    pip install nose
+    pip install -r tests/requirements.txt
 
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
@@ -136,6 +145,8 @@ as administrator.
 Run tests
 =========
 
+If you have followed the steps above to set up your environment for testing, running the test suite should be as easy as running nosetests(1) with the following options::
+
     nosetests -v --with-coverage --cover-package=privacyidea --cover-html
 
 Contributing
@@ -148,7 +159,7 @@ If you found a security vulnerability please report it to
 security@privacyidea.org.
 
 You can find detailed information about contributing here:
-https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.rst
+https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.md
 
 Code structure
 ==============

@@ -39,17 +39,19 @@ from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import and_
 from sqlalchemy import create_engine
-from sqlalchemy import Integer
+from sqlalchemy import Integer, cast, String
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
 import hashlib
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.utils import (is_true, censor_connect_string, to_utf8)
+from privacyidea.lib.utils import (is_true, censor_connect_string,
+                                   convert_column_to_unicode)
 from passlib.context import CryptContext
 from base64 import b64decode, b64encode
-from passlib.utils.binary import h64
+from passlib.utils import h64
+
 from passlib.utils.compat import uascii_to_str, u
 from passlib.utils.compat import unicode as pl_unicode
 from passlib.utils import to_unicode
@@ -355,9 +357,11 @@ class IdResolver (UserIdResolver):
     def _get_userid_filter(self, userId):
         column = getattr(self.TABLE, self.map.get("userid"))
         if isinstance(column.type, Integer):
-            return column == userId
+            # since our user ID is usually a string we need to cast
+            return column == int(userId)
         else:
-            return column.like(userId)
+            # otherwise we cast the column to string (in case of postgres UUIDs)
+            return cast(column, String).like(userId)
 
     def getUsername(self, userId):
         """
@@ -377,6 +381,7 @@ class IdResolver (UserIdResolver):
         :param LoginName: The login name from the credentials
         :type LoginName: string
         :return: UserId as found for the LoginName
+        :rtype: str
         """
         userid = ""
 
@@ -394,7 +399,7 @@ class IdResolver (UserIdResolver):
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
-                userid = user["id"]
+                userid = convert_column_to_unicode(user["id"])
         except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
 

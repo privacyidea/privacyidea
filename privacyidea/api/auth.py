@@ -60,11 +60,12 @@ from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.api.lib.postpolicy import postpolicy, get_webui_settings
-from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+from privacyidea.api.lib.prepolicy import is_remote_user_allowed, prepolicy, pushtoken_disable_wait
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
-from privacyidea.lib.config import get_from_config, SYSCONF, update_config_object
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
+from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
 import logging
 
@@ -79,12 +80,13 @@ def before_request():
     """
     This is executed before the request
     """
-    update_config_object()
+    ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
+    g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
@@ -98,7 +100,9 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
+@prepolicy(pushtoken_disable_wait, request)
 @postpolicy(get_webui_settings)
+@event("auth", request, g)
 def get_auth_token():
     """
     This call verifies the credentials of the user and issues an
@@ -207,6 +211,8 @@ def get_auth_token():
     loginname, realm = split_user(username)
     realm = realm or get_default_realm()
 
+    user_obj = User()
+
     # Check if the remote user is allowed
     if (request.remote_user == username) and is_remote_user_allowed(request):
         # Authenticated by the Web Server
@@ -262,10 +268,14 @@ def get_auth_token():
             g.audit_object.log({"user": "",
                                 "administrator": user_obj.login,
                                 "realm": user_obj.realm,
+                                "resolver": user_obj.resolver,
+                                "serial": details.get('serial', None) if details else None,
                                 "info": log_used_user(user_obj)})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
+                                "resolver": user_obj.resolver,
+                                "serial": details.get('serial', None) if details else None,
                                 "info": log_used_user(user_obj)})
 
     if not admin_auth and not user_auth:
@@ -274,6 +284,7 @@ def get_auth_token():
                         details=details or {})
     else:
         g.audit_object.log({"success": True})
+        request.User = user_obj
 
     # If the HSM is not ready, we need to create the nonce in another way!
     hsm = init_hsm()

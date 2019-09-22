@@ -71,7 +71,7 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import (SCOPE, ACTION, get_action_values_from_options)
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
@@ -353,20 +353,14 @@ class EmailTokenClass(HotpTokenClass):
         message = default
         mimetype = "plain"
         g = options.get("g")
-        username = None
-        realm = None
         user_object = options.get("user")
-        if user_object:  # pragma: no cover
-            username = user_object.login
-            realm = user_object.realm
         if g:
             clientip = options.get("clientip")
             policy_object = g.policy_object
             messages = policy_object.\
                 get_action_values(action=action,
                                   scope=SCOPE.AUTH,
-                                  realm=realm,
-                                  user=username,
+                                  user_object=user_object if user_object else None,
                                   client=clientip,
                                   unique=True,
                                   allow_white_space_in_action=True,
@@ -411,12 +405,12 @@ class EmailTokenClass(HotpTokenClass):
             clientip = options.get("clientip")
             policy_object = g.policy_object
             autoemailpol = policy_object.\
-                get_policies(action=EMAILACTION.EMAILAUTO,
-                             scope=SCOPE.AUTH,
-                             realm=realm,
-                             user=username,
-                             client=clientip, active=True,
-                             audit_data=g.audit_object.audit_data)
+                match_policies(action=EMAILACTION.EMAILAUTO,
+                               scope=SCOPE.AUTH,
+                               realm=realm,
+                               user=username,
+                               client=clientip, active=True,
+                               audit_data=g.audit_object.audit_data)
             autosms = len(autoemailpol) >= 1
 
         return autosms
@@ -444,12 +438,19 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
-        message = message.format(otp=otp, serial=serial)
+        tags = create_tag_dict(serial=serial,
+                               tokenowner=self.user,
+                               tokentype=self.get_tokentype(),
+                               recipient={"givenname": self.user.info.get("givenname"),
+                                          "surname": self.user.info.get("surname")},
+                               escape_html=mimetype.lower() == "html")
+
+        message = message.format(otp=otp, **tags)
 
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)
 
-        subject = subject.format(otp=otp, serial=serial)
+        subject = subject.format(otp=otp, **tags)
 
         log.debug("sending Email to {0!r}".format(recipient))
 

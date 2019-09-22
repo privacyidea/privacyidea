@@ -49,8 +49,7 @@ initialized the yubikey with the external *ykpersonalize* tool.
 
 When using the yubikey personalization GUI you need to copy the value of
 "Secret Key (16 bytes Hex)". This is the secret OTP key, which you need to
-copy and paste in the field "OTP Key" in the privacyIDEA Web UI. (Remove
-possible white spaces!)
+copy and paste in the field "OTP Key" in the privacyIDEA Web UI.
 
 .. figure:: images/enroll_yubikey.png
    :width: 500

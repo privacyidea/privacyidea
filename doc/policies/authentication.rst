@@ -86,6 +86,37 @@ for the RADIUS server.
    delete all his tokens and then authenticate with
    his static password again.
 
+passthru_assign
+~~~~~~~~~~~~~~~
+
+.. index:: passthru, migration
+
+type: str
+
+This policy is only evaluated, if the policy ``passthru`` is set.
+If the user is authenticated against a RADIUS server, then privacyIDEA
+splits the sent password into PIN and OTP value and tries to find an unassigned token,
+that is in the user's realm by using the OTP value. If it can identify this token, it assigns this
+token to the user and sets the sent PIN.
+
+The policy is configured with a string value, that contains
+* the position of the PIN
+* the OTP length and
+* the number of OTP values tested for each unassigned token (optional, default=100).
+
+Examples are
+
+* ``8:pin`` would be an eight digit OTP value followed by the PIN
+* ``pin:6:10000`` would be the PIN followed by an 6 digit OTP value, 10.000
+  otp values would be checked for each token.
+
+.. note:: This method can be used to automatically migrated tokens from an old system
+   to privacyIDEA. The administrator needs to import all seeds of the old tokens
+   and put the tokens in the user's realm.
+
+.. warning:: This can be very time consuming if the OTP values to check is set to high!
+
+
 passOnNoToken
 ~~~~~~~~~~~~~
 
@@ -150,7 +181,20 @@ type: string
 
 This is the text that is sent via Email to be used with Email Token. This
 text should contain the OTP value.
-You can use the tags *<otp>* and *<serial>*.
+
+The text can contain the following tags, that will be filled:
+
+  * {serial} the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {tokentype} the type of the token.
+  * {recipient_givenname} the given name of the recipient.
+  * {recipient_surname} the surname of the recipient.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
@@ -160,7 +204,7 @@ Default: *<otp>*
 
 You can also provide the filename to an email template. The filename must be prefixed with
 ``file:`` like ``file:/etc/privacyidea/emailtemplate.html``. The template is
-an HTML file and contain the tags ``{otp}`` and ``{serial}``.
+an HTML file.
 
 .. note:: If a message text is supplied directly, the email is sent as plain text.
    If the email template is read from a file, a HTML-only email is sent instead.
@@ -173,7 +217,7 @@ emailsubject
 type: string
 
 This is the subject of the Email sent by the Email Token.
-You can use the tags *<otp>* and *<serial>*.
+You can use the same tags as mentioned in ``emailtext``.
 
 Default: Your OTP
 
@@ -301,6 +345,23 @@ not occur within 5 minutes, the credentials can not be used anymore.
 In future implementations the caching of the credentials could also be
 dependent on the clients IP address and the user agent.
 
+.. note:: Cache entries are written to the database table ``authcache``. Please note
+   that expired entries are automatically deleted only when the user
+   attempts to log in with the same expired credentials again. In all other cases,
+   expired entries need to be deleted from this table manually by running::
+
+      pi-manage authcache cleanup --minutes MIN
+
+   which deletes all cache entries whose last authentication has occurred at least
+   ``MIN`` minutes ago. As an example::
+
+      pi-manage authcache cleanup --minutes 300
+
+   will delete all authentication cache entries whose last authentication happened more
+   than 5 hours ago.
+
+   It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
+
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
@@ -330,6 +391,34 @@ type: string
 This is the title of the push notification that is displayed
 on the user's smartphone during the login process with
 a :ref:`push_token`.
+
+.. _policy_push_wait:
+
+push_wait
+~~~~~~~~~
+
+.. index:: push token, push direct authentication
+
+type: int
+
+This can be set to a number of seconds. If this is set, the authentication
+with a push token is only performed via one request to ``/validate/check``.
+The HTTP request to ``/validate/check`` will wait up to this number of
+seconds and check, if the push challenge was confirmed by the user.
+
+This way push tokens can be used with any non-push-capable applications.
+
+Sensible numbers might be 10 or 20 seconds.
+
+.. note:: This behaviour can interfere with other tokentypes. Even if
+   the user also has a normal HOTP token, the ``/validate/check`` request
+   will only return after this number of seconds.
+
+.. warning:: Using simple webserver setups like Apache WSGI this actually
+   can block all available worker threads, which will cause privacyIDEA
+   to become unresponsive if the number of open PUSH challenges exceeds
+   the number of available worker threads!
+
 
 .. _policy_challenge_text:
 

@@ -40,7 +40,7 @@ from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp)
 from .log import log_with
-from privacyidea.lib.config import update_config_object
+from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def get_realms(realmname=""):
     :return: a dict with realm description like
     :rtype: dict
     '''
-    config_object = update_config_object()
+    config_object = get_config_object()
     realms = config_object.realm
     if realmname:
         if realmname in realms:
@@ -135,8 +135,7 @@ def get_default_realm():
     @return: the realm name
     @rtype : string
     """
-    config_object = update_config_object()
-    return config_object.default_realm
+    return get_config_object().default_realm
 
 
 @log_with(log)

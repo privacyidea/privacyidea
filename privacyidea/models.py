@@ -88,7 +88,12 @@ class MethodsMixin(object):
         return ret
 
 
-def save_config_timestamp():
+def save_config_timestamp(invalidate_config=True):
+    """
+    Save the current timestamp to the database, and optionally
+    invalidate the current request-local config object.
+    :param invalidate_config: defaults to True
+    """
     c1 = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
     if c1:
         c1.Value = datetime.now().strftime("%s")
@@ -97,6 +102,14 @@ def save_config_timestamp():
                                datetime.now().strftime("%s"),
                                Description="config timestamp. last changed.")
         db.session.add(new_timestamp)
+    if invalidate_config:
+        # We have just modified the config. From now on, the request handling
+        # should operate on the *new* config. Hence, we need to invalidate
+        # the current request-local config object. The next access to the config
+        # during this request will reload the config from the database and create
+        # a new request-local config object, which holds the *new* config.
+        from privacyidea.lib.config import invalidate_config_object
+        invalidate_config_object()
 
 
 class TimestampMethodsMixin(object):
@@ -418,22 +431,22 @@ class Token(MethodsMixin, db.Model):
     
         return res
 
-    def split_pin_pass(self, passwd, prepend=True):
-        """
-        The password is split into the PIN and the OTP component.
-        THe token knows its length, so it can split accordingly.
-
-        :param passwd: The password that is to be split
-        :param prepend: The PIN is put in front of the OTP value
-        :return: tuple of (res, pin, otpval)
-        """
-        if prepend:
-            pin = passwd[:-self.otplen]
-            otp = passwd[-self.otplen:]
-        else:
-            otp = passwd[:self.otplen]
-            pin = passwd[self.otplen:]
-        return True, pin, otp
+#    def split_pin_pass(self, passwd, prepend=True):
+#        """
+#        The password is split into the PIN and the OTP component.
+#        THe token knows its length, so it can split accordingly.##
+#
+#        :param passwd: The password that is to be split
+#        :param prepend: The PIN is put in front of the OTP value
+#        :return: tuple of (res, pin, otpval)
+#        """
+#        if prepend:
+#            pin = passwd[:-self.otplen]
+#            otp = passwd[-self.otplen:]
+#        else:
+#            otp = passwd[:self.otplen]
+#            pin = passwd[self.otplen:]
+#        return True, pin, otp
 
     def is_pin_encrypted(self, pin=None):
         ret = False
@@ -1372,15 +1385,23 @@ class Policy(TimestampMethodsMixin, db.Model):
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
-    condition = db.Column(db.Integer, default=0, nullable=False)
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priotity.
     priority = db.Column(db.Integer, default=1, nullable=False)
+    conditions = db.relationship("PolicyCondition",
+                                 lazy="joined",
+                                 backref="policy",
+                                 order_by="PolicyCondition.id",
+                                 # With these cascade options, we ensure that whenever a Policy object is added
+                                 # to a session, its conditions are also added to the session (save-update, merge).
+                                 # Likewise, whenever a Policy object is deleted, its conditions are also
+                                 # deleted (delete). Conditions without a policy are deleted (delete-orphan).
+                                 cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", condition=0, priority=1,
-                 check_all_resolvers=False):
+                 resolver="", user="", client="", time="", priority=1,
+                 check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
         self.name = name
@@ -1393,9 +1414,30 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.user = user
         self.client = client
         self.time = time
-        self.condition = condition
         self.priority = priority
         self.check_all_resolvers = check_all_resolvers
+        if conditions is None:
+            self.conditions = []
+        else:
+            self.set_conditions(conditions)
+
+    def set_conditions(self, conditions):
+        """
+        Replace the list of conditions of this policy with a new list
+        of conditions, i.e. a list of 5-tuples (section, key, comparator, value, active).
+        """
+        self.conditions = []
+        for section, key, comparator, value, active in conditions:
+            condition_object = PolicyCondition(
+                section=section, Key=key, comparator=comparator, Value=value, active=active,
+            )
+            self.conditions.append(condition_object)
+
+    def get_conditions_tuples(self):
+        """
+        :return: a list of 5-tuples (section, key, comparator, value, active).
+        """
+        return [condition.as_tuple() for condition in self.conditions]
 
     @staticmethod
     def _split_string(value):
@@ -1431,7 +1473,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
-             "condition": self.condition,
+             "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
         action_list = [x.strip().split("=") for x in (self.action or "").split(
             ",")]
@@ -1447,6 +1489,29 @@ class Policy(TimestampMethodsMixin, db.Model):
         else:
             ret = d
         return ret
+
+
+class PolicyCondition(MethodsMixin, db.Model):
+    __tablename__ = "policycondition"
+
+    id = db.Column(db.Integer, Sequence("policycondition_seq"), primary_key=True)
+    policy_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    section = db.Column(db.Unicode(255), nullable=False)
+    # We use upper-case "Key" and "Value" to prevent conflicts with databases
+    # that do not support "key" or "value" as column names
+    Key = db.Column(db.Unicode(255), nullable=False)
+    comparator = db.Column(db.Unicode(255), nullable=False, default=u'equals')
+    Value = db.Column(db.Unicode(2000), nullable=False, default=u'')
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+
+    def as_tuple(self):
+        """
+        :return: the condition as a tuple (section, key, comparator, value, active)
+        """
+        return self.section, self.Key, self.comparator, self.Value, self.active
+
 
 # ------------------------------------------------------------------
 #
@@ -1694,7 +1759,6 @@ class EventHandler(MethodsMixin, db.Model):
         if self.id is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
         else:
             # update
             EventHandler.query.filter_by(id=self.id).update({
@@ -1707,7 +1771,8 @@ class EventHandler(MethodsMixin, db.Model):
                 "condition": self.condition,
                 "action": self.action
             })
-            db.session.commit()
+        save_config_timestamp()
+        db.session.commit()
         return self.id
 
     def delete(self):
@@ -1721,6 +1786,7 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerCondition) \
             .filter(EventHandlerCondition.eventhandler_id == ret) \
             .delete()
+        save_config_timestamp()
         db.session.commit()
         return ret
 
@@ -2339,35 +2405,33 @@ class ClientApplication(MethodsMixin, db.Model):
     hostname = db.Column(db.Unicode(255))
     clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
     lastseen = db.Column(db.DateTime)
+    node = db.Column(db.Unicode(255), nullable=False)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
+                                          'node',
                                           name='caix'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def save(self):
         clientapp = ClientApplication.query.filter(
             ClientApplication.ip == self.ip,
-            ClientApplication.clienttype == self.clienttype).first()
+            ClientApplication.clienttype == self.clienttype,
+            ClientApplication.node == self.node).first()
         self.lastseen = datetime.now()
         if clientapp is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
-            ret = self.id
         else:
             # update
             values = {"lastseen": self.lastseen}
             if self.hostname is not None:
                 values["hostname"] = self.hostname
-            ClientApplication.query.filter(
-                ClientApplication.id == clientapp.id).update(values)
-            ret = clientapp.id
+            ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
         db.session.commit()
-        return ret
 
     def __repr__(self):
-        return "<ClientApplication [{0!s}][{1!s}:{2!s}]>".format(
-            self.id, self.ip, self.clienttype)
+        return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
+            self.id, self.ip, self.clienttype, self.node)
 
 
 class Subscription(MethodsMixin, db.Model):
@@ -2433,21 +2497,34 @@ class Subscription(MethodsMixin, db.Model):
 class EventCounter(db.Model):
     """
     This table stores counters of the event handler "Counter".
+
+    Note that an event counter name does *not* correspond to just one,
+    but rather *several* table rows, because we store event counters
+    for each privacyIDEA node separately.
+    This is intended to improve the performance of replicated setups,
+    because each privacyIDEA node then only writes to its own "private"
+    table row. This way, we avoid locking issues that would occur
+    if all nodes write to the same table row.
     """
     __tablename__ = 'eventcounter'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, Sequence("eventcounter_seq"), primary_key=True)
+    counter_name = db.Column(db.Unicode(80), nullable=False)
     counter_value = db.Column(db.Integer, default=0)
+    node = db.Column(db.Unicode(255), nullable=False)
+    __table_args__ = (db.UniqueConstraint('counter_name',
+                                          'node',
+                                          name='evctr_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
-    def __init__(self, name, value=0):
+    def __init__(self, name, value=0, node=""):
         self.counter_value = value
         self.counter_name = name
+        self.node = node
         self.save()
 
     def save(self):
         db.session.add(self)
         db.session.commit()
-        return self.counter_name
 
     def delete(self):
         ret = self.counter_name
@@ -2463,25 +2540,12 @@ class EventCounter(db.Model):
         self.counter_value = self.counter_value + 1
         self.save()
 
-    def decrease(self, allow_negative=False):
+    def decrease(self):
         """
-        Decrease the value of a counter, stop at zero if allow_negative not given
-        :param allow_negative:
+        Decrease the value of a counter.
         :return:
         """
-        if self.counter_value <= 0 and not allow_negative:
-            # set counter to zero
-            self.counter_value = 0
-        else:
-            self.counter_value = self.counter_value - 1
-        self.save()
-
-    def reset(self):
-        """
-        Reset the value of a counter
-        :return:
-        """
-        self.counter_value = 0
+        self.counter_value = self.counter_value - 1
         self.save()
 
 
@@ -2513,26 +2577,26 @@ class Audit(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
-    signature = db.Column(db.String(audit_column_length.get("signature")))
-    action = db.Column(db.String(audit_column_length.get("action")))
+    signature = db.Column(db.Unicode(audit_column_length.get("signature")))
+    action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
-    serial = db.Column(db.String(audit_column_length.get("serial")))
-    token_type = db.Column(db.String(audit_column_length.get("token_type")))
-    user = db.Column(db.String(audit_column_length.get("user")), index=True)
-    realm = db.Column(db.String(audit_column_length.get("realm")))
-    resolver = db.Column(db.String(audit_column_length.get("resolver")))
+    serial = db.Column(db.Unicode(audit_column_length.get("serial")))
+    token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
+    user = db.Column(db.Unicode(audit_column_length.get("user")), index=True)
+    realm = db.Column(db.Unicode(audit_column_length.get("realm")))
+    resolver = db.Column(db.Unicode(audit_column_length.get("resolver")))
     administrator = db.Column(
-        db.String(audit_column_length.get("administrator")))
+        db.Unicode(audit_column_length.get("administrator")))
     action_detail = db.Column(
-        db.String(audit_column_length.get("action_detail")))
-    info = db.Column(db.String(audit_column_length.get("info")))
+        db.Unicode(audit_column_length.get("action_detail")))
+    info = db.Column(db.Unicode(audit_column_length.get("info")))
     privacyidea_server = db.Column(
-        db.String(audit_column_length.get("privacyidea_server")))
-    client = db.Column(db.String(audit_column_length.get("client")))
-    loglevel = db.Column(db.String(audit_column_length.get("loglevel")))
-    clearance_level = db.Column(db.String(audit_column_length.get(
+        db.Unicode(audit_column_length.get("privacyidea_server")))
+    client = db.Column(db.Unicode(audit_column_length.get("client")))
+    loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
+    clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
-    policies = db.Column(db.String(audit_column_length.get("policies")))
+    policies = db.Column(db.Unicode(audit_column_length.get("policies")))
 
     def __init__(self,
                  action="",

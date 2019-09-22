@@ -94,6 +94,7 @@ def get_taskmodule_options(taskmodule):
 
 @periodictask_blueprint.route('/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
 def list_periodic_tasks():
     """
     Return a list of objects of defined periodic tasks.
@@ -106,6 +107,7 @@ def list_periodic_tasks():
 
 @periodictask_blueprint.route('/<ptaskid>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
 def get_periodic_task_api(ptaskid):
     """
     Return the dictionary describing a periodic task.

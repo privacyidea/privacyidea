@@ -1,6 +1,7 @@
 # coding: utf-8
 from mock import mock
 import os
+from sqlalchemy import func
 
 from privacyidea.models import (Token,
                                 Resolver,
@@ -18,7 +19,7 @@ from privacyidea.models import (Token,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption, MonitoringStats)
+                                PeriodicTaskOption, MonitoringStats, PolicyCondition, db)
 from .base import MyTestCase
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -134,16 +135,6 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(r)
         r = t2.check_pin("thepin")
         self.assertTrue(r)
-
-        # call split_pin_pass
-        res, pin, otp = t2.split_pin_pass("pin123456")
-        self.assertTrue(res)
-        self.assertTrue(pin == "pin", pin)
-        self.assertTrue(otp == "123456", otp)
-        res, pin, otp = t2.split_pin_pass("123456pin", prepend=False)
-        self.assertTrue(res)
-        self.assertTrue(pin == "pin", pin)
-        self.assertTrue(otp == "123456", otp)
 
         # save the pin in an encrypted way
         t2.set_pin("thepin", hashed=False)
@@ -379,6 +370,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(p.action == "action1", p)
         self.assertTrue("action1" in p.get().get("action"), p)
         self.assertTrue("action1" in p.get("action"), p)
+        self.assertEqual(p.get()["conditions"], [])
 
         p2 = Policy("pol1", active="false",
                     scope="selfservice", action="action1",
@@ -398,6 +390,40 @@ class TokenModelTestCase(MyTestCase):
         p3 = Policy("pol3", active="false", scope="admin",
                     adminrealm='superuser', action="*")
         self.assertEqual(p3.adminrealm, "superuser")
+        p3.save()
+
+        # set conditions
+        p3.set_conditions([("userinfo", "type", "==", "foobar", False),
+                           ("request", "user_agent", "==", "abcd", True)])
+        self.assertEqual(p3.get_conditions_tuples(),
+                         [("userinfo", "type", "==", "foobar", False),
+                          ("request", "user_agent", "==", "abcd", True)])
+        self.assertEqual(p3.get()["conditions"],
+                         [("userinfo", "type", "==", "foobar", False),
+                          ("request", "user_agent", "==", "abcd", True)])
+        self.assertEqual(PolicyCondition.query.count(), 2)
+
+        p3.set_conditions([("userinfo", "type", "==", "baz", True)])
+        p3.save()
+        self.assertEqual(p3.get()["conditions"],
+                         [("userinfo", "type", "==", "baz", True)])
+        self.assertEqual(len(p3.conditions), 1)
+        self.assertEqual(p3.conditions[0].Value, "baz")
+        self.assertEqual(PolicyCondition.query.count(), 1)
+
+        # Check that the change has been persisted to the database
+        p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
+        self.assertEqual(p3_reloaded1.get()["conditions"],
+                         [("userinfo", "type", "==", "baz", True)])
+        self.assertEqual(len(p3_reloaded1.conditions), 1)
+        self.assertEqual(p3_reloaded1.conditions[0].Value, "baz")
+        self.assertEqual(PolicyCondition.query.count(), 1)
+
+        p3.set_conditions([])
+        p3.save()
+        self.assertEqual(p3.get()["conditions"], [])
+        self.assertEqual(Policy.query.filter_by(name="pol3").one().get()["conditions"], [])
+        self.assertEqual(PolicyCondition.query.count(), 0)
 
     def test_12_challenge(self):
         c = Challenge("S123456")
@@ -633,21 +659,23 @@ class TokenModelTestCase(MyTestCase):
         gw.delete()
 
     def test_21_add_update_delete_clientapp(self):
-        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
-                                clienttype="PAM").save()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        ClientApplication(ip="1.2.3.4", hostname="host1",
+                          clienttype="PAM", node="localnode").save()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertEqual(c.hostname, "host1")
         self.assertEqual(c.ip, "1.2.3.4")
         self.assertEqual(c.clienttype, "PAM")
         t1 = c.lastseen
 
-        cid = ClientApplication(ip="1.2.3.4", hostname="host1",
-                              clienttype="PAM").save()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        self.assertIn("localnode", repr(c))
+
+        ClientApplication(ip="1.2.3.4", hostname="host1",
+                          clienttype="PAM", node="localnode").save()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertTrue(c.lastseen > t1)
 
-        ClientApplication.query.filter(ClientApplication.id == cid).delete()
-        c = ClientApplication.query.filter(ClientApplication.id == cid).first()
+        ClientApplication.query.filter(ClientApplication.id == c.id).delete()
+        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertEqual(c, None)
 
     def test_22_subscription(self):
@@ -750,6 +778,7 @@ class TokenModelTestCase(MyTestCase):
         counter.save()
         counter2 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter2.counter_value, 10)
+        self.assertEqual(counter2.node, "")
 
         counter2.increase()
         counter2.increase()
@@ -762,30 +791,31 @@ class TokenModelTestCase(MyTestCase):
         counter4 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter4.counter_value, 11)
 
-        counter4.decrease(allow_negative=True)
+        counter4.decrease()
 
         counter5 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter5.counter_value, 10)
 
-        counter5.reset()
+        counter6 = EventCounter("test_counter", 4, "othernode")
+        self.assertEqual(counter6.counter_value, 4)
+        self.assertEqual(counter6.node, "othernode")
 
-        counter6 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter6.counter_value, 0)
+        counter_value = db.session.query(func.sum(EventCounter.counter_value))\
+            .filter(EventCounter.counter_name == "test_counter").one()[0]
+        self.assertEqual(counter_value, 14)
 
-        counter6.decrease(allow_negative=True)
-        counter6.decrease(allow_negative=True)
+        counters7 = EventCounter.query.filter_by(counter_name="test_counter").all()
+        self.assertEqual(len(counters7), 2)
 
-        counter7 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter7.counter_value, -2)
-
-        counter7.decrease(allow_negative=False)
-
-        counter8 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter8.counter_value, 0)
-
+        counter8 = EventCounter.query.filter_by(counter_name="test_counter", node="othernode")
         counter8.delete()
-        counter9 = EventCounter.query.filter_by(counter_name="test_counter").first()
-        self.assertEqual(counter9, None)
+
+        counters9 = EventCounter.query.filter_by(counter_name="test_counter").all()
+        self.assertEqual(len(counters9), 1)
+        counters9[0].delete()
+
+        counter10 = EventCounter.query.filter_by(counter_name="test_counter").first()
+        self.assertEqual(counter10, None)
 
     def test_26_periodictask(self):
         current_utc_time = datetime(2018, 3, 4, 5, 6, 8)

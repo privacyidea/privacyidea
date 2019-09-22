@@ -52,6 +52,8 @@ from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
+from ..lib.radiusserver import get_radiusservers
+from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
@@ -82,8 +84,8 @@ system_blueprint = Blueprint('system_blueprint', __name__)
 
 
 @system_blueprint.route('/documentation', methods=['GET'])
-@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.CONFIGDOCUMENTATION)
 def get_config_documentation():
     """
     returns an restructured text document, that describes the complete
@@ -94,7 +96,7 @@ def get_config_documentation():
     config = get_from_config()
     resolvers = get_resolver_list()
     realms = get_realms()
-    policies = P.get_policies()
+    policies = P.list_policies()
     admins = get_db_admins()
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -149,8 +151,8 @@ def get_config(key=None):
 
 
 @system_blueprint.route('/setConfig', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_config():
     """
     set a configuration key or a set of configuration entries
@@ -214,8 +216,8 @@ def set_config():
 
 
 @system_blueprint.route('/setDefault', methods=['POST'])
-@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 @admin_required
+@prepolicy(check_base_action, request, ACTION.SYSTEMWRITE)
 def set_default():
     """
     define default settings for tokens. These default settings
@@ -261,9 +263,9 @@ def set_default():
 
 
 @system_blueprint.route('/<key>', methods=['DELETE'])
+@admin_required
 @prepolicy(check_base_action, request, ACTION.SYSTEMDELETE)
 @log_with(log)
-@admin_required
 def delete_config(key=None):
     """
     delete a configuration key
@@ -281,9 +283,9 @@ def delete_config(key=None):
 
 
 @system_blueprint.route('/hsm', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, ACTION.SETHSM)
 @log_with(log)
-@admin_required
 def set_security_module():
     """
     Set the password for the security module
@@ -296,8 +298,8 @@ def set_security_module():
 
 
 @system_blueprint.route('/hsm', methods=['GET'])
-@log_with(log)
 @admin_required
+@log_with(log)
 def get_security_module():
     """
     Get the status of the security module.
@@ -310,9 +312,9 @@ def get_security_module():
 
 
 @system_blueprint.route('/random', methods=['GET'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETRANDOM)
 @log_with(log)
-@admin_required
 def rand():
     """
     This endpoint can be used to retrieve random keys from privacyIDEA.
@@ -341,9 +343,9 @@ def rand():
 
 
 @system_blueprint.route('/test/<tokentype>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, action=ACTION.SYSTEMWRITE)
 @log_with(log)
-@admin_required
 def test(tokentype=None):
     """
     The call /system/test/email tests the configuration of the email token.
@@ -351,5 +353,32 @@ def test(tokentype=None):
     tokenc = get_token_class(tokentype)
     res, description = tokenc.test_config(request.all_data)
     g.audit_object.log({"success": 1,
-                        "tokentype": tokentype})
+                        "token_type": tokentype})
     return send_result(res, details={"message": description})
+
+
+@system_blueprint.route('/names/radius', methods=['GET'])
+@prepolicy(check_base_action, request, action="enrollRADIUS")
+def list_radius_servers():
+    """
+    Return the list of identifiers of all defined RADIUS servers.
+    This endpoint requires the enrollRADIUS right.
+    """
+    server_list = get_radiusservers()
+    res = [server.config.identifier for server in server_list]
+    g.audit_object.log({'success': True})
+    return send_result(res)
+
+
+@system_blueprint.route('/names/caconnector', methods=['GET'])
+@prepolicy(check_base_action, request, action="enrollCERTIFICATE")
+def list_ca_connectors():
+    """
+    Return a list of defined CA connectors. Each item of the list is
+    a dictionary with the CA connector information, including the
+    name and defined templates, but excluding the CA connector data.
+    This endpoint requires the enrollCERTIFICATE right.
+    """
+    ca_list = get_caconnector_list(return_config=False)
+    g.audit_object.log({"success": True})
+    return send_result(ca_list)

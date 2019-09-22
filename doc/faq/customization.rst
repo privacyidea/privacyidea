@@ -49,6 +49,29 @@ Follow these basic steps:
 .. warning:: Of course - if there are functional enhancements or bug fixes in the
    original templates - your template will also not be affected by these.
 
+
+Translating templates
+.....................
+
+The translation in privacyIDEA is very flexible (see :ref:`translation`).
+But if you change the templates the normal translation with PO files can
+get a bit tricky.
+
+Starting with privacyIDEA 3.0.1 you can use the scope variable
+``browserLanguage`` in your custom templates.
+
+You can print the browser language like this ``{{ browserLanguage }}``.
+
+And you can display text in different languages in ``divs`` like this::
+
+    <div ng-show="browserLanguage === 'de'">
+        Das ist ein deutscher Text.
+    </div>
+    <div ng-show="browserLanguage === 'en'">
+        This is an English text.
+    </div>
+
+
 .. _themes:
 
 Themes
@@ -73,7 +96,7 @@ file there.
 Use web server rewrite modules
 ..............................
 
-Again you can also use the Apache rewrite module to replace the original css file.
+Again you can also use the Apache rewrite module to replace the original css file::
 
     RewriteEngine On
     RewriteRule "/static/contrib/css/bootstrap-theme.css"  \
@@ -84,6 +107,23 @@ A good stating point might be the themes at http://bootswatch.com.
 
 .. note:: If you add your own CSS file, the file *bootstrap-theme.css* will
    not be loaded anymore. So you might start with a copy of the original file.
+
+
+Use web server substitute module
+................................
+
+You can also use the substitute module of the Apache webserver.
+It is not clear how much performance impact you get, since this
+module can scan and replace any text that is delivered by the web server.
+
+If you for example want to replace the title of the webpages, you could
+do it like this::
+
+       <Location "/">
+           AddOutputFilterByType SUBSTITUTE text/html
+           Substitute "s/>privacyidea Authentication System</>My own 2FA system</ni"
+       </Location>
+
 
 .. _customize_logo:
 
@@ -99,6 +139,12 @@ in the same folder and set
 in the ``pi.cfg`` config file.
 
 .. _customize_menu:
+
+Page title
+~~~~~~~~~~
+
+You can configure the page title by setting ``PI_PAGE_TITLE`` in the
+``pi.cfg`` file.
 
 Menu
 ~~~~

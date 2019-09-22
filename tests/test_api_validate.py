@@ -4,14 +4,14 @@ import json
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.models import (Token, Challenge, AuthCache)
+from privacyidea.models import (Token, Challenge, AuthCache, db)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
-                                   set_pin)
+                                   set_pin, get_one_token)
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
@@ -19,15 +19,18 @@ from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib import _
 
+import datetime
 import time
 import responses
-from . import smtpmock, ldap3mock
+from . import smtpmock, ldap3mock, radiusmock
 
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
+DICT_FILE="tests/testdata/dictionary"
 
 LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                  "attributes": {'cn': 'alice',
@@ -37,6 +40,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 'oid': "2",
                                 "homeDirectory": "/home/alice",
                                 "email": "alice@test.com",
+                                "memberOf": ["cn=admins,o=test", "cn=users,o=test"],
                                 "accountExpires": 131024988000000000,
                                 "objectGUID": '\xef6\x9b\x03\xc0\xe7\xf3B'
                                               '\x9b\xf9\xcajl\rM1',
@@ -46,6 +50,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "sn": "Marley",
                                 "givenName": "Robert",
                                 "email": "bob@example.com",
+                                "memberOf": ["cn=users,o=test"],
                                 "mobile": "123456",
                                 "homeDirectory": "/home/bob",
                                 'userPassword': 'bobpwééé',
@@ -58,6 +63,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Corny",
                                 "sn": "keule",
                                 "email": "ck@o",
+                                "memberOf": ["cn=helpdesk,o=test", "cn=users,o=test"],
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
@@ -69,6 +75,7 @@ LDAPDirectory = [{"dn": "cn=alice,ou=example,o=test",
                                 "givenName": "Frank",
                                 "sn": "Hause",
                                 "email": "fh@o",
+                                "memberOf": ["cn=users,o=test"],
                                 "mobile": "123354",
                                 'userPassword': 'ldaptest',
                                 "accountExpires": 9223372036854775807,
@@ -193,7 +200,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -212,7 +219,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -237,7 +244,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -257,7 +264,7 @@ class DisplayTANTestCase(MyApiTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertTrue(value == 1, result)
 
@@ -274,10 +281,10 @@ class DisplayTANTestCase(MyApiTestCase):
                                                  "challenge": challenge}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             hex_challenge = detail.get("attributes").get("challenge")
             self.assertEqual(hex_challenge, "7196501689c356046867728f4feb74458dcfd079")
@@ -292,7 +299,7 @@ class DisplayTANTestCase(MyApiTestCase):
                                                      transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
 
@@ -306,7 +313,7 @@ class DisplayTANTestCase(MyApiTestCase):
                                                      transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
 
@@ -321,10 +328,10 @@ class DisplayTANTestCase(MyApiTestCase):
                                                  "challenge": challenge}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             hex_challenge = detail.get("attributes").get("challenge")
             self.assertEqual(len(hex_challenge), 40)
@@ -400,13 +407,13 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             result = data.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("otplen"), 6)
-            auth_items = json.loads(res.data.decode('utf8')).get("auth_items")
+            auth_items = res.json.get("auth_items")
             offline = auth_items.get("offline")[0]
             # Check the number of OTP values
             self.assertEqual(len(offline.get("response")), 100)
@@ -426,11 +433,11 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
-            result = json.loads(res.data.decode('utf8')).get("result")
+            data = res.json
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            auth_items = json.loads(res.data.decode('utf8')).get("auth_items")
+            auth_items = res.json.get("auth_items")
             offline = auth_items.get("offline")[0]
             # Check the number of OTP values
             self.assertEqual(len(offline.get("response")), 3)
@@ -454,7 +461,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("error").get("message"),
                              u"ERR905: Token is not an offline token or refill token is incorrect")
 
@@ -467,11 +474,11 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
-            result = json.loads(res.data.decode('utf8')).get("result")
+            data = res.json
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            auth_items = json.loads(res.data.decode('utf8')).get("auth_items")
+            auth_items = res.json.get("auth_items")
             offline = auth_items.get("offline")[0]
             # Check the number of OTP values
             self.assertEqual(len(offline.get("response")), 5)
@@ -499,7 +506,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                                  "refilltoken": refilltoken_3},
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              u"ERR401: You provided a wrong OTP value.")
@@ -514,7 +521,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                                  "refilltoken": refilltoken_3},
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              u"ERR905: The token does not exist")
@@ -529,7 +536,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              u"ERR905: Token is not an offline token or refill token is incorrect")
@@ -628,10 +635,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin287082"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("otplen"), 6)
 
         # Check that the counter is increased!
@@ -650,7 +657,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin287082"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
 
@@ -670,10 +677,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                      "pass": "pin287082"})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
-            detail = json.loads(res.data).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("otplen"), 6)
 
         # Check that the counter is increased!
@@ -693,7 +700,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                      "pass": "pin287082"})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
 
@@ -705,7 +712,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin969429"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is True, result)
 
@@ -716,8 +723,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin969429"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            details = res.json.get("detail")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
             self.assertEqual(details.get("message"), "wrong otp value. "
@@ -734,8 +741,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin359152"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            details = res.json.get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -750,8 +757,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin359152"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            details = res.json.get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -767,7 +774,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "359152"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
@@ -795,8 +802,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "XXXX123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
 
         tok = get_tokens(serial="SE1")[0]
@@ -814,8 +821,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("serial"), "SE1")
             self.assertEqual(detail.get("message"), "wrong otp value")
 
@@ -840,8 +847,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "XXXX123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
 
         tok = get_tokens(serial="SE1")[0]
@@ -859,8 +866,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("serial"), "SE1")
             self.assertEqual(detail.get("message"), "wrong otp value")
 
@@ -877,14 +884,14 @@ class ValidateAPITestCase(MyApiTestCase):
                                 "type": "spass"})
         token_obj.set_count_auth_max(5)
 
-        for i in range(1, 5):
+        for i in range(0, 5):
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"serial": "pass1",
                                                      "pass": "123456"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                result = json.loads(res.data.decode('utf8')).get("result")
+                result = res.json.get("result")
                 self.assertEqual(result.get("value"), True)
 
         # The 6th authentication will fail
@@ -894,8 +901,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), False)
             self.assertTrue("Authentication counter exceeded"
                             in detail.get("message"))
@@ -912,8 +919,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "123456"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), False)
             self.assertEqual(detail.get("message"), "matching 1 tokens, "
                                                     "Failcounter exceeded")
@@ -927,8 +934,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin338314"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
@@ -943,8 +950,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin254676"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), True)
@@ -963,8 +970,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin254676"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), False)
@@ -982,8 +989,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pin254676"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             value = result.get("value")
             attributes = value.get("attributes")
             self.assertEqual(value.get("auth"), False)
@@ -1007,7 +1014,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
@@ -1029,8 +1036,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), _("please enter otp: "))
             transaction_id = detail.get("transaction_id")
@@ -1045,13 +1052,135 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "359152"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertTrue(result.get("value"))
 
         self.assertEqual(token.get_failcount(), 0)
         # delete the token
         remove_token(serial=serial)
+
+    def test_11b_challenge_response_multiple_hotp_failcounters(self):
+        # Check behavior of Challenge-Response with multiple tokens
+        # set a chalresp policy for HOTP
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=hotp",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
+
+        chalresp_serials = ["CHALRESP1", "CHALRESP2"]
+        chalresp_pins = ["chalresp1", "chalresp2"]
+        tokens = []
+
+        # create two C/R tokens with different PINs for the same user
+        for serial, pin in zip(chalresp_serials, chalresp_pins):
+            # create a token and assign to the user
+            db_token = Token(serial, tokentype="hotp")
+            db_token.update_otpkey(self.otpkey)
+            db_token.save()
+            token = HotpTokenClass(db_token)
+            token.add_user(User("cornelius", self.realm1))
+            token.set_pin(pin)
+            # Set the failcounter
+            token.set_failcount(5)
+            tokens.append(token)
+
+        # create a challenge for the first token by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": chalresp_pins[0]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), _("please enter otp: "))
+            transaction_id = detail.get("transaction_id")
+
+        # Failcounters are unchanged
+        self.assertEqual(tokens[0].get_failcount(), 5)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # send an incorrect OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+
+        # Failcounter for the first token is increased
+        # Failcounter for the second token is unchanged
+        self.assertEqual(tokens[0].get_failcount(), 6)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # send the correct OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "359152"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("value"))
+
+        # Failcounter for the first token is reset
+        # Failcounter for the second token is unchanged
+        self.assertEqual(tokens[0].get_failcount(), 0)
+        self.assertEqual(tokens[1].get_failcount(), 5)
+
+        # Set the same failcount for both tokens
+        tokens[0].set_failcount(5)
+
+        # trigger a challenge for both tokens
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        # send an incorrect OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id":
+                                                     transaction_id,
+                                                 "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+
+        # Failcounter for both tokens are increased
+        self.assertEqual(tokens[0].get_failcount(), 6)
+        self.assertEqual(tokens[1].get_failcount(), 6)
+
+        # delete the tokens
+        for serial in chalresp_serials:
+            remove_token(serial=serial)
 
     def test_12_challenge_response_sms(self):
         # set a chalresp policy for SMS
@@ -1065,7 +1194,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
@@ -1084,8 +1213,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
             self.assertTrue("The PIN was correct, "
                             "but the SMS could not be sent" in
@@ -1101,8 +1230,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"),
                              "No active challenge response token found")
@@ -1124,7 +1253,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
@@ -1143,8 +1272,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_id")
@@ -1159,8 +1288,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "359152"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertTrue(result.get("value"))
 
         # delete the token
@@ -1179,7 +1308,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
         # Set validity period
@@ -1191,9 +1320,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("value"))
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            details = res.json.get("detail")
             self.assertTrue("Outside validity period" in details.get("message"))
 
         token_obj.set_validity_period_end("1999-01-01T10:00+0200")
@@ -1205,9 +1334,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("value"))
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            details = res.json.get("detail")
             self.assertTrue("Outside validity period" in details.get("message"))
 
         # delete the token
@@ -1230,7 +1359,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": serial1}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
         set_privacyidea_config("splitAtSign", "0")
@@ -1250,7 +1379,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": serial2}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
         # The default behaviour - if the config entry does not exist,
@@ -1263,7 +1392,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": serial2}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
     def test_16_autoresync_hotp(self):
@@ -1282,7 +1411,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "async399871"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
 
         # counter = 9, will be autosynced.
@@ -1294,7 +1423,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "async520489"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         delete_privacyidea_config("AutoResync")
@@ -1319,7 +1448,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                      "pass": pin}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                result = json.loads(res.data.decode('utf8')).get("result")
+                result = res.json.get("result")
                 self.assertEqual(result.get("value"), True)
 
         with self.app.test_request_context('/validate/check',
@@ -1329,7 +1458,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
 
         delete_policy("pol_time1")
@@ -1354,7 +1483,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                      "pass": "wrongpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                result = json.loads(res.data.decode('utf8')).get("result")
+                result = res.json.get("result")
                 self.assertEqual(result.get("value"), False)
 
         # Now we do the correct authentication, but
@@ -1366,9 +1495,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            details = res.json.get("detail")
             self.assertEqual(details.get("message"),
                              "Only 2 failed authentications per 0:00:20")
 
@@ -1388,7 +1517,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                         "pass": "pthru"})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         # Passthru with POST Request
@@ -1399,7 +1528,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pthru"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         # Test if the policies "reset_all_tokens" and "passthru" work out fine at the same time
@@ -1412,7 +1541,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pthru"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         delete_policy("reset_all_tokens")
@@ -1446,7 +1575,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(value, True)
 
@@ -1457,9 +1586,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("value"))
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             question = detail.get("message")
             self.assertTrue(question in questions)
@@ -1474,7 +1603,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": answer}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
     def test_21_validate_disabled(self):
@@ -1501,7 +1630,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "superSecret"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         # disable 2nd token
@@ -1516,7 +1645,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "superSecret"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         delete_policy("disabled")
@@ -1548,7 +1677,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "locked"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         remove_token("spass1l")
@@ -1580,9 +1709,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("serial"), serial)
 
         # User that does not exist, can authenticate
@@ -1593,9 +1722,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
                              u"user does not exist, accepted "
                              u"due to 'pass_no'")
@@ -1612,9 +1741,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
                              u"user does not exist, accepted "
                              u"due to 'pass_no'")
@@ -1631,9 +1760,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
                              u"user has no token, "
                              u"accepted due to 'pass_no'")
@@ -1649,9 +1778,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "wrongPiN"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
                              "wrong otp pin")
 
@@ -1667,7 +1796,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail, None)
 
     def test_23a_pass_no_user_resolver(self):
@@ -1689,7 +1818,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "secret"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
                              u'user does not exist, accepted due to \'pol1\'')
         delete_policy("pol1")
@@ -1718,9 +1847,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
@@ -1735,7 +1864,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "287082"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         # Trigger challenge for user
@@ -1747,9 +1876,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
@@ -1764,7 +1893,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "969429"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         remove_token(serial)
@@ -1797,9 +1926,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the Email:"))
             transaction_id = detail.get("transaction_ids")[0]
@@ -1837,9 +1966,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             multi_challenge = detail.get("multi_challenge")
             self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
@@ -1866,9 +1995,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "287082"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(serial, "CR2B")
 
@@ -1909,9 +2038,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pinB}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), False)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             multi_challenge = detail.get("multi_challenge")
             self.assertEqual(multi_challenge[0].get("serial"), "CR2B")
@@ -1936,9 +2065,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "287082"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(serial, "CR2B")
 
@@ -1983,7 +2112,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "123456"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertFalse(result.get("status"))
 
     def test_29_several_CR_one_locked(self):
@@ -2013,10 +2142,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             # This is a challene, the value is False
             self.assertEqual(result.get("value"), False)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(serial, "CR2A")
             # Only one challenge, the 2nd token was revoked.
@@ -2053,9 +2182,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("type"), "undetermined")
 
         # two same token types.
@@ -2070,9 +2199,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("type"), "spass")
 
         # A user has one HOTP token and two spass tokens.
@@ -2087,9 +2216,9 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("type"), "spass")
 
         # policy only allows HOTP.
@@ -2103,10 +2232,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "hallo123"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail, None)
 
         # Define a passthru policy
@@ -2120,7 +2249,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "pthru"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
 
         delete_policy("onlyHOTP")
@@ -2165,7 +2294,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "email"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            resp = json.loads(res.data.decode('utf8'))
+            resp = res.json
             self.assertEqual(resp.get("detail").get("message"), "check your email")
 
         # Challenge Response with SMS
@@ -2175,7 +2304,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "sms"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            resp = json.loads(res.data.decode('utf8'))
+            resp = res.json
             self.assertEqual(resp.get("detail").get("message"), "check your sms")
 
         # Two different token types that are triggered by the same PIN:
@@ -2195,7 +2324,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "PIN"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            resp = json.loads(res.data.decode('utf8'))
+            resp = res.json
             self.assertEqual(resp.get("detail").get("message"), "check your sms, check your email")
 
         delete_policy("chalsms")
@@ -2213,7 +2342,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             error_msg = result.get("error").get("message")
             self.assertEqual("ERR905: You need to specify a serial or a user.", error_msg)
 
@@ -2224,7 +2353,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             error_msg = result.get("error").get("message")
             self.assertEqual("ERR905: Invalid user.", error_msg)
 
@@ -2235,7 +2364,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             error_msg = result.get("error").get("message")
             self.assertEqual("ERR905: Invalid serial number.", error_msg)
 
@@ -2251,7 +2380,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
         self.assertEqual(int(tok.get_tokeninfo("count_auth")), 1)
@@ -2264,7 +2393,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
         self.assertEqual(int(tok.get_tokeninfo("count_auth")), 1)
@@ -2309,7 +2438,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": "spass"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -2320,7 +2449,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get("count"), 1)
             self.assertTrue("logged in as Cooper." in json_response.get("result").get("value").get("auditdata")[0].get("info"),
@@ -2340,7 +2469,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -2356,10 +2485,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"), u"Authenticated by AuthCache.")
 
         delete_policy("authcache")
@@ -2372,10 +2501,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("message"), u"wrong otp value. previous otp used again")
 
         # If there is no authcache, the same value must not be used again!
@@ -2386,7 +2515,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
@@ -2402,9 +2531,76 @@ class ValidateAPITestCase(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
+
+    def test_34_validate_user_and_serial(self):
+        # create a new token
+        db_token = Token(self.serials[1], tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        self.assertEqual(token.token.serial, self.serials[1], token)
+        # try to authenticate a given user with a given unassigned token serial
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serials[1],
+                                                 "pass": OTPs[3]}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
+
+        # try to authenticate with a token assigned to a different user
+        token.add_user(User(u"nönäscii", self.realm2))
+        token.set_pin("pin")
+        self.assertEqual(token.token.owners.first().user_id, "1116")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serials[1],
+                                                 "pass": OTPs[3]}):
+            res = self.app.full_dispatch_request()
+            result = res.json['result']
+            self.assertEqual(result['error']['message'],
+                             u"ERR905: Given serial does not belong to given user!",
+                             result)
+            self.assertEqual(res.status_code, 400, res)
+
+
+class RegistrationValidity(MyApiTestCase):
+
+    def setUp(self):
+        super(RegistrationValidity, self).setUp()
+        self.setUp_user_realms()
+
+    def test_00_registrationtoken_with_validity_period(self):
+        r = init_token({"type": "registration"},
+                       user=User("cornelius", self.realm1))
+        password = r.init_details.get("otpkey")
+
+        # The enddate is 17 minutes in the past
+        end_date = datetime.datetime.now() - datetime.timedelta(minutes=17)
+        end_date_str = end_date.strftime("%Y-%m-%dT%H:%M%z")
+        r.set_validity_period_end(end_date_str)
+        # now check if authentication fails
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
 
 
 class AChallengeResponse(MyApiTestCase):
@@ -2453,7 +2649,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2468,7 +2664,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("value"))
 
         # Now we send the challenge and then we disable the token
@@ -2478,7 +2674,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2496,10 +2692,10 @@ class AChallengeResponse(MyApiTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(detail.get("message"), "Challenge matches, but token is inactive.")
+            self.assertEqual(detail.get("message"), "Challenge matches, but token is not fit for challenge. Token is disabled")
 
         # The token is still disabled. We are checking, if we can do a challenge response
         # for a disabled token
@@ -2509,7 +2705,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2539,7 +2735,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2553,7 +2749,7 @@ class AChallengeResponse(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             # Triggerchallenge returns the numbers of tokens in the "value
             self.assertEqual(data.get("result").get("value"), 1)
@@ -2586,7 +2782,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2601,7 +2797,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2616,7 +2812,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2627,7 +2823,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2658,7 +2854,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2673,7 +2869,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2688,7 +2884,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             # The first challenge will not authenticate anymore, since the OTP is not stored in the challenge data
             # and the token counter was increased
@@ -2701,7 +2897,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2735,7 +2931,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2749,7 +2945,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2763,7 +2959,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2774,7 +2970,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2812,7 +3008,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2826,7 +3022,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2840,7 +3036,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[1]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             # First OTP fails, since the counter increased
             self.assertFalse(data.get("result").get("value"))
@@ -2852,7 +3048,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": OTPs[2]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             # Last value succeeds
             self.assertTrue(data.get("result").get("value"))
@@ -2886,7 +3082,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2923,7 +3119,7 @@ class AChallengeResponse(MyApiTestCase):
                                                  "pass": "pin"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
@@ -2935,6 +3131,347 @@ class AChallengeResponse(MyApiTestCase):
         delete_policy("pol_header")
         delete_policy("pol_footer")
         delete_policy("pol_hotp")
+
+    def test_09_challenge_response_inc_failcounter(self):
+        # make HOTP a challenge response token
+        set_policy(name="pol_hotp",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        init_token({"serial": "tok1",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # On token fails to challenge response
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongOTP",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual("tok1", detail.get("serial"))
+            self.assertEqual("hotp", detail.get("type"))
+            self.assertEqual("Response did not match the challenge.", detail.get("message"))
+
+        init_token({"serial": "tok2",
+                    "otpkey": self.otpkey,
+                    "pin": "pin"}, user=User("cornelius", self.realm1))
+
+        # Now, two tokens will not match
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongOTP",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertTrue("serial" not in detail)
+            self.assertEqual("Response did not match for 2 tokens.", detail.get("message"))
+
+        # Now check the fail counters of the tokens
+        self.assertEqual(2, get_one_token(serial="tok1").token.failcount)
+        self.assertEqual(1, get_one_token(serial="tok2").token.failcount)
+
+        remove_token("tok1")
+        remove_token("tok2")
+        delete_policy("pol_hotp")
+
+    def test_10_unique_transaction_id(self):
+        # Tokens should create a unique transaction id
+        # The TiQR token changes the transaction id.
+
+        # Assign token to user:
+        r = init_token({"serial": "tok1", "type": "hotp", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+        r = init_token({"serial": "tok2", "type": "tiqr", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+
+        set_policy("chalresp", scope=SCOPE.AUTHZ, action="{0!s}=hotp".format(ACTION.TRIGGERCHALLENGE))
+
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertEqual(data.get("result").get("value"), 2)
+            # The two challenges should be the same
+            multichallenge = data.get("detail").get("multi_challenge")
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
+            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+
+        delete_policy("chalresp")
+        remove_token("tok1")
+        remove_token("tok2")
+
+    @radiusmock.activate
+    def test_11_validate_radiustoken(self):
+        # A RADIUS token with RADIUS challenge response
+        # remove all tokens of user Cornelius
+        user_obj = User("cornelius", self.realm1)
+        remove_token(user=user_obj)
+
+        r = add_radius(identifier="myserver", server="1.2.3.4",
+                       secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        token = init_token({"type": "radius",
+                            "serial": "rad1",
+                            "radius.identifier": "myserver",
+                            "radius.local_checkpin": False,
+                            "radius.user": u"nönäscii"},
+                           user=user_obj)
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "radiuspassword"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            transaction_id = data.get("detail").get("transaction_id")
+
+        # Now we send the response to this request but the wrong response!
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "wrongPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+            t = data.get("detail").get("transaction_id")
+            # No transaction_id
+            self.assertIsNone(t)
+
+        # Finally we succeed
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+            t = data.get("detail").get("transaction_id")
+            # No transaction_id
+            self.assertIsNone(t)
+
+        # A second request tries to use the same transaction_id, but the RADIUS server
+        # responds with a Reject
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertFalse(data.get("result").get("value"))
+
+        # And finally a single shot authentication, no chal resp, no transaction_id
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
+        with self.app.test_request_context('/validate/check',
+                                           method="POST",
+                                           data={"user": "cornelius",
+                                                 "pass": "correctPW"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+        remove_token("rad1")
+
+    def test_12_polltransaction(self):
+        # Assign token to user:
+        r = init_token({"serial": "tok1", "type": "hotp", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+        r = init_token({"serial": "tok2", "type": "tiqr", "otpkey": self.otpkey},
+                       user=User("cornelius", self.realm1))
+        self.assertTrue(r)
+
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("status"))
+            self.assertEqual(data.get("result").get("value"), 2)
+            # The two challenges should be the same
+            multichallenge = data.get("detail").get("multi_challenge")
+            transaction_id = data.get("detail").get("transaction_id")
+            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
+            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+
+        # Check that serials are written to the audit log
+        entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge*")
+        self.assertIn("tok1", entry["serial"])
+        self.assertIn("tok2", entry["serial"])
+
+        # add a really old expired challenge for tok1
+        old_transaction_id = "1111111111"
+        old_challenge = Challenge(serial="tok1", transaction_id=old_transaction_id, challenge="")
+        old_challenge_timestamp = datetime.datetime.now() - datetime.timedelta(days=3)
+        old_challenge.timestamp = old_challenge_timestamp
+        old_challenge.expiration = old_challenge_timestamp + datetime.timedelta(minutes=120)
+        old_challenge.save()
+
+        # Check behavior of the polltransaction endpoint
+        # POST is not allowed
+        with self.app.test_request_context("/validate/polltransaction", method="POST"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 405)
+
+        # transaction_id is required
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            self.assertFalse(res.json["result"]["status"])
+            self.assertIn("Missing parameter: 'transaction_id'", res.json["result"]["error"]["message"])
+
+        # wildcards do not work
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": "*"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # a non-existent transaction_id just returns false
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # check audit log
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
+        self.assertEqual(entry["info"], "transaction_id: 123456")
+        self.assertEqual(entry["serial"], None)
+        self.assertEqual(entry["user"], None)
+
+        # polling the transaction returns false, because no challenge has been answered
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # but audit log contains both serials and the user
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
+        self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
+        self.assertIn("tok1", entry["serial"])
+        self.assertIn("tok2", entry["serial"])
+        self.assertFalse(entry["success"])
+        self.assertEqual(entry["user"], "cornelius")
+        self.assertEqual(entry["resolver"], "resolver1")
+        self.assertEqual(entry["realm"], self.realm1)
+
+        # polling the expired transaction returns false
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": old_transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # and the audit log contains no serials and the user
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
+        self.assertEqual(entry["info"], "transaction_id: {}".format(old_transaction_id))
+        self.assertEqual(entry["serial"], None)
+        self.assertFalse(entry["success"])
+
+        # Mark one challenge as answered
+        Challenge.query.filter_by(serial="tok1", transaction_id=transaction_id).update({"otp_valid": True})
+        db.session.commit()
+
+        # polling the transaction returns true, because the challenge has been answered
+        with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
+
+        entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
+        self.assertEqual(entry["info"], "transaction_id: {}".format(transaction_id))
+        # tok2 is not written to the audit log
+        self.assertEqual(entry["serial"], "tok1")
+        self.assertTrue(entry["success"])
+        self.assertEqual(entry["user"], "cornelius")
+        self.assertEqual(entry["resolver"], "resolver1")
+        self.assertEqual(entry["realm"], self.realm1)
+
+        # polling the transaction again gives the same result, even with the more REST-y endpoint
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
+                                           data={}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
+
+        remove_token("tok1")
+        remove_token("tok2")
+
+        # polling the transaction now gives false
+        with self.app.test_request_context("/validate/polltransaction/{}".format(transaction_id), method="GET",
+                                           data={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
@@ -2955,7 +3492,7 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
                                            data={"serial": "triggtoken", "pass": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
 
@@ -2966,7 +3503,7 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get(
                 "count"), 1)
@@ -2981,7 +3518,7 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
                                            data={"serial": "triggtoken", "pass": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data)
+            data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
 
@@ -2992,7 +3529,7 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            json_response = json.loads(res.data)
+            json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertEqual(json_response.get("result").get("value").get("count"), 1)
             # Both policies have triggered

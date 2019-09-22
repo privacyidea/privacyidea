@@ -36,6 +36,7 @@
         </div>
         <div class="text-center">
             <button ng-click="setResolver()"
+                    ng-show="checkRight('resolverwrite')"
                     ng-disabled="formResolverAddPassword.$invalid"
                     class="btn btn-primary"
                     translate>Save resolver

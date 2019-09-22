@@ -290,7 +290,7 @@ type: bool
 Buttons for actions that a user is not allowed to perform, are hidden instead of
 being disabled.
 
-(Since privacyIDEA 2.24)
+(Since privacyIDEA 3.0)
 
 login_text
 ~~~~~~~~~~

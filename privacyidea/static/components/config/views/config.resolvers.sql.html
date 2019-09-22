@@ -30,7 +30,7 @@
             <div class="col-sm-9">
                 <input name="driver" class="form-control"
                        ng-model="params.Driver" required
-                       placeholder="mysql"/>
+                       placeholder="mysql+pymysql"/>
             </div>
         </div>
 
@@ -249,6 +249,7 @@
                     class="btn btn-success" translate>Test SQL Resolver
             </button>
             <button ng-click="setSQLResolver()"
+                    ng-show="checkRight('resolverwrite')"
                     ng-disabled="formResolverAddSql.$invalid"
                     class="btn btn-primary" translate>Save Resolver
             </button>

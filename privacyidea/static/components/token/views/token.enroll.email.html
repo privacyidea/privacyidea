@@ -3,7 +3,7 @@
 </p>
 
 <h4 translate>Token data</h4>
-<div ng-hide="form['email.mailserver']" translate class="bg-danger">
+<div ng-hide="form['email.mailserver'] || loggedInUser.role==='user'" translate class="bg-danger">
     For Email tokens to work properly you need to set the
     <a ui-sref="config.tokens({tokentype:'email'})">Email Token Config</a>!
 </div>
