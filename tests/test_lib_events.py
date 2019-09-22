@@ -2069,10 +2069,10 @@ class TokenEventTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SPASS01", "type": "spass"}
-        resp = Response()
+        resp = Response(mimetype='application/json')
         resp.data = """{"result": {"value": true}}"""
 
-        # The token faile counter will be set to 7
+        # The token will get a random pin of 8
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2082,10 +2082,9 @@ class TokenEventTestCase(MyTestCase):
         t_handler = TokenEventHandler()
         res = t_handler.do(ACTION_TYPE.SET_RANDOM_PIN, options=options)
         self.assertTrue(res)
-        # Check if the token has the correct sync window
-        self.assertIn("pin", resp.data)
-        res = json.loads(resp.data)
-        pin = res.get("detail").get("pin")
+        # Check, if we have a pin
+        self.assertIn("pin", resp.json["detail"])
+        pin = resp.json["detail"]["pin"]
         self.assertEqual(len(pin), 8)
 
         # Check if the new PIN will authenticate with the SPass token
