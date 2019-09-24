@@ -12,8 +12,9 @@ application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
 to privacyIDEA. This is quite simple using a REST API
-:ref:`rest_validate`. However, you need to take care to correctly implement all
-:ref:`authentication_modes`.
+:ref:`rest_validate`. In order to support more sophisticated token types like
+challenge-response or out-of-band tokens, you should take a look at the
+various :ref:`authentication_modes`.
 
 .. _pam_plugin:
 
