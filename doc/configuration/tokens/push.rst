@@ -21,6 +21,8 @@ logs the user in automatically.
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.
 
+The PUSH token implements the :ref:`outofband mode <authentication_mode_outofband>`.
+
 Configuration
 ~~~~~~~~~~~~~
 
@@ -101,5 +103,3 @@ For an in depth view of the protocol see
 [the github issue](https://github.com/privacyidea/privacyidea/issues/1342)
 and
 [the wiki page](https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
-
-

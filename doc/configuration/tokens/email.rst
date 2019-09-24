@@ -20,6 +20,7 @@ the user.
 The EMail token is a challenge response token. I.e. when using the OTP PIN in
 the first authentication request, the sending of the EMail will be triggered
 and in a second authentication request the OTP value from the EMail needs to be
-presented.
+presented. It implements the :ref:`challenge authentication mode <authentication_mode_challenge>`.
+
 
 For a more detailed insight see the code documentation :ref:`code_email_token`.

@@ -6,7 +6,7 @@ Authentication policies
 .. index:: authentication policies
 
 The scope *authentication* gives you more detailed
-possibilities to authenticate the user or to define 
+possibilities to authenticate the user or to define
 what happens during authentication.
 
 Technically the authentication policies apply
@@ -14,7 +14,7 @@ to the REST API :ref:`rest_validate` and are checked
 using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The following actions are available in the scope 
+The following actions are available in the scope
 *authentication*:
 
 .. _otppin_policy:
@@ -26,7 +26,7 @@ type: string
 
 This action defines how the fixed password part during
 authentication should be validated.
-Each token has its own OTP PIN, but you can choose 
+Each token has its own OTP PIN, but you can choose
 how the authentication should be processed:
 
 ``otppin=tokenpin``
@@ -44,7 +44,7 @@ how the authentication should be processed:
    OTP value.
 
 .. note:: The domain password is checked with an LDAP
-   bind right at the moment of authentication. 
+   bind right at the moment of authentication.
    So if the user is locked or the password was
    changed authentication will fail.
 
@@ -68,7 +68,7 @@ I.e. the user needs to provide the LDAP- or SQL-password or valid credentials
 for the RADIUS server.
 
 .. note:: This is a good way to do a smooth enrollment.
-   Users having a token enrolled will have to use the 
+   Users having a token enrolled will have to use the
    token, users not having a token, yet, will be able
    to authenticate with their domain password.
 
@@ -82,7 +82,7 @@ for the RADIUS server.
    although a tokentype policy is active!
 
 .. warning:: If the user has the right to delete his
-   tokens in selfservice portal, the user could 
+   tokens in selfservice portal, the user could
    delete all his tokens and then authenticate with
    his static password again.
 
@@ -290,9 +290,6 @@ type: string
 This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
-
-.. note:: The TiQR token does not need this setting, since it always works with
-   challenge response.
 
 .. _policy_u2f_facets:
 

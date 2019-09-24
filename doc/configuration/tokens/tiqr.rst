@@ -9,6 +9,9 @@ Starting with version 2.6 privacyIDEA supports the TiQR token.
 The TiQR token is a smartphone token, that can be used to login by only
 scanning a QR code.
 
+The TiQR token implements the
+:ref:`outofband authentication mode <authentication_mode_outofband>`.
+
 The token is also enrolled by scanning a QR code.
 
 .. figure:: images/enroll_tiqr_1.png
