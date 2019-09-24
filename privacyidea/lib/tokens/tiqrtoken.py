@@ -68,8 +68,12 @@ the token in challenge response.
    authentication is stored in the Challenge DB table.
    (No need for the application to take any action)
 5. Now, the application needs to poll
-   ``/validate/check?user=<user>&transaction_id=*&pass=`` to verifiy the
-   successful authentication. The ``pass`` can be empty.
+   ``/validate/polltransaction?transaction_id=<transaction_id>`` to check
+   the transaction status. If the endpoint returns ``false``, the challenge
+   has not been answered yet.
+6. Once ``/validate/polltransaction`` returns true, the application needs to finalize
+   the authentication with a request ``/validate/check?user=<user>&transaction_id=<transaction_id>&pass=``.
+   The ``pass`` can be empty.
    If ``value=true`` is returned, the user authenticated successfully
    with the TiQR token.
 

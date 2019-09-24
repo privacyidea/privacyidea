@@ -14,6 +14,10 @@ The TOTP algorithm has some parameter, like if the generated OTP value will
 be 6 digits or 8 digits or if the SHA1 oder the SHA256 hashing algorithm is
 used and the timestep being 30 or 60 seconds.
 
+The TOTP token implements the :ref:`authenticate mode <authentication_mode_authenticate>`.
+With a suitable :ref:`policy_challenge_response` policy, it may also be used
+in the :ref:`challenge mode <authentication_mode_challenge>`.
+
 Hardware tokens
 ~~~~~~~~~~~~~~~
 
