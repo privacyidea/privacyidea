@@ -142,11 +142,16 @@ def set_random_pin(request=None, action=None):
     """
     params = request.all_data
     policy_object = g.policy_object
-    user_object = get_user_from_param(params)
+    # Fixme: we need to allow passing the user
+    #user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
+    adminname = g.logged_in_user.get("username")
+    adminrealm = g.logged_in_user.get("realm")
     pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
                                                scope=SCOPE.ADMIN,
-                                               user_object=user_object,
+                                               adminrealm=adminrealm,
+                                               user=adminname,
+                                               #user_object=user_object,
                                                client=g.client_ip,
                                                unique=True,
                                                audit_data=g.audit_object.audit_data)
