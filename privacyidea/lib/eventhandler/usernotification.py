@@ -316,6 +316,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
                                    client_ip=g.client_ip,
+                                   pin=pin,
                                    googleurl_value=googleurl_value,
                                    recipient=recipient,
                                    tokenowner=tokenowner,
@@ -325,8 +326,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
 
-            body = body.format(googleurl_img=googleurl_img, pin=pin,
-                               **tags)
+            body = body.format(googleurl_img=googleurl_img, **tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
