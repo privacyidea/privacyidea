@@ -18,7 +18,7 @@
     <link href="{{ instance }}/{{ "static/contrib/css/angular-multi-select.css" | versioned }}" rel="stylesheet"/>
     <link href="{{ instance }}/{{ "static/contrib/css/angular-inform.css" | versioned }}" rel="stylesheet"/>
     <link href="{{ instance }}/{{ "static/contrib/css/hotkeys.min.css" | versioned }}" rel="stylesheet"/>
-    <link href="{{ instance }}/{{ theme | versioned }}" rel="stylesheet"/>
+    {% if theme %}<link href="{{ instance }}/{{ theme | versioned }}" rel="stylesheet"/>{%  endif %}
     {% if custom_css %}<link href="{{ instance }}/{{ custom_css | versioned }}" rel="stylesheet"/>{% endif %}
 
     <script type="application/javascript">
