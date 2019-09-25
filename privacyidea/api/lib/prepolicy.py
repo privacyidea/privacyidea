@@ -137,8 +137,7 @@ def set_random_pin(request=None, action=None):
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ENROLL, ACTION.OTPPINSETRANDOM to set a random OTP
-    PIN during Token enrollment
+    It uses the policy SCOPE.ADMIN, ACTION.OTPPINSETRANDOM to set a random OTP PIN
     """
     params = request.all_data
     policy_object = g.policy_object

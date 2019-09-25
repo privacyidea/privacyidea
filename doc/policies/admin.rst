@@ -218,7 +218,7 @@ range: 1-31
 
 The administrator can set a random pin for a token
 with the endpoint ``token/setrandompin``.
-This policy is needed to define how log the PIN will be.
+This policy is needed to define how long the PIN will be.
 
 .. note:: The PIN will consist of digits and letters.
 
