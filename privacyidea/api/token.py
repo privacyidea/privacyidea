@@ -81,6 +81,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
+                                           set_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
@@ -674,7 +675,7 @@ def setpin_api(serial=None):
 @token_blueprint.route('/setrandompin', methods=['POST'])
 @token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETRANDOMPIN)
-@prepolicy(init_random_pin, request, action="setrandompin")
+@prepolicy(set_random_pin, request)
 @prepolicy(encrypt_pin, request)
 @postpolicy(save_pin_change, request)
 @event("token_setrandompin", request, g)

@@ -131,10 +131,39 @@ class prepolicy(object):
         return policy_wrapper
 
 
+def set_random_pin(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API setrandompin function
+    If the policy is set accordingly it adds a random PIN to the
+    request.all_data like.
+
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINSETRANDOM to set a random OTP
+    PIN during Token enrollment
+    """
+    params = request.all_data
+    policy_object = g.policy_object
+    user_object = get_user_from_param(params)
+    # get the length of the random PIN from the policies
+    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
+                                               scope=SCOPE.ADMIN,
+                                               user_object=user_object,
+                                               client=g.client_ip,
+                                               unique=True,
+                                               audit_data=g.audit_object.audit_data)
+
+    if len(pin_pols) == 0:
+        # We do this to avoid that an admin sets a random PIN manually!
+        raise TokenAdminError("You need to specify an admin policy 'otp_pin_set_random'.")
+    elif len(pin_pols) == 1:
+        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+
+    return True
+
+
 def init_random_pin(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API init function
-    and setrandom_pin function.
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
@@ -151,10 +180,6 @@ def init_random_pin(request=None, action=None):
                                                client=g.client_ip,
                                                unique=True,
                                                audit_data=g.audit_object.audit_data)
-
-    if action=="setrandompin" and len(pin_pols) == 0:
-        # We do this to avoid that an admin sets a random PIN manually!
-        raise TokenAdminError("You need to specify an enrollment policy 'otp_pin_random'.")
     if len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))

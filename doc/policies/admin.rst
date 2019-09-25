@@ -209,6 +209,20 @@ and it must not contain any other characters.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
 
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
+
+type: integer
+
+range: 1-31
+
+The administrator can set a random pin for a token
+with the endpoint ``token/setrandompin``.
+This policy is needed to define how log the PIN will be.
+
+.. note:: The PIN will consist of digits and letters.
+
+
 resync
 ~~~~~~
 
