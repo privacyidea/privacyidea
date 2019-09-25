@@ -137,19 +137,28 @@ def set_random_pin(request=None, action=None):
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ADMIN, ACTION.OTPPINSETRANDOM to set a random OTP PIN
+    It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
     policy_object = g.policy_object
     # Fixme: we need to allow passing the user
     #user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    adminname = g.logged_in_user.get("username")
-    adminrealm = g.logged_in_user.get("realm")
+    role = g.logged_in_user.get("role")
+    username = g.logged_in_user.get("username")
+    if role == ROLE.ADMIN:
+        scope = SCOPE.ADMIN
+        admin_realm = g.logged_in_user.get("realm")
+        realm = params.get("realm", "")
+    else:
+        scope = SCOPE.USER
+        realm = g.logged_in_user.get("realm")
+        admin_realm = None
     pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
-                                               scope=SCOPE.ADMIN,
-                                               adminrealm=adminrealm,
-                                               user=adminname,
+                                               scope=scope,
+                                               adminrealm=admin_realm,
+                                               user=username,
+                                               realm=realm,
                                                #user_object=user_object,
                                                client=g.client_ip,
                                                unique=True,
