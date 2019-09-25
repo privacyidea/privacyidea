@@ -1,3 +1,9 @@
+Version 3.1.1, 2019-09-25
+
+  Fixes:
+  * Fix the wrong token_type key in the audit log which caused the tokentype
+    to not be contained in the audit (#1846)
+
 Version 3.1, 2019-09-04
 
   Features:
