@@ -699,7 +699,7 @@ def setrandompin_api(serial=None):
     encrypt_pin = getParam(request.all_data, "encryptpin")
     pin = getParam(request.all_data, "pin")
     if not pin:
-        raise TokenAdminError("We have an empty PIN. Please check you policy 'otp_pin_random'.")
+        raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
     g.audit_object.add_to_log({'action_detail': "otppin, "})
     res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)

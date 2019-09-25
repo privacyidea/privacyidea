@@ -1821,7 +1821,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
             result = res.json.get("result")
-            self.assertIn("We have an empty PIN. Please check you policy 'otp_pin_random'.",
+            self.assertIn("We have an empty PIN. Please check your policy 'otp_pin_set_random'.",
                           result.get("error").get("message"))
 
         # at least we need a otppinrandom policy
