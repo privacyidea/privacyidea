@@ -299,6 +299,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
+            pin = content.get("detail", {}).get("pin")
             googleurl_value = content.get("detail", {}).get("googleurl",
                                                             {}).get("value")
             googleurl_img = content.get("detail", {}).get("googleurl",
@@ -315,6 +316,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
                                    client_ip=g.client_ip,
+                                   pin=pin,
                                    googleurl_value=googleurl_value,
                                    recipient=recipient,
                                    tokenowner=tokenowner,
@@ -324,8 +326,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
 
-            body = body.format(googleurl_img=googleurl_img,
-                               **tags)
+            body = body.format(googleurl_img=googleurl_img, **tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":

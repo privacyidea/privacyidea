@@ -261,6 +261,7 @@ class ACTION(object):
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
+    OTPPINSETRANDOM = "otp_pin_set_random"
     OTPPINMAXLEN = 'otp_pin_maxlength'
     OTPPINMINLEN = 'otp_pin_minlength'
     OTPPINCONTENTS = 'otp_pin_contents'
@@ -287,6 +288,7 @@ class ACTION(object):
     SET = "set"
     SETDESCRIPTION = "setdescription"
     SETPIN = "setpin"
+    SETRANDOMPIN = "setrandompin"
     SETREALM = "setrealm"
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
@@ -1295,6 +1297,10 @@ def get_static_policy_definitions(scope=None):
                                 'tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('Admin is allowed to set a random OTP PIN of tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
             ACTION.SETTOKENINFO: {'type': 'bool',
                                'desc': _('Admin is allowed to manually set and delete token info.'),
                                'mainmenu': [MAIN_MENU.TOKENS],
@@ -1501,6 +1507,11 @@ def get_static_policy_definitions(scope=None):
                                               "(c)haracters, (n)umeric, "
                                               "(s)pecial, (o)thers. [+/-]!"),
                                     'group': GROUP.PIN},
+            ACTION.OTPPINSETRANDOM: {
+                'type': 'int',
+                'value': list(range(1, 32)),
+                'desc': _("The length of a random PIN set by the administrator."),
+                'group': GROUP.PIN},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": GROUP.SYSTEM,
@@ -1685,6 +1696,14 @@ def get_static_policy_definitions(scope=None):
                                       "PIN of his tokens."),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('The user is allowed to set a random OTP PIN of his tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.PIN},
+            ACTION.OTPPINSETRANDOM: {'type': 'int',
+                                     'value': list(range(1, 32)),
+                                     'desc': _("The length of a random PIN set by the user."),
+                                     'group': GROUP.PIN},
             ACTION.SETDESCRIPTION: {'type': 'bool',
                                     'desc': _('The user is allowed to set the token description.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
@@ -1750,9 +1769,9 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
-                'value': list(range(0, 32)),
+                'value': list(range(1, 32)),
                 "desc": _("Set a random OTP PIN with this length for a "
-                          "token."),
+                          "token during the enrollment process."),
                 'group': GROUP.PIN},
             ACTION.PINHANDLING: {
                 'type': 'str',

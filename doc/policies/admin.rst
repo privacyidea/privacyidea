@@ -120,6 +120,14 @@ type: bool
 If the ``setpin`` action is defined, the administrator
 is allowed to set the OTP PIN of a token.
 
+setrandompin
+~~~~~~~~~~~~
+
+type: bool
+
+If the ``setrandompin`` action is defined, the administrator
+is allowed to call the endpoint, that sets a random token PIN.
+
 enrollpin
 ~~~~~~~~~
 
@@ -200,6 +208,20 @@ and it must not contain any other characters.
    characters from the sum of the two groups.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
+
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
+
+type: integer
+
+range: 1-31
+
+The administrator can set a random pin for a token
+with the endpoint ``token/setrandompin``.
+This policy is needed to define how long the PIN will be.
+
+.. note:: The PIN will consist of digits and letters.
+
 
 resync
 ~~~~~~

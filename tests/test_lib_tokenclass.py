@@ -173,7 +173,7 @@ class TokenBaseTestCase(MyTestCase):
         # reset failcount
         token.token.failcount = 8
         
-        self.assertTrue(token.get_user_id() == token.token.owners.first().user_id)
+        self.assertTrue(token.get_user_id() == token.token.first_owner.user_id)
         
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "newtype",

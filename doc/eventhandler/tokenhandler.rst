@@ -169,6 +169,15 @@ Using the action ``set failcounter`` you can reset the fail counter by
 setting it to 0 or also "block" the token by setting the fail counter to what
  ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
+set random pin
+..............
+
+Sets a random PIN for the handled token. The PIN is then added to the response in
+``detail->pin``. This can be used in the *notification handler*.
+Please take care, that probably the PIN needs to be removed from the response
+using the *response mangler handler* after
+handling it with the notification handler.
+
 Code
 ~~~~
 

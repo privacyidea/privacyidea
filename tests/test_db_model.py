@@ -120,7 +120,7 @@ class TokenModelTestCase(MyTestCase):
         t2 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
-        self.assertEqual(t2.owners.first().resolver, "resolver1")
+        self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
         realm_found = False
         for realm_entry in t2.realm_list:
@@ -599,12 +599,12 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(eh1.handlermodule, handlermodule)
         self.assertEqual(eh1.action, action)
         self.assertEqual(eh1.condition, condition)
-        self.assertEqual(eh1.option_list[0].Key, "mailserver")
-        self.assertEqual(eh1.option_list[0].Value, "blafoo")
-        self.assertEqual(eh1.option_list[1].Key, "option2")
-        self.assertEqual(eh1.option_list[1].Value, "value2")
-        self.assertEqual(eh1.condition_list[0].Key, "user_type")
-        self.assertEqual(eh1.condition_list[0].Value, "admin")
+        self.assertEqual(eh1.options[0].Key, "mailserver")
+        self.assertEqual(eh1.options[0].Value, "blafoo")
+        self.assertEqual(eh1.options[1].Key, "option2")
+        self.assertEqual(eh1.options[1].Value, "value2")
+        self.assertEqual(eh1.conditions[0].Key, "user_type")
+        self.assertEqual(eh1.conditions[0].Value, "admin")
 
         id = eh1.id
 
@@ -616,23 +616,23 @@ class TokenModelTestCase(MyTestCase):
 
         # Update option value
         EventHandlerOption(id, Key="mailserver", Value="mailserver")
-        self.assertEqual(eh1.option_list[0].Value, "mailserver")
+        self.assertEqual(eh1.options[0].Value, "mailserver")
 
         # Add Option
         EventHandlerOption(id, Key="option3", Value="value3")
-        self.assertEqual(eh1.option_list[2].Key, "option3")
-        self.assertEqual(eh1.option_list[2].Value, "value3")
+        self.assertEqual(eh1.options[2].Key, "option3")
+        self.assertEqual(eh1.options[2].Value, "value3")
 
         # Update condition value
         EventHandlerCondition(id, Key="user_type", Value="user")
-        self.assertEqual(eh1.condition_list[0].Value, "user")
+        self.assertEqual(eh1.conditions[0].Value, "user")
 
         # Add condition
         EventHandlerCondition(id, Key="result_value", Value="True")
-        self.assertEqual(eh1.condition_list[0].Key, "result_value")
-        self.assertEqual(eh1.condition_list[0].Value, "True")
-        self.assertEqual(eh1.condition_list[1].Key, "user_type")
-        self.assertEqual(eh1.condition_list[1].Value, "user")
+        self.assertEqual(eh1.conditions[0].Key, "result_value")
+        self.assertEqual(eh1.conditions[0].Value, "True")
+        self.assertEqual(eh1.conditions[1].Key, "user_type")
+        self.assertEqual(eh1.conditions[1].Value, "user")
 
         # Delete event handler
         eh1.delete()
@@ -652,8 +652,8 @@ class TokenModelTestCase(MyTestCase):
         SMSGateway(name, provider_module2,
                    options={"k1": "v1"})
         self.assertEqual(gw.providermodule, provider_module2)
-        self.assertEqual(gw.ref_option_list[0].Key, "k1")
-        self.assertEqual(gw.ref_option_list[0].Value, "v1")
+        self.assertEqual(gw.options[0].Key, "k1")
+        self.assertEqual(gw.options[0].Value, "v1")
 
         # Delete gateway
         gw.delete()
