@@ -626,23 +626,31 @@ def check_proxy(path_to_client, proxy_settings):
     # * the proxy path [10.1.1.1/32, 10.2.3.0/24, 192.168.0.0/16] determines 192.168.1.1 as the client address
     # * while the proxy path [10.1.1.1/32, 192.168.0.0/16] determines 10.1.1.1 as the client address (because the
     #   proxy at 10.1.1.1 is not allowed to map to 10.2.3.4).
-    # * and the proxy path [10.1.1.1/32, 10.2.3.0/24, 192.168.3.0/24] determines 10.2.3.4 as the client address,
-    #   because 10.2.3.4 is not allowed to map to 192.168.1.1.
+    # * and the proxy path [10.1.1.1/32, 10.2.3.0/24, 192.168.3.0/24] determines 10.1.1.1 as the client address,
+    #   as the proxy path does not match completely because 10.2.3.4 is not allowed to map to 192.168.1.1.
     # After having processed all paths in the proxy settings, we return the "deepest" IP from ``path_to_client`` that
     # is allowed according to any proxy path of the proxy settings.
     max_idx = 0
     for proxy_path in proxy_dict:
-        for idx, (proxy_path_ip, client_path_ip) in enumerate(zip_longest(proxy_path, path_to_client)):
-            # If proxy_path and path_to_client have different lengths, "missing" elements are filled with None.
+        # If the proxy path contains more subnets than the path to the client, we already know that it cannot match.
+        if len(proxy_path) > len(path_to_client):
+            continue
+        # Hence, we can now be sure that len(path_to_client) >= len(proxy_path).
+        current_max_idx = 0
+        # If len(path_to_client) > len(proxy_path), ``zip`` cuts the lists to the same length.
+        # Hence, we ignore any additional proxy hops that the client may send, which is what we want.
+        for idx, (proxy_path_ip, client_path_ip) in enumerate(zip(proxy_path, path_to_client)):
             # We check if the network in the proxy path contains the IP from path_to_client.
-            if (client_path_ip is not None
-                    and proxy_path_ip is not None
-                    and client_path_ip in proxy_path_ip):
-                # If it does, we may have a new "deepest" IP.
-                max_idx = max(max_idx, idx)
-            else:
-                # If not, we do not have to keep checking the current proxy path.
+            if client_path_ip not in proxy_path_ip:
+                # If not, the current proxy path does not match and we do not have to keep checking it.
                 break
+            else:
+                current_max_idx = idx
+        else:
+            # This branch is only executed if we did *not* break out of the loop. This means that the proxy path
+            # completely matches the path to client, so the mapped client IP is a viable candidate.
+            max_idx = max(max_idx, current_max_idx)
+
     return path_to_client[max_idx]
 
 

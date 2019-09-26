@@ -154,7 +154,7 @@ class UtilsTestCase(MyTestCase):
                          IPAddress("10.0.12"))
 
         # check paths with several hops
-        # 1.2.3.4 -------> 10.0.0.1 -------> 192.168.1.1
+        # 1.2.3.4 -------> 10.0.0.1 -------> 192.168.1.1 --------> privacyIDEA
         #  client           proxy1              proxy2
         path_to_client = list(map(IPAddress, ["192.168.1.1", "10.0.0.1", "1.2.3.4"]))
         # no proxy setting: client IP is proxy2
@@ -167,9 +167,9 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24"),
                          IPAddress("10.0.0.1"))
         # proxy2 may map to 10.0.0.x, which may map to 2.3.4.x but not 1.2.3.4, so
-        # client IP is proxy1
+        # the proxy definition does not match and the client IP is proxy2
         self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
-                         IPAddress("10.0.0.1"))
+                         IPAddress("192.168.1.1"))
         # 10.0.0.x may map to 2.3.4.x, but it doesn't matter because there is proxy2 inbetween
         self.assertEqual(check_proxy(path_to_client, "10.0.0.0/24>2.3.4.0/24"),
                          IPAddress("192.168.1.1"))
@@ -186,10 +186,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(check_proxy(path_to_client,
                                      "192.168.1.1>0.0.0.0/0>0.0.0.0/0"),
                          IPAddress("1.2.3.4"))
-        # but if the next proxy may only map to 2.x.x.x, we end up with proxy1
+        # but if the next proxy may only map to 2.x.x.x, the proxy path does not match and we end up with proxy2.
         self.assertEqual(check_proxy(path_to_client,
                                      "192.168.1.1>0.0.0.0/0>2.0.0.0/8"),
-                         IPAddress("10.0.0.1"))
+                         IPAddress("192.168.1.1"))
 
         # another example
         path_to_client = list(map(IPAddress, ["10.1.1.1", "10.2.3.4", "192.168.1.1"]))
@@ -201,7 +201,7 @@ class UtilsTestCase(MyTestCase):
                          IPAddress("10.1.1.1"))
         self.assertEqual(check_proxy(path_to_client,
                                      "10.1.1.1/32>10.2.3.0/24>192.168.3.0/24"),
-                         IPAddress("10.2.3.4"))
+                         IPAddress("10.1.1.1"))
 
     def test_05_reduce_realms(self):
         realms = {'defrealm': {'default': False,
