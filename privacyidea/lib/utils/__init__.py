@@ -661,7 +661,8 @@ def get_client_ip(request, proxy_settings):
     # From the X-Forwarded-For header, we determine the path to the actual client, i.e. the list of proxy servers
     # that the HTTP response will pass through, including the final client IP:
     # If a client C talks to a proxy P1, which in turn talks to a proxy P2, which talks to privacyIDEA,
-    # X-Forwarded-For will be "P1, P2", and path_to_client will be [P2, P1, C].
+    # X-Forwarded-For will be "C, P1", the HTTP client IP will be P2, and path_to_client
+    # consequently will be [P2, P1, C].
     # However, if we get such a request, we cannot be sure if the X-Forwarded-For header is correct,
     # or if it was sent by a rogue client in order to spoof its IP address.
     # To prevent IP spoofing, privacyIDEA allows to configure a list of proxies that are allowed to override the
