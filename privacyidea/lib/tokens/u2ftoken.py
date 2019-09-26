@@ -496,7 +496,7 @@ class U2fTokenClass(TokenClass):
                     g = options.get("g")
                     user_object = self.user
                     allowed_certs_pols = Match.user(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
-                                                    user=user_object if user_object else None)\
+                                                    user_object=user_object if user_object else None)\
                         .action_values(unique=False)
                     for allowed_cert in allowed_certs_pols:
                         tag, matching, _rest = allowed_cert.split("/", 3)

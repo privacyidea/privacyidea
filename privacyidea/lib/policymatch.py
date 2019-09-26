@@ -148,25 +148,25 @@ class Match(object):
                    sort_by_priority=True)
 
     @classmethod
-    def user(cls, g, scope, action, user):
+    def user(cls, g, scope, action, user_object):
         """
         Match active policies with a scope, an action and a user object (which may be None).
         The client IP is matched implicitly.
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param user: the user object to match. Might also be None, which means that the policy
+        :param user_object: the user object to match. Might also be None, which means that the policy
                      attributes ``user``, ``realm`` and ``resolver`` are ignored.
-        :type user: User or None
+        :type user_object: User or None
         :rtype: ``Match``
         """
         if scope == SCOPE.ADMIN:
             raise MatchingError("Match.user cannot be used for policies with scope ADMIN")
-        if not (user is None or isinstance(user, User)):
+        if not (user_object is None or isinstance(user_object, User)):
             raise MatchingError("Invalid user")
         # Username, realm and resolver will be extracted from the user_object parameter
         return cls(g, name=None, scope=scope, realm=None, active=True,
-                   resolver=None, user=None, user_object=user,
+                   resolver=None, user=None, user_object=user_object,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
                    sort_by_priority=True)
 

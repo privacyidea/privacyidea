@@ -2089,7 +2089,7 @@ def get_action_values_from_options(scope, action, options):
     if g:
         user_object = options.get("user")
         from privacyidea.lib.policymatch import Match
-        value = Match.user(g, scope=scope, action=action, user=user_object)\
+        value = Match.user(g, scope=scope, action=action, user_object=user_object)\
             .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]

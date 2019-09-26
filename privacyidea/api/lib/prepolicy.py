@@ -146,14 +146,14 @@ def init_random_pin(request=None, action=None):
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
-                          user=user_object).action_values(unique=True)
+                          user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
         handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
-                                 user=user_object).action_values(unique=False)
+                                 user_object=user_object).action_values(unique=False)
         # We can have more than one pin handler policy. So we can process the
         #  PIN in several ways!
         for handle_pol in handle_pols:
@@ -315,7 +315,7 @@ def papertoken_count(request=None, action=None):
     """
     from privacyidea.lib.tokens.papertoken import PAPERACTION
     pols = Match.user(g, scope=SCOPE.ENROLL, action=PAPERACTION.PAPERTOKEN_COUNT,
-                      user=request.User).action_values(unique=True)
+                      user_object=request.User).action_values(unique=True)
     if pols:
         papertoken_count = list(pols)[0]
         request.all_data["papertoken_count"] = papertoken_count
@@ -337,7 +337,7 @@ def tantoken_count(request=None, action=None):
     """
     from privacyidea.lib.tokens.tantoken import TANACTION
     pols = Match.user(g, scope=SCOPE.ENROLL, action=TANACTION.TANTOKEN_COUNT,
-                      user=request.User).action_values(unique=True)
+                      user_object=request.User).action_values(unique=True)
     if pols:
         tantoken_count = list(pols)[0]
         request.all_data["tantoken_count"] = tantoken_count
@@ -359,7 +359,7 @@ def encrypt_pin(request=None, action=None):
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.ENCRYPTPIN,
-                          user=user_object).policies()
+                          user_object=user_object).policies()
     if pin_pols:
         request.all_data["encryptpin"] = "True"
     else:
@@ -445,25 +445,25 @@ def init_tokenlabel(request=None, action=None):
     token_type = getParam(request.all_data, "type", optional, "hotp").lower()
     # get the serials from a policy definition
     label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
-                            user=user_object).action_values(unique=True, allow_white_space_in_action=True)
+                            user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
         request.all_data[ACTION.TOKENLABEL] = list(label_pols)[0]
 
     issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
-                             user=user_object).action_values(unique=True, allow_white_space_in_action=True)
+                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(issuer_pols) == 1:
         request.all_data[ACTION.TOKENISSUER] = list(issuer_pols)[0]
 
     imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
-                               user=user_object).action_values(unique=True, allow_white_space_in_action=True)
+                               user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(imageurl_pols) == 1:
         request.all_data[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
 
     # check the force_app_pin policy
     app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
                               action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
-                              user=user_object).any()
+                              user_object=user_object).any()
     if app_pin_pols:
         request.all_data[ACTION.FORCE_APP_PIN] = True
 
@@ -592,7 +592,7 @@ def check_max_token_user(request=None, action=None):
     if user_object.login:
         # check maximum tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
-                                user=user_object).action_values(unique=False, write_to_audit_log=False)
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object)
@@ -609,7 +609,7 @@ def check_max_token_user(request=None, action=None):
 
         # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
-                                user=user_object).action_values(unique=False, write_to_audit_log=False)
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True)
@@ -696,7 +696,7 @@ def set_realm(request=None, action=None):
         user_object = request.User
         username = user_object.login
         policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
-                                  user=user_object)
+                                  user_object=user_object)
     else:  # pragma: no cover
         username = None
         policy_match = Match.realm(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
@@ -800,7 +800,7 @@ def mangle(request=None, action=None):
     user_object = request.User
 
     mangle_pols = Match.user(g, scope=SCOPE.AUTH, action=ACTION.MANGLE,
-                             user=user_object).action_values(unique=False, write_to_audit_log=False)
+                             user_object=user_object).action_values(unique=False, write_to_audit_log=False)
     # We can have several mangle policies! One for user, one for realm and
     # one for pass. So we do no checking here.
     for mangle_pol_action in mangle_pols:
@@ -837,7 +837,7 @@ def check_anonymous_user(request=None, action=None):
     policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
-    action = Match.user(g, scope=SCOPE.USER, action=action, user=user_obj).policies()
+    action = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).policies()
     action_at_all = policy_object.list_policies(scope=SCOPE.USER, active=True)
     if action_at_all and len(action) == 0:
         raise PolicyError(ERROR)
@@ -1063,7 +1063,7 @@ def api_key_required(request=None, action=None):
     user_object = request.User
 
     # Get the policies
-    action = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.APIKEY, user=user_object).policies()
+    action = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1185,7 +1185,7 @@ def pushtoken_wait(request, action):
     """
     user_object = request.User
     waiting = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.WAIT,
-                         user=user_object if user_object else None)\
+                         user_object=user_object if user_object else None)\
         .action_values(unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
         request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
@@ -1210,7 +1210,7 @@ def pushtoken_add_config(request, action):
         registration_url = None
         # Get the firebase configuration from the policies
         firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                     user=request.User if request.User else None)\
+                                     user_object=request.User if request.User else None)\
             .action_values(unique=True, allow_white_space_in_action=True)
         if len(firebase_config) == 1:
             request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
@@ -1219,7 +1219,7 @@ def pushtoken_add_config(request, action):
 
         # Get the sslverify definition from the policies
         ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
-                                user=request.User if request.User else None).action_values(unique=True)
+                                user_object=request.User if request.User else None).action_values(unique=True)
         if len(ssl_verify) == 1:
             request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
         else:
@@ -1245,7 +1245,7 @@ def u2ftoken_verify_cert(request, action):
         request.all_data["u2f.verify_cert"] = True
         user_object = request.User
         do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.NO_VERIFY_CERT,
-                                            user=user_object if user_object else None).policies()
+                                            user_object=user_object if user_object else None).policies()
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
 
@@ -1291,7 +1291,7 @@ def u2ftoken_allowed(request, action):
                 attestation_cert.get_subject())}
 
         allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
-                                        user=request.User if request.User else None)\
+                                        user_object=request.User if request.User else None)\
             .action_values(unique=False)
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)

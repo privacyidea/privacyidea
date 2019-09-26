@@ -205,7 +205,7 @@ def check_tokentype(request, response):
     tokentype = response.json.get("detail", {}).get("type")
     user_object = request.User
     allowed_tokentypes = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENTYPE,
-                                    user=user_object).action_values(unique=False)
+                                    user_object=user_object).action_values(unique=False)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         # If we have tokentype policies, but
         # the tokentype is not allowed, we raise an exception
@@ -498,14 +498,14 @@ def get_webui_settings(request, response):
         if role == ROLE.USER:
             user_obj = User(loginname, realm)
             user_token_num = get_tokens(user=user_obj, count=True)
-            token_wizard_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD, user=user_obj).any()
+            token_wizard_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD, user_object=user_obj).any()
             # We also need to check, if the user has not tokens assigned.
             # If the user has no tokens, we run the wizard. If the user
             # already has tokens, we do not run the wizard.
             token_wizard = token_wizard_pol and (user_token_num == 0)
 
             dialog_no_token_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN,
-                                             user=user_obj).any()
+                                             user_object=user_obj).any()
             dialog_no_token = dialog_no_token_pol and (user_token_num == 0)
         user_details_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
                                        realm=realm).policies()
@@ -584,7 +584,7 @@ def autoassign(request, response):
             # authentication request) we immediately bail out
             # check if the policy is defined
             autoassign_values = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.AUTOASSIGN,
-                                           user=user_obj).action_values(unique=True, write_to_audit_log=False)
+                                           user_object=user_obj).action_values(unique=True, write_to_audit_log=False)
             # check if the user has no token
             if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
                 # Check if the token would match
@@ -673,9 +673,9 @@ def mangle_challenge_response(request, response):
     user_obj = request.User
 
     header_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_HEADER,
-                            user=user_obj).action_values(unique=True, allow_white_space_in_action=True)
+                            user_object=user_obj).action_values(unique=True, allow_white_space_in_action=True)
     footer_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_FOOTER,
-                            user=user_obj).action_values(unique=True, allow_white_space_in_action=True)
+                            user_object=user_obj).action_values(unique=True, allow_white_space_in_action=True)
     if header_pol:
         multi_challenge = content.get("detail", {}).get("multi_challenge")
         if multi_challenge:
