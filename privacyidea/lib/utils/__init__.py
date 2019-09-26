@@ -26,8 +26,6 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
-from itertools import izip_longest
-
 import six
 import logging; log = logging.getLogger(__name__)
 from importlib import import_module
@@ -36,6 +34,7 @@ import base64
 import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
+from six.moves import zip_longest
 from io import BytesIO
 import string
 import re
@@ -633,7 +632,7 @@ def check_proxy(path_to_client, proxy_settings):
     # is allowed according to any proxy path of the proxy settings.
     max_idx = 0
     for proxy_path in proxy_dict:
-        for idx, (proxy_path_ip, client_path_ip) in enumerate(izip_longest(proxy_path, path_to_client)):
+        for idx, (proxy_path_ip, client_path_ip) in enumerate(zip_longest(proxy_path, path_to_client)):
             # If proxy_path and path_to_client have different lengths, "missing" elements are filled with None.
             # We check if the network in the proxy path contains the IP from path_to_client.
             if (client_path_ip is not None
