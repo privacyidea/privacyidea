@@ -2583,11 +2583,11 @@ class UserNotificationTestCase(MyTestCase):
 
         # Unassign any user from this token - we need to do this, since the token can have more users.
         unassign_token(tok.token.serial)
-        self.assertEqual(tok.token.owners.first(), None)
+        self.assertEqual(tok.token.first_owner, None)
         # Set an existing user for the token.
         tok.add_user(User("cornelius", "realm1"))
-        self.assertEqual(tok.token.owners.first().user_id, "1000")
-        self.assertEqual(tok.token.owners.first().realm.name, "realm1")
+        self.assertEqual(tok.token.first_owner.user_id, "1000")
+        self.assertEqual(tok.token.first_owner.realm.name, "realm1")
 
         r = uhandler.check_condition(
             {"g": {},

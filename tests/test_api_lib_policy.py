@@ -2029,7 +2029,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # unassign all tokens from the user autoassignuser
         try:
             unassign_token(None, user=user_obj)
-        except Exception:
+        except Exception as e:
             print("no need to unassign token")
 
         # The request with an OTP value and a PIN of a user, who has not

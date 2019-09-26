@@ -404,7 +404,7 @@ class TokenTestCase(MyTestCase):
 
         r = assign_token(serial, user, pin="1234")
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.owners.first().user_id, "1000")
+        self.assertEqual(tokenobject.token.first_owner.user_id, "1000")
 
         # token already assigned...
         self.assertRaises(TokenAdminError, assign_token, serial,
@@ -413,7 +413,7 @@ class TokenTestCase(MyTestCase):
         # unassign token
         r = unassign_token(serial)
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.owners.first(), None)
+        self.assertEqual(tokenobject.token.first_owner, None)
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -621,8 +621,8 @@ class TokenTestCase(MyTestCase):
 
         r = copy_token_user(serial1, serial2)
         assert isinstance(tobject2, TokenClass)
-        self.assertEqual(tobject2.token.owners.first().user_id, "1000")
-        self.assertEqual(tobject2.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(tobject2.token.first_owner.user_id, "1000")
+        self.assertEqual(tobject2.token.first_owner.resolver, self.resolvername1)
 
         # check if the realms where copied:
         self.assertTrue(tobject2.get_realms() == [self.realm1])

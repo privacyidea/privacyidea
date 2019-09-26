@@ -384,8 +384,8 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         # Check, who is the owner of the new token!
         tokenobject = get_tokens(serial=serial)[0]
-        self.assertEqual(tokenobject.token.owners.first().user_id, "1004")
-        self.assertEqual(tokenobject.token.owners.first().resolver, "resolver1")
+        self.assertEqual(tokenobject.token.first_owner.user_id, "1004")
+        self.assertEqual(tokenobject.token.first_owner.resolver, "resolver1")
 
         # user can delete his own token
         with self.app.test_request_context('/token/{0!s}'.format(serial),
@@ -523,8 +523,8 @@ class APISelfserviceTestCase(MyApiTestCase):
                             response.get("result"))
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
-        self.assertTrue(tokenobject.token.owners.first().user_id == "1004",
-                         tokenobject.token.owners.first().user_id)
+        self.assertTrue(tokenobject.token.first_owner.user_id == "1004",
+                         tokenobject.token.first_owner.user_id)
 
         # User can unassign token
         with self.app.test_request_context('/token/unassign',
@@ -539,7 +539,7 @@ class APISelfserviceTestCase(MyApiTestCase):
                             response.get("result"))
 
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
-        self.assertEqual(tokenobject.token.owners.first(), None)
+        self.assertEqual(tokenobject.token.first_owner, None)
 
 
         # User can not unassign token, which does not belong to him

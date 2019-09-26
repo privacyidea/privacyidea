@@ -103,8 +103,8 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.type == "email", token.type)
 
         token.add_user(User(login="cornelius", realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(token.token.owners.first().user_id, "1000")
+        self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
+        self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
