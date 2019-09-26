@@ -81,6 +81,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_token_action(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -145,6 +146,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "disable", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         r = check_base_action(req, "disable")
         self.assertTrue(r)
@@ -188,6 +190,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_02_check_token_init(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -218,6 +221,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "enroll", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         r = check_token_init(req)
         self.assertTrue(r)
@@ -234,6 +238,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_03_check_token_upload(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -269,6 +274,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04a_check_max_active_token_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -317,6 +323,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -393,6 +400,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_05_check_max_token_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -443,6 +451,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -491,6 +500,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_tokenlabel(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -547,6 +557,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_07_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -581,6 +592,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -610,6 +622,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08a_enroll_pin_admin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -639,6 +652,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08b_enroll_pin_user(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -668,6 +682,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_09_pin_policies(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -736,6 +751,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_09_pin_policies_admin(self):
         g.logged_in_user = {"username": "super",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -802,6 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01b_token_specific_pin_policy(self):
         g.logged_in_user = {"username": "super",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -858,6 +875,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -933,6 +951,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_12_mangle(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -977,6 +996,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_13_remote_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1019,6 +1039,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_14_required_email(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1192,6 +1213,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_18_auditlog_age(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1220,6 +1242,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_papertoken_count(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1245,6 +1268,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_tantoken_count(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1270,6 +1294,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20_allowed_audit_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1321,6 +1346,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # we set the policy scope=enrollment, action=no_verifcy
         from privacyidea.lib.tokens.u2ftoken import U2FACTION
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1356,6 +1382,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SMS1234"},
@@ -1378,6 +1405,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "hans",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SMS1234"},
@@ -1399,6 +1427,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_22_push_firebase_config(self):
         from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -2271,6 +2300,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'type': "totp",
@@ -2303,6 +2333,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_17_pin_change(self):
         g.logged_in_user = {"username": "admin",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'type': "totp",
@@ -2376,6 +2407,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Now the user changes the PIN. Afterwards the next_pin_change is empty
         g.logged_in_user = {"username": "hans",
+                            "realm": "",
                             "role": "user"}
 
         save_pin_change(req, resp, serial="changePIN2")

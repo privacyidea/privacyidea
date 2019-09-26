@@ -58,6 +58,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import Match
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
@@ -500,17 +501,8 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            clientip = options.get("clientip")
-            policy_object = g.policy_object
-            messages = policy_object.\
-                get_action_values(action=SMSACTION.SMSTEXT,
-                                  scope=SCOPE.AUTH,
-                                  user_object=user_object if user_object else None,
-                                  client=clientip,
-                                  unique=True,
-                                  allow_white_space_in_action=True,
-                                  audit_data=g.audit_object.audit_data)
-
+            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
+                                  user_object=user_object if user_object else None).action_values(unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
@@ -531,21 +523,8 @@ class SmsTokenClass(HotpTokenClass):
         autosms = False
         g = options.get("g")
         user_object = options.get("user")
-        username = None
-        realm = None
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
         if g:
-            clientip = options.get("clientip")
-            policy_object = g.policy_object
-            autosmspol = policy_object.\
-                match_policies(action=SMSACTION.SMSAUTO,
-                               scope=SCOPE.AUTH,
-                               realm=realm,
-                               user=username,
-                               client=clientip, active=True,
-                               audit_data=g.audit_object.audit_data)
+            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO, user_object=user_object).policies()
             autosms = len(autosmspol) >= 1
 
         return autosms
