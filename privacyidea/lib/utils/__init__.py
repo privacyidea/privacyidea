@@ -685,7 +685,6 @@ def get_client_ip(request, proxy_settings):
                                   "jwtauth"]) \
                 and "client" in request.all_data:
             path_to_client.append(request.all_data["client"])
-        print("IP access route: {!r}".format(path_to_client))
         # We now refer to ``check_proxy`` to extract the mapped IP from ``path_to_client``.
         return str(check_proxy([IPAddress(ip) for ip in path_to_client], proxy_settings))
     else:
