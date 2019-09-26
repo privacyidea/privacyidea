@@ -142,33 +142,19 @@ def set_random_pin(request=None, action=None):
     It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     # Fixme: we need to allow passing the user
     #user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
     role = g.logged_in_user.get("role")
-    username = g.logged_in_user.get("username")
     if role == ROLE.ADMIN:
-        scope = SCOPE.ADMIN
-        admin_realm = g.logged_in_user.get("realm")
         realm = params.get("realm", "")
     else:
-        scope = SCOPE.USER
         realm = g.logged_in_user.get("realm")
-        admin_realm = None
-    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
-                                               scope=scope,
-                                               adminrealm=admin_realm,
-                                               user=username,
-                                               realm=realm,
-                                               #user_object=user_object,
-                                               client=g.client_ip,
-                                               unique=True,
-                                               audit_data=g.audit_object.audit_data)
-
+    pin_pols = Match.admin_or_user(g, action=ACTION.OTPPINSETRANDOM, realm=realm)\
+        .action_values(unique=True)
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
-        raise TokenAdminError("You need to specify a policy 'otp_pin_set_random' in scope {0!s}.".format(scope))
+        raise TokenAdminError("You need to specify a policy 'otp_pin_set_random' in scope {0!s}.".format(role))
     elif len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
