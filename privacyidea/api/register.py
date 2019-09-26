@@ -36,7 +36,7 @@ from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.user import create_user
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy

@@ -45,7 +45,7 @@ import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm

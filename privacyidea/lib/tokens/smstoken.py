@@ -58,7 +58,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)

@@ -73,7 +73,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge

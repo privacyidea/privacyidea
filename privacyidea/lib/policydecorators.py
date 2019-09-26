@@ -45,7 +45,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 """
 import logging
 
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.error import PolicyError, privacyIDEAError
 import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE

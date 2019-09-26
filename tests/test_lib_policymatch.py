@@ -6,7 +6,7 @@ from mock import Mock
 
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import User
-from privacyidea.lib.policymatch import Match, MatchingError
+from privacyidea.lib.policy import MatchingError, Match
 from privacyidea.lib.policy import set_policy, SCOPE, delete_all_policies, PolicyClass
 from .base import MyTestCase, FakeFlaskG
 

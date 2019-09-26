@@ -68,7 +68,7 @@ log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token)

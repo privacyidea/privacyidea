@@ -42,7 +42,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
-from privacyidea.lib.policymatch import Match
+from privacyidea.lib.policy import Match
 from privacyidea.lib.utils import (is_true, hexlify_and_unicode, to_unicode,
                                    urlsafe_b64encode_and_unicode)
 import binascii
