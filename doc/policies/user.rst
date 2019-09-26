@@ -106,6 +106,14 @@ type: bool
 
 The user is allowed to set the OTP PIN for his tokens.
 
+setrandompin
+~~~~~~~~~~~~
+
+type: bool
+
+If the ``setrandompin`` action is defined, the user
+is allowed to call the endpoint, that sets a random PIN on his
+specified token.
 
 setdescription
 ~~~~~~~~~~~~~~

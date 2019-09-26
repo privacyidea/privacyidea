@@ -1794,6 +1794,52 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue("Invalid serial number" in result.get("error").get("message"))
 
+    def test_32_set_random_pin(self):
+        t = init_token({"genkey": 1})
+        self.assertEqual(t.token.tokentype, "hotp")
+
+        # We get an error, if there is no policy
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertIn("You need to specify a policy 'otp_pin_set_random' in scope admin.",
+                          result.get("error").get("message"))
+
+        # Admin policy: admin is allowed to set random pin
+        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action="{0!s}".format(ACTION.SETRANDOMPIN))
+        # at least we need a otppinrandom policy (but not with length 0
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=0".format(ACTION.OTPPINSETRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertIn("We have an empty PIN. Please check your policy 'otp_pin_set_random'.",
+                          result.get("error").get("message"))
+
+        # at least we need a otppinrandom policy
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(ACTION.OTPPINSETRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertEqual(10, len(detail.get("pin")))
+
+        delete_policy("allowed_to_set_pin")
+        delete_policy("pinpolrandom")
+
 
 class API00TokenPerformance(MyApiTestCase):
 
