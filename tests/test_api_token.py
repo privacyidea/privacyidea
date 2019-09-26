@@ -1806,7 +1806,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
             result = res.json.get("result")
-            self.assertIn("You need to specify an admin policy 'otp_pin_set_random'",
+            self.assertIn("You need to specify a policy 'otp_pin_set_random' in scope admin.",
                           result.get("error").get("message"))
 
         # Admin policy: admin is allowed to set random pin
