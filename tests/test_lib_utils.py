@@ -108,33 +108,100 @@ class UtilsTestCase(MyTestCase):
         r = check_time_in_range("Mon-Wrong: asd-17:30", t)
         self.assertEqual(r, False)
 
-    def test_04_check_overrideclient(self):
+    def test_04a_parse_proxy(self):
+        self.assertEqual(parse_proxy(""), set())
+        # 127.0.0.1 may rewrite to any IP
+        self.assertEqual(parse_proxy("127.0.0.1"),
+                         {(IPNetwork("127.0.0.1/32"), IPNetwork("0.0.0.0/0"))})
+        # 127.0.0.x may rewrite to 10.0.x.x
+        self.assertEqual(parse_proxy("127.0.0.1/24 >  10.0.0.0/16"),
+                         {(IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16"))})
+        # 127.0.0.x may rewrite to 10.0.x.x or 10.1.x.x which may rewrite to 10.2.0.x
+        self.assertEqual(parse_proxy("127.0.0.1/24>10.0.0.0/16, 127.0.0.1/24>10.1.0.0/16>10.2.0.0/24"),
+                         {
+                             (IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16")),
+                             (IPNetwork("127.0.0.1/24"), IPNetwork("10.1.0.0/16"), IPNetwork("10.2.0.0/24"))
+                         })
+
+    def test_04b_check_overrideclient(self):
         proxy_def = " 10.0.0.12, 1.2.3.4/16> 192.168.1.0/24, 172.16.0.1 " \
                     ">10.0.0.0/8   "
         r = parse_proxy(proxy_def)
 
         self.assertEqual(len(r), 3)
-        for proxy, clients in r.items():
-            if IPAddress("10.0.0.12") in proxy:
-                self.assertTrue(IPAddress("1.2.3.4") in clients)
-            elif IPAddress("1.2.3.3") in proxy:
-                self.assertTrue(IPAddress("192.168.1.1") in clients)
-            elif IPAddress("172.16.0.1") in proxy:
-                self.assertEqual(clients, IPNetwork("10.0.0.0/8"))
-            else:
-                assert("The proxy {0!s} was not found!".format(proxy))
+        self.assertIn((IPNetwork("1.2.3.4/16"), IPNetwork("192.168.1.0/24")), r)
+        self.assertIn((IPNetwork("10.0.0.12/32"), IPNetwork("0.0.0.0/0")), r)
+        self.assertIn((IPNetwork("172.16.0.1/32"), IPNetwork("10.0.0.0/8")), r)
 
-        self.assertTrue(check_proxy("10.0.0.12", "1.2.3.4", proxy_def))
-        self.assertFalse(check_proxy("10.0.0.11", "1.2.3.4", proxy_def))
-        self.assertTrue(check_proxy("1.2.3.10", "192.168.1.12", proxy_def))
-        self.assertFalse(check_proxy("172.16.0.1", "1.2.3.4", proxy_def))
-        self.assertTrue(check_proxy("172.16.0.1", "10.1.2.3", proxy_def))
+        # check paths with only a single hop
+        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
+                         IPAddress("1.2.3.4"))  # 10.0.0.12 may map to 1.2.3.4
+        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.11", "1.2.3.4"])), proxy_def),
+                         IPAddress("10.0.0.11"))  # 10.0.0.11 may not map to 1.2.3.4
+        self.assertEqual(check_proxy(list(map(IPAddress, ["1.2.3.10", "192.168.1.12"])), proxy_def),
+                         IPAddress("192.168.1.12"))  # 1.2.3.10 may map to 192.168.1.12
+        self.assertEqual(check_proxy(list(map(IPAddress, ["172.16.0.1", "1.2.3.4"])), proxy_def),
+                         IPAddress("172.16.0.1"))  # 172.16.0.1 may not map to 1.2.3.4
+        self.assertEqual(check_proxy(list(map(IPAddress, ["172.16.0.1", "10.1.2.3"])), proxy_def),
+                         IPAddress("10.1.2.3"))  # 172.16.0.1 may map to 10.1.2.3
 
         # Wrong proxy setting. No commas (issue 526)
         proxy_def = " 10.0.0.12 1.2.3.4/16> 192.168.1.0/24 172.16.0.1 " \
                     ">10.0.0.0/8   "
         self.assertRaises(AddrFormatError, parse_proxy, proxy_def)
-        self.assertFalse(check_proxy("10.0.0.12", "1.2.3.4", proxy_def))
+        # 10.0.0.12 is not allowed to map because the proxy settings are invalid
+        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
+                         IPAddress("10.0.12"))
+
+        # check paths with several hops
+        # 1.2.3.4 -------> 10.0.0.1 -------> 192.168.1.1 --------> privacyIDEA
+        #  client           proxy1              proxy2
+        path_to_client = list(map(IPAddress, ["192.168.1.1", "10.0.0.1", "1.2.3.4"]))
+        # no proxy setting: client IP is proxy2
+        self.assertEqual(check_proxy(path_to_client, ""),
+                         IPAddress("192.168.1.1"))
+        # proxy2 may map to 10.0.1.x: client IP is proxy2
+        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.1.0/24"),
+                         IPAddress("192.168.1.1"))
+        # proxy2 may map to 10.0.0.x: client IP is proxy1
+        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24"),
+                         IPAddress("10.0.0.1"))
+        # proxy2 may map to 10.0.0.x, which may map to 2.3.4.x but not 1.2.3.4, so
+        # the proxy definition does not match and the client IP is proxy2
+        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
+                         IPAddress("192.168.1.1"))
+        # 10.0.0.x may map to 2.3.4.x, but it doesn't matter because there is proxy2 inbetween
+        self.assertEqual(check_proxy(path_to_client, "10.0.0.0/24>2.3.4.0/24"),
+                         IPAddress("192.168.1.1"))
+        # proxy2 may map to 10.0.0.x, which may map to 1.2.x.x or 2.3.4.x, so client IP is 1.2.3.4
+        self.assertEqual(check_proxy(path_to_client,
+                                     "192.168.1.1>10.0.0.0/24>2.3.4.0/24, 192.168.1.1>10.0.0.0/24>1.2.0.0/16"),
+                         IPAddress("1.2.3.4"))
+        # the order of proxy definitions is irrelevant
+        self.assertEqual(check_proxy(path_to_client,
+                                     "192.168.1.1>10.0.0.0/24>1.2.0.0/16, 192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
+                         IPAddress("1.2.3.4"))
+        # proxy2 may map anywhere, and the next proxy may also map anywhere,
+        # so we end up with 1.2.3.4
+        self.assertEqual(check_proxy(path_to_client,
+                                     "192.168.1.1>0.0.0.0/0>0.0.0.0/0"),
+                         IPAddress("1.2.3.4"))
+        # but if the next proxy may only map to 2.x.x.x, the proxy path does not match and we end up with proxy2.
+        self.assertEqual(check_proxy(path_to_client,
+                                     "192.168.1.1>0.0.0.0/0>2.0.0.0/8"),
+                         IPAddress("192.168.1.1"))
+
+        # another example
+        path_to_client = list(map(IPAddress, ["10.1.1.1", "10.2.3.4", "192.168.1.1"]))
+        self.assertEqual(check_proxy(path_to_client,
+                                     "10.1.1.1/32>10.2.3.0/24>192.168.0.0/16"),
+                         IPAddress("192.168.1.1"))
+        self.assertEqual(check_proxy(path_to_client,
+                                     "10.1.1.1/32>192.168.0.0/16"),
+                         IPAddress("10.1.1.1"))
+        self.assertEqual(check_proxy(path_to_client,
+                                     "10.1.1.1/32>10.2.3.0/24>192.168.3.0/24"),
+                         IPAddress("10.1.1.1"))
 
     def test_05_reduce_realms(self):
         realms = {'defrealm': {'default': False,
@@ -544,21 +611,38 @@ class UtilsTestCase(MyTestCase):
         client_proxy = "172.16.1.2"
         r.access_route = [client_proxy]
 
-        proxy_settings = ""
-        ip = get_client_ip(r, proxy_settings)
+        # Setup:
+        # 192.168.2.1 ---------> 172.16.1.2 -------> 10.0.0.1 --------> privacyIDEA
+        # client_parameter       client_proxy        direct_client
+
+        ip = get_client_ip(r, "")
         self.assertEqual(ip, direct_client)
 
         # If there is a proxy_setting, the X-Forwarded-For will
         # work, but not the client_parameter
-        proxy_settings = direct_client
-        ip = get_client_ip(r, proxy_settings)
+        ip = get_client_ip(r, "10.0.0.1")
         self.assertEqual(ip, client_proxy)
 
-        # If the request is a validate request, the
-        # client_parameter will overrule the X-Forwarded-For
+        # If the request is a validate request:
         r.blueprint = "validate_blueprint"
-        ip = get_client_ip(r, proxy_settings)
+        # ... the direct client may map anywhere, but as we also have a X-Forwarded-For header,
+        # the header takes precedence!
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, client_proxy)
+        # ... if we now also allow the client_proxy to rewrite IPs, the client parameter is respected
+        ip = get_client_ip(r, "10.0.0.1>172.16.1.2>0.0.0.0/0")
         self.assertEqual(ip, client_parameter)
+        # ... even if we have multiple proxy settings
+        ip = get_client_ip(r, "10.0.0.1>198.168.1.3, 10.0.0.1>172.16.1.2>1.2.3.4,   10.0.0.1>172.16.1.2>0.0.0.0/0")
+        self.assertEqual(ip, client_parameter)
+        # Check situation if there is no X-Forwarded-For header, but a client parameter:
+        r.access_route = [direct_client]
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, client_parameter)
+        # The client parameter is not respected for the token endpoints
+        r.blueprint = "token_blueprint"
+        ip = get_client_ip(r, "10.0.0.1")
+        self.assertEqual(ip, direct_client)
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
