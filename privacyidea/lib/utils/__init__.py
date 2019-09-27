@@ -612,7 +612,7 @@ def check_proxy(path_to_client, proxy_settings):
     except AddrFormatError:
         log.error("Error parsing the OverrideAuthorizationClient setting: {"
                   "0!s}! The IP addresses need to be comma separated. Fix "
-                  "this. The client IP will not be mapped!")
+                  "this. The client IP will not be mapped!".format(proxy_settings))
         log.debug("{0!s}".format(traceback.format_exc()))
         return path_to_client[0]
 
@@ -630,10 +630,14 @@ def check_proxy(path_to_client, proxy_settings):
     #   as the proxy path does not match completely because 10.2.3.4 is not allowed to map to 192.168.1.1.
     # After having processed all paths in the proxy settings, we return the "deepest" IP from ``path_to_client`` that
     # is allowed according to any proxy path of the proxy settings.
+    log.debug(u"Determining the mapped IP from {!r} given the proxy settings {!r} ...".format(
+        path_to_client, proxy_settings))
     max_idx = 0
     for proxy_path in proxy_dict:
+        log.debug(u"Proxy path: {!r}".format(proxy_path))
         # If the proxy path contains more subnets than the path to the client, we already know that it cannot match.
         if len(proxy_path) > len(path_to_client):
+            log.debug(u"... ignored because it is longer than the path to the client")
             continue
         # Hence, we can now be sure that len(path_to_client) >= len(proxy_path).
         current_max_idx = 0
@@ -643,14 +647,18 @@ def check_proxy(path_to_client, proxy_settings):
             # We check if the network in the proxy path contains the IP from path_to_client.
             if client_path_ip not in proxy_path_ip:
                 # If not, the current proxy path does not match and we do not have to keep checking it.
+                log.debug(u"... ignored because {!r} is not in subnet {!r}".format(client_path_ip, proxy_path_ip))
                 break
             else:
                 current_max_idx = idx
         else:
             # This branch is only executed if we did *not* break out of the loop. This means that the proxy path
             # completely matches the path to client, so the mapped client IP is a viable candidate.
+            if current_max_idx >= max_idx:
+                log.debug(u"... setting new candidate for client IP: {!r}".format(path_to_client[current_max_idx]))
             max_idx = max(max_idx, current_max_idx)
 
+    log.debug(u"Determined mapped client IP: {!r}".format(path_to_client[max_idx]))
     return path_to_client[max_idx]
 
 
