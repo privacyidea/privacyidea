@@ -62,6 +62,7 @@ def single_page_application():
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
+    theme = theme.strip('/')
     # Get further customizations
     customization = current_app.config.get("PI_CUSTOMIZATION",
                                            "/static/customize/")
