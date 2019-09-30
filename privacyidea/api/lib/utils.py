@@ -247,19 +247,44 @@ def verify_auth_token(auth_token, required_role=None):
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
     """
+    r = None
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
-    try:
-        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
-    except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
-    except jwt.ExpiredSignature as err:
-        raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    headers = jwt.get_unverified_header(auth_token)
+    if headers.get("alg") == "RS256":
+        # The trusted JWTs are RSA signed
+        trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
+        for trusted_jwt in trusted_jwts:
+            try:
+                if trusted_jwt.get("algorithm") == "RS256":
+                    j = jwt.decode(auth_token,
+                                   trusted_jwt.get("public_key"),
+                                   algorithms=["RS256"])
+                    if j == dict((k, trusted_jwt.get(k)) for k in ("role", "user", "resolver", "realm")):
+                        r = j
+                        break
+                else:
+                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+            except jwt.DecodeError as err:
+                log.info(u"A given JWT definition does not match.")
+            except jwt.ExpiredSignature as err:
+                # We have the correct token. It expired, so we raise an error
+                raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    if not r:
+        try:
+            r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
+        except jwt.DecodeError as err:
+            raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+        except jwt.ExpiredSignature as err:
+            raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match

@@ -4,8 +4,14 @@ This tests the file api.lib.utils
 """
 from .base import MyApiTestCase
 
-from privacyidea.api.lib.utils import (getParam, check_policy_name)
+from privacyidea.api.lib.utils import (getParam,
+                                       check_policy_name,
+                                       verify_auth_token)
 from privacyidea.lib.error import ParameterError
+import jwt
+import mock
+import datetime
+from privacyidea.lib.error import AuthError
 
 
 class UtilsTestCase(MyApiTestCase):
@@ -42,3 +48,41 @@ class UtilsTestCase(MyApiTestCase):
         check_policy_name("my own pi-update-policy-something")
         check_policy_name("pi-update-policysomething")
 
+    def test_03_verify_auth_token(self):
+        # create a jwt with a trusted private key
+        with open("tests/testdata/jwt_sign.key", "r") as f:
+            key = f.read()
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            auth_token = jwt.encode(payload={"role": "user",
+                                             "user": "userA",
+                                             "realm": "realm1",
+                                             "resolver": "resolverX"},
+                                    key=key,
+                                    algorithm="RS256")
+            r = verify_auth_token(auth_token=auth_token,
+                                  required_role="user")
+            self.assertEqual(r.get("realm"), "realm1")
+            self.assertEqual(r.get("user"), "userA")
+            self.assertEqual(r.get("resolver"), "resolverX",)
+            self.assertEqual(r.get("role"), "user")
+            mock_log.assert_called_once_with("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+
+        # The signature has expired
+        expired_token = jwt.encode(payload={"role": "admin",
+                                            "exp": datetime.datetime.utcnow()-datetime.timedelta(seconds=1000)},
+                                   key=key,
+                                   algorithm="RS256")
+        self.assertRaises(AuthError, verify_auth_token, auth_token=expired_token, required_role="admin")
+
+        # The signature does not match
+        with mock.patch("logging.Logger.info") as mock_log:
+            auth_token = jwt.encode(payload={"role": "user",
+                                             "user": "userA",
+                                             "realm": "realm1",
+                                             "resolver": "resolverX"},
+                                    key=key,
+                                    algorithm="RS256")
+            r = verify_auth_token(auth_token=auth_token,
+                                  required_role="user")
+            mock_log.assert_any_call("A given JWT definition does not match.")
