@@ -519,6 +519,8 @@ def get_webui_settings(request, response):
                                             realm=realm).action_values(unique=True)
         show_seed = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                 realm=realm).any()
+        confirm_action = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.CONFIRM_ACTION,
+                                    realm=realm).action_values(unique=False, allow_white_space_in_action=True)
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
@@ -528,6 +530,10 @@ def get_webui_settings(request, response):
             user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
             default_tokentype = list(default_tokentype_pol)[0]
+        if len(confirm_action) == 1:
+            confirm_action = list(confirm_action)[0]
+        else:
+            confirm_action = "0"
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
@@ -558,6 +564,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
+        content["result"]["value"]["confirm_action"] = confirm_action
         response.set_data(json.dumps(content))
     return response
 

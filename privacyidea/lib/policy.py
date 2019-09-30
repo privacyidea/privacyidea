@@ -229,6 +229,7 @@ class ACTION(object):
     GETCHALLENGES = "getchallenges"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
+    CONFIRM_ACTION = "confirm_action"
     DEFAULT_TOKENTYPE = "default_tokentype"
     DELETE = "delete"
     DISABLE = "disable"
@@ -2083,6 +2084,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this is checked, the seed "
                           "will be displayed as text during enrollment.")
+            },
+            ACTION.CONFIRM_ACTION: {
+                'type': 'str',
+                'desc': _("Ask for confirmation before execute certain actions."),
+                'value': ["0 - Default", "1 - Critical", "2 - Sane", "3 - Fearful"]
             }
         }
 
