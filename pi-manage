@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/opt/privacyidea/3.1/.venv/bin/python3.7
 # -*- coding: utf-8 -*-
 #
 # 2018-08-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -1153,14 +1153,6 @@ def create(name, scope, action, filename=None):
 
             params = ast.literal_eval(contents)
 
-            if params.get("name") and params.get("name") != name:
-                print("Found name '{0!s}' in file, will use that instead of "
-                      "'{1!s}'.".format(params.get("name"), name))
-            else:
-                print("name not defined in file, will use the cli value "
-                      "{0!s}.".format(name))
-                params["scope"] = name
-
             if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
                       "'{1!s}'.".format(params.get("scope"), scope))
@@ -1177,8 +1169,7 @@ def create(name, scope, action, filename=None):
                       "{0!s}.".format(action))
                 params["action"] = action
 
-            r = set_policy(params.get("name"),
-                           scope=params.get("scope"),
+            r = set_policy(name, scope=params.get("scope"),
                            action=params.get("action"),
                            realm=params.get("realm"),
                            resolver=params.get("resolver"),
@@ -1243,11 +1234,20 @@ def createtoken(role, days, realm, username):
 
 if __name__ == '__main__':
     # We add one blank line, to separate the messages from the initialization
-    print("""
+    print_header = True
+    try:
+        if sys.argv[1] in [ '-q', '--quiet' ]:
+            print_header = False
+            sys.argv = sys.argv[1:]
+    except IndexError:
+        pass
+
+    if print_header:
+        print("""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
-   """)
+       """)
     manager.run()
