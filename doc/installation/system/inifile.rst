@@ -176,11 +176,11 @@ users and roles using the parameter ``PI_TRUSTED_JWT``::
                        "resolver": "resolverX"}]
 
 
-This entry means, that the private key, that corresponds the the given
+This entry means, that the private key, that corresponds to the given
 public key can sign a JWT, that can impersonate as the *userA* in resolver
 *resolverX* in *realmA*.
 
-A JWT can be signed like this::
+A JWT can be created like this::
 
    auth_token = jwt.encode(payload={"role": "user",
                                     "user": "userA",
