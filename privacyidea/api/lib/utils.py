@@ -40,6 +40,9 @@ from flask import (jsonify,
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
+                     "RS256", "RS384", "RS512",
+                     "PS256", "PS384", "PS512"]
 
 SESSION_KEY_LENGTH = 32
 
@@ -255,15 +258,16 @@ def verify_auth_token(auth_token, required_role=None):
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
 
     headers = jwt.get_unverified_header(auth_token)
-    if headers.get("alg") == "RS256":
-        # The trusted JWTs are RSA signed
+    algorithm = headers.get("alg")
+    if algorithm in TRUSTED_JWT_ALGOS:
+        # The trusted JWTs are RSA, PSS or eliptic curve signed
         trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
         for trusted_jwt in trusted_jwts:
             try:
-                if trusted_jwt.get("algorithm") == "RS256":
+                if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
                     j = jwt.decode(auth_token,
                                    trusted_jwt.get("public_key"),
-                                   algorithms=["RS256"])
+                                   algorithms=TRUSTED_JWT_ALGOS)
                     if j == dict((k, trusted_jwt.get(k)) for k in ("role", "user", "resolver", "realm")):
                         r = j
                         break
