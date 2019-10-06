@@ -1031,6 +1031,110 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(result.get("value").get("policy_template_url"),
                              DEFAULT_POLICY_TEMPLATE_URL)
 
+    def test_42_auth_timelimit_maxfail(self):
+        self.setUp_user_realm2()
+        # check that AUTHMAXFAIL also takes effect for /auth with loginmode=privacyIDEA
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "spass", "pin": pin}, user=user)
+
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+        set_policy(name="pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20")
+
+        # and even /validate/check does not work
+        # (since it counts /auth *and* /validate/check )
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"])
+            self.assertFalse(result["value"])
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+
+    def test_43_auth_timelimit_maxsuccess(self):
+        self.setUp_user_realm2()
+        # check that AUTHMAXSUCCESS also takes effect for /auth with loginmode=privacyIDEA
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "spass", "pin": pin}, user=user)
+
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXSUCCESS))
+        set_policy(name="pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = json.loads(res.data.decode('utf8')).get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successfull authentications per 0:00:20")
+
+        # ... and not with the wrong PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # /validate/check does not work, since the two allowed authentications
+        # are already used up for the /auth endpoint
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = json.loads(res.data.decode('utf8')).get("result")
+            self.assertTrue(result["status"])
+            self.assertFalse(result["value"])
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+
 
 class PolicyConditionsTestCase(MyApiTestCase):
     @ldap3mock.activate
