@@ -126,6 +126,7 @@ def check_webui_user(user_obj,
     if check_otp:
         # check if the given password matches an OTP token
         check, details = check_user_pass(user_obj, password, options=options)
+        details["loginmode"] = "privacyIDEA"
         if check:
             user_auth = True
     else:

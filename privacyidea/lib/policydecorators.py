@@ -417,9 +417,18 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                               success=False,
                                               timedelta=tdelta)
             log.debug("Checking users timelimit %s: %s "
-                      "failed authentications" %
+                      "failed authentications with /validate/check" %
                       (list(max_fail_dict)[0], fail_c))
-            if fail_c >= policy_count:
+            fail_auth_c = g.audit_object.get_count({"user": user_object.login,
+                                                    "realm": user_object.realm,
+                                                    "info": "%loginmode=privacyIDEA%",
+                                                    "action": "%/auth"},
+                                                    success=False,
+                                                    timedelta=tdelta)
+            log.debug("Checking users timelimit %s: %s "
+                      "failed authentications with /auth" %
+                      (list(max_fail_dict)[0], fail_auth_c))
+            if fail_c + fail_auth_c >= policy_count:
                 res = False
                 reply_dict["message"] = ("Only %s failed authentications "
                                          "per %s" % (policy_count, tdelta))
@@ -438,9 +447,18 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                   success=True,
                                                   timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
-                          "succesful authentications" %
+                          "succesful authentications with /validate/check" %
                           (list(max_success_dict)[0], succ_c))
-                if succ_c >= policy_count:
+                succ_auth_c = g.audit_object.get_count({"user": user_object.login,
+                                                   "realm": user_object.realm,
+                                                   "info": "%loginmode=privacyIDEA%",
+                                                   "action": "%/auth"},
+                                                  success=True,
+                                                  timedelta=tdelta)
+                log.debug("Checking users timelimit %s: %s "
+                          "succesful authentications with /auth" %
+                          (list(max_success_dict)[0], succ_auth_c))
+                if succ_c + succ_auth_c >= policy_count:
                     res = False
                     reply_dict["message"] = ("Only %s successfull "
                                              "authentications per %s"

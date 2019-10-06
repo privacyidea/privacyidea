@@ -269,19 +269,22 @@ def get_auth_token():
                                                     options=options,
                                                     superuser_realms=
                                                     superuser_realms)
+        details = details or {}
         if role == ROLE.ADMIN:
             g.audit_object.log({"user": "",
                                 "administrator": user_obj.login,
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
-                                "serial": details.get('serial', None) if details else None,
-                                "info": log_used_user(user_obj)})
+                                "serial": details.get('serial', None),
+                                "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                        details.get("loginmode"))})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
-                                "serial": details.get('serial', None) if details else None,
-                                "info": log_used_user(user_obj)})
+                                "serial": details.get('serial', None),
+                                "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                        details.get("loginmode"))})
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"),
