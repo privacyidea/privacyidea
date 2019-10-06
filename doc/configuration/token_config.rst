@@ -5,6 +5,7 @@ Tokens
 
 .. toctree::
    supported_tokens.rst
+   authentication_modes.rst
 
 .. _tokentypes:
 
@@ -94,4 +95,3 @@ types.
    :maxdepth: 1
 
    tokenconfig/*
-

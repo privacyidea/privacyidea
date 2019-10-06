@@ -34,6 +34,7 @@ import base64
 import qrcode
 import sqlalchemy
 from six.moves.urllib.parse import urlunparse, urlparse, urlencode
+from six.moves import zip_longest
 from io import BytesIO
 import string
 import re
@@ -54,6 +55,8 @@ from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 
 
 def check_time_in_range(time_range, check_time=None):
@@ -543,68 +546,120 @@ def parse_date(date_string):
 
 def parse_proxy(proxy_settings):
     """
-    This parses the string of the system settings
-    OverrideAuthorizationClient.
+    This parses the string of the system settings OverrideAuthorizationClient into a set of "proxy paths",
+    which are tuples of IPNetwork objects.
 
-    This defines, which client IP may act as a proxy and rewrite the client
+    The setting defines, which client IP may act as a proxy and rewrite the client
     IP to be used in policies and audit log.
 
     Valid strings are
     10.0.0.0/24 > 192.168.0.0/24
-        Hosts in 10.0.0.x may specify clients as 192.168.0.x
+        Hosts in 10.0.0.x may specify clients as 192.168.0.x.
+        This is parsed to a proxy path ``(IPNetwork("10.0.0.0/24"), IPNetwork("192.168.0.0/24"))``.
+    10.0.0.1 > 192.168.0.0/24 > 192.168.1.0/24
+        The proxy in 10.0.0.1 may forward requests from proxies in 192.168.0.x,
+        which may in turn specify clients as 192.168.1.x.
+        This is parsed to a proxy path
+        ``(IPNetwork("10.0.0.0/24"), IPNetwork("192.168.0.0/24"), IPNetwork("192.168.1.0/24")``.
     10.0.0.12 > 192.168.0.0/24
-        Only the one host may rewrite the client IP to 192.168.0.x
+        Only the one host may rewrite the client IP to 192.168.0.x.
+        This is parsed to a proxy path ``(IPNetwork("10.0.0.12/32"), IPNetwork("192.168.0.0/24"))``.
     172.16.0.0/16
         Hosts in 172.16.x.x may rewrite to any client IP
+        This is parsed to a proxy path ``(IPNetwork("172.16.0.0/16"), IPNetwork("0.0.0.0/0"))``.
 
-    Such settings may be separated by comma.
+    Multiple such settings may be separated by comma.
 
     :param proxy_settings: The OverrideAuthorizationClient config string
     :type proxy_settings: basestring
-    :return: A dictionary containing the configuration
+    :return: A set of tuples of IPNetwork objects. Each tuple has at least two elements.
     """
-    proxy_dict = {}
-    proxies_list = [s.strip() for s in proxy_settings.split(",")]
-    for proxy in proxies_list:
-        p_list = proxy.split(">")
-        proxynet = IPNetwork(p_list[0])
-        if len(p_list) > 1:
-            clientnet = IPNetwork(p_list[1])
-        else:
-            # No mapping client, so we take the whole network
-            clientnet = IPNetwork("0.0.0.0/0")
-        proxy_dict[proxynet] = clientnet
+    proxy_set = set()
+    if proxy_settings.strip():
+        proxies_list = [s.strip() for s in proxy_settings.split(",")]
+        for proxy in proxies_list:
+            p_list = proxy.split(">")
+            if len(p_list) > 1:
+                proxypath = tuple(IPNetwork(proxynet) for proxynet in p_list)
+            else:
+                # No mapping client, so we take the whole network
+                proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))
+            proxy_set.add(proxypath)
 
-    return proxy_dict
+    return proxy_set
 
 
-def check_proxy(proxy_ip, rewrite_ip, proxy_settings):
+def check_proxy(path_to_client, proxy_settings):
     """
-    This function checks if the proxy_ip is allowed to rewrite the IP to
-    rewrite_ip. This check is done on the specification in proxy_settings.
+    This function takes a list of IPAddress objects, the so-called "path to client",
+    along with the proxy settings from OverrideAuthorizationClient, and determines
+    the IP from ``path_to_client`` which should be considered the effective client
+    IP according to the proxy settings.
 
-    :param proxy_ip: The actual client, the proxy
-    :type proxy_ip: basestring
-    :param rewrite_ip: The client IP, to which it should be mapped
-    :type rewrite_ip: basestring
+    :param path_to_client: A list of IPAddress objects containing all proxy hops, starting with the current HTTP
+                           client IP and going to the client IP as given by the X-Forwarded-For header.
+                           For example, a value of ``[IPAddress("192.168.1.3")]`` means that the HTTP client at
+                           192.168.1.3 has not sent any X-Forwarded-For headers.
+                           A value of ``[IPAddress("192.168.1.3"), IPAddress("10.1.2.3"), IPAddress("10.0.0.1")]``
+                           means that the request passed two proxies: According to the X-Forwarded-For header,
+                           it originated at 10.0.0.1, then passed a proxy at 10.1.2.3, then passed a proxy at
+                           192.168.1.3 before finally reaching privacyIDEA.
     :param proxy_settings: The proxy settings from OverrideAuthorizationClient
-    :return:
+    :return: an item from ``path_to_client``
     """
     try:
         proxy_dict = parse_proxy(proxy_settings)
     except AddrFormatError:
         log.error("Error parsing the OverrideAuthorizationClient setting: {"
                   "0!s}! The IP addresses need to be comma separated. Fix "
-                  "this. The client IP will not be mapped!")
+                  "this. The client IP will not be mapped!".format(proxy_settings))
         log.debug("{0!s}".format(traceback.format_exc()))
-        return False
+        return path_to_client[0]
 
-    for proxynet, clientnet in proxy_dict.items():
-        if IPAddress(proxy_ip) in proxynet and IPAddress(rewrite_ip) in \
-                clientnet:
-            return True
+    # We extract the IP from ``path_to_client`` that should be considered the "real" client IP by privacyIDEA.
+    # This client IP is an item of ``path_to_client``. The problem is that parts of ``path_to_client`` may
+    # be user-controlled. In order to prevent users from spoofing their IP address, ``proxy_settings``
+    # specifies what proxies are trusted.
+    # For each proxy path (which is a tuple of IPNetwork objects) in ``proxy_settings``, we determine the item of
+    # ``path_to_client`` that would be considered the client IP according to the proxy path.
+    # Example: If ``path_to_client`` is [10.1.1.1, 10.2.3.4, 192.168.1.1]:
+    # * the proxy path [10.1.1.1/32, 10.2.3.0/24, 192.168.0.0/16] determines 192.168.1.1 as the client address
+    # * while the proxy path [10.1.1.1/32, 192.168.0.0/16] determines 10.1.1.1 as the client address (because the
+    #   proxy at 10.1.1.1 is not allowed to map to 10.2.3.4).
+    # * and the proxy path [10.1.1.1/32, 10.2.3.0/24, 192.168.3.0/24] determines 10.1.1.1 as the client address,
+    #   as the proxy path does not match completely because 10.2.3.4 is not allowed to map to 192.168.1.1.
+    # After having processed all paths in the proxy settings, we return the "deepest" IP from ``path_to_client`` that
+    # is allowed according to any proxy path of the proxy settings.
+    log.debug(u"Determining the mapped IP from {!r} given the proxy settings {!r} ...".format(
+        path_to_client, proxy_settings))
+    max_idx = 0
+    for proxy_path in proxy_dict:
+        log.debug(u"Proxy path: {!r}".format(proxy_path))
+        # If the proxy path contains more subnets than the path to the client, we already know that it cannot match.
+        if len(proxy_path) > len(path_to_client):
+            log.debug(u"... ignored because it is longer than the path to the client")
+            continue
+        # Hence, we can now be sure that len(path_to_client) >= len(proxy_path).
+        current_max_idx = 0
+        # If len(path_to_client) > len(proxy_path), ``zip`` cuts the lists to the same length.
+        # Hence, we ignore any additional proxy hops that the client may send, which is what we want.
+        for idx, (proxy_path_ip, client_path_ip) in enumerate(zip(proxy_path, path_to_client)):
+            # We check if the network in the proxy path contains the IP from path_to_client.
+            if client_path_ip not in proxy_path_ip:
+                # If not, the current proxy path does not match and we do not have to keep checking it.
+                log.debug(u"... ignored because {!r} is not in subnet {!r}".format(client_path_ip, proxy_path_ip))
+                break
+            else:
+                current_max_idx = idx
+        else:
+            # This branch is only executed if we did *not* break out of the loop. This means that the proxy path
+            # completely matches the path to client, so the mapped client IP is a viable candidate.
+            if current_max_idx >= max_idx:
+                log.debug(u"... setting new candidate for client IP: {!r}".format(path_to_client[current_max_idx]))
+            max_idx = max(max_idx, current_max_idx)
 
-    return False
+    log.debug(u"Determined mapped client IP: {!r}".format(path_to_client[max_idx]))
+    return path_to_client[max_idx]
 
 
 def get_client_ip(request, proxy_settings):
@@ -612,32 +667,44 @@ def get_client_ip(request, proxy_settings):
     Take the request and the proxy_settings and determine the new client IP.
 
     :param request:
-    :param proxy_settings:
-    :return:
+    :param proxy_settings: The proxy settings from OverrideAuthorizationClient
+    :return: IP address as string
     """
-    client_ip = request.remote_addr
-
-    # Set the possible mapped IP to X-Forwarded-For
-    mapped_ip = request.access_route[0] if request.access_route else None
-
-    # We only do the client-param mapping for authentication requests!
-    if not hasattr(request, "blueprint") or \
-                    request.blueprint in ["validate_blueprint", "ttype_blueprint",
-                                          "jwtauth"]:
-        # The "client" parameter should overrule a possible X-Forwarded-For
-        mapped_ip = request.all_data.get("client") or mapped_ip
-
-    if mapped_ip:
-        if proxy_settings and check_proxy(client_ip, mapped_ip,
-                                          proxy_settings):
-            client_ip = mapped_ip
-        elif mapped_ip != client_ip:
-            log.warning("Proxy {client_ip} not allowed to set IP to "
-                        "{mapped_ip}.".format(client_ip=client_ip,
-                                              mapped_ip=mapped_ip))
-
-    return client_ip
-
+    # This is not so easy, because we want to support the X-Forwarded-For protocol header set by proxies,
+    # but also want to prevent rogue clients from spoofing their IP address, while also supporting the
+    # "client" request parameter.
+    # From the X-Forwarded-For header, we determine the path to the actual client, i.e. the list of proxy servers
+    # that the HTTP response will pass through, including the final client IP:
+    # If a client C talks to a proxy P1, which in turn talks to a proxy P2, which talks to privacyIDEA,
+    # X-Forwarded-For will be "C, P1", the HTTP client IP will be P2, and path_to_client
+    # consequently will be [P2, P1, C].
+    # However, if we get such a request, we cannot be sure if the X-Forwarded-For header is correct,
+    # or if it was sent by a rogue client in order to spoof its IP address.
+    # To prevent IP spoofing, privacyIDEA allows to configure a list of proxies that are allowed to override the
+    # authentication client. See ``check_proxy`` for more details.
+    # If we are handling a /validate/ or /auth/ endpoint and a "client" parameter is provided,
+    # it is appended to the path to the client.
+    if proxy_settings:
+        if not request.access_route:
+            # This is the case for tests
+            return None
+        elif request.access_route == [request.remote_addr]:
+            # This is the case if no X-Forwarded-For header is provided
+            path_to_client = [request.remote_addr]
+        else:
+            # This is the case if a X-Forwarded-For header is provided.
+            path_to_client = [request.remote_addr] + list(reversed(request.access_route))
+        # A possible ``client`` parameter is appended to the *end* of the path to client.
+        if (not hasattr(request, "blueprint") or
+            request.blueprint in ["validate_blueprint", "ttype_blueprint",
+                                  "jwtauth"]) \
+                and "client" in request.all_data:
+            path_to_client.append(request.all_data["client"])
+        # We now refer to ``check_proxy`` to extract the mapped IP from ``path_to_client``.
+        return str(check_proxy([IPAddress(ip) for ip in path_to_client], proxy_settings))
+    else:
+        # If no proxy settings are defined, we do not map any IPs anyway.
+        return request.remote_addr
 
 def check_ip_in_policy(client_ip, policy):
     """
@@ -1205,6 +1272,7 @@ def create_tag_dict(logged_in_user=None,
                     registrationcode=None,
                     googleurl_value=None,
                     client_ip=None,
+                    pin=None,
                     escape_html=False):
     """
     This helper function creates a dictionary with tags to be used in sending emails
@@ -1221,6 +1289,7 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param googleurl_value: The URL for the QR code during token enrollemnt
     :param client_ip: The IP of the client
+    :param pin: the PIN of a token
     :param escape_html: Whether the values for the tags should be html escaped
     :return: The tag dictionary
     """
@@ -1245,6 +1314,7 @@ def create_tag_dict(logged_in_user=None,
                 time=time,
                 date=date,
                 client_ip=client_ip,
+                pin=pin,
                 ua_browser=request.user_agent.browser if request else "",
                 ua_string=request.user_agent.string if request else "")
     if escape_html:
@@ -1254,3 +1324,16 @@ def create_tag_dict(logged_in_user=None,
         tags = escaped_tags
 
     return tags
+
+
+def check_serial_valid(serial):
+    """
+    This function checks the given serial number for allowed values.
+    Raises an exception if the format of the serial number is not allowed
+
+    :param serial:
+    :return: True or Exception
+    """
+    if not re.match(ALLOWED_SERIAL, serial):
+        raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
+    return True

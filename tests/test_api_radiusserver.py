@@ -34,7 +34,7 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
         # list servers
@@ -43,7 +43,7 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 1)
             server1 = server_list.get("server1")
@@ -64,14 +64,14 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             server_list = data.get("result").get("value")
             self.assertEqual(len(server_list), 0)
 
     @radiusmock.activate
     def test_02_send_test_email(self):
         set_privacyidea_config("radius.dictfile", DICT_FILE)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
 
         with self.app.test_request_context('/radiusserver/test_request',
                                            method='POST',
@@ -85,7 +85,7 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
     def test_03_radiusserver_user(self):
@@ -122,23 +122,16 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
-        # User is allowed to list the radius servers
+        # Users are not allowed to list the radius servers
         with self.app.test_request_context('/radiusserver/',
                                            method='GET',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
-            server_list = data.get("result").get("value")
-            self.assertEqual(len(server_list), 1)
-            # The user does not get any information about the server!
-            server1 = server_list.get("server1")
-            self.assertEqual(server1.get("port"), "")
-            self.assertEqual(server1.get("server"), "")
-            self.assertEqual(server1.get("dictionary"), "")
-            self.assertEqual(server1.get("description"), "")
+            self.assertEquals(res.status_code, 401)
+            result = res.json.get("result")
+            self.assertIn("do not have the necessary role", result["error"]["message"])
 
         delete_radius("server1")

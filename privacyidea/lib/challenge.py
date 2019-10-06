@@ -30,6 +30,7 @@ import logging
 import six
 from .log import log_with
 from ..models import Challenge
+from privacyidea.lib.error import ParameterError
 log = logging.getLogger(__name__)
 
 
@@ -150,3 +151,21 @@ def _create_challenge_query(serial=None, transaction_id=None):
             sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
 
     return sql_query
+
+
+def extract_answered_challenges(challenges):
+    """
+    Given a list of challenge objects, extract and return a list of *answered* challenge.
+    A challenge is answered if it is not expired yet *and* if its ``otp_valid`` attribute
+    is set to True.
+    :param challenges: a list of challenge objects
+    :return: a list of answered challenge objects
+    """
+    answered_challenges = []
+    for challenge in challenges:
+        # check if we are still in time.
+        if challenge.is_valid():
+            _, status = challenge.get_otp_status()
+            if status is True:
+                answered_challenges.append(challenge)
+    return answered_challenges

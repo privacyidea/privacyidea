@@ -404,7 +404,7 @@ class TokenTestCase(MyTestCase):
 
         r = assign_token(serial, user, pin="1234")
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.owners.first().user_id, "1000")
+        self.assertEqual(tokenobject.token.first_owner.user_id, "1000")
 
         # token already assigned...
         self.assertRaises(TokenAdminError, assign_token, serial,
@@ -413,7 +413,7 @@ class TokenTestCase(MyTestCase):
         # unassign token
         r = unassign_token(serial)
         self.assertTrue(r)
-        self.assertEqual(tokenobject.token.owners.first(), None)
+        self.assertEqual(tokenobject.token.first_owner, None)
 
         remove_token(serial)
         # assign or unassign a token, that does not exist
@@ -621,8 +621,8 @@ class TokenTestCase(MyTestCase):
 
         r = copy_token_user(serial1, serial2)
         assert isinstance(tobject2, TokenClass)
-        self.assertEqual(tobject2.token.owners.first().user_id, "1000")
-        self.assertEqual(tobject2.token.owners.first().resolver, self.resolvername1)
+        self.assertEqual(tobject2.token.first_owner.user_id, "1000")
+        self.assertEqual(tobject2.token.first_owner.resolver, self.resolvername1)
 
         # check if the realms where copied:
         self.assertTrue(tobject2.get_realms() == [self.realm1])
@@ -1481,6 +1481,14 @@ class TokenTestCase(MyTestCase):
         # Check that we did not miss any tokens
         self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
 
+    def test_0057_check_invalid_serial(self):
+        # This is an invalid serial, which will trigger an exception
+        self.assertRaises(Exception, reset_token, "hans wurst")
+
+        self.assertRaises(Exception, init_token,
+                          {"serial": "invalid/chars",
+                           "genkey": 1})
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 
@@ -1650,6 +1658,7 @@ class TokenFailCounterTestCase(MyTestCase):
 
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
+        g.client_ip = None
         options = {"g": g}
 
         check_token_list([token1, token2], pin1, user=user,

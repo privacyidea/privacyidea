@@ -128,7 +128,7 @@ class UserIdResolver(object):
         :param loginName: The login name of the user
         :type loginName: sting
         :return: The ID of the user
-        :rtype: string or int
+        :rtype: str
         """
         return "dummy_user_id"
 

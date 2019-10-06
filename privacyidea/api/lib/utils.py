@@ -27,19 +27,22 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version
+from privacyidea.lib.utils import prepare_result, get_version, to_unicode
 import time
 import logging
 import json
 import jwt
 import threading
 import six
+import re
 from flask import (jsonify,
-                   current_app,
-                   Response)
+                   current_app)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
+                     "RS256", "RS384", "RS512",
+                     "PS256", "PS384", "PS512"]
 
 SESSION_KEY_LENGTH = 32
 
@@ -187,7 +190,7 @@ def send_csv_result(obj, data_key="tokens",
             output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
         output += "\n"
 
-    return Response(output, mimetype=content_type)
+    return current_app.response_class(output, mimetype=content_type)
 
 
 @log_with(log)
@@ -212,7 +215,7 @@ def get_all_params(param, body):
 
     # In case of serialized JSON data in the body, add these to the values.
     try:
-        json_data = json.loads(body)
+        json_data = json.loads(to_unicode(body))
         for k, v in json_data.items():
             return_param[k] = v
     except Exception as exx:
@@ -247,19 +250,46 @@ def verify_auth_token(auth_token, required_role=None):
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
     """
+    r = None
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
-    try:
-        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
-    except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
-    except jwt.ExpiredSignature as err:
-        raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    headers = jwt.get_unverified_header(auth_token)
+    algorithm = headers.get("alg")
+    if algorithm in TRUSTED_JWT_ALGOS:
+        # The trusted JWTs are RSA, PSS or eliptic curve signed
+        trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
+        for trusted_jwt in trusted_jwts:
+            try:
+                if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
+                    j = jwt.decode(auth_token,
+                                   trusted_jwt.get("public_key"),
+                                   algorithms=TRUSTED_JWT_ALGOS)
+                    if dict((k, j.get(k)) for k in ("role", "user", "resolver", "realm")) == \
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "user", "resolver", "realm")):
+                        r = j
+                        break
+                else:
+                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+            except jwt.DecodeError as err:
+                log.info(u"A given JWT definition does not match.")
+            except jwt.ExpiredSignature as err:
+                # We have the correct token. It expired, so we raise an error
+                raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    if not r:
+        try:
+            r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
+        except jwt.DecodeError as err:
+            raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+        except jwt.ExpiredSignature as err:
+            raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
@@ -268,3 +298,23 @@ def verify_auth_token(auth_token, required_role=None):
                         "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
+
+
+def check_policy_name(name):
+    """
+    This function checks, if the given name is a valid policy name.
+
+    :param name: The name of the policy
+    :return: Raises a ParameterError in case of an invalid name
+    """
+    disallowed_patterns = [("^check$", re.IGNORECASE),
+                           ("^pi-update-policy-", re.IGNORECASE)]
+    for disallowed_pattern in disallowed_patterns:
+        if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
+            raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
+
+    if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
+        raise ParameterError(_("The name of the policy may only contain "
+                               "the characters a-zA-Z0-9_.- "))
+
+

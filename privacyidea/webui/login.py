@@ -62,11 +62,12 @@ def single_page_application():
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
+    theme = theme.strip('/')
     # Get further customizations
     customization = current_app.config.get("PI_CUSTOMIZATION",
                                            "/static/customize/")
     customization = customization.strip('/')
-    # TODO: we should add the CSS into PI_CUSTOMZATION/css
+    custom_css = customization + "/css/custom.css" if current_app.config.get("PI_CUSTOM_CSS") else ""
     # Enrollment-Wizard:
     #    PI_CUSTOMIZATION/views/includes/token.enroll.pre.top.html
     #    PI_CUSTOMIZATION/views/includes/token.enroll.pre.bottom.html
@@ -158,6 +159,7 @@ def single_page_application():
                            hsm_ready=hsm_ready,
                            has_job_queue=str(has_job_queue()),
                            customization=customization,
+                           custom_css=custom_css,
                            customization_menu_file=customization_menu_file,
                            customization_baseline_file=customization_baseline_file,
                            realms=realms,

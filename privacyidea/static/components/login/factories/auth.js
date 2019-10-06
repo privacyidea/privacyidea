@@ -19,7 +19,7 @@
  *
  */
 angular.module("privacyideaAuth", [])
-    .factory("AuthFactory", function (inform, $state) {
+    .factory("AuthFactory", function (inform, gettextCatalog, $state) {
         /*
         Each service - just like this service factory - is a singleton.
         Here we just store the username of the authenticated user and his
@@ -38,14 +38,19 @@ angular.module("privacyideaAuth", [])
             },
             authError: function(error) {
                 var authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
-                inform.add(error.result.error.message, {type: "danger", ttl: 10000});
-                if (authErrorCodes.indexOf(error.result.error.code) >= 0) {
-                    if ($state.current.controller === "registerController" ) {
-                        $state.go('register');
-                    } else if ($state.current.controller === "recoveryController") {
-                        $state.go('recovery');
-                    } else {
-                        $state.go('login');
+                if (typeof (error) === "string") {
+                    inform.add(gettextCatalog.getString("Failed to get a valid JSON response from the privacyIDEA server."),
+                        {type: "danger", ttl: 10000});
+                } else {
+                    inform.add(error.result.error.message, {type: "danger", ttl: 10000});
+                    if (authErrorCodes.indexOf(error.result.error.code) >= 0) {
+                        if ($state.current.controller === "registerController" ) {
+                            $state.go('register');
+                        } else if ($state.current.controller === "recoveryController") {
+                            $state.go('recovery');
+                        } else {
+                            $state.go('login');
+                        }
                     }
                 }
             },

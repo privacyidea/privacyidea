@@ -1,3 +1,75 @@
+Version 3.1, 2019-09-04
+
+  Features:
+  * Allow user attributes in policy conditions (#1645)
+  * Assign tokens and set old PIN during migration (#1619)
+  * Admins can only see tokens within the realm they are allowed to manage (#1713)
+    **Note**: During update a policy "pi-update-policy-b9131d0686eb" is added, which
+    gives admins the previous read rights on tokens.
+  * Add adminread policies for policies, events, resolvers, system, machineresolvers,
+    smtpserver, radiusserver, privacyidea server, periodic tasks, smsgateways. (#1495)
+    **Note**: During update a policy "pi-update-policy-3d7f8b29cbb1" is added, which
+    gives read rights to all admins to provide backward compatibility
+
+  Enhancements:
+  * Authentication and Challenge Response:
+    * RADIUS token supports a single AccessChallenge with the remote RADIUS server (#1790)
+    * Improving Push token performance by reusing still valid access token (#1795)
+    * Improving TiQR token: It returns the remaining attemps after a wrong PIN is given (#1777)
+    * Improving TiQR token: Make TiQR info URL configurable (#1782)
+    * Enhance validate check logic in regards to serials and user names (#1768)
+    * User may now have several TiQR tokens at the same time (#1739)
+    * Do not increase fail counter when *checking* for an answered challenge (#1697)
+    * Allow additional token specific checks when answering challenge response (#1695)
+    * Endpoint GET /token/challenges also takes transaction_id (#1689)
+    * Push token can delay the response of /validate/check, so that there is no need 
+      to query the server to check if the push notification has been answered (#1583)
+  * User experience:
+    * Improve user experience when enrolling Yubikeys via ykpersonalize - Automatically 
+      removing whitespaces (#1735)
+    * Allow user to change the token description (#1717)
+    * Customize Web UI page title (#1624, #1243)
+    * *search_on_enter* also applies to audit log (#1493)
+    * Allow a welcome message in the Web UI if the user has no token (#1074)
+    * Do not display token configuration hints in the UI to normal users (#1789)
+  * Management:
+    * Event handlers allow rollout_state as condition (#1801)
+    * Add script to export OTP counters (#1728)
+    * Allow many additional tags in email notifications: serial, user, givenname,
+      surname, username, userrealm, tokentype, recipient_givenname, recipient_surname,
+      time, date (#1703)
+    * Improve diagnostics script by adding SQLAlchemy URL (#1667)
+    * Add resolver conditions to several policy checks (#1646)
+    * /auth entries in the audit log now also fill in resolver and serial (#1593)
+    * `pi-manage backup` also backs up the FreeRADIUS configuration (#1575)
+    * Allow event handlers on /auth endpoint (#1567)
+    * Allow to force a PIN on tokens in the privacyIDEA Authenticator App (#1295)
+    * New policy *max_active_tokens_per_user* (#1241)
+    * Add image url to the otpauth QR code, allow images in e.g. FreeOTP (#1228)
+    * Add MAC to PSKC token export (#1663)
+  * Performance:
+    * Make the serverpool in LDAP resolver persistant improving redundancy performance (#1396)
+
+  Fixes:
+  * Improve the stability of the schema-update-script (#1760)
+  * Rearrange update order in migration scripts (#1733)
+  * Adapt privacyidea-token-janitor to run with the TokenOwner table (#1709)
+  * Reordering decorators and policy checks to avoid unnecessary error messages (#1751)
+  * Fix user enrollment for tokens that require certain read rights for RADIUS and 
+    certificates by adding additional endpoint /system/names/... (#1749, #1748)
+  * Use same transaction ID for all user tokens even with a  TiQR token (#1723)
+  * Improve challenge response to also check the matching of the transaction ID
+    right at the beginning (#1699)
+  * Add event API requests to Audit log (#1600)
+  * Fix configuring pre-eventhandler with empty condition makes authentication fail (#1658) 
+  * Improve UI by changing the cursor on all clickable elements (#1725)
+  * Web UI: Focus the filter entry field in tables, when the filter is activated (#1661)
+  * Fix some broken links in UI (#1610)
+  * Fix double listing in policy list (#1132)
+  * Remove additional empty line in audit log in case of an error (#1707)
+  * Fix enrollment of certificate tokens under Python 3 (#1799)
+
+
 Version 3.0.2, 2019-06-17
 
   Fixes:

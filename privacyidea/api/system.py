@@ -52,6 +52,8 @@ from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
+from ..lib.radiusserver import get_radiusservers
+from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
@@ -351,5 +353,32 @@ def test(tokentype=None):
     tokenc = get_token_class(tokentype)
     res, description = tokenc.test_config(request.all_data)
     g.audit_object.log({"success": 1,
-                        "tokentype": tokentype})
+                        "token_type": tokentype})
     return send_result(res, details={"message": description})
+
+
+@system_blueprint.route('/names/radius', methods=['GET'])
+@prepolicy(check_base_action, request, action="enrollRADIUS")
+def list_radius_servers():
+    """
+    Return the list of identifiers of all defined RADIUS servers.
+    This endpoint requires the enrollRADIUS right.
+    """
+    server_list = get_radiusservers()
+    res = [server.config.identifier for server in server_list]
+    g.audit_object.log({'success': True})
+    return send_result(res)
+
+
+@system_blueprint.route('/names/caconnector', methods=['GET'])
+@prepolicy(check_base_action, request, action="enrollCERTIFICATE")
+def list_ca_connectors():
+    """
+    Return a list of defined CA connectors. Each item of the list is
+    a dictionary with the CA connector information, including the
+    name and defined templates, but excluding the CA connector data.
+    This endpoint requires the enrollCERTIFICATE right.
+    """
+    ca_list = get_caconnector_list(return_config=False)
+    g.audit_object.log({"success": True})
+    return send_result(ca_list)

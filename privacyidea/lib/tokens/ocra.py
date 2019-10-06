@@ -37,7 +37,6 @@ from hashlib import sha1, sha256, sha512
 import binascii
 import struct
 
-
 SHA_FUNC = {"SHA1": sha1,
             "SHA256": sha256,
             "SHA512": sha512}
@@ -184,7 +183,8 @@ class OCRASuite(object):
         """
         ret = None
         if self.challenge_type == "QH":
-            ret = geturandom(length=self.challenge_length, hex=True)
+            ret = geturandom(length=int(round(self.challenge_length/2)), hex=True)
+            ret = ret[:self.challenge_length]
         elif self.challenge_type == "QA":
             ret = get_alphanum_str(self.challenge_length)
         elif self.challenge_type == "QN":

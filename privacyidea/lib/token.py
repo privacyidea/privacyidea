@@ -75,7 +75,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode
+from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
@@ -974,6 +974,7 @@ def init_token(param, user=None, tokenrealms=None,
 
     tokentype = param.get("type") or "hotp"
     serial = param.get("serial") or gen_serial(tokentype, param.get("prefix"))
+    check_serial_valid(serial)
     realms = []
 
     # unsupported tokentype

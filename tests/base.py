@@ -22,6 +22,7 @@ class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}
     audit_object = None
+    client_ip = None
 
 
 class FakeAudit(Audit):
@@ -155,7 +156,7 @@ class MyTestCase(unittest.TestCase):
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             self.at = result.get("value").get("token")
 
@@ -167,7 +168,7 @@ class MyTestCase(unittest.TestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             self.at_user = result.get("value").get("token")
@@ -175,6 +176,22 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+    def find_most_recent_audit_entry(self, **filter_data):
+        """
+        Given audit log entry filters, return the most recent entry matching the criteria,
+        or raise an IndexError if there is no such entry.
+        This is useful for testing the audit log behavior.
+        """
+        sorted_filter = filter_data.copy()
+        sorted_filter["sortorder"] = "desc"
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data=sorted_filter,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            # return the last entry
+            return res.json["result"]["value"]["auditdata"][0]
 
 
 class OverrideConfigTestCase(MyTestCase):

@@ -42,7 +42,7 @@ You can use the tags *h* (hours), *d* (day) and *y* (year).
 Sepcifying *180d* will find tokens, that were not used for authentication for
 the last 180 days.
 
-The command
+The command::
 
     privacyidea-get-unused-tokens disable 180d
 

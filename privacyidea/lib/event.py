@@ -22,9 +22,9 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+from privacyidea.lib.config import get_config_object
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.models import EventHandler, EventHandlerOption, db
-from privacyidea.lib.error import ParameterError
 from privacyidea.lib.audit import getAudit
 import functools
 import logging
@@ -159,17 +159,23 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.federationhandler import \
         FederationEventHandler
     from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+    from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
+    from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
-    if handlername == "Token":
+    elif handlername == "Token":
         h_obj = TokenEventHandler()
-    if handlername == "Script":
+    elif handlername == "Script":
         h_obj = ScriptEventHandler()
-    if handlername == "Federation":
+    elif handlername == "Federation":
         h_obj = FederationEventHandler()
-    if handlername == "Counter":
+    elif handlername == "Counter":
         h_obj = CounterEventHandler()
+    elif handlername == "RequestMangler":
+        h_obj = RequestManglerEventHandler()
+    elif handlername == "ResponseMangler":
+        h_obj = ResponseManglerEventHandler()
     return h_obj
 
 
@@ -244,17 +250,19 @@ def delete_event(event_id):
 class EventConfiguration(object):
     """
     This class is supposed to contain the event handling configuration during
-    the Request. It can be read initially (in the init method) an can be
-    accessed later during the request.
+    the Request.
+    The currently defined events are fetched from the request-local config object.
     """
 
     def __init__(self):
-        self.eventlist = []
-        self._read_events()
+        pass
 
     @property
     def events(self):
-        return self.eventlist
+        """
+        Shortcut for retrieving the currently defined event handlers from the request-local config object.
+        """
+        return get_config_object().events
 
     def get_handled_events(self, eventname, position="post"):
         """
@@ -265,7 +273,7 @@ class EventConfiguration(object):
         :param position: the position of the event definition
         :return:
         """
-        eventlist = [e for e in self.eventlist if (
+        eventlist = [e for e in self.events if (
             eventname in e.get("event") and e.get("active") and e.get("position") == position)]
         return eventlist
 
@@ -275,18 +283,12 @@ class EventConfiguration(object):
         have one element.
 
         :param eventid: id of the event
-        :type eventid: int
+        :type eventid: int or None
         :return: list with one element
         """
         if eventid is not None:
             eventid = int(eventid)
-            eventlist = [e for e in self.eventlist if e.get("id") == eventid]
+            eventlist = [e for e in self.events if e.get("id") == eventid]
             return eventlist
         else:
-            return self.eventlist
-
-    def _read_events(self):
-        q = EventHandler.query.order_by(EventHandler.ordering)
-        for e in q:
-            self.eventlist.append(e.get())
-
+            return self.events

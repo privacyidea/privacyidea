@@ -6,6 +6,7 @@ CLIENT_FILE = "tests/testdata/google-services.json"
 from .base import MyTestCase
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import (User)
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION, DEFAULT_CHALLENGE_TEXT, strip_key
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token
@@ -13,7 +14,7 @@ from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION, LOGINMODE)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
 from privacyidea.lib.error import ConfigAdminError
@@ -181,7 +182,7 @@ class PushTokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertNotEqual(res.status_code,  200)
-            error = json.loads(res.data.decode("utf8")).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
@@ -206,7 +207,7 @@ class PushTokenTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code,  200)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
             self.assertTrue("pushurl" in detail)
@@ -226,9 +227,9 @@ class PushTokenTestCase(MyTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 404, res)
-            status = json.loads(res.data.decode('utf8')).get("result").get("status")
+            status = res.json.get("result").get("status")
             self.assertFalse(status)
-            error = json.loads(res.data.decode('utf8')).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"),
                              "No token with this serial number in the rollout state 'clientwait'.")
 
@@ -241,9 +242,9 @@ class PushTokenTestCase(MyTestCase):
                                                  "enrollment_credential": "WRonG"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
-            status = json.loads(res.data.decode('utf8')).get("result").get("status")
+            status = res.json.get("result").get("status")
             self.assertFalse(status)
-            error = json.loads(res.data.decode('utf8')).get("result").get("error")
+            error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"),
                              "ERR905: Invalid enrollment credential. You are not authorized to finalize this token.")
 
@@ -256,7 +257,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            detail = res.json.get("detail")
             # still the same serial number
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), "enrolled")
@@ -283,7 +284,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
 
     @responses.activate
-    def test_03_api_authenticate_fail(self):
+    def test_03a_api_authenticate_fail(self):
         # This tests the failed to communicate to the firebase service
         self.setUp_user_realms()
 
@@ -315,14 +316,18 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 400, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"), "ERR401: Failed to submit "
-                                                                                     "message to firebase service.")               
+                                                                                     "message to firebase service.")
+
+            # Our ServiceAccountCredentials mock has been called once, because no access token has been fetched before
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 1)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
 
     @responses.activate
-    def test_03_api_authenticate_client(self):
+    def test_03b_api_authenticate_client(self):
         # Test the /validate/check endpoints without the smartphone endpoint /ttype/push
         self.setUp_user_realms()
 
@@ -353,13 +358,17 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
                 self.assertTrue("transaction_id" in jsonresp.get("detail"))
                 transaction_id = jsonresp.get("detail").get("transaction_id")
                 self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 0)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
 
         # The mobile device has not communicated with the backend, yet.
         # The user is not authenticated!
@@ -371,15 +380,31 @@ class PushTokenTestCase(MyTestCase):
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is false, the user has not answered the challenge, yet
             self.assertFalse(jsonresp.get("result").get("value"))
+
+        # As the challenge has not been answered yet, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
 
         # Now the smartphone communicates with the backend and the challenge in the database table
         # is marked as answered successfully.
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,
                                               transaction_id=transaction_id)
         challengeobject_list[0].set_otp_status(True)
+
+        # As the challenge has been answered, the /validate/polltransaction endpoint returns true
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -389,39 +414,59 @@ class PushTokenTestCase(MyTestCase):
                                                  "state": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is True, since the challenge is marked resolved in the DB
         self.assertTrue(jsonresp.get("result").get("value"))
 
+        # As the challenge does not exist anymore, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+        self.assertEqual(get_challenges(serial=tokenobj.token.serial), [])
+
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         # Do single shot auth with waiting
-        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
-            # alternative: side_effect instead of return_value
-            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+        # Also mock time.time to be 4000 seconds in the future (exceeding the validity of myAccessTokenInfo),
+        # so that we fetch a new auth token
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.time') as mock_time:
+            mock_time.time.return_value = time.time() + 4000
 
-            # add responses, to simulate the communication to firebase
-            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
-                          body="""{}""",
-                          content_type="application/json")
+            with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+                # alternative: side_effect instead of return_value
+                mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_new_bearer_token"))
 
-            # In two seconds we need to run an update on the challenge table.
-            Timer(2, self.mark_challenge_as_accepted).start()
+                # add responses, to simulate the communication to firebase
+                responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                              body="""{}""",
+                              content_type="application/json")
 
-            set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
-            # Send the first authentication request to trigger the challenge
-            with self.app.test_request_context('/validate/check',
-                                               method='POST',
-                                               data={"user": "cornelius",
-                                                     "realm": self.realm1,
-                                                     "pass": "pushpin"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
-                # We successfully authenticated! YEAH!
-                self.assertTrue(jsonresp.get("result").get("value"))
-                self.assertTrue(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
-            delete_policy("push1")
+                # In two seconds we need to run an update on the challenge table.
+                Timer(2, self.mark_challenge_as_accepted).start()
+
+                set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
+                # Send the first authentication request to trigger the challenge
+                with self.app.test_request_context('/validate/check',
+                                                   method='POST',
+                                                   data={"user": "cornelius",
+                                                         "realm": self.realm1,
+                                                         "pass": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res)
+                    jsonresp = res.json
+                    # We successfully authenticated! YEAH!
+                    self.assertTrue(jsonresp.get("result").get("value"))
+                    self.assertTrue(jsonresp.get("result").get("status"))
+                    self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                delete_policy("push1")
+
+            # Our ServiceAccountCredentials mock has been called once because we fetched a new token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 1)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+            self.assertEqual(get_app_local_store()["firebase_token"][FIREBASE_FILE].access_token,
+                             "my_new_bearer_token")
 
         # Authentication fails, if the push notification is not accepted within the configured time
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
@@ -442,7 +487,7 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 # We fail to authenticate! Oh No!
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
@@ -506,13 +551,17 @@ class PushTokenTestCase(MyTestCase):
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
-                jsonresp = json.loads(res.data.decode('utf8'))
+                jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("value"))
                 self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
                 self.assertTrue("transaction_id" in jsonresp.get("detail"))
                 transaction_id = jsonresp.get("detail").get("transaction_id")
                 self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 0)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
 
         # The challenge is sent to the smartphone via the Firebase service, so we do not know
         # the challenge from the /validate/check API.
@@ -631,7 +680,7 @@ class PushTokenTestCase(MyTestCase):
                                                  "state": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            jsonresp = json.loads(res.data.decode('utf8'))
+            jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
 
@@ -642,3 +691,95 @@ class PushTokenTestCase(MyTestCase):
         self.assertNotIn("-", stripped_pubkey)
         self.assertEqual(strip_key(stripped_pubkey), stripped_pubkey)
         self.assertEqual(strip_key("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
+
+    @responses.activate
+    def test_06_api_auth(self):
+        self.setUp_user_realms()
+
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # Set a loginmode policy
+        set_policy("webui", scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        # Set a PUSH_WAIT action which will be ignored by privacyIDEA
+        set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius",
+                                                     "realm": self.realm1,
+                                                     # this will be overwritted by pushtoken_disable_wait
+                                                     PUSH_ACTION.WAIT: "10",
+                                                     "password": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertIn("transaction_id", jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+                self.assertEqual(jsonresp.get("detail").get("message"), DEFAULT_CHALLENGE_TEXT)
+
+        # Get the challenge from the database
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0].challenge
+        # This is what the smartphone answers.
+        # create the signature:
+        sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # We still cannot log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            self.assertFalse(res.json['result']['status'])
+
+        # Answer the challenge
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+
+        # We can now log in
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json['result']['status'])
+
+        delete_policy("push1")
+        delete_policy("webui")

@@ -40,16 +40,41 @@ administrator managed the users token.
   * The SMS Gateway configuration.
 
 
-Options for both actions
-~~~~~~~~~~~~~~~~~~~~~~~~
+savefile
+........
 
-Both actions **sendmail** and **sendsms** take several common options.
+The *savefile* action saves a file to a spool directory.
+Each time the event handler is triggered a new file is saved.
+
+In the ``pi.cfg`` file you can use the setting ``PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY``
+to configure a spool directory, where the notification files will be written.
+The default file location is ``/var/lib/privacyidea/notifications/``.
+The directory needs to be writable for the user *privacyidea*.
+
+**filename**
+
+  * *required* option
+  * The filename of the saved file. It can contain the tag
+    ``{random}`` which will create a 16 characters long
+    alpha numeric string. Thus you could have a filename like
+    ``notification-{random}.csv``.
+
+In addition you can use all tags that can be used in the body
+also in the filename (some of them might not make a lot of sense!).
+
+.. note:: Existing files are overwritten.
+
+Body for all actions
+~~~~~~~~~~~~~~~~~~~~
+
+All actions take the common option *body*:
 
 **body**
 
-  * optional
+  * optional for sendsms and sendemail
+  * required for savefile
 
-Here the administrator can specify the body of the email, that is sent.
+Here the administrator can specify the body of the notification, that is sent or saved.
 The body may contain the following tags
 
   * {admin} name of the logged in user.
@@ -73,6 +98,16 @@ The body may contain the following tags
   * {client_ip} the client IP of the client, which issued the original request.
   * {ua_browser} the user agent of the client, which issued the original request.
   * {ua_string} the complete user agent string (including version number), which issued the original request.
+  * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
+    PIN from the response using the *response mangler*.
+
+
+
+
+Options for sendmail and sendsms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Both actions **sendmail** and **sendsms** take several common options.
 
 **subject**
 

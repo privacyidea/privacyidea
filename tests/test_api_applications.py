@@ -15,8 +15,8 @@ class APIApplicationsResolverTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             value = result.get("value")
             self.assertTrue("ssh" in value)
             self.assertTrue("luks" in value)

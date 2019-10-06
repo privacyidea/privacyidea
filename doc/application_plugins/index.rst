@@ -11,8 +11,10 @@ which enable these
 application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
-to privacyIDEA. This is quite simple using a REST API 
-:ref:`rest_validate`.
+to privacyIDEA. This is quite simple using a REST API
+:ref:`rest_validate`. In order to support more sophisticated token types like
+challenge-response or out-of-band tokens, you should take a look at the
+various :ref:`authentication_modes`.
 
 .. _pam_plugin:
 
@@ -74,8 +76,8 @@ Using pam_yubico
 .. index:: pam_yubico, PAM
 
 If you are using yubikey tokens you might also use ``pam_yubico``.
-You can use Yubikey tokens for two more or less distinct applications. 
-The first is using privacyideas PAM module as described above. 
+You can use Yubikey tokens for two more or less distinct applications.
+The first is using privacyideas PAM module as described above.
 In this case privacyidea handles the policies
 for user access and password validation. This works fine, when you only use
 privacyidea for token validation.
@@ -87,7 +89,7 @@ well.
 
 * You can't set a token PIN in privacyidea, because ``pam_yubico`` tries to
   use the token PIN entered by the user as a system password (which is likely
-  to fail), i.e. the PIN will be stripped by ``pam_yubico`` and will not reach 
+  to fail), i.e. the PIN will be stripped by ``pam_yubico`` and will not reach
   the privacyIDEA system.
 
 * Setting the policy which tokens are valid for which users is done either in

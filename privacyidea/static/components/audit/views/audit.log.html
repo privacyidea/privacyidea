@@ -107,9 +107,11 @@
                 {{ audit.success }}
             </span></td>
                 <td>{{ audit.action_detail }}</td>
-                <td><a ui-sref="token.details({tokenSerial:audit.serial})"
+                <td>
+                    <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
                        ng-click="$rootScope.returnTo=audit;">
-                    {{ audit.serial }}</a></td>
+                    {{ serial }}</a>
+                </td>
                 <td>{{ audit.token_type }}</td>
                 <td>{{ audit.administrator }}</td>
                 <td><a ui-sref="user.details({username:audit.user,

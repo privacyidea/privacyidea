@@ -25,10 +25,17 @@ tests/testdata/ca/*.txt
 tests/testdata/ca/*.req
 !tests/testdata/ca/DE_Hessen_privacyidea_requester.localdomain.req
 tests/testdata/ca/*.der
+tests/testdata/ca2
+tests/testdata/gpg/.gpg-v*-migrated
+tests/testdata/gpg/private-keys-v*.d
 node_modules
 po/*.mo
 htmlcov/
 privacyidea/static/customize/views/
+privacyidea/static/customize/css/
 .eggs/
 privacyIDEA.egg-info/
 __pycache__/
+/enckey
+/public.pem
+/private.pem

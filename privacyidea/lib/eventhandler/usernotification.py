@@ -48,9 +48,10 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib.utils import create_tag_dict
+from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 import logging
-import datetime
+import os
 
 log = logging.getLogger(__name__)
 
@@ -182,7 +183,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                                       "description": _("Send notification to "
                                                        "this user."),
                                       "value": [NOTIFY_TYPE.TOKENOWNER]}
-                               }
+                               },
+                   "savefile": {"body":
+                                    {"type": "text",
+                                     "required": True,
+                                     "description": _("This is the template content of "
+                                                      "the new file. Can contain the tags "
+                                                      "as specified in the documentation.")},
+                                "filename":
+                                    {"type": "str",
+                                     "required": True,
+                                     "description": _("The filename of the notification. Existing files "
+                                                      "are overwritten. The name can contain tags as specified "
+                                                      "in the documentation and can also contain the tag {random}.")}
+                   }
                    }
         return actions
 
@@ -275,7 +289,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             log.warning("Was not able to determine the recipient for the user "
                         "notification: {0!s}".format(handler_def))
 
-        if recipient:
+        if recipient or action.lower() == "savefile":
+            # In case of "savefile" we do not need a recipient
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
             subject = handler_options.get("subject") or \
@@ -284,6 +299,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                      content.get("detail", {}).get("serial") or \
                      g.audit_object.audit_data.get("serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
+            pin = content.get("detail", {}).get("pin")
             googleurl_value = content.get("detail", {}).get("googleurl",
                                                             {}).get("value")
             googleurl_img = content.get("detail", {}).get("googleurl",
@@ -300,6 +316,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
                                    client_ip=g.client_ip,
+                                   pin=pin,
                                    googleurl_value=googleurl_value,
                                    recipient=recipient,
                                    tokenowner=tokenowner,
@@ -309,8 +326,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
 
-            body = body.format(googleurl_img=googleurl_img,
-                               **tags)
+            body = body.format(googleurl_img=googleurl_img, **tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
@@ -334,6 +350,22 @@ class UserNotificationEventHandler(BaseEventHandler):
                 else:
                     log.warning("Failed to send a notification email to user "
                                 "{0}".format(recipient))
+
+            elif action.lower() == "savefile":
+                spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",
+                                                "/var/lib/privacyidea/notifications/")
+                filename = handler_options.get("filename")
+                random = get_alphanum_str(16)
+                filename = filename.format(random=random, **tags).lstrip(os.path.sep)
+                outfile = os.path.normpath(os.path.join(spooldir, filename))
+                if not outfile.startswith(spooldir):
+                    log.error(u'Cannot write outside of spooldir {0!s}!'.format(spooldir))
+                else:
+                    try:
+                        with open(outfile, "w") as f:
+                            f.write(body)
+                    except Exception as err:
+                        log.error(u"Failed to write notification file: {0!s}".format(err))
 
             elif action.lower() == "sendsms":
                 smsconfig = handler_options.get("smsconfig")

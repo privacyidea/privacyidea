@@ -5,7 +5,7 @@
 
 <h4 translate>Token data</h4>
 
-<div ng-hide="form['yubico.id']" translate class="bg-danger">
+<div ng-hide="form['yubico.id'] || loggedInUser.role==='user'" translate class="bg-danger">
     For Yubico tokens to work properly you need to set the
     <a ui-sref="config.tokens({tokentype:'yubico'})">Yubico Token Config</a>!
 </div>

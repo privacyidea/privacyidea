@@ -158,27 +158,44 @@ case of RADIUS the authenticating client
 for the privacyIDEA system will always be the RADIUS server, which issues
 the authentication request. But you can allow the RADIUS server IP to 
 send another client information (in this case the RADIUS client) so that
-the policy is evaluated for the RADIUS client. Such a proxy or RADIUS server
-may add the API parameter *client* with a new IP address.
+the policy is evaluated for the RADIUS client. A RADIUS server
+may add the API parameter *client* with a new IP address. A HTTP reverse
+proxy may append the respective client IP to the ``X-Forwarded-For`` HTTP
+header.
 
-This field takes a comma separated list of IP Networks mapping to other IP
-Networks.
+This field takes a comma separated list of sequences of IP Networks
+mapping to other IP networks.
 
 **Examples**
 
-   10.1.2.0/24 > 192.168.0.0/16*
+::
+
+   10.1.2.0/24 > 192.168.0.0/16
 
 Proxies in the sub net 10.1.2.0/24 may mask as client IPs 192.168.0.0/16. In
 this case the policies for the corresponding client in 192.168.x.x apply.
+
+::
 
    172.16.0.1
 
 The proxy 172.16.0.1 may mask as any arbitrary client IP.
 
+::
+
    10.0.0.18 > 10.0.0.0/8
 
 The proxy 10.0.0.18 may mask as any client in the subnet 10.x.x.x.
 
+Note that the proxy definitions may be nested in order to support multiple proxy hops. As an example::
+
+    10.0.0.18 > 10.1.2.0/24 > 192.168.0.0/16
+
+means that the proxy 10.0.0.18 may map to another proxy into the subnet 10.1.2.x, and a proxy in this
+subnet may mask as any client in the subnet 192.168.x.x.
+
+With the same configuration, a proxy 10.0.0.18 may map to an application plugin in the subnet 10.1.2.x,
+which may in turn use a ``client`` parameter to mask as any client in the subnet 192.168.x.x.
 
 Token default settings
 ......................

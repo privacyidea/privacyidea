@@ -36,4 +36,5 @@ Now you can take a look at the several REST endpoints.
    api/ttype
    api/smtpserver
    api/smsgateway
+   api/radiusserver
    api/subscriptions

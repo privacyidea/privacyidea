@@ -294,7 +294,7 @@ class LibPolicyTestCase(MyTestCase):
                          u"against userstore due to 'pol1'")
 
         # Now set a PASSTHRU policy to a RADIUS config (new style)
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
@@ -659,7 +659,7 @@ class LibPolicyTestCase(MyTestCase):
                          u"against userstore due to 'pol1'")
 
         # Now add a PASSTHRU policy to a RADIUS config
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol2",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))
@@ -800,6 +800,7 @@ class LibPolicyTestCase(MyTestCase):
 
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
+        g.client_ip = None
         options = {"g": g}
 
         r = reset_all_user_tokens(self.fake_check_token_list,
@@ -841,7 +842,7 @@ class LibPolicyTestCase(MyTestCase):
                          "The user has no tokens assigned")
 
         # Now add a PASSTHRU policy to a RADIUS config
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
                    action="{0!s}=radiusconfig1".format(ACTION.PASSTHRU))

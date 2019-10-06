@@ -25,11 +25,14 @@ This provider is used for the push token and can be used for SMS tokens.
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
 from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib import _
 import logging
 from oauth2client.service_account import ServiceAccountCredentials
 import requests
 import json
+import time
+import datetime
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
 SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
@@ -40,6 +43,46 @@ SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
           'https://www.googleapis.com/auth/userinfo.email']
 
 log = logging.getLogger(__name__)
+
+
+class AccessToken(object):
+
+    def __init__(self, access_token, validity):
+        self.access_token = access_token
+        self.expires_at = time.time() + validity - 10
+
+
+def get_firebase_access_token(config_file_name):
+    """
+    This returns the access token for a given JSON config file name
+
+    :param config_file_name:
+    :return:
+    """
+    fbt = "firebase_token"
+    now = time.time()
+    app_store = get_app_local_store()
+
+    if fbt not in app_store or not isinstance(app_store[fbt], dict):
+        # initialize the firebase_token in the app_store as dict
+        app_store[fbt] = {}
+
+    if not isinstance(app_store[fbt].get(config_file_name), AccessToken) or \
+            now > app_store[fbt].get(config_file_name).expires_at:
+        # If the type of the config is not class AccessToken or
+        # if the token has expired
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(config_file_name, SCOPES)
+        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
+        access_token_info = credentials.get_access_token()
+        # Now we set the expiration date for the new access_token with a margin of 10 seconds
+        At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
+        # We do not use a lock here: The worst that could happen is that two threads
+        # fetch new auth tokens concurrently. In this case, one of them wins and is written to the dictionary.
+        app_store[fbt][config_file_name] = At
+        readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
+        log.debug(u"Setting the expiration for {!r} of the new access_token to {!s}.".format(config_file_name, readable_time))
+
+    return app_store[fbt][config_file_name].access_token
 
 
 class FIREBASE_CONFIG:
@@ -56,6 +99,11 @@ class FIREBASE_CONFIG:
 
 class FirebaseProvider(ISMSProvider):
 
+    def __init__(self, db_smsprovider_object=None, smsgateway=None):
+        ISMSProvider.__init__(self, db_smsprovider_object, smsgateway)
+        self.access_token_info = None
+        self.access_token_expires_at = 0
+
     def submit_message(self, firebase_token, data):
         """
         send a message to a registered Firebase client
@@ -69,16 +117,9 @@ class FirebaseProvider(ISMSProvider):
         """
         res = False
 
-        credentials = ServiceAccountCredentials.\
-                from_json_keyfile_name(self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG),
-                                       SCOPES)
+        bearer_token = get_firebase_access_token(self.smsgateway.option_dict.get(
+            FIREBASE_CONFIG.JSON_CONFIG))
 
-        access_token_info = credentials.get_access_token()
-
-        # Should we do something with expires in?
-        # expires_in = access_token_info.expires_in
-
-        bearer_token = access_token_info.access_token
         headers = {
             'Authorization': u'Bearer {0!s}'.format(bearer_token),
             'Content-Type': 'application/json; UTF-8',

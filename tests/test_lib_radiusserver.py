@@ -57,7 +57,7 @@ class RADIUSServerTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_04_RADIUS_request(self):
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -65,13 +65,13 @@ class RADIUSServerTestCase(MyTestCase):
         r = RADIUSServer.request(radius.config, "user", "password")
         self.assertEqual(r, True)
 
-        radiusmock.setdata(success=False)
+        radiusmock.setdata(response=radiusmock.AccessReject)
         r = RADIUSServer.request(radius.config, "user", "password")
         self.assertEqual(r, False)
 
     @radiusmock.activate
     def test_05_RADIUS_request(self):
-        radiusmock.setdata(success=True, timeout=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept, timeout=True)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -82,13 +82,13 @@ class RADIUSServerTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_06_test_radius(self):
-        radiusmock.setdata(success=False)
+        radiusmock.setdata(response=radiusmock.AccessReject)
         r = test_radius(identifier="myserver", server="1.2.3.4",
                         user="user", password="password",
                         secret="testing123", dictionary=DICT_FILE)
         self.assertFalse(r)
 
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         r = test_radius(identifier="myserver", server="1.2.3.4",
                         user="user", password="password",
                         secret="testing123", dictionary=DICT_FILE)
@@ -103,7 +103,7 @@ class RADIUSServerTestCase(MyTestCase):
 
     @radiusmock.activate
     def test_07_non_ascii(self):
-        radiusmock.setdata(success=True)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)

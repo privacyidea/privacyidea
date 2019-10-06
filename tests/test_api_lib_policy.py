@@ -27,7 +27,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist)
+                                           check_admin_tokenlist, pushtoken_disable_wait)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -48,7 +48,7 @@ from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
-from flask import Response, Request, g, current_app, jsonify
+from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.error import PolicyError, RegistrationError
 from privacyidea.lib.machineresolver import save_resolver
@@ -81,6 +81,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_check_token_action(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -145,6 +146,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "disable", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         r = check_base_action(req, "disable")
         self.assertTrue(r)
@@ -188,6 +190,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_02_check_token_init(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -218,15 +221,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # A normal user can "enroll", since no user policies are defined.
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         r = check_token_init(req)
         self.assertTrue(r)
+
+        # An exception is raised for an invalid role
+        g.logged_in_user = {"username": "user1",
+                            "role": "invalid"}
+        with self.assertRaises(PolicyError):
+            check_token_init(req)
+
         # finally delete policy
         delete_policy("pol1")
 
 
     def test_03_check_token_upload(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -262,6 +274,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04a_check_max_active_token_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -310,6 +323,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -386,6 +400,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_05_check_max_token_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -436,6 +451,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -484,6 +500,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_06_set_tokenlabel(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -504,21 +521,43 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {
-                        "user": "cornelius",
+        req.all_data = {"user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
 
         # Check, if the tokenlabel was added
-        self.assertEqual(req.all_data.get("tokenlabel"), "<u>@<r>")
+        self.assertEqual(req.all_data.get(ACTION.TOKENLABEL), "<u>@<r>")
         # Check, if the tokenissuer was added
-        self.assertEqual(req.all_data.get("tokenissuer"), "myPI")
+        self.assertEqual(req.all_data.get(ACTION.TOKENISSUER), "myPI")
+        # Check, if force_app_pin wasn't added (since there is no policy)
+        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
+
+        # reset the request data and start again with force_app_pin policy
+        set_policy(name="pol3",
+                   scope=SCOPE.ENROLL,
+                   action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
+        req.all_data = {"user": "cornelius",
+                        "realm": "home"}
+        init_tokenlabel(req)
+        # Check, if force_app_pin was added and is True
+        self.assertTrue(req.all_data.get('force_app_pin'))
+
+        # Check that the force_app_pin policy isn't set for totp token
+        req.all_data = {"user": "cornelius",
+                        "realm": "home",
+                        "type": "TOTP"}
+        init_tokenlabel(req)
+        # Check, that force_app_pin wasn't added
+        self.assertNotIn(ACTION.FORCE_APP_PIN, req.all_data, req.all_data)
+
         # finally delete policy
         delete_policy("pol1")
         delete_policy("pol2")
+        delete_policy("pol3")
 
     def test_07_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -553,6 +592,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -582,6 +622,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08a_enroll_pin_admin(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -611,6 +652,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08b_enroll_pin_user(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -640,6 +682,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_09_pin_policies(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -708,6 +751,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_09_pin_policies_admin(self):
         g.logged_in_user = {"username": "super",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -774,6 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01b_token_specific_pin_policy(self):
         g.logged_in_user = {"username": "super",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -830,6 +875,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -905,6 +951,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_12_mangle(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -949,6 +996,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_13_remote_user(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -991,6 +1039,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_14_required_email(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1164,6 +1213,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_18_auditlog_age(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1192,6 +1242,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_papertoken_count(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1217,6 +1268,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_19_tantoken_count(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1242,6 +1294,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20_allowed_audit_realm(self):
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  headers={})
@@ -1293,6 +1346,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # we set the policy scope=enrollment, action=no_verifcy
         from privacyidea.lib.tokens.u2ftoken import U2FACTION
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1328,6 +1382,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "admin1",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SMS1234"},
@@ -1350,6 +1405,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
 
         g.logged_in_user = {"username": "hans",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SMS1234"},
@@ -1371,6 +1427,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_22_push_firebase_config(self):
         from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
         g.logged_in_user = {"username": "user1",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -1523,6 +1580,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("push1")
 
+    def test_24b_push_disable_wait_policy(self):
+        # We send a fake push_wait that is not in the policies
+        class RequestMock(object):
+            pass
+        req = RequestMock()
+        req.all_data = {"push_wait": "120"}
+        pushtoken_disable_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        # But even with a policy, the function still sets PUSH_ACTION.WAIT to False
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        req = RequestMock()
+        req.all_data = {"push_wait": "120"}
+        pushtoken_disable_wait(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        delete_policy("push1")
+
     def test_25_admin_token_list(self):
         # The tokenlist policy can result in a None filter, an empty [] filter or
         # a filter with realms ["realm1", "realm2"].
@@ -1631,7 +1706,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # The token type SPASS is not allowed on this client, so an exception
         #  is raised.
         r = check_tokentype(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
     def test_01_check_undetermined_tokentype(self):
@@ -1698,7 +1773,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action="tokeninfo=testkey/test.*/", client="10.0.0.0/8")
         g.policy_object = PolicyClass()
         r = check_tokeninfo(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
         # Set a policy that does NOT match
@@ -1723,7 +1798,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action="tokeninfo=testkey/missingslash", client="10.0.0.0/8")
         g.policy_object = PolicyClass()
         r = check_tokeninfo(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
         delete_policy("pol1")
@@ -1772,7 +1847,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # The token type SPASS is not allowed on this client, so an exception
         # is raised.
         r = check_serial(req, resp)
-        jresult = json.loads(r.data)
+        jresult = r.json
         self.assertTrue(jresult.get("result").get("value"))
 
     def test_03_no_detail_on_success(self):
@@ -1802,7 +1877,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = no_detail_on_success(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("detail" not in jresult, jresult)
         delete_policy("pol2")
 
@@ -1833,7 +1908,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = no_detail_on_fail(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("detail" not in jresult, jresult)
 
         # A successful call has a detail in the response!
@@ -1848,7 +1923,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = no_detail_on_fail(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("detail" in jresult, jresult)
 
         delete_policy("pol2")
@@ -1879,7 +1954,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("user" not in jresult.get("detail"), jresult)
 
         # A successful get a user added
@@ -1890,7 +1965,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("user" in jresult.get("detail"), jresult)
         self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
         self.assertFalse("user-realm" in jresult.get("detail"), jresult)
@@ -1902,7 +1977,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = add_user_detail_to_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue("user-resolver" in jresult.get("detail"), jresult)
         self.assertEqual(jresult.get("detail").get("user-resolver"), self.resolvername1)
         self.assertTrue("user-realm" in jresult.get("detail"), jresult)
@@ -1955,7 +2030,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue(jresult.get("result").get("value"), jresult)
         self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN1")
         self.assertEqual(jresult.get("detail").get("otplen"), 6)
@@ -1983,7 +2058,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # unassign all tokens from the user autoassignuser
         try:
             unassign_token(None, user=user_obj)
-        except Exception:
+        except Exception as e:
             print("no need to unassign token")
 
         # The request with an OTP value and a PIN of a user, who has not
@@ -2016,7 +2091,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         new_response = autoassign(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value"), True)
         self.assertEqual(jresult.get("detail").get("serial"), "UASSIGN2")
         self.assertEqual(jresult.get("detail").get("otplen"), 6)
@@ -2073,7 +2148,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = offline_info(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertTrue(jresult.get("result").get("value"), jresult)
         self.assertEqual(jresult.get("detail").get("serial"), serial)
 
@@ -2089,12 +2164,10 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("offline287082",
-                                             response.get('1')))
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("offline516516",
-                                             response.get('99')))
+        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline287082",
+                                                          response.get('1')))
+        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline516516",
+                                                          response.get('99')))
         res = tokenobject.check_otp("516516") # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
@@ -2139,7 +2212,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # signing of API responses is the default
         new_response = sign_response(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("nonce"), "12345678")
         # After switching to the PSS signature scheme, each signature will be
         # different. So we have to verify the signature through the sign object
@@ -2187,7 +2260,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), False)
 
@@ -2197,7 +2270,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    action=ACTION.TOKENWIZARD)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), True)
 
@@ -2206,7 +2279,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    active=False)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), False)
 
@@ -2220,13 +2293,14 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_dialog", scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN)
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
-        jresult = json.loads(new_response.data)
+        jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             ACTION.DIALOG_NO_TOKEN), True)
         delete_policy("pol_dialog")
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
+                            "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'type': "totp",
@@ -2259,6 +2333,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_17_pin_change(self):
         g.logged_in_user = {"username": "admin",
+                            "realm": "",
                             "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'type': "totp",
@@ -2332,6 +2407,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Now the user changes the PIN. Afterwards the next_pin_change is empty
         g.logged_in_user = {"username": "hans",
+                            "realm": "",
                             "role": "user"}
 
         save_pin_change(req, resp, serial="changePIN2")

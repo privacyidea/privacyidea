@@ -26,7 +26,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))
@@ -39,6 +39,18 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
             value = res.json['result']['value']
+            self.assertEqual(len(value), 1)
+            pol1 = value[0]
+            self.assertEqual(pol1.get("check_all_resolvers"), True)
+            self.assertEqual(pol1.get("priority"), 3)
+
+        # get active policies
+        with self.app.test_request_context('/policy/?active=true',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'], res.json)
             self.assertEqual(len(value), 1)
             pol1 = value[0]
             self.assertEqual(pol1.get("check_all_resolvers"), True)
@@ -57,7 +69,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            data = json.loads(res.data.decode('utf8'))
+            data = res.json
             result = data.get("result")
             self.assertTrue("setPolicy pol1" in result.get("value"),
                             result.get("value"))

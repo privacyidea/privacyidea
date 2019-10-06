@@ -3,7 +3,7 @@ This file contains the tests for the periodic tasks API.
 
 This tests api/periodictask.py
 """
-import json
+import jwt
 from contextlib import contextmanager
 import mock
 from dateutil.parser import parse as parse_timestamp
@@ -34,7 +34,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         kwargs['headers'] = headers
         with self.app.test_request_context(*args, **kwargs):
             res = self.app.full_dispatch_request()
-            return res.status_code, json.loads(res.data.decode('utf8'))
+            return res.status_code, res.json
 
     def test_01_crud(self):
         # no tasks yet
@@ -44,7 +44,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(data['result']['value'], [])
 
         # need authorization
-        status_code, data = self.simulate_request('/periodictask/', method='GET', headers={'Authorization': 'ABC'})
+        fake_auth_token = jwt.encode({"role": "admin"}, key="313233343536", algorithm="HS256")
+        status_code, data = self.simulate_request('/periodictask/', method='GET', headers={'Authorization': fake_auth_token})
         self.assertEqual(status_code, 401)
         self.assertFalse(data['result']['status'])
 

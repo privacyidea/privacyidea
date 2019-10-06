@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
+#             Add a high-level API for policy matching
 #  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add admin read policies
 #  2019-06-19 Friedrich Weber <friedrich.weber@netknights.it>
@@ -159,7 +161,6 @@ Time formats are
 and any combination of it. "dow" being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
-
 from .log import log_with
 from configobj import ConfigObj
 
@@ -170,7 +171,7 @@ from ..models import (Policy, db, save_config_timestamp)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object)
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
@@ -234,6 +235,7 @@ class ACTION(object):
     EMAILCONFIG = "smtpconfig"
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
+    FORCE_APP_PIN = "force_app_pin"
     GETSERIAL = "getserial"
     GETRANDOM = "getrandom"
     IMPORT = "importtokens"
@@ -259,6 +261,7 @@ class ACTION(object):
     NODETAILFAIL = "no_detail_on_fail"
     OTPPIN = "otppin"
     OTPPINRANDOM = "otp_pin_random"
+    OTPPINSETRANDOM = "otp_pin_set_random"
     OTPPINMAXLEN = 'otp_pin_maxlength'
     OTPPINMINLEN = 'otp_pin_minlength'
     OTPPINCONTENTS = 'otp_pin_contents'
@@ -285,6 +288,7 @@ class ACTION(object):
     SET = "set"
     SETDESCRIPTION = "setdescription"
     SETPIN = "setpin"
+    SETRANDOMPIN = "setrandompin"
     SETREALM = "setrealm"
     SERIAL = "serial"
     SYSTEMDELETE = "configdelete"
@@ -769,41 +773,23 @@ class PolicyClass(object):
                         and other_policy["action"][action] != prioritized_action):
                     raise PolicyError("Contradicting {!s} policies.".format(action))
 
-    @log_with(log)
-    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
-                          resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None,
-                          user_object=None, audit_data=None):
+    @staticmethod
+    def extract_action_values(policies, action, unique=False, allow_white_space_in_action=False):
         """
-        Get the defined action values for a certain action like
-            scope: authorization
-            action: tokentype
-        would return a dictionary of {tokentype: policyname}
-
-            scope: authorization
-            action: serial
-        would return a dictionary of {serial: policyname}
-
-        All parameters not described below are covered in the documentation of ``match_policies``.
-
-        :param unique: if set, the function will only consider the policy with the
-            highest priority and check for policy conflicts.
+        Given an action, extract all values the given policies specify for that action.
+        :param policies: a list of policy dictionaries
+        :type policies: list
+        :param action: a policy action
+        :type action: action
+        :param unique: if True, only consider the policy with the highest priority
+                       and check for policy conflicts (in this case, raise a PolicyError).
+        :type unique: bool
         :param allow_white_space_in_action: Some policies like emailtext
             would allow entering text with whitespaces. These whitespaces
             must not be used to separate action values!
-        :type allow_white_space_in_action: bool
-        :param audit_data: This is a dictionary, that can take audit_data in the g object.
-            If set, this dictionary will be filled with the list of triggered policynames in the
-            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
-            found policy will be used. I could make less sense with an aktion like ACTION.LASTAUTH - where
-            the value of the action needs to be evaluated in a more special case.
-        :rtype: dict
+        :return: a dictionary mapping action values to lists of matching policies.
         """
         policy_values = {}
-        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
-                                       action=action, active=True,
-                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
-                                       client=client, sort_by_priority=True)
         # If unique = True, only consider the policies with the highest priority
         if policies and unique:
             highest_priority = policies[0]['priority']
@@ -836,6 +822,45 @@ class PolicyClass(object):
         if unique and len(policy_values) > 1:
             names = [p['name'] for p in policies]
             raise PolicyError(u"There are policies with conflicting actions: {!r}".format(names))
+        return policy_values
+
+    @log_with(log)
+    def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
+                          resolver=None, user=None, client=None, unique=False,
+                          allow_white_space_in_action=False, adminrealm=None,
+                          user_object=None, audit_data=None):
+        """
+        Get the defined action values for a certain action like
+            scope: authorization
+            action: tokentype
+        would return a dictionary of {tokentype: policyname}
+
+            scope: authorization
+            action: serial
+        would return a dictionary of {serial: policyname}
+
+        All parameters not described below are covered in the documentation of ``match_policies``.
+
+        :param unique: if set, the function will only consider the policy with the
+            highest priority and check for policy conflicts.
+        :param allow_white_space_in_action: Some policies like emailtext
+            would allow entering text with whitespaces. These whitespaces
+            must not be used to separate action values!
+        :type allow_white_space_in_action: bool
+        :param audit_data: This is a dictionary, that can take audit_data in the g object.
+            If set, this dictionary will be filled with the list of triggered policynames in the
+            key "policies". This can be useful for policies like ACTION.OTPPIN - where it is clear, that the
+            found policy will be used. It could make less sense with an action like ACTION.LASTAUTH - where
+            the value of the action needs to be evaluated in a more special case.
+        :rtype: dict
+        """
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+                                       action=action, active=True,
+                                       realm=realm, resolver=resolver, user=user, user_object=user_object,
+                                       client=client, sort_by_priority=True)
+        policy_values = self.extract_action_values(policies, action,
+                                                   unique=unique,
+                                                   allow_white_space_in_action=allow_white_space_in_action)
 
         if audit_data is not None:
             for action_value, policy_names in policy_values.items():
@@ -888,26 +913,25 @@ class PolicyClass(object):
         :param client: The HTTP client IP
         :return: A list of actions
         """
-        from privacyidea.lib.auth import ROLE
         from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
-        userrealm = None
-        adminrealm = None
-        resolver = None
-        logged_in_user = {"username": username,
-                          "realm": realm}
         if scope == SCOPE.ADMIN:
+            # If the logged-in user is an admin, we match for username/adminrealm only
+            match_username = username
+            user_object = None
             adminrealm = realm
-            logged_in_user["role"] = ROLE.ADMIN
         elif scope == SCOPE.USER:
-            userrealm = realm
-            logged_in_user["role"] = ROLE.USER
-            resolver = User(username, userrealm).resolver
+            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
+            match_username = None
+            adminrealm = None
+            user_object = User(username, realm)
+        else:
+            raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
+                                   user=match_username,
+                                   user_object=user_object,
                                    adminrealm=adminrealm,
-                                   realm=userrealm,
-                                   resolver=resolver,
-                                   user=username, active=True,
+                                   active=True,
                                    client=client)
         for pol in pols:
             for action, action_value in pol.get("action").items():
@@ -917,7 +941,7 @@ class PolicyClass(object):
                     if isinstance(action_value, string_types):
                         rights.add(u"{}={}".format(action, action_value))
         # check if we have policies at all:
-        pols = self.match_policies(scope=scope, active=True)
+        pols = self.list_policies(scope=scope, active=True)
         if not pols:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
@@ -959,13 +983,18 @@ class PolicyClass(object):
         enroll_types = {}
         role = logged_in_user.get("role")
         if role == ROLE.ADMIN:
+            # If the logged-in user is an admin, we match for username/adminrealm
+            user_name = logged_in_user.get("username")
+            user_object = None
             admin_realm = logged_in_user.get("realm")
-            user_realm = None
         else:
+            # If the logged-in user is a user, we pass an user object to allow matching for userinfo attributes
+            user_name = None
+            user_object = User(logged_in_user.get("username"),
+                               logged_in_user.get("realm"))
             admin_realm = None
-            user_realm = logged_in_user.get("realm")
         # check, if we have a policy definition at all.
-        pols = self.match_policies(scope=role, active=True)
+        pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
         for tokenclass in tokenclasses:
             # Check if the tokenclass is ui enrollable for "user" or "admin"
@@ -980,8 +1009,8 @@ class PolicyClass(object):
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
-                                               user=logged_in_user.get("username"),
-                                               realm=user_realm,
+                                               user=user_name,
+                                               user_object=user_object,
                                                active=True,
                                                action="enroll"+tokentype.upper(),
                                                adminrealm=admin_realm)
@@ -1268,6 +1297,10 @@ def get_static_policy_definitions(scope=None):
                                 'tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('Admin is allowed to set a random OTP PIN of tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
             ACTION.SETTOKENINFO: {'type': 'bool',
                                'desc': _('Admin is allowed to manually set and delete token info.'),
                                'mainmenu': [MAIN_MENU.TOKENS],
@@ -1474,6 +1507,11 @@ def get_static_policy_definitions(scope=None):
                                               "(c)haracters, (n)umeric, "
                                               "(s)pecial, (o)thers. [+/-]!"),
                                     'group': GROUP.PIN},
+            ACTION.OTPPINSETRANDOM: {
+                'type': 'int',
+                'value': list(range(1, 32)),
+                'desc': _("The length of a random PIN set by the administrator."),
+                'group': GROUP.PIN},
             ACTION.AUDIT: {'type': 'bool',
                            "desc": _("Admin is allowed to view the Audit log."),
                            "group": GROUP.SYSTEM,
@@ -1571,7 +1609,7 @@ def get_static_policy_definitions(scope=None):
                                         'mainmenu': [MAIN_MENU.CONFIG],
                                         'group': GROUP.SYSTEM},
             ACTION.EVENTHANDLINGREAD: {'type': 'bool',
-                                       'desc': _("Admin is allowed to read "
+                                       'desc': _("Admin is allowed to read event "
                                                  "handling configuration."),
                                        'mainmenu': [MAIN_MENU.CONFIG],
                                        'group': GROUP.SYSTEM},
@@ -1658,6 +1696,14 @@ def get_static_policy_definitions(scope=None):
                                       "PIN of his tokens."),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.PIN},
+            ACTION.SETRANDOMPIN: {'type': 'bool',
+                                  'desc': _('The user is allowed to set a random OTP PIN of his tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.PIN},
+            ACTION.OTPPINSETRANDOM: {'type': 'int',
+                                     'value': list(range(1, 32)),
+                                     'desc': _("The length of a random PIN set by the user."),
+                                     'group': GROUP.PIN},
             ACTION.SETDESCRIPTION: {'type': 'bool',
                                     'desc': _('The user is allowed to set the token description.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
@@ -1723,9 +1769,9 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.OTPPINRANDOM: {
                 'type': 'int',
-                'value': list(range(0, 32)),
+                'value': list(range(1, 32)),
                 "desc": _("Set a random OTP PIN with this length for a "
-                          "token."),
+                          "token during the enrollment process."),
                 'group': GROUP.PIN},
             ACTION.PINHANDLING: {
                 'type': 'str',
@@ -1828,7 +1874,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.PASSTHRU_ASSIGN: {
                 'type': 'str',
-                'desc': _('This allows to automatically assign a within privacyIDEA, if the '
+                'desc': _('This allows to automatically assign a Token within privacyIDEA, if the '
                           'user was authenticated via passthru against a RADIUS server. The OTP value '
                           'is used to find the unassigned token in privacyIDEA. Enter the length of the OTP value '
                           'and where the PIN is set like 8:pin or pin:6.')
@@ -2054,28 +2100,16 @@ def get_action_values_from_options(scope, action, options):
     This function is used in the library level to fetch policy action values
     from a given option dictionary.
 
+    The matched policies are *not* written to the audit log.
+
     :return: A scalar, string or None
     """
     value = None
     g = options.get("g")
     if g:
         user_object = options.get("user")
-        username = None
-        realm = None
-        if user_object:
-            username = user_object.login
-            realm = user_object.realm
-
-        clientip = options.get("clientip")
-        policy_object = g.policy_object
-        value = policy_object. \
-            get_action_values(action=action,
-                              scope=scope,
-                              realm=realm,
-                              user=username,
-                              client=clientip,
-                              unique=True,
-                              allow_white_space_in_action=True)
+        value = Match.user(g, scope=scope, action=action, user_object=user_object)\
+            .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
         if len(value) >= 1:
             return list(value)[0]
         else:
@@ -2103,3 +2137,189 @@ def get_policy_condition_comparators():
     """
     return {comparator: {"description": description}
             for comparator, description in COMPARATOR_DESCRIPTIONS.items()}
+
+
+class MatchingError(ServerError):
+    pass
+
+
+class Match(object):
+    """
+    This class provides a high-level API for policy matching. It should not be instantiated directly. Instead,
+    code should use one of the provided classmethods to construct a ``Match`` object. See the respective
+    classmethods for details.
+
+    A ``Match`` object encapsulates a policy matching operation, i.e. a call to ``PolicyClass.match_policies``.
+    In order to retrieve the matching policies, one should use one of ``policies()``, ``action_values()`` and ``any()``.
+    By default, these functions write the matched policies to the audit log. This behavior can be explicitly disabled.
+
+    Every classmethod expects a so-called "context object" as its first argument.
+    The context object implements the following attributes:
+     * ``audit_object``: an ``Audit`` object which is used to write the used policies to the audit log.
+                         In case False is passed for ``write_to_audit_log``, the audit object may be None.
+     * ``policy_object``: a ``PolicyClass`` object that is used to retrieve the matching policies.
+     * ``client_ip``: the IP of the current client, as a string
+     * ``logged_in_user``: a dictionary with keys "username", "realm", "role" that describes the
+                           currently logged-in (managing) user
+    In our case, this context object is usually the ``flask.g`` object.
+    """
+    def __init__(self, g, **kwargs):
+        self._g = g
+        self._match_kwargs = kwargs
+
+    def policies(self, write_to_audit_log=True):
+        """
+        Return a list of policies. The list is sorted by priority, which means that prioritized policies appear first.
+        :param write_to_audit_log: If True, write the list of matching policies to the audit log
+        :return: a list of policy dictionaries
+        :rtype: list
+        """
+        if write_to_audit_log:
+            audit_data = self._g.audit_object.audit_data
+        else:
+            audit_data = None
+        return self._g.policy_object.match_policies(audit_data=audit_data,
+                                                    **self._match_kwargs)
+
+    def any(self, write_to_audit_log=True):
+        """
+        Return True if at least one policy matches.
+        :param write_to_audit_log: If True, write the list of matching policies to the audit log
+        :return: True or False
+        """
+        return bool(self.policies(write_to_audit_log=write_to_audit_log))
+
+    def action_values(self, unique, allow_white_space_in_action=False, write_to_audit_log=True):
+        """
+        Return a dictionary of action values extracted from the matching policies.
+        The dictionary maps each action value to a list of policies which define this action value.
+        :param unique: If True, return only the prioritized action value.
+                       See ``PolicyClass.get_action_values`` for details.
+        :param allow_white_space_in_action: If True, allow whitespace in action values.
+                       See ``PolicyClass.get_action_values`` for details.
+        :param write_to_audit_log: If True, augment the audit log with the names of all
+                       policies whose action values are returned
+        :rtype: dict
+        """
+        policies = self.policies(write_to_audit_log=False)
+        action_values = self._g.policy_object.extract_action_values(policies,
+                                                                    self._match_kwargs['action'],
+                                                                    unique=unique,
+                                                                    allow_white_space_in_action=
+                                                                    allow_white_space_in_action)
+        if write_to_audit_log:
+            for action_value, policy_names in action_values.items():
+                for p_name in policy_names:
+                    self._g.audit_object.audit_data.setdefault("policies", []).append(p_name)
+        return action_values
+
+    @classmethod
+    def action_only(cls, g, scope, action):
+        """
+        Match active policies solely based on a scope and an action, which may also be None.
+        The client IP is matched implicitly.
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action, or None
+        :rtype: ``Match``
+        """
+        if scope == SCOPE.ADMIN:
+            raise MatchingError("Match.action_only cannot be used for policies with scope ADMIN")
+        return cls(g, name=None, scope=scope, realm=None, active=True,
+                   resolver=None, user=None, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=None, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def realm(cls, g, scope, action, realm):
+        """
+        Match active policies with a scope, an action and a user realm.
+        The client IP is matched implicitly.
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action
+        :param realm: the realm to match
+        :rtype: ``Match``
+        """
+        if scope == SCOPE.ADMIN:
+            raise MatchingError("Match.realm cannot be used for policies with scope ADMIN")
+        return cls(g, name=None, scope=scope, realm=realm, active=True,
+                   resolver=None, user=None, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=None, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def user(cls, g, scope, action, user_object):
+        """
+        Match active policies with a scope, an action and a user object (which may be None).
+        The client IP is matched implicitly.
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action
+        :param user_object: the user object to match. Might also be None, which means that the policy
+                     attributes ``user``, ``realm`` and ``resolver`` are ignored.
+        :type user_object: User or None
+        :rtype: ``Match``
+        """
+        if scope == SCOPE.ADMIN:
+            raise MatchingError("Match.user cannot be used for policies with scope ADMIN")
+        if not (user_object is None or isinstance(user_object, User)):
+            raise MatchingError("Invalid user")
+        # Username, realm and resolver will be extracted from the user_object parameter
+        return cls(g, name=None, scope=scope, realm=None, active=True,
+                   resolver=None, user=None, user_object=user_object,
+                   client=g.client_ip, action=action, adminrealm=None, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def admin(cls, g, action, realm):
+        """
+        Match admin policies with an action and, optionally, a realm.
+        Assumes that the currently logged-in user is an admin, and throws an error otherwise.
+        Policies will be matched against the admin's username and adminrealm,
+        and optionally also the provided user realm.
+        The client IP is matched implicitly.
+        :param g: context object
+        :param action: the policy action
+        :param realm: the user realm against which policies should be matched. Can be None.
+        :type realm: str or None
+        :rtype: ``Match``
+        """
+        username = g.logged_in_user["username"]
+        adminrealm = g.logged_in_user["realm"]
+        from privacyidea.lib.auth import ROLE
+        if g.logged_in_user["role"] != ROLE.ADMIN:
+            raise MatchingError("Policies with scope ADMIN can only be retrieved by admins")
+        return cls(g, name=None, scope=SCOPE.ADMIN, realm=realm, active=True,
+                   resolver=None, user=username, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
+                   sort_by_priority=True)
+
+    @classmethod
+    def admin_or_user(cls, g, action, realm):
+        """
+        Depending on the role of the currently logged-in user, match either scope=ADMIN or scope=USER policies.
+        If the currently logged-in user is an admin, match policies against the username, adminrealm
+        and the given user realm.
+        If the currently logged-in user is a user, match policies against the username and the given realm.
+        The client IP is matched implicitly.
+        :param g: context object
+        :param action: the policy action
+        :param realm: the given realm
+        :rtype: ``Match``
+        """
+        from privacyidea.lib.auth import ROLE
+        if g.logged_in_user["role"] == ROLE.ADMIN:
+            scope = SCOPE.ADMIN
+            username = g.logged_in_user["username"]
+            adminrealm = g.logged_in_user["realm"]
+        elif g.logged_in_user["role"] == ROLE.USER:
+            scope = SCOPE.USER
+            username = g.logged_in_user["username"]
+            adminrealm = None
+        else:
+            raise MatchingError("Unknown role")
+        return cls(g, name=None, scope=scope, realm=realm, active=True,
+                   resolver=None, user=username, user_object=None,
+                   client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
+                   sort_by_priority=True)

@@ -180,6 +180,14 @@ maximum failcounter is reached. In such a case the user can not use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
 
+**rollout_state**
+
+This is the rollout_state of a token. A token can be rolled out in several steps
+like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
+token contains certain values like 'clientwait' or 'enrolled'.
+This way actions can be triggered, depending on the step during an enrollment
+process.
+
 **token_has_owner**
 
 The action is only triggered, if the token is or is not assigned to a user.
@@ -256,7 +264,7 @@ With ``token/init`` you could get:
 
 "missing Authorization header"
 
-..note:: The field ``detail->error->message is only available in case of an
+.. note:: The field ``detail->error->message is only available in case of an
    internal error, i.e. if the response status is ``False``.
 
 **detail_message**
@@ -272,8 +280,7 @@ Those messages can be manyfold like:
 
 "Only 2 failed authentications per 1:00:00"
 
-
-..note:: The field ``detail->message`` is available in case of status ``True``,
+.. note:: The field ``detail->message`` is available in case of status ``True``,
    like an authentication request that was handled successfully but failed.
 
 
@@ -300,3 +307,4 @@ Available Handler Modules
    scripthandler
    counterhandler
    federationhandler
+   requestmangler

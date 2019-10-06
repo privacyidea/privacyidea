@@ -31,10 +31,8 @@ It only provides the method
 
   GET /audit
 """
-from flask import (Blueprint,
-                   request, current_app, Response,
-                   stream_with_context)
-from .lib.utils import (send_result, getParam)
+from flask import (Blueprint, request, current_app, stream_with_context)
+from .lib.utils import (send_result)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
                                  allowed_audit_realm)
 from ..api.auth import admin_required
@@ -146,9 +144,8 @@ def download_csv(csvfile=None):
         del param["timelimit"]
     else:
         timelimit = None
-    return Response(stream_with_context(audit.csv_generator(param=param,
-                                                            timelimit=timelimit)),
-                    mimetype='text/csv',
-                    headers={"Content-Disposition": ("attachment; "
-                                                     "filename=%s" % csvfile)})
-
+    return current_app.response_class(stream_with_context(audit.csv_generator(param=param,
+                                                                              timelimit=timelimit)),
+                                      mimetype='text/csv',
+                                      headers={"Content-Disposition": ("attachment; "
+                                                                       "filename=%s" % csvfile)})

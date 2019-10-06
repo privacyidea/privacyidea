@@ -38,7 +38,6 @@ import logging
 from privacyidea.lib.radiusserver import (add_radius, RADIUSServer,
                                           delete_radius, get_radiusservers, test_radius)
 from privacyidea.models import RADIUSServer as RADIUSServerDB
-from privacyidea.api.auth import admin_required
 
 
 log = logging.getLogger(__name__)
@@ -47,7 +46,6 @@ radiusserver_blueprint = Blueprint('radiusserver_blueprint', __name__)
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def create(identifier=None):
@@ -91,29 +89,18 @@ def list_radius():
     server_list = get_radiusservers()
     for server in server_list:
         # We do not add the secret!
-        if g.logged_in_user.get("role") == "admin":
-            res[server.config.identifier] = {"server": server.config.server,
-                                             "port": server.config.port,
-                                             "dictionary": server.config.dictionary,
-                                             "description":
-                                                 server.config.description,
-                                             "timeout": server.config.timeout,
-                                             "retries": server.config.retries}
-        else:
-            # We do not pass any information to a normal user!
-            res[server.config.identifier] = {"server": "",
-                                             "port": "",
-                                             "dictionary": "",
-                                             "description": "",
-                                             "timeout": 0,
-                                             "retries": 0}
-
+        res[server.config.identifier] = {"server": server.config.server,
+                                         "port": server.config.port,
+                                         "dictionary": server.config.dictionary,
+                                         "description":
+                                             server.config.description,
+                                         "timeout": server.config.timeout,
+                                         "retries": server.config.retries}
     g.audit_object.log({'success': True})
     return send_result(res)
 
 
 @radiusserver_blueprint.route('/<identifier>', methods=['DELETE'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
@@ -130,7 +117,6 @@ def delete_server(identifier=None):
 
 
 @radiusserver_blueprint.route('/test_request', methods=['POST'])
-@admin_required
 @prepolicy(check_base_action, request, ACTION.RADIUSSERVERWRITE)
 @log_with(log)
 def test():

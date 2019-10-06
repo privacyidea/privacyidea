@@ -23,6 +23,7 @@ import functools
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib import _
+from privacyidea.lib.utils import check_serial_valid
 log = logging.getLogger(__name__)
 
 
@@ -65,6 +66,9 @@ def check_user_or_serial(func):
                 (user is None or (user is not None and user.is_empty()))):
             # We either have an empty User object or None
             raise ParameterError(ParameterError.USER_OR_SERIAL)
+
+        if serial:
+            check_serial_valid(serial)
 
         f_result = func(*args, **kwds)
         return f_result

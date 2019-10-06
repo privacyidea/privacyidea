@@ -21,6 +21,8 @@ logs the user in automatically.
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.
 
+The PUSH token implements the :ref:`outofband mode <authentication_mode_outofband>`.
+
 Configuration
 ~~~~~~~~~~~~~
 
@@ -30,6 +32,10 @@ The minimum necessary configuration is an ``enrollment`` policy
 With the ``authentication`` policies :ref:`policy_push_text_on_mobile`
 and :ref:`policy_push_title_on_mobile` you can define
 the contents of the push notification.
+
+If you want to use push tokens with legacy applications that are not yet set up to be compatible with out-of-band
+tokens, you can set the ``authentication`` policy :ref:`policy_push_wait`. Please note, that setting this policy can
+interfere with other tokentypes and will impact performance, as detailed in the documentation for ``push_wait``.
 
 Enrollment
 ~~~~~~~~~~
@@ -97,5 +103,3 @@ For an in depth view of the protocol see
 [the github issue](https://github.com/privacyidea/privacyidea/issues/1342)
 and
 [the wiki page](https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
-
-

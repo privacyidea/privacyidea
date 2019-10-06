@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2019-09-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add decorators for event handling
 # 2016-07-12 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add decorator for checking realmadmin realms during userlist
 # 2014-12-08 Cornelius Kölbel, <cornelius@privacyidea.org>
@@ -31,6 +33,8 @@ from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
 from ..lib.policy import ACTION
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, get_user_from_param, User
+from privacyidea.lib.event import event
+
 
 from flask import (g)
 from ..lib.user import get_user_list
@@ -47,6 +51,7 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 @prepolicy(realmadmin, request, ACTION.USERLIST)
 @prepolicy(check_base_action, request, ACTION.USERLIST)
 @user_required
+@event("user_list", request, g)
 def get_users():
     """
     list the users in a realm
@@ -110,6 +115,7 @@ def get_users():
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.DELETEUSER)
+@event("user_delete", request, g)
 def delete_user(resolvername=None, username=None):
     """
     Delete a User in the user store.
@@ -138,6 +144,7 @@ def delete_user(resolvername=None, username=None):
 @user_blueprint.route('/', methods=['POST'])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.ADDUSER)
+@event("user_add", request, g)
 def create_user_api():
     """
     Create a new user in the given resolver.
@@ -180,6 +187,7 @@ def create_user_api():
 @user_blueprint.route('', methods=['PUT'])
 @user_blueprint.route('/', methods=['PUT'])
 @prepolicy(check_base_action, request, ACTION.UPDATEUSER)
+@event("user_update", request, g)
 def update_user():
     """
     Edit a user in the user store.

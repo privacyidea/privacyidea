@@ -6,22 +6,27 @@ lib/event.py (the decorator)
 """
 import email
 
+import mock
+
 from . import smtpmock
 import responses
 import os
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.eventhandler.usernotification import (
     UserNotificationEventHandler, NOTIFY_TYPE)
+from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from flask import Request, Response
+from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
@@ -34,11 +39,12 @@ from privacyidea.lib.token import (init_token, remove_token, unassign_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import create_user, User
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import is_true, to_unicode
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
+from privacyidea.app import PiResponseClass as Response
 import json
 
 
@@ -56,6 +62,8 @@ class EventHandlerLibTestCase(MyTestCase):
                       conditions={},
                       options={"emailconfig": "themis",
                                "always": "immer"})
+        # retrieve the current config timestamp
+        current_timestamp = get_config_object().timestamp
 
         self.assertEqual(r, 2)
         # Update the first event
@@ -67,11 +75,19 @@ class EventHandlerLibTestCase(MyTestCase):
                       id=eid)
         self.assertEqual(r, eid)
 
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
+        current_timestamp = get_config_object().timestamp
+
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 2)
         # delete
         r = delete_event(eid)
         self.assertTrue(r)
+
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
+        current_timestamp = get_config_object().timestamp
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 1)
 
@@ -82,6 +98,8 @@ class EventHandlerLibTestCase(MyTestCase):
         n_eid = events[0].get("id")
         # Disable this event in the database
         enable_event(n_eid, False)
+        # check that the config timestamp has been updated
+        self.assertGreater(get_config_object().timestamp, current_timestamp)
         # Reread event config from the database
         event_config = EventConfiguration()
         events = event_config.get_handled_events("token_init")
@@ -92,7 +110,6 @@ class EventHandlerLibTestCase(MyTestCase):
         event_config = EventConfiguration()
         events = event_config.get_handled_events("token_init")
         self.assertEqual(len(events), 1)
-
         # If eventid is None, then the whole list is returned
         r = event_config.get_event(None)
         self.assertEqual(r, event_config.events)
@@ -467,6 +484,54 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertFalse(r)
 
+    def test_07_check_rollout_state(self):
+        self.setUp_user_realms()
+        serial = "rs01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        # Prepare the token
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        tok.token.rollout_state = "fakestate"
+        tok.token.save()
+
+        uhandler = BaseEventHandler()
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        # Check if the condition matches
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "fakestate"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.ROLLOUT_STATE: "otherstate"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        remove_token(serial)
+
 
 class CounterEventTestCase(MyTestCase):
 
@@ -672,7 +737,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -712,7 +777,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/validate/check")
 
@@ -751,7 +816,7 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/serial")
 
@@ -844,9 +909,427 @@ class FederationEventTestCase(MyTestCase):
         add_privacyideaserver("remotePI", url="https://remote", tls=False)
         res = f_handler.do(ACTION_TYPE.FORWARD, options=options)
         self.assertTrue(res)
-        response = json.loads(options.get("response").data)
+        response = options.get("response").json
         self.assertEqual(response.get("detail").get("origin"),
                          "https://remote/token/init")
+
+
+class RequestManglerTestCase(MyTestCase):
+
+    def test_01_delete_request_parameter(self):
+        actions = RequestManglerEventHandler().actions
+        self.assertTrue("delete" in actions, actions)
+        self.assertTrue("set" in actions, actions)
+
+        pos = RequestManglerEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post", "pre"})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass", "deleteme": "topsecret"}
+        resp = Response()
+
+        # Request
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "deleteme"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertNotIn("deleteme", req.all_data)
+        self.assertTrue(res)
+
+        # Delete a non-existing value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "doesnotexist"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertNotIn("doesnotexist", req.all_data)
+        self.assertTrue(res)
+
+    def test_02_set_parameter(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+
+        # simple add a parameter with a fixed value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "newone",
+                                        "value": "simpleadd"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("simpleadd", req.all_data.get("newone"))
+
+        # overwrite an existing parameter with a fixed value
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "serial",
+                                        "value": "FUN007"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("FUN007", req.all_data.get("serial"))
+
+        # Change a parameter with the part of another parameter
+        req.all_data = {"user": "givenname.surname@company.com",
+                        "realm": ""}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "realm",
+                                        "value": "{0}",
+                                        "match_parameter": "user",
+                                        "match_pattern": ".*@(.*)"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("company.com", req.all_data.get("realm"))
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+        # Only match the complete value, not a subvalue
+        req.all_data = {"user": "givenname.surname@company.company",
+                        "realm": ""}
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "realm",
+                                        "value": "newrealm",
+                                        "match_parameter": "user",
+                                        "match_pattern": ".*@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The realm is not changed!
+        self.assertEqual("", req.all_data.get("realm"))
+
+        # Now we change the parameter itself.
+        # Change company.com of a user to newcompany.com
+        req.all_data = {"user": "givenname.surname@company.com"}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{0}@newcompany.com",
+                                        "match_parameter": "user",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual("givenname.surname@newcompany.com", req.all_data.get("user"))
+
+        # The request does not contain the match_parameter, thus the
+        # parameter in question will not be modified
+        req.all_data = {"user": "givenname.surname@company.com" }
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{0}@newcompany.com",
+                                        "match_parameter": "username",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The name is still the old one - since there was nothing to match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+        # Do some nasty replacing, that will not work out
+        # We require two tags, but only have one!
+        req.all_data = {"user": "givenname.surname@company.com"}
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"parameter": "user",
+                                        "value": "{1} <{0}@newcompany.com>",
+                                        "match_parameter": "user",
+                                        "match_pattern": "(.*)@company.com"}
+                                   }
+                   }
+        r_handler = RequestManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        # The user was not modified, since the number of tags did not match
+        self.assertEqual("givenname.surname@company.com", req.all_data.get("user"))
+
+
+class ResponseManglerTestCase(MyTestCase):
+
+    def test_01_delete_response(self):
+        actions = ResponseManglerEventHandler().actions
+        self.assertTrue("delete" in actions, actions)
+        self.assertTrue("set" in actions, actions)
+
+        pos = ResponseManglerEventHandler().allowed_positions
+        self.assertEqual(set(pos), {"post"})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response(mimetype='application/json')
+
+        # delete JSON pointer with two components
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/message"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["detail"]["error"], 1)
+        self.assertNotIn("message", resp.json["detail"])
+
+        # delete JSON pointer with one component
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/result"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertIn("message", resp.json["detail"])
+        self.assertNotIn("result", resp.json)
+
+        # delete JSON pointer with three components
+        resp.data = """{"result": {"value": true}, "detail": {"data": {"Du": "Da"}, "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/data/Du"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertIn("error", resp.json["detail"])
+        self.assertNotIn("Du", resp.json["detail"]["data"])
+
+        # JSON pointer with more than 3 components not supported
+        resp.data = """{"result": {"value": true},
+                        "detail": {"message": {"comp1": {"comp2": "test"}}, "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/message/comp1/comp2"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertIn("comp2", resp.json["detail"]["message"]["comp1"])
+        self.assertIn("result", resp.json)
+
+        # Invalid JSON pointer will cause a log warning but will not change the response
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/notexist"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertIn("message", resp.json["detail"])
+        self.assertIn("result", resp.json)
+
+        # What happens if we have a non-json response, like in GET /token?outform=csv
+        # Nothing is changed!
+        csv = b"""column1, column2, column3
+        column1, column2, column3
+        """
+        resp.data = csv
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/notexist"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("delete", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.data, csv)
+
+    def test_02_set_response(self):
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response(mimetype='application/json')
+
+        # add JSON pointer with one component
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/something",
+                                        "value": "special",
+                                        "type": "string"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["something"], "special")
+
+        # add JSON pointer with two components
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/something",
+                                        "value": "special",
+                                        "type": "string"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["detail"]["something"], "special")
+
+        # change JSON pointer with two components
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/detail/message",
+                                        "value": "special",
+                                        "type": "string"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["detail"]["message"], "special")
+
+        # add the components, that do not yet exist
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/comp1/comp2/comp3",
+                                        "value": "1",
+                                        "type": "bool"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["comp1"]["comp2"]["comp3"], True)
+
+        # JSON pointer with more than 3 components not supported
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/comp1/comp2/comp3/comp4",
+                                        "value": "1",
+                                        "type": "integer"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertNotIn("comp1", resp.json)
+
+        # Wrong type declaration
+        resp.data = """{"result": {"value": true}, "detail": {"message": "Du", "error": 1}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"JSON pointer": "/comp1/comp2",
+                                        "value": "notint",
+                                        "type": "integer"}
+                                   }
+                   }
+        r_handler = ResponseManglerEventHandler()
+        res = r_handler.do("set", options=options)
+        self.assertTrue(res)
+        self.assertEqual(resp.json["comp1"]["comp2"], "notint")
 
 
 class TokenEventTestCase(MyTestCase):
@@ -1557,6 +2040,59 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
+    def test_11_set_random_pin(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response(mimetype='application/json')
+        resp.data = """{"result": {"value": true}}"""
+
+        # The token will get a random pin of 8
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"length": "8"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_RANDOM_PIN, options=options)
+        self.assertTrue(res)
+        # Check, if we have a pin
+        self.assertIn("pin", resp.json["detail"])
+        pin = resp.json["detail"]["pin"]
+        self.assertEqual(len(pin), 8)
+
+        # Check if the new PIN will authenticate with the SPass token
+        r, _counter, _reply = t[0].authenticate(pin)
+        self.assertTrue(r)
+
+        remove_token("SPASS01")
+
 
 class UserNotificationTestCase(MyTestCase):
 
@@ -2100,11 +2636,11 @@ class UserNotificationTestCase(MyTestCase):
 
         # Unassign any user from this token - we need to do this, since the token can have more users.
         unassign_token(tok.token.serial)
-        self.assertEqual(tok.token.owners.first(), None)
+        self.assertEqual(tok.token.first_owner, None)
         # Set an existing user for the token.
         tok.add_user(User("cornelius", "realm1"))
-        self.assertEqual(tok.token.owners.first().user_id, "1000")
-        self.assertEqual(tok.token.owners.first().realm.name, "realm1")
+        self.assertEqual(tok.token.first_owner.user_id, "1000")
+        self.assertEqual(tok.token.first_owner.realm.name, "realm1")
 
         r = uhandler.check_condition(
             {"g": {},
@@ -2484,7 +3020,7 @@ class UserNotificationTestCase(MyTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
 
         # Cleanup
@@ -2808,3 +3344,88 @@ class UserNotificationTestCase(MyTestCase):
                          "+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq"
                          "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
                          "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
+
+    def test_21_save_notification(self):
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "OATH123456",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+        # remove leftover file from the last test run, if any
+        if os.path.exists("tests/testdata/testOATH123456.txt"):
+            os.remove("tests/testdata/testOATH123456.txt")
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("savefile", options=options)
+        self.assertTrue(res)
+        # check, if the file was written with the correct contents
+        with open("tests/testdata/testOATH123456.txt") as f:
+            l = f.read()
+        self.assertEqual(l, "OATH123456, Cornelius")
+        os.remove("tests/testdata/testOATH123456.txt")
+
+        # Check what happens if we try to write outside of spooldir
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "../../../test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        un_handler = UserNotificationEventHandler()
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
+
+        # Check what happens if the file can not be written
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"filename": "test{serial}.txt",
+                                        "body": "{serial}, {user}"}
+                                   }
+                   }
+
+        # create a file, that is not writable
+        with open("tests/testdata/testOATH123456.txt", "w") as f:
+            f.write("empty")
+        os.chmod("tests/testdata/testOATH123456.txt", 0o400)
+        un_handler = UserNotificationEventHandler()
+        # Check that an error is written to the logfile
+        with mock.patch("logging.Logger.error") as mock_log:
+            un_handler.do("savefile", options=options)
+            call_args = mock_log.call_args
+            # ensure log.error was actually called ...
+            self.assertIsNotNone(call_args)
+            # ... with the right message
+            self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
+
+        os.remove("tests/testdata/testOATH123456.txt")
+

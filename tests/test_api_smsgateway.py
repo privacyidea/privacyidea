@@ -13,8 +13,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
         # create an sms gateway definition
@@ -30,8 +30,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -42,8 +42,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "myGateway")
             self.assertEqual(sms_gw.get("name"), "myGW")
@@ -68,8 +68,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -79,8 +79,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "new description")
 
@@ -93,8 +93,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
 
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty gateways
@@ -103,8 +103,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):
@@ -122,8 +122,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # add option
@@ -136,7 +136,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
 
         # check options
         with self.app.test_request_context('/smsgateway',
@@ -145,7 +145,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                    'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("options").get("URL"),
                              "http://example.com")
@@ -158,8 +158,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            detail = json.loads(res.data.decode('utf8')).get("detail")
+            result = res.json.get("result")
+            detail = res.json.get("detail")
 
         # check options
         with self.app.test_request_context('/smsgateway',
@@ -168,7 +168,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = json.loads(res.data.decode('utf8')).get("result")
+            result = res.json.get("result")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("options").get("URL"), None)
             self.assertEqual(sms_gw.get("options").get("HTTP_METHOD"),
@@ -180,7 +180,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            value = json.loads(res.data.decode('utf8')).get("result").get("value")
+            value = res.json.get("result").get("value")
             self.assertEqual(len(value), 5)
             self.assertTrue('privacyidea.lib.smsprovider.HttpSMSProvider'
                             '.HttpSMSProvider' in value)

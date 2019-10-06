@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+2019-08-15 More sophisticated radiusmock
+        Cornelius Kölbel <cornelius.koelbel@netknights.it>
 2017-10-30 Add mocking the timeout
         Cornelius Kölbel <cornelius.koelbel@netknights.it>
 2015-01-29 Change responses.py to be able to run with RADIUS
@@ -25,8 +27,8 @@ from __future__ import (
     absolute_import, print_function, division, unicode_literals
 )
 
-import re
 import six
+from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 
 if six.PY2:
     try:
@@ -41,6 +43,7 @@ from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
 from pyrad import packet
 from pyrad.client import Timeout
+from pyrad.packet import AccessChallenge, AccessReject, AccessAccept
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -105,11 +108,12 @@ class RadiusMock(object):
         self._request_data = {}
         self._calls.reset()
 
-    def setdata(self, server=None, rpacket=None, success=True, timeout=False):
+    def setdata(self, server=None, rpacket=None, response=AccessReject, response_data=None, timeout=False):
         self._request_data = {
             'server': server,
             'packet': rpacket,
-            'success': success,
+            'response': response,
+            'response_data': response_data or {},
             'timeout': timeout
         }
 
@@ -147,13 +151,10 @@ class RadiusMock(object):
               255       Reserved
         """
         #reply = pkt.CreateReply(packet=rawreply)
-        reply = pkt.CreateReply()
         if self._request_data.get("timeout"):
             raise Timeout()
-        if self._request_data.get("success"):
-            reply.code = packet.AccessAccept
-        else:
-            reply.code = packet.AccessReject
+        reply = pkt.CreateReply(**self._request_data.get("response_data"))
+        reply.code = self._request_data.get("response", AccessReject)
         return reply
 
     def start(self):

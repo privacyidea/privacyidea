@@ -25,10 +25,12 @@ Client Application information was saved during authentication requests.
 The code is tested in tests/test_lib_clientapplication.py.
 """
 
+from sqlalchemy import func
 import logging
 import datetime
 from .log import log_with
-from ..models import ClientApplication, Subscription
+from ..models import ClientApplication, Subscription, db
+from privacyidea.lib.config import get_privacyidea_node
 from netaddr import IPAddress
 
 
@@ -44,14 +46,16 @@ def save_clientapplication(ip, clienttype):
     :type ip: well formatted string or IPAddress
     :param clienttype: The type of the client
     :type ip: basestring
-    :return: database ID
+    :return: None
     """
+    node = get_privacyidea_node()
     # Check for a valid IP address
     ip = IPAddress(ip)
     # TODO: resolve hostname
-    id = ClientApplication(ip="{0!s}".format(ip),
-                           clienttype=clienttype).save()
-    return id
+    app = ClientApplication(ip="{0!s}".format(ip),
+                            clienttype=clienttype,
+                            node=node)
+    app.save()
 
 
 @log_with(log)
@@ -71,7 +75,15 @@ def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
     }
     """
     clients = {}
-    sql_query = ClientApplication.query
+    # We group the results by IP, hostname and clienttype. Then, the rows in each group
+    # only differ in the respective node names and the "lastseen" timestamp. Hence, we
+    # then fetch MAX(lastseen) of each group to retrieve the most recent timestamp at
+    # which the client was seen on *any* node. It is written to the ``max_lastseen``
+    # attribute.
+    sql_query = db.session.query(ClientApplication.ip,
+                                 ClientApplication.hostname,
+                                 ClientApplication.clienttype,
+                                 func.max(ClientApplication.lastseen).label("max_lastseen"))
     if ip:
         # Check for a valid IP address
         ip = IPAddress(ip)
@@ -80,17 +92,17 @@ def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
     if clienttype:
         sql_query = sql_query.filter(ClientApplication.clienttype == clienttype)
 
+    sql_query = sql_query.group_by(ClientApplication.ip,
+                                   ClientApplication.hostname,
+                                   ClientApplication.clienttype)
+
     for row in sql_query.all():
         if group_by.lower() == "clienttype":
-            if not clients.get(row.clienttype):
-                clients[row.clienttype] = []
-            clients[row.clienttype].append({"ip": row.ip,
-                                            "hostname": row.hostname,
-                                            "lastseen": row.lastseen})
+            clients.setdefault(row.clienttype, []).append({"ip": row.ip,
+                                                           "hostname": row.hostname,
+                                                           "lastseen": row.max_lastseen})
         else:
-            if not clients.get(row.ip):
-                clients[row.ip] = []
-            clients[row.ip].append({"hostname": row.hostname,
-                                    "clienttype": row.clienttype,
-                                    "lastseen": row.lastseen})
+            clients.setdefault(row.ip, []).append({"hostname": row.hostname,
+                                                   "clienttype": row.clienttype,
+                                                   "lastseen": row.max_lastseen})
     return clients

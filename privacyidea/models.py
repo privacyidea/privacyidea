@@ -190,9 +190,7 @@ class Token(MethodsMixin, db.Model):
                             default=1000)
     rollout_state = db.Column(db.Unicode(10),
                               default=u'')
-    info = db.relationship('TokenInfo',
-                           lazy='dynamic',
-                           backref='info')
+    info_list = db.relationship('TokenInfo', lazy='select', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
 
@@ -649,10 +647,6 @@ class TokenInfo(MethodsMixin, db.Model):
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'), index=True)
-    # This creates an attribute "info_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='info_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'Key',
                                           name='tiix_2'),
@@ -795,6 +789,9 @@ class Realm(TimestampMethodsMixin, db.Model):
                      unique=True, nullable=False)
     default = db.Column(db.Boolean(), default=False)
     option = db.Column(db.Unicode(40), default=u'')
+    resolver_list = db.relationship('ResolverRealm',
+                                    lazy='select',
+                                    foreign_keys='ResolverRealm.realm_id')
     
     @log_with(log)
     def __init__(self, realm):
@@ -869,9 +866,6 @@ class CAConnectorConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    cacon = db.relationship('CAConnector',
-                            lazy='joined',
-                            backref='config_list')
     __table_args__ = (db.UniqueConstraint('caconnector_id',
                                           'Key',
                                           name='ccix_2'),
@@ -929,9 +923,12 @@ class Resolver(TimestampMethodsMixin, db.Model):
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
-    rconfig = db.relationship('ResolverConfig',
-                              lazy='joined',
-                              backref='resolver')
+    config_list = db.relationship('ResolverConfig',
+                                  lazy='select',
+                                  backref='resolver')
+    realm_list = db.relationship('ResolverRealm',
+                                 lazy='select',
+                                 foreign_keys='ResolverRealm.resolver_id')
     
     def __init__(self, name, rtype):
         self.name = name
@@ -967,10 +964,6 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    # This creates an attribute "config_list" in the Resolver object
-    reso = db.relationship('Resolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='rcix_2'),
@@ -1026,16 +1019,12 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
-    # this will create a "realm_list" in the resolver object
     resolver = db.relationship(Resolver,
                                lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id",
-                               backref="realm_list")
-    # this will create a "resolver_list" in the realm object
+                               foreign_keys="ResolverRealm.resolver_id")
     realm = db.relationship(Realm,
                             lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id",
-                            backref="resolver_list")
+                            foreign_keys="ResolverRealm.realm_id")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
@@ -1759,7 +1748,6 @@ class EventHandler(MethodsMixin, db.Model):
         if self.id is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
         else:
             # update
             EventHandler.query.filter_by(id=self.id).update({
@@ -1772,7 +1760,8 @@ class EventHandler(MethodsMixin, db.Model):
                 "condition": self.condition,
                 "action": self.action
             })
-            db.session.commit()
+        save_config_timestamp()
+        db.session.commit()
         return self.id
 
     def delete(self):
@@ -1786,6 +1775,7 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerCondition) \
             .filter(EventHandlerCondition.eventhandler_id == ret) \
             .delete()
+        save_config_timestamp()
         db.session.commit()
         return ret
 
@@ -1830,9 +1820,6 @@ class EventHandlerCondition(db.Model):
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.Unicode(2000), default=u'')
     comparator = db.Column(db.Unicode(255), default=u'equal')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='condition_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehcix_1'),
@@ -1878,9 +1865,6 @@ class EventHandlerOption(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='option_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehoix_1'),
@@ -1964,9 +1948,6 @@ class MachineResolverConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    reso = db.relationship('MachineResolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='mrcix_2'),
@@ -2080,7 +2061,7 @@ class SMSGateway(MethodsMixin, db.Model):
     providermodule = db.Column(db.Unicode(1024), nullable=False)
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
-                              backref='ref_smsgateway')
+                              backref='smsgw')
 
     def __init__(self, identifier, providermodule, description=None,
                  options=None):
@@ -2142,7 +2123,7 @@ class SMSGateway(MethodsMixin, db.Model):
         :return: dict
         """
         res = {}
-        for option in self.ref_option_list:
+        for option in self.options:
             res[option.Key] = option.Value
         return res
 
@@ -2173,9 +2154,6 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     Type = db.Column(db.Unicode(100), default=u'')
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
-    smsgw = db.relationship('SMSGateway',
-                            lazy='joined',
-                            backref='ref_option_list')
     __table_args__ = (db.UniqueConstraint('gateway_id',
                                           'Key',
                                           name='sgix_1'),
@@ -2404,35 +2382,33 @@ class ClientApplication(MethodsMixin, db.Model):
     hostname = db.Column(db.Unicode(255))
     clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
     lastseen = db.Column(db.DateTime)
+    node = db.Column(db.Unicode(255), nullable=False)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
+                                          'node',
                                           name='caix'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def save(self):
         clientapp = ClientApplication.query.filter(
             ClientApplication.ip == self.ip,
-            ClientApplication.clienttype == self.clienttype).first()
+            ClientApplication.clienttype == self.clienttype,
+            ClientApplication.node == self.node).first()
         self.lastseen = datetime.now()
         if clientapp is None:
             # create a new one
             db.session.add(self)
-            db.session.commit()
-            ret = self.id
         else:
             # update
             values = {"lastseen": self.lastseen}
             if self.hostname is not None:
                 values["hostname"] = self.hostname
-            ClientApplication.query.filter(
-                ClientApplication.id == clientapp.id).update(values)
-            ret = clientapp.id
+            ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
         db.session.commit()
-        return ret
 
     def __repr__(self):
-        return "<ClientApplication [{0!s}][{1!s}:{2!s}]>".format(
-            self.id, self.ip, self.clienttype)
+        return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
+            self.id, self.ip, self.clienttype, self.node)
 
 
 class Subscription(MethodsMixin, db.Model):
@@ -2498,21 +2474,34 @@ class Subscription(MethodsMixin, db.Model):
 class EventCounter(db.Model):
     """
     This table stores counters of the event handler "Counter".
+
+    Note that an event counter name does *not* correspond to just one,
+    but rather *several* table rows, because we store event counters
+    for each privacyIDEA node separately.
+    This is intended to improve the performance of replicated setups,
+    because each privacyIDEA node then only writes to its own "private"
+    table row. This way, we avoid locking issues that would occur
+    if all nodes write to the same table row.
     """
     __tablename__ = 'eventcounter'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    counter_name = db.Column(db.Unicode(80), nullable=False, primary_key=True)
+    id = db.Column(db.Integer, Sequence("eventcounter_seq"), primary_key=True)
+    counter_name = db.Column(db.Unicode(80), nullable=False)
     counter_value = db.Column(db.Integer, default=0)
+    node = db.Column(db.Unicode(255), nullable=False)
+    __table_args__ = (db.UniqueConstraint('counter_name',
+                                          'node',
+                                          name='evctr_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
 
-    def __init__(self, name, value=0):
+    def __init__(self, name, value=0, node=""):
         self.counter_value = value
         self.counter_name = name
+        self.node = node
         self.save()
 
     def save(self):
         db.session.add(self)
         db.session.commit()
-        return self.counter_name
 
     def delete(self):
         ret = self.counter_name
@@ -2528,25 +2517,12 @@ class EventCounter(db.Model):
         self.counter_value = self.counter_value + 1
         self.save()
 
-    def decrease(self, allow_negative=False):
+    def decrease(self):
         """
-        Decrease the value of a counter, stop at zero if allow_negative not given
-        :param allow_negative:
+        Decrease the value of a counter.
         :return:
         """
-        if self.counter_value <= 0 and not allow_negative:
-            # set counter to zero
-            self.counter_value = 0
-        else:
-            self.counter_value = self.counter_value - 1
-        self.save()
-
-    def reset(self):
-        """
-        Reset the value of a counter
-        :return:
-        """
-        self.counter_value = 0
+        self.counter_value = self.counter_value - 1
         self.save()
 
 

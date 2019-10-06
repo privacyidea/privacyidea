@@ -55,14 +55,11 @@ Table of Contents
    modules/index
    faq/index
 
-.. note:: Some parts are marked as "**(TODO)** Not yet implemented".
-   These are components that have not been migrated from 1.5 to 2.0.
-   If you are missing an important, not-yet-migrated part, drop us a note!
 
 If you are missing any information or descriptions
 file an issue at `github <https://github.com/privacyidea/privacyidea/issues>`_ (which would be the preferred way),
 drop a note to info(@)privacyidea.org
-or go to the `Google group <https://groups.google.com/forum/?hl=en#!forum/privacyidea>`_.
+or go to the `Community Forum <https://community.privacyidea.org>`_.
 
 This will help us a lot to improve documentation to your needs.
 
