@@ -28,6 +28,7 @@ tests/testdata/ca/*.der
 tests/testdata/ca2
 tests/testdata/gpg/.gpg-v*-migrated
 tests/testdata/gpg/private-keys-v*.d
+tests/testdata/tmp_directory
 node_modules
 po/*.mo
 htmlcov/

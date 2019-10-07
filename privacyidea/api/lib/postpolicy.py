@@ -303,7 +303,8 @@ def no_detail_on_success(request, response):
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
-        del content["detail"]
+        # None assures that we do not get an error, if "detail" does not exist.
+        content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detailPol])
 
@@ -328,12 +329,12 @@ def add_user_detail_to_response(request, response):
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
         #  details
-        ui = request.User.info
+        ui = request.User.info.copy()
         ui["password"] = ""
         for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
-        content["detail"]["user"] = ui
+        content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
@@ -341,7 +342,7 @@ def add_user_detail_to_response(request, response):
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
-        content["detail"]["user-resolver"] = request.User.resolver
+        content.setdefault("detail", {})["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
