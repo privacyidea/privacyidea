@@ -44,7 +44,7 @@ import logging
 import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, CONFIRMACTION
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
@@ -70,8 +70,7 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
-DEFAULT_CONFIRM_ACTION = "severe"
-
+DEFAULT_CONFIRM_ACTION = CONFIRMACTION.SEVERE
 
 class postpolicy(object):
     """
@@ -543,6 +542,7 @@ def get_webui_settings(request, response):
         confirm_action = DEFAULT_CONFIRM_ACTION
         if len(confirm_action_pol) == 1:
             confirm_action = list(confirm_action_pol)[0]
+        confirm_action_level = CONFIRMACTION.SEVERITY_LEVELS[confirm_action]
 
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=ACTION.POLICYTEMPLATEURL).action_values(unique=True)
@@ -566,6 +566,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
         content["result"]["value"]["confirm_action"] = confirm_action
+        content["result"]["value"]["confirm_action_level"] = confirm_action_level
         response.set_data(json.dumps(content))
     return response
 
