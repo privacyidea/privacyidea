@@ -70,6 +70,7 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
+DEFAULT_CONFIRM_ACTION = "severe"
 
 
 class postpolicy(object):
@@ -519,6 +520,8 @@ def get_webui_settings(request, response):
                                             realm=realm).action_values(unique=True)
         show_seed = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                 realm=realm).any()
+        confirm_action_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.CONFIRMACTION,
+                                         realm=realm).action_values(unique=True)
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
@@ -536,6 +539,10 @@ def get_webui_settings(request, response):
         timeout_action = DEFAULT_TIMEOUT_ACTION
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
+
+        confirm_action = DEFAULT_CONFIRM_ACTION
+        if len(confirm_action_pol) == 1:
+            confirm_action = list(confirm_action_pol)[0]
 
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=ACTION.POLICYTEMPLATEURL).action_values(unique=True)
@@ -558,6 +565,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
+        content["result"]["value"]["confirm_action"] = confirm_action
         response.set_data(json.dumps(content))
     return response
 

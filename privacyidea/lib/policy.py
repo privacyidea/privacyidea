@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-10-07 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#             Add confirm_action policy
 #  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add a high-level API for policy matching
 #  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -227,6 +229,7 @@ class ACTION(object):
     CHALLENGETEXT_HEADER = "challenge_text_header"
     CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
+    CONFIRMACTION = "confirm_action"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DEFAULT_TOKENTYPE = "default_tokentype"
@@ -406,6 +409,14 @@ class TIMEOUT_ACTION(object):
     __doc__ = """This is a list of actions values for idle users"""
     LOGOUT = "logout"
     LOCKSCREEN = 'lockscreen'
+
+
+class CONFIRMACTION(object):
+    __doc__ = """This is a list of severity settings for confirm_action"""
+    NONE = "never"
+    SEVERE = "severe"
+    DIFFICULT = "difficult"
+    ANY = "always"
 
 
 class CONDITION_SECTION(object):
@@ -2083,6 +2094,12 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this is checked, the seed "
                           "will be displayed as text during enrollment.")
+            },
+            ACTION.CONFIRMACTION: {
+                'type': 'str',
+                'desc': _('When to ask the user to confirm their action with a popup dialog. If set to "difficult", '
+                          'only ask when the change would require some work to revert. Defaults to "severe".'),
+                'value': [CONFIRMACTION.NONE, CONFIRMACTION.SEVERE, CONFIRMACTION.DIFFICULT, CONFIRMACTION.ANY]
             }
         }
 
