@@ -542,7 +542,6 @@ def get_webui_settings(request, response):
         confirm_action = DEFAULT_CONFIRM_ACTION
         if len(confirm_action_pol) == 1:
             confirm_action = list(confirm_action_pol)[0]
-        confirm_action_level = CONFIRMACTION.SEVERITY_LEVELS[confirm_action]
 
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=ACTION.POLICYTEMPLATEURL).action_values(unique=True)
@@ -566,7 +565,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
         content["result"]["value"]["confirm_action"] = confirm_action
-        content["result"]["value"]["confirm_action_level"] = confirm_action_level
+        content["result"]["value"]["confirm_action_levels"] = CONFIRMACTION.SEVERITY_LEVELS
         response.set_data(json.dumps(content))
     return response
 
