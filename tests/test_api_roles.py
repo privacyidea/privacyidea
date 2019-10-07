@@ -629,14 +629,14 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
             # check that this is a user
             role = result.get("value").get("role")
-            self.assertTrue(role == "user", result)
-            self.assertEqual(result.get("value").get("realm"), "realm1")
-            self.assertNotIn("detail", content)
+            self.assertEqual(role, "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1", content)
+            self.assertNotIn("detail", content, content)
 
         set_policy(name="pol_add_info",
                    scope=SCOPE.AUTHZ,
@@ -650,17 +650,17 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
             # check that this is a user
             role = result.get("value").get("role")
-            self.assertTrue(role == "user", result)
-            self.assertEqual(result.get("value").get("realm"), "realm1")
-            self.assertEqual(content["detail"]["user-realm"], "realm1")
-            self.assertEqual(content["detail"]["user-resolver"], "resolver1")
-            self.assertIn("user", content["detail"])
-            self.assertEqual(content["detail"]["user"]["userid"], "1004")
+            self.assertEqual(role, "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1", content)
+            self.assertEqual(content["detail"]["user-realm"], "realm1", content)
+            self.assertEqual(content["detail"]["user-resolver"], "resolver1", content)
+            self.assertIn("user", content["detail"], content)
+            self.assertEqual(content["detail"]["user"]["userid"], "1004", content)
 
         # ... but not for internal admins
         with self.app.test_request_context('/auth',
@@ -669,10 +669,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
-            self.assertNotIn("detail", content)
+            self.assertTrue(result.get("status"), content)
+            self.assertNotIn("detail", content, content)
 
         delete_policy("pol_add_info")
 
@@ -699,10 +699,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            self.assertIn("long ago", content["detail"]["message"])
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("long ago", content["detail"]["message"], content)
 
         selfservice_token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
 
@@ -713,9 +713,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         # Authentication still works for internal admins
         with self.app.test_request_context('/auth',
@@ -724,9 +724,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         remove_token(selfservice_token.token.serial)
         delete_policy("pol_lastauth")
@@ -754,10 +754,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            self.assertIn("Tokentype not allowed", result["error"]["message"])
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Tokentype not allowed", result["error"]["message"], content)
 
         # Allow HOTP+SPASS
         set_policy("pol_tokentype",
@@ -771,9 +771,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         # Authentication still works for internal admins
         with self.app.test_request_context('/auth',
@@ -782,9 +782,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         remove_token(spass_token.token.serial)
         delete_policy("pol_tokentype")
@@ -812,10 +812,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            self.assertIn("Tokeninfo field", result["error"]["message"])
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Tokeninfo field", result["error"]["message"], content)
 
         # Add the tokeninfo, we can authenticate
         spass_token.add_tokeninfo("secure", "yes")
@@ -825,9 +825,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         # Authentication still works for internal admins
         with self.app.test_request_context('/auth',
@@ -836,9 +836,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         remove_token(spass_token.token.serial)
         delete_policy("pol_tokeninfo")
@@ -866,10 +866,11 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            self.assertIn("Serial is not allowed for authentication", result["error"]["message"])
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Serial is not allowed for authentication",
+                          result["error"]["message"], content)
 
         # Add a token with a suitable serial
         good_token = init_token({"type": "spass", "pin": "anotherpin", "serial": "GOOD1234"},
@@ -880,9 +881,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "anotherpin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         # Authentication still works for internal admins
         with self.app.test_request_context('/auth',
@@ -891,9 +892,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "testpw"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
+            content = res.json
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         remove_token(spass_token.token.serial)
         remove_token(good_token.token.serial)
@@ -917,10 +918,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
-            self.assertIn("detail", content)
+            content = res.json
+            self.assertIn("detail", content, content)
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         # With the policy, there aren't
         set_policy("pol_detail",
@@ -932,21 +933,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": "somepin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            content = json.loads(res.data.decode('utf8'))
-            self.assertNotIn("detail", content)
+            content = res.json
+            self.assertNotIn("detail", content, content)
             result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
-
-        # Authentication still works for internal admins
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "testadmin",
-                                                 "password": "testpw"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            content = json.loads(res.data.decode('utf8'))
-            result = content.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("status"), content)
 
         remove_token(spass_token.token.serial)
         delete_policy("pol_detail")
@@ -1065,9 +1055,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 failed authentications per 0:00:20")
+                             "Only 2 failed authentications per 0:00:20",
+                             details)
 
         # and even /validate/check does not work
         # (since it counts /auth *and* /validate/check )
@@ -1077,9 +1068,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result["status"])
-            self.assertFalse(result["value"])
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
@@ -1113,9 +1104,10 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "password": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
-            details = json.loads(res.data.decode('utf8')).get("detail")
+            details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 successfull authentications per 0:00:20")
+                             "Only 2 successfull authentications per 0:00:20",
+                             details)
 
         # ... and not with the wrong PIN
         with self.app.test_request_context('/auth',
@@ -1133,9 +1125,9 @@ class APISelfserviceTestCase(MyApiTestCase):
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertTrue(result["status"])
-            self.assertFalse(result["value"])
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
