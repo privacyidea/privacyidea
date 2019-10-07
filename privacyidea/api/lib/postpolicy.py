@@ -303,9 +303,8 @@ def no_detail_on_success(request, response):
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
-        # But only if there is a "detail" key in the response.
-        if "detail" in content:
-            del content["detail"]
+        # None assures that we do not get an error, if "detail" does not exist.
+        content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detailPol])
 
@@ -336,7 +335,6 @@ def add_user_detail_to_response(request, response):
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
-        response.data = json.dumps(content)
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
