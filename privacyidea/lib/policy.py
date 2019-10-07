@@ -416,7 +416,13 @@ class CONFIRMACTION(object):
     NONE = "never"
     SEVERE = "severe"
     DIFFICULT = "difficult"
-    ANY = "always"
+    ALL = "always"
+    SEVERITY_LEVELS = {
+        "never": 40,
+        "severe": 30,
+        "difficult": 20,
+        "always": 10
+    }
 
 
 class CONDITION_SECTION(object):
@@ -2099,7 +2105,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('When to ask the user to confirm their action with a popup dialog. If set to "difficult", '
                           'only ask when the change would require some work to revert. Defaults to "severe".'),
-                'value': [CONFIRMACTION.NONE, CONFIRMACTION.SEVERE, CONFIRMACTION.DIFFICULT, CONFIRMACTION.ANY]
+                'value': [CONFIRMACTION.NONE, CONFIRMACTION.SEVERE, CONFIRMACTION.DIFFICULT, CONFIRMACTION.ALL]
             }
         }
 
