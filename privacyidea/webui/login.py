@@ -150,21 +150,26 @@ def single_page_application():
     else:
         login_text = ""
 
-    return current_app.response_class(render_template("index.html", instance=instance,
-                                                      backendUrl=backend_url,
-                                                      browser_lang=browser_lang,
-                                                      remote_user=remote_user,
-                                                      theme=theme,
-                                                      password_reset=password_reset,
-                                                      hsm_ready=hsm_ready,
-                                                      has_job_queue=str(has_job_queue()),
-                                                      customization=customization,
-                                                      custom_css=custom_css,
-                                                      customization_menu_file=customization_menu_file,
-                                                      customization_baseline_file=customization_baseline_file,
-                                                      realms=realms,
-                                                      external_links=external_links,
-                                                      login_text=login_text,
-                                                      logo=logo,
-                                                      page_title=page_title),
+    render_context = {
+        'instance': instance,
+        'backendUrl': backend_url,
+        'browser_lang': browser_lang,
+        'remote_user': remote_user,
+        'theme': theme,
+        'password_reset': password_reset,
+        'hsm_ready': hsm_ready,
+        'has_job_queue': str(has_job_queue()),
+        'customization': customization,
+        'custom_css': custom_css,
+        'customization_menu_file': customization_menu_file,
+        'customization_baseline_file': customization_baseline_file,
+        'realms': realms,
+        'external_links': external_links,
+        'login_text': login_text,
+        'logo': logo,
+        'page_title': page_title
+    }
+
+    return current_app.response_class(render_template("index.html",
+                                                      **render_context),
                                       mimetype='text/html')

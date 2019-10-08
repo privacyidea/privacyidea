@@ -283,7 +283,7 @@ def get_policy(name=None, export=None):
     else:
         # We want to export all policies
         pol = P.list_policies()
-        ret = send_file(export_policies(pol), export)
+        ret = send_file(export_policies(pol), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
                         'info': u"name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})

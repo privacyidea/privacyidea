@@ -1792,7 +1792,7 @@ class EventHandler(MethodsMixin, db.Model):
 
     def get(self):
         """
-        Return the serialized policy object including the options
+        Return the serialized eventhandler object including the options
 
         :return: complete dict
         :rytpe: dict

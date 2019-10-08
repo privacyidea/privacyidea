@@ -85,10 +85,10 @@ def cert_enroll():
 CN={1!s},CN={2!s},O={3!s}
 emailAddress={4!s}
 """.format(request_key,
-       request.PI_username,
-       request.PI_role,
-       request.PI_realm,
-       email)
+           request.PI_username,
+           request.PI_role,
+           request.PI_realm,
+           email)
     # Take the CSR and run a token init
     from privacyidea.lib.token import init_token
     tokenobject = init_token({"request": csr,
@@ -100,14 +100,14 @@ emailAddress={4!s}
     cert_pem = certificate.replace('\r', "").replace('\n', "")
     cert_pem = cert_pem.replace("-----BEGIN CERTIFICATE-----", "")
     cert_pem = cert_pem.replace("-----END CERTIFICATE-----", "")
-    return render_template("token_enrolled.html",
-                           instance=instance,
-                           backendUrl=backend_url,
-                           username="{0!s}@{1!s}".format(request.PI_username,
-                                               request.PI_realm),
-                           role=request.PI_role,
-                           serial=serial,
-                           certificate=certificate,
-                           cert_pem=cert_pem)
-
-
+    render_context = {'instance': instance,
+                      'backendUrl': backend_url,
+                      'username': "{0!s}@{1!s}".format(request.PI_username,
+                                                       request.PI_realm),
+                      'role': request.PI_role,
+                      'serial': serial,
+                      'certificate': certificate,
+                      'cert_pem': cert_pem }
+    return current_app.response_class(render_template("token_enrolled.html",
+                                                      **render_context),
+                                      mimetype='text/html')

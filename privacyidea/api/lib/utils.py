@@ -148,8 +148,20 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     return ret
 
 
-def send_file(output, filename):
-    content_type = "application/force-download"
+def send_file(output, filename, content_type='text/csv'):
+    """
+    Send the output to the client with the "Content-disposition" header to
+    declare it as a downloadable file.
+    :param output: The data that should be send as a file
+    :type output: str
+    :param filename: The proposed filename
+    :type filename: str
+    :param content_type: The proposed content type of the data
+    :type content_type: str (should be something from this list:
+                             https://www.iana.org/assignments/media-types/media-types.xhtml)
+    :return: The generated response
+    :rtype: flask.Response
+    """
     headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
     return current_app.response_class(output, headers=headers, mimetype=content_type)
 
@@ -176,20 +188,22 @@ def send_csv_result(obj, data_key="tokens",
     """
     delim = "'"
     output = u""
-    # Do the header
-    for k, _v in obj.get(data_key, {})[0].items():
-        output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
-    output += "\n"
-
-    # Do the data
-    for row in obj.get(data_key, {}):
-        for val in row.values():
-            if isinstance(val, six.string_types):
-                value = val.replace("\n", " ")
-            else:
-                value = val
-            output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+    # check if there is any data
+    if data_key in obj and len(obj[data_key]) > 0:
+        # Do the header
+        for k, _v in obj.get(data_key)[0].items():
+            output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
         output += "\n"
+
+        # Do the data
+        for row in obj.get(data_key):
+            for val in row.values():
+                if isinstance(val, six.string_types):
+                    value = val.replace("\n", " ")
+                else:
+                    value = val
+                output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+            output += "\n"
 
     return send_file(output, filename)
 

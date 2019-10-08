@@ -111,7 +111,7 @@ def get_config_documentation():
     # Three or more line breaks will be changed to two.
     return send_file(re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
                                                               context=context)),
-                     'documentation.rst')
+                     'documentation.rst', content_type='text/plain')
 
 
 @system_blueprint.route('/gpgkeys', methods=['GET'])

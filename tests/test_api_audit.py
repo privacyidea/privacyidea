@@ -42,7 +42,10 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertEqual(res.mimetype, 'application/force-download')
+            self.assertEqual(res.mimetype, 'text/csv', res)
+            self.assertIn('Content-disposition', res.headers, res.headers)
+            self.assertEqual('attachment; filename=test.csv',
+                             res.headers['Content-disposition'], res.headers)
             # we have at least 2 entries here, the authentication and this one
             self.assertGreater(len(list(res.response)), 1)
 
@@ -56,8 +59,9 @@ class APIAuditTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertEqual(res.mimetype, 'application/force-download')
-            # we have at least 2 entries here, the authentication and this one
+            self.assertEqual(res.mimetype, 'text/csv', res)
+            # The audit entry from (fake) 10 minutes ago should not be in the
+            # result data
             self.assertNotIn(b"'enroll','1','','','','foo'", res.data, res)
 
     def test_02_get_allowed_audit_realm(self):
