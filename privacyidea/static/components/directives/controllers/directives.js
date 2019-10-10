@@ -401,22 +401,18 @@ myApp.directive('spinner', function() {
     };
 });
 
-myApp.directive('focus', function($timeout){
-    return {
- scope : {
-   trigger : '@focus'
- },
- link : function(scope, element) {
-  scope.$watch('trigger', function(value) {
-    if (value === "true") {
-      $timeout(function() {
-       element[0].focus();
-      });
-   }
- });
- }
-};
-});
+myApp.directive('autofocus', ['$timeout',
+    function ($timeout) {
+        return {
+            restrict: 'A',
+            link: function ($scope, $element) {
+                $timeout(function () {
+                    $element[0].focus();
+                });
+            }
+        };
+    }
+]);
 
 myApp.directive("piPolicyConditions", function (instanceUrl) {
     /* This directive is used to set the conditions of a policy.
