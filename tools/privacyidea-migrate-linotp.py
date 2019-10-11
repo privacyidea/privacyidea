@@ -52,6 +52,7 @@ import json
 import getopt
 import binascii
 import os
+import re
 from privacyidea.lib.crypto import aes_cbc_decrypt, aes_cbc_encrypt
 from privacyidea.lib.utils import hexlify_and_unicode
 
@@ -70,7 +71,8 @@ EXAMPLE_CONFIG_FILE = """{
     "ASSIGNMENTS": {
         "resolver": {"local": "localpw"},
         "realm": {"localpw": "neuerrealm"},
-        "unassigned_tokens": ["testfoo"]
+        "unassigned_tokens": ["testfoo"],
+        "convert_endian": true
     },
     "ENCRYPTION": {
         "reencrypt": false,
@@ -81,6 +83,16 @@ EXAMPLE_CONFIG_FILE = """{
         "arbitrary_migrationkey": "somevalue"
     }
 }"""
+
+
+# These patterns are used to convert a middle endian UUID to a standard UUID:
+# 33221100554477668899AABBCCDDEEFF -> 00112233-4455-6677-8899-AABBCCDDEEFF
+UUID_MATCH_PATTERN = "^([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})" \
+                     "([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})" \
+                     "([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})" \
+                     "([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$"
+
+UUID_REPLACE_PATTERN = "\\4\\3\\2\\1-\\6\\5-\\8\\7-\\9\\10-\\11\\12\\13\\14\\15\\16"
 
 
 class Config(object):
@@ -372,6 +384,10 @@ def migrate(config_obj):
                                     u"resolver: {0!s}".format(linotp_resolver))
                 resolver_type = resolver_type
                 user_id = r['LinOtpUserid']
+                if config_obj.ASSIGNMENTS.get("convert_endian"):
+                    print(" +--- converting UUID {0!s}".format(user_id))
+                    user_id = re.sub(UUID_MATCH_PATTERN, UUID_REPLACE_PATTERN, user_id)
+                    print("  +-- to              {0!s}".format(user_id))
             else:
                 user_pin = None
                 user_pin_iv = None
