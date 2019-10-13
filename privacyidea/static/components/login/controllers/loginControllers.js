@@ -356,6 +356,8 @@ angular.module("privacyideaApp")
             $scope.hide_buttons = data.result.value.hide_buttons;
             $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
+            $scope.confirm_action = data.result.value.confirm_action;
+            $scope.confirm_action_levels = data.result.value.confirm_action_levels;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
@@ -489,6 +491,27 @@ angular.module("privacyideaApp")
         */
         $scope.reloadListeners = 1;
     };
+
+    /*
+     * Ask the user to confirm an action.
+     *
+     * This will open a modal with a given heading and confirmation question, if the severity warrants a confirmation
+     * dialog. The modal will have two buttons, one labeled “no”, one labeled with the given action. If the user
+     * confirms the action by clicking the button, the given callback will be invoked, otherwise the dialog will be
+     * closed and no action will be performed. If the given severity does not call for a confirmation dialog to be
+     * opened, the callback will be executed immediately and no dialog will be opened.
+     */
+    $scope.confirm = function (severity, heading, question, action, callback) {
+        // TODO Implement
+        if (severity >= $scope.confirm_action_levels[$scope.confirm_action]) {
+            console.log("Confirmation dialog:", {
+                heading: heading,
+                question: question,
+                action: action,
+                callback: callback
+            });
+        }
+    }
 
 });
 
