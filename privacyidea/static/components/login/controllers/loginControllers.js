@@ -532,7 +532,6 @@ angular.module("privacyideaApp").controller("mainController", [
          */
         $scope.confirm = function (severity, heading, question, action, callback) {
             var dialogpath = instanceUrl + "/static/components/dialogs/views/";
-            var parentElem = angular.element(document.getElementById("modal-anchor"));
             if (severity >= $scope.confirm_action_levels[$scope.confirm_action]) {
                 var modalInstance = $modal.open({
                     templateUrl: dialogpath + "dialog.confirm_action.html",
@@ -540,7 +539,6 @@ angular.module("privacyideaApp").controller("mainController", [
                     controllerAs: "$ctrl",
                     ariaLabelledBy: "modal-title",
                     ariaDescribedBy: "modal-content",
-                    appendTo: parentElem,
                     resolve: {
                         heading: function() {
                             return heading;
