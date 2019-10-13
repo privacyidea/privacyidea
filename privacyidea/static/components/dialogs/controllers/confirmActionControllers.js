@@ -1,4 +1,8 @@
 /**
+ * http://www.privacyidea.org
+ *
+ * 2019-10-13 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
  * License as published by the Free Software Foundation; either

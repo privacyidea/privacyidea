@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-13 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Switch to new DI-syntax, add $scope.confirm().
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
