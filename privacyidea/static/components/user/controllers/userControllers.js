@@ -173,7 +173,7 @@ angular.module("privacyideaApp")
 
         $scope.deleteUserAsk = function() {
             $scope.confirm(
-                $scope.confirm_action_levels["difficult"],
+                $scope.confirm_action_levels["severe"],
                 "Delete User",
                 "Do you really want to delete the user in the user store?",
                 "Delete User",
