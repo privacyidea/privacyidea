@@ -34,6 +34,7 @@ angular.module("privacyideaApp").controller("mainController", [
     "AuthFactory",
     "$rootScope",
     "$state",
+    "$modal",
     "ConfigFactory",
     "inform",
     "PolicyTemplateFactory",
@@ -52,6 +53,7 @@ angular.module("privacyideaApp").controller("mainController", [
         AuthFactory,
         $rootScope,
         $state,
+        $modal,
         ConfigFactory,
         inform,
         PolicyTemplateFactory,
@@ -527,14 +529,31 @@ angular.module("privacyideaApp").controller("mainController", [
          * opened, the callback will be executed immediately and no dialog will be opened.
          */
         $scope.confirm = function (severity, heading, question, action, callback) {
-            // TODO Implement
+            var dialogpath = instanceUrl + "/static/components/dialogs/views/";
+            var parentElem = angular.element(document.getElementById("modal-anchor"));
             if (severity >= $scope.confirm_action_levels[$scope.confirm_action]) {
-                console.log("Confirmation dialog:", {
-                    heading: heading,
-                    question: question,
-                    action: action,
-                    callback: callback
+                var modalInstance = $modal.open({
+                    templateUrl: dialogpath + "dialog.confirm_action.html",
+                    controller: "confirmActionController",
+                    controllerAs: "$ctrl",
+                    ariaLabelledBy: "modal-title",
+                    ariaDescribedBy: "modal-content",
+                    appendTo: parentElem,
+                    resolve: {
+                        heading: function() {
+                            return heading;
+                        },
+                        question: function() {
+                            return question;
+                        },
+                        action: function() {
+                            return action;
+                        }
+                    }
                 });
+                modalInstance.result.then(callback);
+            } else {
+                callback();
             }
         }
     }
