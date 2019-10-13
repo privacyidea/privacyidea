@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-13 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Refactor deleteUserAsk().
  * 2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
  *            On initialisation generate object describing the fields
  *            required by the add user form for each resolver.

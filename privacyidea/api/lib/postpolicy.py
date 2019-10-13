@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2019-10-07 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#             Add confirm_action policy
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenwizard
 #  2015-10-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
