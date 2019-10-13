@@ -172,7 +172,12 @@ angular.module("privacyideaApp")
         };
 
         $scope.deleteUserAsk = function() {
-            $('#dialogUserDelete').modal();
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Delete User",
+                "Do you really want to delete the user in the user store?",
+                "Delete User",
+                $scope.deleteUser);
         };
         $scope.deleteUser = function () {
             UserFactory.deleteUser($scope.resolvername, $scope.User.username,
