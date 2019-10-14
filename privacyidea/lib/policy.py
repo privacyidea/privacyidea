@@ -418,7 +418,7 @@ class CONFIRMACTION(object):
     DIFFICULT = "difficult"
     ALL = "always"
     SEVERITY_LEVELS = {
-        "never": 40,
+        "never": 100,
         "severe": 30,
         "difficult": 20,
         "always": 10
