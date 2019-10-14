@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -137,6 +139,15 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 myApp.controller("tokenAssignController", function ($scope, TokenFactory,
                                                     $stateParams, AuthFactory,
                                                     UserFactory, $state) {
+    $scope.assignTokenAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Connect Token",
+            "Do you want to connect this token to your account now?",
+            "Connect Token",
+            $scope.assignToken);
+    };
+
     $scope.assignToken = function () {
         TokenFactory.assign({
             serial: fixSerial($scope.newToken.serial),
@@ -627,6 +638,17 @@ myApp.controller("tokenImportController", function ($scope, $upload,
     ConfigFactory.getPGPKeys(function (data) {
         $scope.pgpkeys = data.result.value;
     });
+
+    $scope.uploadAsk = function(files) {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Confirm Import",
+            "Please confirm, that you wish to import the tokens from the selected file.",
+            "Start Import",
+            function() {
+                $scope.upload(files);
+            });
+    };
 
     $scope.upload = function (files) {
         if (files && files.length) {
