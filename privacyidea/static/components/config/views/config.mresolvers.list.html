@@ -16,15 +16,18 @@
                 {{ resolver.type }}
             </td>
             <td>
-                <button class="btn btn-sm btn-primary"
+                <button
+                        class="btn btn-sm btn-primary"
                         ng-click="editResolver(resolver.resolvername,
                         resolver.type)"
                         translate>Edit</button>
-                <button class="btn btn-sm btn-danger"
+                <button
+                        class="btn btn-sm btn-danger"
                         ng-show="checkRight('mresolverdelete')"
-                        ng-click="delResolver(resolver.resolvername)">
-                    <span class="glyphicon glyphicon-trash"></span>
-                    <span translate>Delete</span></button>
+                        ng-click="delMachineResolverAsk(resolver.resolvername)">
+                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
+                    <span translate>Delete</span>
+                </button>
             </td>
         </tr>
         </tbody>

@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2017-08-24 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -46,6 +48,17 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
         });
     };
 
+    $scope.delPrivacyideaServerAsk = function(identifier) {
+        $scope.confirm(
+            $scope.confirm_action_level["severe"],
+            "Delete PrivacyIDEA Server Configuration",
+            "Are you sure you want to delete this PrivacyIDEA server configuration",
+            "Delete Server Config",
+            function() {
+                $scope.delPrivacyideaServer(identifier);
+            });
+    };
+
     $scope.delPrivacyideaServer = function (identifier) {
         ConfigFactory.delPrivacyidea(identifier, function(data) {
             $scope.getPrivacyideaServers();
@@ -70,7 +83,16 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
         });
     };
 
-    $scope.savePrivacyideaServer= function() {
+    $scope.savePrivacyideaServerAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_level["difficult"],
+            "Save PrivacyIDEA Server Configuration",
+            "Do you want to apply this PrivacyIDEA server configuration?",
+            "Save Server Config",
+            $scope.savePrivacyideaServer);
+    };
+
+    $scope.savePrivacyideaServer = function() {
         ConfigFactory.addPrivacyidea($scope.params, function(data){
             if (data.result.status === true) {
                 inform.add(gettextCatalog.getString("privacyIDEA Server" +

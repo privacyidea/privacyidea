@@ -28,11 +28,11 @@
             <td>
                 <span ng-show="policy.active"
                       class="glyphicon glyphicon-ok"
-                      ng-click="disablePolicy(policy.name)">
+                      ng-click="disablePolicyAsk(policy.name)">
                 </span>
                 <span ng-hide="policy.active"
                       class="glyphicon glyphicon-minus"
-                      ng-click="enablePolicy(policy.name)">
+                      ng-click="enablePolicyAsk(policy.name)">
                 </span>
             </td>
             <td>
@@ -60,7 +60,7 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('policydelete')"
-                        ng-click="delPolicy(policy.name)">
+                        ng-click="delPolicyAsk(policy.name)">
                         <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>

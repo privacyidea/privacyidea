@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2015-01-11 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -34,10 +36,32 @@ myApp.controller("policyListController", function($scope, $stateParams,
         });
     };
 
+    $scope.delPolicyAsk = function(policyName) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete Policy",
+            "Do you really want to delete this policy? This cannot be undone!",
+            "Delete Policy",
+            function() {
+                $scope.delPolicy(policyName);
+            });
+    };
+
     $scope.delPolicy = function (policyName) {
         ConfigFactory.delPolicy(policyName, function(data) {
             $scope.getPolicies();
         });
+    };
+
+    $scope.enablePolicyAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Enable Policy",
+            "Do you really want to enable this policy?",
+            "Enable",
+            function() {
+                enablePolicy(name);
+            });
     };
 
     // define functions
@@ -45,6 +69,17 @@ myApp.controller("policyListController", function($scope, $stateParams,
         ConfigFactory.enablePolicy(name, function () {
             $scope.getPolicies();
         });
+    };
+
+    $scope.disablePolicyAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Disable Policy",
+            "Do you really want to disable this policy?",
+            "Disable",
+            function() {
+                disablePolicy(name);
+            });
     };
 
     $scope.disablePolicy = function (name) {
@@ -259,6 +294,15 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         }
     };
 
+    $scope.createPolicyAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Store Policy",
+            "Do you really want to apply these settings?",
+            "Store Policy",
+            $scope.createPolicy);
+    };
+
     $scope.createPolicy = function () {
         // This is called to save the policy
         // get scope
@@ -442,6 +486,15 @@ myApp.controller("tokenConfigController", function ($scope, $location,
         });
     };
 
+    $scope.saveTokenConfigAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Update Token Configuration",
+            "Do you apply your changes to the settings for this token type?",
+            "Update Config",
+            $scope.saveTokenConfig);
+    };
+
     $scope.saveTokenConfig = function () {
         // only save parameters, that have changed!
         //debug: console.log($scope.form);
@@ -456,6 +509,17 @@ myApp.controller("tokenConfigController", function ($scope, $location,
                                 {type: "info"});
             }
         });
+    };
+
+    $scope.deleteSystemEntryAsk = function(apiId) {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Delete System Entry",
+            "Are you sure you want to delete this item?",
+            "Delete",
+            function() {
+                $scope.deleteSystemEntry(apiId);
+            });
     };
 
     $scope.deleteSystemEntry = function(apiId) {
@@ -568,6 +632,17 @@ myApp.controller("configController", function ($scope, $location,
         });
     };
 
+    $scope.delResolverAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete Resolver",
+            "Do you really want to delete this resolver? This cannot be undone!",
+            "Delete Resolver",
+            function() {
+                delResolver(name);
+            });
+    };
+
     $scope.delResolver = function (name) {
         ConfigFactory.delResolver(name, function (data) {
             $scope.resolvers = data.result.value;
@@ -579,6 +654,17 @@ myApp.controller("configController", function ($scope, $location,
         ConfigFactory.getMachineResolvers(function (data) {
             $scope.machineResolvers = data.result.value;
         });
+    };
+
+    $scope.delMachineResolverAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete Machine Resolver",
+            "Do you really want to delete this resolver? This cannot be undone!",
+            "Delete Resolver",
+            function() {
+                delMachineResolver(name);
+            });
     };
 
     $scope.delMachineResolver = function (name) {
@@ -594,6 +680,17 @@ myApp.controller("configController", function ($scope, $location,
             $scope.realms = data.result.value;
             //debug: console.log($scope.realms);
         });
+    };
+
+    $scope.setRealmAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Save User Realm",
+            "Do you want to apply these settings?",
+            "Save Realm",
+            function() {
+                $scope.setRealm(name);
+            });
     };
 
     $scope.setRealm = function (name) {
@@ -615,6 +712,17 @@ myApp.controller("configController", function ($scope, $location,
         });
     };
 
+    $scope.delRealmAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete User Realm",
+            "Do you really want to delete this realm?",
+            "Delete Realm",
+            function() {
+                $scope.delRealm(name);
+            });
+    };
+
     $scope.delRealm = function (name) {
         ConfigFactory.delRealm(name, function (data) {
             $scope.set_result = data.result.value;
@@ -622,11 +730,31 @@ myApp.controller("configController", function ($scope, $location,
         });
     };
 
+    $scope.setDefaultRealmAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Set Default User Realm",
+            "Are you sure you want to change the default user realm?",
+            "Set Default Realm",
+            function() {
+                $scope.setDefaultRealm(name);
+            });
+    };
+
     $scope.setDefaultRealm = function (name) {
         ConfigFactory.setDefaultRealm(name, function (data) {
             $scope.set_result = data.result.value;
             $scope.getRealms();
         });
+    };
+
+    $scope.clearDefaultRealmAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Clear Default User Realm",
+            "Are you sure you cant to unset the default user realm?",
+            "Clear Default Realm",
+            $scope.clearDefaultRealm);
     };
 
     $scope.clearDefaultRealm = function () {
@@ -673,6 +801,15 @@ myApp.controller("configController", function ($scope, $location,
                     {type: "danger", ttl: 10000});
             }
         });
+    };
+
+    $scope.saveSystemConfigAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Update System Configuration",
+            "Are you sure you want to apply the changes you have made to the system configuration?",
+            "Update Config",
+            $scope.saveSystemConfig);
     };
 
     $scope.saveSystemConfig = function () {
@@ -735,6 +872,15 @@ myApp.controller("PasswdResolverController", function ($scope, ConfigFactory,
         });
     }
 
+    $scope.setResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Store passwd Resolver Configuration",
+            "Do you want to apply this configuration?",
+            "Store Resolver",
+            $scope.setResolver);
+    };
+
     $scope.setResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;
@@ -763,6 +909,15 @@ myApp.controller("hostsResolverController", function ($scope,
         });
     }
 
+    $scope.setMachineResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Save Hosts Machnine Resolver",
+            "Do you want to save your settings for this machine resolver?",
+            "Save",
+            $scope.setMachineResolver);
+    };
+
     $scope.setMachineResolver = function () {
         ConfigFactory.setMachineResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;
@@ -785,6 +940,17 @@ myApp.controller("CAConnectorController", function($scope, ConfigFactory,
         });
     };
     $scope.getCAConnectors();
+
+    $scope.delCAConnectorAsk = function(connectorname) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete CA Connector",
+            "Do you really want to delete this CA connector?",
+            "Delete CA Connector",
+            function() {
+                $scope.delCAConnector(connectorname);
+            });
+    };
 
     $scope.delCAConnector = function(connectorname) {
         ConfigFactory.delCAConnector(connectorname, function(data){
@@ -821,6 +987,15 @@ myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
         });
     }
 
+    $scope.setCAConnectorAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Save CA Connector",
+            "Do you want to save these settings?",
+            "Save",
+            $scope.setCAConnector);
+    };
+
     $scope.setCAConnector = function () {
         ConfigFactory.setCAConnector($scope.connectorname,
                                      $scope.params, function (data) {
@@ -847,6 +1022,17 @@ myApp.controller("machineResolverController", function ($scope,
         });
     };
     $scope.getMachineResolvers();
+
+    $scope.delResolverAsk = function(resolvername) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete User Resolver",
+            "Do you want to delete this resolver?",
+            "Delete Resolver",
+            function() {
+                $scope.delResolver(resolvername);
+            });
+    };
 
     $scope.delResolver = function(resolvername) {
         ConfigFactory.delMachineResolver(resolvername, function(data){
@@ -934,6 +1120,15 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         $scope.params.SCOPE = "SUBTREE";
     };
 
+    $scope.setLDAPResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Store LDAP Resolver Configuration",
+            "Do you want to apply this LDAP configuration?",
+            "Store LDAP Resolver",
+            $scope.setLDAPResolver);
+    };
+
     $scope.setLDAPResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
             $scope.set_result = data.result.value;
@@ -978,6 +1173,15 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
             $scope.params.type = 'scimresolver';
         });
     }
+
+    $scope.setSCIMResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Store SCIM Resolver Configuration",
+            "Do you want to apply this SCIM configuration?",
+            "Store SCIM Resolver",
+            $scope.setSCIMResolver);
+    };
 
     $scope.setSCIMResolver = function () {
         ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
@@ -1056,6 +1260,15 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
         $scope.params.Table = "user";
         $scope.params.Map = '{"userid": "uid", "username": "name", "email"' +
             ': "mail", "password": "pass" }';
+    };
+
+    $scope.setSQLResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Store SQL Resolver Configuration",
+            "Do you want to apply this SQL configuration?",
+            "Store SQL Resolver",
+            $scope.setSQLResolver);
     };
 
     $scope.setSQLResolver = function () {

@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2018-07-31 Friedrich Weber, <friedrich.weber@netknights.it>
  *
  * This code is free software; you can redistribute it and/or
@@ -31,6 +33,17 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
         });
     };
 
+    $scope.delPeriodicTaskAsk = function(ptaskid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete Periodic Task Definition",
+            "Do you really want to delete this task? This cannot be undone!",
+            "Delete Task",
+            function() {
+                $scope.delPeriodicTask(ptaskid);
+            });
+    };
+
     $scope.delPeriodicTask = function (ptaskid) {
         ConfigFactory.delPeriodicTask(ptaskid, function(data) {
             $scope.getPeriodicTasks();
@@ -38,10 +51,32 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
         });
     };
 
+    $scope.enablePeriodicTaskAsk = function(ptaskid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Enable Periodic Task Definition",
+            "Do you want to enable this periodic task?",
+            "Enable Task",
+            function() {
+                $scope.enablePeriodicTask(ptaskid);
+            });
+    };
+
     $scope.enablePeriodicTask = function (ptaskid) {
         ConfigFactory.enablePeriodicTask(ptaskid, function () {
             $scope.getPeriodicTasks();
         });
+    };
+
+    $scope.disablePeriodicTaskAsk = function(ptaskid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Disable Periodic Task Definition",
+            "Do you want to disable this periodic task?",
+            "Disable Task",
+            function() {
+                $scope.disablePeriodicTask(ptaskid);
+            });
     };
 
     $scope.disablePeriodicTask = function (ptaskid) {
@@ -138,6 +173,15 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
         ConfigFactory.getPeriodicTaskmodules(function(data) {
             $scope.taskmodules = data.result.value;
         });
+    };
+
+    $scope.createPeriodicTaskAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Store Periodic Task Definition",
+            "Do you want to apply these settings?",
+            "Store Task",
+            $scope.createPeriodicTask);
     };
 
     $scope.createPeriodicTask = function () {

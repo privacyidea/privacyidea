@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2015-12-28 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -45,6 +47,17 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
         });
     };
 
+    $scope.delSmtpServerAsk = function(identifier) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete SMTP Server Configuration",
+            "Do you really want to delete this SMTP server?",
+            "Delete SMTP Server",
+            function() {
+                $scope.delSmtpServer(identifier);
+            });
+    };
+
     $scope.delSmtpServer = function (identifier) {
         ConfigFactory.delSmtp(identifier, function(data) {
             $scope.getSmtpServers();
@@ -67,6 +80,15 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
                    {type: "info"});
            }
         });
+    };
+
+    $scope.saveSMTPServerAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Store SMTP Server Configuration",
+            "Do you want to apply these settings?",
+            "Store SMTP Server",
+            $scope.saveSMTPServer);
     };
 
     $scope.saveSMTPServer = function() {

@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2016-06-15 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -68,6 +70,15 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.getSMSProviders();
     $scope.getSMSGateways($scope.gateway_id);
 
+    $scope.createSMSgatewayAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Store SMS Gateway Definition",
+            "Do you want to apply these settings?",
+            "Store SMS Gateway",
+            $scope.createSMSgateway);
+    };
+
     $scope.createSMSgateway = function () {
         // This is called to save the SMS gateway
         if ($scope.gateway_id) {
@@ -86,6 +97,17 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
             $state.go("config.smsgateway.list");
             $('html,body').scrollTop(0);
         });
+    };
+
+    $scope.deleteSMSgatewayAsk = function(name) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete SMS Gateway Definition",
+            "Do you really want to delete this SMS gateway?",
+            "Delete SMS Gateway",
+            function() {
+                $scope.deleteSMSgateway(name);
+            });
     };
 
     $scope.deleteSMSgateway = function (name) {

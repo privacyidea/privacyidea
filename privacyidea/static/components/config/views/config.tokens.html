@@ -67,8 +67,9 @@
 
             <div class="text-center"
                 ng-show="checkRight('configwrite')">
-                <button class="btn btn-primary"
-                        ng-click="saveTokenConfig()"
+                <button
+                        class="btn btn-primary"
+                        ng-click="saveTokenConfigAsk()"
                         ng-disabled="formTokenConfig.$invalid"
                         translate>
                     Save

@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2016-02-20 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -46,6 +48,17 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
+    $scope.delRadiusServerAsk = function(identifier) {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete RADIUS Server Configuration",
+            "Are you sure you want to delete this RADIUS server configuration?",
+            "Delete Server",
+            function() {
+                $scope.delRadiusServer(identifier);
+            });
+    };
+
     $scope.delRadiusServer = function (identifier) {
         ConfigFactory.delRadius(identifier, function(data) {
             $scope.getRadiusServers();
@@ -73,7 +86,16 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
-    $scope.saveRadiusServer= function() {
+    $scope.saveRadiusServerAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Save RADIUS Server Configuration",
+            "Do you want to apply this RADIUS server configuration?",
+            "Save RADIUS Config",
+            $scope.saveRadiusServer);
+    };
+
+    $scope.saveRadiusServer = function() {
         ConfigFactory.addRadius($scope.params, function(data){
             if (data.result.status === true) {
                 inform.add(gettextCatalog.getString("RADIUS Config saved."),
