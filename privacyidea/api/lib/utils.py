@@ -148,6 +148,18 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     return ret
 
 
+def send_html(output):
+    """
+    Send the ouput as HTML to the client with the correct mimetype.
+
+    :param output: The HTML to send to the client
+    :type output: str
+    :return: The generated response
+    :rtype: flask.Response
+    """
+    return current_app.response_class(output, mimetype='text/html')
+
+
 def send_file(output, filename, content_type='text/csv'):
     """
     Send the output to the client with the "Content-disposition" header to
