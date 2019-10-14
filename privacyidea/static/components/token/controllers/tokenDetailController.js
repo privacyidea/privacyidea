@@ -117,6 +117,24 @@ myApp.controller("tokenDetailController", function ($scope,
             $rootScope.previousState.params);
     };
 
+    $scope.unassignAskAdmin = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["easy"],
+            "Unassign Token",
+            "Do you really want to remove this token from this users account?",
+            "Unassign",
+            $scope.unassign);
+    };
+
+    $scope.unassignAskUser = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Unassign Token",
+            "Do you really want to remove this token from your account?",
+            "Unassign",
+            $scope.unassign);
+    };
+
     $scope.unassign = function () {
         if ($scope.loggedInUser.role === 'user') {
             TokenFactory.unassign($scope.tokenSerial, $state.go('token.list'));
@@ -125,22 +143,62 @@ myApp.controller("tokenDetailController", function ($scope,
         }
     };
 
+    $scope.enableAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Enable Token",
+            "Do you want to enable this token?",
+            "Enable Token",
+            $scope.enable);
+    };
+
     $scope.enable = function () {
         TokenFactory.enable($scope.tokenSerial, $scope.get);
+    };
+
+    $scope.disableAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["easy"],
+            "Disable Token",
+            "Do you really want to disable this token?",
+            "Disable Token",
+            $scope.disable);
     };
 
     $scope.disable = function () {
         TokenFactory.disable($scope.tokenSerial, $scope.get);
     };
+
+    $scope.revokeAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Revoke Token",
+            "Do you really want to revoke this token?",
+            "Revoke Token",
+            $scope.revoke);
+    };
+
     $scope.revoke = function () {
         TokenFactory.revoke($scope.tokenSerial, $scope.get);
     };
+
     $scope.set = function (key, value) {
         TokenFactory.set($scope.tokenSerial, key, value, $scope.get);
     };
+
     $scope.setdescription = function (description) {
         TokenFactory.set_description($scope.tokenSerial, description, $scope.get);
     };
+
+    $scope.resetAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Reset Fail Counter",
+            "Do you want to reset the fail counter for this token?",
+            "Reset",
+            $scope.reset);
+    };
+
     $scope.reset = function () {
         TokenFactory.reset($scope.tokenSerial, $scope.get);
     };
@@ -159,6 +217,15 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.selectedRealms = {};
     };
 
+    $scope.saveRealmAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["easy"],
+            "Edit Token Realm",
+            "Do you want to apply your changes to the realm assignments for this token?",
+            "Save Realm",
+            $scope.saveRealm);
+    };
+
     $scope.saveRealm = function () {
         var realms = [];
         for (var realm in $scope.selectedRealms) {
@@ -168,6 +235,18 @@ myApp.controller("tokenDetailController", function ($scope,
         }
         TokenFactory.setrealm($scope.tokenSerial, realms, $scope.get);
         $scope.cancelEditRealm();
+    };
+
+    $scope.saveTokenInfoAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Edit Token Information",
+            "Do you want to apply your changes the information for this token?",
+            "Save Token Info",
+            function() {
+                $scope.editTokenInfo = 0;
+                $scope.saveTokenInfo();
+            });
     };
 
     $scope.saveTokenInfo = function () {
@@ -181,6 +260,15 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.get);
     };
 
+    $scope.assignUserAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Assign User",
+            "Do you really want to assign the user to this token?",
+            "Assign",
+            $scope.assignUser);
+    };
+
     $scope.assignUser = function () {
         TokenFactory.assign({
             serial: $scope.tokenSerial,
@@ -190,8 +278,26 @@ myApp.controller("tokenDetailController", function ($scope,
         }, $scope.get);
     };
 
+    $scope.deleteAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["severe"],
+            "Delete Token",
+            "Are you sure you want to delete this token? CAUTION: THIS MAY BE DIFFICULT OR IMPOSSIBLE TO REVERT!",
+            "Yes, really delete this token!",
+            $scope.delete);
+    };
+
     $scope.delete = function () {
         TokenFactory.delete($scope.tokenSerial, $scope.return_to);
+    };
+
+    $scope.setRandomPinAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Set Random Token PIN",
+            "Dou you really want to change the PIN for this token?",
+            "Set PIN",
+            $scope.setRandomPin);
     };
 
     $scope.setRandomPin = function () {
@@ -205,6 +311,15 @@ myApp.controller("tokenDetailController", function ($scope,
                 }
                 $scope.randomPin = data.detail.pin;
             });
+    };
+
+    $scope.setPinAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Set Token PIN",
+            "Dou you really want to change the PIN for this token?",
+            "Set PIN",
+            $scope.setPin);
     };
 
     $scope.setPin = function () {
@@ -225,6 +340,15 @@ myApp.controller("tokenDetailController", function ($scope,
                     $scope.get();
                 }
             });
+    };
+
+    $scope.resyncTokenAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Resync Token",
+            "Do you want to resync this token using the OTP value you entered?",
+            "Resync Token",
+            $scope.resyncToken);
     };
 
     $scope.resyncToken = function () {
@@ -281,6 +405,15 @@ myApp.controller("tokenDetailController", function ($scope,
                 $scope.realms = data.result.value;
         });
 
+        $scope.attachMachineAsk = function() {
+            $scope.confirm(
+                $scope.confirm_action_levels["always"],
+                "Attach Machine to Token",
+                "Are you sure you want to attach the machine to this token?",
+                "Attach Machine",
+                $scope.attachMachine);
+        };
+
         $scope.attachMachine = function () {
             // newToken.serial, application
             var params = $scope.form.options;
@@ -300,6 +433,17 @@ myApp.controller("tokenDetailController", function ($scope,
             });
         };
 
+        $scope.detachMachineTokenAsk = function(machineid, resolver, application) {
+            $scope.confirm(
+                $scope.confirm_action_levels["easy"],
+                "Detach Machine from Token",
+                "Do you really want to detach the machine from this token?",
+                "Detach Machine",
+                function() {
+                    $scope.detachMachineToken(machineid, resolver, application);
+                });
+        };
+
         $scope.detachMachineToken = function (machineid, resolver, application) {
             MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
                     application: application,
@@ -308,6 +452,18 @@ myApp.controller("tokenDetailController", function ($scope,
             }, function (data) {
                 $scope.getMachines();
             });
+        };
+
+        $scope.saveOptionsAsk = function(machineid, resolver, application, options) {
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Save Machine Options",
+                "Do you want to apply the changes you have made to the options for this machine?",
+                "Save Options",
+                function() {
+                    $scope.saveOptions(machineid, resolver, application, options);
+                    $scope.machine.optionsEdit = false;
+                });
         };
 
         $scope.saveOptions = function(machineid, resolver, application, options) {

@@ -10,7 +10,7 @@
             <td translate>Type</td>
             <td>{{ token.tokentype }}</td>
             <td>
-                <button class="btn btn-danger" ng-click="delete()"
+                <button class="btn btn-danger" ng-click="deleteAsk()"
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')"
                         ng-hide="!checkRight('delete') && hide_buttons">
@@ -34,28 +34,28 @@
                   translate>revoked</span>
             </td>
             <td>
-            <span ng-show="token.active"
-                  ng-click="disable()">
+            <span ng-show="token.active">
                 <button class="btn btn-danger"
                         id="disableButton"
                         ng-disabled="!checkRight('disable')"
                         ng-hide="!checkRight('disable') && hide_buttons"
-                        translate>Disable</button>
+                        translate
+                        ng-click="disableAsk()">Disable</button>
             </span>
-            <span ng-show="!token.active && !token.locked"
-                  ng-click="enable()">
+            <span ng-show="!token.active && !token.locked">
                 <button class="btn btn-success"
                         id="enableButton"
                         ng-disabled="!checkRight('enable')"
                         ng-hide="!checkRight('enable') && hide_buttons"
+                        ng-click="enableAsk()"
                         translate>Enable</button>
             </span>
-            <span ng-show="!token.revoked"
-                  ng-click="revoke()">
+            <span ng-show="!token.revoked">
                 <button class="btn btn-danger"
                         id="revokeButton"
                         ng-disabled="!checkRight('revoke')"
                         ng-hide="!checkRight('revoke') && hide_buttons"
+                        ng-click="revokeAsk()"
                         translate>
                     Revoke</button>
             </span>
@@ -89,7 +89,7 @@
                 <button class="btn btn-success"
                         id="resetButton"
                         ng-show="token.failcount > 0"
-                        ng-click="reset()"
+                        ng-click="resetAsk()"
                         ng-disabled="!checkRight('reset')"
                         ng-hide="!checkRight('reset') && hide_buttons"
                         translate>Reset fail counter
@@ -259,7 +259,7 @@
                     <button class="btn btn-primary"
                             id="tiSaveButton"
                             ng-show="editTokenInfo"
-                            ng-click="editTokenInfo=0; saveTokenInfo()"
+                            ng-click="saveTokenInfoAsk()"
                             translate>Save Token Info
                     </button>
                     <button class="btn btn-danger"
@@ -302,7 +302,7 @@
                     <button class="btn btn-primary"
                             id="trSaveButton"
                             ng-show="editTokenRealm"
-                            ng-click="saveRealm()"
+                            ng-click="saveRealmAsk()"
                             translate>Save realms
                     </button>
                     <button class="btn btn-danger"
@@ -333,7 +333,7 @@
                 <button class="btn btn-primary"
                         id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
-                        ng-click="resyncToken()">
+                        ng-click="resyncTokenAsk()">
                     <span class="glyphicon glyphicon-refresh"></span>
                     <span translate>Resync Token</span>
                 </button>
@@ -355,7 +355,7 @@
                 <button class="btn btn-primary"
                         id="setPinButton"
                         ng-disabled="pin1 != pin2"
-                        ng-click="setPin()">
+                        ng-click="setPinAsk()">
                     <span class="glyphicon glyphicon-pushpin"></span>
                     <span translate>Set PIN</span>
                 </button>
@@ -372,7 +372,7 @@
             <td>
                 <button class="btn btn-primary"
                         id="setRandomPinButton"
-                        ng-click="setRandomPin()">
+                        ng-click="setRandomPinAsk()">
                     <span class="glyphicon glyphicon-pushpin"></span>
                     <span translate>Set random PIN</span>
                 </button>
@@ -433,7 +433,7 @@
                 <td>
                     <button ng-hide="token.locked"
                             id="unassignAdminButton"
-                            ng-click="unassign()"
+                            ng-click="unassignAskAdmin()"
                             class="btn btn-warning">
                         <span class="glyphicon glyphicon-resize-full"></span>
                         <span translate>Unassign User</span>
@@ -458,7 +458,7 @@
     </div>
     <div ng-show="loggedInUser.role== 'user' && !token.locked
         && checkRight('unassign')">
-        <button ng-click="unassign()"
+        <button ng-click="unassignAskUser()"
                 id="unassignUserButton"
                 class="btn btn-warning">
             <span class="glyphicon glyphicon-resize-full"></span>
@@ -477,7 +477,7 @@
     <div assign-user new-user-object="newUser" realms="realms"></div>
 
     <div class="text-center">
-        <button type="button" ng-click="assignUser()"
+        <button type="button" ng-click="assignUserAsk()"
                 id="assignButton"
                 ng-disabled="formAssignToken.$invalid"
                 class="btn btn-primary">
@@ -565,17 +565,13 @@
                             translate>Edit Options
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.machine_id,
-                            machine.resolver, machine.application)"
+                            ng-click="detachMachineTokenAsk(machine.machine_id, machine.resolver, machine.application)"
                             translate>Detach
                     </button>
                 </td>
                 <td ng-show="machine.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptions(machine.machine_id,
-                            machine.resolver, machine.application,
-                            machine.options);
-                            machine.optionsEdit=false"
+                            ng-click="saveOptionsAsk(machine.machine_id, machine.resolver, machine.application, machine.options)"
                             translate>Save Options
                     </button>
                     <button class="btn btn-danger"
@@ -625,7 +621,7 @@
         </div>
 
         <div class="text-center">
-            <button ng-click="attachMachine()"
+            <button ng-click="attachMachineAsk()"
                     ng-disabled="formAttachMachine.$invalid"
                     class="btn btn-primary" translate>Attach Machine
             </button>
