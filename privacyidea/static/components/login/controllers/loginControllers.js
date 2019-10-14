@@ -600,6 +600,16 @@ angular.module("privacyideaApp").controller("pinChangeController", [
     ) {
 
         $scope.newpin = "";
+
+        $scope.changePinAsk = function() {
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Change PIN",
+                "Your PIN will be changed. You will be logged out.",
+                "Ok",
+                $scope.changePin);
+        };
+
         $scope.changePin = function () {
             TokenFactory.setpin($scope.pin_change_serial,
                 "otppin", $scope.newpin, function () {
