@@ -50,7 +50,7 @@ from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
-                        send_result)
+                        send_result, send_file)
 from ..lib.log import log_with
 from ..lib.radiusserver import get_radiusservers
 from ..lib.caconnector import get_caconnector_list
@@ -109,8 +109,10 @@ def get_config_documentation():
 
     g.audit_object.log({"success": True})
     # Three or more line breaks will be changed to two.
-    return re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
-                                               context=context))
+    return send_file(re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
+                                                              context=context)),
+                     'documentation.rst', content_type='text/plain')
+
 
 @system_blueprint.route('/gpgkeys', methods=['GET'])
 def get_gpg_keys():

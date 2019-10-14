@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 import os
@@ -840,6 +842,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/plain', res)
             self.assertTrue(b"privacyIDEA configuration documentation" in
                             res.data)
 

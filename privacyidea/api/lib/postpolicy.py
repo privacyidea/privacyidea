@@ -651,7 +651,10 @@ def construct_radius_response(request, response):
                 # user was successfully authenticated
                 return_code = 204
         # send empty body
-        return make_response('', return_code)
+        resp = make_response('', return_code)
+        # tell other policies there is no JSON content
+        resp.mimetype = 'text/plain'
+        return resp
     else:
         return response
 

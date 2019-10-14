@@ -301,14 +301,10 @@ class BaseEventHandler(object):
 
     @staticmethod
     def _get_response_content(response):
+        content = {}
         if response:
             if response.is_json:
                 content = response.json
-            else:
-                content = response.get_json(force=True, cache=False)
-        else:
-            # In Pre-Handling we have no response and no content
-            content = {}
         return content
 
     def check_condition(self, options):

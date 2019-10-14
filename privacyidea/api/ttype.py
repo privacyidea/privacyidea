@@ -103,7 +103,7 @@ def token(ttype=None):
         return current_app.response_class(res[1], mimetype="text/{0!s}".format(res[0]))
     elif len(res) == 2:
         return current_app.response_class(json.dumps(res[1]),
-                        mimetype="application/{0!s}".format(res[0]))
+                                          mimetype="application/{0!s}".format(res[0]))
     else:
         return current_app.response_class(res[1], mimetype="application/octet-binary",
-                        headers=res[2])
+                                          headers=res[2])

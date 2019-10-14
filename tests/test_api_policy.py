@@ -2,7 +2,7 @@
 
 import json
 from .base import MyApiTestCase
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 
 
 class APIPolicyTestCase(MyApiTestCase):
@@ -14,6 +14,28 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
             self.assertEquals(res.json["result"]["value"], [], res.json)
+
+        # test the policy export
+        # first without policies (this used to fail due to an index error)
+        with self.app.test_request_context('/policy/export/pols.txt',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/plain', res)
+            self.assertEqual(res.content_length, 0, res)
+
+        # test export with a given policy
+        set_policy("hide_welcome", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME)
+        with self.app.test_request_context('/policy/export/pols.txt',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/plain', res)
+            self.assertGreater(res.content_length, 0, res)
+            self.assertIn(b'[hide_welcome]', res.data, res)
+        delete_policy('hide_welcome')
 
     def test_01_set_policy(self):
         with self.app.test_request_context('/policy/pol1',
