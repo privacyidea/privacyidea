@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2015-02-27 Cornelius Kölbel, <cornelius@privacyidea.org>
  *            Add Machines to Web UI
  *
@@ -82,6 +84,17 @@ angular.module("privacyideaApp")
             });
         };
 
+        $scope.detachMachineTokenAsk = function(serial, application) {
+            $scope.confirm(
+                $scope.confirm_action_levels["easy"],
+                "Detach Token from Machine",
+                "Do you really want to detach the token from this machine?",
+                "Detach Token",
+                function() {
+                    $scope.detachMachineToken(serial, application);
+                });
+        };
+
         $scope.detachMachineToken = function(serial, application) {
             MachineFactory.detachTokenMachine({serial: serial,
                 application: application,
@@ -90,6 +103,18 @@ angular.module("privacyideaApp")
             }, function (data) {
                 $scope.getMachineTokens();
             });
+        };
+
+        $scope.saveOptionsAsk = function(serial, application, options) {
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Save Machine Options",
+                "Do you want to apply the changes you have made to the options for this machine?",
+                "Save Options",
+                function() {
+                    $scope.saveOptions(serial, application, options);
+                    $scope.token.optionsEdit = false;
+                });
         };
 
         $scope.saveOptions = function(serial, application, options) {
