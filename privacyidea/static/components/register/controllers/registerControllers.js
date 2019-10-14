@@ -10,6 +10,15 @@ angular.module("privacyideaApp")
     $scope.instanceUrl = instanceUrl;
     $scope.newUser = {};
 
+    $scope.registerUserAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["easy"],
+            "Register Account",
+            "Please make sure the entered info is correct before proceeding.",
+            "Register",
+            $scope.registerUser);
+    };
+
     $scope.registerUser = function () {
         RegisterFactory.register($scope.newUser, function() {
             inform.add(gettextCatalog.getString("User account created. An" +
