@@ -19,10 +19,11 @@
                 <button class="btn btn-sm btn-primary"
                         ng-click="editResolver(resolver.resolvername, resolver.type)"
                         translate>Edit</button>
-                <button class="btn btn-sm btn-danger"
+                <button
+                        class="btn btn-sm btn-danger"
                         ng-show="checkRight('resolverdelete')"
-                        ng-click="delResolver(resolver.resolvername)">
-                    <span class="glyphicon glyphicon-trash"></span>
+                        ng-click="delResolverAsk(resolver.resolvername)">
+                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
                     <span translate>Delete</span>
                 </button>
             </td>

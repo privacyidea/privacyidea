@@ -3,21 +3,22 @@
     <translate>Edit Event Handler {{ eventid }}</translate>
 
     <span ng-show="checkRight('eventhandling_write')">
-    <button class="btn btn-danger"
-            ng-click="disableEvent(eventid)"
-            ng-show="form.active" translate>
-        Disable
-    </button>
-    <button class="btn btn-success"
-            ng-click="enableEvent(eventid)"
-            ng-show="!form.active" translate>
-        Enable
-    </button>
-    <button class="btn btn-danger"
-        ng-click="delEvent(eventid)">
-        <span class="glyphicon glyphicon-trash"></span>
-        <span translate>Delete</span>
-    </button>
+        <button class="btn btn-danger"
+                ng-click="disableEventAsk(eventid)"
+                ng-show="form.active" translate>
+            Disable
+        </button>
+        <button class="btn btn-success"
+                ng-click="enableEventAsk(eventid)"
+                ng-show="!form.active" translate>
+            Enable
+        </button>
+        <button
+                class="btn btn-danger"
+                ng-click="delEventAsk(eventid)">
+            <span class="glyphicon glyphicon-trash"></span>
+            <span translate>Delete</span>
+        </button>
     </span>
 </h2>
 
@@ -213,7 +214,7 @@
     <!-- button -->
     <div class="text-center"
          ng-show="checkRight('eventhandling_write')">
-        <button ng-click="createEvent()"
+        <button ng-click="createEventAsk()"
                 id="createEventButton"
                 ng-disabled="formEventAdd.$invalid"
                 class="btn btn-primary">

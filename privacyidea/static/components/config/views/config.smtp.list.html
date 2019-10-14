@@ -29,10 +29,11 @@
                 {{ server.description | limitTo: 20 }}
             </td>
             <td>
-                <button class="btn btn-danger"
+                <button
+                        class="btn btn-danger"
                         ng-show="checkRight('smtpserver_write')"
-                        ng-click="delSmtpServer(identifier)">
-                    <span class="glyphicon glyphicon-trash"></span>
+                        ng-click="delSmtpServerAsk(identifier)">
+                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
                     <span translate>Delete</span>
                 </button>
             </td>

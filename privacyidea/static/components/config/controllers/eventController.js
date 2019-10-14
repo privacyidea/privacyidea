@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2016-05-08 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -34,6 +36,17 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
         });
     };
 
+    $scope.delEventAsk = function(eventid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Delete Event Handler Definition",
+            "Do you really want to delete this event handler definition? This cannot be undone!",
+            "Delete Event Handler",
+            function() {
+                $scope.delEvent(eventid);
+            });
+    };
+
     $scope.delEvent = function (eventid) {
         //debug: console.log("Deleting event " + eventid);
         ConfigFactory.delEvent(eventid, function(data) {
@@ -43,10 +56,32 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
         });
     };
 
-    $scope.enableEvent= function (eventid) {
+    $scope.enableEventAsk = function(eventid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Enable Event Handler Definition",
+            "Do you really want to enable this event handler?",
+            "Enable Event Handler",
+            function() {
+                $scope.enableEvent(eventid);
+            });
+    };
+
+    $scope.enableEvent = function (eventid) {
         ConfigFactory.enableEvent(eventid, function () {
             $scope.getEvents();
         });
+    };
+
+    $scope.disableEventAsk = function(eventid) {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Disable Event Handler Definition",
+            "Do you really want to disable this event handler?",
+            "Disable Event Handler",
+            function() {
+                $scope.disableEvent(eventid);
+            });
     };
 
     $scope.disableEvent = function (eventid) {
@@ -158,6 +193,15 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                $scope.getEvent();
             }
         });
+    };
+
+    $scope.createEventAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Store Event Handler Definition",
+            "Do you want to apply these settings?",
+            "Store Event Handler",
+            $scope.createEvent);
     };
 
     $scope.createEvent = function () {

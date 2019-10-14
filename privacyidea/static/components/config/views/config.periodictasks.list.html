@@ -20,14 +20,14 @@
                        ng-change="orderChanged(ptask)" />
             </td>
             <td>
-                <span ng-show="ptask.active"
-                      class="glyphicon glyphicon-ok"
-                      ng-click="disablePeriodicTask(ptask.id)">
-                </span>
-                <span ng-hide="ptask.active"
-                      class="glyphicon glyphicon-minus"
-                      ng-click="enablePeriodicTask(ptask.id)">
-                </span>
+                <span
+                        ng-show="ptask.active"
+                        class="glyphicon glyphicon-ok"
+                        ng-click="disablePeriodicTaskAsk(ptask.id)"></span>
+                <span
+                        ng-hide="ptask.active"
+                        class="glyphicon glyphicon-minus"
+                        ng-click="enablePeriodicTaskAsk(ptask.id)"></span>
             </td>
             <td>
                 <a ui-sref="config.periodictasks.details({ptaskid: ptask.id})">
@@ -49,7 +49,7 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('periodictask_write')"
-                        ng-click="delPeriodicTask(ptask.id)">
+                        ng-click="delPeriodicTaskAsk(ptask.id)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                 </button>

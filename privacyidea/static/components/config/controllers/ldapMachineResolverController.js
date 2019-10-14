@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2015-03-03 Cornelius Kölbel, <cornelius@privacyidea.org>
  *
  * This code is free software; you can redistribute it and/or
@@ -52,6 +54,15 @@ myApp.controller("ldapMachineResolverController", function ($scope,
         $scope.params.IPATTRIBUTE = "";
         $scope.params.HOSTNAMEATTRIBUTE = "dNSHostName";
         $scope.params.NOREFERRALS = true;
+    };
+
+    $scope.setLDAPMachineResolverAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Save LDAP Machnine Resolver",
+            "Do you want to save your settings for this machine resolver?",
+            "Save",
+            $scope.setLDAPMachineResolver);
     };
 
     $scope.setLDAPMachineResolver = function () {

@@ -24,11 +24,11 @@
             <td>
                 <span ng-show="event.active"
                       class="glyphicon glyphicon-ok"
-                      ng-click="disableEvent(event.id)">
+                      ng-click="disableEventAsk(event.id)">
                 </span>
                 <span ng-hide="event.active"
                       class="glyphicon glyphicon-minus"
-                      ng-click="enableEvent(event.id)">
+                      ng-click="enableEventAsk(event.id)">
                 </span>
             </td>
             <!--
@@ -60,8 +60,8 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('eventhandling_write')"
-                        ng-click="delEvent(event.id)">
-                        <span class="glyphicon glyphicon-trash"></span>
+                        ng-click="delEventAsk(event.id)">
+                        <span class="glyphicon glyphicon-trash" aria-hidden></span>
                         <span translate>Delete</span>
                 </button>
             </td>
