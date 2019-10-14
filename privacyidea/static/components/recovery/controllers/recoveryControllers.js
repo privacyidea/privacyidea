@@ -13,6 +13,15 @@ angular.module("privacyideaApp")
     $scope.params = {recoverycode: $stateParams.recoverycode,
                      user: $stateParams.user};
 
+    $scope.sendRecoveryCodeAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["always"],
+            "Send Password Recovery Code",
+            "An email will be sent to you with instructions to reset your password. Proceed?",
+            "Send Code",
+            $scope.sendRecoveryCode);
+    };
+
     $scope.sendRecoveryCode = function () {
         RecoveryFactory.recover($scope.newUser, function(data) {
             //debug: console.log(data);
@@ -20,6 +29,16 @@ angular.module("privacyideaApp")
                 " password has been sent to you."), {type: "info"});
         })
     };
+
+    $scope.resetPasswordAsk = function() {
+        $scope.confirm(
+            $scope.confirm_action_levels["easy"],
+            "Password Reset",
+            "Your password will be reset. Proceed?",
+            "Reset Password",
+             $scope.resetPassword);
+    };
+
     $scope.resetPassword = function () {
         RecoveryFactory.reset($scope.params, function(data) {
             //debug: console.log(data);
