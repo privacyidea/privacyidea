@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs.
  * 2019-10-13 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
  *            Refactor deleteUserAsk().
  * 2016-04-10 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
@@ -53,6 +55,15 @@ angular.module("privacyideaApp")
             }
         });
 
+        $scope.createUserAsk = function() {
+           $scope.confirm(
+               $scope.confirm_action_levels["easy"],
+               "Create User",
+               "Do you really want to add this new user to the user store?",
+               "Create User",
+               $scope.createUser);
+        };
+
         $scope.createUser = function () {
             //debug: console.log($scope.User);
             UserFactory.createUser($scope.resolvername, $scope.User,
@@ -84,6 +95,15 @@ angular.module("privacyideaApp")
             });
         };
         $scope.getUserDetails();
+
+        $scope.setPasswordAsk = function() {
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Update User Password",
+                "Do you really want to change this users password in the user store?",
+                "Update Password",
+                $scope.setPassword);
+        };
 
         // Set the password
         $scope.setPassword = function () {
@@ -156,6 +176,18 @@ angular.module("privacyideaApp")
             });
         };
 
+        $scope.updateUserAsk = function() {
+            $scope.confirm(
+                $scope.confirm_action_levels["difficult"],
+                "Confirm changes",
+                "Do you really want to apply these changes the the user in the user store?",
+                "Update User",
+                function() {
+                    $scope.editUser = false;
+                    $scope.updateUser();
+                });
+        };
+
         $scope.updateUser = function () {
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
@@ -194,6 +226,15 @@ angular.module("privacyideaApp")
                     inform.add(gettextCatalog.getString("Failed to delete user."), {type: "danger"});
                 }
             });
+        };
+
+        $scope.assignTokenAsk = function() {
+            $scope.confirm(
+                $scope.confirm_action_levels["always"],
+                "Assign Token",
+                "Do you really want to assign a new token to this user?",
+                "Assign Token",
+                $scope.assignToken);
         };
 
         $scope.assignToken = function () {

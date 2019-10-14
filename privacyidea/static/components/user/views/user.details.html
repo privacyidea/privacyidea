@@ -47,7 +47,7 @@
                 <span class="glyphicon glyphicon-edit"></span>
                 <span translate>Edit user</span>
             </button>
-            <button ng-click="editUser=false; updateUser()"
+            <button ng-click="updateUserAsk()"
                     class="btn btn-primary"
                     ng-show="editUser">
                 <span class="glyphicon glyphicon-save"></span>
@@ -131,7 +131,7 @@
         <form name="formAssignToken" role="form" validate>
             <div assign-token new-token-object="newToken"></div>
             <div class="text-center">
-                <button type="button" ng-click="assignToken()"
+                <button type="button" ng-click="assignTokenAsk()"
                         id="assignButton"
                         ng-disabled="formAssignToken.$invalid"
                         class="btn btn-primary" translate>Assign Token
