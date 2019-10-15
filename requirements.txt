@@ -11,7 +11,7 @@ configobj==5.0.6
 croniter==0.3.24
 cryptography==2.4.2
 defusedxml==0.5.0
-ecdsa==0.13
+ecdsa==0.13.3
 Flask==1.0.2
 Flask-Babel==0.11.2
 Flask-Migrate==2.1.1
