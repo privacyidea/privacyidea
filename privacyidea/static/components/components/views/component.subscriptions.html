@@ -2,9 +2,12 @@
 
 
     <div class="text-center">
-        <button class="btn btn-primary" ng-file-select
-                ng-file-change="upload($files)"
-                translate>Upload Subscription File
+        <button
+                class="btn btn-primary"
+                ng-file-select
+                ng-file-change="uploadAsk($files)"
+                translate>
+            Upload Subscription File
         </button>
     </div>
 </form>
@@ -72,8 +75,10 @@
             </div>
         </div>
     </div>
-    <button class="btn btn-danger" translate
-        ng-click="deleteSubscription(subscription.application)">
+    <button
+            class="btn btn-danger"
+            translate
+            ng-click="deleteSubscriptionAsk(subscription.application)">
         Delete
     </button>
 </div>

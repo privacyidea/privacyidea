@@ -2,6 +2,8 @@
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
+ * 2019-10-14 Jean-Pierre Höhmann, <jean-pierre.hoehmann@netknights.it>
+ *            Add confirmation dialogs
  * 2016-09-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
  *
  * This code is free software; you can redistribute it and/or
@@ -42,6 +44,16 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $location.path("/component/clienttype");
     }
 
+    $scope.uploadAsk = function(files) {
+        $scope.confirm(
+            $scope.confirm_action_levels["difficult"],
+            "Upload Subscription File",
+            "Do you want to import the selected file?",
+            "Start Upload",
+            function() {
+                $scope.upload(files);
+            });
+    };
 
     /*
     Functions for subscriptions
@@ -75,6 +87,17 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
             $scope.subscriptions = data.result.value;
             //debug: console.log($scope.subscriptions);
         });
+     };
+
+     $scope.deleteSubscriptionAsk = function(application) {
+         $scope.confirm(
+             $scope.confirm_action_levels["difficult"],
+             "Delete Subscription",
+             "Do you really want to delete this subscription?",
+             "Delete",
+             function() {
+                 $scope.deleteSubscription(application);
+             });
      };
 
      $scope.deleteSubscription = function(application) {
