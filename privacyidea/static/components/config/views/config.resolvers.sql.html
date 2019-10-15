@@ -20,6 +20,8 @@
                 <input name="resolvername" id="resolvername"
                        class="form-control"
                        ng-model="resolvername" required placeholder="resolver1"
+                       pattern="{{ inputNamePatterns.withoutTest.pattern }}"
+                       title="{{ inputNamePatterns.withoutTest.title }}"
                        autofocus/>
             </div>
         </div>

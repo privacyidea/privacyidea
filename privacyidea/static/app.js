@@ -76,6 +76,16 @@ myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
+myApp.constant("resourceNamePatterns", {
+    simple: {pattern: "^[a-zA-Z0-9_.-]+$",
+        title: "The resource name must consist of letters, numbers and '_', '-', '.'"},
+/* we have to ignore "test" and "test_request" as a resource name explicitly */
+    withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
+        title: "The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test'"},
+    withoutTestRequest: {pattern: "^(?!test_request$)([a-zA-Z0-9_.-]+)$",
+        title: "The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test_request'"}});
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {
 

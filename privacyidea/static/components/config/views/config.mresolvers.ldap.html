@@ -19,6 +19,8 @@
         <div class="col-sm-9">
             <input name="resolvername" id="resolvername" class="form-control"
                    ng-model="resolvername" required placeholder="resolver1"
+                   pattern="{{ inputNamePatterns.withoutTest.pattern }}"
+                   title="{{ inputNamePatterns.withoutTest.title }}"
                    autofocus/>
         </div>
     </div>
@@ -28,7 +30,7 @@
             Server URI</label>
 
         <div class="col-sm-9">
-            <input name="serveruri" class="form-control"
+            <input name="serveruri" class="form-control" id="serveruri"
                    ng-model="params.LDAPURI" required
                    placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
         </div>
@@ -81,7 +83,7 @@
                 translate>Base DN</label>
 
         <div class="col-sm-9">
-            <input name="basedn" class="form-control"
+            <input name="basedn" id="basedn" class="form-control"
                    ng-model="params.LDAPBASE" required
                    placeholder="ou=users,dc=domain,dc=tld"/>
         </div>
@@ -91,7 +93,7 @@
                 translate>Bind DN</label>
 
         <div class="col-sm-9">
-            <input name="binddn" class="form-control"
+            <input name="binddn" id="binddn" class="form-control"
                    ng-model="params.BINDDN"
                    placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
         </div>
@@ -101,7 +103,7 @@
                 translate>Bind Password</label>
 
         <div class="col-sm-3">
-            <input name="bindpw" class="form-control"
+            <input name="bindpw" class="form-control" id="bindpw"
                    type="password"
                    autocomplete="off"
                    ng-model="params.BINDPW"
@@ -114,7 +116,7 @@
         <div class="col-sm-3">
             <select class="form-control"
                     ng-model="params.AUTHTYPE"
-                    name="authtype"
+                    name="authtype" id="authtype"
                     ng-options="select for select in authtypes">
             </select>
         </div>
@@ -124,7 +126,7 @@
             Timeout (seconds)</label>
 
         <div class="col-sm-3">
-            <input name="timeout" class="form-control"
+            <input name="timeout" class="form-control" id="timeout"
                    ng-model="params.TIMEOUT" required
                    placeholder="5"/>
         </div>
@@ -133,7 +135,7 @@
                 translate>Size Limit</label>
 
         <div class="col-sm-3">
-            <input name="sizelimit" class="form-control"
+            <input name="sizelimit" class="form-control" id="sizelimit"
                    ng-model="params.SIZELIMIT" required
                    placeholder="500"/>
         </div>
@@ -156,6 +158,7 @@
             <div class="col-sm-9">
 
                 <input name="machineIdAttribute" class="form-control"
+                       id="machineIdAttribute"
                        ng-model="params.IDATTRIBUTE" required
                        placeholder="{{ 'An Attribute or the DN to identify the machine'|translate }}"/>
             </div>
@@ -166,6 +169,7 @@
 
             <div class="col-sm-9">
                 <input name="ldapsearchfilter" class="form-control"
+                       id="ldapsearchfilter"
                        ng-model="params.SEARCHFILTER" required
                        placeholder="(objectClass=computer)"/>
             </div>
@@ -176,6 +180,7 @@
 
             <div class="col-sm-9">
                 <input name="hostnameattribute" class="form-control"
+                       id="hostnameattribute"
                        ng-model="params.HOSTNAMEATTRIBUTE" required
                        placeholder='dNSHostName'
                         />
@@ -187,6 +192,7 @@
 
             <div class="col-sm-9">
                 <input name="ipattribute" class="form-control"
+                       id="ipattribute"
                        ng-model="params.IPATTRIBUTE"
                        placeholder="{{ 'An Attribute that contains the IP address.'|translate }}"
                         />
