@@ -120,18 +120,18 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.unassignAskAdmin = function() {
         $scope.confirm(
             $scope.confirm_action_levels["easy"],
-            "Unassign Token",
-            "Do you really want to remove this token from this users account?",
-            "Unassign",
+            gettextCatalog.getString("Unassign Token"),
+            gettextCatalog.getString("Do you really want to remove this token from this users account?"),
+            gettextCatalog.getString("Unassign"),
             $scope.unassign);
     };
 
     $scope.unassignAskUser = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Unassign Token",
-            "Do you really want to remove this token from your account?",
-            "Unassign",
+            gettextCatalog.getString("Unassign Token"),
+            gettextCatalog.getString("Do you really want to remove this token from your account?"),
+            gettextCatalog.getString("Unassign"),
             $scope.unassign);
     };
 
@@ -146,9 +146,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.enableAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Enable Token",
-            "Do you want to enable this token?",
-            "Enable Token",
+            gettextCatalog.getString("Enable Token"),
+            gettextCatalog.getString("Do you want to enable this token?"),
+            gettextCatalog.getString("Enable Token"),
             $scope.enable);
     };
 
@@ -159,9 +159,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.disableAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["easy"],
-            "Disable Token",
-            "Do you really want to disable this token?",
-            "Disable Token",
+            gettextCatalog.getString("Disable Token"),
+            gettextCatalog.getString("Do you really want to disable this token?"),
+            gettextCatalog.getString("Disable Token"),
             $scope.disable);
     };
 
@@ -172,9 +172,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.revokeAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Revoke Token",
-            "Do you really want to revoke this token?",
-            "Revoke Token",
+            gettextCatalog.getString("Revoke Token"),
+            gettextCatalog.getString("Do you really want to revoke this token?"),
+            gettextCatalog.getString("Revoke Token"),
             $scope.revoke);
     };
 
@@ -193,9 +193,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.resetAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Reset Fail Counter",
-            "Do you want to reset the fail counter for this token?",
-            "Reset",
+            gettextCatalog.getString("Reset Fail Counter"),
+            gettextCatalog.getString("Do you want to reset the fail counter for this token?"),
+            gettextCatalog.getString("Reset"),
             $scope.reset);
     };
 
@@ -220,9 +220,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.saveRealmAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["easy"],
-            "Edit Token Realm",
-            "Do you want to apply your changes to the realm assignments for this token?",
-            "Save Realm",
+            gettextCatalog.getString("Edit Token Realm"),
+            gettextCatalog.getString("Do you want to apply your changes to the realm assignments for this token?"),
+            gettextCatalog.getString("Save Realm"),
             $scope.saveRealm);
     };
 
@@ -240,9 +240,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.saveTokenInfoAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Edit Token Information",
-            "Do you want to apply your changes the information for this token?",
-            "Save Token Info",
+            gettextCatalog.getString("Edit Token Information"),
+            gettextCatalog.getString("Do you want to apply your changes the information for this token?"),
+            gettextCatalog.getString("Save Token Info"),
             function() {
                 $scope.editTokenInfo = 0;
                 $scope.saveTokenInfo();
@@ -263,9 +263,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.assignUserAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Assign User",
-            "Do you really want to assign the user to this token?",
-            "Assign",
+            gettextCatalog.getString("Assign User"),
+            gettextCatalog.getString("Do you really want to assign the user to this token?"),
+            gettextCatalog.getString("Assign"),
             $scope.assignUser);
     };
 
@@ -281,9 +281,11 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.deleteAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete Token",
-            "Are you sure you want to delete this token? CAUTION: THIS MAY BE DIFFICULT OR IMPOSSIBLE TO REVERT!",
-            "Yes, really delete this token!",
+            gettextCatalog.getString("Delete Token"),
+            gettextCatalog.getString(
+                "Are you sure you want to delete this token? " +
+                "CAUTION: THIS MAY BE DIFFICULT OR IMPOSSIBLE TO REVERT!"),
+            gettextCatalog.getString("Yes, really delete this token!"),
             $scope.delete);
     };
 
@@ -294,9 +296,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.setRandomPinAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Set Random Token PIN",
-            "Dou you really want to change the PIN for this token?",
-            "Set PIN",
+            gettextCatalog.getString("Set Random Token PIN"),
+            gettextCatalog.getString("Dou you really want to change the PIN for this token?"),
+            gettextCatalog.getString("Set PIN"),
             $scope.setRandomPin);
     };
 
@@ -316,9 +318,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.setPinAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Set Token PIN",
-            "Dou you really want to change the PIN for this token?",
-            "Set PIN",
+            gettextCatalog.getString("Set Token PIN"),
+            gettextCatalog.getString("Dou you really want to change the PIN for this token?"),
+            gettextCatalog.getString("Set PIN"),
             $scope.setPin);
     };
 
@@ -345,9 +347,9 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.resyncTokenAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Resync Token",
-            "Do you want to resync this token using the OTP value you entered?",
-            "Resync Token",
+            gettextCatalog.getString("Resync Token"),
+            gettextCatalog.getString("Do you want to resync this token using the OTP value you entered?"),
+            gettextCatalog.getString("Resync Token"),
             $scope.resyncToken);
     };
 
@@ -408,9 +410,9 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.attachMachineAsk = function() {
             $scope.confirm(
                 $scope.confirm_action_levels["always"],
-                "Attach Machine to Token",
-                "Are you sure you want to attach the machine to this token?",
-                "Attach Machine",
+                gettextCatalog.getString("Attach Machine to Token"),
+                gettextCatalog.getString("Are you sure you want to attach the machine to this token?"),
+                gettextCatalog.getString("Attach Machine"),
                 $scope.attachMachine);
         };
 
@@ -436,9 +438,9 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.detachMachineTokenAsk = function(machineid, resolver, application) {
             $scope.confirm(
                 $scope.confirm_action_levels["easy"],
-                "Detach Machine from Token",
-                "Do you really want to detach the machine from this token?",
-                "Detach Machine",
+                gettextCatalog.getString("Detach Machine from Token"),
+                gettextCatalog.getString("Do you really want to detach the machine from this token?"),
+                gettextCatalog.getString("Detach Machine"),
                 function() {
                     $scope.detachMachineToken(machineid, resolver, application);
                 });
@@ -457,9 +459,9 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.saveOptionsAsk = function(machineid, resolver, application, options) {
             $scope.confirm(
                 $scope.confirm_action_levels["difficult"],
-                "Save Machine Options",
-                "Do you want to apply the changes you have made to the options for this machine?",
-                "Save Options",
+                gettextCatalog.getString("Save Machine Options"),
+                gettextCatalog.getString("Do you want to apply the changes you have made to the options for this machine?"),
+                gettextCatalog.getString("Save Options"),
                 function() {
                     $scope.saveOptions(machineid, resolver, application, options);
                     $scope.machine.optionsEdit = false;

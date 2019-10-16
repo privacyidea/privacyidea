@@ -39,9 +39,9 @@ myApp.controller("policyListController", function($scope, $stateParams,
     $scope.delPolicyAsk = function(policyName) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete Policy",
-            "Do you really want to delete this policy? This cannot be undone!",
-            "Delete Policy",
+            gettextCatalog.getString("Delete Policy"),
+            gettextCatalog.getString("Do you really want to delete this policy? This cannot be undone!"),
+            gettextCatalog.getString("Delete Policy"),
             function() {
                 $scope.delPolicy(policyName);
             });
@@ -56,9 +56,9 @@ myApp.controller("policyListController", function($scope, $stateParams,
     $scope.enablePolicyAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Enable Policy",
-            "Do you really want to enable this policy?",
-            "Enable",
+            gettextCatalog.getString("Enable Policy"),
+            gettextCatalog.getString("Do you really want to enable this policy?"),
+            gettextCatalog.getString("Enable"),
             function() {
                 $scope.enablePolicy(name);
             });
@@ -74,9 +74,9 @@ myApp.controller("policyListController", function($scope, $stateParams,
     $scope.disablePolicyAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Disable Policy",
-            "Do you really want to disable this policy?",
-            "Disable",
+            gettextCatalog.getString("Disable Policy"),
+            gettextCatalog.getString("Do you really want to disable this policy?"),
+            gettextCatalog.getString("Disable"),
             function() {
                 $scope.disablePolicy(name);
             });
@@ -297,9 +297,9 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.createPolicyAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Store Policy",
-            "Do you really want to apply these settings?",
-            "Store Policy",
+            gettextCatalog.getString("Store Policy"),
+            gettextCatalog.getString("Do you really want to apply these settings?"),
+            gettextCatalog.getString("Store Policy"),
             $scope.createPolicy);
     };
 
@@ -489,9 +489,9 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.saveTokenConfigAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Update Token Configuration",
-            "Do you apply your changes to the settings for this token type?",
-            "Update Config",
+            gettextCatalog.getString("Update Token Configuration"),
+            gettextCatalog.getString("Do you apply your changes to the settings for this token type?"),
+            gettextCatalog.getString("Update Config"),
             $scope.saveTokenConfig);
     };
 
@@ -514,9 +514,9 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.deleteSystemEntryAsk = function(apiId) {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Delete System Entry",
-            "Are you sure you want to delete this item?",
-            "Delete",
+            gettextCatalog.getString("Delete System Entry"),
+            gettextCatalog.getString("Are you sure you want to delete this item?"),
+            gettextCatalog.getString("Delete"),
             function() {
                 $scope.deleteSystemEntry(apiId);
             });
@@ -635,9 +635,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.delResolverAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete Resolver",
-            "Do you really want to delete this resolver? This cannot be undone!",
-            "Delete Resolver",
+            gettextCatalog.getString("Delete Resolver"),
+            gettextCatalog.getString("Do you really want to delete this resolver? This cannot be undone!"),
+            gettextCatalog.getString("Delete Resolver"),
             function() {
                 $scope.delResolver(name);
             });
@@ -659,9 +659,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.delMachineResolverAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete Machine Resolver",
-            "Do you really want to delete this resolver? This cannot be undone!",
-            "Delete Resolver",
+            gettextCatalog.getString("Delete Machine Resolver"),
+            gettextCatalog.getString("Do you really want to delete this resolver? This cannot be undone!"),
+            gettextCatalog.getString("Delete Resolver"),
             function() {
                 $scope.delMachineResolver(name);
             });
@@ -685,9 +685,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.setRealmAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Save User Realm",
-            "Do you want to apply these settings?",
-            "Save Realm",
+            gettextCatalog.getString("Save User Realm"),
+            gettextCatalog.getString("Do you want to apply these settings?"),
+            gettextCatalog.getString("Save Realm"),
             function() {
                 $scope.setRealm(name);
             });
@@ -715,9 +715,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.delRealmAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete User Realm",
-            "Do you really want to delete this realm?",
-            "Delete Realm",
+            gettextCatalog.getString("Delete User Realm"),
+            gettextCatalog.getString("Do you really want to delete this realm?"),
+            gettextCatalog.getString("Delete Realm"),
             function() {
                 $scope.delRealm(name);
             });
@@ -733,9 +733,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.setDefaultRealmAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Set Default User Realm",
-            "Are you sure you want to change the default user realm?",
-            "Set Default Realm",
+            gettextCatalog.getString("Set Default User Realm"),
+            gettextCatalog.getString("Are you sure you want to change the default user realm?"),
+            gettextCatalog.getString("Set Default Realm"),
             function() {
                 $scope.setDefaultRealm(name);
             });
@@ -751,9 +751,9 @@ myApp.controller("configController", function ($scope, $location,
     $scope.clearDefaultRealmAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Clear Default User Realm",
-            "Are you sure you cant to unset the default user realm?",
-            "Clear Default Realm",
+            gettextCatalog.getString("Clear Default User Realm"),
+            gettextCatalog.getString("Are you sure you cant to unset the default user realm?"),
+            gettextCatalog.getString("Clear Default Realm"),
             $scope.clearDefaultRealm);
     };
 
@@ -806,9 +806,10 @@ myApp.controller("configController", function ($scope, $location,
     $scope.saveSystemConfigAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Update System Configuration",
-            "Are you sure you want to apply the changes you have made to the system configuration?",
-            "Update Config",
+            gettextCatalog.getString("Update System Configuration"),
+            gettextCatalog.getString(
+                "Are you sure you want to apply the changes you have made to the system configuration?"),
+            gettextCatalog.getString("Update Config"),
             $scope.saveSystemConfig);
     };
 
@@ -874,9 +875,9 @@ myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $s
     $scope.setResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Store passwd Resolver Configuration",
-            "Do you want to apply this configuration?",
-            "Store Resolver",
+            gettextCatalog.getString("Store passwd Resolver Configuration"),
+            gettextCatalog.getString("Do you want to apply this configuration?"),
+            gettextCatalog.getString("Store Resolver"),
             $scope.setResolver);
     };
 
@@ -911,9 +912,9 @@ myApp.controller("hostsResolverController", function ($scope,
     $scope.setMachineResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Save Hosts Machnine Resolver",
-            "Do you want to save your settings for this machine resolver?",
-            "Save",
+            gettextCatalog.getString("Save Hosts Machnine Resolver"),
+            gettextCatalog.getString("Do you want to save your settings for this machine resolver?"),
+            gettextCatalog.getString("Save"),
             $scope.setMachineResolver);
     };
 
@@ -943,9 +944,9 @@ myApp.controller("CAConnectorController", function($scope, ConfigFactory,
     $scope.delCAConnectorAsk = function(connectorname) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete CA Connector",
-            "Do you really want to delete this CA connector?",
-            "Delete CA Connector",
+            gettextCatalog.getString("Delete CA Connector"),
+            gettextCatalog.getString("Do you really want to delete this CA connector?"),
+            gettextCatalog.getString("Delete CA Connector"),
             function() {
                 $scope.delCAConnector(connectorname);
             });
@@ -989,9 +990,9 @@ myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
     $scope.setCAConnectorAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Save CA Connector",
-            "Do you want to save these settings?",
-            "Save",
+            gettextCatalog.getString("Save CA Connector"),
+            gettextCatalog.getString("Do you want to save these settings?"),
+            gettextCatalog.getString("Save"),
             $scope.setCAConnector);
     };
 
@@ -1025,9 +1026,9 @@ myApp.controller("machineResolverController", function ($scope,
     $scope.delResolverAsk = function(resolvername) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete User Resolver",
-            "Do you want to delete this resolver?",
-            "Delete Resolver",
+            gettextCatalog.getString("Delete User Resolver"),
+            gettextCatalog.getString("Do you want to delete this resolver?"),
+            gettextCatalog.getString("Delete Resolver"),
             function() {
                 $scope.delResolver(resolvername);
             });
@@ -1122,9 +1123,9 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.setLDAPResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Store LDAP Resolver Configuration",
-            "Do you want to apply this LDAP configuration?",
-            "Store LDAP Resolver",
+            gettextCatalog.getString("Store LDAP Resolver Configuration"),
+            gettextCatalog.getString("Do you want to apply this LDAP configuration?"),
+            gettextCatalog.getString("Store LDAP Resolver"),
             $scope.setLDAPResolver);
     };
 
@@ -1176,9 +1177,9 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
     $scope.setSCIMResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Store SCIM Resolver Configuration",
-            "Do you want to apply this SCIM configuration?",
-            "Store SCIM Resolver",
+            gettextCatalog.getString("Store SCIM Resolver Configuration"),
+            gettextCatalog.getString("Do you want to apply this SCIM configuration?"),
+            gettextCatalog.getString("Store SCIM Resolver"),
             $scope.setSCIMResolver);
     };
 
@@ -1264,9 +1265,9 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
     $scope.setSQLResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Store SQL Resolver Configuration",
-            "Do you want to apply this SQL configuration?",
-            "Store SQL Resolver",
+            gettextCatalog.getString("Store SQL Resolver Configuration"),
+            gettextCatalog.getString("Do you want to apply this SQL configuration?"),
+            gettextCatalog.getString("Store SQL Resolver"),
             $scope.setSQLResolver);
     };
 

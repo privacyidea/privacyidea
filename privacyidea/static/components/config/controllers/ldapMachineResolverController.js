@@ -59,9 +59,9 @@ myApp.controller("ldapMachineResolverController", function ($scope,
     $scope.setLDAPMachineResolverAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Save LDAP Machnine Resolver",
-            "Do you want to save your settings for this machine resolver?",
-            "Save",
+            gettextCatalog.getString("Save LDAP Machnine Resolver"),
+            gettextCatalog.getString("Do you want to save your settings for this machine resolver?"),
+            gettextCatalog.getString("Save"),
             $scope.setLDAPMachineResolver);
     };
 

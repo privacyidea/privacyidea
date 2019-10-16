@@ -47,9 +47,9 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
     $scope.uploadAsk = function(files) {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Upload Subscription File",
-            "Do you want to import the selected file?",
-            "Start Upload",
+            gettextCatalog.getString("Upload Subscription File"),
+            gettextCatalog.getString("Do you want to import the selected file?"),
+            gettextCatalog.getString("Start Upload"),
             function() {
                 $scope.upload(files);
             });
@@ -92,9 +92,9 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
      $scope.deleteSubscriptionAsk = function(application) {
          $scope.confirm(
              $scope.confirm_action_levels["difficult"],
-             "Delete Subscription",
-             "Do you really want to delete this subscription?",
-             "Delete",
+             gettextCatalog.getString("Delete Subscription"),
+             gettextCatalog.getString("Do you really want to delete this subscription?"),
+             gettextCatalog.getString("Delete"),
              function() {
                  $scope.deleteSubscription(application);
              });

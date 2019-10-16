@@ -13,9 +13,9 @@ angular.module("privacyideaApp")
     $scope.registerUserAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["easy"],
-            "Register Account",
-            "Please make sure the entered info is correct before proceeding.",
-            "Register",
+            gettextCatalog.getString("Register Account"),
+            gettextCatalog.getString("Please make sure the entered info is correct before proceeding."),
+            gettextCatalog.getString("Register"),
             $scope.registerUser);
     };
 

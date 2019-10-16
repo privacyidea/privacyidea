@@ -50,9 +50,9 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
     $scope.delSmtpServerAsk = function(identifier) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete SMTP Server Configuration",
-            "Do you really want to delete this SMTP server?",
-            "Delete SMTP Server",
+            gettextCatalog.getString("Delete SMTP Server Configuration"),
+            gettextCatalog.getString("Do you really want to delete this SMTP server?"),
+            gettextCatalog.getString("Delete SMTP Server"),
             function() {
                 $scope.delSmtpServer(identifier);
             });
@@ -85,9 +85,9 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
     $scope.saveSMTPServerAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Store SMTP Server Configuration",
-            "Do you want to apply these settings?",
-            "Store SMTP Server",
+            gettextCatalog.getString("Store SMTP Server Configuration"),
+            gettextCatalog.getString("Do you want to apply these settings?"),
+            gettextCatalog.getString("Store SMTP Server"),
             $scope.saveSMTPServer);
     };
 

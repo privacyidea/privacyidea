@@ -36,9 +36,9 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
     $scope.delPeriodicTaskAsk = function(ptaskid) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete Periodic Task Definition",
-            "Do you really want to delete this task? This cannot be undone!",
-            "Delete Task",
+            gettextCatalog.getString("Delete Periodic Task Definition"),
+            gettextCatalog.getString("Do you really want to delete this task? This cannot be undone!"),
+            gettextCatalog.getString("Delete Task"),
             function() {
                 $scope.delPeriodicTask(ptaskid);
             });
@@ -54,9 +54,9 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
     $scope.enablePeriodicTaskAsk = function(ptaskid) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Enable Periodic Task Definition",
-            "Do you want to enable this periodic task?",
-            "Enable Task",
+            gettextCatalog.getString("Enable Periodic Task Definition"),
+            gettextCatalog.getString("Do you want to enable this periodic task?"),
+            gettextCatalog.getString("Enable Task"),
             function() {
                 $scope.enablePeriodicTask(ptaskid);
             });
@@ -71,9 +71,9 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
     $scope.disablePeriodicTaskAsk = function(ptaskid) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Disable Periodic Task Definition",
-            "Do you want to disable this periodic task?",
-            "Disable Task",
+            gettextCatalog.getString("Disable Periodic Task Definition"),
+            gettextCatalog.getString("Do you want to disable this periodic task?"),
+            gettextCatalog.getString("Disable Task"),
             function() {
                 $scope.disablePeriodicTask(ptaskid);
             });
@@ -178,9 +178,9 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
     $scope.createPeriodicTaskAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Store Periodic Task Definition",
-            "Do you want to apply these settings?",
-            "Store Task",
+            gettextCatalog.getString("Store Periodic Task Definition"),
+            gettextCatalog.getString("Do you want to apply these settings?"),
+            gettextCatalog.getString("Store Task"),
             $scope.createPeriodicTask);
     };
 

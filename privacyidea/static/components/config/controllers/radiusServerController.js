@@ -51,9 +51,9 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
     $scope.delRadiusServerAsk = function(identifier) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete RADIUS Server Configuration",
-            "Are you sure you want to delete this RADIUS server configuration?",
-            "Delete Server",
+            gettextCatalog.getString("Delete RADIUS Server Configuration"),
+            gettextCatalog.getString("Are you sure you want to delete this RADIUS server configuration?"),
+            gettextCatalog.getString("Delete Server"),
             function() {
                 $scope.delRadiusServer(identifier);
             });
@@ -89,9 +89,9 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
     $scope.saveRadiusServerAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Save RADIUS Server Configuration",
-            "Do you want to apply this RADIUS server configuration?",
-            "Save RADIUS Config",
+            gettextCatalog.getString("Save RADIUS Server Configuration"),
+            gettextCatalog.getString("Do you want to apply this RADIUS server configuration?"),
+            gettextCatalog.getString("Save RADIUS Config"),
             $scope.saveRadiusServer);
     };
 
