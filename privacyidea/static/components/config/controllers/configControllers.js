@@ -60,7 +60,7 @@ myApp.controller("policyListController", function($scope, $stateParams,
             "Do you really want to enable this policy?",
             "Enable",
             function() {
-                enablePolicy(name);
+                $scope.enablePolicy(name);
             });
     };
 
@@ -78,7 +78,7 @@ myApp.controller("policyListController", function($scope, $stateParams,
             "Do you really want to disable this policy?",
             "Disable",
             function() {
-                disablePolicy(name);
+                $scope.disablePolicy(name);
             });
     };
 
@@ -639,7 +639,7 @@ myApp.controller("configController", function ($scope, $location,
             "Do you really want to delete this resolver? This cannot be undone!",
             "Delete Resolver",
             function() {
-                delResolver(name);
+                $scope.delResolver(name);
             });
     };
 
@@ -663,7 +663,7 @@ myApp.controller("configController", function ($scope, $location,
             "Do you really want to delete this resolver? This cannot be undone!",
             "Delete Resolver",
             function() {
-                delMachineResolver(name);
+                $scope.delMachineResolver(name);
             });
     };
 
