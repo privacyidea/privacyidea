@@ -7,10 +7,10 @@ myApp.controller("tokenLostController", function ($scope,
     $scope.setTokenLostAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Mark Token as Lost",
-            "Do you really want to mark this token as lost? This will disable the token and generate a temporary" +
-            "password based token as a replacement!",
-            "Yes, this token is really lost!",
+            gettextCatalog.getString("Mark Token as Lost"),
+            gettextCatalog.getString("Do you really want to mark this token as lost? " +
+                "This will disable the token and generate a temporary password based token as a replacement!",
+            gettextCatalog.getString("Yes, this token is really lost!"),
             $scope.setTokenLost);
     };
 

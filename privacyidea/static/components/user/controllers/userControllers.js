@@ -58,9 +58,9 @@ angular.module("privacyideaApp")
         $scope.createUserAsk = function() {
            $scope.confirm(
                $scope.confirm_action_levels["easy"],
-               "Create User",
-               "Do you really want to add this new user to the user store?",
-               "Create User",
+               gettextCatalog.getString("Create User"),
+               gettextCatalog.getString("Do you really want to add this new user to the user store?"),
+               gettextCatalog.getString("Create User"),
                $scope.createUser);
         };
 
@@ -99,9 +99,9 @@ angular.module("privacyideaApp")
         $scope.setPasswordAsk = function() {
             $scope.confirm(
                 $scope.confirm_action_levels["difficult"],
-                "Update User Password",
-                "Do you really want to change this users password in the user store?",
-                "Update Password",
+                gettextCatalog.getString("Update User Password"),
+                gettextCatalog.getString("Do you really want to change this users password in the user store?"),
+                gettextCatalog.getString("Update Password"),
                 $scope.setPassword);
         };
 
@@ -179,9 +179,10 @@ angular.module("privacyideaApp")
         $scope.updateUserAsk = function() {
             $scope.confirm(
                 $scope.confirm_action_levels["difficult"],
-                "Confirm changes",
-                "Do you really want to apply these changes the the user in the user store?",
-                "Update User",
+                gettextCatalog.getString("Confirm changes"),
+                gettextCatalog.getString(
+                    "Do you really want to apply these changes the the user in the user store?"),
+                gettextCatalog.getString("Update User"),
                 function() {
                     $scope.editUser = false;
                     $scope.updateUser();
@@ -208,9 +209,9 @@ angular.module("privacyideaApp")
         $scope.deleteUserAsk = function() {
             $scope.confirm(
                 $scope.confirm_action_levels["severe"],
-                "Delete User",
-                "Do you really want to delete the user in the user store?",
-                "Delete User",
+                gettextCatalog.getString("Delete User"),
+                gettextCatalog.getString("Do you really want to delete the user in the user store?"),
+                gettextCatalog.getString("Delete User"),
                 $scope.deleteUser);
         };
         $scope.deleteUser = function () {
@@ -231,9 +232,9 @@ angular.module("privacyideaApp")
         $scope.assignTokenAsk = function() {
             $scope.confirm(
                 $scope.confirm_action_levels["always"],
-                "Assign Token",
-                "Do you really want to assign a new token to this user?",
-                "Assign Token",
+                gettextCatalog.getString("Assign Token"),
+                gettextCatalog.getString("Do you really want to assign a new token to this user?"),
+                gettextCatalog.getString("Assign Token"),
                 $scope.assignToken);
         };
 

@@ -142,9 +142,9 @@ myApp.controller("tokenAssignController", function ($scope, TokenFactory,
     $scope.assignTokenAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Connect Token",
-            "Do you want to connect this token to your account now?",
-            "Connect Token",
+            gettextCatalog.getString("Connect Token"),
+            gettextCatalog.getString("Do you want to connect this token to your account now?"),
+            gettextCatalog.getString("Connect Token"),
             $scope.assignToken);
     };
 
@@ -642,9 +642,10 @@ myApp.controller("tokenImportController", function ($scope, $upload,
     $scope.uploadAsk = function(files) {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Confirm Import",
-            "Please confirm, that you wish to import the tokens from the selected file.",
-            "Start Import",
+            gettextCatalog.getString("Confirm Import"),
+            gettextCatalog.getString(
+                "Please confirm, that you wish to import the tokens from the selected file."),
+            gettextCatalog.getString("Start Import"),
             function() {
                 $scope.upload(files);
             });

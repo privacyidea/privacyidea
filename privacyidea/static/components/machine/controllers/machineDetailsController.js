@@ -87,9 +87,9 @@ angular.module("privacyideaApp")
         $scope.detachMachineTokenAsk = function(serial, application) {
             $scope.confirm(
                 $scope.confirm_action_levels["easy"],
-                "Detach Token from Machine",
-                "Do you really want to detach the token from this machine?",
-                "Detach Token",
+                gettextCatalog.getString("Detach Token from Machine"),
+                gettextCatalog.getString("Do you really want to detach the token from this machine?"),
+                gettextCatalog.getString("Detach Token"),
                 function() {
                     $scope.detachMachineToken(serial, application);
                 });
@@ -108,9 +108,10 @@ angular.module("privacyideaApp")
         $scope.saveOptionsAsk = function(serial, application, options) {
             $scope.confirm(
                 $scope.confirm_action_levels["difficult"],
-                "Save Machine Options",
-                "Do you want to apply the changes you have made to the options for this machine?",
-                "Save Options",
+                gettextCatalog.getString("Save Machine Options"),
+                gettextCatalog.getString(
+                    "Do you want to apply the changes you have made to the options for this machine?"),
+                gettextCatalog.getString("Save Options"),
                 function() {
                     $scope.saveOptions(serial, application, options);
                     $scope.token.optionsEdit = false;

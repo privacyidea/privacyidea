@@ -51,9 +51,9 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     $scope.delPrivacyideaServerAsk = function(identifier) {
         $scope.confirm(
             $scope.confirm_action_level["severe"],
-            "Delete PrivacyIDEA Server Configuration",
-            "Are you sure you want to delete this PrivacyIDEA server configuration",
-            "Delete Server Config",
+            gettextCatalog.getString("Delete PrivacyIDEA Server Configuration"),
+            gettextCatalog.getString("Are you sure you want to delete this PrivacyIDEA server configuration"),
+            gettextCatalog.getString("Delete Server Config"),
             function() {
                 $scope.delPrivacyideaServer(identifier);
             });
@@ -86,9 +86,9 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     $scope.savePrivacyideaServerAsk = function() {
         $scope.confirm(
             $scope.confirm_action_level["difficult"],
-            "Save PrivacyIDEA Server Configuration",
-            "Do you want to apply this PrivacyIDEA server configuration?",
-            "Save Server Config",
+            gettextCatalog.getString("Save PrivacyIDEA Server Configuration"),
+            gettextCatalog.getString("Do you want to apply this PrivacyIDEA server configuration?"),
+            gettextCatalog.getString("Save Server Config"),
             $scope.savePrivacyideaServer);
     };
 

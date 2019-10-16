@@ -16,9 +16,10 @@ angular.module("privacyideaApp")
     $scope.sendRecoveryCodeAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Send Password Recovery Code",
-            "An email will be sent to you with instructions to reset your password. Proceed?",
-            "Send Code",
+            gettextCatalog.getString("Send Password Recovery Code"),
+            gettextCatalog.getString(
+                "An email will be sent to you with instructions to reset your password. Proceed?"),
+            gettextCatalog.getString("Send Code"),
             $scope.sendRecoveryCode);
     };
 
@@ -33,9 +34,9 @@ angular.module("privacyideaApp")
     $scope.resetPasswordAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["easy"],
-            "Password Reset",
-            "Your password will be reset. Proceed?",
-            "Reset Password",
+            gettextCatalog.getString("Password Reset"),
+            gettextCatalog.getString("Your password will be reset. Proceed?"),
+            gettextCatalog.getString("Reset Password"),
              $scope.resetPassword);
     };
 

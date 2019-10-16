@@ -73,9 +73,9 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.createSMSgatewayAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Store SMS Gateway Definition",
-            "Do you want to apply these settings?",
-            "Store SMS Gateway",
+            gettextCatalog.getString("Store SMS Gateway Definition"),
+            gettextCatalog.getString("Do you want to apply these settings?"),
+            gettextCatalog.getString("Store SMS Gateway"),
             $scope.createSMSgateway);
     };
 
@@ -102,9 +102,9 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.deleteSMSgatewayAsk = function(name) {
         $scope.confirm(
             $scope.confirm_action_levels["severe"],
-            "Delete SMS Gateway Definition",
-            "Do you really want to delete this SMS gateway?",
-            "Delete SMS Gateway",
+            gettextCatalog.getString("Delete SMS Gateway Definition"),
+            gettextCatalog.getString("Do you really want to delete this SMS gateway?"),
+            gettextCatalog.getString("Delete SMS Gateway"),
             function() {
                 $scope.deleteSMSgateway(name);
             });

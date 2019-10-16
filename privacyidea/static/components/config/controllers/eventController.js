@@ -39,9 +39,10 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
     $scope.delEventAsk = function(eventid) {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Delete Event Handler Definition",
-            "Do you really want to delete this event handler definition? This cannot be undone!",
-            "Delete Event Handler",
+            gettextCatalog.getString("Delete Event Handler Definition"),
+            gettextCatalog.getString(
+                "Do you really want to delete this event handler definition? This cannot be undone!"),
+            gettextCatalog.getString("Delete Event Handler"),
             function() {
                 $scope.delEvent(eventid);
             });
@@ -59,9 +60,9 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
     $scope.enableEventAsk = function(eventid) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Enable Event Handler Definition",
-            "Do you really want to enable this event handler?",
-            "Enable Event Handler",
+            gettextCatalog.getString("Enable Event Handler Definition"),
+            gettextCatalog.getString("Do you really want to enable this event handler?"),
+            gettextCatalog.getString("Enable Event Handler"),
             function() {
                 $scope.enableEvent(eventid);
             });
@@ -76,9 +77,9 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
     $scope.disableEventAsk = function(eventid) {
         $scope.confirm(
             $scope.confirm_action_levels["always"],
-            "Disable Event Handler Definition",
-            "Do you really want to disable this event handler?",
-            "Disable Event Handler",
+            gettextCatalog.getString("Disable Event Handler Definition"),
+            gettextCatalog.getString("Do you really want to disable this event handler?"),
+            gettextCatalog.getString("Disable Event Handler"),
             function() {
                 $scope.disableEvent(eventid);
             });
@@ -198,9 +199,9 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.createEventAsk = function() {
         $scope.confirm(
             $scope.confirm_action_levels["difficult"],
-            "Store Event Handler Definition",
-            "Do you want to apply these settings?",
-            "Store Event Handler",
+            gettextCatalog.getString("Store Event Handler Definition"),
+            gettextCatalog.getString("Do you want to apply these settings?"),
+            gettextCatalog.getString("Store Event Handler"),
             $scope.createEvent);
     };
 
