@@ -215,6 +215,7 @@ def before_request():
 @smtpserver_blueprint.after_request
 @eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
+@smsgateway_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request

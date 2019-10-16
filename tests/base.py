@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import json
 import mock
 
 from privacyidea.app import create_app
@@ -190,6 +189,9 @@ class MyTestCase(unittest.TestCase):
                                            data=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
+            self.assertTrue(res.is_json, res)
+            result = res.json['result']
+            self.assertIn('auditdata', result['value'])
             # return the last entry
             return res.json["result"]["value"]["auditdata"][0]
 

@@ -1,6 +1,8 @@
-import json
+# -*- coding: utf-8 -*-
+
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+
 
 class APISmsGatewayTestCase(MyApiTestCase):
 
@@ -16,6 +18,10 @@ class APISmsGatewayTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
+
+        # check that we have an entry in the audit log
+        audit_entry = self.find_most_recent_audit_entry(action="GET /smsgateway*")
+        self.assertEqual(audit_entry['success'], 1, audit_entry)
 
         # create an sms gateway definition
         param = {
