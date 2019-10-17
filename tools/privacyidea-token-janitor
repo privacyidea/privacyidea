@@ -431,16 +431,44 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         token_obj.token.serial,
                         token_obj.token.tokentype,
                         token_obj.token.description,
-                        token_obj.get_tokeninfo()))
+                        token_obj.get_tokeninfo()
+                        ))
+                    user = token_obj.user
+                    if user:
+                        print("\t\t'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
+                            user.info.get("username", ""),
+                            user.info.get("givenname", ""),
+                            user.info.get("surname", ""),
+                            user.uid,
+                            user.resolver,
+                            user.realm
+                        ))
+                    else:
+                        print ("\t\tUser N/A, not assigned or orphaned.")
             else:
                 for token_obj in tlist:
-                    print(u"'{!s}','{!s}','{!s}','{!s}'".format(
-                        token_obj.token.serial,
-                        token_obj.token.tokentype,
-                        token_obj.token.description,
-                        token_obj.get_tokeninfo()
-                    ))
-
+                    user = token_obj.user
+                    if user:
+                        print(u"'{!s}','{!s}','{!s}','{!s}','{!s}','{!s}','{!s}','{!s}','{!s}','{!s}'".format(
+                            token_obj.token.serial,
+                            token_obj.token.tokentype,
+                            token_obj.token.description,
+                            token_obj.get_tokeninfo(),
+                            user.info.get("username", ""),
+                            user.info.get("givenname", ""),
+                            user.info.get("surname", ""),
+                            user.uid,
+                            user.resolver,
+                            user.realm
+                        ))
+                    else:
+                        print(u"'{!s}','{!s}','{!s}','{!s}','N/A','N/A','N/A','N/A','N/A','N/A'".format(
+                            token_obj.token.serial,
+                            token_obj.token.tokentype,
+                            token_obj.token.description,
+                            token_obj.get_tokeninfo()
+                        ))
+                                         
         elif action == "listuser":
             if not sum_tokens:
                 tokens = export_token_data(tlist)
