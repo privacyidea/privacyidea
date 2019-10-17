@@ -76,7 +76,9 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
 
     if key in param:
         ret = param[key]
-    elif default:
+    # we have to check for None explicitely since an empty dict or '0' as a
+    # default value would also evaluate to False
+    elif default is not None:
         ret = default
     elif not optional:
         raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
@@ -343,8 +345,6 @@ def check_policy_name(name):
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
             raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
 
-    if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
+    if not re.match(r'^[a-zA-Z0-9_. -]+$', name):
         raise ParameterError(_("The name of the policy may only contain "
                                "the characters a-zA-Z0-9_.- "))
-
-

@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
 
-@smsgateway_blueprint.route('', methods=['GET'])
+@smsgateway_blueprint.route('/', methods=['GET'])
 @smsgateway_blueprint.route('/<gwid>', methods=['GET'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYREAD)
@@ -65,14 +65,14 @@ def get_gateway(gwid=None):
     res = {}
     # TODO: if the gateway definitions contains a password normal users should
     #  not be allowed to read the configuration. Normal users should only be
-    # allowed to read the identifier of the definitions!
+    #  allowed to read the identifier of the definitions!
     if gwid == "providers":
         for classname in SMS_PROVIDERS:
             smsclass = get_sms_provider_class(classname.rsplit(".", 1)[0],
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
+        res = [gw.as_dict() for gw in get_smsgateway(db_id=gwid)]
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -142,4 +142,3 @@ def delete_gateway_option(gwid=None, option=None):
                         "info": u"{0!s}/{1!s}".format(gwid, option)})
 
     return send_result(res)
-

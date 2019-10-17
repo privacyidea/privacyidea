@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 
 
-@eventhandling_blueprint.route('', methods=['GET'])
+@eventhandling_blueprint.route('/', methods=['GET'])
 @eventhandling_blueprint.route('/<eventid>', methods=['GET'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.EVENTHANDLINGREAD)

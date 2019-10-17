@@ -204,25 +204,25 @@ def delete_smsgateway_option(id, option_key):
     return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
 
 
-def get_smsgateway(identifier=None, id=None, gwtype=None):
+def get_smsgateway(identifier=None, db_id=None, gwtype=None):
     """
     return a list of all SMS Gateway Configurations!
 
     :param identifier: If the identifier is specified, then we return only
         this single gateway definition
-    :param id: If the id is specified, we return only this single SMS gateway
+    :param db_id: If the id is specified, we return only this single SMS gateway
         definition
     :param gwtype: The type of the gateway to return
     :return: list of gateway definitions
     """
     res = []
     sqlquery = SMSGateway.query
-    if id:
+    if db_id:
         try:
-            id = int(id)
-            sqlquery = sqlquery.filter_by(id=id)
+            db_id = int(db_id)
+            sqlquery = sqlquery.filter_by(id=db_id)
         except Exception:
-            log.info("We can not filter for smsgateway {0!s}".format(id))
+            log.info("We can not filter for smsgateway id: {0!s}".format(db_id))
     if gwtype:
         sqlquery = sqlquery.filter_by(providermodule=gwtype)
     if identifier:

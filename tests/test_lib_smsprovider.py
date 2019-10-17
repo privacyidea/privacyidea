@@ -75,12 +75,12 @@ class SMSTestCase(MyTestCase):
                                      "URL": "example.com"})
         self.assertTrue(id > 0)
 
-        gw = get_smsgateway(id=id)
+        gw = get_smsgateway(db_id=id)
         self.assertEqual(gw[0].description, "test")
         # update the description
         set_smsgateway(identifier, provider_module,
                        description="This is a sensible description")
-        gw = get_smsgateway(id=id)
+        gw = get_smsgateway(db_id=id)
         self.assertEqual(gw[0].description, "This is a sensible description")
 
         # update some options
@@ -88,7 +88,7 @@ class SMSTestCase(MyTestCase):
                        options={"HTTP_METHOD": "POST",
                                 "URL": "example.com",
                                 "new key": "value"})
-        gw = get_smsgateway(id=id)
+        gw = get_smsgateway(db_id=id)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
@@ -96,7 +96,7 @@ class SMSTestCase(MyTestCase):
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
-        gw = get_smsgateway(id=id)
+        gw = get_smsgateway(db_id=id)
         self.assertEqual(len(gw[0].option_dict), 2)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
