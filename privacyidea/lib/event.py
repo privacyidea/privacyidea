@@ -148,34 +148,21 @@ def get_handler_object(handlername):
     Return an event handler object based on the Name of the event handler class
 
     :param handlername: The identifier of the Handler Class
-    :type hanldername: basestring
+    :type handlername: str
     :return:
     """
     # TODO: beautify and make this work with several different handlers
-    from privacyidea.lib.eventhandler.usernotification import \
-        UserNotificationEventHandler
+    from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
     from privacyidea.lib.eventhandler.tokenhandler import TokenEventHandler
     from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
-    from privacyidea.lib.eventhandler.federationhandler import \
-        FederationEventHandler
+    from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
     from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
     from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
     from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-    h_obj = None
-    if handlername == "UserNotification":
-        h_obj = UserNotificationEventHandler()
-    elif handlername == "Token":
-        h_obj = TokenEventHandler()
-    elif handlername == "Script":
-        h_obj = ScriptEventHandler()
-    elif handlername == "Federation":
-        h_obj = FederationEventHandler()
-    elif handlername == "Counter":
-        h_obj = CounterEventHandler()
-    elif handlername == "RequestMangler":
-        h_obj = RequestManglerEventHandler()
-    elif handlername == "ResponseMangler":
-        h_obj = ResponseManglerEventHandler()
+    try:
+        h_obj = locals()[handlername + 'EventHandler']()
+    except KeyError as _e:
+        h_obj = None
     return h_obj
 
 

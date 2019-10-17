@@ -142,6 +142,10 @@ class EventHandlerLibTestCase(MyTestCase):
         h_obj = get_handler_object("Federation")
         self.assertEqual(type(h_obj), FederationEventHandler)
 
+        # also check for an unknown handler
+        h_obj = get_handler_object('Unknown')
+        self.assertIsNone(h_obj)
+
 
 class BaseEventHandlerTestCase(MyTestCase):
 
