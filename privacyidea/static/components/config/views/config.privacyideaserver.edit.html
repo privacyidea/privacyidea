@@ -17,7 +17,7 @@
                    ng-model="params.identifier" required
                    placeholder="myRemotePrivacyIDEAServer"
                    pattern="{{ inputNamePatterns.withoutTestRequest.pattern }}"
-                   title="{{ inputNamePatterns.withoutTestRequest.title }}"
+                   title="{{ inputNamePatterns.withoutTestRequest.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
                 of the privacyIDEA server definition.</p>

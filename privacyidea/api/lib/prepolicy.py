@@ -168,7 +168,8 @@ def set_random_pin(request=None, action=None):
 
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
-        raise TokenAdminError("You need to specify a policy 'otp_pin_set_random' in scope {0!s}.".format(scope))
+        raise TokenAdminError("You need to specify a policy '{1!s}' in scope "
+                              "{0!s}.".format(scope, ACTION.OTPPINSETRANDOM))
     elif len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
