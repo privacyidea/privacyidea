@@ -38,19 +38,19 @@ class SMSTestCase(MyTestCase):
         self.assertTrue(text == "Some Error", text)
 
     def test_01_get_provider_class(self):
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SipgateSMSProvider",
             "SipgateSMSProvider")
 
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.HttpSMSProvider",
             "HttpSMSProvider")
 
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
         
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmppSMSProvider",
             "SmppSMSProvider")
 
@@ -70,17 +70,36 @@ class SMSTestCase(MyTestCase):
     def test_02_create_modify_delete_smsgateway_configuration(self):
         identifier = "myGW"
         provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
-        self.assertTrue(id > 0)
+        gwid = set_smsgateway(identifier, provider_module, description="test",
+                              options={"HTTP_METHOD": "POST",
+                                       "URL": "example.com"})
+        self.assertTrue(gwid > 0)
 
-        gw = get_smsgateway(db_id=id)
+        # add another sms gateway
+        identifier2 = "myGW2"
+        gwid2 = set_smsgateway(identifier=identifier2, providermodule=provider_module,
+                               description='foo',
+                               options={"HTTP_METHOD": "GET",
+                                        "URL": "example2.com"})
+        self.assertGreater(gwid2, 0, gwid2)
+
+        gw = get_smsgateway(db_id=gwid)
         self.assertEqual(gw[0].description, "test")
+
+        # check for wrong id type
+        gw = get_smsgateway(db_id='test')
+        # since there will be no filter applied, we receive all gateways
+        self.assertEqual(2, len(gw))
+
+        # check for provider module filter
+        gw = get_smsgateway(gwtype=provider_module, identifier=identifier2)
+        self.assertGreater(len(gw), 0, gw)
+        self.assertEqual(gw[0].description, 'foo')
+
         # update the description
         set_smsgateway(identifier, provider_module,
                        description="This is a sensible description")
-        gw = get_smsgateway(db_id=id)
+        gw = get_smsgateway(db_id=gwid)
         self.assertEqual(gw[0].description, "This is a sensible description")
 
         # update some options
@@ -88,23 +107,25 @@ class SMSTestCase(MyTestCase):
                        options={"HTTP_METHOD": "POST",
                                 "URL": "example.com",
                                 "new key": "value"})
-        gw = get_smsgateway(db_id=id)
+        gw = get_smsgateway(db_id=gwid)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
         self.assertEqual(gw[0].option_dict.get("new key"), "value")
 
         # delete a single option
-        r = delete_smsgateway_option(id, "URL")
-        gw = get_smsgateway(db_id=id)
+        delete_smsgateway_option(gwid, "URL")
+        gw = get_smsgateway(db_id=gwid)
         self.assertEqual(len(gw[0].option_dict), 2)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
         self.assertEqual(gw[0].option_dict.get("new key"), "value")
 
-        # finally delete the gateway definition
+        # finally delete the gateway definitions
         r = delete_smsgateway(identifier)
-        self.assertEqual(r, id)
+        self.assertEqual(r, gwid)
+        r = delete_smsgateway(identifier=identifier2)
+        self.assertEqual(r, gwid2)
 
         # delete successful?
         gw = get_smsgateway()
@@ -115,10 +136,10 @@ class SMSTestCase(MyTestCase):
         identifier = "myGW"
         provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
                           ".HttpSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
-        self.assertTrue(id > 0)
+        gwid = set_smsgateway(identifier, provider_module, description="test",
+                              options={"HTTP_METHOD": "POST",
+                                       "URL": "example.com"})
+        self.assertTrue(gwid > 0)
 
         sms = create_sms_instance(identifier)
 
