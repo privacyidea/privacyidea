@@ -76,9 +76,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
 
     if key in param:
         ret = param[key]
-    # we have to check for None explicitely since an empty dict or '0' as a
-    # default value would also evaluate to False
-    elif default is not None:
+    elif default:
         ret = default
     elif not optional:
         raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
