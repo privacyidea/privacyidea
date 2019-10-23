@@ -127,7 +127,31 @@ class FirebaseProvider(ISMSProvider):
         fcm_message = {
             "message": {
                         "data": data,
-                        "token": firebase_token
+                        "token": firebase_token,
+                        "android": {
+                                    "priority": "HIGH",
+                                    "ttl": "120s",
+                                    "fcm_options": {"analytics_label": "AndroidPushToken"}
+                                   },
+                        "apns": {
+                                 "headers": {
+                                             "apns-priority": "10",
+                                             "apns-push-type": "alert",
+                                             "apns-collapse-id": "privacyidea.pushtoken",
+                                             "apns-expiration": str(int(time.time()) + 120)
+                                            },
+                                 "payload": {
+                                             "aps": {
+                                                     "alert": {
+                                                               "title": data.get("title"),
+                                                               "body": data.get("question"),
+                                                              },
+                                                     "sound": "default",
+                                                     "category": "PUSH_AUTHENTICATION"
+                                                    },
+                                            },
+                                 "fcm_options": {"analytics_label": "iOSPushToken"}
+                                }
                        }
             }
 
