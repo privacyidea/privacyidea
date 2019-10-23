@@ -16,6 +16,8 @@
             <input name="identifier" id="identifier" class="form-control"
                    ng-model="params.identifier" required
                    placeholder="mySmtpServer"
+                   pattern="{{ inputNamePatterns.withoutTestEmail.pattern }}"
+                   title="{{ inputNamePatterns.withoutTestEmail.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
                 of the SMTP server definition.</p>
