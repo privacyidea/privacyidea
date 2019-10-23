@@ -1354,11 +1354,10 @@ class TokenClass(object):
         :return: true or false
         :rtype: bool
         """
-
         request_is_challenge = False
         options = options or {}
         pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True and "data" in options or "challenge" in options:
+        if pin_match is True:
             request_is_challenge = True
 
         return request_is_challenge
