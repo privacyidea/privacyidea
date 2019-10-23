@@ -364,7 +364,7 @@
 
         <tr ng-hide="token.locked || !checkRight('setrandompin')">
             <td>
-                <span translate>Random generated PIN</span>
+                <span ng-show="randomPin" translate>Random generated PIN</span>
             </td>
             <td>
                 {{ randomPin }}
