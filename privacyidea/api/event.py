@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 
 
-@eventhandling_blueprint.route('', methods=['GET'])
+@eventhandling_blueprint.route('/', methods=['GET'])
 @eventhandling_blueprint.route('/<eventid>', methods=['GET'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.EVENTHANDLINGREAD)
@@ -66,9 +66,8 @@ def get_eventhandling(eventid=None):
         res = AVAILABLE_EVENTS
     elif eventid == "handlermodules":
         # TODO: We need to provide a dynamic list of event handlers
-        res = ["UserNotification", "Token", "Federation", "Script", "Counter"]
-        res.append("RequestMangler")
-        res.append("ResponseMangler")
+        res = ["UserNotification", "Token", "Federation", "Script", "Counter",
+               "RequestMangler", "ResponseMangler"]
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})

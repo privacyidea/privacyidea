@@ -9,7 +9,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
     def test_01_crud_smsgateway(self):
 
         # list empty sms gateway definitions
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
@@ -41,7 +41,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -90,7 +90,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "new description")
 
-
         # delete gateway
         with self.app.test_request_context('/smsgateway/myGW',
                                            method='DELETE',
@@ -104,7 +103,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty gateways
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -145,7 +144,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             result = res.json.get("result")
 
         # check options
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                    'Authorization': self.at}):
@@ -168,7 +167,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             detail = res.json.get("detail")
 
         # check options
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -242,7 +241,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         # delete the read policy
         delete_policy("pol_read")
 
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
