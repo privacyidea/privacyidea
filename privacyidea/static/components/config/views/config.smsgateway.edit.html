@@ -89,9 +89,8 @@
                 {{ option }}
             </td>
             <td>
-                <button
-                        ng-click="deleteOption(optionname)"
-                        class="btn btn-danger">Delete</button>
+                <button ng-click="deleteOption(optionname)"
+                class="btn btn-danger">Delete</button>
             </td>
         </tr>
 
@@ -116,12 +115,11 @@
     <!-- button -->
     <div class="text-center"
          ng-show="checkRight('smsgateway_write')">
-        <button
-                ng-click="createSMSgatewayAsk()"
+        <button ng-click="createSMSgateway()"
                 id="createGatewayButton"
                 ng-disabled="formGatewayAdd.$invalid"
                 class="btn btn-primary">
-            <span class="glyphicon glyphicon-plus" aria-hidden></span>
+            <span class="glyphicon glyphicon-plus"></span>
             <span translate>Save SMS gateway</span>
         </button>
     </div>

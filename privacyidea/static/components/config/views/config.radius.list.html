@@ -24,11 +24,10 @@
                 {{ server.description | limitTo: 20 }}
             </td>
             <td>
-                <button
-                        class="btn btn-danger"
+                <button class="btn btn-danger"
                         ng-show="checkRight('radiusserver_write')"
-                        ng-click="delRadiusServerAsk(identifier)">
-                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
+                        ng-click="delRadiusServer(identifier)">
+                        <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
             </td>
