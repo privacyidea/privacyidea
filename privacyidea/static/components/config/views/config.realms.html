@@ -6,7 +6,7 @@
                     ng-class="{ active: $state.includes('config.realms.list')}">
                     <a ui-sref="config.realms.list"
                             translate>All Realms</a></li>
-                <li><a ng-click="clearDefaultRealm()"
+                <li><a ng-click="clearDefaultRealmAsk()"
                        ng-show="checkRight('resolverwrite')"
                         translate>Clear default realm</a></li>
             </ul>

@@ -15,7 +15,7 @@
                 <span ng-show="checkRight('resolverwrite')">
                     <button class="btn btn-success"
                             ng-hide="realm.default"
-                            ng-click="setDefaultRealm(realmname)"
+                            ng-click="setDefaultRealmAsk(realmname)"
                             translate>set Default
                     </button>
                 </span>
@@ -63,7 +63,7 @@
                 </button>
                 <button class="btn btn-danger"
                         ng-show="checkRight('resolverdelete')"
-                        ng-click="delRealm(realmname)">
+                        ng-click="delRealmAsk(realmname)">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                 </button>
@@ -71,7 +71,7 @@
                 <span ng-show="editRealm == realmname">
                     <button class="btn btn-primary"
                             ng-show="checkRight('resolverwrite')"
-                            ng-click="setRealm(realmname)"
+                            ng-click="setRealmAsk(realmname)"
                             translate>Save
                     </button>
                     <button class="btn btn-danger"
@@ -117,7 +117,7 @@
                 </td>
                 <td>
                     <span ng-hide="editRealm">
-                    <button ng-click="setRealm(realm.name)"
+                    <button ng-click="setRealmAsk(realm.name)"
                             ng-disabled="formNewRealm.$invalid"
                             class="btn btn-primary" translate>Create realm
                     </button>
