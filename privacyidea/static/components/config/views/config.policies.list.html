@@ -28,10 +28,14 @@
             <td>
                 <span ng-show="policy.active"
                       class="glyphicon glyphicon-ok"
+                      role="button"
+                      aria-label='{{ "Disable Policy" | translate }}'
                       ng-click="disablePolicyAsk(policy.name)">
                 </span>
                 <span ng-hide="policy.active"
                       class="glyphicon glyphicon-minus"
+                      role="button"
+                      aria-label='{{ "Enable Policy" | translate }}'
                       ng-click="enablePolicyAsk(policy.name)">
                 </span>
             </td>
@@ -61,7 +65,7 @@
                 <button class="btn btn-danger"
                         ng-show="checkRight('policydelete')"
                         ng-click="delPolicyAsk(policy.name)">
-                        <span class="glyphicon glyphicon-trash"></span>
+                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
                     <span translate>Delete</span>
                 </button>
             </td>

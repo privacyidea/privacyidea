@@ -50,7 +50,7 @@
             <button ng-click="updateUserAsk()"
                     class="btn btn-primary"
                     ng-show="editUser">
-                <span class="glyphicon glyphicon-save"></span>
+                <span class="glyphicon glyphicon-save" aria-hidden></span>
                 <span translate>Save user</span>
             </button>
             <button ng-click="editUser=false; getUserDetails()"
@@ -60,7 +60,7 @@
             <button ng-click="deleteUserAsk()"
                     class="btn btn-danger"
                     ng-show="!editUser && checkRight('deleteuser')">
-                <span class="glyphicon glyphicon-trash"></span>
+                <span class="glyphicon glyphicon-trash" aria-hidden></span>
                 <span translate>Delete user</span>
             </button>
         </div>

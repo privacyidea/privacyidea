@@ -14,7 +14,7 @@
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')"
                         ng-hide="!checkRight('delete') && hide_buttons">
-                    <span class="glyphicon glyphicon-trash"></span>
+                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
                     <span translate>Delete</span>
                 </button>
             </td>
@@ -334,7 +334,7 @@
                         id="resyncButton"
                         ng-disabled="(!otp1 || !otp2)"
                         ng-click="resyncTokenAsk()">
-                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span class="glyphicon glyphicon-refresh" aria-hidden></span>
                     <span translate>Resync Token</span>
                 </button>
             </td>
@@ -356,7 +356,7 @@
                         id="setPinButton"
                         ng-disabled="pin1 != pin2"
                         ng-click="setPinAsk()">
-                    <span class="glyphicon glyphicon-pushpin"></span>
+                    <span class="glyphicon glyphicon-pushpin" aria-hidden></span>
                     <span translate>Set PIN</span>
                 </button>
             </td>
@@ -373,7 +373,7 @@
                 <button class="btn btn-primary"
                         id="setRandomPinButton"
                         ng-click="setRandomPinAsk()">
-                    <span class="glyphicon glyphicon-pushpin"></span>
+                    <span class="glyphicon glyphicon-pushpin" aria-hidden></span>
                     <span translate>Set random PIN</span>
                 </button>
             </td>
@@ -435,7 +435,7 @@
                             id="unassignAdminButton"
                             ng-click="unassignAskAdmin()"
                             class="btn btn-warning">
-                        <span class="glyphicon glyphicon-resize-full"></span>
+                        <span class="glyphicon glyphicon-resize-full" aria-hidden></span>
                         <span translate>Unassign User</span>
                     </button>
                 </td>
@@ -461,7 +461,7 @@
         <button ng-click="unassignAskUser()"
                 id="unassignUserButton"
                 class="btn btn-warning">
-            <span class="glyphicon glyphicon-resize-full"></span>
+            <span class="glyphicon glyphicon-resize-full" aria-hidden></span>
             <span translate>Unassign Token</span>
         </button>
     </div>
@@ -481,7 +481,7 @@
                 id="assignButton"
                 ng-disabled="formAssignToken.$invalid"
                 class="btn btn-primary">
-            <span class="glyphicon glyphicon-resize-small"></span>
+            <span class="glyphicon glyphicon-resize-small" aria-hidden></span>
             <span translate>Assign User</span>
         </button>
     </div>

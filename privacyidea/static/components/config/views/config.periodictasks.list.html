@@ -22,10 +22,14 @@
             <td>
                 <span ng-show="ptask.active"
                       class="glyphicon glyphicon-ok"
+                      role="button"
+                      aria-label='{{ "Disable Periodic Task" | translate }}'
                       ng-click="disablePeriodicTaskAsk(ptask.id)">
                 </span>
                 <span ng-hide="ptask.active"
                       class="glyphicon glyphicon-minus"
+                      role="button"
+                      aria-label='{{ "Enable Periodic Task" | translate }}'
                       ng-click="enablePeriodicTaskAsk(ptask.id)">
                 </span>
             </td>
@@ -50,7 +54,7 @@
                 <button class="btn btn-danger"
                         ng-show="checkRight('periodictask_write')"
                         ng-click="delPeriodicTaskAsk(ptask.id)">
-                        <span class="glyphicon glyphicon-trash"></span>
+                        <span class="glyphicon glyphicon-trash" aria-hidden></span>
                         <span translate>Delete</span>
                 </button>
             </td>
