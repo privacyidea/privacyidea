@@ -16,16 +16,14 @@
                 {{ caconnector.type }}
             </td>
             <td>
-                <button
-                        class="btn btn-sm btn-primary"
-                        ng-click="editCAConnector(caconnector.connectorname, caconnector.type)"
+                <button class="btn btn-sm btn-primary"
+                        ng-click="editCAConnector(caconnector.connectorname,
+                        caconnector.type)"
                         translate>Edit</button>
-                <button
-                        class="btn btn-sm btn-danger"
-                        ng-click="delCAConnectorAsk(caconnector.connectorname)">
-                    <span class="glyphicon glyphicon-trash" aria-hidden></span>
-                    <span translate>Delete</span>
-                </button>
+                <button class="btn btn-sm btn-danger"
+                        ng-click="delCAConnector(caconnector.connectorname)">
+                    <span class="glyphicon glyphicon-trash" translate></span>
+                    <span translate>Delete</span></button>
             </td>
         </tr>
         </tbody>

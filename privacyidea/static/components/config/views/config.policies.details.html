@@ -2,22 +2,21 @@
     ng-show="existingPolicyname">
     <translate>Edit Policy {{ existingPolicyname }}</translate>
     <span ng-show="checkRight('policywrite')">
-        <button
-                class="btn btn-danger"
-                ng-click="disablePolicyAsk(existingPolicyname)"
-                ng-show="params.active"
-                translate>Disable</button>
-        <button
-                class="btn btn-success"
-                ng-click="enablePolicyAsk(existingPolicyname)"
-                ng-show="!params.active"
-                translate>Enable</button>
-        <button
-                class="btn btn-danger"
-                ng-click="delPolicyAsk(existingPolicyname)">
-            <span class="glyphicon glyphicon-trash" aria-hidden></span>
-            <span translate>Delete</span>
-        </button>
+    <button class="btn btn-danger"
+            ng-click="disablePolicy(existingPolicyname)"
+            ng-show="params.active" translate>
+        Disable
+    </button>
+    <button class="btn btn-success"
+            ng-click="enablePolicy(existingPolicyname)"
+            ng-show="!params.active" translate>
+        Enable
+    </button>
+    <button class="btn btn-danger"
+        ng-click="delPolicy(existingPolicyname)">
+        <span class="glyphicon glyphicon-trash"></span>
+        <span translate>Delete</span>
+    </button>
     </span>
 </h2>
 
@@ -78,12 +77,11 @@
 
     <div class="text-center"
          ng-show="checkRight('policywrite')">
-        <button
-                ng-click="createPolicyAsk()"
+        <button ng-click="createPolicy()"
                 id="createPolicyButton"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
-            <span class="glyphicon glyphicon-plus" aria-hidden></span>
+            <span class="glyphicon glyphicon-plus"></span>
             <span translate>Create Policy</span>
         </button>
     </div>
@@ -351,7 +349,7 @@
 
     <div class="text-center"
          ng-show="checkRight('policywrite')">
-        <button ng-click="createPolicyAsk()"
+        <button ng-click="createPolicy()"
                 id="createPolicyButton"
                 ng-disabled="formPolicyAdd.$invalid"
                 class="btn btn-primary">
