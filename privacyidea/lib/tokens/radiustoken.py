@@ -211,7 +211,7 @@ class RadiusTokenClass(RemoteTokenClass):
         if options is None:
             options = {}
         message = options.get('radius_message') or "Enter your RADIUS tokencode:"
-        state = hexlify_and_unicode(options.get('radius_state') or '')
+        state = binascii.hexlify(options.get('radius_state') or b'')
         attributes = {'state': transactionid}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 

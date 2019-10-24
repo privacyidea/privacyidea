@@ -72,7 +72,7 @@ def get_gateway(gwid=None):
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(db_id=gwid)]
+        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
 
     g.audit_object.log({"success": True})
     return send_result(res)
