@@ -4,17 +4,17 @@
 
     <span ng-show="checkRight('periodictask_write')">
     <button class="btn btn-danger"
-            ng-click="disablePeriodicTask(ptaskid)"
+            ng-click="disablePeriodicTaskAsk(ptaskid)"
             ng-show="form.active" translate>
         Disable
     </button>
     <button class="btn btn-success"
-            ng-click="enablePeriodicTask(ptaskid)"
+            ng-click="enablePeriodicTaskAsk(ptaskid)"
             ng-show="!form.active" translate>
         Enable
     </button>
     <button class="btn btn-danger"
-        ng-click="delPeriodicTask(ptaskid)">
+        ng-click="delPeriodicTaskAsk(ptaskid)">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>
     </button>
@@ -163,7 +163,7 @@
     <!-- button -->
     <div class="text-center"
          ng-show="checkRight('periodictask_write')">
-        <button ng-click="createPeriodicTask()"
+        <button ng-click="createPeriodicTaskAsk()"
                 id="createPeriodicTaskButton"
                 ng-disabled="formPeriodicTaskAdd.$invalid"
                 class="btn btn-primary">
