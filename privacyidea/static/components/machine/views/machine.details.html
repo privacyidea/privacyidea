@@ -61,11 +61,13 @@
                     {{ token.serial }}</a> ({{ token.type  }})</td>
                 <td>{{ token.application }}</td>
                 <td ng-hide="token.optionsEdit">
-                    <span ng-repeat="option in Applications[token.application].options.required">
+                    <span ng-repeat="option
+                    in Applications[token.application].options.required">
                         <b>{{ option | capitalize }}:</b>
                         {{ token.options[option] }}<br>
                     </span>
-                    <span ng-repeat="option in Applications[token.application].options.optional">
+                    <span ng-repeat="option
+                    in Applications[token.application].options.optional">
                         <b>{{ option | capitalize }}:</b>
                         {{ token.options[option] }}<br>
                     </span>
@@ -93,15 +95,16 @@
                             ng-click="token.optionsEdit=true"
                             translate>Edit Options
                     </button>
-                    <button
-                            class="btn btn-danger"
-                            ng-click="detachMachineTokenAsk(token.serial, token.application)"
-                            translate>Detach
+                    <button class="btn btn-danger"
+                            ng-click="detachMachineToken(token.serial,
+                            token.application)" translate>Detach
                     </button>
                 </td>
                 <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptionsAsk(token.serial, token.application, token.options)"
+                            ng-click="saveOptions(token.serial,
+                            token.application, token.options);
+                            token.optionsEdit=false"
                             translate>Save Options
                     </button>
                     <button class="btn btn-danger"
