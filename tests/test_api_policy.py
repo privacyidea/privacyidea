@@ -335,8 +335,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertEqual(result["result"]["error"]["message"],
-                             u"Unknown HTTP header key referenced in condition of policy u'cond1': u'User-Agent'")
+            self.assertIn(u"Unknown HTTP header key referenced in condition of policy",
+                          result["result"]["error"]["message"])
+            self.assertIn(u"User-Agent", result["result"]["error"]["message"])
 
         # A request without such a specific header - always has a header
         with self.app.test_request_context('/validate/check',
@@ -345,5 +346,6 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertEqual(result["result"]["error"]["message"],
-                             u"Unknown HTTP header key referenced in condition of policy u'cond1': u'User-Agent'")
+            self.assertIn(u"Unknown HTTP header key referenced in condition of policy",
+                          result["result"]["error"]["message"])
+            self.assertIn(u"User-Agent", result["result"]["error"]["message"])
