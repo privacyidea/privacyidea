@@ -96,15 +96,14 @@
                             translate>Edit Options
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="detachMachineToken(token.serial,
+                            ng-click="detachMachineTokenAsk(token.serial,
                             token.application)" translate>Detach
                     </button>
                 </td>
                 <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptions(token.serial,
-                            token.application, token.options);
-                            token.optionsEdit=false"
+                            ng-click="saveOptionsAsk(token.serial,
+                            token.application, token.options)"
                             translate>Save Options
                     </button>
                     <button class="btn btn-danger"
