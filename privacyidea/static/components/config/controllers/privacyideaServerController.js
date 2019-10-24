@@ -21,9 +21,9 @@
  *
  */
 myApp.controller("privacyideaServerController", function($scope, $stateParams,
-                                                    inform, gettextCatalog,
-                                                    $state, $location,
-                                                    ConfigFactory) {
+                                                         inform, gettextCatalog,
+                                                         $state, $location,
+                                                         ConfigFactory) {
     if ($location.path() === "/config/privacyideaserver") {
         $location.path("/config/privacyideaserver/list");
     }

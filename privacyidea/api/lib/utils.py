@@ -40,6 +40,9 @@ from flask import (jsonify,
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
+                     "RS256", "RS384", "RS512",
+                     "PS256", "PS384", "PS512"]
 
 SESSION_KEY_LENGTH = 32
 
@@ -148,6 +151,36 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     return ret
 
 
+def send_html(output):
+    """
+    Send the ouput as HTML to the client with the correct mimetype.
+
+    :param output: The HTML to send to the client
+    :type output: str
+    :return: The generated response
+    :rtype: flask.Response
+    """
+    return current_app.response_class(output, mimetype='text/html')
+
+
+def send_file(output, filename, content_type='text/csv'):
+    """
+    Send the output to the client with the "Content-disposition" header to
+    declare it as a downloadable file.
+    :param output: The data that should be send as a file
+    :type output: str
+    :param filename: The proposed filename
+    :type filename: str
+    :param content_type: The proposed content type of the data
+    :type content_type: str (should be something from this list:
+                             https://www.iana.org/assignments/media-types/media-types.xhtml)
+    :return: The generated response
+    :rtype: flask.Response
+    """
+    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
+    return current_app.response_class(output, headers=headers, mimetype=content_type)
+
+
 def send_csv_result(obj, data_key="tokens",
                     filename="privacyidea-tokendata.csv"):
     """
@@ -169,25 +202,25 @@ def send_csv_result(obj, data_key="tokens",
     :rtype: Response object
     """
     delim = "'"
-    content_type = "application/force-download"
-    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
     output = u""
-    # Do the header
-    for k, _v in obj.get(data_key, {})[0].items():
-        output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
-    output += "\n"
-
-    # Do the data
-    for row in obj.get(data_key, {}):
-        for val in row.values():
-            if isinstance(val, six.string_types):
-                value = val.replace("\n", " ")
-            else:
-                value = val
-            output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+    # check if there is any data
+    if data_key in obj and len(obj[data_key]) > 0:
+        # Do the header
+        for k, _v in obj.get(data_key)[0].items():
+            output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
         output += "\n"
 
-    return current_app.response_class(output, mimetype=content_type)
+        # Do the data
+        for row in obj.get(data_key):
+            for val in row.values():
+                if isinstance(val, six.string_types):
+                    value = val.replace("\n", " ")
+                else:
+                    value = val
+                output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+            output += "\n"
+
+    return send_file(output, filename)
 
 
 @log_with(log)
@@ -247,19 +280,46 @@ def verify_auth_token(auth_token, required_role=None):
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
     """
+    r = None
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
-    try:
-        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
-    except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
-    except jwt.ExpiredSignature as err:
-        raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    headers = jwt.get_unverified_header(auth_token)
+    algorithm = headers.get("alg")
+    if algorithm in TRUSTED_JWT_ALGOS:
+        # The trusted JWTs are RSA, PSS or eliptic curve signed
+        trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
+        for trusted_jwt in trusted_jwts:
+            try:
+                if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
+                    j = jwt.decode(auth_token,
+                                   trusted_jwt.get("public_key"),
+                                   algorithms=TRUSTED_JWT_ALGOS)
+                    if dict((k, j.get(k)) for k in ("role", "user", "resolver", "realm")) == \
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "user", "resolver", "realm")):
+                        r = j
+                        break
+                else:
+                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+            except jwt.DecodeError as err:
+                log.info(u"A given JWT definition does not match.")
+            except jwt.ExpiredSignature as err:
+                # We have the correct token. It expired, so we raise an error
+                raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    if not r:
+        try:
+            r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
+        except jwt.DecodeError as err:
+            raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+        except jwt.ExpiredSignature as err:
+            raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match

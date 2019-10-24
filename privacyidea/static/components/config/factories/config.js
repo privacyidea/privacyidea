@@ -73,6 +73,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(AuthFactory.authError);
         },
         getSMSGateways: function(gwid, callback) {
+            if(!gwid) {gwid = "";}
             $http.get(smsgatewayUrl + "/" + gwid, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback

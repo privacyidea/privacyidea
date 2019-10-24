@@ -22,8 +22,8 @@
  */
 
 myApp.controller("ldapMachineResolverController", function ($scope,
-                                                      ConfigFactory, inform,
-                                                      $state, $stateParams) {
+                                                            ConfigFactory, inform,
+                                                            $state, $stateParams) {
     $scope.params = {
         type: 'ldap',
         AUTHTYPE: "Simple",
@@ -31,8 +31,6 @@ myApp.controller("ldapMachineResolverController", function ($scope,
         START_TLS: true
     };
     $scope.authtypes = ["Simple", "SASL Digest-MD5"];
-
-
     $scope.resolvername = $stateParams.resolvername;
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit

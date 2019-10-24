@@ -107,6 +107,8 @@ class PiResponseClass(Response):
         """
         return self.get_json(cache=False)
 
+    default_mimetype = 'application/json'
+
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',

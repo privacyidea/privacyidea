@@ -46,6 +46,7 @@ angular.module("privacyideaApp").controller("mainController", [
     "U2fFactory",
     "instanceUrl",
     "PollingAuthFactory",
+    "resourceNamePatterns"
     function (
         Idle,
         $scope,
@@ -64,12 +65,14 @@ angular.module("privacyideaApp").controller("mainController", [
         RegisterFactory,
         U2fFactory,
         instanceUrl,
-        PollingAuthFactory) {
+        PollingAuthFactory,
+        resourceNamePatterns) {
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
     $scope.getRightsValue = AuthFactory.getRightsValue;
     $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
+    $scope.inputNamePatterns = resourceNamePatterns;
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
     $scope.remoteUser = obj.val();
     if (!$scope.remoteUser) {

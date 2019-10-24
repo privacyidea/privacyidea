@@ -350,31 +350,6 @@ class HotpTokenClass(TokenClass):
                      get_from_config("hotp.hashlib", u'sha1')
         return hashlibStr
 
-    # challenge interfaces starts here
-    @log_with(log)
-    @challenge_response_allowed
-    def is_challenge_request(self, passw, user=None, options=None):
-        """
-        check, if the request would start a challenge
-
-        - default: if the passw contains only the pin, this request would
-        trigger a challenge
-
-        - in this place as well the policy for a token is checked
-
-        :param passw: password, which might be pin or pin+otp
-        :param options: dictionary of additional request parameters
-
-        :return: returns true or false
-        """
-        trigger_challenge = False
-        options = options or {}
-        pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
-            trigger_challenge = True
-
-        return trigger_challenge
-
 
     @log_with(log)
     @check_token_locked

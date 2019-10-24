@@ -24,8 +24,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.lib.queue import has_job_queue
-
 __doc__ = """This is the starting point for the single web application.
 Other html code is dynamically loaded via angularJS and located in
 /static/views/...
@@ -34,6 +32,7 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
                    current_app)
+from privacyidea.api.lib.utils import send_html
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
@@ -42,6 +41,7 @@ from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
@@ -58,7 +58,7 @@ def single_page_application():
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
-        return render_template("deactivated.html")
+        return send_html(render_template("deactivated.html"))
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
@@ -102,7 +102,7 @@ def single_page_application():
                 client=client_ip)
             # Use the realms from the policy.
             realms = ",".join(realm_dropdown_values)
-        except AttributeError as ex:
+        except AttributeError as _e:
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
             realms = ",".join(get_realms())
@@ -117,7 +117,7 @@ def single_page_application():
 
     # Use policies to determine the customization of menu
     # and baseline. get_action_values returns an array!
-    sub_state  = subscription_status()
+    sub_state = subscription_status()
     customization_menu_file = policy_object.get_action_values(
         allow_white_space_in_action=True,
         action=ACTION.CUSTOM_MENU,
@@ -150,21 +150,24 @@ def single_page_application():
     else:
         login_text = ""
 
-    return render_template("index.html", instance=instance,
-                           backendUrl=backend_url,
-                           browser_lang=browser_lang,
-                           remote_user=remote_user,
-                           theme=theme,
-                           password_reset=password_reset,
-                           hsm_ready=hsm_ready,
-                           has_job_queue=str(has_job_queue()),
-                           customization=customization,
-                           custom_css=custom_css,
-                           customization_menu_file=customization_menu_file,
-                           customization_baseline_file=customization_baseline_file,
-                           realms=realms,
-                           external_links=external_links,
-                           login_text=login_text,
-                           logo=logo,
-                           page_title=page_title)
+    render_context = {
+        'instance': instance,
+        'backendUrl': backend_url,
+        'browser_lang': browser_lang,
+        'remote_user': remote_user,
+        'theme': theme,
+        'password_reset': password_reset,
+        'hsm_ready': hsm_ready,
+        'has_job_queue': str(has_job_queue()),
+        'customization': customization,
+        'custom_css': custom_css,
+        'customization_menu_file': customization_menu_file,
+        'customization_baseline_file': customization_baseline_file,
+        'realms': realms,
+        'external_links': external_links,
+        'login_text': login_text,
+        'logo': logo,
+        'page_title': page_title
+    }
 
+    return send_html(render_template("index.html", **render_context))

@@ -20,6 +20,8 @@
                        class="form-control"
                        ng-model="resolvername" required
                        placeholder="MachineResolver1"
+                       pattern="{{ inputNamePatterns.withoutTest.pattern }}"
+                       title="{{ inputNamePatterns.withoutTest.title | translate }}"
                        autofocus/>
             </div>
         </div>
@@ -31,8 +33,7 @@
                 <input name="resolverfile" id="resolverfile"
                        class="form-control"
                        ng-model="params.filename" required
-                       placeholder="/etc/hosts"
-                       autofocus/>
+                       placeholder="/etc/hosts"/>
             </div>
         </div>
         <div class="text-center" ng-show="checkRight('mresolverwrite')">

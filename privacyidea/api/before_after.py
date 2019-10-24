@@ -215,6 +215,7 @@ def before_request():
 @smtpserver_blueprint.after_request
 @eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
+@smsgateway_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
@@ -267,7 +268,7 @@ def auth_error(error):
                 if 'message' in error.details:
                     message = u'{}|{}'.format(message, error.details['message'])
 
-        g.audit_object.log({"info": message})
+        g.audit_object.add_to_log({"info": message}, add_with_comma=True)
         g.audit_object.finalize_log()
     return send_error(error.message,
                       error_code=error.id,
@@ -292,7 +293,7 @@ def auth_error(error):
 @postrequest(sign_response, request=request)
 def policy_error(error):
     if "audit_object" in g:
-        g.audit_object.log({"info": error.message})
+        g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
         g.audit_object.finalize_log()
     return send_error(error.message, error_code=error.id), 403
 

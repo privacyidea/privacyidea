@@ -5,6 +5,7 @@ selfservice) on the REST API.
 
 implementation is contained in api/auth.py, api/token.py api/audit.py
 """
+import datetime
 import json
 
 from . import ldap3mock
@@ -14,6 +15,7 @@ from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    assign_token, unassign_token, init_token)
 from privacyidea.lib.user import User
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
@@ -618,6 +620,328 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(response.get("result").get("value"),
                             response.get("result"))
 
+    def test_09_authz_user_detail(self):
+        # Test behavior of ADDUSERINRESPONSE and ADDRESOLVERINRESPONSE policy action for /auth endpoint
+        # Normally, no userinfo and realm/resolver are found in the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertEqual(role, "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1", content)
+            self.assertNotIn("detail", content, content)
+
+        set_policy(name="pol_add_info",
+                   scope=SCOPE.AUTHZ,
+                   action=[ACTION.ADDUSERINRESPONSE, ACTION.ADDRESOLVERINRESPONSE],
+                   realm="realm1")
+
+        # Userinfo + realm/resolver are added to the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertEqual(role, "user", result)
+            self.assertEqual(result.get("value").get("realm"), "realm1", content)
+            self.assertEqual(content["detail"]["user-realm"], "realm1", content)
+            self.assertEqual(content["detail"]["user-resolver"], "resolver1", content)
+            self.assertIn("user", content["detail"], content)
+            self.assertEqual(content["detail"]["user"]["userid"], "1004", content)
+
+        # ... but not for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+            self.assertNotIn("detail", content, content)
+
+        delete_policy("pol_add_info")
+
+    def test_10_authz_lastauth(self):
+        # Test LASTAUTH policy action for /auth endpoint
+        # This only works if we authenticate against privacyIDEA
+        set_policy("pol_lastauth",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.LASTAUTH: "10m",
+                   })
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        selfservice_token = init_token({"type": "spass", "pin": "somepin"},
+                                       user=User("selfservice", "realm1"))
+        # Last authentication was too long ago.
+        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            content = res.json
+            result = content.get("result")
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("long ago", content["detail"]["message"], content)
+
+        selfservice_token.add_tokeninfo(ACTION.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+
+        # But now it works
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        remove_token(selfservice_token.token.serial)
+        delete_policy("pol_lastauth")
+        delete_policy("pol_loginmode")
+
+    def test_11_authz_tokentype(self):
+        # Check TOKENTYPE policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                       user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        set_policy("pol_tokentype",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENTYPE: "hotp",
+                   })
+
+        # Cannot authenticate with SPASS token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            content = res.json
+            result = content.get("result")
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Tokentype not allowed", result["error"]["message"], content)
+
+        # Allow HOTP+SPASS
+        set_policy("pol_tokentype",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENTYPE: "hotp spass",
+                   })
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_tokentype")
+        delete_policy("pol_loginmode")
+
+    def test_12_authz_tokeninfo(self):
+        # Check TOKENINFO policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                 user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        set_policy("pol_tokeninfo",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.TOKENINFO: "secure/yes/",
+                   })
+
+        # Cannot authenticate with token that does not have a "secure" tokeninfo
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            content = res.json
+            result = content.get("result")
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Tokeninfo field", result["error"]["message"], content)
+
+        # Add the tokeninfo, we can authenticate
+        spass_token.add_tokeninfo("secure", "yes")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_tokeninfo")
+        delete_policy("pol_loginmode")
+
+    def test_13_authz_tokenserial(self):
+        # Check SERIAL policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                 user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+        set_policy("pol_serial",
+                   scope=SCOPE.AUTHZ,
+                   action={
+                       ACTION.SERIAL: "GOOD.*"
+                   })
+
+        # Cannot authenticate with token that does not have a "GOOD..." serial
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            content = res.json
+            result = content.get("result")
+            self.assertFalse(result.get("status"), content)
+            self.assertIn("Serial is not allowed for authentication",
+                          result["error"]["message"], content)
+
+        # Add a token with a suitable serial
+        good_token = init_token({"type": "spass", "pin": "anotherpin", "serial": "GOOD1234"},
+                                 user=User("selfservice", "realm1"))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "anotherpin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        # Authentication still works for internal admins
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            content = res.json
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        remove_token(spass_token.token.serial)
+        remove_token(good_token.token.serial)
+        delete_policy("pol_serial")
+        delete_policy("pol_loginmode")
+
+    def test_13_authz_no_detail_on_success(self):
+        # Check NODETAILSUCCESS policy action for /auth endpoint
+        spass_token = init_token({"type": "spass", "pin": "somepin"},
+                                 user=User("selfservice", "realm1"))
+        set_policy("pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action={
+                       ACTION.LOGINMODE: LOGINMODE.PRIVACYIDEA,
+                   })
+
+        # Without the policy, there are details in the response
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            self.assertIn("detail", content, content)
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        # With the policy, there aren't
+        set_policy("pol_detail",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.NODETAILSUCCESS)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "somepin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            content = res.json
+            self.assertNotIn("detail", content, content)
+            result = content.get("result")
+            self.assertTrue(result.get("status"), content)
+
+        remove_token(spass_token.token.serial)
+        delete_policy("pol_detail")
+        delete_policy("pol_loginmode")
+
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
         serial = "serial0001"
@@ -701,6 +1025,112 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(result2.get("status"), res.data)
             # Test logout time
             self.assertEqual(result2.get("value").get("logout_time"), 200)
+
+    def test_42_auth_timelimit_maxfail(self):
+        self.setUp_user_realm2()
+        # check that AUTHMAXFAIL also takes effect for /auth with loginmode=privacyIDEA
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "spass", "pin": pin}, user=user)
+
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXFAIL))
+        set_policy(name="pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": "wrong"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 failed authentications per 0:00:20",
+                             details)
+
+        # and even /validate/check does not work
+        # (since it counts /auth *and* /validate/check )
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
+
+    def test_43_auth_timelimit_maxsuccess(self):
+        self.setUp_user_realm2()
+        # check that AUTHMAXSUCCESS also takes effect for /auth with loginmode=privacyIDEA
+        user = User("timelimituser", realm=self.realm2)
+        pin = "spass"
+        # create a token
+        token = init_token({"type": "spass", "pin": pin}, user=user)
+
+        set_policy(name="pol_time1",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}=2/20s".format(ACTION.AUTHMAXSUCCESS))
+        set_policy(name="pol_loginmode",
+                   scope=SCOPE.WEBUI,
+                   action="{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+        for _ in range(2):
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "timelimituser@" + self.realm2,
+                                                     "password": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+
+        # We now cannot authenticate even with the correct PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+            details = res.json.get("detail")
+            self.assertEqual(details.get("message"),
+                             "Only 2 successfull authentications per 0:00:20",
+                             details)
+
+        # ... and not with the wrong PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "timelimituser@" + self.realm2,
+                                                 "password": "wrong"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401)
+
+        # /validate/check does not work, since the two allowed authentications
+        # are already used up for the /auth endpoint
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "timelimituser@" + self.realm2,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            self.assertFalse(result["value"], result)
+
+        delete_policy("pol_time1")
+        delete_policy("pol_loginmode")
 
 
 class PolicyConditionsTestCase(MyApiTestCase):

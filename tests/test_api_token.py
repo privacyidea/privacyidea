@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from .base import MyApiTestCase
 import json
 import os
@@ -300,11 +302,11 @@ class APITokenTestCase(MyApiTestCase):
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           query_string=urlencode({"outform":
-                                                                       "csv"}),
+                                           query_string=urlencode({"outform": "csv"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/csv', res)
             self.assertTrue(b"info" in res.data, res.data)
             self.assertTrue(b"username" in res.data, res.data)
             self.assertTrue(b"user_realm" in res.data, res.data)
@@ -1173,6 +1175,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(token.timestep, int(timestep))
 
     def test_17_enroll_certificate(self):
+        self.setUp_user_realms()
         cwd = os.getcwd()
         # setup ca connector
         r = save_caconnector({"cakey": CAKEY,

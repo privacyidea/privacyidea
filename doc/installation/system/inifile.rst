@@ -156,3 +156,36 @@ all available nodes in the cluster.
 
 If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
 If this is also not set, the node name is returned as "localnode".
+
+.. _trusted_jwt:
+
+Trusted JWTs
+-------------
+
+Other applications can use the API without the need
+to call the ``/auth`` endpoint. This can be achieved by
+trusting private RSA keys to sign JWTs. You can define a list
+of corresponding public keys that are trusted for certain
+users and roles using the parameter ``PI_TRUSTED_JWT``::
+
+   PI_TRUSTED_JWT = [{"public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEF...",
+                       "algorithm": "RS256",
+                       "role": "user",
+                       "realm": "realm1",
+                       "user": "userA",
+                       "resolver": "resolverX"}]
+
+
+This entry means, that the private key, that corresponds to the given
+public key can sign a JWT, that can impersonate as the *userA* in resolver
+*resolverX* in *realmA*.
+
+A JWT can be created like this::
+
+   auth_token = jwt.encode(payload={"role": "user",
+                                    "user": "userA",
+                                    "realm": "realm1",
+                                    "resolver": "resolverX"},
+                                    key=private_key,
+                                    algorithm="RS256")
+

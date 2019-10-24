@@ -4,6 +4,7 @@ import json
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
+from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.models import (Token, Challenge, AuthCache, db)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
@@ -1003,6 +1004,31 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(attributes.get("username"), "cornelius")
 
     def test_11_challenge_response_hotp(self):
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.add_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+        # Set the failcounter
+        token.set_failcount(5)
+
+        # try to do challenge response without a policy. It will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), _("wrong otp pin"))
+            self.assertNotIn("transaction_id", detail)
+
         # set a chalresp policy for HOTP
         with self.app.test_request_context('/policy/pol_chal_resp',
                                            data={'action':
@@ -1018,17 +1044,6 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
 
-        serial = "CHALRESP1"
-        pin = "chalresp1"
-        # create a token and assign to the user
-        db_token = Token(serial, tokentype="hotp")
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
-        token = HotpTokenClass(db_token)
-        token.add_user(User("cornelius", self.realm1))
-        token.set_pin(pin)
-        # Set the failcounter
-        token.set_failcount(5)
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1059,6 +1074,61 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(token.get_failcount(), 0)
         # delete the token
         remove_token(serial=serial)
+
+    def test_11a_challenge_response_registration(self):
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        db_token = Token(serial, tokentype="registration")
+        db_token.save()
+        token = RegistrationTokenClass(db_token)
+        token.add_user(User("cornelius", self.realm1))
+        token.set_pin(pin)
+
+        # try to do challenge response without a policy. It will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), _("wrong otp pin"))
+            self.assertNotIn("transaction_id", detail)
+
+        # set a chalresp policy for Registration Token
+        with self.app.test_request_context('/policy/pol_chal_resp',
+                                           data={'action':
+                                                     "challenge_response=registration",
+                                                 'scope': "authentication",
+                                                 'realm': '',
+                                                 'active': True},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"] is True, result)
+            self.assertEquals(result['value']['setPolicy pol_chal_resp'], 1, result)
+
+        # create the challenge by authenticating with the OTP PIN
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), _("please enter otp: "))
+            transaction_id = detail.get("transaction_id")
+
+        # delete the token
+        remove_token(serial=serial)
+        delete_policy("pol_chal_resp")
 
     def test_11b_challenge_response_multiple_hotp_failcounters(self):
         # Check behavior of Challenge-Response with multiple tokens

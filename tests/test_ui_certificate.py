@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 This file tests the web UI for creating certificate requests
 
@@ -30,8 +32,7 @@ class WebUICertificateTestCase(MyTestCase):
     def test_01_cert_request(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -43,11 +44,10 @@ class WebUICertificateTestCase(MyTestCase):
         # Check the form
         with self.app.test_request_context('/certificate',
                                            method='POST',
-                                           data={"authtoken":
-                                                     authtoken.get(
-                                                         "token")}):
+                                           data={"authtoken": authtoken.get("token")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/html', res)
             # Check the form
             self.assertTrue(b"privacyIDEA Certificate Request" in res.data)
             self.assertTrue(b"Key strength" in res.data)
@@ -82,14 +82,13 @@ class WebUICertificateTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json['result']
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
             self.assertTrue(result["value"] == 1, result)
 
         # Get the users authtoken
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -101,13 +100,12 @@ class WebUICertificateTestCase(MyTestCase):
         # Check the form
         with self.app.test_request_context('/certificate/enroll',
                                            method='POST',
-                                           data={"authtoken":
-                                                     authtoken.get(
-                                                         "token"),
-                                               "requestkey": REQUESTKEY,
-                                                "ca": "localCA"}):
+                                           data={"authtoken": authtoken.get("token"),
+                                                 "requestkey": REQUESTKEY,
+                                                 "ca": "localCA"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/html', res)
             # Check the form
             self.assertTrue(b"The certificate with token serial" in res.data)
             self.assertTrue(b"Certificate to Browser" in res.data)

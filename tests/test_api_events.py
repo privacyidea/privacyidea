@@ -10,7 +10,7 @@ class APIEventsTestCase(MyApiTestCase):
 
     def test_00_api_errors(self):
         # check for auth error
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401, res)
@@ -43,20 +43,14 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 404, res)
             self.assertEqual(res.json['result']['error']['code'], 601, res.json)
         # And check if the /event request writes a valid (failed) audit entry
-        with self.app.test_request_context('/audit/',
-                                           method='GET',
-                                           data={'action': 'POST /event/enable/<eventid>'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            auditentry = res.json.get("result").get("value").get("auditdata")[0]
-            self.assertEqual(auditentry['action'], 'POST /event/enable/<eventid>', auditentry)
-            self.assertEqual(auditentry['success'], 0, auditentry)
+        auditentry = self.find_most_recent_audit_entry(action='POST /event/enable/<eventid>')
+        self.assertEqual(auditentry['action'], 'POST /event/enable/<eventid>', auditentry)
+        self.assertEqual(auditentry['success'], 0, auditentry)
 
     def test_01_crud_events(self):
 
         # list empty events
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
@@ -67,14 +61,8 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertIn('signature', res.json, res.json)
 
         # Check if the /event request writes a valid audit entry
-        with self.app.test_request_context('/audit/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            auditentry = res.json.get("result").get("value").get("auditdata")[0]
-            self.assertEqual(auditentry['action'], 'GET /event', auditentry)
-            self.assertEqual(auditentry['success'], 1, auditentry)
+        auditentry = self.find_most_recent_audit_entry(action='GET /event/')
+        self.assertEqual(auditentry['success'], 1, auditentry)
 
         # create an event configuration
         param = {
@@ -95,7 +83,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # check the event
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -129,7 +117,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # check the event
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -169,7 +157,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -201,7 +189,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list event with options
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -228,7 +216,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -305,7 +293,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list event with options
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -324,7 +312,7 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -343,7 +331,7 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -366,7 +354,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -451,7 +439,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
-        with self.app.test_request_context('/event',
+        with self.app.test_request_context('/event/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

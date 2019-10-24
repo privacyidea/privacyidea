@@ -76,6 +76,19 @@ myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
+myApp.constant("resourceNamePatterns", {
+    simple: {pattern: "^[a-zA-Z0-9_.-]+$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")},
+/* we have to ignore "test" and "test_request" as a resource name explicitly */
+    withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test'")},
+    withoutTestEmail: {pattern: "^(?!send_test_email$)([A-Za-z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'send_test_email'")},
+    withoutTestRequest: {pattern: "^(?!test_request$)([a-zA-Z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test_request'")}});
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {
 
@@ -144,3 +157,9 @@ myApp.config(['$compileProvider',
 isTrue = function (value) {
     return ["1", "true", true, "True"].indexOf(value) > -1;
 };
+
+// this is for the translation of the constants (see
+// https://github.com/rubenv/angular-gettext/issues/67 )
+function gettext (string) {
+  return string;
+}

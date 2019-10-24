@@ -855,7 +855,8 @@ myApp.controller("configController", function ($scope, $location,
 
 });
 
-myApp.controller("PasswdResolverController", function ($scope, ConfigFactory, $state, $stateParams) {
+myApp.controller("PasswdResolverController", function ($scope, ConfigFactory,
+                                                       $state, $stateParams) {
     $scope.params = {
         type: 'passwdresolver',
         fileName: "/etc/passwd"

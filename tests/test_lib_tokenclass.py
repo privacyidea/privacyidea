@@ -540,15 +540,14 @@ class TokenBaseTestCase(MyTestCase):
         transaction_id = "123456789"
 
         db_token.set_pin("test")
-        # No challenge request
-        req = token.is_challenge_request("test", User(login="cornelius",
+        # No challenge request, since we have the wrong pin
+        req = token.is_challenge_request("testX", User(login="cornelius",
                                                       realm=self.realm1))
         self.assertFalse(req, req)
-        # A challenge request
+        # A challenge request, since we have the correct pin
         req = token.is_challenge_request("test",
                                          User(login="cornelius",
-                                              realm=self.realm1),
-                                         {"data": "a challenge"})
+                                              realm=self.realm1))
         self.assertTrue(req, req)
 
         resp = token.is_challenge_response(User(login="cornelius",
