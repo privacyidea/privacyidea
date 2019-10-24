@@ -22,6 +22,7 @@ class FakeFlaskG(object):
     logged_in_user = {}
     audit_object = None
     client_ip = None
+    request_headers = None
 
 
 class FakeAudit(Audit):

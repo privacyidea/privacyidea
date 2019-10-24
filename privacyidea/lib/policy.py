@@ -411,6 +411,7 @@ class TIMEOUT_ACTION(object):
 class CONDITION_SECTION(object):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
+    HTTP_REQUEST_HEADER = "HTTP Request header"
 
 
 class PolicyClass(object):
@@ -615,7 +616,7 @@ class PolicyClass(object):
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None,
                        client=None, action=None, adminrealm=None, time=None,
-                       sort_by_priority=True, audit_data=None):
+                       sort_by_priority=True, audit_data=None, request_headers=None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -645,6 +646,7 @@ class PolicyClass(object):
         :param audit_data: A dictionary with audit data collected during a request. This
         method will add found policies to the dictionary.
         :type audit_data: dict or None
+        :param request_headers: A dict with HTTP headers
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -668,7 +670,7 @@ class PolicyClass(object):
             reduced_policies))
 
         # filter policies by the policy conditions
-        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object)
+        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers)
         log.debug("Policies after matching conditions".format(
             reduced_policies))
 
@@ -678,13 +680,15 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    def filter_policies_by_conditions(self, policies, user_object=None):
+    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None):
         """
         Given a list of policy dictionaries and a current user object (if any),
         return a list of all policies whose conditions match the given user object.
         Raises a PolicyError if a condition references an unknown section.
         :param policies: a list of policy dictionaries
         :param user_object: a User object, or None if there is no current user
+        :param request_headers: The HTTP headers
+        :type request_headers: Request object
         :return: generates a list of policy dictionaries
         """
         reduced_policies = []
@@ -696,6 +700,11 @@ class PolicyClass(object):
                         if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
                             include_policy = False
                             break
+                    elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
+                        if not self._policy_matches_request_header_condition(policy, key, comparator, value,
+                                                                             request_headers):
+                            include_policy = False
+                            break
                     else:
                         log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
                             policy['name'], section
@@ -704,6 +713,35 @@ class PolicyClass(object):
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
+
+    @staticmethod
+    def _policy_matches_request_header_condition(policy, key, comparator, value, request_headers):
+        """
+        :param request_headers: Request Header object
+        :type request_headers: Can be accessed using .get()
+        """
+        # Now we check the HTTP request headers
+        if request_headers is not None:
+            if request_headers.get(key):
+                try:
+                    header_value = request_headers.get(key)
+                    return compare_values(header_value, comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on HTTP header {!r} of policy {!r}: {!r}".format(
+                        key, policy['name'], exx
+                    ))
+                    raise PolicyError(
+                        u"Invalid comparison in the HTTP header conditions of policy {!r}".format(policy['name']))
+            else:
+                log.warning(u"Unknown HTTP header key referenced in condition of policy "
+                            u"{!r}: {!r}".format(policy["name"], key))
+                raise PolicyError(u"Unknown HTTP header key referenced in condition of policy "
+                                  u"{!r}: {!r}".format(policy["name"], key))
+        else:  # pragma: no cover
+            log.error(u"Policy {!r} has conditions on headers {!r}, but http header"
+                      u" is not available. This should not happen.".format(policy["name"], key))
+            raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but http header"
+                        u" is not available".format(policy["name"], key))
 
     @staticmethod
     def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
@@ -2126,6 +2164,9 @@ def get_policy_condition_sections():
     return {
         CONDITION_SECTION.USERINFO: {
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
+        },
+        CONDITION_SECTION.HTTP_REQUEST_HEADER: {
+            "description": _("The policy only matches if certain conditions on the HTTP Request header are fulfilled.")
         }
     }
 
@@ -2178,7 +2219,11 @@ class Match(object):
             audit_data = self._g.audit_object.audit_data
         else:
             audit_data = None
-        return self._g.policy_object.match_policies(audit_data=audit_data,
+        if hasattr(self._g, "request_headers"):
+            request_headers = self._g.request_headers
+        else:
+            request_headers = None
+        return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
                                                     **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
