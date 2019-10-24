@@ -24,10 +24,14 @@
             <td>
                 <span ng-show="event.active"
                       class="glyphicon glyphicon-ok"
+                      role="button"
+                      aria-label='{{ "Disable Event" | translate }}'
                       ng-click="disableEventAsk(event.id)">
                 </span>
                 <span ng-hide="event.active"
                       class="glyphicon glyphicon-minus"
+                      role="button"
+                      aria-label='{{ "Enable Event" | translate }}'
                       ng-click="enableEventAsk(event.id)">
                 </span>
             </td>
