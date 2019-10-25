@@ -354,6 +354,15 @@ def export_user_data(token_list):
     return users
 
 
+def print_token_data(token_object):
+    print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                            token_object.token.serial,
+                            token_object.token.tokentype,
+                            token_object.token.description,
+                            token_object.get_tokeninfo()
+                            ))
+
+
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
 @manager.option('--active', help='True|False|None')
@@ -430,22 +439,12 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     print("Token serial\tTokeninfo")
                     print("="*42)
                     for token_obj in tlist:
-                        print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                            token_obj.token.serial,
-                            token_obj.token.tokentype,
-                            token_obj.token.description,
-                            token_obj.get_tokeninfo()
-                            ))
+                        print_token_data(token_obj)
                 else:
                     print("Token serial\tToken and user info")
                     print("="*42)
                     for token_obj in tlist:
-                        print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                            token_obj.token.serial,
-                            token_obj.token.tokentype,
-                            token_obj.token.description,
-                            token_obj.get_tokeninfo()
-                            ))
+                        print_token_data(token_obj)
                         user = token_obj.user
                         if not user:
                             print ("\t\tUser N/A, not assigned or orphaned.")
@@ -490,7 +489,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                 user.resolver,
                                 user.realm
                             ))
-                                                                   
+
         elif action == "listuser":
             if not sum_tokens:
                 tokens = export_token_data(tlist)
