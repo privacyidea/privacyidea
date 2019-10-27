@@ -313,13 +313,20 @@ def export_token_data(token_list):
     for token_obj in token_list:
         token_data = [u"{0!s}".format(token_obj.token.serial),
                       u"{0!s}".format(token_obj.token.tokentype)]
-        user = token_obj.user
+        try:
+            user = token_obj.user
+        except Exception:
+            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
+                token_obj.token.serial
+            ))
+            token_data.append("**failed user resolving**")
         if user:
             token_data.append(u"{0!s}".format(user.info.get("username", "")))
             token_data.append(u"{0!s}".format(user.info.get("givenname", "")))
             token_data.append(u"{0!s}".format(user.info.get("surname", "")))
             token_data.append(u"{0!s}".format(user.uid))
             token_data.append(u"{0!s}".format(user.resolver))
+            token_data.append(u"{0!s}".format(user.realm))
         tokens.append(token_data)
     return tokens
 
@@ -333,7 +340,12 @@ def export_user_data(token_list):
     """
     users = {}
     for token_obj in token_list:
-        user = token_obj.user
+        try:
+            user = token_obj.user
+        except Exception:
+            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
+                token_obj.token.serial
+            ))
         if user:
             uid = u"'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
                 user.info.get("username", ""),
@@ -344,7 +356,7 @@ def export_user_data(token_list):
                 user.realm
             )
         else:
-            uid = u"N/A"
+            uid = u"N/A, N/A, N/A, N/A, N/A, N/A, N/A"
 
         if uid in users.keys():
             users[uid].append(token_obj.token.serial)
@@ -352,7 +364,6 @@ def export_user_data(token_list):
             users[uid] = [token_obj.token.serial]
 
     return users
-
 
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
