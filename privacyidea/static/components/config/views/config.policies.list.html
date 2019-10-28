@@ -8,11 +8,13 @@
             <th>
                 <button class="btn btn-default unsorted" pi-sort-by="active" translate>Active</button>
             </th>
-            <th>
+            <th class="pifilter">
                 <button class="btn btn-default unsorted" pi-sort-by="name" translate>Policy Name</button>
+                <pi-filter ng-model="filter.name" ng-change="$apply()"></pi-filter>
             </th>
-            <th>
+            <th class="pifilter">
                 <button class="btn btn-default unsorted" pi-sort-by="scope" translate>Scope</button>
+                <pi-filter ng-model="filter.scope" ng-change="$apply()"></pi-filter>
             </th>
             <th translate>Action</th>
             <th translate>Realm</th>
@@ -22,7 +24,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="policy in policies | orderBy:sortby:reverse">
+        <tr ng-repeat="policy in policies | filter:filter | orderBy:sortby:reverse">
             <td>
                 <input type="number" ng-model="policy.priority"
                        class="form-control" min="1"
