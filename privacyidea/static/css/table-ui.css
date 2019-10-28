@@ -1,6 +1,1 @@
-#tablemachinelist th.pifilter { white-space: nowrap; }
-#tableauditlog th.pifilter { white-space: nowrap; }
-#tableuserlist th.pifilter { white-space: nowrap; }
-#tabletokenchallenges th.pifilter { white-space: nowrap; }
-#tabletokenlist th.pifilter { white-space: nowrap; }
-
+th.pifilter { white-space: nowrap; }

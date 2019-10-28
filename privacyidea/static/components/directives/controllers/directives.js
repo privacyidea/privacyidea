@@ -81,7 +81,7 @@ myApp.directive("piSortBy", function(){
         link: function(scope, element, attr) {
             element.on('click', function() {
                 var column = attr.piSortBy;
-                scope.params.sortby=column;
+                scope.sortby=column;
                 scope.reverse=!scope.reverse;
                 $(".sortUp").addClass("unsorted");
                 $(".sortDown").addClass("unsorted");
@@ -93,7 +93,10 @@ myApp.directive("piSortBy", function(){
                 } else {
                     element.addClass("sortUp");
                 }
-                scope.get();
+
+                // scope.get() is what we call, when sorting is done on the server. For client-side sorting $apply() is
+                // used to rerender the list with the new sorting.
+                scope.get ? scope.get() : scope.$apply();
             });
         }
     };
