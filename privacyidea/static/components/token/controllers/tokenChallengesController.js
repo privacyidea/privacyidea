@@ -17,6 +17,7 @@ myApp.controller("tokenChallengesController", function ($scope,
     // define functions
     $scope.get = function () {
         $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+        $scope.params.sortBy = $scope.sortBy;
         if ($scope.reverse) {
             $scope.params.sortdir = "desc";
         } else {
