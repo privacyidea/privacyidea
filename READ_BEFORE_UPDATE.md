@@ -1,5 +1,14 @@
 # Update Notes
 
+## Update from 3.1 to 3.2
+
+* REST API
+
+  The endpoints "GET /event" has been changed to "GET /event/"
+  since it returns a list of events.
+  The endpoints "GET /smsgateway" has been changed to 
+  "GET /smsgateway/"  since it returns a list of events.
+
 ## Update from 3.0 to 3.1
 
 * Policies
