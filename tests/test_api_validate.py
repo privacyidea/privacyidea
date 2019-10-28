@@ -747,22 +747,6 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
-    def test_05_check_serial_with_no_user(self):
-        # Check a token per serial when the token has no user assigned.
-        init_token({"serial": "nouser",
-                    "otpkey": self.otpkey,
-                    "pin": "pin"})
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"serial": "nouser",
-                                                 "pass": "pin359152"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            details = res.json.get("detail")
-            self.assertEqual(result.get("status"), True)
-            self.assertEqual(result.get("value"), True)
-
     def test_05a_check_otp_only(self):
         # Check the OTP of the token without PIN
         init_token({"serial": "otponly",

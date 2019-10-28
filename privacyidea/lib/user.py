@@ -59,7 +59,7 @@ from .resolver import (get_resolver_object,
 from .realm import (get_realms,
                     get_default_realm,
                     get_realm)
-from .config import get_from_config
+from .config import get_from_config, SYSCONF
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 
 log = logging.getLogger(__name__)
@@ -519,7 +519,7 @@ def split_user(username):
     """
     Split the username of the form user@realm into the username and the realm
     splitting myemail@emailprovider.com@realm is also possible and will
-    return (myemail@emailprovider, realm).
+    return (myemail@emailprovider.com, realm).
 
     If for a user@domain the "domain" does not exist as realm, the name is
     not split, since it might be the user@domain in the default realm
@@ -568,8 +568,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username is None:
         username = ""
     else:
-        splitAtSign = get_from_config("splitAtSign", default=False,
-                                      return_bool=True)
+        splitAtSign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
         if splitAtSign:
             (username, realm) = split_user(username)
 

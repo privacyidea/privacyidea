@@ -58,7 +58,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exist)
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.realm import get_default_realm
+from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype, 
                                             check_tokeninfo, check_serial, no_detail_on_fail, no_detail_on_success,
                                             get_webui_settings)
@@ -121,6 +121,7 @@ def get_auth_token():
         the API.
     :jsonparam password: The password/credentials of the user who wants to
         authenticate to the API.
+    :jsonparam realm: The realm where the user will be searched.
 
     :return: A json response with an authentication token, that needs to be
         used in any further request.
@@ -187,15 +188,30 @@ def get_auth_token():
     validity = timedelta(hours=1)
     username = getParam(request.all_data, "username")
     password = getParam(request.all_data, "password")
-    realm = getParam(request.all_data, "realm")
+    realm_param = getParam(request.all_data, "realm")
     details = {}
+    realm = ''
+
+    # the realm parameter has precedence! Check if it exists
+    if realm_param and not realm_is_defined(realm_param):
+        raise AuthError(_("Authentication failure. Unknown realm: {0!s}.".format(realm_param)),
+                        id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
 
     if username is None:
         raise AuthError(_("Authentication failure. Missing Username"),
                         id=ERROR.AUTHENTICATE_MISSING_USERNAME)
 
-    if realm:
-        username = username + "@" + realm
+    loginname = username
+    split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
+    if split_at_sign:
+        (loginname, realm) = split_user(username)
+
+    # overwrite the splitted realm if we have a realm parameter
+    if realm_param:
+        realm = realm_param
+
+    # and finaly check if there is a realm
+    realm = realm or get_default_realm()
 
     # Failsafe to have the user attempt in the log, whatever happens
     # This can be overwritten later
@@ -215,9 +231,6 @@ def get_auth_token():
     # Verify the password
     admin_auth = False
     user_auth = False
-
-    loginname, realm = split_user(username)
-    realm = realm or get_default_realm()
 
     user_obj = User()
 
@@ -280,7 +293,7 @@ def get_auth_token():
                                 "resolver": user_obj.resolver,
                                 "serial": details.get('serial', None),
                                 "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
-                                        details.get("loginmode"))})
+                                                                        details.get("loginmode"))})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
