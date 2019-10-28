@@ -4,12 +4,15 @@
 from .base import MyApiTestCase
 import mock
 import six
-from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.config import (set_privacyidea_config,
+                                    SYSCONF)
+from privacyidea.lib.auth import create_db_admin
 
 
 class AuthApiTestCase(MyApiTestCase):
     def test_01_auth_with_split(self):
-        set_privacyidea_config("splitAtSign", "1")
+        # By default, splitAtSign should be true
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
         self.setUp_user_realms()
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -175,7 +178,7 @@ class AuthApiTestCase(MyApiTestCase):
 
     # And now we do all of the above without the splitAtSign setting
     def test_02_auth_without_split(self):
-        set_privacyidea_config("splitAtSign", "0")
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
         self.setUp_user_realms()
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -354,3 +357,65 @@ class AuthApiTestCase(MyApiTestCase):
                 expected = "The user User(login='selfservice@realm1', " \
                            "realm='realm3', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
+
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+
+    def test_03_admin_auth(self):
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+        # check that the default admin works
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            # role should be 'admin'
+            self.assertEqual('admin', result['value']['role'], result)
+
+        # add an admin with an '@' in the login name
+        create_db_admin(self.app, 'super@intern', password='testing')
+        # as long as the part after the '@' does not resemble an existing realm,
+        # this should work with 'spltAtSign' set to True
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "super@intern",
+                                                 "password": "testing"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            # role should be 'admin'
+            self.assertEqual('admin', result['value']['role'], result)
+
+        # both admin logins should also work with 'splitAtSign' set to False
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "testpw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            # role should be 'admin'
+            self.assertEqual('admin', result['value']['role'], result)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "super@intern",
+                                                 "password": "testing"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            # role should be 'admin'
+            self.assertEqual('admin', result['value']['role'], result)
+
+        # reset 'splitAtSign' to default value
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)

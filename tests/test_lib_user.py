@@ -171,7 +171,7 @@ class UserTestCase(MyTestCase):
 
     def test_09_get_user_from_param(self):
         # enable splitAtSign
-        set_privacyidea_config("splitAtSign", "1")
+        set_privacyidea_config("splitAtSign", True)
         user = get_user_from_param({"user": "cornelius"})
         self.assertTrue(user.realm == self.realm1, user)
         self.assertTrue(user.resolver == self.resolvername1, user)
@@ -203,25 +203,35 @@ class UserTestCase(MyTestCase):
         user = get_user_from_param(param)
         self.assertEqual("{0!s}".format(user), "<cornelius.resolver1@realm2>")
 
-        # test with splitAtSign set to '0'
-#        set_privacyidea_config("splitAtSign", "0")
-#        user, realm = split_user("user@realm1")
-#        self.assertEqual(user, "user@realm1", (user, realm))
-#        self.assertEqual(realm, "", (user, realm))
-#
-#        user = split_user("user")
-#        self.assertTrue(user == ("user", ""), user)
-#
-#        user, realm = split_user("user@email@realm1")
-#        self.assertEqual(user, "user@email@realm1", user)
-#        self.assertEqual(realm, "", realm)
-#
-#        user, realm = split_user("realm1\\user")
-#        self.assertEqual(user, "user", user)
-#        self.assertEqual(realm, "realm1", realm)
-#
-#        # reset splitAtSign setting
-#        set_privacyidea_config("splitAtSign", "1")
+        # test with splitAtSign set to False
+        set_privacyidea_config("splitAtSign", False)
+
+        # don't split at @, realm will be default realm
+        param = {"user": "cornelius@realm2"}
+        user = get_user_from_param(param)
+        self.assertEqual(user.login, "cornelius@realm2", user)
+        self.assertEqual(user.realm, "realm1", user)
+
+        param = {"user": "cornelius",
+                 "realm": self.realm2}
+        user = get_user_from_param(param)
+        self.assertEqual(user.login, "cornelius", user)
+        self.assertEqual(user.realm, "realm2", user)
+
+        param = {"user": "cornelius@unknown@realm1",
+                 "realm": self.realm2}
+        user = get_user_from_param(param)
+        self.assertEqual(user.login, "cornelius@unknown@realm1", user)
+        self.assertEqual(user.realm, "realm2", user)
+
+        param = {"user": "cornelius//realm1",
+                 "realm": self.realm2}
+        user = get_user_from_param(param)
+        self.assertEqual(user.login, "cornelius//realm1", user)
+        self.assertEqual(user.realm, "realm2", user)
+
+        # reset splitAtSign setting
+        set_privacyidea_config("splitAtSign", True)
 
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",

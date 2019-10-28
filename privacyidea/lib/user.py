@@ -568,8 +568,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username is None:
         username = ""
     else:
-        splitAtSign = get_from_config(SYSCONF.SPLITATSIGN, default=False,
-                                      return_bool=True)
+        splitAtSign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
         if splitAtSign:
             (username, realm) = split_user(username)
 
