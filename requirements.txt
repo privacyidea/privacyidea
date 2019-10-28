@@ -29,7 +29,7 @@ MarkupSafe==1.1.1
 netaddr==0.7.19
 oauth2client==2.0.1
 passlib==1.7.1
-Pillow==5.1.0
+Pillow==6.2.1
 psycopg2==2.8.3
 pyasn1==0.4.3
 pyasn1-modules==0.2.4
@@ -44,7 +44,7 @@ python-gnupg==0.4.4
 pytz==2018.4
 pyusb==1.0.2
 PyYAML==5.1
-qrcode==6.0
+qrcode==6.1
 redis==2.10.6
 requests==2.20.0
 rsa==4.0
