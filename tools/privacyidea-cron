@@ -29,6 +29,7 @@ import sys
 import warnings
 import json
 from datetime import datetime
+import time
 
 import dateutil
 from flask_script import Manager, Command
@@ -80,6 +81,7 @@ def run_task_on_node(ptask, node):
     :param ptask: task as a dictionary
     :param node: Node name
     """
+
     try:
         print_stdout(u"Running {!r} ...".format(ptask["name"]), end="")
         result = execute_task(ptask["taskmodule"], ptask["options"])
@@ -153,7 +155,17 @@ manager.add_command('list', Command(list_tasks))
                 dest="cron_mode",
                 action="store_true",
                 help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr")
-def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
+@manager.option("-r", "--retry",
+                dest="number_of_retries",
+                type=int,
+                default=1,
+                help="Number of tries of execution of the failed periodic tasks.")
+@manager.option("-p", "--period",
+                dest="period_between_retries",
+                type=int,
+                default=0,
+                help="The interval in seconds between tries of execution of the failed periodic tasks.")
+def run_scheduled(node_string=None, dryrun=False, cron_mode=False, number_of_retries=None, period_between_retries=None):
     """
     Execute all periodic tasks that are scheduled to run.
     """
@@ -169,15 +181,22 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
 
         print_stdout()
         if not dryrun:
-            results = []
-            for ptask in scheduled_tasks:
-                result = run_task_on_node(ptask, node)
-                results.append(result)
-            if all(results):
-                print_stdout(u"All scheduled tasks executed successfully.")
-            else:
+            while True:
+                print_stdout(u"Trying to execute scheduled tasks on node {!s} ....".format(node))
+                for ptask in scheduled_tasks[:]:
+                    result = run_task_on_node(ptask, node)
+                    if result:
+                        scheduled_tasks.remove(ptask)
+                if not scheduled_tasks:
+                    print_stdout(u"All scheduled tasks executed successfully.")
+                    break
                 print_stderr(u"Some tasks exited with errors.")
-                sys.exit(1)
+                number_of_retries -= 1
+                if number_of_retries <= 0:                  
+                    sys.exit(1)
+                print_stdout(u"Waiting for the next try ....")
+                time.sleep(period_between_retries)
+            
         else:
             print_stdout(u"Not running any tasks because --dryrun was passed.")
     else:
