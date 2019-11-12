@@ -17,7 +17,8 @@
             <th class="pifilter">
                 <button class="btn btn-default unsorted" pi-sort-by="handlermodule" translate>Handlermodule</button>
                 <pi-filter ng-model="filter.handlermodule" ng-change="$apply()"></pi-filter>
-                <br>
+            </th>
+            <th class="pifilter">
                 <span class="btn btn-default unsorted" pi-sort-by="position" translate>Position</span>
                 <pi-filter ng-model="filter.position" ng-change="$apply()"></pi-filter>
             </th>
@@ -60,8 +61,10 @@
                 {{ event.event | json}}
             </td>
             <td>
-                {{ event.handlermodule }}<br>
-                <em>{{ event.position }}</em>
+                {{ event.handlermodule }}
+            </td>
+            <td>
+                {{ event.position }}
             </td>
             <td>
                 {{ event.conditions }}
