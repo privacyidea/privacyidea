@@ -52,6 +52,8 @@ class Audit(AuditBase):
         # Initialize all modules
         self.write_modules = [get_module_class(audit_module, "Audit", "log")(config) for audit_module in write_conf]
         self.read_module = get_module_class(read_conf, "Audit", "log")(config)
+        if not self.read_module.is_readable:
+            log.warning(u"The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
 
     def log(self, param):
         """
@@ -60,12 +62,13 @@ class Audit(AuditBase):
         for module in self.write_modules:
             module.log(param)
 
-    def search(self, param, display_error=True, rp_dict=None, timelimit=None):
+    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
+               timelimit=None):
         """
         Call the search method for the one readable module
         """
-        return self.read_module.search(param, display_error=display_error,
-                                       rp_dict=rp_dict, timelimit=timelimit)
+        return self.read_module.search(search_dict, page_size=page_size, page=page,
+                                       sortorder=sortorder, timelimit=timelimit)
 
     def get_count(self, search_dict, timedelta=None, success=None):
         """
@@ -73,11 +76,11 @@ class Audit(AuditBase):
         """
         return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
 
-    def get_total(self, param, AND=True, display_error=True):
+    def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         Call the total method for the one readable module
         """
-        return self.read_module.get_total(param, AND=AND, display_error=display_error)
+        return self.read_module.get_total(param, AND=AND, display_error=display_error, timelimit=timelimit)
 
     def finalize_log(self):
         """

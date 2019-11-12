@@ -76,6 +76,8 @@ class Paginate(object):
 
 class Audit(object):  # pragma: no cover
 
+    is_readble = False
+
     def __init__(self, config=None):
         """
         Create a new audit object.
@@ -147,7 +149,6 @@ class Audit(object):  # pragma: no cover
             log.error("Error reading key file: {0!r})".format(e))
             log.debug(traceback.format_exc())
             raise e
-
 
     def get_audit_id(self):
         return self.name

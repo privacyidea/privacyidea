@@ -83,6 +83,8 @@ class Audit(AuditBase):
     If PI_CHECK_OLD_SIGNATURES = True old style signatures (text-book RSA) will
     be checked as well, otherwise they will be marked as 'FAIL'.
     """
+
+    is_readable = True
     
     def __init__(self, config=None):
         self.name = "sqlaudit"
