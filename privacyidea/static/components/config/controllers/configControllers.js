@@ -749,7 +749,7 @@ myApp.controller("hostsResolverController", function ($scope,
                                                       $state, $stateParams) {
     $scope.params = {
         type: 'hosts',
-        fileName: "/etc/hosts"
+        filename: "/etc/hosts"
     };
 
     $scope.resolvername = $stateParams.resolvername;
