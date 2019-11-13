@@ -11,6 +11,8 @@ from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
 import time
+from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
+from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 
 
 PUBLIC = "tests/testdata/public.pem"
@@ -291,3 +293,42 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.total, 1)
         # The tokentype was actually written as token_type
         self.assertEqual(audit_log.auditdata[0].get("token_type"), "spass")
+
+    def test_20_logger_audit(self):
+        a = LoggerAudit()
+        a.log({"action": "something"})
+        a.finalize_log()
+        r = a.search({"action": "something"})
+        # This is a non readable audit, so we got nothing
+        self.assertEqual(r.auditdata, [])
+        self.assertEqual(r.total, 0)
+
+    def test_30_container_audit(self):
+        import os
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        basedir = "/".join(basedir.split("/")[:-1]) + "/"
+        a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
+                                                         "privacyidea.lib.auditmodules.sqlaudit"],
+                            "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
+                            "PI_AUDIT_NO_SIGN": True,
+                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
+        a.log({"action": "something_test_30"})
+        a.finalize_log()
+        c = a.get_count({})
+        self.assertEqual(c, 1)
+        t = a.get_total({})
+        self.assertEqual(t, 1)
+        r = a.search({"action": "*something*"})
+        # The search should go to the sql audit
+        self.assertEqual(r.total, 1)
+        self.assertEqual(r.auditdata[0].get("action"), u"something_test_30")
+
+        # Non readable read module!
+        a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit"],
+                            "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.loggeraudit"})
+        a.log({"action": "logger_30"})
+        a.finalize_log()
+        r = a.search({"action": "*logger*"})
+        # The search should go to the sql audit
+        self.assertEqual(r.total, 0)
+        self.assertEqual(r.auditdata, [])

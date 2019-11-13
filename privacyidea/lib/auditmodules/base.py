@@ -76,7 +76,7 @@ class Paginate(object):
 
 class Audit(object):  # pragma: no cover
 
-    is_readble = False
+    is_readable = False
 
     def __init__(self, config=None):
         """

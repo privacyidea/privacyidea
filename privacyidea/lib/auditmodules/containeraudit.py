@@ -87,5 +87,5 @@ class Audit(AuditBase):
         Call the finalize method of all writeable audit modules
         """
         for module in self.write_modules:
-            module.finalize()
+            module.finalize_log()
 
