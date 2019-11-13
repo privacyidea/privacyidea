@@ -2,6 +2,27 @@
 
 ## Update from 3.1 to 3.2
 
+* Change to Python 3
+
+  The built Ubuntu und CentOS packages are now built with Python 3.
+  The virtual environments thus have changed.
+  If you have any changes like customizations under
+  /opt/privacyidea/lib/python2.7/ these will not be found anymore
+  and the WebUI could result in not being accessable.
+  This could be relevant when using ``PI_CUSTOM_CSS = True``
+  or ``PI_CUSTOMIZATION`` in your pi.cfg file.
+  
+  You will have to move the corresponding files to
+  /opt/privacyidea/lib/python3.x/...
+
+* MySQL-python obsolete
+
+  With the change to Python 3 the MySQL DB driver has become
+  obsolete since it is not supported under Python 3 anymore.
+  If your current DB URI starts with "mysql://", the 
+  update script wil automatically change this to 
+  "mysql+pymysql://" to assure further operation under Python 3.
+
 * REST API
 
   The endpoints "GET /event" has been changed to "GET /event/"
