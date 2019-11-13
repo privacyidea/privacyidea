@@ -196,6 +196,11 @@ and audit handler::
    To still be able to *read* audit information, take a look at the
    :ref:`container_audit`.
 
+.. note:: The policies :ref:`policy_auth_max_success`
+   and :ref:`policy_auth_max_fail`
+   depend on reading the audit log. If you use a non readable audit log
+   like the *Logger Audit* these policies will not work.
+
 .. _container_audit:
 
 Container Audit
