@@ -940,3 +940,31 @@ class TokenModelTestCase(MyTestCase):
         MonitoringStats.query.delete()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 0)
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 0)
+
+
+class TokenModelTestCaseDeleting(MyTestCase):
+
+    def test_01_create_and_delete_resolver(self):
+        r = Resolver("try_delete", "passwdresolver")
+        rid = r.save()
+        self.assertTrue(r.name is not None, r.name)
+        self.assertTrue(r.rtype is not None, r.rtype)
+        # Add configuration to the resolver
+        conf = ResolverConfig(r.id, "fileName", "this_very_specific_file_try_delete")
+        conf.save()
+
+        # Read Resolver
+        r1 = Resolver.query.filter_by(name="try_delete").first()
+        self.assertTrue(r1.rtype == "passwdresolver", r1.rtype)
+        self.assertEqual(rid, r1.id)
+
+        # Get the option
+        rc = ResolverConfig.query.filter_by(Value="this_very_specific_file_try_delete").first()
+        self.assertTrue(rc)
+        self.assertEqual(rc.resolver_id, rid)
+
+        # Now delete the Resolver and check, if there is no config left
+        reso = Resolver.query.filter_by(name="try_delete").first()
+        reso.delete()
+        rc = ResolverConfig.query.filter_by(Value="this_very_specific_file_try_delete").first()
+        self.assertIsNone(rc)
