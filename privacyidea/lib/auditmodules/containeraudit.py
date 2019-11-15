@@ -17,9 +17,12 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """The Container Audit Module is used to write audit entries to the Python logging module.
+__doc__ = """The Container Audit Module allows to write audit information to several different
+audit modules at the same time. E.g. it can write audit information to the SQL Audit Module and to the 
+Logger Audit Module. This way audit information can be saved in the SQL database and at the same time
+be passed to a file or external services via the Python logging facility. 
 
-The Logger Audit Module is configured like this:
+The Container Audit Module is configured like this:
 
     PI_AUDIT_MODULE = 'privacyidea.lib.auditmodules.containeraudit'
     PI_AUDIT_CONTAINER_WRITE = ['privacyidea.lib.auditmodules.sqlaudit','privacyidea.lib.auditmodules.loggeraudit']
