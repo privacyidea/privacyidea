@@ -17,7 +17,7 @@ privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
 
 Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
 a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
-to service like splunk or logstash.
+to services like splunk or logstash.
 
 .. _sql_audit:
 
@@ -222,7 +222,7 @@ module description.
 
 The key ``PI_AUDIT_CONTAINER_READ`` contains one single audit module, that
 is capable of reading information. In this case the :ref:`sql_audit` module can be
-used. The :ref:`logger_audit` module can **note** be used for reading!
+used. The :ref:`logger_audit` module can **not** be used for reading!
 
 Using the *Container Audit* module you can on the one hand send audit information
 to external services using the :ref:`logger_audit` but also keep the
