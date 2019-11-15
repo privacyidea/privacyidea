@@ -332,3 +332,15 @@ class AuditTestCase(MyTestCase):
         # The search should go to the sql audit
         self.assertEqual(r.total, 0)
         self.assertEqual(r.auditdata, [])
+
+    def test_31_container_audit_wrong_module(self):
+        # Test what happens with a non-existing module
+        import os
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        basedir = "/".join(basedir.split("/")[:-1]) + "/"
+        module_config = {"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.doesnotexist",
+                                                         "privacyidea.lib.auditmodules.sqlaudit"],
+                         "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
+                         "PI_AUDIT_NO_SIGN": True,
+                         "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
+        self.assertRaises(ImportError, ContainerAudit, module_config)
