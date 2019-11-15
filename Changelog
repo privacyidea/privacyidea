@@ -1,3 +1,9 @@
+Version 3.1.2, 2019-11-15
+
+  Fixes:
+  * Fix the missing phone number field for SMS token, when a user
+    wants to enroll an SMS token. (#1929)
+
 Version 3.1.1, 2019-09-25
 
   Fixes:
