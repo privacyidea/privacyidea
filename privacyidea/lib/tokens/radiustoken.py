@@ -473,9 +473,6 @@ class RadiusTokenClass(RemoteTokenClass):
                                                radius_user))
 
         try:
-            # pyrad does not allow to set timeout and retries.
-            # it defaults to retries=3, timeout=5
-
             # TODO: At the moment we support only one radius server.
             # No round robin.
             server = radius_server.split(':')
@@ -501,7 +498,9 @@ class RadiusTokenClass(RemoteTokenClass):
 
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
                                        User_Name=radius_user.encode('utf-8'),
-                                       NAS_Identifier=nas_identifier.encode('ascii'))
+                                       NAS_Identifier=nas_identifier.encode('ascii'),
+                                       timeout=radius_server_object.config.timeout,
+                                       retries=radius_server_object.config.retries)
 
             req["User-Password"] = req.PwCrypt(otpval)
 
