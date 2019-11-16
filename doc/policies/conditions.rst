@@ -118,6 +118,11 @@ privacyIDEA uses the ``Comparator`` to check if the value of a header is equal o
 of the required value.
 
 .. note:: privacyIDEA raises an error if ``Key`` refers to an unknown request header.
+   If the header in question is missing, the policy can not get completely evaluated.
+   Be aware that requests, that do not contain the header ``Key`` will always fail!
+   Thus, if you are using uncommon headers you should
+   in addition restrict the policy e.g. to client IPs, to assure, that a request from
+   this certain IP address will always contain the header, that is to be checked.
 
 
 Comparators

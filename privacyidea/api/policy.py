@@ -152,7 +152,7 @@ def set_policy_api(name=None):
 
     The policy POST request can also take the parameter of conditions. This is a list of conditions sets:
     [ [ "userinfo", "memberOf", "equals", "groupA", "true" ], [ ... ] ]
-    Being the ``section``, the ``key``, the ``comparator``, the ``value`` and ``active``.
+    With the entries being the the ``section``, the ``key``, the ``comparator``, the ``value`` and ``active``.
     For more on conditions see :ref:`policy_conditions`.
 
 
