@@ -298,12 +298,11 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
                                                  "realm": "realm1",
-                                                 "conditions" : [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
-                                                                  "User-Agent", "equals", "SpecialApp", True]],
+                                                 "conditions": [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
+                                                                 "User-Agent", "equals", "SpecialApp", True]],
                                                  "scope": SCOPE.AUTHZ},
                                            headers={'PI-Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            result = res.json
             self.assertEqual(res.status_code, 200)
 
         # A request with another header will display the details
@@ -349,3 +348,53 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertIn(u"Unknown HTTP header key referenced in condition of policy",
                           result["result"]["error"]["message"])
             self.assertIn(u"User-Agent", result["result"]["error"]["message"])
+
+        # Test http header policy with broken matching
+        # update the policy
+        with self.app.test_request_context('/policy/cond1',
+                                           method='POST',
+                                           json={"action": ACTION.NODETAILSUCCESS,
+                                                 "realm": "realm1",
+                                                 "conditions": [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
+                                                                 "User-Agent", "broken",
+                                                                 "SpecialApp", True]],
+                                                 "scope": SCOPE.AUTHZ},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+        # now test the policy
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           headers={"User-Agent": "SpecialApp"},
+                                           json={"pass": "1234", "user": "cornelius",
+                                                 "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json
+            self.assertIn(u"Invalid comparison in the HTTP header conditions of policy",
+                          result["result"]["error"]["message"])
+
+        # Also check for an unknown section
+        # update the policy
+        with self.app.test_request_context('/policy/cond1',
+                                           method='POST',
+                                           json={"action": ACTION.NODETAILSUCCESS,
+                                                 "realm": "realm1",
+                                                 "conditions": [['blabla',
+                                                                 "User-Agent", "equals",
+                                                                 "SpecialApp", True]],
+                                                 "scope": SCOPE.AUTHZ},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+        # now test the policy
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           headers={"User-Agent": "SpecialApp"},
+                                           json={"pass": "1234", "user": "cornelius",
+                                                 "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json
+            self.assertIn("Policy 'cond1' has condition with unknown section",
+                          result["result"]["error"]["message"], result)
