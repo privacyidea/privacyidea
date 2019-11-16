@@ -96,7 +96,7 @@ class Redis(object):
     def get(self, value):
         return self.dictionary.get(value)
 
-    def setex(self, key, value, ttl):
+    def setex(self, key, value=None, time=None):
         self.dictionary[key] = value
         return True
 
