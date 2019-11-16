@@ -396,5 +396,8 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn("Policy 'cond1' has condition with unknown section",
+            # The text can be "Policy u'cond1' has condition with unknown section"
+            # or "Policy 'cond1' has condition with unknown section"
+            # so we only match for a substring
+            self.assertIn("has condition with unknown section",
                           result["result"]["error"]["message"], result)
