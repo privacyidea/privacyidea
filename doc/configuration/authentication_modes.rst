@@ -6,7 +6,7 @@ Authentication Modes
 privacyIDEA supports a variety of tokens that implement different
 authentication flows. We call these flows *authentication modes*. Currently,
 tokens may implement three authentication modes, namely ``authenticate``,
-``challenge`` and ```outofband``.
+``challenge`` and ``outofband``.
 
 Application plugins need to implement the three authentication modes
 separately, as the modes differ in their user experience. For example:
