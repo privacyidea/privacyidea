@@ -18,6 +18,36 @@ Therefor the users need to authenticate with their username and the realm like t
    
    user@realm
 
+.. _relate_realm:
+
+Relate User to a Realm
+......................
+
+.. index:: realm relation
+
+There are several options to relate a user to a specific realm during
+authentication. Usually, if only a login is given, the user will be searched
+in the default realm.
+
+============  =======  ======================  =====
+  Input                splitAtSign
+---------------------  -----------------------------
+login         realm    true                    false
+============  =======  ======================  =====
+user          user     user->defrealm          user->defrealm
+user          realm1   user->realm1            user->realm1
+user          unknown  --                      --
+user@realm1            user->realm1            user@realm1->defrealm
+user@realm1   realm1   user->realm1            user@realm1->realm1
+user@realm1   realm2   user->realm2            user@realm1->realm2
+user@realm2   realm1   user->realm1            user@realm2->realm1
+user@realm1   unknown  --                      --
+user@unknown           user@unknown->defrealm  user@unknown->defrealm
+user@unknown  realm1   user@unknown->realm1    user@unknown->realm1
+user@unknown  unknown  --                      --
+============  =======  ======================  =====
+
+
 .. _list_of_realms:
 
 List of Realms
