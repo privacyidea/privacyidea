@@ -18,25 +18,31 @@ You need to generate a config file and adapt it to your needs.
 SQL section contains the database connections to the LinOTP and
 the privacyIDEA database.
 
-SQL:INSERR_CHUNK_SIZE gives you a speed advantage. This many tokens will
+SQL:INSERT_CHUNK_SIZE gives you a speed advantage. This many tokens will
 be inserted at one time.
 
-MIGRATE defines which elements should be migrated, tokens, tokeninfo and assignment?
+MIGRATE defines which elements should be migrated: This can be tokens, tokeninfo and assignment.
 
-The ASSIGNMENTS section defines, who the token-assignments should be migrated.
+The ASSIGNMENTS section defines, to which privacyIDEA users the old token-assignments 
+    should be migrated to.
 
 The "resolver" key maps LinOTP-resolvers to privacyIDEA-Resolvers. 
 The key is the LinOTP resolver and the value is the new privacyIDEA resolver.
 
-The "realm" key puts tokens in the specified privacyIDEA resolver (key)
-into the privacyIDEA realm (value). Note: There is no logic checking done,
-so take care that the resolver is really located in the specified realm.
+The "realm" key puts tokens that are migrated into the specified privacyIDEA resolver (key)
+into the given privacyIDEA realm (value). Note: There is no logic checking with the 
+privacyIDEA resolver-realm-configuration done.
+So take care that the privacyIDEA resolver is really located in the specified privacyIDEA realm.
 
 In this example the resolvername "lokal" from LinOTP gets imported to
 privacyIDEA with the resolver "PIResolver" in realm "pirealm".
 
 Tokens, that were not assigned to a user will be assigned to the realms specified
 in the list "unassigned_tokens".
+
+LinOTP (sometimes) uses a mixed endian notation for the objectGUID of users in Active Directory.
+So if your users can not be found due to an unknown objectGUID, you need to set "convert_endian"
+to true. This will convert the mixed endian notation to a standard notation used by privacyIDEA.
 
 The NEW_TOKENINFO section can set any arbitrary tokeninfo for the 
 migrated tokens.
