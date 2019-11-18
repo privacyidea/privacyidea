@@ -69,11 +69,14 @@ class Paginate(object):
         self.next = None
         # the number of the current page
         self.current = 1
+        self.page = 1
         # the total entry numbers
         self.total = 0
     
 
 class Audit(object):  # pragma: no cover
+
+    is_readable = False
 
     def __init__(self, config=None):
         """
@@ -147,11 +150,10 @@ class Audit(object):  # pragma: no cover
             log.debug(traceback.format_exc())
             raise e
 
-
     def get_audit_id(self):
         return self.name
 
-    def get_total(self, param, AND=True, display_error=True):
+    def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         This method returns the total number of audit entries
         in the audit store
@@ -227,7 +229,8 @@ class Audit(object):  # pragma: no cover
 #        """
 #        pass
 
-    def search(self, param, display_error=True, rp_dict=None, timelimit=None):
+    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
+               timelimit=None):
         """
         This function is used to search audit events.
 
@@ -259,7 +262,8 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def search_query(self, search_dict, rp_dict):
+    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
+                     sortname="number", timelimit=None):
         """
         This function returns the audit log as an iterator on the result
         """

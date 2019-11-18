@@ -16,6 +16,8 @@ Usually it is set to::
 
    PI_LOGFILE = "/var/log/privacyidea/privacyidea.log"
 
+.. _advanced_logging:
+
 Advanced Logging
 ~~~~~~~~~~~~~~~~
 

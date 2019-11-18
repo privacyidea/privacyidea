@@ -174,6 +174,10 @@ invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
+.. note:: This policy depends on reading the audit log. If you use a
+   non readable audit log like :ref:`logger_audit` this policy will not
+   work.
+
 .. _policy_auth_max_fail:
 
 auth_max_fail
@@ -196,6 +200,10 @@ performed the authentication request is discarded. The used OTP value is
 invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
+
+.. note:: This policy depends on reading the audit log. If you use a
+   non readable audit log like :ref:`logger_audit` this policy will not
+   work.
 
 last_auth
 ~~~~~~~~~

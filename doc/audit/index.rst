@@ -13,12 +13,21 @@ WebUI.
 
    *Audit Log*
 
-privacyIDEA comes with an SQL audit module. (see :ref:`code_audit`)
+privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
+
+Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
+to services like splunk or logstash.
+
+.. _sql_audit:
+
+SQL Audit
+---------
 
 .. _audit_rotate:
 
 Cleaning up entries
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 .. index:: Audit Log Rotate
 
@@ -134,3 +143,91 @@ you can set
    PI_AUDIT_SQL_TRUNCATE = True
 
 in ``pi.cfg``. This will truncate each entry to the defined column length.
+
+.. _logger_audit:
+
+Logger Audit
+------------
+
+The *Logger Audit* module can be used to write audit log information to
+the Python logging facility and thus write log messages to a plain file,
+a syslog daemon, an email address or any destination that is supported
+by the Python logging mechanism.
+
+You can find more information about this in :ref:`advanced_logging`.
+
+To activate the *Logger Audit* module you need to configure the following
+settings in your ``pi.cfg`` file::
+
+   PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
+   PI_AUDIT_SERVERNAME = "your choice"
+   PI_LOGCONFIG = "/etc/privacyidea/logging.cfg"
+
+In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
+the *Logger Audit* will not work correctly.
+
+In the ``logging.cfg`` you then need to define the audit logger::
+
+   [logger_audit]
+   handlers=audit
+   qualname=privacyidea.lib.auditmodules.loggeraudit
+   level=INFO
+
+   [handler_audit]
+   class=logging.handlers.RotatingFileHandler
+   backupCount=14
+   maxBytes=10000000
+   formatter=detail
+   level=INFO
+   args=('/var/log/privacyidea/audit.log',)
+
+Note, that the ``level`` always needs to be *INFO*. In this example the
+audit log will be written to the file ``/var/log/privacyidea/audit.log``.
+
+Finally you need to extend the following settings with the defined audit logger
+and audit handler::
+
+   [handlers]
+   keys=file,audit
+
+   [loggers]
+   keys=root,privacyidea,audit
+
+.. note:: The *Logger Audit* only allows to **write** audit information. It
+   can not be used to **read** data. So if you are only using the
+   *Audit Logger*, you will not be able to *view* audit information in the
+   privacyIDEA Web UI!
+   To still be able to *read* audit information, take a look at the
+   :ref:`container_audit`.
+
+.. note:: The policies :ref:`policy_auth_max_success`
+   and :ref:`policy_auth_max_fail`
+   depend on reading the audit log. If you use a non readable audit log
+   like the *Logger Audit* these policies will not work.
+
+.. _container_audit:
+
+Container Audit
+---------------
+
+The *Container Audit* module is a meta audit module, that can be used to
+write audit information to more than one audit module.
+
+It is configured in the ``pi.cfg`` like this::
+
+    PI_AUDIT_MODULE = 'privacyidea.lib.auditmodules.containeraudit'
+    PI_AUDIT_CONTAINER_WRITE = ['privacyidea.lib.auditmodules.sqlaudit','privacyidea.lib.auditmodules.loggeraudit']
+    PI_AUDIT_CONTAINER_READ = 'privacyidea.lib.auditmodules.sqlaudit'
+
+The key ``PI_AUDIT_CONTAINER_WRITE`` contains a list of audit modules,
+to which the audit information should be written. The listed
+audit modules need to be configured as mentioned in the corresponding audit
+module description.
+
+The key ``PI_AUDIT_CONTAINER_READ`` contains one single audit module, that
+is capable of reading information. In this case the :ref:`sql_audit` module can be
+used. The :ref:`logger_audit` module can **not** be used for reading!
+
+Using the *Container Audit* module you can on the one hand send audit information
+to external services using the :ref:`logger_audit` but also keep the
+audit information visible within privacyIDEA using the :ref:`sql_audit` module.
