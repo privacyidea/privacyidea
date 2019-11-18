@@ -95,6 +95,11 @@ class TestingConfig(Config):
                        "resolver": "resolverX"}]
 
 
+class FileAuditConfig(TestingConfig):
+    PI_LOGCONFIG = "tests/testdata/logging.cfg"
+    PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
+
+
 class ProductionConfig(Config):
     config_path = basedir
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
@@ -136,6 +141,7 @@ class HerokuConfig(Config):
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
+    'fileaudittesting': FileAuditConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
     'heroku': HerokuConfig

@@ -229,3 +229,20 @@ class MyApiTestCase(MyTestCase):
     def setUpClass(cls):
         super(MyApiTestCase, cls).setUpClass()
         cls.cls_auth(cls.app)
+
+
+class MyFileLogTestCase(MyTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = create_app("fileaudittesting", "")
+        cls.app_context = cls.app.app_context()
+        cls.app_context.push()
+        db.create_all()
+        # save the current timestamp to the database to avoid hanging cached
+        # data
+        save_config_timestamp()
+        db.session.commit()
+        # Create an admin for tests.
+        create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
+

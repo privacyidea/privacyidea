@@ -5,7 +5,7 @@ This tests the files
   lib/auditmodules/sqlaudit.py
 """
 
-from .base import MyTestCase
+from .base import MyTestCase, MyFileLogTestCase
 from mock import mock
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
@@ -344,3 +344,22 @@ class AuditTestCase(MyTestCase):
                          "PI_AUDIT_NO_SIGN": True,
                          "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
         self.assertRaises(ImportError, ContainerAudit, module_config)
+
+
+class AuditFileTestCase(MyFileLogTestCase):
+
+    def test_01_external_file_audit(self):
+        self.authenticate()
+        c = []
+        # do a simple GET /token/
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+        with open("audit.log") as file:
+            c = file.readlines()
+
+        self.assertIn("GET /token/", c[-1])
