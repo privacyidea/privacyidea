@@ -62,7 +62,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
-from pyrad.client import Client
+from pyrad.client import Client, Timeout
 from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
@@ -447,6 +447,8 @@ class RadiusTokenClass(RemoteTokenClass):
         radius_identifier = self.get_tokeninfo("radius.identifier")
         radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
+        radius_timeout = 5
+        radius_retries = 3
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
@@ -455,7 +457,8 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server = u"{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
-
+            radius_timeout = int(radius_server_object.config.timeout or 10)
+            radius_retries = int(radius_server_object.config.retries or 1)
         elif system_radius_settings:
             # system configuration
             radius_server = get_from_config("radius.server")
@@ -499,6 +502,10 @@ class RadiusTokenClass(RemoteTokenClass):
                          secret=to_bytes(radius_secret),
                          dict=Dictionary(radius_dictionary))
 
+            # Set retries and timeout of the client
+            srv.timeout = radius_timeout
+            srv.retries = radius_retries
+
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
                                        User_Name=radius_user.encode('utf-8'),
                                        NAS_Identifier=nas_identifier.encode('ascii'))
@@ -509,7 +516,13 @@ class RadiusTokenClass(RemoteTokenClass):
                 req["State"] = radius_state
                 log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
 
-            response = srv.SendPacket(req)
+            try:
+                response = srv.SendPacket(req)
+            except Timeout:
+                log.warning(u"The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
+                    r_server, radius_user))
+                return AccessReject
+
             # handle the RADIUS challenge
             if response.code == pyrad.packet.AccessChallenge:
                 # now we map this to a privacyidea challenge
