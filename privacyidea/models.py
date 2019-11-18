@@ -838,12 +838,12 @@ class CAConnector(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all CAConnectorConfig
-        # FIXME: Sometimes not all entries are deleted.
         db.session.query(CAConnectorConfig)\
                   .filter(CAConnectorConfig.caconnector_id == ret)\
                   .delete()
+        # Delete the CA itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
@@ -936,11 +936,12 @@ class Resolver(TimestampMethodsMixin, db.Model):
         
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all ResolverConfig
         db.session.query(ResolverConfig)\
                   .filter(ResolverConfig.resolver_id == ret)\
                   .delete()
+        # delete the Resolver itself
+        db.session.delete(self)
         save_config_timestamp()
         db.session.commit()
         return ret
@@ -1766,7 +1767,6 @@ class EventHandler(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all EventHandlerOptions
         db.session.query(EventHandlerOption) \
             .filter(EventHandlerOption.eventhandler_id == ret) \
@@ -1775,6 +1775,8 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerCondition) \
             .filter(EventHandlerCondition.eventhandler_id == ret) \
             .delete()
+        # delete the event handler itself
+        db.session.delete(self)
         save_config_timestamp()
         db.session.commit()
         return ret
@@ -1925,11 +1927,12 @@ class MachineResolver(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all MachineResolverConfig
         db.session.query(MachineResolverConfig)\
                   .filter(MachineResolverConfig.resolver_id == ret)\
                   .delete()
+        # delete the MachineResolver itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
@@ -2107,11 +2110,12 @@ class SMSGateway(MethodsMixin, db.Model):
         :return:
         """
         ret = self.id
-        db.session.delete(self)
         # delete all SMSGatewayOptions
         db.session.query(SMSGatewayOption)\
                   .filter(SMSGatewayOption.gateway_id == ret)\
                   .delete()
+        # delete the SMSGateway itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
