@@ -150,6 +150,12 @@ def set_policy_api(name=None):
        realm=realm1
        action=enroll, disable
 
+    The policy POST request can also take the parameter of conditions. This is a list of conditions sets:
+    [ [ "userinfo", "memberOf", "equals", "groupA", "true" ], [ ... ] ]
+    With the entries being the ``section``, the ``key``, the ``comparator``, the ``value`` and ``active``.
+    For more on conditions see :ref:`policy_conditions`.
+
+
     **Example response**:
 
     .. sourcecode:: http

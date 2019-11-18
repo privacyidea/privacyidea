@@ -106,6 +106,25 @@ If the userinfo of the user that is trying to log in does not contain attributes
 ``email`` or ``groups`` (due to a resolver misconfiguration, for example), privacyIDEA
 throws an error and the request is aborted.
 
+``HTTP Request Header``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The section ``HTTP Request header`` can be used to define conditions that are checked against
+the request header key-value pairs.
+
+The ``Key`` specifies the request header key. It is case-sensitive.
+
+privacyIDEA uses the ``Comparator`` to check if the value of a header is equal or a substring
+of the required value.
+
+.. note:: privacyIDEA raises an error if ``Key`` refers to an unknown request header.
+   If the header in question is missing, the policy can not get completely evaluated.
+   Be aware that requests, that do not contain the header ``Key`` will always fail!
+   Thus, if you are using uncommon headers you should
+   in addition restrict the policy e.g. to client IPs, to assure, that a request from
+   this certain IP address will always contain the header, that is to be checked.
+
+
 Comparators
 ~~~~~~~~~~~
 
