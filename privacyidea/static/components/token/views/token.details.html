@@ -10,7 +10,7 @@
             <td translate>Type</td>
             <td>{{ token.tokentype }}</td>
             <td>
-                <button class="btn btn-danger" ng-click="delete()"
+                <button class="btn btn-danger" ng-click="deleteTokenAsk()"
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')"
                         ng-hide="!checkRight('delete') && hide_buttons">
@@ -633,3 +633,7 @@
     </form>
     </div>
 </div>
+
+<ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
+</ng-include>
+
