@@ -30,6 +30,7 @@ netaddr==0.7.19
 oauth2client==2.0.1
 passlib==1.7.1
 Pillow==6.2.1
+psycopg2==2.8.3
 pyasn1==0.4.3
 pyasn1-modules==0.2.4
 pycparser==2.18
