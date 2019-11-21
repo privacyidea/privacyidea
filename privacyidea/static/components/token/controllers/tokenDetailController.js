@@ -191,13 +191,12 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
     $scope.deleteTokenAsk = function() {
+        var tokenType = $scope.token.info.tokenkind;
+        if (tokenType == "hardware"){
             $('#dialogTokenDelete').modal();
-            var tokenType = $scope.token.info.tokenkind;
-                if (tokenType == "hardware"){
-                    $('#dialogTokenDelete').modal();
-                    } else {
-                         $scope.delete();
-                    };
+        } else {
+            $scope.delete();
+        };
      };
 
 
