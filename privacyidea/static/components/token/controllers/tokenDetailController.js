@@ -192,39 +192,18 @@ myApp.controller("tokenDetailController", function ($scope,
 
     $scope.deleteTokenAsk = function() {
             $('#dialogTokenDelete').modal();
-        var tokenType = $scope.token.info.tokenkind;
-        if (tokenType == "hardware"){
-        $('#dialogTokenDelete').modal();
-             } else {
-             TokenFactory.delete($scope.tokenSerial, $scope.return_to,
-                function (data) {
-                    if (data.result.value==true) {
-                        inform.add(gettextCatalog.getString("Hardware Token deleted " +
-                            "successfully."),
-                                    {type: "info"});
-                        $scope._getUsers();
-                        $location.path("/user/list");
-                     } else {
-                inform.add(gettextCatalog.getString("Failed to delete Token."), {type: "danger"});
-            };
-              });
-    };
-    };
+            var tokenType = $scope.token.info.tokenkind;
+                if (tokenType == "hardware"){
+                    $('#dialogTokenDelete').modal();
+                    } else {
+                         $scope.delete();
+                    };
+     };
 
-    $scope.deleteToken = function(){
-        TokenFactory.delete($scope.tokenSerial, $scope.return_to,
-            function (data) {
-                if (data.result.value==true) {
-                            inform.add(gettextCatalog.getString("Hardware Token deleted " +
-                                "successfully."),
-                                        {type: "info"});
-                            $scope._getUsers();
-                            $location.path("/user/list");
-                 } else {
-                          inform.add(gettextCatalog.getString("Failed to delete Token."), {type: "danger"});
-                        };
-                             });
-                                 };
+
+    $scope.delete = function () {
+        TokenFactory.delete($scope.tokenSerial, $scope.return_to);
+    };
 
 
     $scope.setRandomPin = function () {
