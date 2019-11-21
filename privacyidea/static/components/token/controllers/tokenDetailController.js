@@ -190,9 +190,20 @@ myApp.controller("tokenDetailController", function ($scope,
         }, $scope.get);
     };
 
+    $scope.deleteTokenAsk = function() {
+        var tokenType = $scope.token.info.tokenkind;
+        if (tokenType == "hardware"){
+            $('#dialogTokenDelete').modal();
+        } else {
+            $scope.delete();
+        };
+     };
+
+
     $scope.delete = function () {
         TokenFactory.delete($scope.tokenSerial, $scope.return_to);
     };
+
 
     $scope.setRandomPin = function () {
         TokenFactory.setrandompin($scope.tokenSerial, function (data) {

@@ -1,0 +1,38 @@
+<div>
+    <!-- Modal -->
+    <div class="modal fade" id="dialogTokenDelete" tabindex="-1"
+         role="dialog"
+         aria-labelledby="myModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel"
+                        translate>Delete Token</h4>
+                </div>
+                <div class="modal-body">
+                    <p translate ng-show="token.username">
+                    Do you really want to delete the Token {{ tokenSerial }} from user {{ token.username }}?
+                    </p>
+                    <p translate ng-hide="token.username">
+                    Do you really want to delete the Token {{ tokenSerial }}?
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default"
+                            data-dismiss="modal" translate>No</button>
+                    <button type="button"
+                            class="btn btn-danger"
+                            data-dismiss="modal"
+                            ng-click="delete()">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span translate>Delete Token</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
