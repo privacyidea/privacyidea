@@ -273,10 +273,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         if ($scope.form.type === "hotp") {
             // preset HOTP hashlib
-            $scope.form.hashlib = $scope.form['hotp.hashlib'];
+            $scope.form.hashlib = $scope.systemDefault['hotp.hashlib'] || 'sha1';
         } else if ($scope.form.type === "totp") {
             // preset TOTP hashlib
-            $scope.form.hashlib = $scope.form['totp.hashlib'];
+            $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
+            $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
         }
         if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;
@@ -524,29 +525,28 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             radius.server, radius.secret...
            are stored in systemDefault and $scope.form
          */
-        var systemDefault = data.result.value;
+        $scope.systemDefault = data.result.value;
         //debug: console.log("system default config");
         //debug: console.log(systemDefault);
         // TODO: The entries should be handled automatically.
         var entries = ["radius.server", "radius.secret", "remote.server",
-            "radius.identifier",
-            "totp.hashlib", "hotp.hashlib", "email.mailserver",
+            "radius.identifier", "email.mailserver",
             "email.mailfrom", "yubico.id", "tiqr.regServer"];
         entries.forEach(function(entry) {
             if (!$scope.form[entry]) {
                 // preset the UI
-                $scope.form[entry] = systemDefault[entry];
+                $scope.form[entry] = $scope.systemDefault[entry];
             }
         });
         // Default HOTP hashlib
-        $scope.form.hashlib = $scope.form["hotp.hashlib"];
+        $scope.form.hashlib = $scope.systemDefault["hotp.hashlib"] || 'sha1';
         // Now add the questions
-        angular.forEach(systemDefault, function(value, key) {
+        angular.forEach($scope.systemDefault, function(value, key) {
             if (key.indexOf("question.question.") === 0) {
                 $scope.questions.push(value);
             }
         });
-        $scope.num_answers = systemDefault["question.num_answers"];
+        $scope.num_answers = $scopen.systemDefault["question.num_answers"];
         //debug: console.log($scope.questions);
         //debug: console.log($scope.form);
     });

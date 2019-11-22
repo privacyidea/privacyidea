@@ -729,3 +729,22 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(p.get("timeStep"), "60")
         delete_policy("pol1")
 
+        # the same should work for admins
+        logged_in_user = {"user": "admin",
+                          "realm": "super",
+                          "role": "admin"}
+        set_policy("pol1", scope=SCOPE.ADMIN, action="totp_hashlib=sha512,"
+                                                    "totp_timestep=60,"
+                                                    "totp_otplen=8")
+        pol = PolicyClass()
+        p = TotpTokenClass.get_default_settings(params,
+                                                logged_in_user=logged_in_user,
+                                                policy_object=pol)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("hashlib"), "sha512")
+        self.assertEqual(p.get("timeStep"), "60")
+        # test check if there is no logged in user
+        p = TotpTokenClass.get_default_settings(params,
+                                                policy_object=pol)
+        self.assertEqual(p, {})
+        delete_policy("pol1")

@@ -1554,11 +1554,34 @@ class APITokenTestCase(MyApiTestCase):
             self.assertNotIn('key1', tokeninfo)
 
     def test_25_user_init_defaults(self):
+        self.setUp_user_realms()
         self.authenticate_selfservice_user()
-        # Now this user is authenticated
-        # selfservice@realm1
+        # Now this user is authenticated as selfservice@realm1
 
-        # Create policy for sha256
+        # first test with system configuration
+        set_privacyidea_config('totp.hashlib', 'sha512')
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "totp",
+                                               "genkey": 1,
+                                               "user": "selfservice",
+                                               "realm": "realm1"},
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json.get('result').get("value"))
+            detail = res.json.get("detail")
+            googleurl = detail.get("googleurl")
+            self.assertTrue("sha512" in googleurl.get("value"))
+            serial = detail.get("serial")
+            token = get_tokens(serial=serial)[0]
+            self.assertEqual(token.hashlib, "sha512")
+            self.assertEqual(token.timestep, 30)
+            self.assertEqual(token.token.otplen, 6)
+            remove_token(serial)
+
+        # Now create policy for sha256, overwriting the system config
         set_policy(name="init_details",
                    scope=SCOPE.USER,
                    action="totp_otplen=8,totp_hashlib=sha256,"
@@ -1573,8 +1596,7 @@ class APITokenTestCase(MyApiTestCase):
                                                "genkey": 1,
                                                "user": "selfservice",
                                                "realm": "realm1"},
-                                           headers={'Authorization':
-                                                        self.at_user}):
+                                           headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
