@@ -4,9 +4,11 @@ This tests the files
   lib/audit.py and
   lib/auditmodules/sqlaudit.py
 """
+import os
 
-from .base import MyTestCase, MyFileLogTestCase
+from .base import MyTestCase, OverrideConfigTestCase
 from mock import mock
+from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
@@ -284,6 +286,8 @@ class AuditTestCase(MyTestCase):
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
+        # remove the audit SQL URI from app config
+        self.app.config.pop("PI_AUDIT_SQL_URI", None)
 
     def test_10_check_tokentype(self):
         # Add a tokentype
@@ -346,7 +350,10 @@ class AuditTestCase(MyTestCase):
         self.assertRaises(ImportError, ContainerAudit, module_config)
 
 
-class AuditFileTestCase(MyFileLogTestCase):
+class AuditFileTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        PI_LOGCONFIG = "tests/testdata/logging.cfg"
+        PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
 
     def test_01_external_file_audit(self):
         self.authenticate()
@@ -363,3 +370,4 @@ class AuditFileTestCase(MyFileLogTestCase):
             c = file.readlines()
 
         self.assertIn("GET /token/", c[-1])
+        os.unlink('audit.log')
