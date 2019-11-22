@@ -48,6 +48,7 @@
 # ./manage.py db migrate
 # ./manage.py createdb
 #
+from __future__ import print_function
 import os
 import sys
 import datetime
