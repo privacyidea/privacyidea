@@ -52,6 +52,7 @@ from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 import logging
 import os
+import traceback
 
 log = logging.getLogger(__name__)
 
