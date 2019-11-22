@@ -4,9 +4,11 @@ This tests the files
   lib/audit.py and
   lib/auditmodules/sqlaudit.py
 """
+import os
 
-from .base import MyTestCase
+from .base import MyTestCase, OverrideConfigTestCase
 from mock import mock
+from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 import datetime
@@ -284,6 +286,8 @@ class AuditTestCase(MyTestCase):
         self.assertEquals(audit_log.total, 1)
         self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
+        # remove the audit SQL URI from app config
+        self.app.config.pop("PI_AUDIT_SQL_URI", None)
 
     def test_10_check_tokentype(self):
         # Add a tokentype
@@ -344,3 +348,26 @@ class AuditTestCase(MyTestCase):
                          "PI_AUDIT_NO_SIGN": True,
                          "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
         self.assertRaises(ImportError, ContainerAudit, module_config)
+
+
+class AuditFileTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        PI_LOGCONFIG = "tests/testdata/logging.cfg"
+        PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
+
+    def test_01_external_file_audit(self):
+        self.authenticate()
+        c = []
+        # do a simple GET /token/
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+        with open("audit.log") as file:
+            c = file.readlines()
+
+        self.assertIn("GET /token/", c[-1])
+        os.unlink('audit.log')
