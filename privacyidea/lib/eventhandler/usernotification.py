@@ -52,6 +52,7 @@ from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 import logging
 import os
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -293,6 +294,16 @@ class UserNotificationEventHandler(BaseEventHandler):
             # In case of "savefile" we do not need a recipient
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
+            if body.startswith("file:"):  # pragma no cover
+                # We read the template from the file.
+                filename = body[5:]
+                try:
+                    with open(filename, "r") as f:
+                        body = f.read()
+                except Exception as e:
+                    log.warning(u"Failed to read email template from file {0!r}: {1!r}".format(filename, e))
+                    log.debug(u"{0!s}".format(traceback.format_exc()))
+
             subject = handler_options.get("subject") or \
                       "An action was performed on your token."
             serial = request.all_data.get("serial") or \
