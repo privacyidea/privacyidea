@@ -205,7 +205,6 @@ class TotpTokenClass(HotpTokenClass):
         self.add_tokeninfo("timeShift", timeShift)
         self.add_tokeninfo("timeStep", timeStep)
         self.add_tokeninfo("hashlib", hashlibStr)
-        self.add_init_details('timeStep', timeStep)
 
     @property
     def timestep(self):

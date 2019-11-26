@@ -546,7 +546,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 $scope.questions.push(value);
             }
         });
-        $scope.num_answers = $scopen.systemDefault["question.num_answers"];
+        $scope.num_answers = $scope.systemDefault["question.num_answers"];
         //debug: console.log($scope.questions);
         //debug: console.log($scope.form);
     });

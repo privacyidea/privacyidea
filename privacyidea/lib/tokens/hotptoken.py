@@ -250,9 +250,9 @@ class HotpTokenClass(TokenClass):
                                         tokentype=tok_type.lower(),
                                         serial=self.get_serial(),
                                         tokenlabel=tokenlabel,
-                                        hash_algo=self.hashlib,
-                                        digits=self.get_otplen(),
-                                        period=self.init_details.get("timeStep", 30),
+                                        hash_algo=params.get("hashlib", "sha1"),
+                                        digits=params.get("otplen", 6),
+                                        period=params.get("timeStep", 30),
                                         issuer=tokenissuer,
                                         user_obj=user,
                                         extra_data=extra_data)
