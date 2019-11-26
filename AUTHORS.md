@@ -1,20 +1,19 @@
-# Authors in version 3.1
+# Authors in version 3.2
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 Friedrich Weber <friedrich.weber@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
 Jean-Pierre <jean-pierre.hoehmann@netknights.it>
-Micha Preußer <micha.preusser@netknights.it>
-Tamaro <tamaro.skaljic@netknights.it>
-Bas van der Vlies <bas.vandervlies@surfsara.nl>
-Pavol Ipoth <pavol.ipoth@telekom.com>
-droobah <bananaboat@gmail.com>
+debianis <db91@gmx.de>
+Josef Wuebbels <josef.wuebbels@t-systems.com>
+markroxor <mrmohitrathoremr@gmail.com>
 
 # Overall authors
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 Friedrich Weber <friedrich.weber@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
+Jean-Pierre <jean-pierre.hoehmann@netknights.it>
 Friedrich Weber <fred@reichbier.de>
 Martin Wheldon <martin.wheldon@greenhills-it.co.uk>
 Pavol Ipoth <pavol.ipoth@telekom.com>
@@ -66,6 +65,9 @@ root <root@Svr040.livingston.nhsscotland.com>
 Tamaro <tamaro.skaljic@netknights.it>
 Bas van der Vlies <bas.vandervlies@surfsara.nl>
 droobah <bananaboat@gmail.com>
+debianis <db91@gmx.de>
+Josef Wuebbels <josef.wuebbels@t-systems.com>
+markroxor <mrmohitrathoremr@gmail.com>
 
 Created using
-git shortlog -sne 9403cd299bed9de846631da56e80362553667bad.. | cut -f 2,3 
+git shortlog -sne ed39864429ca01452acb20bd1d0f340cf136bce6.. | cut -f 2,3 
