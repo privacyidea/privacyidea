@@ -46,16 +46,10 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.auth import ROLE
 from privacyidea.lib import _
 
 optional = True
 required = False
-
-keylen = {'sha1': 20,
-          'sha256': 32,
-          'sha512': 64
-          }
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +71,6 @@ class TotpTokenClass(HotpTokenClass):
         self.set_type(u"totp")
         self.hKeyRequired = True
 
-    
     @staticmethod
     def get_class_type():
         """
@@ -141,6 +134,20 @@ class TotpTokenClass(HotpTokenClass):
                                            'forced to use two-step enrollment.')}
                    },
                    SCOPE.ADMIN: {
+                       'totp_timestep': {'type': 'int',
+                                         'value': [30, 60],
+                                         'desc': 'Specify the time step of '
+                                                 'the timebased OTP token.'},
+                       'totp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': 'Specify the hashlib to be used. '
+                                                'Can be SHA1, SHA256 or SHA512.'},
+                       'totp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': "Specify the OTP length to be "
+                                               "used."},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': _('Specify whether admins are allowed or '
@@ -636,10 +643,10 @@ class TotpTokenClass(HotpTokenClass):
         """
         This method returns a dictionary with default settings for token
         enrollment.
-        These default settings are defined in SCOPE.USER and are
+        These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
         totp_hashlib, totp_timestep and totp_otplen.
-        If these are set, the user will only be able to enroll tokens with
-        these values.
+        If these are set, the user or admin will only be able to enroll tokens
+        with these values.
 
         The returned dictionary is added to the parameters of the API call.
         :param params: The call parameters
@@ -654,36 +661,37 @@ class TotpTokenClass(HotpTokenClass):
         :return: default parameters
         """
         ret = {}
-        if logged_in_user.get("role") == ROLE.USER:
-            hashlib_pol = policy_object.get_action_values(
-                action="totp_hashlib",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if hashlib_pol:
-                ret["hashlib"] = list(hashlib_pol)[0]
+        if not logged_in_user:
+            return ret
+        hashlib_pol = policy_object.get_action_values(
+            action="totp_hashlib",
+            scope=logged_in_user.get('scope'),
+            user=logged_in_user.get("username"),
+            realm=logged_in_user.get("realm"),
+            client=client_ip,
+            unique=True)
+        if hashlib_pol:
+            ret["hashlib"] = list(hashlib_pol)[0]
 
-            timestep_pol = policy_object.get_action_values(
-                action="totp_timestep",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if timestep_pol:
-                ret["timeStep"] = list(timestep_pol)[0]
+        timestep_pol = policy_object.get_action_values(
+            action="totp_timestep",
+            scope=logged_in_user.get('scope'),
+            user=logged_in_user.get("username"),
+            realm=logged_in_user.get("realm"),
+            client=client_ip,
+            unique=True)
+        if timestep_pol:
+            ret["timeStep"] = list(timestep_pol)[0]
 
-            otplen_pol = policy_object.get_action_values(
-                action="totp_otplen",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if otplen_pol:
-                ret["otplen"] = list(otplen_pol)[0]
+        otplen_pol = policy_object.get_action_values(
+            action="totp_otplen",
+            scope=logged_in_user.get('scope'),
+            user=logged_in_user.get("username"),
+            realm=logged_in_user.get("realm"),
+            client=client_ip,
+            unique=True)
+        if otplen_pol:
+            ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 
