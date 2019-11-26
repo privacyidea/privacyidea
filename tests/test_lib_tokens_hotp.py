@@ -695,6 +695,23 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         delete_policy("pol1")
+        # the same should work for an admin user
+        logged_in_user = {"user": "admin",
+                          "realm": "super",
+                          "role": "admin"}
+        set_policy("pol1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512,"
+                                                     "hotp_otplen=8")
+        pol = PolicyClass()
+        p = HotpTokenClass.get_default_settings(params,
+                                                logged_in_user=logged_in_user,
+                                                policy_object=pol)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("hashlib"), "sha512")
+        # test check if there is no logged in user
+        p = HotpTokenClass.get_default_settings(params,
+                                                policy_object=pol)
+        self.assertEqual(p, {})
+        delete_policy("pol1")
 
     def test_28_2step_generation_default(self):
         serial = "2step"

@@ -2331,6 +2331,32 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
 
+        # check that it works in admin scope as well
+        set_policy(name="pol1",
+                   scope=SCOPE.ADMIN,
+                   action="hotp_otplen=8,hotp_hashlib=sha512")
+        g.policy_object = PolicyClass()
+        g.logged_in_user = {"username": "admin",
+                            "realm": "super",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "hotp",
+                                       "genkey": "1"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # request, that matches the policy
+        req.all_data = {
+            "type": "hotp",
+            "genkey": "1"}
+        init_token_defaults(req)
+
+        # Check, if the token defaults were added
+        self.assertEqual(req.all_data.get("hashlib"), "sha512")
+        self.assertEqual(req.all_data.get("otplen"), "8")
+        # finally delete policy
+        delete_policy("pol1")
+
     def test_17_pin_change(self):
         g.logged_in_user = {"username": "admin",
                             "realm": "",

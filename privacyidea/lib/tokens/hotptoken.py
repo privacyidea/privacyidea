@@ -60,9 +60,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode)
-from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import SCOPE, ACTION
 from privacyidea.lib import _
 import traceback
@@ -120,8 +118,8 @@ class HotpTokenClass(TokenClass):
         desc_self1 = _('Specify the hashlib to be used. '
                        'Can be sha1 (1) or sha2-256 (2).')
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
-        desc_two_step_user =_('Specify whether users are allowed or forced to use '
-                              'two-step enrollment.')
+        desc_two_step_user = _('Specify whether users are allowed or forced to use '
+                               'two-step enrollment.')
         desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
                                 'two-step enrollment.')
         res = {'type': 'hotp',
@@ -134,20 +132,23 @@ class HotpTokenClass(TokenClass):
                    SCOPE.ENROLL: {
                        'yubikey_access_code': {
                            'type': 'str',
-                           'desc': _("The Yubikey access code used to initialize Yubikeys.")
+                           'desc': _("The Yubikey access code used to "
+                                     "initialize Yubikeys.")
                        },
                        'hotp_2step_clientsize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the client (in bytes)")
+                           'desc': _("The size of the OTP seed part contributed "
+                                     "by the client (in bytes)")
                        },
                        'hotp_2step_serversize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the server (in bytes)")
+                           'desc': _("The size of the OTP seed part contributed "
+                                     "by the server (in bytes)")
                        },
                        'hotp_2step_difficulty': {
                            'type': 'int',
-                           'desc': _("The difficulty factor used for the OTP seed generation "
-                                     "(should be at least 10000)")
+                           'desc': _("The difficulty factor used for the OTP "
+                                     "seed generation (should be at least 10000)")
                        },
                        'hotp_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
@@ -164,15 +165,22 @@ class HotpTokenClass(TokenClass):
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': desc_self2},
-                       'hotp_force_server_generate': {'type': 'bool',
-                                                      'desc': _("Force the key to "
-                                                                "be generated on "
-                                                                "the server.")},
+                       'hotp_force_server_generate': {
+                           'type': 'bool',
+                           'desc': _("Force the key to be generated on the server.")},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
                                       'desc': desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
+                       'hotp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': desc_self1},
+                       'hotp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': desc_self2},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
                                       'desc': desc_two_step_admin}
@@ -650,10 +658,10 @@ class HotpTokenClass(TokenClass):
         """
         This method returns a dictionary with default settings for token
         enrollment.
-        These default settings are defined in SCOPE.USER and are
+        These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
         hotp_hashlib, hotp_otplen.
-        If these are set, the user will only be able to enroll tokens with
-        these values.
+        If these are set, the user or admin will only be able to enroll tokens
+        with these values.
 
         The returned dictionary is added to the parameters of the API call.
         :param params: The call parameters
@@ -668,26 +676,27 @@ class HotpTokenClass(TokenClass):
         :return: default parameters
         """
         ret = {}
-        if logged_in_user.get("role") == ROLE.USER:
-            hashlib_pol = policy_object.get_action_values(
-                action="hotp_hashlib",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if hashlib_pol:
-                ret["hashlib"] = list(hashlib_pol)[0]
+        if not logged_in_user:
+            return ret
+        hashlib_pol = policy_object.get_action_values(
+            action="hotp_hashlib",
+            scope=logged_in_user.get('role'),
+            user=logged_in_user.get("username"),
+            realm=logged_in_user.get("realm"),
+            client=client_ip,
+            unique=True)
+        if hashlib_pol:
+            ret["hashlib"] = list(hashlib_pol)[0]
 
-            otplen_pol = policy_object.get_action_values(
-                action="hotp_otplen",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if otplen_pol:
-                ret["otplen"] = list(otplen_pol)[0]
+        otplen_pol = policy_object.get_action_values(
+            action="hotp_otplen",
+            scope=logged_in_user.get('role'),
+            user=logged_in_user.get("username"),
+            realm=logged_in_user.get("realm"),
+            client=client_ip,
+            unique=True)
+        if otplen_pol:
+            ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 
