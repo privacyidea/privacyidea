@@ -1,3 +1,78 @@
+Version 3.2, 2019-12-xx
+
+  Features:
+  * New Event Handler: RequestMangler to modify request attributes (#1810)
+  * New Event Handler: ResponseMangler to modify the response data (#1138)
+  * New Audit Module to write to a file (#1072)
+  * New Container Audit Module to write to several audit modules at once (#1072)
+  * Applications can use the API with predefined asymmetric JWT (#1773)
+
+  Enhancements:
+  * Authentication:
+    * Add endpoint /validate/polltransaction for an improved workflow
+      for out-of-band challenges-responses like PUSH token (#1838)
+    * Allow registration token to work as challenge/response (#1897)
+    * RADIUS token also uses timeout and retries (#1931)
+    * Improve the handling of splitAtSign, so that a multi-realm
+      setup will be more consistent (#1808)
+    * Use authentication and authorization policies also for the
+      /auth endpoint (#1722, #1537)
+  * Policies and events:
+    * Allow HTTP AGENT and any arbitrary HTTP header in extended policy conditions (#1425)
+    * Allow HTTP AGENT as condition for event handlers (#1260)
+    * Event Handlers can match for the rollout_state (#1801)
+    * Add write-to-file action to the notification handler (#717)
+    * Allow user endpoints to trigger events (#1822)
+  * Management:
+    * Allow help desk to trigger a token PIN reset without actually seeing the PIN (#1196)
+    * Allow "file:" syntax in email notification handler (#1939)
+    * Allow more sophisticated Proxy settings for the OverrideClient settings (#1868)
+    * LinOTP migration script to work with LDAP mixed endian notation (#1883)
+    * triggerchallenge also writes the serial of the triggered token
+      to the audit log (#1862)
+    * Allow a dash ("-") in policy names (#1813)
+    * The token janitor can return a list of users with tokens (#1705)
+    * Restrict OTP length, hash and timestep also in admin policies (#1566)
+  * User experience:
+    * Clean up event handler view and put handler and
+      position in extra columns (#1920)
+    * Improve the serial number checking for disallowed characters (#1826)
+    * The event handler list can be sorted and filtered (#1818)
+    * The policy list can be sorted and filtered (#1817)
+    * Show disallowed policy name characters in the UI (#1674)
+    * Ask before deleting a hardware token (#954)
+  * Performance:
+    * Improve performance by reading event handlers only if the
+      configuration has changed (#1823)
+    * Store statistics data like event counters per node to improve
+      HA and replication performance (#1819)
+    * Improve performance of the pre-auth event handler (#1686)
+
+  Fixes:
+  * Delete entries from database tables, when the parent object
+    is deleted (fixed for machineresolverconfig, resolverconfig,
+    eventhandleroption) (#1927)
+  * Comply to new pyredis parameters for apache auth module (#1925)
+  * Fix filename parameter of HostMachineResolver (#1912)
+  * Fix JSON content detection for endpoints like /validate/radiuscheck (#1850)
+  * Fix integer UID with PostgreSQL databases (#1825)
+  * Make the policy creation at the command line with pi-manage more
+    consistent (#1807)
+
+
+Version 3.1.2, 2019-11-15
+
+  Fixes:
+  * Fix the missing phone number field for SMS token, when a user
+    wants to enroll an SMS token. (#1929)
+
+Version 3.1.1, 2019-09-25
+
+  Fixes:
+  * Fix the wrong token_type key in the audit log which caused the tokentype
+    to not be contained in the audit (#1846)
+
+
 Version 3.1, 2019-09-04
 
   Features:
