@@ -14,7 +14,8 @@ down_revision = None
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session as BaseSession, relationship
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.exc import ProgrammingError
 import json
 
 Session = sessionmaker()
@@ -498,14 +499,20 @@ def create_new_tables():
 
 
 def upgrade():
-    create_update_token_table()
-    # rename the old table
-    op.rename_table('Config', 'Config_old')
-    create_resolver_config()
-    create_realms()
-    create_policy()
-    finalize_config()
-    create_new_tables()
+    try:
+        create_update_token_table()
+        # rename the old table
+        op.rename_table('Config', 'Config_old')
+        create_resolver_config()
+        create_realms()
+        create_policy()
+        finalize_config()
+        create_new_tables()
+    except ProgrammingError as exx:
+        print("An error occurred during upgrade! Maybe You database schema is "
+              "more recent than 2015? If this is the case, please check the "
+              "output if any changes were made to the db and revert them.")
+        print(exx)
 
 
 def downgrade():
