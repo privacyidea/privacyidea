@@ -298,7 +298,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 # We read the template from the file.
                 filename = body[5:]
                 try:
-                    with open(filename, "r") as f:
+                    with open(filename, "r", encoding="utf-8") as f:
                         body = f.read()
                 except Exception as e:
                     log.warning(u"Failed to read email template from file {0!r}: {1!r}".format(filename, e))
