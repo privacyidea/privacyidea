@@ -308,3 +308,4 @@ Available Handler Modules
    counterhandler
    federationhandler
    requestmangler
+   responsemangler
