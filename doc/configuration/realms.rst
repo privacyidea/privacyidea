@@ -18,6 +18,49 @@ Therefor the users need to authenticate with their username and the realm like t
    
    user@realm
 
+.. _relate_realm:
+
+Relate User to a Realm
+......................
+
+.. index:: realm relation
+
+There are several options to relate a user to a specific realm during
+authentication. Usually, if only a login name is given, the user will be
+searched in the default realm.
+
+If a *realm* parameter is given in a :ref:`/auth<rest_auth>` or
+:ref:`/validate/check<rest_validate>` request, it supersedes a possible
+:ref:`split<splitatsign>` realm.
+
+The following table shows different combinations of *user(name)*-parameter
+and *realm*-parameter. Depending on the :ref:`splitatsign`-setting, this shows
+in which realm the user will be searched:
+
+=============  =======  ========================  ========================
+  Input parameter       :ref:`splitatsign`-setting
+----------------------  --------------------------------------------------
+user(name)     realm    true                      false
+=============  =======  ========================  ========================
+user           --       user ➔ defrealm           user ➔ defrealm
+user           realm1   user ➔ realm1             user ➔ realm1
+user           unknown  --                        --
+user\@realm1   --       user ➔ realm1             user\@realm1 ➔ defrealm
+user\@realm1   realm1   user ➔ realm1             user\@realm1 ➔ realm1
+user\@realm1   realm2   user ➔ realm2             user\@realm1 ➔ realm2
+user\@realm2   realm1   user ➔ realm1             user\@realm2 ➔ realm1
+user\@realm1   unknown  --                        --
+user\@unknown  --       user\@unknown ➔ defrealm  user\@unknown ➔ defrealm
+user\@unknown  realm1   user\@unknown ➔ realm1    user\@unknown ➔ realm1
+user\@unknown  unknown  --                        --
+=============  =======  ========================  ========================
+
+.. note::
+    Be aware that if the :ref:`splitatsign`-setting is *true*, a *realm*
+    parameter is given **and** a user name with an *@*-sign is given where the
+    part after the *@* denotes a valid realm, the *realm* parameter will take
+    precedence.
+
 .. _list_of_realms:
 
 List of Realms

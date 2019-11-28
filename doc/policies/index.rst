@@ -166,4 +166,9 @@ Each policy can contain the following attributes:
   Using conditions, you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
-  Conditions are described in :ref:`policy_conditions`.
+  Conditions are described in
+
+.. toctree::
+    :maxdepth: 1
+
+    conditions
