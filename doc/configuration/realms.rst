@@ -33,31 +33,31 @@ If a *realm* parameter is given in a :ref:`/auth<rest_auth>` or
 :ref:`/validate/check<rest_validate>` request, it supersedes a possible
 :ref:`split<splitatsign>` realm.
 
-The following table shows different combinations of a users login and a *realm*
-parameter and where the user will be looked for depending on the
-:ref:`splitatsign` setting:
+The following table shows different combinations of *user(name)*-parameter
+and *realm*-parameter. Depending on the :ref:`splitatsign`-setting, this shows
+in which realm the user will be searched:
 
-=============  =======  =======================  =====
-  Input                 :ref:`splitatsign`
-----------------------  ------------------------------
-login          realm     true                     false
-=============  =======  =======================  =====
-user           --       user->defrealm           user->defrealm
-user           realm1   user->realm1             user->realm1
-user           unknown  --                       --
-user\@realm1   --       user->realm1             user\@realm1->defrealm
-user\@realm1   realm1   user->realm1             user\@realm1->realm1
-user\@realm1   realm2   user->realm2             user\@realm1->realm2
-user\@realm2   realm1   user->realm1             user\@realm2->realm1
-user\@realm1   unknown  --                       --
-user\@unknown  --       user\@unknown->defrealm  user\@unknown->defrealm
-user\@unknown  realm1   user\@unknown->realm1    user\@unknown->realm1
-user\@unknown  unknown  --                       --
-=============  =======  =======================  =====
+=============  =======  ========================  ========================
+  Input parameter       :ref:`splitatsign`-setting
+----------------------  --------------------------------------------------
+user(name)     realm    true                      false
+=============  =======  ========================  ========================
+user           --       user ➔ defrealm           user ➔ defrealm
+user           realm1   user ➔ realm1             user ➔ realm1
+user           unknown  --                        --
+user\@realm1   --       user ➔ realm1             user\@realm1 ➔ defrealm
+user\@realm1   realm1   user ➔ realm1             user\@realm1 ➔ realm1
+user\@realm1   realm2   user ➔ realm2             user\@realm1 ➔ realm2
+user\@realm2   realm1   user ➔ realm1             user\@realm2 ➔ realm1
+user\@realm1   unknown  --                        --
+user\@unknown  --       user\@unknown ➔ defrealm  user\@unknown ➔ defrealm
+user\@unknown  realm1   user\@unknown ➔ realm1    user\@unknown ➔ realm1
+user\@unknown  unknown  --                        --
+=============  =======  ========================  ========================
 
 .. note::
-    Be aware that if the :ref:`splitatsign` setting is *true*, a *realm*
-    parameter is given **and** a login name with an *@*-sign is given where the
+    Be aware that if the :ref:`splitatsign`-setting is *true*, a *realm*
+    parameter is given **and** a user name with an *@*-sign is given where the
     part after the *@* denotes a valid realm, the *realm* parameter will take
     precedence.
 
