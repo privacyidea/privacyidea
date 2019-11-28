@@ -167,7 +167,7 @@ set failcounter
 
 Using the action ``set failcounter`` you can reset the fail counter by
 setting it to 0 or also "block" the token by setting the fail counter to what
- ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
+ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
 set random pin
 ..............

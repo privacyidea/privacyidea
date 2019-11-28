@@ -438,14 +438,14 @@ smtpserver_read
 
 type: bool
 
-Allow the administrator to read the smtpserver configuration.
+Allow the administrator to read the :ref:`smtpserver`.
 
 smsgateway_write
 ~~~~~~~~~~~~~~~~
 
 type: bool
 
-To be able to define new :ref:`smsgateway` or delete existing ones, the
+To be able to define new :ref:`sms_gateway_config` or delete existing ones, the
 administrator needs the right ``smsgateway_write``.
 
 smsgateway_read
@@ -453,21 +453,21 @@ smsgateway_read
 
 type: bool
 
-Allow the administrator to read the smsgateway configuration.
+Allow the administrator to read the :ref:`sms_gateway_config`.
 
 periodictask_write
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the administrator to write or delete periodictask definitions.
+Allow the administrator to write or delete :ref:`periodic_tasks` definitions.
 
 periodictask_read
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the administrator to read the periodictask definitions.
+Allow the administrator to read the :ref:`periodic_tasks` definitions.
 
 eventhandling_write
 ~~~~~~~~~~~~~~~~~~~
@@ -481,7 +481,7 @@ eventhandling_read
 
 type: bool
 
-Allow the administrator to read event handlers.
+Allow the administrator to read :ref:`eventhandler`.
 
 .. note:: Currently the policies do not take into account resolvers,
    or realms. Having the right to read event handlers, will allow the
