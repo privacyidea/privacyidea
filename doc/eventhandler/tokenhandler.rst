@@ -64,7 +64,7 @@ Finally the administrator can specify the option **additional_params**. This nee
 with parameters, that get passed to the init request. You can specify all parameters, that
 would be used in a ``/token/init`` request:
 
-   {"totp.hashlib": "sha256", "type": "totp", "genkey": 0, "otpkey": "31323334"}
+   {"hashlib": "sha256", "type": "totp", "genkey": 0, "otpkey": "31323334"}
 
 would create a TOTP token, that uses the SHA256 hashing algorithm instead of SHA1.
 ``genkey: 0`` overrides the default behaviour of generating an OTP secret. Instead the

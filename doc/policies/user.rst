@@ -292,3 +292,40 @@ This policy takes a blank separated list of configured SMS gateways.
 It allows the user to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
+
+hotp_hashlib and totp_hashlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+Force the user to enroll HOTP/TOTP Tokens with the specified hashlib.
+The corresponding input selector will be disabled/hidden in the web UI.
+Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
+
+hotp_otplen and totp_otplen
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Force the user to enroll HOTP/TOTP Tokens with the specified otp length.
+The corresponding input selector will be disabled/hidden in the web UI.
+Possible values are *6* or *8*, default is *6*.
+
+hotp_force_server_generate and totp_force_server_generate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Enforce the key generation on the server.
+A corresponding input field for the key data will be disabled/hidden
+in the web UI.
+Default value is *false*.
+
+totp_timestep
+~~~~~~~~~~~~~
+
+type: int
+
+Enforce the timestep of the time-based OTP token.
+A corresponding input selection will be disabled/hidden in the web UI.
+Possible values are *30* or *60*, default is *30*.

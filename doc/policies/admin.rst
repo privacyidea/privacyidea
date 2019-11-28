@@ -27,7 +27,7 @@ administrative users like help desk users in the IT department.
 .. figure:: admin_policies.png
    :width: 500
 
-   *Admin scope provides and additional field 'admin realm'.*
+   *The Admin scope provides an additional field 'admin realm'.*
 
 All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights in one user realm and only a few
@@ -590,6 +590,39 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
 New in version 2.21
+
+hotp_hashlib and totp_hashlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+Force the admin to enroll HOTP/TOTP Tokens with the specified hashlib.
+The corresponding input selector will be disabled in the web UI.
+Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
+
+New in 3.2
+
+hotp_otplen and totp_otplen
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Force the admin to enroll HOTP/TOTP Tokens with the specified otp length.
+The corresponding input selector will be disabled in the web UI.
+Possible values are *6* or *8*, default is *6*.
+
+New in 3.2
+
+totp_timestep
+~~~~~~~~~~~~~
+
+type: int
+
+Enforce the timestep of the time-based OTP token.
+A corresponding input selection will be disabled/hidden in the web UI.
+Possible values are *30* or *60*, default is *30*.
+
+New in 3.2
 
 system_documentation
 ~~~~~~~~~~~~~~~~~~~~
