@@ -79,19 +79,19 @@ class TestingConfig(Config):
                        "algorithm": "HS256",
                        "role": "user",
                        "realm": "realm1",
-                       "user": "userA",
+                       "username": "userA",
                        "resolver": "resolverX"},
                       {"public_key": non_matchin_pubkey,
                        "algorithm": "RS256",
                        "role": "user",
                        "realm": "realm1",
-                       "user": "userA",
+                       "username": "userA",
                        "resolver": "resolverX"},
                       {"public_key": pubtest_key,
                        "algorithm": "RS256",
                        "role": "user",
                        "realm": "realm1",
-                       "user": "userA",
+                       "username": "userA",
                        "resolver": "resolverX"}]
 
 
