@@ -345,6 +345,6 @@ def check_policy_name(name):
 
     if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "
-                               "the characters a-zA-Z0-9_.- "))
+                               "the characters a-zA-Z0-9_. -"))
 
 

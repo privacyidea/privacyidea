@@ -108,7 +108,7 @@ class RequestManglerEventHandler(BaseEventHandler):
                         "value":
                             {"type": "str",
                              "required": True,
-                             "description": _("The new value of the parameter. Can contain tags like {0}, {1} for  "
+                             "description": _("The new value of the parameter. Can contain tags like {0}, {1} for "
                                               "the matched sub strings.")
                             },
                         "match_parameter":

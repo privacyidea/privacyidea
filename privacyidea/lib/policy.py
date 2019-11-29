@@ -1312,7 +1312,7 @@ def get_static_policy_definitions(scope=None):
                                              'expression.')},
             ACTION.REGISTERBODY: {'type': 'text',
                                   'desc': _("The body of the registration "
-                                            "email. Use '{regkey}' as tag"
+                                            "email. Use '{regkey}' as tag "
                                             "for the registration key.")}
         },
         SCOPE.ADMIN: {
