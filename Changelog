@@ -1,4 +1,4 @@
-Version 3.2, 2019-12-xx
+Version 3.2, 2019-12-02
 
   Features:
   * New Event Handler: RequestMangler to modify request attributes (#1810)
