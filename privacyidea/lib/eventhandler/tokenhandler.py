@@ -140,7 +140,7 @@ class TokenEventHandler(BaseEventHandler):
                            {"type": "int",
                             "required": True,
                             "description": _("set the PIN of the token to a random PIN of this length."),
-                            "value": range(1,32)}
+                            "value": list(range(1,32))}
                    },
                    ACTION_TYPE.INIT:
                        {"tokentype":
