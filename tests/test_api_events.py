@@ -260,6 +260,17 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue("sendsms" in result.get("value"))
             detail = res.json.get("detail")
 
+        with self.app.test_request_context('/event/actions/Token',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            set_random_pin = result.get("value").get("set random pin")
+            # The valid OTP PIN length is returned as list
+            self.assertTrue(type(set_random_pin.get("length").get("value")), "list")
+
     def test_05_get_handler_conditions(self):
         with self.app.test_request_context('/event/conditions/UserNotification',
                                            method='GET',
