@@ -172,7 +172,7 @@ users and roles using the parameter ``PI_TRUSTED_JWT``::
                        "algorithm": "RS256",
                        "role": "user",
                        "realm": "realm1",
-                       "user": "userA",
+                       "username": "userA",
                        "resolver": "resolverX"}]
 
 
@@ -183,9 +183,15 @@ public key can sign a JWT, that can impersonate as the *userA* in resolver
 A JWT can be created like this::
 
    auth_token = jwt.encode(payload={"role": "user",
-                                    "user": "userA",
+                                    "username": "userA",
                                     "realm": "realm1",
                                     "resolver": "resolverX"},
                                     key=private_key,
                                     algorithm="RS256")
+
+.. note:: The user and the realm do not necessarily need to exist in any
+   resolver!
+   But there probably must be certain policies defined for this user.
+   If you are using an administrative user, the realm for this administrative
+   must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 

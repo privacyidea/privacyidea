@@ -298,8 +298,8 @@ def verify_auth_token(auth_token, required_role=None):
                     j = jwt.decode(auth_token,
                                    trusted_jwt.get("public_key"),
                                    algorithms=TRUSTED_JWT_ALGOS)
-                    if dict((k, j.get(k)) for k in ("role", "user", "resolver", "realm")) == \
-                            dict((k, trusted_jwt.get(k)) for k in ("role", "user", "resolver", "realm")):
+                    if dict((k, j.get(k)) for k in ("role", "username", "resolver", "realm")) == \
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "username", "resolver", "realm")):
                         r = j
                         break
                 else:

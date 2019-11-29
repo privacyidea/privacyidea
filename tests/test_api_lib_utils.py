@@ -55,7 +55,7 @@ class UtilsTestCase(MyApiTestCase):
 
         with mock.patch("logging.Logger.warning") as mock_log:
             auth_token = jwt.encode(payload={"role": "user",
-                                             "user": "userA",
+                                             "username": "userA",
                                              "realm": "realm1",
                                              "resolver": "resolverX"},
                                     key=key,
@@ -63,7 +63,7 @@ class UtilsTestCase(MyApiTestCase):
             r = verify_auth_token(auth_token=auth_token,
                                   required_role="user")
             self.assertEqual(r.get("realm"), "realm1")
-            self.assertEqual(r.get("user"), "userA")
+            self.assertEqual(r.get("username"), "userA")
             self.assertEqual(r.get("resolver"), "resolverX",)
             self.assertEqual(r.get("role"), "user")
             mock_log.assert_called_once_with("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
@@ -78,7 +78,7 @@ class UtilsTestCase(MyApiTestCase):
         # The signature does not match
         with mock.patch("logging.Logger.info") as mock_log:
             auth_token = jwt.encode(payload={"role": "user",
-                                             "user": "userA",
+                                             "username": "userA",
                                              "realm": "realm1",
                                              "resolver": "resolverX"},
                                     key=key,
@@ -86,3 +86,26 @@ class UtilsTestCase(MyApiTestCase):
             r = verify_auth_token(auth_token=auth_token,
                                   required_role="user")
             mock_log.assert_any_call("A given JWT definition does not match.")
+
+    def test_04_check_jwt_username_in_audit(self):
+        # Here we check, if the username from the trusted JWT appears in the audit log.
+        # This means that the username is read in the correct way from the JWT and
+        # also used in the correct way for policy handling.
+        with open("tests/testdata/jwt_sign.key", "r") as f:
+            key = f.read()
+
+        auth_token = jwt.encode(payload={"role": "user", "username": "userA", "realm": "realm1",
+                                         "resolver": "resolverX"},
+                                key=key,
+                                algorithm="RS256")
+
+        # The authenticated but non-existing user tries for fetch his tokens
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={"Authorization": auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
+        # We see the user from the trusted JWT in the audit log.
+        ae = self.find_most_recent_audit_entry(action="GET /token/")
+        self.assertEqual(ae.get("user"), u"userA")
