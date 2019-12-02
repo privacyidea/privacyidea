@@ -78,9 +78,11 @@ and Registration Codes for easy deployment.
 privacyIDEA is based on Flask and SQLAlchemy as the python backend. The
 web UI is based on angularJS and bootstrap.
 A MachineToken design lets you assign tokens to machines. Thus you can use
-your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
+your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP
+with PAM.
 
-You may join the discourse discussion forum to give feedback, help other users, discuss questions and ideas:
+You may join the discourse discussion forum to give feedback, help other users,
+discuss questions and ideas:
 https://community.privacyidea.org
 
 
@@ -88,7 +90,8 @@ Setup
 =====
 
 For setting up the system to *run* it, please read install instructions 
-at http://privacyidea.readthedocs.io.
+at `privacyidea.readthedocs.io <http://privacyidea.readthedocs.io/en/latest/installation/index
+.html>`_.
 
 If you want to setup a development environment start like this::
 
@@ -98,34 +101,30 @@ If you want to setup a development environment start like this::
     source venv/bin/activate
     pip install -r requirements.txt
     
-You may additionally want to set up your environment for testing, by adding nose and the additional dependencies::
+You may additionally want to set up your environment for testing, by adding the
+additional dependencies::
 
-    pip install nose
     pip install -r tests/requirements.txt
 
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
 
-Getting and updating submodules
-===============================
-
-Some authentication modules and the admin client are located in git submodules.
-To fetch the latest release of these run::
-
-   git submodule init
-   git submodule update
-
-Later you can update the submodules like this::
-
-   git pull --recurse-submodules
-
 Running it
 ==========
 
-Create the database and encryption key::
+First You need to create a `config-file <https://privacyidea.readthedocs
+.io/en/latest/installation/system/inifile.html>`_.
+
+Then create the database and encryption key::
 
     ./pi-manage createdb
     ./pi-manage create_enckey
+
+If You plan to use the database for a longer time, You should `stamp <https://privacyidea
+.readthedocs.io/en/latest/installation/upgrade.html>`_ the database to simplify
+updates::
+
+    ./pi-manage db stamp head -d migrations/
 
 Create the key for the audit log::
 
@@ -145,9 +144,11 @@ as administrator.
 Run tests
 =========
 
-If you have followed the steps above to set up your environment for testing, running the test suite should be as easy as running nosetests(1) with the following options::
+If you have followed the steps above to set up your environment for testing,
+running the test suite should be as easy as running
+`pytest <http://pytest.org/>`_ with the following options::
 
-    nosetests -v --with-coverage --cover-package=privacyidea --cover-html
+    python -m pytest -v --cov=privacyidea --cov-report=html test/
 
 Contributing
 ============
