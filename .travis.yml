@@ -6,10 +6,15 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+
+# check if we need to run travis
+before_install: ./.travis_check.sh; ret=$?; if [ $ret -eq 123 ]; then travis_terminate 0; elif [
+  $ret -ne 0 ]; then travis_terminate $ret; fi
+
 # command to install dependencies
 install:
-  - "pip install ."
   - "pip install -r tests/requirements.txt"
+  - "pip install ."
   - "pip install codecov"
 
 # split the test run according to
