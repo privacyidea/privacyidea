@@ -101,6 +101,8 @@ If you want to setup a development environment start like this::
     source venv/bin/activate
     pip install -r requirements.txt
     
+.. _testing_env:
+
 You may additionally want to set up your environment for testing, by adding the
 additional dependencies::
 
@@ -120,9 +122,9 @@ Then create the database and encryption key::
     ./pi-manage createdb
     ./pi-manage create_enckey
 
-If You plan to use the database for a longer time, You should `stamp <https://privacyidea
-.readthedocs.io/en/latest/installation/upgrade.html>`_ the database to simplify
-updates::
+If You want to keep the development database upgradable, You should `stamp
+<https://privacyidea.readthedocs.io/en/latest/installation/upgrade.html>`_ it
+to simplify updates::
 
     ./pi-manage db stamp head -d migrations/
 
@@ -144,9 +146,9 @@ as administrator.
 Run tests
 =========
 
-If you have followed the steps above to set up your environment for testing,
-running the test suite should be as easy as running
-`pytest <http://pytest.org/>`_ with the following options::
+If you have followed the steps above to set up your
+`environment for testing <#testing-env>`__, running the test suite should be as
+easy as running `pytest <http://pytest.org/>`_ with the following options::
 
     python -m pytest -v --cov=privacyidea --cov-report=html test/
 
