@@ -59,12 +59,8 @@ Now you can run the server for your first test::
    pi-manage runserver
 
 Stamp the database, so that privacyIDEA has the right database schema version.
-This is important for later update processes:
+This is important for later update processes::
 
    pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations
 
 Depending on the database you want to use, you may have to install additional packages.
-
-.. rubric:: Footnotes
-.. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

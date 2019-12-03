@@ -154,6 +154,11 @@ and::
 
     $ setsebool -P httpd_can_network_connect_db 1
 
+If the user store is an LDAP-resolver, the ``httpd``-process also needs to access
+the ldap ports::
+
+    $ setsebool -P httpd_can_connect_ldap 1
+
 If something does not seem right, check for "``denied``" entries in
 ``/var/log/audit/audit.log``
 

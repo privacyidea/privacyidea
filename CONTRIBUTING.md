@@ -3,6 +3,7 @@
 There are different ways to contribute. Some of them should
 be really easy.
 
+First of all:  
 **Thanks a lot for contributing to privacyIDEA!**
 
 ## Tell about it
@@ -57,6 +58,19 @@ at some things from a new angle.
 Submit an issue and describe your idea in the best possible details.
 
 https://github.com/privacyidea/privacyidea/issues
+
+## Documentation
+
+The source code is pretty well documented. The main documentation resides in the
+`doc`-subfolder and can be build with:
+```
+pip install -r doc/requirements.txt
+cd doc/ && make html
+```
+This also pulls the API-documentation from the source code.
+The latest release documentation can be found here:
+
+http://privacyidea.readthedocs.io/en/latest/
 
 ## Translations
 
