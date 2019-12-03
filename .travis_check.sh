@@ -2,7 +2,7 @@
 
 set -ev
 
-# setup patterns for files to ignore
+# setup patterns for files/directories to ignore
 declare -a ignore_patterns
 ignore_patterns=(
   "^doc/"
@@ -43,8 +43,7 @@ for CHANGED_FILE in ${CHANGED_FILES}; do
   done
   if [[ ${match_found} == False ]]; then
     IGNORE_BUILD=False
-    echo "Do not ignore build! File: $CHANGED_FILE, IGNORE_BUILD: $IGNORE_BUILD, match_found:
-    $match_found"
+    echo "Found a test-relevant file: $CHANGED_FILE. Executing tests."
     break
   fi
 done
@@ -55,5 +54,5 @@ if [[ ${IGNORE_BUILD} == True ]]; then
   echo "No changes to build-essential files found, exiting."
   exit 123
 else
-  echo "Changes to build-essential files found, continuing with build."
+  echo "Changes to build-essential files found, continuing with tests."
 fi
