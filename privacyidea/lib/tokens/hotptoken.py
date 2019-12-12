@@ -61,7 +61,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.lib import _
 import traceback
 import logging
@@ -130,6 +130,16 @@ class HotpTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of HOTP tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active HOTP tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
                        'yubikey_access_code': {
                            'type': 'str',
                            'desc': _("The Yubikey access code used to "

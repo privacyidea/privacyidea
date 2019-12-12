@@ -36,7 +36,7 @@ from privacyidea.lib.utils import prepare_result, to_bytes
 from privacyidea.lib.error import ResourceNotFoundError, ValidateError
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
@@ -227,6 +227,16 @@ class PushTokenClass(TokenClass):
                            'desc': _('The smartphone needs to verify SSL during the enrollment. (default 1)'),
                            'group':  "PUSH",
                            'value': ["0", "1"]
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of Push tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active Push tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
                    },
                    SCOPE.AUTH: {

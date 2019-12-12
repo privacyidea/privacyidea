@@ -28,11 +28,12 @@ The code is tested in tests/test_lib_tokens_ssh
 
 import logging
 from privacyidea.lib import _
-log = logging.getLogger(__name__)
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
+log = logging.getLogger(__name__)
 
 
 optional = True
@@ -86,7 +87,21 @@ class SSHkeyTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of SSH keys assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active SSH keys assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
         if key:
             ret = res.get(key, {})

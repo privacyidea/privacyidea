@@ -50,6 +50,7 @@ from privacyidea.lib.decorators import check_token_locked
 import traceback
 import logging
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -97,7 +98,20 @@ class MotpTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {}
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of mOTP tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active mOTP tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               }
                }
 
         if key:

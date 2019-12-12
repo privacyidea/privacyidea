@@ -41,6 +41,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP
 
 log = logging.getLogger(__name__)
 optional = True
@@ -129,7 +130,20 @@ class FourEyesTokenClass(TokenClass):
                'user':  [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of 4eyes tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active 4eyes tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:

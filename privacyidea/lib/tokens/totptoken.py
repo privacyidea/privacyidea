@@ -45,7 +45,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP
 from privacyidea.lib import _
 
 optional = True
@@ -169,7 +169,19 @@ class TotpTokenClass(HotpTokenClass):
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of remote tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active remote tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
+
                    }
                },
                }

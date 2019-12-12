@@ -34,6 +34,7 @@ from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 import random
 import json
 
@@ -93,7 +94,20 @@ class QuestionnaireTokenClass(TokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of questionaire tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active questionaire tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:

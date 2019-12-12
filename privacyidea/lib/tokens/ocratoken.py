@@ -41,6 +41,7 @@ from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import get_alphanum_str
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-8:QH40"
 
@@ -93,7 +94,20 @@ class OcraTokenClass(TokenClass):
                #'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': [],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of OCRA tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active OCRA tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
