@@ -319,6 +319,35 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_user(req))
         # finally delete policy
         delete_policy("pol1")
+
+        # now we enable the hotp token again.
+        enable_token("NEW001")
+
+        # Set a policy to limit active HOTP tokens to 1
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="hotp_{0!s}={1!s}".format(ACTION.MAXACTIVETOKENUSER, 1))
+        # we try to enroll a new HOTP token, this would fail.
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # enrolling the same HOTP token would succeed
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW001"}
+        self.assertTrue(check_max_token_user(req))
+
+        # We could also enroll a new TOTP token
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "type": "totp"}
+        self.assertTrue(check_max_token_user(req))
+
+        # clean up
+        delete_policy("pol1")
         remove_token("NEW001")
 
     def test_04_check_max_token_user(self):
@@ -393,8 +422,45 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"realm": self.realm1}
         self.assertTrue(check_max_token_user(req))
 
-        # finally delete policy
+        # delete generic policy
         delete_policy("pol1")
+        delete_policy("pol2")
+
+        # Now we set a policy specifically for HOTP tokens:
+        set_policy(name="pol2",
+                   scope=SCOPE.ENROLL,
+                   action="hotp_{0!s}={1!s}".format(ACTION.MAXTOKENUSER, 2))
+        g.policy_object = PolicyClass()
+        # and fail to enroll a new token
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW003",
+                        "type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # and we fail to create a token with default type "hotp"
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW003"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # but we can reenroll an existing HOTP token
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW002"}
+        self.assertTrue(check_max_token_user(req))
+
+        # and we succeed in issueing a new totp token
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW004",
+                        "type": "totp"}
+        self.assertTrue(check_max_token_user(req))
+
+        # finally delete policy
+        delete_policy("pol2")
         remove_token("NEW001")
         remove_token("NEW002")
 

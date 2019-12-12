@@ -41,6 +41,10 @@ type: int
 
 Limit the maximum number of tokens per user in this realm.
 
+There are also token type specific policies to limit the
+number of tokens of a specific token type, that a user is
+allowed to have assigned.
+
 .. note:: If you do not set this action, a user may have
    unlimited tokens assigned.
 
@@ -54,6 +58,10 @@ max_active_token_per_user
 type: int
 
 Limit the maximum number of active tokens per user.
+
+There are also token type specific policies to limit the
+number of tokens of a specific token type, that a user is
+allowed to have assigned.
 
 .. note:: Inactive tokens will not be taken into account.
    If the token already exists, it can be recreated if the token

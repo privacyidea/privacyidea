@@ -637,12 +637,13 @@ def check_max_token_user(request=None, action=None):
     if user_object.login:
         serial = getParam(params, "serial")
         tokentype = getParam(params, "type")
-        if not tokentype and serial:
-            # If we have a serial but no tokentype, we can specify the tokentype
-            tokentype = get_token_type(serial)
-        else:
-            # In some cases we have no serial and no tokentype.
-            tokentype = "hotp"
+        if not tokentype:
+            if serial:
+                # If we have a serial but no tokentype, we can get the tokentype from
+                # the token, if it exists
+                tokentype = get_token_type(serial) or "hotp"
+            else:
+                tokentype = "hotp"
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
@@ -686,15 +687,11 @@ def check_max_token_user(request=None, action=None):
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True, tokentype=tokentype)
-            _token_allowed = False
-            if serial:
-                for tok in tokenobject_list:
-                    if tok.token.serial == serial:
-                        # If a serial is provided and this token already exists (and is active), the
-                        # token can be regenerated. If the token would be inactive, regenerating this
-                        # token would reactivate it and thus the user would have more tokens!
-                        _token_allowed = True
-            if not _token_allowed:
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                pass
+            else:
                 already_assigned_tokens = len(tokenobject_list)
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
@@ -707,15 +704,12 @@ def check_max_token_user(request=None, action=None):
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True)
-            _token_allowed = False
-            if serial:
-                for tok in tokenobject_list:
-                    if tok.token.serial == serial:
-                        # If a serial is provided and this token already exists (and is active), the
-                        # token can be regenerated. If the token would be inactive, regenerating this
-                        # token would reactivate it and thus the user would have more tokens!
-                        _token_allowed = True
-            if not _token_allowed:
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists (and is active), the
+                # token can be regenerated. If the token would be inactive, regenerating this
+                # token would reactivate it and thus the user would have more tokens!
+                pass
+            else:
                 already_assigned_tokens = len(tokenobject_list)
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
