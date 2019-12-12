@@ -11,7 +11,11 @@
 </div>
 <div class="navbar navbar-default navbar-fixed-top">
     <div class="container">
-        <a class="navbar-brand" ui-sref="token.list">
+        <a class="navbar-brand" ui-sref="token.list" ng-show="loggedInUser.role">
+            <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                 class="pilogo" alt="privacyIDEA">
+        </a>
+        <a class="navbar-brand" ng-hide="loggedInUser.role">
             <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                  class="pilogo" alt="privacyIDEA">
         </a>
