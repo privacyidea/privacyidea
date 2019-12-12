@@ -186,7 +186,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if stripped_realm is not None:
         # filter for the realm
         if "*" in realm:
-            sql_query = sql_query.filter(and_(func.lower(Realm.name).like(realm.replace("*","%").lower()),
+            sql_query = sql_query.filter(and_(func.lower(Realm.name).like(realm.replace("*", "%").lower()),
                                               TokenRealm.realm_id == Realm.id,
                                               TokenRealm.token_id ==
                                               Token.id)).distinct()
