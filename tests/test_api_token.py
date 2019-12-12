@@ -352,6 +352,24 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(len(tokenlist) == 2, res.data)
             self.assertTrue(count == 2, count)
 
+        # list tokens, that look a bit like realm1
+        search_realm = self.realm1[:-1] + "*"
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "tokenrealm": search_realm}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            count = result.get("value").get("count")
+            next = result.get("value").get("next")
+            prev = result.get("value").get("prev")
+            self.assertTrue(len(tokenlist) == 2, res.data)
+            self.assertTrue(count == 2, count)
+
     def test_04_assign_unassign_token(self):
         with self.app.test_request_context('/token/assign',
                                            method='POST',

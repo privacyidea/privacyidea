@@ -40,6 +40,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.get = function (live_search) {
         if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
             $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+            //$scope.params.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
             $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
             $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
             $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
