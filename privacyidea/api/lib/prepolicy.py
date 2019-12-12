@@ -63,8 +63,6 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import logging
-
-log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
@@ -87,6 +85,8 @@ import importlib
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+
+log = logging.getLogger(__name__)
 
 optional = True
 required = False
@@ -637,8 +637,12 @@ def check_max_token_user(request=None, action=None):
     if user_object.login:
         serial = getParam(params, "serial")
         tokentype = getParam(params, "type")
-        if not tokentype:
+        if not tokentype and serial:
+            # If we have a serial but no tokentype, we can specify the tokentype
             tokentype = get_token_type(serial)
+        else:
+            # In some cases we have no serial and no tokentype.
+            tokentype = "hotp"
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
