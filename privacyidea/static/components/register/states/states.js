@@ -20,8 +20,8 @@
  */
 
 angular.module('privacyideaApp.registerStates', ['ui.router', 'privacyideaApp.versioning']).config(
-    ['$stateProvider', 'versioningSuffixProvider',
-        function ($stateProvider, versioningSuffixProvider) {
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -31,7 +31,7 @@ angular.module('privacyideaApp.registerStates', ['ui.router', 'privacyideaApp.ve
             $stateProvider
                 .state('register', {
                     url: "/register",
-                    templateUrl: registerpath + "register.html" + versioningSuffixProvider.$get(),
+                    templateUrl: registerpath + "register.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "registerController"
                 });
         }]);

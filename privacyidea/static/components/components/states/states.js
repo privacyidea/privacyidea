@@ -21,8 +21,8 @@
  */
 
 angular.module('privacyideaApp.componentStates', ['ui.router', 'privacyideaApp.versioning']).config(
-    ['$stateProvider', 'versioningSuffixProvider',
-        function ($stateProvider, versioningSuffixProvider) {
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -32,17 +32,17 @@ angular.module('privacyideaApp.componentStates', ['ui.router', 'privacyideaApp.v
             $stateProvider
                 .state('component', {
                     url: "/component",
-                    templateUrl: auditpath + "component.html" + versioningSuffixProvider.$get(),
+                    templateUrl: auditpath + "component.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "componentController"
                 })
                 .state('component.clienttype', {
                     url: "/clienttype",
-                    templateUrl: auditpath + "component.clienttype.html" + versioningSuffixProvider.$get(),
+                    templateUrl: auditpath + "component.clienttype.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "componentController"
                 })
                 .state('component.subscriptions', {
                     url: "/subscriptions",
-                    templateUrl: auditpath + "component.subscriptions.html" + versioningSuffixProvider.$get(),
+                    templateUrl: auditpath + "component.subscriptions.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "componentController"
                 })
             ;

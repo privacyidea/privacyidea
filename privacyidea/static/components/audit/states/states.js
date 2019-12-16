@@ -24,8 +24,8 @@
  */
 
 angular.module('privacyideaApp.auditStates', ['ui.router', 'privacyideaApp.versioning']).config(
-    ['$stateProvider', 'versioningSuffixProvider',
-        function ($stateProvider, versioningSuffixProvider) {
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -35,12 +35,12 @@ angular.module('privacyideaApp.auditStates', ['ui.router', 'privacyideaApp.versi
             $stateProvider
                 .state('audit', {
                     url: "/audit",
-                    templateUrl: auditpath + "audit.html" + versioningSuffixProvider.$get(),
+                    templateUrl: auditpath + "audit.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "auditController"
                 })
                 .state('audit.log', {
                     url: "/log?serial&user",
-                    templateUrl: auditpath + "audit.log.html" + versioningSuffixProvider.$get(),
+                    templateUrl: auditpath + "audit.log.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "auditController"
                 });
         }]);

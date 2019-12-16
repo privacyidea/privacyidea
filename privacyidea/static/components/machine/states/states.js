@@ -21,8 +21,8 @@
  */
 
 angular.module('privacyideaApp.machineStates', ['ui.router', 'privacyideaApp.versioning']).config(
-    ['$stateProvider', 'versioningSuffixProvider',
-        function ($stateProvider, versioningSuffixProvider) {
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -32,15 +32,15 @@ angular.module('privacyideaApp.machineStates', ['ui.router', 'privacyideaApp.ver
             $stateProvider
                 .state('machine', {
                     url: "/machine",
-                    templateUrl: machinepath + "machine.html" + versioningSuffixProvider.$get()
+                    templateUrl: machinepath + "machine.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('machine.list', {
                     url: "/list?resolver",
-                    templateUrl: machinepath + "machine.list.html" + versioningSuffixProvider.$get()
+                    templateUrl: machinepath + "machine.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('machine.details', {
                     url: "/details/{machineid:.*}/{machineresolver:.*}",
-                    templateUrl: machinepath + "machine.details.html" + versioningSuffixProvider.$get(),
+                    templateUrl: machinepath + "machine.details.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: ['$scope', '$stateParams',
                         function ($scope, $stateParams) {
                             $scope.machineid = $stateParams.machineid;

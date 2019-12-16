@@ -20,8 +20,8 @@
  */
 
 angular.module('privacyideaApp.recoveryStates', ['ui.router', 'privacyideaApp.versioning']).config(
-    ['$stateProvider', 'versioningSuffixProvider',
-        function ($stateProvider, versioningSuffixProvider) {
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -31,12 +31,12 @@ angular.module('privacyideaApp.recoveryStates', ['ui.router', 'privacyideaApp.ve
             $stateProvider
                 .state('recovery', {
                     url: "/recovery",
-                    templateUrl: recoverypath + "recovery.html" + versioningSuffixProvider.$get(),
+                    templateUrl: recoverypath + "recovery.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "recoveryController"
                 })
                 .state('reset', {
                     url: "/reset/{user:.*}/{recoverycode:.*}",
-                    templateUrl: recoverypath + "recovery.reset.html" + versioningSuffixProvider.$get(),
+                    templateUrl: recoverypath + "recovery.reset.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "recoveryController"
                 });
         }]);

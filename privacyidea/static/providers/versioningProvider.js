@@ -34,11 +34,12 @@ versioning.constant('PRIVACYIDEA_VERSION_NUMBER', document.getElementById('PRIVA
 /*
  * A suffix, that can be appended to an url to invalidate the caches when necessary.
  *
- * This factory will provide a suffix for an url that sets a parameter `v` to either the privacyideaVersionNumber, if
- * known, or a random string otherwise. This has the effect of preserving caches, but not across updates of the
- * privacyIDEA server software and not if the user is running a development version of privacyIDEA.
+ * This factory will provide a provider to provide a suffix for an url that sets a parameter `v` to either the
+ * privacyideaVersionNumber, if known, or a random string otherwise. This has the effect of preserving caches, but not
+ * across updates of the privacyIDEA server software and not if the user is running a development version of
+ * privacyIDEA.
  */
-versioning.provider('versioningSuffix', [
+versioning.provider('versioningSuffixProvider', [
     'RANDOM_VERSION_STRING_LENGTH',
     'PRIVACYIDEA_VERSION_NUMBER',
     function(
@@ -46,8 +47,12 @@ versioning.provider('versioningSuffix', [
         PRIVACYIDEA_VERSION_NUMBER
     ) {
         this.$get = function() {
-            return '?v=' + (PRIVACYIDEA_VERSION_NUMBER
-                || Math.random().toString(36).substring(2, 2 + RANDOM_VERSION_STRING_LENGTH));
+            return new (function() {
+                this.$get = function() {
+                    return '?v=' + (PRIVACYIDEA_VERSION_NUMBER
+                        || Math.random().toString(36).substring(2, 2 + RANDOM_VERSION_STRING_LENGTH));
+                };
+            });
         };
     }
 ]);
