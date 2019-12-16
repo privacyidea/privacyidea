@@ -4,6 +4,7 @@ lib.caconnectors.localca.py
 """
 from .base import MyTestCase
 import os
+import glob
 import six
 import shutil
 from io import StringIO
@@ -280,6 +281,30 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue(ddiff.days > 740, ddiff.days)
         self.assertTrue(ddiff.days < 760, ddiff.days)
 
+    def test_99_cleanup(self):
+        filelist = glob.glob("{0!s}/100*.pem".format(WORKINGDIR))
+        for f in filelist:
+            try:
+                os.remove(f)
+            except:
+                print("Error deleting file {0!s}".format(f))
+
+        FILES = ["cornelius_user\@localhost.localdomain_realm1.pem",
+                 "cornelius_user\@localhost.localdomain_realm1.req",
+                 "DE_Hessen_privacyidea_requester.localdomain.req",
+                 "DE_Hessen_privacyidea_usercert.pem",
+                 "DE_Hessen_privacyidea_usercert.req",
+                 "index.txt.attr.old",
+                 "index.txt.old",
+                 "serial.old",
+                 "Steve_Test.der",
+                 "Steve_Test.txt"]
+        for f in FILES:
+            try:
+                os.remove("{0!s}/{1!s}".format(WORKINGDIR,f))
+            except:
+                print("Error deleing file {0!s}/{1!s}.".format(WORKINGDIR, f))
+
 
 class CreateLocalCATestCase(MyTestCase):
     """
@@ -299,3 +324,13 @@ class CreateLocalCATestCase(MyTestCase):
             self.assertEqual(cacon.workingdir, workdir)
             # check if the generated files exist
             self.assertTrue(os.path.exists(os.path.join(workdir, 'cacert.pem')))
+
+    def test_02_cleanup(self):
+        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
+        for f in filelist:
+            try:
+                os.remove(f)
+            except:
+                print("Error deleting file {0!s}.".format(f))
+        os.rmdir("{0!s}2".format(WORKINGDIR))
+
