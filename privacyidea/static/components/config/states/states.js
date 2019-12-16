@@ -23,9 +23,9 @@
  *
  */
 
-angular.module('privacyideaApp.configStates', ['ui.router']).config(
-    ['$stateProvider',
-        function ($stateProvider) {
+angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.versioning']).config(
+    ['$stateProvider', 'versioningSuffixProvider',
+        function ($stateProvider, versioningSuffixProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -35,220 +35,220 @@ angular.module('privacyideaApp.configStates', ['ui.router']).config(
             $stateProvider
                 .state('config', {
                     url: "/config",
-                    templateUrl: configpath + "config.html"
+                    templateUrl: configpath + "config.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers', {
                     url: "/resolvers",
-                    templateUrl: configpath + "config.resolvers.html"
+                    templateUrl: configpath + "config.resolvers.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.resolvers.list.html"
+                    templateUrl: configpath + "config.resolvers.list.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.addpasswdresolver', {
                     // Create a new resolver
                     url: "/passwd",
-                    templateUrl: configpath + "config.resolvers.passwd.html"
+                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.editpasswdresolver', {
                     // edit an existing resolver
                     url: "/passwd/{resolvername:.*}",
-                    templateUrl: configpath + "config.resolvers.passwd.html"
+                    templateUrl: configpath + "config.resolvers.passwd.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.addldapresolver', {
                     url: "/ldap",
-                    templateUrl: configpath + "config.resolvers.ldap.html"
+                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.editldapresolver', {
                     url: "/ldap/{resolvername:.*}",
-                    templateUrl: configpath + "config.resolvers.ldap.html"
+                    templateUrl: configpath + "config.resolvers.ldap.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.addscimresolver', {
                     url: "/scim",
-                    templateUrl: configpath + "config.resolvers.scim.html"
+                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.editscimresolver', {
                     url: "/scim/{resolvername:.*}",
-                    templateUrl: configpath + "config.resolvers.scim.html"
+                    templateUrl: configpath + "config.resolvers.scim.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.addsqlresolver', {
                     url: "/ldap",
-                    templateUrl: configpath + "config.resolvers.sql.html"
+                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.resolvers.editsqlresolver', {
                     url: "/ldap/{resolvername:.*}",
-                    templateUrl: configpath + "config.resolvers.sql.html"
+                    templateUrl: configpath + "config.resolvers.sql.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.caconnectors', {
                     url: "/caconnectors",
-                    templateUrl: configpath + "config.caconnectors.html"
+                    templateUrl: configpath + "config.caconnectors.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.caconnectors.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.caconnectors.list.html"
+                    templateUrl: configpath + "config.caconnectors.list.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.caconnectors.addlocal', {
                     url: "/local",
-                    templateUrl: configpath + "config.caconnectors.local.html"
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.caconnectors.editlocal', {
                     url: "/local/{connectorname:.*}",
-                    templateUrl: configpath + "config.caconnectors.local.html"
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
-                    templateUrl: configpath + "config.machineresolvers.html"
+                    templateUrl: configpath + "config.machineresolvers.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.mresolvers.list.html"
+                    templateUrl: configpath + "config.mresolvers.list.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers.addhosts', {
                     // Create a new resolver
                     url: "/hosts",
-                    templateUrl: configpath + "config.mresolvers.hosts.html"
+                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers.edithosts', {
                     // edit an existing resolver
                     url: "/hosts/{resolvername:.*}",
-                    templateUrl: configpath + "config.mresolvers.hosts.html"
+                    templateUrl: configpath + "config.mresolvers.hosts.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers.addldap', {
                     // Create a new resolver
                     url: "/ldap",
-                    templateUrl: configpath + "config.mresolvers.ldap.html"
+                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.mresolvers.editldap', {
                     // edit an existing resolver
                     url: "/ldap/{resolvername:.*}",
-                    templateUrl: configpath + "config.mresolvers.ldap.html"
+                    templateUrl: configpath + "config.mresolvers.ldap.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.system', {
                     url: "/system",
-                    templateUrl: configpath + "config.system.html"
+                    templateUrl: configpath + "config.system.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.sysdoc', {
                     url: "/system/documentation",
-                    templateUrl: configpath + "config.system.html"
+                    templateUrl: configpath + "config.system.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.policies', {
                     url: "/policies",
-                    templateUrl: configpath + "config.policies.html"
+                    templateUrl: configpath + "config.policies.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.policies.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.policies.list.html"
+                    templateUrl: configpath + "config.policies.list.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.policies.details', {
                     url: "/details/{policyname:.*}",
-                    templateUrl: configpath + "config.policies.details.html",
+                    templateUrl: configpath + "config.policies.details.html" + versioningSuffixProvider.$get(),
                     controller: "policyDetailsController"
                 })
                 .state('config.tokens', {
                     url: "/tokens/{tokentype:.*}",
-                    templateUrl: configpath + "config.tokens.html",
+                    templateUrl: configpath + "config.tokens.html" + versioningSuffixProvider.$get(),
                     controller: "tokenConfigController"
                 })
 //                .state('config.machines', {
 //                    url: "/machines",
-//                    templateUrl: path + "config.machines.html"
+//                    templateUrl: path + "config.machines.html" + versioningSuffixProvider.$get()
 //                })
                 .state('config.realms', {
                     url: "/realms",
-                    templateUrl: configpath + "config.realms.html"
+                    templateUrl: configpath + "config.realms.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.realms.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.realms.list.html"
+                    templateUrl: configpath + "config.realms.list.html" + versioningSuffixProvider.$get()
                 })
                 .state('config.smtp', {
                     url: "/smtp",
-                    templateUrl: configpath + "config.smtp.html",
+                    templateUrl: configpath + "config.smtp.html" + versioningSuffixProvider.$get(),
                     controller: "smtpServerController"
                 })
                 .state('config.smtp.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.smtp.list.html",
+                    templateUrl: configpath + "config.smtp.list.html" + versioningSuffixProvider.$get(),
                     controller: "smtpServerController"
                 })
                 .state('config.smtp.edit', {
                     url: "/edit/{identifier:.*}",
-                    templateUrl: configpath + "config.smtp.edit.html",
+                    templateUrl: configpath + "config.smtp.edit.html" + versioningSuffixProvider.$get(),
                     controller: "smtpServerController"
                 })
                 .state('config.smsgateway', {
                     url: "/smsgateway",
-                    templateUrl: configpath + "config.smsgateway.html",
+                    templateUrl: configpath + "config.smsgateway.html" + versioningSuffixProvider.$get(),
                     controller: "smsgatewayController"
                 })
                 .state('config.smsgateway.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.smsgateway.list.html",
+                    templateUrl: configpath + "config.smsgateway.list.html" + versioningSuffixProvider.$get(),
                     controller: "smsgatewayController"
                 })
                 .state('config.smsgateway.edit', {
                     url: "/edit/{gateway_id:.*}",
-                    templateUrl: configpath + "config.smsgateway.edit.html",
+                    templateUrl: configpath + "config.smsgateway.edit.html" + versioningSuffixProvider.$get(),
                     controller: "smsgatewayController"
                 })
                 .state('config.radius', {
                     url: "/radius",
-                    templateUrl: configpath + "config.radius.html",
+                    templateUrl: configpath + "config.radius.html" + versioningSuffixProvider.$get(),
                     controller: "radiusServerController"
                 })
                 .state('config.radius.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.radius.list.html",
+                    templateUrl: configpath + "config.radius.list.html" + versioningSuffixProvider.$get(),
                     controller: "radiusServerController"
                 })
                 .state('config.radius.edit', {
                     url: "/edit/{identifier:.*}",
-                    templateUrl: configpath + "config.radius.edit.html",
+                    templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProvider.$get(),
                     controller: "radiusServerController"
                 })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",
-                    templateUrl: configpath + "config.privacyideaserver.html",
+                    templateUrl: configpath + "config.privacyideaserver.html" + versioningSuffixProvider.$get(),
                     controller: "privacyideaServerController"
                 })
                 .state('config.privacyideaserver.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.privacyideaserver.list.html",
+                    templateUrl: configpath + "config.privacyideaserver.list.html" + versioningSuffixProvider.$get(),
                     controller: "privacyideaServerController"
                 })
                 .state('config.privacyideaserver.edit', {
                     url: "/edit/{identifier:.*}",
-                    templateUrl: configpath + "config.privacyideaserver.edit.html",
+                    templateUrl: configpath + "config.privacyideaserver.edit.html" + versioningSuffixProvider.$get(),
                     controller: "privacyideaServerController"
                 })
                 .state('config.events', {
                     url: "/events",
-                    templateUrl: configpath + "config.events.html",
+                    templateUrl: configpath + "config.events.html" + versioningSuffixProvider.$get(),
                     controller: "eventController"
                 })
                 .state('config.events.details', {
                     url: "/details/{eventid:.*}",
-                    templateUrl: configpath + "config.events.details.html",
+                    templateUrl: configpath + "config.events.details.html" + versioningSuffixProvider.$get(),
                     controller: "eventDetailController"
                 })
                 .state('config.events.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.events.list.html",
+                    templateUrl: configpath + "config.events.list.html" + versioningSuffixProvider.$get(),
                     controller: "eventController"
                 })
                 .state('config.periodictasks', {
                     url: "/periodictasks",
-                    templateUrl: configpath + "config.periodictasks.html",
+                    templateUrl: configpath + "config.periodictasks.html" + versioningSuffixProvider.$get(),
                     controller: "periodicTaskController"
                 })
                 .state('config.periodictasks.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.periodictasks.list.html",
+                    templateUrl: configpath + "config.periodictasks.list.html" + versioningSuffixProvider.$get(),
                     controller: "periodicTaskController"
                 })
                 .state('config.periodictasks.details', {
                     url: "/details/{ptaskid:.*}",
-                    templateUrl: configpath + "config.periodictasks.details.html",
+                    templateUrl: configpath + "config.periodictasks.details.html" + versioningSuffixProvider.$get(),
                     controller: "periodicTaskDetailController"
                 })
             ;

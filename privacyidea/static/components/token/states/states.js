@@ -23,9 +23,9 @@
  *
  */
 
-angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
-    ['$stateProvider',
-        function ($stateProvider) {
+angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versioning']).config(
+    ['$stateProvider', 'versioningSuffixProvider',
+        function ($stateProvider, versioningSuffixProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -35,51 +35,51 @@ angular.module('privacyideaApp.tokenStates', ['ui.router']).config(
             $stateProvider
                 .state('token', {
                     url: "/token",
-                    templateUrl: tokenpath + "token.html"
+                    templateUrl: tokenpath + "token.html" + versioningSuffixProvider.$get()
                 })
                 .state('token.list', {
                     url: "/list",
-                    templateUrl: tokenpath + "token.list.html",
+                    templateUrl: tokenpath + "token.list.html" + versioningSuffixProvider.$get(),
                     controller: "tokenController"
                 })
                 .state('token.assign', {
                     url: "/assign",
-                    templateUrl: tokenpath + "token.assign.html",
+                    templateUrl: tokenpath + "token.assign.html" + versioningSuffixProvider.$get(),
                     controller: "tokenAssignController"
                 })
                 .state('token.details', {
                     url: "/details/{tokenSerial:.*}",
-                    templateUrl: tokenpath + "token.details.html",
+                    templateUrl: tokenpath + "token.details.html" + versioningSuffixProvider.$get(),
                     controller: "tokenDetailController"
                 })
                 .state('token.lost', {
                     url: "/lost/{tokenSerial:.*}",
-                    templateUrl: tokenpath + "token.lost.html",
+                    templateUrl: tokenpath + "token.lost.html" + versioningSuffixProvider.$get(),
                     controller: "tokenLostController"
                 })
                 .state('token.getserial', {
                     url: "/getserial",
-                    templateUrl: tokenpath + "token.getserial.html",
+                    templateUrl: tokenpath + "token.getserial.html" + versioningSuffixProvider.$get(),
                     controller: "tokenGetSerialController"
                 })
                 .state('token.enroll', {
                     url: "/enroll/{realmname:.*}/{username:.*}",
-                    templateUrl: tokenpath + "token.enroll.html",
+                    templateUrl: tokenpath + "token.enroll.html" + versioningSuffixProvider.$get(),
                     controller: "tokenEnrollController"
                 })
                 .state('token.wizard', {
                     url: "/wizard",
-                    templateUrl: tokenpath + "token.enroll.html",
+                    templateUrl: tokenpath + "token.enroll.html" + versioningSuffixProvider.$get(),
                     controller: "tokenEnrollController"
                 })
                 .state('token.import', {
                     url: "/import",
-                    templateUrl: tokenpath + "token.import.html",
+                    templateUrl: tokenpath + "token.import.html" + versioningSuffixProvider.$get(),
                     controller: "tokenImportController"
                 })
                 .state('token.challenges', {
                     url: "/challenges",
-                    templateUrl: tokenpath + "token.challenges.html",
+                    templateUrl: tokenpath + "token.challenges.html" + versioningSuffixProvider.$get(),
                     controller: "tokenChallengesController"
                 });
         }]);

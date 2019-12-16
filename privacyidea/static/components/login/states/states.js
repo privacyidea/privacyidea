@@ -19,9 +19,9 @@
  *
  */
 
-angular.module('privacyideaApp.loginStates', ['ui.router']).config(
-    ['$stateProvider',
-        function ($stateProvider) {
+angular.module('privacyideaApp.loginStates', ['ui.router', 'privacyideaApp.versioning']).config(
+    ['$stateProvider', 'versioningSuffixProvider',
+        function ($stateProvider, versioningSuffixProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -31,22 +31,22 @@ angular.module('privacyideaApp.loginStates', ['ui.router']).config(
             $stateProvider
                 .state('offline', {
                     url: "/offline",
-                    templateUrl: loginpath + "offline.html"
+                    templateUrl: loginpath + "offline.html" + versioningSuffixProvider.$get()
                 }).state('login', {
                     url: "/login",
-                    templateUrl: loginpath + "login.html"
+                    templateUrl: loginpath + "login.html" + versioningSuffixProvider.$get()
                 }).state('initial_login', {
                     // This is the state, when no login path is specified
                     url: "",
-                    templateUrl: loginpath + "login.html"
+                    templateUrl: loginpath + "login.html" + versioningSuffixProvider.$get()
                 }).state('response', {
                     // This is the state, when the login is performed via
                     // challenge response.
                     url: "/response",
-                    templateUrl: loginpath + "enter-response.html"
+                    templateUrl: loginpath + "enter-response.html" + versioningSuffixProvider.$get()
                 }).state('pinchange', {
                     url: "/pinchange",
-                    templateUrl: loginpath + "pinchange.html",
+                    templateUrl: loginpath + "pinchange.html" + versioningSuffixProvider.$get(),
                     controller: "pinChangeController"
             });
         }]);
