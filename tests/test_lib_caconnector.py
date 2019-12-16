@@ -284,26 +284,21 @@ class LocalCATestCase(MyTestCase):
     def test_99_cleanup(self):
         filelist = glob.glob("{0!s}/100*.pem".format(WORKINGDIR))
         for f in filelist:
-            try:
-                os.remove(f)
-            except:
-                print("Error deleting file {0!s}".format(f))
+            os.remove(f)
 
-        FILES = ["cornelius_user\@localhost.localdomain_realm1.pem",
-                 "cornelius_user\@localhost.localdomain_realm1.req",
+        FILES = ["cornelius_user@localhost.localdomain_realm1.pem",
+                 "cornelius_user@localhost.localdomain_realm1.req",
                  "DE_Hessen_privacyidea_requester.localdomain.req",
                  "DE_Hessen_privacyidea_usercert.pem",
                  "DE_Hessen_privacyidea_usercert.req",
                  "index.txt.attr.old",
                  "index.txt.old",
                  "serial.old",
+                 "crl.pem",
                  "Steve_Test.der",
                  "Steve_Test.txt"]
         for f in FILES:
-            try:
-                os.remove("{0!s}/{1!s}".format(WORKINGDIR,f))
-            except:
-                print("Error deleing file {0!s}/{1!s}.".format(WORKINGDIR, f))
+            os.remove("{0!s}/{1!s}".format(WORKINGDIR, f))
 
 
 class CreateLocalCATestCase(MyTestCase):
@@ -333,4 +328,3 @@ class CreateLocalCATestCase(MyTestCase):
             except:
                 print("Error deleting file {0!s}.".format(f))
         os.rmdir("{0!s}2".format(WORKINGDIR))
-
