@@ -470,11 +470,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
-        req.all_data = {"realm": "somerealm"}
-        req.User = None
+        req.all_data = {}
+        req.User = User()
+        set_realm(req)
+        # Check, that the realm was not set, since there was no user in the request
+        self.assertEqual(req.all_data.get("realm"), None)
+
+        req.all_data = {}
+        req.User = User(login="cornelius", realm="somerealm")
         set_realm(req)
         # Check, if the realm was modified to the realm specified in the policy
-        self.assertTrue(req.all_data.get("realm") == self.realm1)
+        self.assertEqual(req.all_data.get("realm"), self.realm1)
 
         # A request, that does not match the policy:
         req.all_data = {"realm": "otherrealm"}
@@ -491,7 +497,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # This request will trigger two policies with different realms to set
         req.all_data = {"realm": "somerealm"}
-        req.User = None
+        req.User = User(login="cornelius", realm="somerealm")
         self.assertRaises(PolicyError, set_realm, req)
 
         # finally delete policy

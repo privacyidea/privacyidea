@@ -736,24 +736,20 @@ def set_realm(request=None, action=None):
     # At the moment a realm parameter with no user parameter returns a user
     # object like "@realm". If this is changed one day, we need to also fetch
     #  the realm
-    if request.User:
+    if request.User and request.User.login:
         user_object = request.User
         username = user_object.login
         policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
                                   user_object=user_object)
-    else:  # pragma: no cover
-        username = None
-        policy_match = Match.realm(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
-                                   realm=request.all_data.get("realm"))
-    new_realm = policy_match.action_values(unique=False)
-    if len(new_realm) > 1:
-        raise PolicyError("I do not know, to which realm I should set the "
-                          "new realm. Conflicting policies exist.")
-    elif len(new_realm) == 1:
-        # There is one specific realm, which we set in the request
-        request.all_data["realm"] = list(new_realm)[0]
-        # We also need to update the user
-        request.User = User(username, request.all_data["realm"])
+        new_realm = policy_match.action_values(unique=False)
+        if len(new_realm) > 1:
+            raise PolicyError("I do not know, to which realm I should set the "
+                              "new realm. Conflicting policies exist.")
+        elif len(new_realm) == 1:
+            # There is one specific realm, which we set in the request
+            request.all_data["realm"] = list(new_realm)[0]
+            # We also need to update the user
+            request.User = User(username, request.all_data["realm"])
 
     return True
 
