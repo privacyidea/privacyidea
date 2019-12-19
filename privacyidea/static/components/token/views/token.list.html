@@ -62,6 +62,12 @@
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin'" translate>Token realms
+                <pi-filter ng-model="tokenrealmFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
             <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
                 <button pi-sort-by="resolver"
@@ -129,6 +135,11 @@
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                    {{ t_realm }}</a>&nbsp;
             </td>
 
             <td ng-show="loggedInUser.role == 'admin' &&

@@ -182,13 +182,20 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         else:
             log.warning("assigned value not in [True, False] {0!r}".format(assigned))
 
-    if realm is not None:
+    stripped_realm = None if realm is None else realm.strip("*")
+    if stripped_realm is not None:
         # filter for the realm
-        sql_query = sql_query.filter(and_(func.lower(Realm.name) ==
-                                          realm.lower(),
-                                          TokenRealm.realm_id == Realm.id,
-                                          TokenRealm.token_id ==
-                                          Token.id)).distinct()
+        if "*" in realm:
+            sql_query = sql_query.filter(and_(func.lower(Realm.name).like(realm.replace("*", "%").lower()),
+                                              TokenRealm.realm_id == Realm.id,
+                                              TokenRealm.token_id ==
+                                              Token.id)).distinct()
+        else:
+            # exact matching
+            sql_query = sql_query.filter(and_(func.lower(Realm.name) == realm.lower(),
+                                              TokenRealm.realm_id == Realm.id,
+                                              TokenRealm.token_id ==
+                                              Token.id)).distinct()
 
     if allowed_realms is not None:
         sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
