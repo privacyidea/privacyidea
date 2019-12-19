@@ -52,6 +52,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -114,7 +115,21 @@ class RemoteTokenClass(TokenClass):
                'user': [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of remote tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active remote tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:

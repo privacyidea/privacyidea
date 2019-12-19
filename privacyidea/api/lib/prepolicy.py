@@ -63,15 +63,13 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 import logging
-
-log = logging.getLogger(__name__)
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token)
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class)
 from privacyidea.lib.crypto import generate_password
@@ -87,6 +85,8 @@ import importlib
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+
+log = logging.getLogger(__name__)
 
 optional = True
 required = False
@@ -629,11 +629,40 @@ def check_max_token_user(request=None, action=None):
     :return: True otherwise raises an Exception
     """
     ERROR = "The number of tokens for this user is limited!"
+    ERROR_TYPE = "The number of tokens of type {0!s} for this user is limited!"
     ERROR_ACTIVE = "The number of active tokens for this user is limited!"
+    ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
-    serial = getParam(params, "serial")
     if user_object.login:
+        serial = getParam(params, "serial")
+        tokentype = getParam(params, "type")
+        if not tokentype:
+            if serial:
+                # If we have a serial but no tokentype, we can get the tokentype from
+                # the token, if it exists
+                tokentype = get_token_type(serial) or "hotp"
+            else:
+                tokentype = "hotp"
+
+        # check maximum number of type specific tokens of user
+        limit_list = Match.user(g, scope=SCOPE.ENROLL,
+                                action="{0!s}_{1!s}".format(tokentype.lower(), ACTION.MAXTOKENUSER),
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
+        if limit_list:
+            # we need to check how many tokens of this specific type the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, tokentype=tokentype)
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_TYPE.format(tokentype))
+
         # check maximum tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
@@ -652,20 +681,35 @@ def check_max_token_user(request=None, action=None):
                     raise PolicyError(ERROR)
 
         # check maximum active tokens of user
+        limit_list = Match.user(g, scope=SCOPE.ENROLL,
+                                action="{0!s}_{1!s}".format(tokentype, ACTION.MAXACTIVETOKENUSER),
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
+        if limit_list:
+            # we need to check how many active tokens the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, active=True, tokentype=tokentype)
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_ACTIVE_TYPE.format(tokentype))
+
+        # check maximum active tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True)
-            _token_allowed = False
-            if serial:
-                for tok in tokenobject_list:
-                    if tok.token.serial == serial:
-                        # If a serial is provided and this token already exists (and is active), the
-                        # token can be regenerated. If the token would be inactive, regenerating this
-                        # token would reactivate it and thus the user would have more tokens!
-                        _token_allowed = True
-            if not _token_allowed:
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists (and is active), the
+                # token can be regenerated. If the token would be inactive, regenerating this
+                # token would reactivate it and thus the user would have more tokens!
+                pass
+            else:
                 already_assigned_tokens = len(tokenobject_list)
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:

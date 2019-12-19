@@ -99,6 +99,7 @@ from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 log = logging.getLogger(__name__)
 optional = True
@@ -160,7 +161,21 @@ class TiqrTokenClass(OcraTokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of TiQR tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active TiQR tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:

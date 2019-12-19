@@ -271,6 +271,17 @@ class U2fTokenClass(TokenClass):
                            'type': 'bool',
                            'desc': _("Do not verify the U2F attestation certificate."),
                            'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of U2F tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active U2F tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
                    }
                }

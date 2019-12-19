@@ -27,11 +27,9 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.papertoken import PaperTokenClass
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.lib import _
-from privacyidea.lib.policydecorators import libpolicy
 from privacyidea.lib.crypto import geturandom, hash
-import binascii
 
 log = logging.getLogger(__name__)
 DEFAULT_COUNT = 100
@@ -108,6 +106,17 @@ class TanTokenClass(PaperTokenClass):
                            "type": "int",
                            "desc": _("The number of OTP values, which are "
                                      "printed on the paper.")
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of TAN tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active TAN tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
                    }
                }

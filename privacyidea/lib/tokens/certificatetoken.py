@@ -42,6 +42,7 @@ from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -156,9 +157,21 @@ class CertificateTokenClass(TokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of certificates assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active certificates assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
                }
-
+               }
         if key:
             ret = res.get(key, {})
         else:

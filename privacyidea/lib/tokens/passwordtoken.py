@@ -26,6 +26,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.utils import to_bytes
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+
 
 optional = True
 required = False
@@ -106,7 +108,20 @@ class PasswordTokenClass(TokenClass):
                'user':  [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': [],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of password tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active password tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
         # I don't think we need to define the lost token policies here...
 

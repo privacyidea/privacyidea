@@ -56,7 +56,7 @@ from privacyidea.api.lib.utils import required, optional
 from privacyidea.lib.utils import is_true
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, get_action_values_from_options
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
@@ -235,6 +235,19 @@ class SmsTokenClass(HotpTokenClass):
                                " ".join(sms_gateways))
                        }
                    },
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of SMS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active SMS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
                },
         }
 

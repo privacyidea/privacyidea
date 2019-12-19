@@ -68,6 +68,7 @@ from hashlib import sha1
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -162,7 +163,21 @@ class YubikeyTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {}
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of Yubikey tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active Yubikey tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               }
         }
 
         if key:

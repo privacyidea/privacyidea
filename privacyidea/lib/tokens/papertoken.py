@@ -29,9 +29,8 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.lib import _
-from privacyidea.lib.policydecorators import libpolicy
 
 log = logging.getLogger(__name__)
 DEFAULT_COUNT = 100
@@ -107,7 +106,18 @@ class PaperTokenClass(HotpTokenClass):
                            "type": "int",
                            "desc": _("The number of OTP values, which are "
                                      "printed on the paper.")
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of paper tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active paper tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
+
                    }
                }
                }

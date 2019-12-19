@@ -66,6 +66,7 @@ from pyrad.client import Client, Timeout
 from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -109,7 +110,21 @@ class RadiusTokenClass(RemoteTokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of RADIUS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active RADIUS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
