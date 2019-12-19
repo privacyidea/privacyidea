@@ -249,6 +249,39 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
+    def test_04_testing_token_with_setrealm(self):
+        """
+        When testing a token in the UI, the following request is triggered.
+        https://privacyidea/validate/check
+        serial=PISM1234
+        pass=1234
+
+        If we have a setrealm policy, this request is triggered:
+        https://privacyidea/validate/check
+        serial=PISM1234
+        pass=1234
+        realm=newrealm
+        """
+        init_token({"serial": "SPASS_04", "type": "spass", "pin": "1234"})
+
+        set_policy(name="pol_setrealm_01",
+                   scope=SCOPE.AUTHZ,
+                   action="{0!s}={1!s}".format(ACTION.SETREALM, self.realm1))
+
+        # Successfully test the token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "SPASS_04",
+                                                 "pass": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        delete_policy("pol_setrealm_01")
+        remove_token("SPASS_04")
+
 
 class DisplayTANTestCase(MyApiTestCase):
 
