@@ -1,0 +1,5 @@
+scanner:
+  linter: pycodestyle
+
+pycodestyle:
+  max-line-length: 100
