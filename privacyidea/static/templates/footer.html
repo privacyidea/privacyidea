@@ -1,19 +1,19 @@
 
 
 
-<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.about.html'">
+<ng-include src="'{{ instance }}/{{ "static/components/dialogs/views/dialog.about.html" | versioned }}'">
 </ng-include>
 
-<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.lock.html'">
+<ng-include src="'{{ instance }}/{{ "static/components/dialogs/views/dialog.lock.html" | versioned }}'">
 </ng-include>
 
-<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.autocreate_realm.html'">
+<ng-include src="'{{ instance }}/{{ "static/components/dialogs/views/dialog.autocreate_realm.html" | versioned }}'">
 </ng-include>
 
-<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.welcome.html'">
+<ng-include src="'{{ instance }}/{{ "static/components/dialogs/views/dialog.welcome.html" | versioned }}'">
 </ng-include>
 
-<ng-include src="'{{ instance }}/static/components/dialogs/views/dialog.no.token.html'">
+<ng-include src="'{{ instance }}/{{ "static/components/dialogs/views/dialog.no.token.html" | versioned }}'">
 </ng-include>
 
 <!--load all javascripts after the HTML part-->
@@ -31,6 +31,7 @@
 <script src="{{ instance }}/{{ "static/contrib/js/ngmodules/angular-gettext.js" | versioned }}"></script>
 <script src="{{ instance }}/{{  "static/components/translation/translations.js" | versioned }}"></script>
 <script src="{{ instance }}/{{ "static/app.js" | versioned }}"></script>
+<script src="{{ instance }}/{{ "static/providers/versioningProvider.js" | versioned }}"></script>
 <script src="{{ instance }}/{{ "static/components/directives/controllers/directives.js" | versioned }}"></script>
 <script src="{{ instance }}/{{ "static/components/login/factories/auth.js" | versioned }}"></script>
 <script src="{{ instance }}/{{ "static/components/login/factories/u2f.js" | versioned }}"></script>
