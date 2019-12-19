@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-11-29 16:16+0100\n"
+"POT-Creation-Date: 2019-12-19 15:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1212,55 +1212,55 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:190
+#: lib/smsprovider/FirebaseProvider.py:214
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:194
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:198
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:202
+#: lib/smsprovider/FirebaseProvider.py:226
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:207
+#: lib/smsprovider/FirebaseProvider.py:231
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:212
+#: lib/smsprovider/FirebaseProvider.py:236
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:217
+#: lib/smsprovider/FirebaseProvider.py:241
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:222
+#: lib/smsprovider/FirebaseProvider.py:246
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:227
+#: lib/smsprovider/FirebaseProvider.py:251
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."

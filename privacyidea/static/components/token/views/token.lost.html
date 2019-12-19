@@ -1,5 +1,5 @@
 <h3 name="Token Details">
-    <translate>Token {{ selectedToken.serial }} is Lost!</translate>
+    <translate>Token {{ selectedToken.serial }} is Lost?</translate>
     <a class="btn btn-default" ui-sref="audit({serial:selectedToken.serial})">
         <translate>View token in Audit log</translate></a>
 </h3>
@@ -19,14 +19,14 @@
     <a ui-sref="token.details({tokenSerial:selectedToken.serial})">
         {{ selectedToken.serial }}
     </a>
-    is disabled and can be deleted or enabled later.
+    will be disabled and can be deleted or enabled later.
 </p>
 
 <div class="text-center"
      ng-hide="tokenLost">
     <button ng-click="setTokenLost()"
             class="btn btn-primary"
-            translate>Mark the token to be lost
+            translate>Mark the token as lost
     </button>
 </div>
 

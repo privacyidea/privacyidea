@@ -11,6 +11,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.0.6\n"
 
+# This is the level in the subscriptions
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr "Subskriptionsstufe"
+
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -1505,7 +1512,7 @@ msgid ""
 "the\n"
 "    same."
 msgstr ""
-"Wenn ein Token verloren ist, können Sie einen temporären Passwort-basierten "
+"Wenn der Token verloren ist, können Sie einen temporären Passwort-basierten "
 "Token ausrollen und dieses Passwort an den Benutzer geben. Dieses Passwort "
 "muss vom Benutzer mit der OTP PIN des alten Tokens kombiniert werden."
 
@@ -1633,13 +1640,6 @@ msgstr ""
 msgid "Length of UID"
 msgstr "Länge des UID"
 
-# This is the level in the subscriptions
-#. level of subscription
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
-msgctxt "subscription"
-msgid "Level"
-msgstr "Subskriptionsstufe"
-
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
 msgstr "Lizenziert unter"
@@ -1757,7 +1757,7 @@ msgid "Mapping"
 msgstr "Zuordnung"
 
 #: privacyidea/static/components/token/views/token.lost.html:27
-msgid "Mark the token to be lost"
+msgid "Mark the token as lost"
 msgstr "Den Token als verloren markieren"
 
 #: privacyidea/static/components/config/views/config.system.html:235
@@ -3397,13 +3397,13 @@ msgid ""
 "    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
 "        {{ selectedToken.serial }}\n"
 "    </a>\n"
-"    is disabled and can be deleted or enabled later."
+"    will be disabled and can be deleted or enabled later."
 msgstr ""
 "Der alte Token\n"
 "    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
 "        {{ selectedToken.serial }}\n"
 "    </a>\n"
-"wurde deaktiviert und kann später gelöscht oder wieder aktiviert werden."
+"wird deaktiviert und kann später gelöscht oder wieder aktiviert werden."
 
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
@@ -3952,8 +3952,8 @@ msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-msgid "Token {{ selectedToken.serial }} is Lost!"
-msgstr "Der Token {{ selectedToken.serial }} ist verloren!"
+msgid "Token {{ selectedToken.serial }} is Lost?"
+msgstr "Der Token {{ selectedToken.serial }} ist verloren?"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
