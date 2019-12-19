@@ -1,0 +1,50 @@
+#
+# Configuration for pep8speaks.
+#
+# This configures the automatic style checking for pull requests with Python code. Is is intentionally set to be rather
+# lax in some areas, to allow developers to make conscious decisions about how to best format to be as readable as
+# possible.
+#
+
+scanner:
+    diff_only: True  # Do not scan the entire file touched by the Pull Request for errors.
+    linter: pycodestyle
+
+pycodestyle:
+    max-line-length: 120
+    ignore:
+        - E121 # Continuation line under-indented for hanging indent.
+        - E122 # Continuation line missing indentation or outdented.
+        - E124 # Closing bracket does not match visual indentation.
+        - E125 # Continuation line with same indent as next logical line.
+        - E126 # Continuation line over-indented for hanging indent.
+        - E127 # Continuation line over-indented for visual indent.
+        - E128 # Continuation line under-indented for visual indent.
+        - E129 # Visually indented line with same indent as next logical line.
+        - E131 # Continuation line unaligned for hanging indent.
+        - E133 # Closing bracket is missing indentation.
+        - E226 # Missing whitespace around arithmetic operator,
+        - E241 # Multiple spaces after `,`.
+        - E402 # Module level import not at the top of file.
+        - E704 # Multiple statements on one line (def).
+        - E711 # Comparison to None should be `if cond is None:`.
+        - E712 # Comparison to True should be `if cond is True:` or `if cond:`.
+        - E721 # Do not compare types, use `isinstace()`.
+        - E731 # Do not assign a lambda expression, use a def.
+        - E741 # Do not use variables named `l`, `O`, or `I`.
+        - E743 # Do not use functions named `l`, `O`, or `I`.
+        - W503 # Line break before binary operator.
+        - W505 # Doc line too long.
+    exclude: []
+    count: False
+    first: False
+    show-pep8: False
+    show-source: False
+    statistics: False
+    hang-closing: False
+    filename: []
+    select: []
+
+no_blank_comment: True  # No comment is made on PR without any errors.
+descending_issues_order: False  # PEP 8 issues in message will be displayed in ascending order of line numbers per file.
+only_mention_files_with_errors: True  # No separate status section for each file is made in the comment.
