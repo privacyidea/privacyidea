@@ -4,6 +4,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Project-Id-Version: \n"
 
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -1442,12 +1448,6 @@ msgstr ""
 msgid "Length of UID"
 msgstr ""
 
-#. level of subscription
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
-msgctxt "subscription"
-msgid "Level"
-msgstr ""
-
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
 msgstr ""
@@ -1565,7 +1565,7 @@ msgid "Mapping"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:27
-msgid "Mark the token to be lost"
+msgid "Mark the token as lost"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:235
@@ -3021,7 +3021,7 @@ msgid ""
 "    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
 "        {{ selectedToken.serial }}\n"
 "    </a>\n"
-"    is disabled and can be deleted or enabled later."
+"    will be disabled and can be deleted or enabled later."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:48
@@ -3453,7 +3453,7 @@ msgid "Token resync successful."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-msgid "Token {{ selectedToken.serial }} is Lost!"
+msgid "Token {{ selectedToken.serial }} is Lost?"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
