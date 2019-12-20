@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2019, Cornelius Kölbel
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+from privacyidea.app import create_app
+import requests
+from privacyidea.lib.user import get_user_list
+from privacyidea.lib.token import get_tokens
+import jwt
+import click
+from privacyidea.lib.user import User
+
+
+__doc__ = """
+This script can be called from a cron job to enroll tokens to users,
+who do not have a token, yet.
+This could be a registration token or any other token type.
+The token is enrolled via the web UI, so that you can attach
+event handlers to the enrollment process.
+"""
+
+__version__ = "0.1"
+ROLE = "admin"
+ALGO = "RS256"
+
+app = create_app(config_name='production', silent=True)
+
+
+def create_jwt(jwt_privkey, jwt_user, jwt_realm):
+    """
+    create a JWT and return it
+    :param jwt_privkey:
+    :param jwt_user:
+    :param jwt_realm:
+    :return:
+    """
+    pkey = None
+    auth_token = None
+    if jwt_privkey:
+        with open(jwt_privkey, "r") as f:
+            pkey = f.read()
+        if pkey:
+            auth_token = jwt.encode(payload={"role": ROLE,
+                                             "username": jwt_user,
+                                             "realm": jwt_realm},
+                                    key=pkey,
+                                    algorithm=ALGO)
+    return auth_token
+
+
+@click.command()
+@click.option('-r', '--realm', required=True)
+@click.option('-t', '--tokentype', default="registration", show_default=True)
+@click.option('--jwt_privkey', required=True)
+@click.option('--jwt_user', required=True)
+@click.option('--jwt_realm')
+@click.option('--url', default="https://localhost", show_default=True)
+def enroll(realm, tokentype, jwt_privkey, jwt_user, jwt_realm, url):
+    """
+    Enroll a token for users in the given realm.
+
+    A token of type <tokentype> will be enrolled to all users
+    in the given realm, who currently have not token assigned.
+
+    NOTE: This script is using the configured resolvers to find all
+    users and check, if those users have a token assigned. If the resolver
+    has a **limit** defined, it could be, that this script does not find
+    all users.
+
+    The token is enrolled via the REST API, so events can be triggered.
+
+    """
+    auth_token = create_jwt(jwt_privkey, jwt_user, jwt_realm)
+    with app.app_context():
+        # Now we do all the users
+        users = get_user_list(param={"realm": realm})
+        usernames = [user.get("username") for user in users]
+        print("Processing {0!s} users.".format(len(usernames)))
+        num_success = 0
+        num_fail = 0
+
+        for user in usernames:
+            toks = get_tokens(user=User(user,realm))
+            if len(toks) == 0:
+                print("user {0!s} has no token assigned.".format(user))
+                # Do a REST request with a trusted JWT
+                # See https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html#trusted-jwts
+                if auth_token:
+                    r = requests.post("{0!s}/token/init".format(url),
+                                  verify=False,
+                                  data={"type": tokentype,
+                                        "genkey": 1,
+                                        "user": user,
+                                        "realm": realm},
+                                  headers={"Authorization": auth_token})
+                    if r.status_code == 200:
+                        print("Created token for user {0!s}.".format(user))
+                        num_success += 1
+                    else:
+                        print("Failed to create token for user {0!s}: {1!s}.".format(user, r.status_code))
+                        num_fail += 1
+            else:
+                print(".")
+
+        # Final output
+        if num_fail:
+            print("Failed to create {0!s} tokens.".format(num_fail))
+        if num_success:
+            print("Created {0!s} tokens.".format(num_success))
+
+
+if __name__ == '__main__':
+    enroll()
