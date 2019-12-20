@@ -1,4 +1,4 @@
-#!/opt/privacyidea/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2019, Cornelius Kölbel
@@ -40,7 +40,7 @@ from privacyidea.lib.user import User
 
 
 __doc__ = """
-This is a script can be called from a cron job to enroll tokens to users,
+This script can be called from a cron job to enroll tokens to users,
 who do not have a token, yet.
 This could be a registration token or any other token type.
 The token is enrolled via the web UI, so that you can attach
@@ -64,16 +64,15 @@ def create_jwt(jwt_privkey, jwt_user, jwt_realm):
     """
     pkey = None
     auth_token = None
-    with app.app_context():
-        if jwt_privkey:
-            with open(jwt_privkey, "r") as f:
-                pkey = f.read()
-            if pkey:
-                auth_token = jwt.encode(payload={"role": ROLE,
-                                     "username": jwt_user,
-                                     "realm": jwt_realm},
-                                     key=pkey,
-                                     algorithm=ALGO)
+    if jwt_privkey:
+        with open(jwt_privkey, "r") as f:
+            pkey = f.read()
+        if pkey:
+            auth_token = jwt.encode(payload={"role": ROLE,
+                                             "username": jwt_user,
+                                             "realm": jwt_realm},
+                                    key=pkey,
+                                    algorithm=ALGO)
     return auth_token
 
 
@@ -90,6 +89,11 @@ def enroll(realm, tokentype, jwt_privkey, jwt_user, jwt_realm, url):
 
     A token of type <tokentype> will be enrolled to all users
     in the given realm, who currently have not token assigned.
+
+    NOTE: This script is using the configured resolvers to find all
+    users and check, if those users have a token assigned. If the resolver
+    has a **limit** defined, it could be, that this script does not find
+    all users.
 
     The token is enrolled via the REST API, so events can be triggered.
 
