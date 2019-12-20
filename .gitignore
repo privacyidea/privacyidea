@@ -17,14 +17,6 @@ doc/_build/
 *.log
 *.old
 *.orig
-tests/testdata/ca/*.pem
-!tests/testdata/ca/cacert.pem
-!tests/testdata/ca/cakey.pem
-tests/testdata/ca/*.txt
-!tests/testdata/ca/index.txt
-tests/testdata/ca/*.req
-!tests/testdata/ca/DE_Hessen_privacyidea_requester.localdomain.req
-tests/testdata/ca/*.der
 tests/testdata/ca2
 tests/testdata/gpg/.gpg-v*-migrated
 tests/testdata/gpg/private-keys-v*.d
