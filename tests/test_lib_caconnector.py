@@ -348,6 +348,6 @@ class CreateLocalCATestCase(MyTestCase):
         for f in filelist:
             try:
                 os.remove(f)
-            except:
+            except OSError:
                 print("Error deleting file {0!s}.".format(f))
         os.rmdir("{0!s}2".format(WORKINGDIR))
