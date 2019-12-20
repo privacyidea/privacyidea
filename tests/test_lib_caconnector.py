@@ -173,6 +173,7 @@ class LocalCATestCase(MyTestCase):
             os.remove(f)
 
         FILES = ["DE_Hessen_privacyidea_requester.localdomain.req",
+                 "DE_Hessen_privacyidea_requester.localdomain.pem",
                  "DE_Hessen_privacyidea_usercert.pem",
                  "DE_Hessen_privacyidea_usercert.req",
                  "index.txt.attr.old",
