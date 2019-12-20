@@ -155,6 +155,48 @@ class LocalCATestCase(MyTestCase):
     Test the local CA connector
     """
 
+    @classmethod
+    def setUpClass(cls):
+        # call parent
+        super(MyTestCase, cls).setUpClass()
+
+        # Backup the original index and serial
+        shutil.copyfile("{0!s}/serial".format(WORKINGDIR),
+                        "{0!s}/serial.orig".format(WORKINGDIR))
+        shutil.copyfile("{0!s}/index.txt".format(WORKINGDIR),
+                        "{0!s}/index.txt.orig".format(WORKINGDIR))
+
+    @classmethod
+    def tearDownClass(cls):
+        filelist = glob.glob("{0!s}/100*.pem".format(WORKINGDIR))
+        for f in filelist:
+            os.remove(f)
+
+        FILES = ["DE_Hessen_privacyidea_requester.localdomain.req",
+                 "DE_Hessen_privacyidea_usercert.pem",
+                 "DE_Hessen_privacyidea_usercert.req",
+                 "index.txt.attr.old",
+                 "index.txt.old",
+                 "serial.old",
+                 "crl.pem",
+                 "Steve_Test.der",
+                 "Steve_Test.txt"]
+        for f in FILES:
+            try:
+                os.remove("{0!s}/{1!s}".format(WORKINGDIR, f))
+            except OSError:
+                print("File {1!s} could not be deleted.".format(f))
+
+        # restore backup of index.txt and serial
+        shutil.copyfile("{0!s}/serial.orig".format(WORKINGDIR),
+                        "{0!s}/serial".format(WORKINGDIR))
+        shutil.copyfile("{0!s}/index.txt.orig".format(WORKINGDIR),
+                        "{0!s}/index.txt".format(WORKINGDIR))
+        os.remove("{0!s}/serial.orig".format(WORKINGDIR))
+        os.remove("{0!s}/index.txt.orig".format(WORKINGDIR))
+        # call parent
+        super(MyTestCase, cls).tearDownClass()
+
     def test_01_create_ca_connector(self):
         # cakey missing
         self.assertRaises(CAError, LocalCAConnector, "localCA",
@@ -280,25 +322,6 @@ class LocalCATestCase(MyTestCase):
         # The certificate is signed for 750 days
         self.assertTrue(ddiff.days > 740, ddiff.days)
         self.assertTrue(ddiff.days < 760, ddiff.days)
-
-    def test_99_cleanup(self):
-        filelist = glob.glob("{0!s}/100*.pem".format(WORKINGDIR))
-        for f in filelist:
-            os.remove(f)
-
-        FILES = ["cornelius_user@localhost.localdomain_realm1.pem",
-                 "cornelius_user@localhost.localdomain_realm1.req",
-                 "DE_Hessen_privacyidea_requester.localdomain.req",
-                 "DE_Hessen_privacyidea_usercert.pem",
-                 "DE_Hessen_privacyidea_usercert.req",
-                 "index.txt.attr.old",
-                 "index.txt.old",
-                 "serial.old",
-                 "crl.pem",
-                 "Steve_Test.der",
-                 "Steve_Test.txt"]
-        for f in FILES:
-            os.remove("{0!s}/{1!s}".format(WORKINGDIR, f))
 
 
 class CreateLocalCATestCase(MyTestCase):
