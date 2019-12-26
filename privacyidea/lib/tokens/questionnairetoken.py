@@ -207,7 +207,7 @@ class QuestionnaireTokenClass(TokenClass):
                 # This is "Question1?.type" of type "password"
                 # So this is actually a question and we add the question to
                 # the list
-                questions.append(question.strip(".type"))
+                questions.append(question.replace('.type', '').strip())
         message = random.choice(questions)
         attributes = None
 
