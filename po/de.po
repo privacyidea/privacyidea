@@ -11,13 +11,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.0.6\n"
 
-# This is the level in the subscriptions
-#. level of subscription
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
-msgctxt "subscription"
-msgid "Level"
-msgstr "Subskriptionsstufe"
-
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -1639,6 +1632,13 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
 msgid "Length of UID"
 msgstr "Länge des UID"
+
+# This is the level in the subscriptions
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr "Subskriptionsstufe"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
@@ -3952,7 +3952,8 @@ msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-msgid "Token {{ selectedToken.serial }} is Lost?"
+#, fuzzy
+msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren?"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
