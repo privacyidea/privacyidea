@@ -3952,7 +3952,6 @@ msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-#, fuzzy
 msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren?"
 
