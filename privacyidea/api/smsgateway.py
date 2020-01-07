@@ -88,7 +88,7 @@ def set_gateway():
     :jsonparam name: The unique identifier of the SMS gateway definition
     :jsonparam module: The providermodule name
     :jsonparam description: An optional description of the definition
-    :jsonparam options.*: Additional options for the provider module (module
+    :jsonparam option.*: Additional options for the provider module (module
         specific)
     """
     param = request.all_data
