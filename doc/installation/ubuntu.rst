@@ -12,7 +12,7 @@ Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_.
 These are available via a public ppa repository [#ppa]_.
 
 Starting with privacyIDEA 3.0 packages are available 
-for Ubuntu 16.04LTS and 18.04LTS [#ubuntu1804]_.
+for Ubuntu 16.04LTS and 18.04LTS not in PPA but in a new repository [#ubuntu1804]_.
 
 Installing privacyIDEA 3.0 or higher
 ....................................
