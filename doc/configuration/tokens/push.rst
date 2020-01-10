@@ -16,7 +16,58 @@ service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
-logs the user in automatically.
+logs the user in automatically. For an example of how the components in a
+typical deployment of push tokens interact reference the following diagram.
+
+.. uml::
+    :scale: 50%
+    :align: center
+    :caption: A typical push token deployment
+
+    rectangle "On Prem" {
+        card SAML {
+            node "Service Provider" as SP
+            node "Identity Provider" as IDP
+        }
+        card "1st Factor" {
+            database LDAP
+        }
+        card "2nd Factor" {
+            node PrivacyIDEA as PI
+            file "User Resolver" as Users
+            file "Machine Resolver" as Machines
+        }
+    }
+
+    together {
+        actor User
+        node iPhone
+        node Client
+    }
+
+    cloud Cloud {
+        node Firebase
+        node APN
+    }
+
+    User ~~> iPhone
+    User ~~> Client
+
+    Client -- SP
+    SP -- IDP
+    SP ..> Client : Require Auth
+
+    Client --> IDP : Request Auth
+    IDP -- LDAP
+    IDP -- PI
+
+    PI -- Users
+    PI -- Machines
+
+    PI --> Firebase : Push Token
+    Firebase --> APN
+    APN --> iPhone
+    iPhone --> PI : Confirm Token
 
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.
