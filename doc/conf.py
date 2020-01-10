@@ -273,3 +273,5 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
