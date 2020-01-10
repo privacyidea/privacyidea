@@ -12,7 +12,7 @@ The token type *push* sends a cryptographic challenge via the
 Google Firebase service to the smartphone of the user. This push
 notification is displayed on the smartphone of the user with a text
 that tells the user that he or somebody else requests to login to a
-service. The can simply accept this request.
+service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
