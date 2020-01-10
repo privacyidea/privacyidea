@@ -20,53 +20,53 @@ logs the user in automatically. For an example of how the components in a
 typical deployment of push tokens interact reference the following diagram.
 
 .. uml::
-    :width: 500
-    :caption: A typical push token deployment
+  :width: 500
+  :caption: A typical push token deployment
 
-    rectangle "On Prem" {
-        card SAML {
-            node "Service Provider" as SP
-            node "Identity Provider" as IDP
-        }
-        card "1st Factor" {
-            database LDAP
-        }
-        card "2nd Factor" {
-            node PrivacyIDEA as PI
-            file "User Resolver" as Users
-            file "Machine Resolver" as Machines
-        }
+  rectangle "On Prem" {
+    card SAML {
+      node "Service Provider" as SP
+      node "Identity Provider" as IDP
     }
-
-    together {
-        actor User
-        node iPhone
-        node Client
+    card "1st Factor" {
+      database LDAP
     }
-
-    cloud Cloud {
-        node Firebase
-        node APN
+    card "2nd Factor" {
+      node PrivacyIDEA as PI
+      file "User Resolver" as Users
+      file "Machine Resolver" as Machines
     }
+  }
 
-    User ~~> iPhone
-    User ~~> Client
+  together {
+    actor User
+    node iPhone
+    node Client
+  }
 
-    Client -- SP
-    SP -- IDP
-    SP ..> Client : Require Auth
+  cloud Cloud {
+    node Firebase
+    node APN
+  }
 
-    Client --> IDP : Request Auth
-    IDP -- LDAP
-    IDP -- PI
+  User ~~> iPhone
+  User ~~> Client
 
-    PI -- Users
-    PI -- Machines
+  Client -- SP
+  SP -- IDP
+  SP ..> Client : Require Auth
 
-    PI --> Firebase : Push Token
-    Firebase --> APN
-    APN --> iPhone
-    iPhone --> PI : Confirm Token
+  Client --> IDP : Request Auth
+  IDP -- LDAP
+  IDP -- PI
+
+  PI -- Users
+  PI -- Machines
+
+  PI --> Firebase : Push Token
+  Firebase --> APN
+  APN --> iPhone
+  iPhone --> PI : Confirm Token
 
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.
