@@ -20,8 +20,7 @@ logs the user in automatically. For an example of how the components in a
 typical deployment of push tokens interact reference the following diagram.
 
 .. uml::
-    :scale: 50%
-    :align: center
+    :width: 500
     :caption: A typical push token deployment
 
     rectangle "On Prem" {
