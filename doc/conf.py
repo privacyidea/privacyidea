@@ -274,5 +274,12 @@ texinfo_documents = [
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
 
+#
+# PlantUML
+#
+
+# Run plantUML under Java in headless mode. This is needed for compatibility with readthedocs.io.
 plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
+
+# Use SVG inside <object> in supported browsers (all except IE8), falling back to PNG.
 plantuml_output_format = 'svg'
