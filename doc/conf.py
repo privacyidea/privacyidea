@@ -275,3 +275,4 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
+plantuml_output_format = 'svg'
