@@ -41,6 +41,12 @@ modes in more detail.
 ``authenticate`` mode
 ---------------------
 
+.. uml::
+  :width: 500
+
+  Service -> PrivacyIDEA: POST /validate/check
+  Service <-- PrivacyIDEA
+
  * The user enters a OTP PIN along with an OTP value.
  * The plugin sends a request to the ``/validate/check`` endpoint:
 
@@ -57,6 +63,28 @@ modes in more detail.
 
 ``challenge`` mode
 ------------------
+
+.. uml::
+  :width: 500
+
+  alt with pin
+
+    Service -> PrivacyIDEA: POST /validate/check
+    Service <-- PrivacyIDEA: transaction_id
+
+  else without pin
+
+    Service -> PrivacyIDEA: POST /validate/triggerchallenge
+    Service <-- PrivacyIDEA: transaction_id
+
+  end
+
+  PrivacyIDEA -> "SMS Gateway": OTP
+
+  ...User enters OTP from SMS...
+
+  Service -> PrivacyIDEA: POST /validate/check
+  Service <-- PrivacyIDEA
 
  * The plugin triggers a challenge, for example via the
    ``/validate/triggerchallenge`` endpoint:
@@ -94,6 +122,43 @@ modes in more detail.
 
 ``outofband`` mode
 ------------------
+
+.. uml::
+  :width: 500
+
+  alt with pin
+
+    Service -> PrivacyIDEA: POST /validate/check
+    Service <-- PrivacyIDEA: transaction_id
+
+  else without pin
+
+    Service -> PrivacyIDEA: POST /validate/triggerchallenge
+    Service <-- PrivacyIDEA: transaction_id
+
+  end
+
+  PrivacyIDEA -> Firebase: PUSH Notification
+  Firebase -> Phone: PUSH Notification
+
+  loop until confirmed
+
+    Service -> PrivacyIDEA: GET /validate/polltransaction
+    Service <-- PrivacyIDEA: false
+
+  end
+
+  ...User confirms sign in on phone...
+
+  Phone -> PrivacyIDEA: POST /ttype/push
+
+  Service -> PrivacyIDEA: GET /validate/polltransaction
+  Service <-- PrivacyIDEA: true
+
+  |||
+
+  Service -> PrivacyIDEA: POST /validate/check
+  Service <-- PrivacyIDEA
 
  * The plugin triggers a challenge, for example via the
    ``/validate/triggerchallenge`` endpoint:
