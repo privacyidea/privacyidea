@@ -6,3 +6,4 @@ sphinxcontrib-httpdomain==1.7.0
 sphinx-rtd-theme==0.4.3
 docutils==0.14
 Pygments>=2.0.2
+sphinxcontrib-plantuml==0.18
