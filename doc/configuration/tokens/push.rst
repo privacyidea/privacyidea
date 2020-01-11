@@ -32,9 +32,8 @@ typical deployment of push tokens interact reference the following diagram.
       database LDAP
     }
     card "2nd Factor" {
-      node PrivacyIDEA as PI
+      node privacyIDEA as PI
       file "User Resolver" as Users
-      file "Machine Resolver" as Machines
     }
   }
 
@@ -61,7 +60,6 @@ typical deployment of push tokens interact reference the following diagram.
   IDP -- PI
 
   PI -- Users
-  PI -- Machines
 
   PI --> Firebase : Push Token
   Firebase --> APN
