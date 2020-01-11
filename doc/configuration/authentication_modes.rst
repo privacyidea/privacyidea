@@ -44,11 +44,13 @@ modes in more detail.
 .. uml::
   :width: 500
 
-  Service -> PrivacyIDEA: POST /validate/check
-  Service <-- PrivacyIDEA
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
-* The user enters a OTP PIN along with an OTP value.
-* The plugin sends a request to the ``/validate/check`` endpoint:
+The *Service* is an application that is protected with a second factor by privacyIDEA.
+
+* The user enters a OTP PIN along with an OTP value at the *Service*.
+* The plugin sends a request to the ``/validate/check`` endpoint of privacyIDEA:
 
   .. code-block:: text
 
@@ -69,22 +71,22 @@ modes in more detail.
 
   alt with pin
 
-    Service -> PrivacyIDEA: POST /validate/check
-    Service <-- PrivacyIDEA: transaction_id
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
 
   else without pin
 
-    Service -> PrivacyIDEA: POST /validate/triggerchallenge
-    Service <-- PrivacyIDEA: transaction_id
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
 
   end
 
-  PrivacyIDEA -> "SMS Gateway": OTP
+  privacyIDEA -> "SMS Gateway": OTP
 
   ...User enters OTP from SMS...
 
-  Service -> PrivacyIDEA: POST /validate/check
-  Service <-- PrivacyIDEA
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
 * The plugin triggers a challenge, for example via the
   ``/validate/triggerchallenge`` endpoint:
@@ -128,37 +130,37 @@ modes in more detail.
 
   alt with pin
 
-    Service -> PrivacyIDEA: POST /validate/check
-    Service <-- PrivacyIDEA: transaction_id
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
 
   else without pin
 
-    Service -> PrivacyIDEA: POST /validate/triggerchallenge
-    Service <-- PrivacyIDEA: transaction_id
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
 
   end
 
-  PrivacyIDEA -> Firebase: PUSH Notification
+  privacyIDEA -> Firebase: PUSH Notification
   Firebase -> Phone: PUSH Notification
 
   loop until confirmed
 
-    Service -> PrivacyIDEA: GET /validate/polltransaction
-    Service <-- PrivacyIDEA: false
+    Service -> privacyIDEA: GET /validate/polltransaction
+    Service <-- privacyIDEA: false
 
   end
 
   ...User confirms sign in on phone...
 
-  Phone -> PrivacyIDEA: POST /ttype/push
+  Phone -> privacyIDEA: POST /ttype/push
 
-  Service -> PrivacyIDEA: GET /validate/polltransaction
-  Service <-- PrivacyIDEA: true
+  Service -> privacyIDEA: GET /validate/polltransaction
+  Service <-- privacyIDEA: true
 
   |||
 
-  Service -> PrivacyIDEA: POST /validate/check
-  Service <-- PrivacyIDEA
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
 * The plugin triggers a challenge, for example via the
   ``/validate/triggerchallenge`` endpoint:
