@@ -41,113 +41,180 @@ modes in more detail.
 ``authenticate`` mode
 ---------------------
 
- * The user enters a OTP PIN along with an OTP value.
- * The plugin sends a request to the ``/validate/check`` endpoint:
+.. uml::
+  :width: 500
 
-   .. code-block:: text
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
-     POST /validate/check
+The *Service* is an application that is protected with a second factor by privacyIDEA.
 
-     user=<user>&pass=<PIN+OTP>
+* The user enters a OTP PIN along with an OTP value at the *Service*.
+* The plugin sends a request to the ``/validate/check`` endpoint of privacyIDEA:
 
-  and privacyIDEA returns whether the authentication request has succeeded
-  or not.
+  .. code-block:: text
+
+    POST /validate/check
+
+    user=<user>&pass=<PIN+OTP>
+
+ and privacyIDEA returns whether the authentication request has succeeded
+ or not.
 
 .. _authentication_mode_challenge:
 
 ``challenge`` mode
 ------------------
 
- * The plugin triggers a challenge, for example via the
-   ``/validate/triggerchallenge`` endpoint:
+.. uml::
+  :width: 500
 
-   .. code-block:: text
+  alt with pin
 
-     POST /validate/triggerchallenge
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
 
-     user=<user>
+  else without pin
 
-   Alternatively, a challenge can be triggered via the ``/validate/check``
-   endpoint with the PIN of a challenge-response token:
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
 
-   .. code-block:: text
+  end
 
-     POST /validate/check
+  privacyIDEA -> "SMS Gateway": OTP
 
-     user=<user>&pass=<PIN>
+  ...User enters OTP from SMS...
 
-   In both variants, the plugin receives a transaction ID which we call
-   ``transaction_id`` and asks the user for the challenge response.
- * The user enters the challenge response, which we call ``OTP``.
-   The plugin forwards the response to privacyIDEA along with the
-   transaction ID:
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
-   .. code-block:: text
+* The plugin triggers a challenge, for example via the
+  ``/validate/triggerchallenge`` endpoint:
 
-     POST /validate/check
+  .. code-block:: text
 
-     user=<user>&transaction_id=<transaction_id>&pass=<OTP>
+    POST /validate/triggerchallenge
 
-  and privacyIDEA returns whether the authentication request succeeded or not.
+    user=<user>
+
+  Alternatively, a challenge can be triggered via the ``/validate/check``
+  endpoint with the PIN of a challenge-response token:
+
+  .. code-block:: text
+
+    POST /validate/check
+
+    user=<user>&pass=<PIN>
+
+  In both variants, the plugin receives a transaction ID which we call
+  ``transaction_id`` and asks the user for the challenge response.
+* The user enters the challenge response, which we call ``OTP``.
+  The plugin forwards the response to privacyIDEA along with the
+  transaction ID:
+
+  .. code-block:: text
+
+    POST /validate/check
+
+    user=<user>&transaction_id=<transaction_id>&pass=<OTP>
+
+ and privacyIDEA returns whether the authentication request succeeded or not.
 
 .. _authentication_mode_outofband:
 
 ``outofband`` mode
 ------------------
 
- * The plugin triggers a challenge, for example via the
-   ``/validate/triggerchallenge`` endpoint:
+.. uml::
+  :width: 500
 
-   .. code-block:: text
+  alt with pin
 
-     POST /validate/triggerchallenge
+    Service -> privacyIDEA: POST /validate/check
+    Service <-- privacyIDEA: transaction_id
 
-     user=<user>
+  else without pin
 
-   or via the ``/validate/check`` endpoint with the PIN of a out-of-band token:
+    Service -> privacyIDEA: POST /validate/triggerchallenge
+    Service <-- privacyIDEA: transaction_id
 
-   .. code-block:: text
+  end
 
-     POST /validate/check
+  privacyIDEA -> Firebase: PUSH Notification
+  Firebase -> Phone: PUSH Notification
 
-     user=<user>&pass=<PIN>
+  loop until confirmed
 
-   In both variants, the plugin receives a transaction ID which we call
-   ``transaction_id``.
-   The plugin may now periodically query the status of the challenge by
-   polling the ``/validate/polltransaction`` endpoint:
+    Service -> privacyIDEA: GET /validate/polltransaction
+    Service <-- privacyIDEA: false
 
-   .. code-block:: text
+  end
 
-     GET /validate/polltransaction
+  ...User confirms sign in on phone...
 
-     transaction_id=<transaction_id>
+  Phone -> privacyIDEA: POST /ttype/push
 
-   If this endpoint returns ``false``, the challenge has not been answered yet.
- * The user approves the challenge on a separate device, e.g. their
-   smartphone app. The app communicates with a tokentype-specific endpoint of
-   privacyIDEA, which marks the challenge as answered.
-   The exact communication depends on the token type.
- * Once ``/validate/polltransaction`` returns ``true``, the plugin *must*
-   finalize the authentication via the ``/validate/check`` endpoint:
+  Service -> privacyIDEA: GET /validate/polltransaction
+  Service <-- privacyIDEA: true
 
-   .. code-block:: text
+  |||
 
-     POST /validate/check
+  Service -> privacyIDEA: POST /validate/check
+  Service <-- privacyIDEA
 
-     user=<user>&transaction_id=<transaction_id>&pass=
+* The plugin triggers a challenge, for example via the
+  ``/validate/triggerchallenge`` endpoint:
 
-   For the ``pass`` parameter, the plugin sends an empty string.
+  .. code-block:: text
 
-   This step is crucial because the ``/validate/check`` endpoint takes defined
-   authentication and authorization policies into account to decide whether
-   the authentication was successful or not.
+    POST /validate/triggerchallenge
 
-   .. note:: The ``/validate/polltransaction`` endpoint does not require
-       authentication and does not increase the failcounters of tokens. Hence, attackers
-       may try to brute-force transaction IDs of correctly answered challenges.
-       Due to the short expiration timeout and the length of the randomly-generated
-       transaction IDs, it is unlikely that attackers correctly guess a
-       transaction ID in time.
-       Nonetheless, plugins must not allow users to inject transaction
-       IDs, and plugins must not leak transaction IDs to users.
+    user=<user>
+
+  or via the ``/validate/check`` endpoint with the PIN of a out-of-band token:
+
+  .. code-block:: text
+
+    POST /validate/check
+
+    user=<user>&pass=<PIN>
+
+  In both variants, the plugin receives a transaction ID which we call
+  ``transaction_id``.
+  The plugin may now periodically query the status of the challenge by
+  polling the ``/validate/polltransaction`` endpoint:
+
+  .. code-block:: text
+
+    GET /validate/polltransaction
+
+    transaction_id=<transaction_id>
+
+  If this endpoint returns ``false``, the challenge has not been answered yet.
+* The user approves the challenge on a separate device, e.g. their
+  smartphone app. The app communicates with a tokentype-specific endpoint of
+  privacyIDEA, which marks the challenge as answered.
+  The exact communication depends on the token type.
+* Once ``/validate/polltransaction`` returns ``true``, the plugin *must*
+  finalize the authentication via the ``/validate/check`` endpoint:
+
+  .. code-block:: text
+
+    POST /validate/check
+
+    user=<user>&transaction_id=<transaction_id>&pass=
+
+  For the ``pass`` parameter, the plugin sends an empty string.
+
+  This step is crucial because the ``/validate/check`` endpoint takes defined
+  authentication and authorization policies into account to decide whether
+  the authentication was successful or not.
+
+  .. note:: The ``/validate/polltransaction`` endpoint does not require
+      authentication and does not increase the failcounters of tokens. Hence, attackers
+      may try to brute-force transaction IDs of correctly answered challenges.
+      Due to the short expiration timeout and the length of the randomly-generated
+      transaction IDs, it is unlikely that attackers correctly guess a
+      transaction ID in time.
+      Nonetheless, plugins must not allow users to inject transaction
+      IDs, and plugins must not leak transaction IDs to users.

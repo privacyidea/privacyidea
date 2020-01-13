@@ -12,11 +12,59 @@ The token type *push* sends a cryptographic challenge via the
 Google Firebase service to the smartphone of the user. This push
 notification is displayed on the smartphone of the user with a text
 that tells the user that he or somebody else requests to login to a
-service. The can simply accept this request.
+service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
-logs the user in automatically.
+logs the user in automatically. For an example of how the components in a
+typical deployment of push tokens interact reference the following diagram.
+
+.. uml::
+  :width: 500
+  :caption: A typical push token deployment
+
+  rectangle "On Prem" {
+    card SAML {
+      node "Service Provider" as SP
+      node "Identity Provider" as IDP
+    }
+    card "1st Factor" {
+      database LDAP
+    }
+    card "2nd Factor" {
+      node privacyIDEA as PI
+      file "User Resolver" as Users
+    }
+  }
+
+  together {
+    actor User
+    node iPhone
+    node Client
+  }
+
+  cloud Cloud {
+    node Firebase
+    node APN
+  }
+
+  User ~~> iPhone
+  User ~~> Client
+
+  Client -- SP
+  SP -- IDP
+  SP ..> Client : Require Auth
+
+  Client --> IDP : Request Auth
+  IDP -- LDAP
+  IDP -- PI
+
+  PI -- Users
+
+  PI --> Firebase : Push Token
+  Firebase --> APN
+  APN --> iPhone
+  iPhone --> PI : Confirm Token
 
 To allow privacyIDEA to send push notifications, a Firebase service
 needs to be configured. To do so see :ref:`firebase_provider`.

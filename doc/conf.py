@@ -58,7 +58,7 @@ sys.path.insert(0, os.path.abspath('../privacyidea'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 
-              'sphinxcontrib.autohttp.flask']
+              'sphinxcontrib.autohttp.flask', 'sphinxcontrib.plantuml']
 http_index_ignore_prefixes = ['/token']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -273,3 +273,13 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+#
+# PlantUML
+#
+
+# Run plantUML under Java in headless mode. This is needed for compatibility with readthedocs.io.
+plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
+
+# Use SVG inside <object> in supported browsers (all except IE8), falling back to PNG.
+plantuml_output_format = 'svg'
