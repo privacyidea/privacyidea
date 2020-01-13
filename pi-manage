@@ -263,6 +263,7 @@ def create(directory="/var/lib/privacyidea/backup/",
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
 
+    directory = os.path.abspath(directory)
     call(["mkdir", "-p", directory])
     # set correct owner, if possible
     if os.geteuid() == 0:
@@ -280,7 +281,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
+        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
@@ -346,7 +347,7 @@ def restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE)
+    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE, encoding='utf8')
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
         if re.search(r"/pi.cfg$", line):
