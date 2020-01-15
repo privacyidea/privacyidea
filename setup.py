@@ -5,6 +5,7 @@ import os
 import stat
 import sys
 
+#VERSION="2.1dev4"
 VERSION = "3.2"
 
 # Taken from kennethreitz/requests/setup.py
@@ -41,7 +42,7 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
                     "Flask-Script>=2.0.5",
                     "Flask-SQLAlchemy>=2.0",
                     "Flask-Versioned>=0.9.4",
-                    "huey[redis]>=2.0.0",
+                    "huey[redis]>=1.11.0",
                     "ldap3>=2.6",
                     "netaddr>=0.7.12",
                     "oauth2client>=2.0.1",
@@ -105,11 +106,11 @@ setup(
     extras_require={
         'doc': ["Sphinx>=1.3.1",
                 "sphinxcontrib-httpdomain>=1.3.0",
-                "sphinxcontrib-plantuml"],
-        'test': ["mock",
-                 "pytest",
-                 "pytest-cov",
-                 "responses"],
+                "sphinxcontrib-plantuml>=0.18"],
+        'test': ["mock>=2.0.0",
+                 "pytest>=3.6.0",
+                 "pytest-cov>=2.5.1",
+                 "responses>=0.9.0"],
         'postgres': ['psycopg2>=2.8.3']
     },
     install_requires=install_requires,

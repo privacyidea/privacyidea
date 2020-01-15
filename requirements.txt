@@ -20,7 +20,7 @@ Flask-Script==2.0.6
 Flask-SQLAlchemy==2.4.1
 Flask-Versioned==0.9.4.post20101221
 httplib2==0.15.0
-huey==2.1.3
+huey==1.11.0
 idna==2.8
 ipaddress==1.0.23; python_version < '3.0'
 itsdangerous==1.1.0
