@@ -424,7 +424,7 @@ class LocalCAConnector(BaseCAConnector):
                                                           certificate_filename))
         # run the command
         args = shlex.split(cmd)
-        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, encoding='utf8')
+        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -509,7 +509,7 @@ class LocalCAConnector(BaseCAConnector):
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
-        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, encoding='utf8')
+        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -554,7 +554,7 @@ class LocalCAConnector(BaseCAConnector):
                                          config=self.config.get(ATTR.OPENSSL_CNF),
                                          CRL=crl)
             args = shlex.split(cmd)
-            p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, encoding='utf8')
+            p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
             result, error = p.communicate()
             if p.returncode != 0:  # pragma: no cover
                 # Some error occurred
@@ -703,7 +703,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, encoding='utf8')
+    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
@@ -717,7 +717,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, encoding='utf8')
+    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred

@@ -348,7 +348,7 @@ def restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = my_Popen(["tar", "-ztf", backup_file], stdout=PIPE, encoding='utf8')
+    p = my_Popen(["tar", "-ztf", backup_file], stdout=PIPE)
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
         if re.search(r"/pi.cfg$", line):
