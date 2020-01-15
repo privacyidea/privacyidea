@@ -105,19 +105,33 @@ You need to call the javascript function
                 name: <name>,
                 displayName: <displayName>
             },
-            pubKeyCredParams: <pubKeyCredParams>,
+            pubKeyCredParams: [{
+                alg: <algorithm>,
+                type: "public-key"
+            }],
             authenticatorSelection: <authenticatorSelection>,
             timeout: <timeout>,
-            attestation: <attestation>
+            attestation: <attestation>,
+            extensions: {
+                authnSel: <authenticatorSelectionList>
+            }
         })
         .then(function(credential) { <responseHandler> })
         .catch(function(error) { <errorHandler> });
 
-Here *nonce*, *relyingParty*, *serialNumber*, *pubKeyCredParams*,
-*authenticatorSelection*, *timeout*, and *attestation* are the values
-provided by the server in the first step, *name* is the user name the user
-uses to log in (often an email address), and *displayName* is the
-human-readable name used to address the user (usually the users full name).
+Here *nonce*, *relyingParty*, *serialNumber*, *algorithm*,
+*authenticatorSelection*, *timeout*, *attestation*, and
+*authenticatorSelectionList* are the values provided by the server in the first
+step, *name* is the user name the user uses to log in (often an email address),
+and *displayName* is the human-readable name used to address the user (usually
+the users full name). Some of these options are optional and should be ommited,
+if the server does not send them.
+
+If an *authenticationSelectionList* was given, the *responseHandler* needs to
+verify, that the field *authnSel* of *credential.getExtensionResults()*
+contains true. If this is not the case, the *responseHandler* should abort and
+call the *errorHandler*, displaying an error telling the user to use his
+company-provided token.
 
 The *responseHandler* needs to then send the *id* to the server along with the
 *clientDataJSON* and the *attestationObject* contained in the *response* field
@@ -178,8 +192,8 @@ for the token (without requiring any special permissions).
                     "challenge": <nonce>,
                     "allowCredentials": [{
                         "id": <credentialId>,
-                        "type": <keyType>,
-                        "transports": <allowedTransports>
+                        "transports": <allowedTransports>,
+                        "userVerification": <userVerificationRequirement>
                     }],
                     "timeout": <timeout>
                 }
@@ -234,8 +248,8 @@ challenge will be triggered for every challenge response token the user has.
                     "challenge": <nonce>,
                     "allowCredentials": [{
                         "id": <credentialId>,
-                        "type": <keyType>,
-                        "transports": <allowedTransports>
+                        "transports": <allowedTransports>,
+                        "userVerification": <userVerificationRequirement>
                     }],
                     "timeout": <timeout>
                 }
@@ -250,8 +264,8 @@ challenge will be triggered for every challenge response token the user has.
                         "challenge": <nonce>,
                         "allowCredentials": [{
                             "id": <credentialId>,
-                            "type": <keyType>,
-                            "transports": <allowedTransports>
+                            "transports": <allowedTransports>,
+                            "userVerification": <userVerificationRequirement>
                         }],
                         "timeout": <timeout>
                     }
@@ -281,16 +295,17 @@ Send the Response
 
 The application now needs to call the javascipt function
 *navigator.credentials.get* with *publicKeyCredentialRequstOptions* built using
-the *nonce*, *credentialId*, *keyType*, *allowedTransports* and *timeout* from
-the server.
+the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
+and *timeout* from the server.
 
     const publicKeyCredentialRequestOptions = {
         challenge: Uint8Array.from(<nonce>, c => c.charCodeAt(0)),
         allowCredentials: [{
             id: Uint8Array.from(<credentialId>, c=> c.charCodeAt(0)),
-            type: <keyType>,
+            type: 'public-key',
             transports: <allowedTransports>
         }],
+        userVerification: <userVerificationRequirement>,
         timeout: <timeout>
     }
     navigator
@@ -308,8 +323,7 @@ returned by the WebAuthn device in the *assertion* and the *authenticatorData*,
 The *clientDataJSON* should again be encoded as a JSON-string. The
 *authenticatorData* and *signature* are both binary and need to be encoded as
 base64. For more detailed instructions, refer to “2. Step” under “Enrollment”
-above. The *serial* may be pulled from the challenge provided by the server, or
-decoded from the *response.userHandle* field contained in the *assertion*.
+above. 
 
 .. sourcecode:: http
 
@@ -320,7 +334,6 @@ decoded from the *response.userHandle* field contained in the *assertion*.
     user=<user>
     pass=
     transaction_id=<transaction_id>
-    serial=<serial>
     id=<id>
     clientdata=<clientDataJSON>
     signaturedata=<signature>
@@ -341,8 +354,10 @@ class WEBAUTHNACTION(object):
     TIMEOUT_ENROLL = 'webauthn_timeout_enroll'
     RELYING_PARTY_NAME = 'webauthn_relying_party_name'
     RELYING_PARTY_ID = 'webauthn_relying_party_id'
-    PUBLIC_KEY_CREDENTIAL_ALGORITHMS = 'webauthn_public_key_credential_algorithms'
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
+    AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
+    USER_VERIFICATION_REQUIREMENT_ENROLL = 'webauthn_user_verification_requirement_enroll'
+    USER_VERIFICATION_REQUIREMENT_AUTH = 'webauthn_user_verification_requirement_auth'
 
 
 class WebAuthnTokenClass(TokenClass):
@@ -394,13 +409,23 @@ class WebAuthnTokenClass(TokenClass):
                 SCOPE.AUTH: {
                     WEBAUTHNACTION.ALLOWED_TRANSPORTS: {
                         'type': 'str',
-                        'desc': _("Only the specified transports may be used to speak to WebAuthn tokens."
-                                  "Default: usb ble nfc internal lightning (All transports are allowed)")
+                        'desc': _("A list of transports to prefer to communicate with WebAuthn tokens."
+                                  "Default: usb ble nfc internal lightning (All standard transports)")
                     },
                     WEBAUTHNACTION.TIMEOUT_AUTH: {
                         'type': 'int',
                         'desc': _("The amount of time in seconds the user has to confirm an authorization request on "
                                   "his WebAuthn token. Default: 60")
+                    },
+                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH: {
+                        'type': 'str',
+                        'desc': _("Whether the user's identity should be verified when authenticating with a WebAuthn "
+                                  "token. Default: preferred (verify the user if supported by the token)"),
+                        'value': [
+                            'required',
+                            'preferred',
+                            'discouraged'
+                        ]
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
@@ -432,6 +457,23 @@ class WebAuthnTokenClass(TokenClass):
                             "platform",
                             "cross-platform",
                             "either"
+                        ]
+                    },
+                    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: {
+                        'type': 'str',
+                        'desc': _("A list of WebAuthn authenticators acceptable for enrollment, given as a "
+                                  "space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
+                        'group': GROUP.TOKEN
+                    },
+                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL: {
+                        'type': 'str',
+                        'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
+                                  "token. Default: preferred (verify the user if supported by the token)"),
+                        'group': GROUP.TOKEN,
+                        'value': [
+                            "required",
+                            "preferred",
+                            "discouraged"
                         ]
                     },
                     ACTION.MAXTOKENUSER: {
