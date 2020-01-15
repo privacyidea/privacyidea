@@ -391,7 +391,7 @@ def restore(backup_file):
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
