@@ -85,6 +85,7 @@ and what key types are acceptable to the server.
     Accept: application/json
     
     type=webauthn
+    serial=<serial>
     id=<id>
     clientdata=<clientDataJSON>
     regdata=<attestationObject>
@@ -284,9 +285,9 @@ the *nonce*, *credentialId*, *keyType*, *allowedTransports* and *timeout* from
 the server.
 
     const publicKeyCredentialRequestOptions = {
-        challenge: Uing8Array.from(<nonce>, c => c.charCodeAt(0)),
+        challenge: Uint8Array.from(<nonce>, c => c.charCodeAt(0)),
         allowCredentials: [{
-            id: Uint8Array.from(<credentialId>, c=> c.charcodeAt(0)),
+            id: Uint8Array.from(<credentialId>, c=> c.charCodeAt(0)),
             type: <keyType>,
             transports: <allowedTransports>
         }],
@@ -393,12 +394,13 @@ class WebAuthnTokenClass(TokenClass):
                 SCOPE.AUTH: {
                     WEBAUTHNACTION.ALLOWED_TRANSPORTS: {
                         'type': 'str',
-                        'desc': _("Only the specified protocols may be used to speak to WebAuthn tokens.")
+                        'desc': _("Only the specified transports may be used to speak to WebAuthn tokens."
+                                  "Default: usb ble nfc internal lightning (All transports are allowed)")
                     },
                     WEBAUTHNACTION.TIMEOUT_AUTH: {
                         'type': 'int',
                         'desc': _("The amount of time in seconds the user has to confirm an authorization request on "
-                                  "his WebAuthn token.")
+                                  "his WebAuthn token. Default: 60")
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
@@ -419,18 +421,12 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.TIMEOUT_ENROLL: {
                         'type': 'int',
                         'desc': _("The amount of time in seconds the user has to confirm enrollment on his "
-                                  "WebAuthn token.")
-                    },
-                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
-                        'type': 'str',
-                        'desc': _("Which algorithms are acceptable for public key creation for WebAuthn. The "
-                                  "algorithms are given by their number in the COSE registry."),
-                        'group': GROUP.TOKEN
+                                  "WebAuthn token. Default: 60")
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
                         'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform attachments, "
-                                  "or only cross-platform attachments."),
+                                  "or only cross-platform attachments. Default: either"),
                         'group': GROUP.TOKEN,
                         'value': [
                             "platform",
