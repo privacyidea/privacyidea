@@ -105,10 +105,16 @@ You need to call the javascript function
                 name: <name>,
                 displayName: <displayName>
             },
-            pubKeyCredParams: [{
-                alg: <algorithm>,
-                type: "public-key"
-            }],
+            pubKeyCredParams: [
+                {
+                    alg: <preferredAlgorithm>,
+                    type: "public-key"
+                },
+                {
+                    alg: <alternativeAlgorithm>,
+                    type: "public-key"
+                }
+            ],
             authenticatorSelection: <authenticatorSelection>,
             timeout: <timeout>,
             attestation: <attestation>,
@@ -119,13 +125,14 @@ You need to call the javascript function
         .then(function(credential) { <responseHandler> })
         .catch(function(error) { <errorHandler> });
 
-Here *nonce*, *relyingParty*, *serialNumber*, *algorithm*,
-*authenticatorSelection*, *timeout*, *attestation*, and
+Here *nonce*, *relyingParty*, *serialNumber*, *preferredAlgorithm*,
+*alternativeAlgorithm*, *authenticatorSelection*, *timeout*, *attestation*, and
 *authenticatorSelectionList* are the values provided by the server in the first
 step, *name* is the user name the user uses to log in (often an email address),
 and *displayName* is the human-readable name used to address the user (usually
-the users full name). Some of these options are optional and should be ommited,
-if the server does not send them.
+the users full name). *alternativeAlgorithm*, *authenticatorSelection*,
+*timeout*, *attestation*, and *authenticatorSelectionList* are optional and any
+of these values should simply be omitted, if the server has not sent it.
 
 If an *authenticationSelectionList* was given, the *responseHandler* needs to
 verify, that the field *authnSel* of *credential.getExtensionResults()*
@@ -293,7 +300,7 @@ challenge will be triggered for every challenge response token the user has.
 Send the Response
 ~~~~~~~~~~~~~~~~~
 
-The application now needs to call the javascipt function
+The application now needs to call the javascript function
 *navigator.credentials.get* with *publicKeyCredentialRequstOptions* built using
 the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
 and *timeout* from the server.
@@ -358,6 +365,7 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
     USER_VERIFICATION_REQUIREMENT_ENROLL = 'webauthn_user_verification_requirement_enroll'
     USER_VERIFICATION_REQUIREMENT_AUTH = 'webauthn_user_verification_requirement_auth'
+    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_algorithm_preference'
 
 
 class WebAuthnTokenClass(TokenClass):
@@ -474,6 +482,18 @@ class WebAuthnTokenClass(TokenClass):
                             "required",
                             "preferred",
                             "discouraged"
+                        ]
+                    },
+                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: {
+                        'type': 'str',
+                        'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens"
+                                  "Default: ecdsa_preferred"),
+                        'group': GROUP.TOKEN,
+                        'value': [
+                            "ecdsa_preferred",
+                            "ecdsa_only",
+                            "rsassa-pss_preferred",
+                            "rsassa-pss_only"
                         ]
                     },
                     ACTION.MAXTOKENUSER: {
