@@ -1341,7 +1341,7 @@ def check_serial_valid(serial):
 
 
 def my_Popen(command, stdin=None, stdout=None, stderr=None, cwd=None, shell=False,
-             encoding=None):
+             encoding='utf8'):
     try:
         p = Popen(command, stdin=stdin, stdout=stdout, stderr=stderr,
                   cwd=cwd, shell=shell, encoding=encoding)
