@@ -327,9 +327,12 @@ decoded from the *response.userHandle* field contained in the *assertion*.
 
 """
 
+IMAGES = IMAGES
+
 log = logging.getLogger(__name__)
 optional = True
 required = False
+
 
 class WEBAUTHNACTION(object):
     ALLOWED_TRANSPORTS = 'webauthn_allowed_transports'
@@ -339,6 +342,7 @@ class WEBAUTHNACTION(object):
     RELYING_PARTY_ID = 'webauthn_relying_party_id'
     PUBLIC_KEY_CREDENTIAL_ALGORITHMS = 'webauthn_public_key_credential_algorithms'
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
+
 
 class WebAuthnTokenClass(TokenClass):
     """
@@ -454,3 +458,16 @@ class WebAuthnTokenClass(TokenClass):
             if ret == 'all':
                 ret = res
         return ret
+
+    @log_with(log)
+    def __init__(self, db_token):
+        """
+        Create a new WebAuthn Token object from a database object
+
+        :param db_token:  instance of the orm db object
+        :type db_token: DB object
+        """
+        TokenClass.__init__(self, db_token)
+        self.set_type(u"webauthn")
+        self.hKeyRequired = False
+        self.init_step = 1
