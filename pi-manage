@@ -54,6 +54,7 @@ import datetime
 from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
+from privacyidea.lib.utils import my_Popen
 from getpass import getpass
 import gnupg
 import yaml
@@ -347,7 +348,7 @@ def restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE, encoding='utf8')
+    p = my_Popen(["tar", "-ztf", backup_file], stdout=PIPE)
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
         if re.search(r"/pi.cfg$", line):
