@@ -1,5 +1,13 @@
 # Update Notes
 
+## Update from 3.2 to 3.3
+
+* PostgreSQL database adapter removed from default installation
+
+  When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package
+  wont be installed anymore. Instead one can use 
+  ``pip install privacyIDEA[postgres]`` to also install the required packages.
+
 ## Update from 3.1 to 3.2
 
 * Change to Python 3
