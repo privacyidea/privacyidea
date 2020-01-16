@@ -1511,6 +1511,11 @@ def get_static_policy_definitions(scope=None):
                                                  "CA Connector definitions."),
                                        "group": GROUP.SYSTEM,
                                        'mainmenu': [MAIN_MENU.CONFIG]},
+            ACTION.CACONNECTORREAD: {'type': 'bool',
+                                     "desc": _("Admin is allowed to read CA Connector "
+                                               "definitions."),
+                                     "group": GROUP.SYSTEM,
+                                     'mainmenu': [MAIN_MENU.CONFIG]},
             ACTION.MACHINERESOLVERWRITE: {'type': 'bool',
                                           'desc': _("Admin is allowed to "
                                                     "write and modify the "
