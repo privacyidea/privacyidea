@@ -3,24 +3,28 @@ This test file tests the lib.tokens.webauthntoken, along with lib.tokens.webauth
 This depends on lib.tokenclass
 """
 
+import unittest
+from copy import copy
+
+from privacyidea.lib.tokens import webauthn
+from privacyidea.lib.tokens.webauthn import COSEALGORITHM
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import set_policy, SCOPE
 
-RP_ID = 'example.com'
-RP_NAME = 'ACME'
-
 
 class WebAuthnTokenTestCase(MyTestCase):
+    RP_ID = 'example.com'
+    RP_NAME = 'ACME'
 
     def test_00_users(self):
         self.setUp_user_realms()
 
         set_policy(name="WebAuthn",
                    scope=SCOPE.ENROLL,
-                   action=WEBAUTHNACTION.RELYING_PARTY_NAME+"="+RP_NAME+","
-                         +WEBAUTHNACTION.RELYING_PARTY_ID+"="+RP_ID)
+                   action=WEBAUTHNACTION.RELYING_PARTY_NAME+"="+self.RP_NAME+","
+                          +WEBAUTHNACTION.RELYING_PARTY_ID+"="+self.RP_ID)
 
     def test_01_create_token(self):
         pin = "1234"
