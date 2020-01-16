@@ -23,7 +23,7 @@
 
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.models import Challenge
-from privacyidea.lib.tokens.u2ftoken import IMAGES
+from privacyidea.lib.tokens.u2ftoken import IMAGES, U2FACTION
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
@@ -356,6 +356,10 @@ required = False
 
 
 class WEBAUTHNACTION(object):
+    """
+    Policy actions defined for WebAuthn
+    """
+
     ALLOWED_TRANSPORTS = 'webauthn_allowed_transports'
     TIMEOUT_AUTH = 'webauthn_timeout_auth'
     TIMEOUT_ENROLL = 'webauthn_timeout_enroll'
@@ -495,6 +499,11 @@ class WebAuthnTokenClass(TokenClass):
                             "rsassa-pss_preferred",
                             "rsassa-pss_only"
                         ]
+                    },
+                    U2FACTION.REQ: {
+                        'type': 'str',
+                        'desc': _("Only the specified U2F tokens are allowed to be registered as tokens for WebAuthn"),
+                        'group': GROUP.TOKEN
                     },
                     ACTION.MAXTOKENUSER: {
                         'type': 'int',
