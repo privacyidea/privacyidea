@@ -58,6 +58,7 @@ import json
 import logging
 import os
 
+import cbor2
 import six
 from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
