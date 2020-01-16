@@ -50,8 +50,19 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import base64
+import binascii
+import codecs
+import hashlib
 import json
 import logging
+import os
+
+import six
+from OpenSSL import crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import constant_time
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers, SECP256R1, ECDSA
 
 __doc__ = """
 Business logic for WebAuthn protocol.
@@ -60,6 +71,27 @@ This file implements the server part of the WebAuthn protocol.
 
 This file is tested in tests/test_lib_tokens_webauthn.py
 """
+
+# Authenticator data flags.
+#
+# https://www.w3.org/TR/webauthn/#authenticator-data
+#
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+from cryptography.hazmat.primitives.hashes import SHA256
+
+USER_PRESENT = 1 << 0
+USER_VERIFIED = 1 << 2
+ATTESTATION_DATA_INCLUDED = 1 << 6
+EXTENSION_DATA_INCLUDED = 1 << 7
+
+# Default client extensions
+#
+DEFAULT_CLIENT_EXTENSIONS = {'appid': None}
+
+# Default authenticator extensions
+#
+DEFAULT_AUTHENTICATOR_EXTENSIONS = {}
 
 log = logging.getLogger(__name__)
 
@@ -125,28 +157,14 @@ class COSE_ALGORITHM(object):
     """
 
     ES256 = -7
-    ES384 = -35
-    ES512 = -36
-
     PS256 = -37
-    PS384 = -38
-    PS512 = -39
-
     RS256 = -257
-    RS384 = -258
-    RS512 = -259
 
 
 SUPPORTED_COSE_ALGORITHMS = (
     COSE_ALGORITHM.ES256,
-    COSE_ALGORITHM.ES384,
-    COSE_ALGORITHM.ES512,
     COSE_ALGORITHM.PS256,
-    COSE_ALGORITHM.PS384,
-    COSE_ALGORITHM.PS512,
     COSE_ALGORITHM.RS256,
-    COSE_ALGORITHM.RS384,
-    COSE_ALGORITHM.RS512
 )
 
 
@@ -201,7 +219,7 @@ AUTHENTICATOR_ATTACHMENT_TYPES = (
 
 class COSEKeyException(Exception):
     """
-    COSE algorithm key unsupported or unknown.
+    COSE public key invalid or unsupported.
     """
 
     pass
@@ -361,3 +379,272 @@ class WebAuthnMakeCredentialOptions(object):
     @property
     def json(self):
         return json.dumps(self.registration_dict)
+
+
+def _encode_public_key(public_key):
+    """
+    Extracts the x and y coordinates from a public point on a Cryptography elliptic curve.
+
+    The result of running this function is a 65 byte string. This function is the inverse of
+    decode_public_key().public_key().
+
+    :param public_key: An EllipticCurvePublicKey object
+    :return: The coordinates packed into a standard byte string representation.
+    """
+    numbers = public_key.public_numbers()
+    return b'\x04' + binascii.unhexlify('{:064x}{:064x}'.format(numbers.x, numbers.y))
+
+
+def _load_cose_public_key(key_bytes):
+    ALG_KEY = 3
+
+    cose_public_key = cbor2.loads(key_bytes)
+
+    if ALG_KEY not in cose_public_key:
+        raise COSEKeyException('Public key missing required algorithm parameter.')
+
+    alg = cose_public_key[ALG_KEY]
+
+    if alg == COSE_ALGORITHM.ES256:
+        X_KEY = -2
+        Y_KEY = -3
+
+        required_keys = {
+            ALG_KEY,
+            X_KEY,
+            Y_KEY
+        }
+
+        if not set(cose_public_key.keys()).issuperset(required_keys):
+            raise COSEKeyException('Public key must match COSE_Key spec.')
+
+        if len(cose_public_key[X_KEY]) != 32:
+            raise RegistrationRejectedException('Bad public key.')
+        x = int(codecs.encode(cose_public_key[X_KEY], 'hex'), 16)
+
+        if len(cose_public_key[Y_KEY]) != 32:
+            raise RegistrationRejectedException('Bad public key.')
+        y = int(codecs.encode(cose_public_key[Y_KEY], 'hex'), 16)
+
+        return alg, EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key(backend=default_backend())
+    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256):
+        E_KEY = -2
+        N_KEY = -1
+
+        required_keys = {
+            ALG_KEY,
+            E_KEY,
+            N_KEY
+        }
+
+        if not set(cose_public_key.keys()).issuperset(required_keys):
+            raise COSEKeyException('Public key must match COSE_Key spec.')
+
+        if len(cose_public_key[E_KEY]) != 3 or len(cose_public_key[N_KEY]) != 256:
+            raise COSEKeyException('Bad public key.')
+
+        e = int(codecs.encode(cose_public_key[E_KEY], 'hex'), 16)
+        n = int(codecs.encode(cose_public_key[N_KEY], 'hex'), 16)
+
+        return alg, RSAPublicNumbers(e, n).public_key(backend=default_backend())
+    else:
+        raise COSEKeyException('Unsupported algorithm.')
+
+
+def _webauthn_b64_decode(encoded):
+    """
+    Pad a WebAuthn base64-encoded string and decode it.
+
+    WebAuthn specifies web-safe base64 encoding *without* padding. The Python
+    implementation of base64 requires padding. This function will add the
+    padding back in to a WebAuthn base64-encoded string, then run it through
+    the native Python implementation of base64 to decode.
+
+    :param encoded: A WebAuthn base64-encoded string.
+    :type encoded: basestring or bytes
+    :return: The decoded binary.
+    :rtype: bytes
+    """
+
+    if isinstance(encoded, bytes):
+        encoded = str(encoded, 'utf-8')
+
+    # Add '=' until length is a multiple of 4 bytes, then decode.
+    padding_len = (-len(encoded) % 4)
+    encoded += '=' * padding_len
+    return base64.urlsafe_b64decode(encoded)
+
+
+def _webauthn_b64_encode(raw):
+    """
+    Encode bytes using WebAuthn base64-encoding.
+
+    WebAuthn specifies a web-safe base64 encoding *without* padding. The Python
+    implementation of base64 will include padding. This function will use the
+    native Python implementation of base64 do encode, then strip of the padding.
+
+    :param raw: Bytes to encode.
+    :type raw: bytes
+    :return: The encoded base64.
+    :rtype: bytes
+    """
+    return base64.urlsafe_b64encode(raw).rstrip(b'=')
+
+def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
+    """
+    Return a list of trusted attestation root certificates.
+
+    This will fetch all CA certificates from the given directory, silently skipping any invalid ones.
+
+    :param attestation_type: The attestation type being used. If the type is unsupported, an empty list is returned.
+    :type attestation_type: basestring
+    :param attestation_fmt: The attestation format being used. If the format is unsupported, an empty list is returned.
+    :type attestation_fmt: basestring
+    :param trust_anchor_dir: The path to the directory that contains the CA certificates.
+    :type trust_anchor_dir: basestring
+    :return: The list of trust anchors.
+    """
+
+    if attestation_type not in SUPPORTED_ATTESTATION_TYPES or attestation_fmt not in SUPPORTED_ATTESTATION_FORMATS:
+        return []
+
+    trust_anchors = []
+
+    if os.path.isdir(trust_anchor_dir):
+        for trust_anchor_name in os.listdir(trust_anchor_dir):
+            trust_anchor_path = os.path.join(trust_anchor_dir, trust_anchor_name)
+            if os.path.isfile(trust_anchor_path):
+                with open(trust_anchor_path, 'rb') as f:
+                    pem_data = f.read().strip()
+                    try:
+                        pem = crypto.load_certificate(crypto.FILETYPE_PEM, pem_data)
+                        trust_anchors.append(pem)
+                    except Exception:
+                        pass
+
+
+def _is_trusted_attestation_cert(trust_path, trust_anchors):
+    if not trust_path or not isinstance(trust_path, list):
+        return False
+
+    # FIXME Only using the first attestation certificate in the trust path for now, should be able to build a chain.
+    attestation_cert = trust_path[0]
+    store = crypto.X509Store()
+    for i in trust_anchors:
+        store.add_cert(i)
+    store_ctx = crypto.X509StoreContext(store, attestation_cert)
+
+    try:
+        store_ctx.verify_certificate()
+        return True
+    except Exception as e:
+        log.info('Unable to verify certificate: {}'.format(e))
+
+    return False
+
+
+def _verify_type(received_type, expected_type):
+    return received_type == expected_type
+
+
+def _verify_challenge(received_challenge, sent_challenge):
+    return received_challenge \
+        and sent_challenge \
+        and isinstance(received_challenge, six.string_types) \
+        and isinstance(sent_challenge, six.string_types) \
+        and constant_time.bytes_eq(
+            bytes(sent_challenge, encoding='utf-8'),
+            bytes(received_challenge, encoding='utf-8')
+        )
+
+
+def _verify_origin(client_data, origin):
+    return isinstance(client_data, dict) \
+        and client_data.get('origin') \
+        and client_data.get('origin') == origin
+
+
+def _verify_token_binding_id(client_data):
+    """
+    Verify tokenBinding. Currently this is unimplemented, so it will simply return false if tokenBinding is required.
+
+    The tokenBinding member contains information about the state of the
+    Token Binding protocol used when communicating with the Relying Party.
+    The status member is one of:
+        not-supported: when the client does not support token binding.
+            supported: the client supports token binding, but it was not
+                       negotiated when communicating with the Relying
+                       Party.
+              present: token binding was used when communicating with the
+                       Relying Party. In this case, the id member MUST be
+                       present and MUST be a base64url encoding of the
+                       Token Binding ID that was used.
+
+    :param client_data: The WebAuthn client data dictionary.
+    :type client_data: dict
+    :return: False, if tokenBinding is present.
+    :rtype: bool
+    """
+
+    # TODO Add support for verifying the token binding ID.
+
+    return client_data['tokenBinding']['status'] in ('supported', 'not_supported')
+
+
+def _verify_client_extensions(client_extensions, expected_client_extensions):
+    return set(expected_client_extensions.keys()).issuperset(client_extensions.keys())
+
+
+def _verify_authenticator_extensions(client_data, expected_authenticator_extensions):
+    # TODO
+    return True
+
+
+def _verify_rp_id_hash(auth_data_rp_id_hash, rp_id):
+    rp_id_hash = hashlib.sha256(bytes(rp_id, "utf-8")).digest()
+    return constant_time.bytes_eq(auth_data_rp_id_hash, rp_id_hash)
+
+
+def _verify_attestation_statement_format(fmt):
+    """
+    Verify that the attestation statement format is supported.
+
+    :param fmt: The attestation statement format.
+    :type fmt: basestring
+    :return: Whether the attestation statement format is supported.
+    :rtype: bool
+    """
+
+    # TODO Handle more attestation statement formats
+
+    return isinstance(fmt, six.string_types) and fmt in SUPPORTED_ATTESTATION_FORMATS
+
+
+def _get_auth_data_rp_id_hash(auth_data):
+    if not isinstance(auth_data, six.binary_type):
+        return False
+
+    return auth_data[:32]
+
+
+def _get_client_data_hash(decoded_client_data):
+    if not isinstance(decoded_client_data, six.binary_type):
+        return ''
+
+    return hashlib.sha256(decoded_client_data).digest()
+
+
+def _validate_credential_id(credential_id):
+    return isinstance(credential_id, six.string_types)
+
+
+def _verify_signature(public_key, alg, data, signature):
+    if alg == COSE_ALGORITHM.ES256:
+        public_key.verify(signature, data, ECDSA(SHA256()))
+    elif alg == COSE_ALGORITHM.RS256:
+        public_key.verify(signature, data, PKCS1v15(), SHA256())
+    elif alg == COSE_ALGORITHM.PS256:
+        padding = PSS(mgf=MGF1(SHA256()), salt_length=PSS.MAX_LENGTH)
+        public_key.verify(signature, data, padding, SHA256())
+    else:
+        raise NotImplementedError()
