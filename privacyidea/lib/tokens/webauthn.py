@@ -217,6 +217,26 @@ AUTHENTICATOR_ATTACHMENT_TYPES = (
     AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
 )
 
+class TRANSPORT(object):
+    """
+    The standard transports.
+    """
+
+    USB = 'usb'
+    BLE = 'ble'
+    NFC = 'nfc'
+    INTERNAL = 'internal'
+    LIGHTNING = 'lightning'
+
+
+TRANSPORTS = (
+    TRANSPORT.USB,
+    TRANSPORT.BLE,
+    TRANSPORT.NFC,
+    TRANSPORT.INTERNAL,
+    TRANSPORT.LIGHTNING
+)
+
 
 class COSEKeyException(Exception):
     """
@@ -255,9 +275,21 @@ class WebAuthnMakeCredentialOptions(object):
     Generate the options passed to navigator.credentials.create()
     """
 
-    def __init__(self, challenge, rp_name, rp_id, user_id, user_name, user_display_name, timeout, attestation,
-                 user_verification, public_key_credential_algorithms, icon_url=None, authenticator_attachment=None,
-                 authenticator_selection_list=None, location=None):
+    def __init__(self,
+                 challenge,
+                 rp_name,
+                 rp_id,
+                 user_id,
+                 user_name,
+                 user_display_name,
+                 timeout,
+                 attestation,
+                 user_verification,
+                 public_key_credential_algorithms,
+                 icon_url=None,
+                 authenticator_attachment=None,
+                 authenticator_selection_list=None,
+                 location=None):
         """
         Create a new WebAuthnMakeCredentialOptions object.
 
@@ -290,6 +322,7 @@ class WebAuthnMakeCredentialOptions(object):
         :param location: Whether to ask for the inclusion of location information in the attestation.
         :type location: bool
         :return: A WebAuthnMakeCredentialOptions object.
+        :rtype: WebAuthnMakeCredentialOptions
         """
 
         self.challenge = challenge
@@ -299,7 +332,6 @@ class WebAuthnMakeCredentialOptions(object):
         self.user_name = user_name
         self.user_display_name = user_display_name
         self.icon_url = icon_url
-        self.timeout = timeout
         self.authenticator_selection_list = authenticator_selection_list
         self.location = bool(location)
 
@@ -323,6 +355,10 @@ class WebAuthnMakeCredentialOptions(object):
                                  + ', '.join(AUTHENTICATOR_ATTACHMENT_TYPES))
         self.authenticator_attachment = authenticator_attachment
 
+        if int(timeout) < 1:
+            raise ValueError('timeout must be a positive integer.')
+        self.timeout = timeout
+
         self.public_key_credential_parameters = [
             {
                 'alg': i,
@@ -337,6 +373,7 @@ class WebAuthnMakeCredentialOptions(object):
         The publicKeyCredentialCreationOptions dictionary.
 
         :return: The publicKeyCredentialCreationOptions dictionary.
+        :rtype: dict
         """
 
         registration_dict = {
@@ -379,7 +416,203 @@ class WebAuthnMakeCredentialOptions(object):
 
     @property
     def json(self):
+        """
+        The publicKeyCredentialCreationOptions dictionary encoded as JSON.
+
+        :return: The publicKeyCredentialCreationOptions dictionary encoded as JSON.
+        :rtype: basestring
+        """
+
         return json.dumps(self.registration_dict)
+
+
+class WebAuthnAssertionOptions(object):
+    """
+    Generate the options passed to navigator.credentials.get()
+    """
+
+    def __init__(self,
+                 challenge,
+                 webauthn_user,
+                 transports,
+                 user_verification_requirement,
+                 timeout):
+        """
+        Create a new WebAuthnAssertionOptions object.
+
+        :param challenge: The challenge is a buffer of cryptographically random bytes needed to prevent replay attacks.
+        :type challenge: basestring
+        :param webauthn_user: A user cred or a list of user creds to allow authentication with.
+        :type webauthn_user: WebAuthnUser or list of WebAuthnUser
+        :param transports: Which transports to ask for.
+        :type transports: list of basestring
+        :param user_verification_requirement: The level of user verification this authentication requires.
+        :type user_verification_requirement: basestring
+        :param timeout: The time (in milliseconds) that the user has to respond to the prompt for authentication.
+        :type timeout: int
+        :return: A WebAuthnAssertionOptions object.
+        :rtype: WebAuthnAssertionOptions
+        """
+
+        self.challenge = challenge
+        if not self.challenge:
+            raise ValueError('The challenge may not be empty.')
+
+        self.webauthn_users = webauthn_user if isinstance(webauthn_user, list) else [webauthn_user]
+        if len(self.webauthn_users) < 1:
+            raise ValueError('webauthn_user may not be empty.')
+        for user in self.webauthn_users:
+            if not isinstance(user, WebAuthnUser):
+                raise ValueError('webauthn_user must be of type WebAuthnUser.')
+            if not user.credential_id:
+                raise ValueError('user must have a credential_id.')
+            if not user.rp_id:
+                raise ValueError('user must have a rp_id.')
+
+        if len(set([u.rp_id for u in self.webauthn_users])) != 1:
+            raise ValueError('all users must have the same rp_id.')
+        self.rp_id = self.webauthn_users[0].rp_id
+
+        self.timeout = timeout
+        if int(self.timeout) < 1:
+            raise ValueError('timeout must be a positive integer.')
+
+        self.transports = transports
+        if len(self.transports) < 1:
+            raise ValueError('transports may not be empty.')
+
+        self.user_verification_requirement = str(user_verification_requirement).lower()
+        if self.user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise ValueError('user_verification_requirement must be one of '
+                             + ', '.join(USER_VERIFICATION_LEVELS))
+
+    @property
+    def assertion_dict(self):
+        """
+        The publicKeyCredentialRequestOptions dictionary.
+
+        :return: The publicKeyCredentialRequestOptions dictionary.
+        :rtype: dict
+        """
+
+        return {
+            'challenge': self.challenge,
+            'allowCredentials': [
+                {
+                    'type': 'public-key',
+                    'id': user.credential_id,
+                    'transports': self.transports
+                }
+                for user in self.webauthn_users
+            ],
+            'rpId': self.rp_id,
+            'userVerification': self.user_verification_requirement,
+            'timeout': self.timeout
+        }
+
+    @property
+    def json(self):
+        """
+        The publicKeyCredentialRequestOptions dictionary encoded as JSON.
+
+        :return: The publicKeyCredentialRequestOptions dictionary encoded as JSON.
+        :rtype: basestring
+        """
+
+        return json.dumps(self.assertion_dict)
+
+
+class WebAuthnUser(object):
+    """
+    A single WebAuthn user credential.
+    """
+
+    def __init__(self,
+                 id,
+                 name,
+                 display_name,
+                 icon_url,
+                 credential_id,
+                 public_key,
+                 sign_count,
+                 rp_id):
+        """
+        Create a new WebAuthnUser object.
+
+        :param id: The ID for the user credential being stored. This is the privacyIDEA token serial.
+        :type id: basestring
+        :param name: The user name the user logs in with.
+        :type name: basestring
+        :param display_name: The human readable name of the user.
+        :type display_name: basestring
+        :param icon_url: An optional icon url.
+        :type icon_url: basestring
+        :param credential_id: The ID of the credential.
+        :type credential_id: basestring
+        :param public_key: The credential public key.
+        :type public_key: basestring
+        :param sign_count: The signature counter value.
+        :type sign_count: int
+        :param rp_id: The ID of the relying party associated with this credential.
+        :type rp_id: basestring
+        :return: A WebAuthnUser object.
+        :rtype: WebAuthnUser
+        """
+
+        if not credential_id:
+            raise WebAuthnUserDataMissing("credential_id missing")
+        if not rp_id:
+            raise WebAuthnUserDataMissing("rp_id missing")
+
+        self.id = id
+        self.name = name
+        self.display_name = display_name
+        self.icon_url = icon_url
+        self.credential_id = credential_id
+        self.public_key = public_key
+        self.sign_count = sign_count
+        self.rp_id = rp_id
+
+    def __str__(self):
+        return '{} ({}, {}, {})'.format(self.id, self.name, self.display_name, self.sign_count)
+
+
+class WebAuthnCredential(object):
+    """
+    A single WebAuthn credential.
+    """
+
+    def __init__(self,
+                 rp_id,
+                 origin,
+                 credential_id,
+                 public_key,
+                 sign_count):
+        """
+        Create a new WebAuthnCredential object.
+
+        :param rp_id: The relying party ID.
+        :type rp_id: basestring
+        :param origin: The origin of the user the credential is for.
+        :type origin: basestring
+        :param credential_id: The ID of the credential.
+        :type credential_id: basestring
+        :param public_key: The public key of the credential.
+        :type public_key: basestring
+        :param sign_count: The signature count.
+        :type sign_count: int
+        :return: A WebAuthnCredential
+        :rtype: WebAuthnCredential
+        """
+
+        self.rp_id = rp_id
+        self.origin = origin
+        self.credential_id = credential_id
+        self.public_key = public_key
+        self.sign_count = sign_count
+
+    def __str_(self):
+        return '{} ({}, {}, {})'.format(self.credential_id, self.rp_id, self.origin, self.sign_count)
 
 
 def _encode_public_key(public_key):
