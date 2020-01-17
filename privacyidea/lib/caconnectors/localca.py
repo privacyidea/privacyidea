@@ -31,8 +31,7 @@ from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from OpenSSL import crypto
-from subprocess import Popen, PIPE
-from privacyidea.lib.utils import my_Popen
+from subprocess import Popen, PIPE  
 import yaml
 import datetime
 import shlex
@@ -424,7 +423,7 @@ class LocalCAConnector(BaseCAConnector):
                                                           certificate_filename))
         # run the command
         args = shlex.split(cmd)
-        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -509,7 +508,7 @@ class LocalCAConnector(BaseCAConnector):
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
-        p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -554,7 +553,7 @@ class LocalCAConnector(BaseCAConnector):
                                          config=self.config.get(ATTR.OPENSSL_CNF),
                                          CRL=crl)
             args = shlex.split(cmd)
-            p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
             result, error = p.communicate()
             if p.returncode != 0:  # pragma: no cover
                 # Some error occurred
@@ -703,7 +702,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
@@ -717,7 +716,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = my_Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred

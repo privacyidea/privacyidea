@@ -189,7 +189,7 @@ class ScriptEventHandler(BaseEventHandler):
         rcode = 0
         try:
             log.info("Starting script {script!r}.".format(script=script_name))
-            p = subprocess.Popen(proc_args, cwd=self.script_directory)
+            p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)
             if handler_options.get("background") == SCRIPT_WAIT:
                 rcode = p.wait()
 
