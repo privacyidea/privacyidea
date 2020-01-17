@@ -1338,14 +1338,3 @@ def check_serial_valid(serial):
     if not re.match(ALLOWED_SERIAL, serial):
         raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
     return True
-
-
-def my_Popen(command, stdin=None, stdout=None, stderr=None, cwd=None, shell=False,
-             encoding='utf8'):
-    try:
-        p = Popen(command, stdin=stdin, stdout=stdout, stderr=stderr,
-                  cwd=cwd, shell=shell, encoding=encoding)
-    except TypeError:
-        p = Popen(command, stdin=stdin, stdout=stdout, stderr=stderr,
-                  cwd=cwd, shell=shell)
-    return p
