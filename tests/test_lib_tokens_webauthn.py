@@ -34,7 +34,7 @@ from copy import copy
 
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                             _webauthn_b64_decode, _webauthn_b64_encode,
+                                             webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
                                              ATTESTATION_LEVEL, AuthenticatorDataFlags)
 from .base import MyTestCase
@@ -226,11 +226,11 @@ class WebAuthnTestCase(unittest.TestCase):
 
     def test_05_no_user_presence_fail_assertion(self):
         webauthn_assertion_response = self.getAssertionResponse()
-        auth_data = _webauthn_b64_decode(webauthn_assertion_response.assertion_response['authData'])
+        auth_data = webauthn_b64_decode(webauthn_assertion_response.assertion_response['authData'])
         flags = struct.unpack('!B', auth_data[32:33])[0]
         flags = flags & ~AuthenticatorDataFlags.USER_PRESENT
         auth_data = auth_data[:32] + struct.pack('!B', flags) + auth_data[33:]
-        webauthn_assertion_response.assertion_response['authData'] = _webauthn_b64_encode(auth_data)
+        webauthn_assertion_response.assertion_response['authData'] = webauthn_b64_encode(auth_data)
 
         # FIXME This *should* fail because UP=0, but will fail anyway later on because the signature is invalid.
         # TODO Build a mock Authenticator implementation, to be able to sign arbitrary authenticator data statements.

@@ -1115,7 +1115,7 @@ class WebAuthnRegistrationResponse(object):
             # Let C, the client data claimed as collected during the credential
             # creation, be the result of running an implementation-specific JSON
             # parser on JSONtext.
-            decoded_cd = _webauthn_b64_decode(json_text)
+            decoded_cd = webauthn_b64_decode(json_text)
             c = json.loads(decoded_cd.decode('utf-8'))
 
             # Step 3.
@@ -1160,7 +1160,7 @@ class WebAuthnRegistrationResponse(object):
             # the AuthenticatorAttestationResponse structure to obtain
             # the attestation statement format fmt, the authenticator
             # data authData, and the attestation statement attStmt.
-            att_obj = cbor2.loads(_webauthn_b64_decode(self.registration_response.get('attObj')))
+            att_obj = cbor2.loads(webauthn_b64_decode(self.registration_response.get('attObj')))
             att_stmt = att_obj.get('attStmt')
             auth_data = att_obj.get('authData')
             fmt = att_obj.get('fmt')
@@ -1237,7 +1237,7 @@ class WebAuthnRegistrationResponse(object):
                 auth_data,
                 client_data_hash
             )
-            b64_cred_id = _webauthn_b64_encode(cred_id)
+            b64_cred_id = webauthn_b64_encode(cred_id)
 
             # Step 15.
             #
@@ -1304,7 +1304,7 @@ class WebAuthnRegistrationResponse(object):
             credential = WebAuthnCredential(rp_id=self.rp_id,
                                             origin=self.origin,
                                             id=b64_cred_id,
-                                            public_key=_webauthn_b64_encode(credential_public_key),
+                                            public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
                                             attestation_level=attestation_level)
             if is_trusted_attestation_cert:
@@ -1359,6 +1359,46 @@ class WebAuthnAssertionResponse(object):
         :param expected_assertion_client_extensions:
         :param expected_assertion_authnticator_extensions:
         """
+
+
+def webauthn_b64_decode(encoded):
+    """
+    Pad a WebAuthn base64-encoded string and decode it.
+
+    WebAuthn specifies web-safe base64 encoding *without* padding. The Python
+    implementation of base64 requires padding. This function will add the
+    padding back in to a WebAuthn base64-encoded string, then run it through
+    the native Python implementation of base64 to decode.
+
+    :param encoded: A WebAuthn base64-encoded string.
+    :type encoded: basestring or bytes
+    :return: The decoded binary.
+    :rtype: bytes
+    """
+
+    if isinstance(encoded, bytes):
+        encoded = str(encoded, 'utf-8')
+
+    # Add '=' until length is a multiple of 4 bytes, then decode.
+    padding_len = (-len(encoded) % 4)
+    encoded += '=' * padding_len
+    return base64.urlsafe_b64decode(encoded)
+
+
+def webauthn_b64_encode(raw):
+    """
+    Encode bytes using WebAuthn base64-encoding.
+
+    WebAuthn specifies a web-safe base64 encoding *without* padding. The Python
+    implementation of base64 will include padding. This function will use the
+    native Python implementation of base64 do encode, then strip of the padding.
+
+    :param raw: Bytes to encode.
+    :type raw: bytes
+    :return: The encoded base64.
+    :rtype: bytes
+    """
+    return base64.urlsafe_b64encode(raw).rstrip(b'=')
 
 
 def _encode_public_key(public_key):
@@ -1430,45 +1470,6 @@ def _load_cose_public_key(key_bytes):
     else:
         raise COSEKeyException('Unsupported algorithm.')
 
-
-def _webauthn_b64_decode(encoded):
-    """
-    Pad a WebAuthn base64-encoded string and decode it.
-
-    WebAuthn specifies web-safe base64 encoding *without* padding. The Python
-    implementation of base64 requires padding. This function will add the
-    padding back in to a WebAuthn base64-encoded string, then run it through
-    the native Python implementation of base64 to decode.
-
-    :param encoded: A WebAuthn base64-encoded string.
-    :type encoded: basestring or bytes
-    :return: The decoded binary.
-    :rtype: bytes
-    """
-
-    if isinstance(encoded, bytes):
-        encoded = str(encoded, 'utf-8')
-
-    # Add '=' until length is a multiple of 4 bytes, then decode.
-    padding_len = (-len(encoded) % 4)
-    encoded += '=' * padding_len
-    return base64.urlsafe_b64decode(encoded)
-
-
-def _webauthn_b64_encode(raw):
-    """
-    Encode bytes using WebAuthn base64-encoding.
-
-    WebAuthn specifies a web-safe base64 encoding *without* padding. The Python
-    implementation of base64 will include padding. This function will use the
-    native Python implementation of base64 do encode, then strip of the padding.
-
-    :param raw: Bytes to encode.
-    :type raw: bytes
-    :return: The encoded base64.
-    :rtype: bytes
-    """
-    return base64.urlsafe_b64encode(raw).rstrip(b'=')
 
 def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
     """
