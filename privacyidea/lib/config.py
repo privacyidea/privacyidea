@@ -714,6 +714,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.vascotoken")
     module_list.add("privacyidea.lib.tokens.tantoken")
     module_list.add("privacyidea.lib.tokens.pushtoken")
+    module_list.add("privacyidea.lib.tokens.webauthntoken")
 
     #module_list.add(".tokens.tagespassworttoken")
     #module_list.add(".tokens.vascotoken")
