@@ -34,7 +34,9 @@ from copy import copy
 
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                             USER_PRESENT, _webauthn_b64_decode, _webauthn_b64_encode)
+                                             USER_PRESENT, _webauthn_b64_decode, _webauthn_b64_encode,
+                                             WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
+                                             ATTESTATION_LEVEL)
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION
 from privacyidea.lib.token import init_token
@@ -158,7 +160,7 @@ class WebAuthnTestCase(unittest.TestCase):
             user_name=self.USER_NAME,
             user_display_name=self.USER_DISPLAY_NAME,
             icon_url=self.ICON_URL,
-            credential_id=credential.credential_id.decode(),
+            credential_id=credential.id.decode(),
             public_key=credential.public_key,
             sign_count=credential.sign_count,
             rp_id=credential.rp_id
@@ -185,9 +187,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin=self.ORIGIN,
             registration_response=copy(self.REGISTRATION_RESPONSE_TMPL),
             challenge=self.REGISTRATION_CHALLENGE,
-            trusted_attestation_cert_required=True,
-            self_attestation_permitted=True,
-            none_attestation_permitted=True,
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE],
             uv_required=False,
             expected_registration_client_extensions=self.EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
         )
@@ -200,8 +200,7 @@ class WebAuthnTestCase(unittest.TestCase):
             origin=self.ORIGIN,
             registration_response=copy(self.REGISTRATION_RESPONSE_TMPL),
             challenge=self.REGISTRATION_CHALLENGE,
-            trusted_attestation_cert_required=True,
-            self_attestation_permitted=True,
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
             uv_required=True,
             expected_registration_client_extensions=self.EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
         )

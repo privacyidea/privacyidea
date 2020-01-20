@@ -369,7 +369,8 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
     USER_VERIFICATION_REQUIREMENT_ENROLL = 'webauthn_user_verification_requirement_enroll'
     USER_VERIFICATION_REQUIREMENT_AUTH = 'webauthn_user_verification_requirement_auth'
-    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_algorithm_preference'
+    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_credential_algorithm_preference'
+    AUTHENTICATOR_ATTESTATION_REQUIREMENT_LEVEL = 'webauthn_authenticator_attestation_requirement_level'
 
 
 class WebAuthnTokenClass(TokenClass):
@@ -498,6 +499,18 @@ class WebAuthnTokenClass(TokenClass):
                             "ecdsa_only",
                             "rsassa-pss_preferred",
                             "rsassa-pss_only"
+                        ]
+                    },
+                    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_REQUIREMENT_LEVEL: {
+                        'type': 'str',
+                        'desc': _("Whether to request attestation data when enrolling a new WebAuthn token."
+                                  "Note: for u2f_req to work with WebAuthn, this cannot be set to discouraged. "
+                                  "Default: preferred (ask for attestation, but do not fail if none is provided)"),
+                        'group': GROUP.TOKEN,
+                        'value': [
+                            "required",
+                            "preferred",
+                            "discouraged"
                         ]
                     },
                     U2FACTION.REQ: {
