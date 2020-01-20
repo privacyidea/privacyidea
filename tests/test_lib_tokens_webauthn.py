@@ -34,9 +34,9 @@ from copy import copy
 
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                             USER_PRESENT, _webauthn_b64_decode, _webauthn_b64_encode,
+                                             _webauthn_b64_decode, _webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                             ATTESTATION_LEVEL)
+                                             ATTESTATION_LEVEL, AuthenticatorDataFlags)
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION
 from privacyidea.lib.token import init_token
@@ -228,7 +228,7 @@ class WebAuthnTestCase(unittest.TestCase):
         webauthn_assertion_response = self.getAssertionResponse()
         auth_data = _webauthn_b64_decode(webauthn_assertion_response.assertion_response['authData'])
         flags = struct.unpack('!B', auth_data[32:33])[0]
-        flags = flags & ~USER_PRESENT
+        flags = flags & ~AuthenticatorDataFlags.USER_PRESENT
         auth_data = auth_data[:32] + struct.pack('!B', flags) + auth_data[33:]
         webauthn_assertion_response.assertion_response['authData'] = _webauthn_b64_encode(auth_data)
 
