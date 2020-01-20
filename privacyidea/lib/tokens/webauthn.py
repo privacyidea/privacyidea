@@ -254,6 +254,7 @@ AUTHENTICATOR_ATTACHMENT_TYPES = (
     AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
 )
 
+
 class TRANSPORT(object):
     """
     The standard transports.
@@ -338,7 +339,7 @@ class AuthenticatorDataFlags(object):
         :rtype: bool
         """
 
-        return (self.flags & self.USER_PRESENT) != 0x01
+        return (self.flags & self.USER_PRESENT) == self.USER_PRESENT
 
     @property
     def user_verified(self):
@@ -347,7 +348,7 @@ class AuthenticatorDataFlags(object):
         :rtype: bool
         """
 
-        return (self.flags & self.USER_VERIFIED) != 0x01
+        return (self.flags & self.USER_VERIFIED) == self.USER_VERIFIED
 
     @property
     def attestation_data_included(self):
@@ -356,7 +357,7 @@ class AuthenticatorDataFlags(object):
         :rtype: bool
         """
 
-        return (self.flags & self.ATTESTATION_DATA_INCLUDED) != 0x01
+        return (self.flags & self.ATTESTATION_DATA_INCLUDED) == self.ATTESTATION_DATA_INCLUDED
 
     @property
     def extension_data_included(self):
@@ -365,7 +366,7 @@ class AuthenticatorDataFlags(object):
         :rtype: bool
         """
 
-        return (self.flags & self.EXTENSION_DATA_INCLUDED) != 0x01
+        return (self.flags & self.EXTENSION_DATA_INCLUDED) == self.EXTENSION_DATA_INCLUDED
 
 
 class WebAuthnMakeCredentialOptions(object):
@@ -618,9 +619,9 @@ class WebAuthnUser(object):
     """
 
     def __init__(self,
-                 id,
-                 name,
-                 display_name,
+                 user_id,
+                 user_name,
+                 user_display_name,
                  icon_url,
                  credential_id,
                  public_key,
@@ -629,12 +630,12 @@ class WebAuthnUser(object):
         """
         Create a new WebAuthnUser object.
 
-        :param id: The ID for the user credential being stored. This is the privacyIDEA token serial.
-        :type id: basestring
-        :param name: The user name the user logs in with.
-        :type name: basestring
-        :param display_name: The human readable name of the user.
-        :type display_name: basestring
+        :param user_id: The ID for the user credential being stored. This is the privacyIDEA token serial.
+        :type user_id: basestring
+        :param user_name: The user name the user logs in with.
+        :type user_name: basestring
+        :param user_display_name: The human readable name of the user.
+        :type user_display_name: basestring
         :param icon_url: An optional icon url.
         :type icon_url: basestring
         :param credential_id: The ID of the credential.
@@ -654,9 +655,9 @@ class WebAuthnUser(object):
         if not rp_id:
             raise WebAuthnUserDataMissing("rp_id missing")
 
-        self.id = id
-        self.name = name
-        self.display_name = display_name
+        self.user_id = user_id
+        self.user_name = user_name
+        self.user_display_name = user_display_name
         self.icon_url = icon_url
         self.credential_id = credential_id
         self.public_key = public_key
@@ -664,7 +665,7 @@ class WebAuthnUser(object):
         self.rp_id = rp_id
 
     def __str__(self):
-        return '{} ({}, {}, {})'.format(self.id, self.name, self.display_name, self.sign_count)
+        return '{} ({}, {}, {})'.format(self.user_id, self.user_name, self.user_display_name, self.sign_count)
 
 
 class WebAuthnCredential(object):
@@ -675,7 +676,7 @@ class WebAuthnCredential(object):
     def __init__(self,
                  rp_id,
                  origin,
-                 id,
+                 credential_id,
                  public_key,
                  sign_count,
                  attestation_level):
@@ -686,10 +687,10 @@ class WebAuthnCredential(object):
         :type rp_id: basestring
         :param origin: The origin of the user the credential is for.
         :type origin: basestring
-        :param id: The ID of the credential.
-        :type id: basestring
+        :param credential_id: The ID of the credential.
+        :type credential_id: bytes
         :param public_key: The public key of the credential.
-        :type public_key: basestring
+        :type public_key: bytes
         :param sign_count: The signature count.
         :type sign_count: int
         :param attestation_level: The level of attestation that was provided for this credential.
@@ -700,7 +701,7 @@ class WebAuthnCredential(object):
 
         self.rp_id = rp_id
         self.origin = origin
-        self.id = id
+        self.credential_id = credential_id
         self.public_key = public_key
         self.sign_count = sign_count
 
@@ -729,7 +730,7 @@ class WebAuthnCredential(object):
         return not ATTESTATION_REQUIREMENT_LEVEL[self.attestation_level]['self_attestation_permitted']
 
     def __str_(self):
-        return '{} ({}, {}, {})'.format(self.id, self.rp_id, self.origin, self.sign_count)
+        return '{} ({}, {}, {})'.format(self.credential_id, self.rp_id, self.origin, self.sign_count)
 
 
 class WebAuthnRegistrationResponse(object):
@@ -745,8 +746,8 @@ class WebAuthnRegistrationResponse(object):
                  attestation_requirement_level,
                  trust_anchor_dir=None,
                  uv_required=False,
-                 expected_registration_client_extensions=DEFAULT_CLIENT_EXTENSIONS,
-                 expected_registration_authenticator_extensions=DEFAULT_AUTHENTICATOR_EXTENSIONS):
+                 expected_registration_client_extensions=None,
+                 expected_registration_authenticator_extensions=None):
         """
         Create a new WebAuthnRegistrationResponse object.
 
@@ -777,8 +778,13 @@ class WebAuthnRegistrationResponse(object):
         self.challenge = challenge
         self.trust_anchor_dir = trust_anchor_dir
         self.uv_required = uv_required
-        self.expected_registration_client_extensions = expected_registration_client_extensions
-        self.expected_registration_authenticator_extensions = expected_registration_authenticator_extensions
+
+        self.expected_registration_client_extensions = expected_registration_client_extensions \
+            if expected_registration_client_extensions \
+            else DEFAULT_CLIENT_EXTENSIONS
+        self.expected_registration_authenticator_extensions = expected_registration_authenticator_extensions \
+            if expected_registration_authenticator_extensions \
+            else DEFAULT_AUTHENTICATOR_EXTENSIONS
 
         if attestation_requirement_level not in ATTESTATION_REQUIREMENT_LEVELS:
             raise ValueError('Illegal attestation_requirement_level.')
@@ -1204,8 +1210,9 @@ class WebAuthnRegistrationResponse(object):
             if not _verify_authenticator_extensions(auth_data, self.expected_registration_authenticator_extensions):
                 raise RegistrationRejectedException('Unable to verify authenticator extensions.')
             if not _verify_client_extensions(
-                    json.loads(self.registration_response.get('registrationClientExtensions')),
-                    self.expected_registration_client_extensions):
+                json.loads(self.registration_response.get('registrationClientExtensions')),
+                self.expected_registration_client_extensions
+            ):
                 raise RegistrationRejectedException('Unable to verify client extensions.')
 
             # Step 13.
@@ -1303,7 +1310,7 @@ class WebAuthnRegistrationResponse(object):
             # Relying Party's system.
             credential = WebAuthnCredential(rp_id=self.rp_id,
                                             origin=self.origin,
-                                            id=b64_cred_id,
+                                            credential_id=b64_cred_id,
                                             public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
                                             attestation_level=attestation_level)
@@ -1345,20 +1352,237 @@ class WebAuthnAssertionResponse(object):
                  origin,
                  allow_credentials=None,
                  uv_required=False,
-                 expected_assertion_client_extensions=DEFAULT_CLIENT_EXTENSIONS,
-                 expected_assertion_authnticator_extensions=DEFAULT_AUTHENTICATOR_EXTENSIONS):
+                 expected_assertion_client_extensions=None,
+                 expected_assertion_authenticator_extensions=None):
         """
         Create a new WebAUthnAssertionResponse object.
 
-        :param webauthn_user: The Web
-        :param assertion_response:
-        :param challenge:
-        :param origin:
-        :param allow_credentials:
-        :param uv_required:
-        :param expected_assertion_client_extensions:
-        :param expected_assertion_authnticator_extensions:
+        :param webauthn_user: The WebAuthnUser used to create the assertion.
+        :type webauthn_user: WebAuthnUser
+        :param assertion_response: The assertion as a public key credential dictionary.
+        :type assertion_response: dict
+        :param challenge: The challenge that was sent to the client.
+        :type challenge: basestring
+        :param origin: The origin of the user.
+        :type origin: basestring
+        :param allow_credentials: Which existing credentials to allow for the authentication.
+        :type allow_credentials: list of dict
+        :param uv_required: Whether user verification is required.
+        :type uv_required: bool
+        :param expected_assertion_client_extensions: A dict whose keys indicate which client extensions are expected.
+        :type expected_assertion_client_extensions: dict
+        :param expected_assertion_authenticator_extensions: A dict whose keys indicate which auth exts to expect.
+        :type expected_assertion_authenticator_extensions: dict
+        :return: A WebAuthnAssertionResponse object.
+        :rtype: WebAuthnAssertionResponse
         """
+        self.assertion_response = assertion_response
+        self.challenge = challenge
+        self.origin = origin
+        self.allow_credentials = allow_credentials
+        self.uv_required = uv_required
+
+        self.expected_assertion_client_extensions = expected_assertion_client_extensions \
+            if expected_assertion_client_extensions \
+            else DEFAULT_CLIENT_EXTENSIONS
+        self.expected_assertion_authenticator_extensions = expected_assertion_authenticator_extensions \
+            if expected_assertion_authenticator_extensions \
+            else DEFAULT_AUTHENTICATOR_EXTENSIONS
+
+        if not isinstance(self.webauthn_user, WebAuthnUser):
+            raise ValueError('Invalid user type.')
+        self.webauthn_user = webauthn_user
+
+    def verify(self):
+        try:
+            # Step 1.
+            #
+            # If the allowCredentials option was given when this authentication
+            # ceremony was initiated, verify that credential.id identifies one
+            # of the public key credentials that were listed in allowCredentials.
+            if self.allow_credentials and self.assertion_response.get('id') not in self.allow_credentials:
+                raise AuthenticationRejectedException('Invalid credential.')
+
+            # Step 2.
+            #
+            # If credential.response.userHandle is present, verify that the user
+            # identified by this value is the owner of the public key credential
+            # identified by credential.id.
+            user_handle = self.assertion_response.get('userHandle')
+            if user_handle and not user_handle == self.webauthn_user.user_name:
+                raise AuthenticationRejectedException('Invalid credential.')
+
+            # Step 3.
+            #
+            # Using credential's id attribute (or the corresponding rawId, if
+            # base64url encoding is inappropriate for your use case), look up
+            # the corresponding credential public key.
+            if not _validate_credential_id(self.webauthn_user.credential_id):
+                raise AuthenticationRejectedException('Invalid credential ID.')
+            if not self.webauthn_user.public_key:
+                raise WebAuthnUserDataMissing("public_key missing.")
+            public_key_alg, user_pubkey = _load_cose_public_key(webauthn_b64_decode(self.webauthn_user.public_key))
+
+            # Step 4.
+            #
+            # Let cData, aData and sig denote the value of credential's
+            # response's clientDataJSON, authenticatorData, and signature
+            # respectively.
+            c_data = self.assertion_response.get('clientData')
+            a_data = webauthn_b64_decode(self.assertion_response.get('authData'))
+            sig = binascii.unhexlify(self.assertion_response.get('signature'))
+
+            # Step 5.
+            #
+            # Let JSONtext be the result of running UTF-8 decode on the
+            # value of cData.
+            json_text = c_data
+
+            # Step 6.
+            #
+            # Let C, the client data claimed as used for the signature,
+            # be the result of running an implementation-specific JSON
+            # parser on JSONtext.
+            c = json.loads(webauthn_b64_decode(json_text))
+
+            # Step 7.
+            #
+            # Verify that the value of C.type is the string webauthn.get.
+            if not _verify_type(c.get('type'), CLIENT_DATA_TYPE.GET):
+                raise RegistrationRejectedException('Invalid type.')
+
+            # Step 8.
+            #
+            # Verify that the value of C.challenge matches the challenge
+            # that was sent to the authenticator in the
+            # PublicKeyCredentialRequestOptions passed to the get() call.
+            if not _verify_challenge(c.get('challenge'), self.challenge):
+                raise AuthenticationRejectedException('Unable to verify challenge.')
+
+            # Step 9.
+            #
+            # Verify that the value of C.origin matches the Relying
+            # Party's origin.
+            if not _verify_origin(c, self.origin):
+                raise AuthenticationRejectedException('Unable to verify origin.')
+
+            # Step 10.
+            #
+            # Verify that the value of C.tokenBinding.status matches
+            # the state of Token Binding for the TLS connection over
+            # which the attestation was obtained. If Token Binding was
+            # used on that TLS connection, also verify that
+            # C.tokenBinding.id matches the base64url encoding of the
+            # Token Binding ID for the connection.
+
+            # XXX: Chrome does not currently supply token binding in the clientDataJSON
+            # if not _verify_token_binding_id(c):
+            #     raise AuthenticationRejectedException('Unable to verify token binding ID.')
+
+            # Step 11.
+            #
+            # Verify that the rpIdHash in aData is the SHA-256 hash of
+            # the RP ID expected by the Relying Party.
+            if not _verify_rp_id_hash(_get_auth_data_rp_id_hash(a_data), self.webauthn_user.rp_id):
+                raise AuthenticationRejectedException('Unable to verify RP ID hash.')
+
+            # Step 12.
+            #
+            # Verify that the User Present bit of the flags in authData
+            # is set.
+            if not AuthenticatorDataFlags(a_data).user_present:
+                raise AuthenticationRejectedException('Malformed request received.')
+
+            # Step 13.
+            #
+            # If user verification is required for this assertion, verify that
+            # the User Verified bit of the flags in authData is set.
+            if self.uv_required and not AuthenticatorDataFlags(a_data).user_verified:
+                raise RegistrationRejectedException('Malformed request received.')
+
+            # Step 14.
+            #
+            # Verify that the values of the client extension outputs in
+            # clientExtensionResults and the authenticator extension outputs
+            # in the extensions in authData are as expected, considering the
+            # client extension input values that were given as the extensions
+            # option in the get() call. In particular, any extension identifier
+            # values in the clientExtensionResults and the extensions in
+            # authData MUST be also be present as extension identifier values
+            # in the extensions member of options, i.e., no extensions are
+            # present that were not requested. In the general case, the meaning
+            # of "are as expected" is specific to the Relying Party and which
+            # extensions are in use.
+            if not _verify_authenticator_extensions(a_data, self.expected_assertion_authenticator_extensions):
+                raise AuthenticationRejectedException('Unable to verify authenticator extensions.')
+            if not _verify_client_extensions(
+                json.loads(self.assertion_response.get('assertionClientExtensions')),
+                self.expected_assertion_client_extensions
+            ):
+                raise AuthenticationRejectedException('Unable to verify client extensions.')
+
+            # Step 15.
+            #
+            # Let hash be the result of computing a hash over the cData
+            # using SHA-256.
+            hash = _get_client_data_hash(c)
+
+            # Step 16.
+            #
+            # Using the credential public key looked up in step 3, verify
+            # that sig is a valid signature over the binary concatenation
+            # of aData and hash.
+            try:
+                _verify_signature(public_key=user_pubkey,
+                                  alg=public_key_alg,
+                                  data=b''.join([
+                                      a_data,
+                                      hash
+                                  ]),
+                                  signature=sig)
+            except InvalidSignature:
+                raise AuthenticationRejectedException('Invalid signature received.')
+            except NotImplementedError:
+                raise AuthenticationRejectedException('Unsupported algorithm.')
+
+            # Step 17.
+            #
+            # If the signature counter value adata.signCount is nonzero or
+            # the value stored in conjunction with credential's id attribute
+            # is nonzero, then run the following sub-step:
+            #     If the signature counter value adata.signCount is
+            #         greater than the signature counter value stored in
+            #         conjunction with credential's id attribute.
+            #             Update the stored signature counter value,
+            #             associated with credential's id attribute,
+            #             to be the value of adata.signCount.
+            #         less than or equal to the signature counter value
+            #         stored in conjunction with credential's id attribute.
+            #             This is a signal that the authenticator may be
+            #             cloned, i.e. at least two copies of the credential
+            #             private key may exist and are being used in parallel.
+            #             Relying Parties should incorporate this information
+            #             into their risk scoring. Whether the Relying Party
+            #             updates the stored signature counter value in this
+            #             case, or not, or fails the authentication ceremony
+            #             or not, is Relying Party-specific.
+            sign_count = struct.unpack('!I', a_data[33:37])[0]
+            if not sign_count:
+                raise AuthenticationRejectedException('Unable to parse sign_count.')
+            if not isinstance(self.webauthn_user.sign_count, int) or self.webauthn_user.sign_count < 0:
+                raise WebAuthnUserDataMissing('sign_count missing from WebAuthnUser.')
+            if sign_count <= self.webauthn_user.sign_count:
+                raise  AuthenticationRejectedException('Duplicate authentication detected.')
+
+            # Step 18.
+            #
+            # If all the above steps are successful, continue with the
+            # authentication ceremony as appropriate. Otherwise, fail the
+            # authentication ceremony.
+            return sign_count
+
+        except Exception as e:
+            raise AuthenticationRejectedException('Authentication rejected. Error: {}'.format(e))
 
 
 def webauthn_b64_decode(encoded):

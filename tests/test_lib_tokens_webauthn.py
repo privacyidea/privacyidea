@@ -36,7 +36,8 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejecte
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                             ATTESTATION_LEVEL, AuthenticatorDataFlags)
+                                             ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
+                                             WebAuthnUser)
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION
 from privacyidea.lib.token import init_token
@@ -160,7 +161,7 @@ class WebAuthnTestCase(unittest.TestCase):
             user_name=self.USER_NAME,
             user_display_name=self.USER_DISPLAY_NAME,
             icon_url=self.ICON_URL,
-            credential_id=credential.id.decode(),
+            credential_id=credential.credential_id.decode(),
             public_key=credential.public_key,
             sign_count=credential.sign_count,
             rp_id=credential.rp_id
@@ -237,4 +238,3 @@ class WebAuthnTestCase(unittest.TestCase):
         # TODO Sign an authenticator data statement with UP=0 and test against that so that the signature is valid.
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
-
