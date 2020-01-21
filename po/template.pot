@@ -3453,7 +3453,11 @@ msgid "Token resync successful."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:2
+<<<<<<< HEAD
 msgid "Token {{ selectedToken.serial }} is Lost?"
+=======
+msgid "Token {{ selectedToken.serial }} is lost?"
+>>>>>>> branch-3.2
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33

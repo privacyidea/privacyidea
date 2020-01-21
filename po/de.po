@@ -1640,6 +1640,13 @@ msgstr ""
 msgid "Length of UID"
 msgstr "Länge des UID"
 
+# This is the level in the subscriptions
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr "Subskriptionsstufe"
+
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
 msgstr "Lizenziert unter"
@@ -3952,7 +3959,7 @@ msgid "Token resync successful."
 msgstr "Token wurde erfolgreich resynchronisiert."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-msgid "Token {{ selectedToken.serial }} is Lost?"
+msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "Der Token {{ selectedToken.serial }} ist verloren?"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33

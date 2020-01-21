@@ -1,14 +1,14 @@
 # Translations template for PROJECT.
-# Copyright (C) 2019 ORGANIZATION
+# Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2019.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-12-19 15:55+0100\n"
+"POT-Creation-Date: 2020-01-15 17:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1212,55 +1212,55 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:190
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:194
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:222
+#: lib/smsprovider/FirebaseProvider.py:198
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:226
+#: lib/smsprovider/FirebaseProvider.py:202
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:231
+#: lib/smsprovider/FirebaseProvider.py:207
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:236
+#: lib/smsprovider/FirebaseProvider.py:212
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:241
+#: lib/smsprovider/FirebaseProvider.py:217
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:246
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:251
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."

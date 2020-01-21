@@ -1,3 +1,15 @@
+Version 3.2.2, 2020-01-17
+
+  Fixes:
+  * Fix Popen calls like with pi-manage backup restore
+  * Fix retrieving the correct database for restore (#1993)
+  * Fix caconnectorread policy (#1994)
+
+Version 3.2.1, 2019-12-30
+
+  Fixes:
+  * Fix the wording and translation of the lost token scenario
+
 Version 3.2, 2019-12-02
 
   Features:

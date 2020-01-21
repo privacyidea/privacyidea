@@ -1338,6 +1338,7 @@ def check_serial_valid(serial):
     if not re.match(ALLOWED_SERIAL, serial):
         raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
     return True
+<<<<<<< HEAD
 
 
 def my_Popen(command, stdin=None, stdout=None, stderr=None, cwd=None, shell=False,
@@ -1349,3 +1350,5 @@ def my_Popen(command, stdin=None, stdout=None, stderr=None, cwd=None, shell=Fals
         p = Popen(command, stdin=stdin, stdout=stdout, stderr=stderr,
                   cwd=cwd, shell=shell)
     return p
+=======
+>>>>>>> branch-3.2

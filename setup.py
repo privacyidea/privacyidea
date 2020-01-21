@@ -6,7 +6,7 @@ import stat
 import sys
 
 #VERSION="2.1dev4"
-VERSION = "3.2"
+VERSION="3.2.2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -145,6 +145,9 @@ setup(
                  'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7'
                  ],
+    #message_extractors={'privacyidea': [
+    #        ('**.py', 'python', None),
+    #        ('static/**.html', 'html', {'input_encoding': 'utf-8'})]},
     zip_safe=False,
     long_description=get_file_contents('README.rst')
 )
