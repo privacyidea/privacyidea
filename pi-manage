@@ -54,7 +54,6 @@ import datetime
 from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
-from privacyidea.lib.utils import my_Popen
 from getpass import getpass
 import gnupg
 import yaml
@@ -348,7 +347,7 @@ def restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = my_Popen(["tar", "-ztf", backup_file], stdout=PIPE)
+    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE, universal_newlines=True)
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
         if re.search(r"/pi.cfg$", line):
@@ -391,7 +390,7 @@ def restore(backup_file):
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]

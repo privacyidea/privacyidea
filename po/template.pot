@@ -4,12 +4,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Project-Id-Version: \n"
 
-#. level of subscription
-#: privacyidea/static/components/components/views/component.subscriptions.html:27
-msgctxt "subscription"
-msgid "Level"
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:13
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -338,7 +332,7 @@ msgstr ""
 msgid "Attribute mapping"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:78
+#: privacyidea/static/templates/menu.html:82
 msgid "Audit"
 msgstr ""
 
@@ -459,7 +453,7 @@ msgstr ""
 msgid "Certificate Template"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:227
+#: privacyidea/static/components/token/controllers/tokenControllers.js:228
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr ""
 
@@ -569,7 +563,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:130
+#: privacyidea/static/templates/menu.html:134
 msgid "Community"
 msgstr ""
 
@@ -577,7 +571,7 @@ msgstr ""
 msgid "Comparator"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:87
+#: privacyidea/static/templates/menu.html:91
 msgid "Components"
 msgstr ""
 
@@ -590,7 +584,7 @@ msgstr ""
 msgid "Conditions"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:69
+#: privacyidea/static/templates/menu.html:73
 msgid "Config"
 msgstr ""
 
@@ -840,7 +834,7 @@ msgstr ""
 msgid "Disable"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:101
+#: privacyidea/static/components/token/views/token.list.html:107
 msgid "Disable token"
 msgstr ""
 
@@ -888,7 +882,7 @@ msgstr ""
 msgid "EMail Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:223
+#: privacyidea/static/components/token/controllers/tokenControllers.js:224
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
@@ -1015,7 +1009,7 @@ msgstr ""
 msgid "Enable"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:106
+#: privacyidea/static/components/token/views/token.list.html:112
 msgid "Enable token"
 msgstr ""
 
@@ -1031,7 +1025,7 @@ msgid "Enroll Token"
 msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:82
-#: privacyidea/static/components/token/controllers/tokenControllers.js:162
+#: privacyidea/static/components/token/controllers/tokenControllers.js:163
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:157
 msgid "Enroll a new token"
@@ -1183,7 +1177,7 @@ msgid ""
 "    to privacyIDEA."
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:229
+#: privacyidea/static/components/token/controllers/tokenControllers.js:230
 msgid "Four Eyes: Two or more users are required to log in."
 msgstr ""
 
@@ -1231,7 +1225,7 @@ msgstr ""
 msgid "HOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:210
+#: privacyidea/static/components/token/controllers/tokenControllers.js:211
 msgid "HOTP: event based One Time Passwords"
 msgstr ""
 
@@ -1448,6 +1442,12 @@ msgstr ""
 msgid "Length of UID"
 msgstr ""
 
+#. level of subscription
+#: privacyidea/static/components/components/views/component.subscriptions.html:27
+msgctxt "subscription"
+msgid "Level"
+msgstr ""
+
 #: privacyidea/static/components/dialogs/views/dialog.about.html:25
 msgid "Licensed under"
 msgstr ""
@@ -1491,7 +1491,7 @@ msgstr ""
 msgid "Loading users..."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:138
+#: privacyidea/static/templates/menu.html:142
 msgid "Lock screen"
 msgstr ""
 
@@ -1510,7 +1510,7 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:108
+#: privacyidea/static/templates/menu.html:112
 msgid "Login"
 msgstr ""
 
@@ -1525,7 +1525,7 @@ msgid "Login with credentials"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:161
-#: privacyidea/static/templates/menu.html:141
+#: privacyidea/static/templates/menu.html:145
 msgid "Logout"
 msgstr ""
 
@@ -1552,7 +1552,7 @@ msgid "Machine Resolver"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:50
-#: privacyidea/static/templates/menu.html:61
+#: privacyidea/static/templates/menu.html:65
 msgid "Machines"
 msgstr ""
 
@@ -1768,7 +1768,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/templates/baseline.html:26
-#: privacyidea/static/templates/menu.html:126
+#: privacyidea/static/templates/menu.html:130
 msgid "Online Documentation"
 msgstr ""
 
@@ -1815,7 +1815,7 @@ msgstr ""
 msgid "Owncloud"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:234
+#: privacyidea/static/components/token/controllers/tokenControllers.js:235
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr ""
 
@@ -2080,7 +2080,7 @@ msgstr ""
 msgid "RADIUS servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:221
+#: privacyidea/static/components/token/controllers/tokenControllers.js:222
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 
@@ -2131,7 +2131,7 @@ msgstr ""
 msgid "Recorded Last Runs"
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:99
+#: privacyidea/static/templates/menu.html:103
 msgid "Refresh"
 msgstr ""
 
@@ -2142,7 +2142,7 @@ msgstr ""
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:89
-#: privacyidea/static/templates/menu.html:104
+#: privacyidea/static/templates/menu.html:108
 msgid "Register"
 msgstr ""
 
@@ -2170,7 +2170,7 @@ msgstr ""
 msgid "Remote Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:217
+#: privacyidea/static/components/token/controllers/tokenControllers.js:218
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 
@@ -2199,7 +2199,7 @@ msgstr ""
 msgid "Required Realms"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:114
+#: privacyidea/static/components/token/views/token.list.html:120
 msgid "Reset Failcounter"
 msgstr ""
 
@@ -2256,7 +2256,7 @@ msgstr ""
 msgid "Revoke"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:171
+#: privacyidea/static/components/token/controllers/tokenControllers.js:172
 msgid "Roll the token"
 msgstr ""
 
@@ -2284,7 +2284,7 @@ msgstr ""
 msgid "SMS Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:225
+#: privacyidea/static/components/token/controllers/tokenControllers.js:226
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
@@ -2304,11 +2304,11 @@ msgstr ""
 msgid "SMTP servers"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:212
+#: privacyidea/static/components/token/controllers/tokenControllers.js:213
 msgid "SPass: Simple Pass token. Static passwords"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:214
+#: privacyidea/static/components/token/controllers/tokenControllers.js:215
 msgid "SSH Public Key: The public SSH key"
 msgstr ""
 
@@ -2576,7 +2576,7 @@ msgid "Successfully authenticated."
 msgstr ""
 
 #: privacyidea/static/templates/baseline.html:14
-#: privacyidea/static/templates/menu.html:133
+#: privacyidea/static/templates/menu.html:137
 msgid "Support"
 msgstr ""
 
@@ -2625,7 +2625,7 @@ msgstr ""
 msgid "TOTP Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:211
+#: privacyidea/static/components/token/controllers/tokenControllers.js:212
 msgid "TOTP: time based One Time Passwords"
 msgstr ""
 
@@ -3047,7 +3047,7 @@ msgid ""
 "                        service itself</a>."
 msgstr ""
 
-#: privacyidea/static/app.js:138
+#: privacyidea/static/app.js:139
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 
@@ -3077,19 +3077,19 @@ msgid ""
 "    checked locally."
 msgstr ""
 
-#: privacyidea/static/app.js:81
+#: privacyidea/static/app.js:82
 msgid "The resource name must consist of letters, numbers and '_', '-', '.'"
 msgstr ""
 
-#: privacyidea/static/app.js:87
+#: privacyidea/static/app.js:88
 msgid "The resource name must consist of letters, numbers and '_', '-', '.' and must not be the word 'send_test_email'"
 msgstr ""
 
-#: privacyidea/static/app.js:84
+#: privacyidea/static/app.js:85
 msgid "The resource name must consist of letters, numbers and '_', '-', '.' and must not be the word 'test'"
 msgstr ""
 
-#: privacyidea/static/app.js:90
+#: privacyidea/static/app.js:91
 msgid "The resource name must consist of letters, numbers and '_', '-', '.' and must not be the word 'test_request'"
 msgstr ""
 
@@ -3373,7 +3373,7 @@ msgstr ""
 msgid "TiQR Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:231
+#: privacyidea/static/components/token/controllers/tokenControllers.js:232
 msgid "TiQR: Authenticate with Smartphone by scanning a QR code."
 msgstr ""
 
@@ -3444,6 +3444,10 @@ msgid ""
 "                                wizard"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.list.html:65
+msgid "Token realms"
+msgstr ""
+
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:253
 msgid "Token resync failed."
 msgstr ""
@@ -3453,12 +3457,12 @@ msgid "Token resync successful."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:2
-msgid "Token {{ selectedToken.serial }} is Lost?"
+msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
-#: privacyidea/static/templates/menu.html:35
+#: privacyidea/static/templates/menu.html:39
 msgid "Tokens"
 msgstr ""
 
@@ -3499,7 +3503,7 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:233
+#: privacyidea/static/components/token/controllers/tokenControllers.js:234
 msgid "U2F: Universal 2nd Factor hardware token."
 msgstr ""
 
@@ -3567,7 +3571,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:21
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:67
 #: privacyidea/static/components/config/views/config.radius.edit.html:99
-#: privacyidea/static/templates/menu.html:52
+#: privacyidea/static/templates/menu.html:56
 msgid "User"
 msgstr ""
 
@@ -3581,7 +3585,7 @@ msgstr ""
 msgid "User Id"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:79
+#: privacyidea/static/components/token/views/token.list.html:85
 msgid "User Store"
 msgstr ""
 
@@ -3609,7 +3613,7 @@ msgstr ""
 msgid "User-Resolver"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.list.html:67
+#: privacyidea/static/components/token/views/token.list.html:73
 msgid "UserId"
 msgstr ""
 
@@ -3628,7 +3632,7 @@ msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
 #: privacyidea/static/components/config/views/config.html:58
-#: privacyidea/static/templates/menu.html:43
+#: privacyidea/static/templates/menu.html:47
 msgid "Users"
 msgstr ""
 
@@ -3756,7 +3760,7 @@ msgid ""
 "                    token model."
 msgstr ""
 
-#: privacyidea/static/templates/menu.html:152
+#: privacyidea/static/templates/menu.html:156
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr ""
 
@@ -3800,11 +3804,11 @@ msgstr ""
 msgid "Yubico URL"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:215
+#: privacyidea/static/components/token/controllers/tokenControllers.js:216
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:219
+#: privacyidea/static/components/token/controllers/tokenControllers.js:220
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
 
@@ -3825,8 +3829,8 @@ msgid "action detail"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:25
+#: privacyidea/static/components/token/views/token.list.html:105
 #: privacyidea/static/components/token/views/token.list.html:39
-#: privacyidea/static/components/token/views/token.list.html:99
 msgid "active"
 msgstr ""
 
@@ -3869,7 +3873,7 @@ msgid "description"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:28
-#: privacyidea/static/components/token/views/token.list.html:104
+#: privacyidea/static/components/token/views/token.list.html:110
 msgid "disabled"
 msgstr ""
 
@@ -3926,7 +3930,7 @@ msgstr ""
 msgid "mOTP PIN"
 msgstr ""
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:213
+#: privacyidea/static/components/token/controllers/tokenControllers.js:214
 msgid "mOTP: classical mobile One Time Passwords"
 msgstr ""
 
