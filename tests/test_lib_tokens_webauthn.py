@@ -28,10 +28,13 @@
 This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
+
+import os
 import struct
 import unittest
 from copy import copy
 
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
@@ -43,10 +46,13 @@ from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACT
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import set_policy, SCOPE
 
+TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
+
 
 class WebAuthnTokenTestCase(MyTestCase):
     RP_ID = 'example.com'
     RP_NAME = 'ACME'
+    APP_ID = "http://localhost:5000"
 
     def test_00_users(self):
         self.setUp_user_realms()
@@ -55,6 +61,8 @@ class WebAuthnTokenTestCase(MyTestCase):
                    scope=SCOPE.ENROLL,
                    action=WEBAUTHNACTION.RELYING_PARTY_NAME+"="+self.RP_NAME+","
                           +WEBAUTHNACTION.RELYING_PARTY_ID+"="+self.RP_ID)
+        set_privacyidea_config("webauthn.trust_anchor_dir", TRUST_ANCHOR_DIR)
+        set_privacyidea_config("webauthn.appid", self.APP_ID)
 
     def test_01_create_token(self):
         pin = "1234"
@@ -71,6 +79,7 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(WebAuthnTokenClass.get_class_prefix(), "WAN")
         self.assertEqual(WebAuthnTokenClass.get_class_info().get('type'), "webauthn")
         self.assertEqual(WebAuthnTokenClass.get_class_info('type'), "webauthn")
+        self.assertTrue(serial.startswith("WAN"))
 
 
 #
@@ -189,6 +198,7 @@ class WebAuthnTestCase(unittest.TestCase):
             registration_response=copy(self.REGISTRATION_RESPONSE_TMPL),
             challenge=self.REGISTRATION_CHALLENGE,
             attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE],
+            trust_anchor_dir=TRUST_ANCHOR_DIR,
             uv_required=False,
             expected_registration_client_extensions=self.EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
         )
@@ -202,6 +212,7 @@ class WebAuthnTestCase(unittest.TestCase):
             registration_response=copy(self.REGISTRATION_RESPONSE_TMPL),
             challenge=self.REGISTRATION_CHALLENGE,
             attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+            trust_anchor_dir=TRUST_ANCHOR_DIR,
             uv_required=True,
             expected_registration_client_extensions=self.EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
         )

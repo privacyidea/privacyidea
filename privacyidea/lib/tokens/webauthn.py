@@ -744,7 +744,7 @@ class WebAuthnRegistrationResponse(object):
                  registration_response,
                  challenge,
                  attestation_requirement_level,
-                 trust_anchor_dir=None,
+                 trust_anchor_dir,
                  uv_required=False,
                  expected_registration_client_extensions=None,
                  expected_registration_authenticator_extensions=None):
