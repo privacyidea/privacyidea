@@ -1210,7 +1210,7 @@ class WebAuthnRegistrationResponse(object):
             if not _verify_authenticator_extensions(auth_data, self.expected_registration_authenticator_extensions):
                 raise RegistrationRejectedException('Unable to verify authenticator extensions.')
             if not _verify_client_extensions(
-                json.loads(self.registration_response.get('registrationClientExtensions')),
+                self.registration_response.get('registrationClientExtensions'),
                 self.expected_registration_client_extensions
             ):
                 raise RegistrationRejectedException('Unable to verify client extensions.')
@@ -1516,7 +1516,7 @@ class WebAuthnAssertionResponse(object):
             if not _verify_authenticator_extensions(a_data, self.expected_assertion_authenticator_extensions):
                 raise AuthenticationRejectedException('Unable to verify authenticator extensions.')
             if not _verify_client_extensions(
-                json.loads(self.assertion_response.get('assertionClientExtensions')),
+                self.assertion_response.get('assertionClientExtensions'),
                 self.expected_assertion_client_extensions
             ):
                 raise AuthenticationRejectedException('Unable to verify client extensions.')
@@ -1802,7 +1802,20 @@ def _verify_token_binding_id(client_data):
 
 
 def _verify_client_extensions(client_extensions, expected_client_extensions):
-    return client_extensions and set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
+    """
+    Verify the client extensions.
+
+    This will verify that no additional extensions were provided, that were not requested.  The extensions will be
+    passed in as provided by the authenticator. Any parsing is done inside the function.
+
+    :param client_extensions: The registrationClientExtensions or assertionClientExtensions field, respectively.
+    :type client_extensions: basestring
+    :param expected_client_extensions: A dictionary whose keys indicate the extensions to expect.
+    :type expected_client_extensions: dict
+    :return: Whether there were any unexpected extensions.
+    :rtype: bool
+    """
+    return not client_extensions or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
 
 
 def _verify_authenticator_extensions(auth_data, expected_authenticator_extensions):
@@ -1814,10 +1827,12 @@ def _verify_authenticator_extensions(auth_data, expected_authenticator_extension
     this function will simply return false if there is any autheticator
     extensions at all for now.
 
-    :param auth_data: The autheticator data.
+    :param auth_data: The authenticator data.
     :type auth_data: bytes
     :param expected_authenticator_extensions: A dictionary whose keys indicate the extensions to expect.
+    :type expected_authenticator_extensions: dict
     :return: Whether there were any unexpected extensions.
+    :rtype: bool
     """
     return not AuthenticatorDataFlags(auth_data).extension_data_included
 
