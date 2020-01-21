@@ -64,7 +64,7 @@ are ``PI_LOGLEVEL``, ``PI_LOGFILE``, ``PI_LOGCONFIG``. These are described in
 :ref:`debug_log`.
 
 You can use ``PI_CSS`` to define the location of another cascading style
-sheet to customize the look and fell. Read more at :ref:`themes`.
+sheet to customize the look and feel. Read more at :ref:`themes`.
 
 .. note:: If you ever need passwords being logged in the log file, you may
    set ``PI_LOGLEVEL = 9``, which is a lower log level than ``logging.DEBUG``.
