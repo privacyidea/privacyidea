@@ -1389,7 +1389,7 @@ class WebAuthnAssertionResponse(object):
             if expected_assertion_authenticator_extensions \
             else DEFAULT_AUTHENTICATOR_EXTENSIONS
 
-        if not isinstance(self.webauthn_user, WebAuthnUser):
+        if not isinstance(webauthn_user, WebAuthnUser):
             raise ValueError('Invalid user type.')
         self.webauthn_user = webauthn_user
 
@@ -1428,7 +1428,7 @@ class WebAuthnAssertionResponse(object):
             # Let cData, aData and sig denote the value of credential's
             # response's clientDataJSON, authenticatorData, and signature
             # respectively.
-            c_data = self.assertion_response.get('clientData')
+            c_data = webauthn_b64_decode(self.assertion_response.get('clientData'))
             a_data = webauthn_b64_decode(self.assertion_response.get('authData'))
             sig = binascii.unhexlify(self.assertion_response.get('signature'))
 
@@ -1443,7 +1443,7 @@ class WebAuthnAssertionResponse(object):
             # Let C, the client data claimed as used for the signature,
             # be the result of running an implementation-specific JSON
             # parser on JSONtext.
-            c = json.loads(webauthn_b64_decode(json_text))
+            c = json.loads(json_text)
 
             # Step 7.
             #
@@ -1525,7 +1525,7 @@ class WebAuthnAssertionResponse(object):
             #
             # Let hash be the result of computing a hash over the cData
             # using SHA-256.
-            hash = _get_client_data_hash(c)
+            hash = _get_client_data_hash(c_data)
 
             # Step 16.
             #
@@ -1729,7 +1729,7 @@ def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
 
 
 def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
-    if not trust_path or not isinstance(trust_path, list):
+    if not trust_path or not isinstance(trust_path, list) or not trust_anchors or not isinstance(trust_anchors, list):
         return False
 
     # FIXME Only using the first attestation certificate in the trust path for now, should be able to build a chain.
@@ -1865,6 +1865,14 @@ def _get_auth_data_rp_id_hash(auth_data):
 
 
 def _get_client_data_hash(decoded_client_data):
+    """
+    Compute the SHA256 hash of the client data.
+
+    :param decoded_client_data: The client data to hash.
+    :type decoded_client_data: bytes
+    :return: The hash of the client data.
+    :rtype: bytes
+    """
     if not isinstance(decoded_client_data, six.binary_type):
         return ''
 
