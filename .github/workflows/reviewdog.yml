@@ -10,6 +10,6 @@ jobs:
       - name: misspell
         uses: reviewdog/action-misspell@v1
         with:
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{ secrets.reviewdog_secret }}
           locale: "US"
-          reporter: github-check
+          reporter: github-pr-review
