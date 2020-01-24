@@ -16,6 +16,14 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401, res)
             self.assertEqual(res.json['result']['error']['code'], 4033, res.json)
 
+        # check for automatic redirect on missing trailing slash from flask
+        with self.app.test_request_context('/event',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 308, res)
+            self.assertIn('Location', res.headers, res)
+
         param = {
             "name": "Send an email",
             "event": "token_init",

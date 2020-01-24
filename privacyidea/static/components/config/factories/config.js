@@ -120,7 +120,7 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             ).error(AuthFactory.authError);
         },
         getEvents: function(callback) {
-            $http.get(eventUrl, {
+            $http.get(eventUrl + "/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).success(callback
             ).error(AuthFactory.authError);
