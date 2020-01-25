@@ -1916,6 +1916,32 @@ class API00TokenPerformance(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("value").get("count"), self.token_count)
 
+        init_token({"genkey": 1, "serial": "realmtoken"}, tokenrealms=[self.realm1])
+        toks = get_tokens(realm="*realm1*")
+        self.assertEqual(len(toks), 1)
+
+        # Request tokens in tokenrealm
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"tokenrealm": "**"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            # Even if we fetch tokenrealm=** we also get all the tokens without a tokenrealm
+            self.assertEqual(result.get("value").get("count"), self.token_count + 10 + 1)
+
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"tokenrealm": "*alm1*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get("value").get("count"), 1)
+
+        remove_token(serial="realmtoken")
+
     def test_02_several_requests(self):
         # Run GET challenges
         with self.app.test_request_context('/token/challenges/*',
