@@ -21,9 +21,22 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import binascii
+
+from OpenSSL import crypto
+from cryptography import x509
+from flask import request
+
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import get_from_config
+from privacyidea.lib.error import ParameterError, RegistrationError
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.models import Challenge
-from privacyidea.lib.tokens.u2ftoken import IMAGES, U2FACTION
+from privacyidea.lib.tokens.u2f import x509name_to_string
+from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
+                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode)
+from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
@@ -71,9 +84,9 @@ it in two steps:
     type=webauthn
     
 This step returns a nonce, a relying party (containing a name and an ID
-generated from your domain), and a serial number. It will also pass some
-additional options regarding timeout, which authenticators are acceptable,
-and what key types are acceptable to the server.
+generated from your domain), and a serial number, along with a transaction ID.
+It will also pass some additional options regarding timeout, which
+authenticators are acceptable, and what key types are acceptable to the server.
 
 2. Step
 ~~~~~~~
@@ -86,12 +99,14 @@ and what key types are acceptable to the server.
     
     type=webauthn
     serial=<serial>
-    id=<id>
+    transaction_id=<transaction_id>
     clientdata=<clientDataJSON>
     regdata=<attestationObject>
+    description=<description>
 
-*id*, *clientDataJSON* and *attestationObject* are the values returned by the
-WebAuthn authenticator.
+*clientDataJSON* and *attestationObject* are the values returned by the
+WebAuthn authenticator. *description* is an optional description string for 
+the new token.
 
 You need to call the javascript function
 
@@ -348,11 +363,53 @@ above.
 
 """
 
+from privacyidea.lib.utils import hexlify_and_unicode
+
 IMAGES = IMAGES
+
+DEFAULT_DESCRIPTION = "Generic WebAuthn Token"
+
+# Policy defaults
+DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal lightning"
+DEFAULT_TIMEOUT_AUTH = 60
+DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH = 'preferred'
+DEFAULT_TIMEOUT_ENROLL = 60
+DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
+DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL = 'preferred'
+DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'ecdsa_preferred'
+DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
+DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
+
+PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS = {
+    'ecdsa_preferred': [
+        COSE_ALGORITHM.ES256,
+        COSE_ALGORITHM.PS256
+    ],
+    'ecdsa_only': [
+        COSE_ALGORITHM.ES256
+    ],
+    'rsassa-pss_preferred': [
+        COSE_ALGORITHM.PS256,
+        COSE_ALGORITHM.ES256
+    ],
+    'rsassa-pss_only': [
+        COSE_ALGORITHM.PS256
+    ]
+}
 
 log = logging.getLogger(__name__)
 optional = True
 required = False
+
+
+class WEBAUTHNCONFIG(object):
+    """
+    Config options defined for WebAuthn
+    """
+
+    TRUST_ANCHOR_DIR = 'webauthn.trust_anchor_dir'
+    APP_ID = 'webauthn.appid'
+    CHALLENGE_VALIDITY_TIME = 'WebauthnChallengeValidityTime'
 
 
 class WEBAUTHNACTION(object):
@@ -370,7 +427,9 @@ class WEBAUTHNACTION(object):
     USER_VERIFICATION_REQUIREMENT_ENROLL = 'webauthn_user_verification_requirement_enroll'
     USER_VERIFICATION_REQUIREMENT_AUTH = 'webauthn_user_verification_requirement_auth'
     PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_credential_algorithm_preference'
-    AUTHENTICATOR_ATTESTATION_REQUIREMENT_LEVEL = 'webauthn_authenticator_attestation_requirement_level'
+    AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
+    AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
+    REQ = 'webauthn_req'
 
 
 class WebAuthnTokenClass(TokenClass):
@@ -382,6 +441,7 @@ class WebAuthnTokenClass(TokenClass):
     def get_class_type():
         """
         Returns the internal token type identifier
+
         :return: webauthn
         :rtype: basestring
         """
@@ -391,6 +451,7 @@ class WebAuthnTokenClass(TokenClass):
     def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
+
         :return: WAN
         :rtype: basestring
         """
@@ -427,8 +488,9 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.TIMEOUT_AUTH: {
                         'type': 'int',
-                        'desc': _("The amount of time in seconds the user has to confirm an authorization request on "
-                                  "his WebAuthn token. Default: 60")
+                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. " 
+                                  "Note: You will want to increase the ChallengeValidityTime along with this. "
+                                  "Default: 60")
                     },
                     WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH: {
                         'type': 'str',
@@ -458,8 +520,9 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.TIMEOUT_ENROLL: {
                         'type': 'int',
-                        'desc': _("The amount of time in seconds the user has to confirm enrollment on his "
-                                  "WebAuthn token. Default: 60")
+                        'desc': _("The time in seconds the user has to confirm enrollment on his WebAuthn token. "
+                                  "Note: You will want to increase the ChallengeValidityTime along with this. "
+                                  "Default: 60")
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
@@ -483,7 +546,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
                         'group': GROUP.TOKEN,
-                        'value': [
+                        'value':    [
                             "required",
                             "preferred",
                             "discouraged"
@@ -501,21 +564,33 @@ class WebAuthnTokenClass(TokenClass):
                             "rsassa-pss_only"
                         ]
                     },
-                    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_REQUIREMENT_LEVEL: {
+                    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
                         'desc': _("Whether to request attestation data when enrolling a new WebAuthn token."
-                                  "Note: for u2f_req to work with WebAuthn, this cannot be set to discouraged. "
-                                  "Default: preferred (ask for attestation, but do not fail if none is provided)"),
+                                  "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
+                                  "Default: direct (ask for non-anonymized attestation data)"),
                         'group': GROUP.TOKEN,
                         'value': [
-                            "required",
-                            "preferred",
-                            "discouraged"
+                            "none",
+                            "indirect",
+                            "direct"
                         ]
                     },
-                    U2FACTION.REQ: {
+                    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: {
                         'type': 'str',
-                        'desc': _("Only the specified U2F tokens are allowed to be registered as tokens for WebAuthn"),
+                        'desc': _("Whether and how strictly to check authenticator attestation data."
+                                  "Note: If the attestation for is none, the needs to also be none."
+                                  "Default: untrusted (attestation is required, but can be unknown or self-signed)"),
+                        'group': GROUP.TOKEN,
+                        'value': [
+                            "none",
+                            "untrusted",
+                            "trusted"
+                        ]
+                    },
+                    WEBAUTHNACTION.REQ: {
+                        'type': 'str',
+                        'desc': _("Only the specified WebauthnTokens are allowed to be registered."),
                         'group': GROUP.TOKEN
                     },
                     ACTION.MAXTOKENUSER: {
@@ -551,3 +626,120 @@ class WebAuthnTokenClass(TokenClass):
         self.set_type(u"webauthn")
         self.hKeyRequired = False
         self.init_step = 1
+
+    def decrypt_otpkey(self):
+        """
+        This method fetches a decrypted version of the otp_key.
+
+        This method becomes necessary, since the way WebAuthn is implemented
+        in PrivacyIdea, the otpkey of a WebAuthn token is the credential_id,
+        which may encode important information and needs to be sent to the
+        client to allow the client to create an assertion for the
+        authentication process.
+
+        :return: The otpkey decrypted and encoded as WebAuthn base64.
+        :rtype: basestring
+        """
+
+        return webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey()))
+
+
+    def update(self, param, reset_failcount=True):
+        """
+        This method is called during the initialization process.
+
+        :param param: Parameters from the token init.
+        :type param: dict
+        :param reset_failcount: Whether to reset the fail count.
+        :type reset_failcount: bool
+        :return: Nothing
+        :rtype: None
+        """
+
+        TokenClass.update(self, param)
+
+        transaction_id = getParam(param, "transaction_id")
+
+        if transaction_id:
+            self.init_step = 2
+
+            serial = self.token.serial
+            reg_data = getParam(param, "regdata", required)
+            client_data = getParam(param, "clientdata", required)
+            description = getParam(param, "description", optional)
+
+            rp_id = getParam(param, WEBAUTHNACTION.RELYING_PARTY_ID, required)
+            uv_req = getParam(param, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL, optional)
+            attestation_level = getParam(param, WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, required)
+
+            if 'HTTP_ORIGIN' not in request.environ:
+                raise ParameterError("The ORIGIN HTTP header must be included, when enrolling a new WebAuthn token.")
+
+            challengeobject_list = [
+                challengeobject
+                for challengeobject in get_challenges(serial=serial,
+                                                      transaction_id=transaction_id)
+                if challengeobject.is_valid()
+            ]
+
+            # Since we are still enrolling the token, there should be exactly one challenge.
+            if not len(challengeobject_list):
+                raise RegistrationError(
+                    "The enrollment challenge does not exist or has timed out for {0!s}".format(serial))
+            challengeobject = challengeobject_list[0]
+            challenge = binascii.unhexlify(challengeobject.challenge)
+
+            # This does the heavy lifting.
+            #
+            # All data is parsed and verified. If any errors occur an exception
+            # will be raised.
+            webAuthnCredential = WebAuthnRegistrationResponse(
+                rp_id=rp_id,
+                origin=request.environ['HTTP_ORIGIN'],
+                registration_response={
+                    'clientData': client_data,
+                    'attObj': reg_data
+                },
+                challenge=webauthn_b64_encode(challenge),
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
+                trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
+                uv_required=uv_req
+            ).verify([
+                token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
+            ])
+
+            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.credential_id)))
+            self.set_otp_count(webAuthnCredential.sign_count)
+            self.add_tokeninfo("pubKey", hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.public_key)))
+            self.add_tokeninfo("relying_party_id", webAuthnCredential.rp_id)
+            self.add_tokeninfo("origin", webAuthnCredential.origin)
+            self.add_tokeninfo("attestation_level", webAuthnCredential.attestation_level)
+
+            # Add attestation info.
+            if webAuthnCredential.attestation_cert:
+                # attestation_cert is of type X509. If you get warnings from your IDE
+                # here, it is because your IDE mistakenly assumes it to be of type PKey,
+                # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
+                # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
+                # and can be safely ignored.
+                #
+                # See also:
+                # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
+                attestation_cert = crypto.X509.from_cryptography(webAuthnCredential.attestation_cert)
+                self.add_tokeninfo("attestation_issuer", x509name_to_string(attestation_cert.get_issuer()))
+                self.add_tokeninfo("attestation_serial", x509name_to_string(attestation_cert.get_serial_number()))
+                self.add_tokeninfo("attestation_subject", x509name_to_string(attestation_cert.get_subject()))
+
+                if not description:
+                    cn = webAuthnCredential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                    description = cn[0] if len(cn) else DEFAULT_DESCRIPTION
+
+            self.set_description(description)
+
+            # Delete all challenges. We are still in enrollment, so there
+            # *should* be only one, but it can't hurt to be thorough here.
+            for challengeobject in challengeobject_list:
+                challengeobject.delete()
+            self.challenge_janitor()
+        else:
+            self.set_description("WebAuthn initialization")
