@@ -21,7 +21,8 @@ class APIEventsTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 308, res)
+            # In test environment this can throw a 301
+            self.assertTrue(res.status_code in [301, 308], res)
             self.assertIn('Location', res.headers, res)
 
         param = {

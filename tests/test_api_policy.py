@@ -268,6 +268,65 @@ class APIPolicyTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
 
+    def test_03_set_adminuser_policy(self):
+        # Set a policy for the user testadmin
+        with self.app.test_request_context('/policy/pol1adminuser',
+                                           method='POST',
+                                           data={
+                                               "action": "{0!s}, {1!s}".format(ACTION.POLICYDELETE,
+                                               ACTION.POLICYREAD),
+                                               "scope": SCOPE.ADMIN,
+                                               "realm": "",
+                                               "adminuser": "testadmin"},
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            self.assertTrue("setPolicy pol1adminuser" in result.get("value"),
+                            result.get("value"))
+
+        # Get the policies
+        with self.app.test_request_context('/policy/',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            policies = result.get("value")
+            # We have two polices
+            self.assertEqual(2, len(policies))
+
+        # The admin is not allowed to enroll a token!
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"genkey": 1},
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # Forbidden
+            self.assertTrue(res.status_code == 403, res)
+            data = res.json
+            result = data.get("result")
+            status = result.get("status")
+            self.assertFalse(status)
+            message = result.get("error").get("message")
+            self.assertEqual(message, u"Admin actions are defined, but you are not allowed to enroll this token type!")
+
+        # Delete the policy
+        with self.app.test_request_context('/policy/pol1adminuser',
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            status = result.get("status")
+            self.assertTrue(status)
 
 class APIPolicyConditionTestCase(MyApiTestCase):
 
