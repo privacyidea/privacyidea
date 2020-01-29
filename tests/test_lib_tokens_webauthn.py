@@ -42,7 +42,7 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejecte
                                              ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
                                              WebAuthnUser)
 from .base import MyTestCase
-from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION
+from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass, WEBAUTHNACTION, WEBAUTHNCONFIG
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import set_policy, SCOPE
 
@@ -61,8 +61,8 @@ class WebAuthnTokenTestCase(MyTestCase):
                    scope=SCOPE.ENROLL,
                    action=WEBAUTHNACTION.RELYING_PARTY_NAME+"="+self.RP_NAME+","
                           +WEBAUTHNACTION.RELYING_PARTY_ID+"="+self.RP_ID)
-        set_privacyidea_config("webauthn.trust_anchor_dir", TRUST_ANCHOR_DIR)
-        set_privacyidea_config("webauthn.appid", self.APP_ID)
+        set_privacyidea_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
+        set_privacyidea_config(WEBAUTHNCONFIG.APP_ID, self.APP_ID)
 
     def test_01_create_token(self):
         pin = "1234"
@@ -135,7 +135,7 @@ class WebAuthnTestCase(unittest.TestCase):
     USER_ID = b'\x80\xf1\xdc\xec\xb5\x18\xb1\xc8b\x05\x886\xbc\xdfJ\xdf'
     RP_NAME = "Web Authentication"
     TIMEOUT = 60000
-    ATTESTATION = 'direct'
+    ATTESTATION_FORM = 'direct'
     USER_VERIFICATION = None
     PUBLIC_KEY_CREDENTIAL_ALGORITHMS = [
         COSE_ALGORITHM.ES256,
@@ -157,7 +157,7 @@ class WebAuthnTestCase(unittest.TestCase):
             user_display_name=self.USER_DISPLAY_NAME,
             icon_url=self.ICON_URL,
             timeout=self.TIMEOUT,
-            attestation=self.ATTESTATION,
+            attestation=self.ATTESTATION_FORM,
             user_verification=self.USER_VERIFICATION,
             public_key_credential_algorithms=self.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
             location=True

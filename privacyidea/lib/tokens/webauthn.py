@@ -50,7 +50,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import base64
 import binascii
 import codecs
 import hashlib
@@ -67,6 +66,13 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import constant_time
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers, SECP256R1, ECDSA
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.x509 import load_der_x509_certificate
+
+from privacyidea.lib.tokens.u2f import url_encode, url_decode
+from privacyidea.lib.utils import to_bytes, to_unicode
 
 __doc__ = """
 Business logic for WebAuthn protocol.
@@ -75,15 +81,6 @@ This file implements the server part of the WebAuthn protocol.
 
 This file is tested in tests/test_lib_tokens_webauthn.py
 """
-
-# Authenticator data flags.
-#
-# https://www.w3.org/TR/webauthn/#authenticator-data
-#
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from cryptography.hazmat.primitives.hashes import SHA256
-from cryptography.x509 import load_der_x509_certificate
 
 # Default client extensions
 #
@@ -436,22 +433,20 @@ class WebAuthnMakeCredentialOptions(object):
 
         attestation = str(attestation).lower()
         if attestation not in ATTESTATION_FORMS:
-            raise ValueError('Attestation string must be one of '
-                             + ', '.join(ATTESTATION_FORMS))
+            raise ValueError('Attestation string must be one of {0!s}'.format(', '.join(ATTESTATION_FORMS)))
         self.attestation = attestation
 
         if user_verification is not None:
             user_verification = str(user_verification).lower()
             if user_verification not in USER_VERIFICATION_LEVELS:
-                raise ValueError('user_verification must be one of '
-                                 + ', '.join(USER_VERIFICATION_LEVELS))
+                raise ValueError('user_verification must be one of {0!s}'.format(', '.join(USER_VERIFICATION_LEVELS)))
         self.user_verification = user_verification
 
         if authenticator_attachment is not None:
             authenticator_attachment = str(authenticator_attachment).lower()
             if authenticator_attachment not in AUTHENTICATOR_ATTACHMENT_TYPES:
-                raise ValueError('authenticator_attachment must be one of '
-                                 + ', '.join(AUTHENTICATOR_ATTACHMENT_TYPES))
+                raise ValueError(
+                    'authenticator_attachment must be one of {0!s}'.format(', '.join(AUTHENTICATOR_ATTACHMENT_TYPES)))
         self.authenticator_attachment = authenticator_attachment
 
         if int(timeout) < 1:
@@ -578,8 +573,8 @@ class WebAuthnAssertionOptions(object):
 
         self.user_verification_requirement = str(user_verification_requirement).lower()
         if self.user_verification_requirement not in USER_VERIFICATION_LEVELS:
-            raise ValueError('user_verification_requirement must be one of '
-                             + ', '.join(USER_VERIFICATION_LEVELS))
+            raise ValueError(
+                'user_verification_requirement must be one of {0!s}'.format(', '.join(USER_VERIFICATION_LEVELS)))
 
     @property
     def assertion_dict(self):
@@ -679,7 +674,8 @@ class WebAuthnCredential(object):
                  credential_id,
                  public_key,
                  sign_count,
-                 attestation_level):
+                 attestation_level,
+                 attestation_cert=None):
         """
         Create a new WebAuthnCredential object.
 
@@ -688,27 +684,29 @@ class WebAuthnCredential(object):
         :param origin: The origin of the user the credential is for.
         :type origin: basestring
         :param credential_id: The ID of the credential.
-        :type credential_id: bytes
+        :type credential_id: basestring or bytes
         :param public_key: The public key of the credential.
-        :type public_key: bytes
+        :type public_key: basestring or bytes
         :param sign_count: The signature count.
         :type sign_count: int
         :param attestation_level: The level of attestation that was provided for this credential.
         :type attestation_level: basestring
+        :param attestation_cert: The attestation certificate, if any.
+        :type attestation_cert: Certificate
         :return: A WebAuthnCredential
         :rtype: WebAuthnCredential
         """
 
         self.rp_id = rp_id
         self.origin = origin
-        self.credential_id = credential_id
-        self.public_key = public_key
+        self.credential_id = to_bytes(credential_id)
+        self.public_key = to_bytes(public_key)
         self.sign_count = sign_count
+        self.attestation_cert = attestation_cert
 
         attestation_level = str(attestation_level).lower()
         if attestation_level not in ATTESTATION_LEVELS:
-            raise ValueError('Attestation level must be one of '
-                             + ', '.join(ATTESTATION_LEVELS))
+            raise ValueError('Attestation level must be one of {0!s}'.format(', '.join(ATTESTATION_LEVELS)))
         self.attestation_level = attestation_level
 
     @property
@@ -744,7 +742,7 @@ class WebAuthnRegistrationResponse(object):
                  registration_response,
                  challenge,
                  attestation_requirement_level,
-                 trust_anchor_dir,
+                 trust_anchor_dir=None,
                  uv_required=False,
                  expected_registration_client_extensions=None,
                  expected_registration_authenticator_extensions=None):
@@ -796,7 +794,21 @@ class WebAuthnRegistrationResponse(object):
         # With none attestation, authenticator attestation will not be performed.
         self.none_attestation_permitted = attestation_requirement_level['none_attestation_permitted']
 
-    def _verify_attestation_statement(self, fmt, att_stmt, auth_data, client_data_hash):
+    @staticmethod
+    def parse_attestation_object(attestation_object):
+        """
+        Pull the individual fields out of an attestation object.
+
+        :param attestation_object: The attestation object, as passed by the authenticator.
+        :type attestation_object: basestring
+        :return: The result of CBOR-decoding the attestation_object.
+        :rtype: dict
+        """
+
+        return cbor2.loads(webauthn_b64_decode(attestation_object))
+
+    @staticmethod
+    def verify_attestation_statement(fmt, att_stmt, auth_data, client_data_hash=b'', none_attestation_permitted=True):
         """
         The procedure for verifying an attestation statement.
 
@@ -813,6 +825,10 @@ class WebAuthnRegistrationResponse(object):
         also be able to build the attestation certificate chain if the client did not
         provide this chain in the attestation information.
 
+        In order to facilitate further checking of the certificate by prepolicies, the
+        client_data_hash may be omitted, to only perform parsing of the statement, verifying
+        it further down the line.
+
         :param fmt: The attestation format.
         :type fmt: basestring
         :param att_stmt: The attestation statement structure.
@@ -821,6 +837,10 @@ class WebAuthnRegistrationResponse(object):
         :type auth_data: basestring
         :param client_data_hash: The hash of the serialized client data.
         :type client_data_hash: SHA256Type
+        :param none_attestation_permitted: Whether to allow for the attestation type to be none or unsupported.
+        :type none_attestation_permitted: bool
+        :return: The attestation type, trust path, credential public key, credential id and aaguid.
+        :rtype: set
         """
 
         attestation_data = auth_data[37:]
@@ -891,23 +911,25 @@ class WebAuthnRegistrationResponse(object):
             #
             # Verify the sig using verificationData and certificate public
             # key per [SEC1].
-            try:
-                _verify_signature(certificate_public_key, alg, verification_data, signature)
-            except InvalidSignature:
-                raise RegistrationRejectedException('Invalid signature received.')
-            except NotImplementedError:
-                # We do not support this. Treat as none attestation, if acceptable.
-                if self.none_attestation_permitted:
-                    attestation_type = ATTESTATION_TYPE.NONE
-                    trust_path = []
-                    return (
-                        attestation_type,
-                        trust_path,
-                        credential_pub_key,
-                        cred_id
-                    )
+            if client_data_hash:
+                try:
+                    _verify_signature(certificate_public_key, alg, verification_data, signature)
+                except InvalidSignature:
+                    raise RegistrationRejectedException('Invalid signature received.')
+                except NotImplementedError:
+                    # We do not support this. Treat as none attestation, if acceptable.
+                    if none_attestation_permitted:
+                        attestation_type = ATTESTATION_TYPE.NONE
+                        trust_path = []
+                        return (
+                            attestation_type,
+                            trust_path,
+                            credential_pub_key,
+                            cred_id,
+                            aaguid
+                        )
 
-                raise RegistrationRejectedException('Unsupported algorithm.')
+                    raise RegistrationRejectedException('Unsupported algorithm.')
 
             # Step 7.
             #
@@ -920,7 +942,8 @@ class WebAuthnRegistrationResponse(object):
                 attestation_type,
                 trust_path,
                 credential_pub_key,
-                cred_id
+                cred_id,
+                aaguid
             )
         elif fmt == ATTESTATION_FORMAT.PACKED:
             attestation_syntaxes = {
@@ -968,23 +991,25 @@ class WebAuthnRegistrationResponse(object):
                 # concatenation of authenticatorData and clientDataHash
                 # using the attestation public key in attestnCert with
                 # the algorithm specified in alg.
-                try:
-                    _verify_signature(certificate_public_key, alg, verification_data, signature)
-                except InvalidSignature:
-                    raise RegistrationRejectedException('Invalid signature received.')
-                except NotImplementedError:
-                    # We do not support this. Treat as none attestation, if acceptable.
-                    if self.none_attestation_permitted:
-                        attestation_type = ATTESTATION_TYPE.NONE
-                        trust_path = []
-                        return (
-                            attestation_type,
-                            trust_path,
-                            credential_pub_key,
-                            cred_id
-                        )
+                if client_data_hash:
+                    try:
+                        _verify_signature(certificate_public_key, alg, verification_data, signature)
+                    except InvalidSignature:
+                        raise RegistrationRejectedException('Invalid signature received.')
+                    except NotImplementedError:
+                        # We do not support this. Treat as none attestation, if acceptable.
+                        if none_attestation_permitted:
+                            attestation_type = ATTESTATION_TYPE.NONE
+                            trust_path = []
+                            return (
+                                attestation_type,
+                                trust_path,
+                                credential_pub_key,
+                                cred_id,
+                                aaguid
+                            )
 
-                    raise RegistrationRejectedException('Unsupported algorithm.')
+                        raise RegistrationRejectedException('Unsupported algorithm.')
 
                 #
                 # Verify that attestnCert meets the requirements in
@@ -1056,14 +1081,15 @@ class WebAuthnRegistrationResponse(object):
                 trust_path = [x509_att_cert]
             elif 'ecdaaKeyId' in att_stmt:
                 # We do not support this. If attestation is optional, have it go through anyways.
-                if self.none_attestation_permitted:
+                if none_attestation_permitted:
                     attestation_type = ATTESTATION_TYPE.ECDAA
                     trust_path = []
                     return (
                         attestation_type,
                         trust_path,
                         credential_pub_key,
-                        cred_id
+                        cred_id,
+                        aaguid
                     )
 
                 # Step 3.
@@ -1079,7 +1105,7 @@ class WebAuthnRegistrationResponse(object):
                 raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
             else:
                 # Attestation is either none, or unsupported.
-                if not self.none_attestation_permitted:
+                if not none_attestation_permitted:
                     if fmt == ATTESTATION_FORMAT.NONE:
                         raise RegistrationRejectedException('Authenticator attestation is required.')
                     else:
@@ -1096,7 +1122,8 @@ class WebAuthnRegistrationResponse(object):
                     attestation_type,
                     trust_path,
                     credential_pub_key,
-                    cred_id
+                    cred_id,
+                    aaguid
                 )
 
     def verify(self, existing_credential_ids=None):
@@ -1122,7 +1149,7 @@ class WebAuthnRegistrationResponse(object):
             # creation, be the result of running an implementation-specific JSON
             # parser on JSONtext.
             decoded_cd = webauthn_b64_decode(json_text)
-            c = json.loads(decoded_cd.decode('utf-8'))
+            c = json.loads(to_unicode(decoded_cd))
 
             # Step 3.
             #
@@ -1166,7 +1193,7 @@ class WebAuthnRegistrationResponse(object):
             # the AuthenticatorAttestationResponse structure to obtain
             # the attestation statement format fmt, the authenticator
             # data authData, and the attestation statement attStmt.
-            att_obj = cbor2.loads(webauthn_b64_decode(self.registration_response.get('attObj')))
+            att_obj = self.parse_attestation_object(self.registration_response.get('attObj'))
             att_stmt = att_obj.get('attStmt')
             auth_data = att_obj.get('authData')
             fmt = att_obj.get('fmt')
@@ -1237,12 +1264,14 @@ class WebAuthnRegistrationResponse(object):
                 attestation_type,
                 trust_path,
                 credential_public_key,
-                cred_id
-            ) = self._verify_attestation_statement(
+                cred_id,
+                aaguid
+            ) = self.verify_attestation_statement(
                 fmt,
                 att_stmt,
                 auth_data,
-                client_data_hash
+                client_data_hash,
+                self.none_attestation_permitted
             )
             b64_cred_id = webauthn_b64_encode(cred_id)
 
@@ -1255,7 +1284,9 @@ class WebAuthnRegistrationResponse(object):
             # Metadata Service [FIDOMetadataService] provides one way to obtain
             # such information, using the aaguid in the attestedCredentialData
             # in authData.
-            trust_anchors = _get_trust_anchors(attestation_type, fmt, self.trust_anchor_dir)
+            trust_anchors = _get_trust_anchors(attestation_type, fmt, self.trust_anchor_dir) \
+                if self.trust_anchor_dir \
+                else None
             if not trust_anchors and self.trusted_attestation_cert_required:
                 raise RegistrationRejectedException('No trust anchors available to verify attestation certificate.')
 
@@ -1289,7 +1320,6 @@ class WebAuthnRegistrationResponse(object):
             else:
                 attestation_level = ATTESTATION_LEVEL.NONE
 
-
             # Step 17.
             #
             # Check that the credentialId is not yet registered to any other user.
@@ -1313,7 +1343,8 @@ class WebAuthnRegistrationResponse(object):
                                             credential_id=b64_cred_id,
                                             public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
-                                            attestation_level=attestation_level)
+                                            attestation_level=attestation_level,
+                                            attestation_cert=trust_path[0] if len(trust_path) else None)
             if is_trusted_attestation_cert:
                 return credential
 
@@ -1589,10 +1620,9 @@ def webauthn_b64_decode(encoded):
     """
     Pad a WebAuthn base64-encoded string and decode it.
 
-    WebAuthn specifies web-safe base64 encoding *without* padding. The Python
-    implementation of base64 requires padding. This function will add the
-    padding back in to a WebAuthn base64-encoded string, then run it through
-    the native Python implementation of base64 to decode.
+    WebAuthn specifies a web-safe base64 encoding *without* padding. Since
+    this is the same as u2f, this function will just rely on the existing u2f
+    implementation of this algorithm.
 
     :param encoded: A WebAuthn base64-encoded string.
     :type encoded: basestring or bytes
@@ -1600,29 +1630,24 @@ def webauthn_b64_decode(encoded):
     :rtype: bytes
     """
 
-    if isinstance(encoded, bytes):
-        encoded = str(encoded, 'utf-8')
-
-    # Add '=' until length is a multiple of 4 bytes, then decode.
-    padding_len = (-len(encoded) % 4)
-    encoded += '=' * padding_len
-    return base64.urlsafe_b64decode(encoded)
+    return url_decode(encoded)
 
 
 def webauthn_b64_encode(raw):
     """
     Encode bytes using WebAuthn base64-encoding.
 
-    WebAuthn specifies a web-safe base64 encoding *without* padding. The Python
-    implementation of base64 will include padding. This function will use the
-    native Python implementation of base64 do encode, then strip of the padding.
+    WebAuthn specifies a web-safe base64 encoding *without* padding. Since
+    this is the same as u2f, this function will just rely on the existing u2f
+    implementation of this algorithm.
 
     :param raw: Bytes to encode.
-    :type raw: bytes
+    :type raw: basestring or bytes
     :return: The encoded base64.
-    :rtype: bytes
+    :rtype: basestring
     """
-    return base64.urlsafe_b64encode(raw).rstrip(b'=')
+
+    return url_encode(raw)
 
 
 def _encode_public_key(public_key):
@@ -1763,8 +1788,8 @@ def _verify_challenge(received_challenge, sent_challenge):
         and isinstance(received_challenge, six.string_types) \
         and isinstance(sent_challenge, six.string_types) \
         and constant_time.bytes_eq(
-            bytes(sent_challenge, encoding='utf-8'),
-            bytes(received_challenge, encoding='utf-8')
+            to_bytes(sent_challenge),
+            to_bytes(received_challenge)
         )
 
 
@@ -1838,7 +1863,7 @@ def _verify_authenticator_extensions(auth_data, expected_authenticator_extension
 
 
 def _verify_rp_id_hash(auth_data_rp_id_hash, rp_id):
-    rp_id_hash = hashlib.sha256(bytes(rp_id, "utf-8")).digest()
+    rp_id_hash = hashlib.sha256(to_bytes(rp_id)).digest()
     return constant_time.bytes_eq(auth_data_rp_id_hash, rp_id_hash)
 
 
@@ -1853,7 +1878,6 @@ def _verify_attestation_statement_format(fmt):
     """
 
     # TODO Handle more attestation statement formats
-
     return isinstance(fmt, six.string_types) and fmt in SUPPORTED_ATTESTATION_FORMATS
 
 
