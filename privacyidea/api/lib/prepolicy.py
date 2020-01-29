@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#             Add WebAuthn token
 #  2019-02-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add push token enrollment policy
 #  2018-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -62,7 +64,12 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+
 import logging
+import string
+
+from OpenSSL import crypto
+
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
@@ -81,7 +88,18 @@ import functools
 import jwt
 import re
 import importlib
+
 # Token specific imports!
+from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHENTICATOR_ATTACHMENT_TYPES,
+                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_TIMEOUT_ENROLL,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  DEFAULT_TIMEOUT_AUTH, DEFAULT_ALLOWED_TRANSPORTS,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -1353,10 +1371,13 @@ def u2ftoken_allowed(request, action):
     :param action: 
     :return: 
     """
-    policy_object = g.policy_object
+
+    ttype = request.all_data.get("type")
+
     # Get the registration data of the 2nd step of enrolling a U2F device
     reg_data = request.all_data.get("regdata")
-    if reg_data:
+
+    if ttype and ttype.lower() == "u2f" and reg_data:
         # We have a registered u2f device!
         serial = request.all_data.get("serial")
 
@@ -1366,32 +1387,20 @@ def u2ftoken_allowed(request, action):
         signature, description = parse_registration_data(reg_data,
                                                          verify_cert=False)
 
-        cert_info = {
-            "attestation_issuer":
-                x509name_to_string(attestation_cert.get_issuer()),
-            "attestation_serial": "{!s}".format(
-                attestation_cert.get_serial_number()),
-            "attestation_subject": x509name_to_string(
-                attestation_cert.get_subject())}
-
         allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
                                         user_object=request.User if request.User else None)\
             .action_values(unique=False)
-        for allowed_cert in allowed_certs_pols:
-            tag, matching, _rest = allowed_cert.split("/", 3)
-            tag_value = cert_info.get("attestation_{0!s}".format(tag))
-            # if we do not get a match, we bail out
-            m = re.search(matching, tag_value)
-            if not m:
-                log.warning("The U2F device {0!s} is not "
-                            "allowed to be registered due to policy "
-                            "restriction".format(
-                    serial))
-                raise PolicyError("The U2F device is not allowed "
-                                  "to be registered due to policy "
-                                  "restriction.")
-                # TODO: Maybe we should delete the token, as it is a not
-                # usable U2F token, now.
+
+        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+            log.warning("The U2F device {0!s} is not "
+                        "allowed to be registered due to policy "
+                        "restriction".format(
+                serial))
+            raise PolicyError("The U2F device is not allowed "
+                              "to be registered due to policy "
+                              "restriction.")
+            # TODO: Maybe we should delete the token, as it is a not
+            # usable U2F token, now.
 
     return True
 
@@ -1421,4 +1430,333 @@ def allowed_audit_realm(request=None, action=None):
 
     return True
 
+
+def webauthntoken_auth(request, action):
+    """
+    This is a WebAuthn specific wrapper token for the endpoints /validate/triggerechallenge and /validate/check.
+
+    This will enrich the challenge creation request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.AUTH. The request will be augmented with the timeout for
+    authentication, the allowed transports, and the user verification
+    requirement, as specified by the actions WEBAUTHNACTION.TIMEOUT_AUTH,
+    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and
+    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH, respectively.
+
+    All of these policies are optional, and have sensible defaults.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "webauthn":
+        timeout_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action=WEBAUTHNACTION.TIMEOUT_AUTH,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        timeout = int(list(timeout_policies)[0]) if len(timeout_policies) else DEFAULT_TIMEOUT_AUTH
+
+        allowed_transports_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_transports = set(
+            transport
+            for allowed_transports_policy in allowed_transports_policies
+            for transport in allowed_transports_policy.split()
+        ) \
+            if len(allowed_transports_policies) \
+            else DEFAULT_ALLOWED_TRANSPORTS
+
+        user_verification_requirement_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        user_verification_requirement = user_verification_requirement_policies[0] \
+            if len(user_verification_requirement_policies) \
+            else DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH
+        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}"
+                    .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
+                            ", ".join(USER_VERIFICATION_LEVELS)))
+
+        request.all_data[WEBAUTHNACTION.TIMEOUT_AUTH] \
+            = timeout * 1000
+        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
+            = allowed_transports
+        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH] \
+            = user_verification_requirement
+
+    return True
+
+
+def webauthntoken_enroll(request, action):
+    """
+    This is a token specific wrapper for the WebAuthn token for the endpoint /token/init.
+
+    This will enrich the initialization request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.ENROLL. The request will be augmented with a name and id for
+    the relying party, as specified by the with actions
+    WEBAUTHNACTION.RELYING_PARTY_NAME and WEBAUTHNACTION.RELYING_PARTY_ID,
+    respectively, along with the enrollment timeout, authenticator attachment
+    preference, user verification requirement level, public key credential
+    algorithm preferences, authenticator attestation requirement level, and
+    authenticator attestation requirement form, as specified by the actions
+    WEBAUTHNACTION.TIMEOUT_ENROLL, WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, and
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM, respectively.
+
+    Setting WEBAUTHNACTION.RELYING_PARTY_NAME and
+    WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
+    set, we bail out.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "webauthn":
+        rp_id_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        if len(rp_id_policies):
+            rp_id = list(rp_id_policies)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
+
+        rp_name_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True,
+                           allow_white_space_in_action=True)
+        if len(rp_name_policies):
+            rp_name = list(rp_name_policies)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
+
+        # The RP ID is a domain name and thus may not contain any punctuation except '-'.
+        if not set(string.punctuation).intersection(rp_id).issubset(set('-')):
+            log.warning(
+                "Illegal value for {0!s} (must be a domain name): {1!s}"
+                    .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))
+            raise PolicyError(
+                "Illegal value for {0!s} (must be a domain name)."
+                    .format(WEBAUTHNACTION.RELYING_PARTY_ID))
+
+        timeout_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.TIMEOUT_ENROLL,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        timeout = int(list(timeout_policies)[0]) if len(timeout_policies) else DEFAULT_TIMEOUT_ENROLL
+
+        authenticator_attachment_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        authenticator_attachment = list(authenticator_attachment_policies)[0] \
+            if len(authenticator_attachment_policies) \
+               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
+            else None
+
+        user_verification_requirement_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        user_verification_requirement = list(user_verification_requirement_policies)[0] \
+            if len(user_verification_requirement_policies) \
+            else DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL
+        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}"
+                    .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+                            ', '.join(USER_VERIFICATION_LEVELS)))
+
+        public_key_credential_algorithm_preference_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
+            if len(public_key_credential_algorithm_preference_policies) \
+            else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+        if public_key_credential_algorithm_preference not in PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys():
+            raise PolicyError(
+                "{0!s} must be one of {1!s}"
+                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys())))
+
+        authenticator_attestation_level_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
+            if len(authenticator_attestation_level_policies) \
+            else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
+        if authenticator_attestation_level not in ATTESTATION_LEVELS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                    ', '.join(ATTESTATION_LEVELS)))
+
+        authenticator_attestation_form_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True)
+        authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
+            if len(authenticator_attestation_form_policies) \
+            else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+
+        request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
+        request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
+
+        request.all_data[WEBAUTHNACTION.TIMEOUT_ENROLL] \
+            = timeout * 1000
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
+            = authenticator_attachment
+        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL] \
+            = user_verification_requirement
+        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE] \
+            = PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[public_key_credential_algorithm_preference]
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
+            = authenticator_attestation_level
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
+            = authenticator_attestation_form
+
+    return True
+
+
+def webauthntoken_allowed(request, action):
+    """
+    This is a token specific wrapper for WebAuthn token for the endpoint /token/init.
+
+    According to the policy scope=SCOPE.ENROLL,
+    action=WEBAUTHNACTION.REQ it checks, if the assertion certificate is
+    for an allowed WebAuthn token type. According to the policy
+    scope=SCOPE.ENROLL, action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
+    it checks, whether the AAGUID is whitelisted. Note: Depending on the
+    format of the attestation statement, it may be possible to spoof this.
+
+    TODO: Add support for disallowing certain attestation statement formats.
+
+    If the token, which is being enrolled does not contain an allowed attestation
+    certificate, or does not have an allowed AAGUID, we bail out.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+
+    # Get the registration data of the 2nd step of enrolling a WebAuthn token
+    reg_data = request.all_data.get("regdata")
+
+    if ttype and ttype.lower() == "webauthn" and reg_data:
+        # We have a registered webauthn token!
+        serial = request.all_data.get("serial")
+        att_obj = WebAuthnRegistrationResponse.parse_attestation_object(reg_data)
+        (
+            attestation_type,
+            trust_path,
+            credential_pub_key,
+            cred_id,
+            aaguid
+        ) = WebAuthnRegistrationResponse.verify_attestation_statement(fmt=att_obj.get('fmt'),
+                                                                      att_stmt=att_obj.get('attStmt'),
+                                                                      auth_data=att_obj.get('authData'))
+
+        attestation_cert = crypto.X509.from_cryptography(trust_path[0])
+        allowed_certs_pols = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.REQ,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=False)
+
+        allowed_aaguids_pols = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
+
+        # attestation_cert is of type X509. If you get a warning from your IDE
+        # here, it is because your IDE mistakenly assumes it to be of type PKey,
+        # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
+        # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
+        # and can be safely ignored.
+        #
+        # See also:
+        # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
+        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols)\
+                or len(allowed_aaguids) and aaguid not in allowed_aaguids:
+            log.warning(
+                "The WebAuthn token {0!s} is not allowed to be registered due to policy restrictions.".format(serial))
+            raise PolicyError("The WebAuthn token is not allowed to be registered due to policy restrictions.")
+
+    return True
+
+
+def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+    cert_info = {
+        "attestation_issuer":
+            x509name_to_string(attestation_cert.get_issuer()),
+        "attestation_serial": "{!s}".format(
+            attestation_cert.get_serial_number()),
+        "attestation_subject": x509name_to_string(
+            attestation_cert.get_subject())}
+
+    for allowed_cert in allowed_certs_pols:
+        tag, matching, _rest = allowed_cert.split("/", 3)
+        tag_value = cert_info.get("attestation_{0!s}".format(tag))
+        # if we do not get a match, we bail out
+        m = re.search(matching, tag_value)
+        if not m:
+            return False
+
+    return True
 
