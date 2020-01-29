@@ -62,7 +62,7 @@
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin'" translate>Token realms
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
                 <pi-filter ng-model="tokenrealmFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"

@@ -50,7 +50,7 @@ def url_decode(url):
     :return: the decoded string
     :rtype: bytes
     """
-    pad_len = len(url) % 4
+    pad_len = -len(url) % 4
     padding = pad_len * "="
     res = base64.urlsafe_b64decode(to_bytes(url + padding))
     return res

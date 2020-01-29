@@ -124,6 +124,38 @@ privacyIDEA lets you import PSKC files.
 All necessary information (OTP length, Hash algorithm, token type) are read
 from the file.
 
+PSKC files can be encrypted - either with a password or an AES key. You can
+provide this during the upload.
+
+
+SafeNet XML
+-----------
+
+Safenet or former Aladdin provided seed files in their own XML format.
+This is the format to choose, if you have a file, that looks like this::
+
+    <Tokens>
+        <Token serial="00040008CFA5">
+        <CaseModel>5</CaseModel>
+        <Model>101</Model>
+        <ProductionDate>02/19/2009</ProductionDate>
+        <ProductName>Safeword Alpine</ProductName>
+        <Applications>
+        <Application ConnectorID="{ab1397d2-ddb6-4705-b66e-9f83f322deb9}">
+        <Seed>123412354</Seed>
+        <MovingFactor>1</MovingFactor>
+        </Application>
+        </Applications>
+        </Token>
+
+        <Token ...>
+        ...
+        </Token>
+     </Tokens>
+
+.. note:: Safenet nowadays might provide you an XML file, which is probably a PKCS file.
+   Please check the file contents!
+
 
 .. [#ocra] http://tools.ietf.org/html/rfc6287#section-6
 .. [#yubipers] http://www.yubico.com/products/services-software/personalization-tools/use/
