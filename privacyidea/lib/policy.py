@@ -1131,7 +1131,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     if type(user) == list:
         user = ", ".join(user)
     if type(adminuser) == list:
-        adminuser = ", ".joint(adminuser)
+        adminuser = ", ".join(adminuser)
     if type(resolver) == list:
         resolver = ", ".join(resolver)
     if type(client) == list:

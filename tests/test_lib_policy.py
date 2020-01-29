@@ -117,7 +117,7 @@ class PolicyTestCase(MyTestCase):
                        action="enroll, init, disable , enable",
                        scope="admin",
                        realm="realm2",
-                       adminuser="admin, superroot")
+                       adminuser=["admin", "superroot"])
         self.assertTrue(p > 0)
 
         # enable and disable policies
@@ -533,9 +533,12 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("yubikey" in tt)
         self.assertTrue("radius" in tt)
 
-        # An admin in realm1 may only enroll Yubikeys
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
-                   adminrealm="realm1",
+                   adminrealm=["realm2"],
+                   action="enrollYUBIKEY")
+        # Update policy: An admin in realm1 may only enroll Yubikeys
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
+                   adminrealm=["realm1"],
                    action="enrollYUBIKEY")
         P = PolicyClass()
 
