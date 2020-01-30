@@ -95,8 +95,19 @@ Added in version 2.14
 
 An event handler module may also contain conditions. Only if all conditions
 are fullfilled, the action is triggered. Conditions are defined in the class
-property *conditions* and checked in the method *check_condition*. The
-UserNotification Event Handler defines such conditions.
+property *conditions* and checked in the method *check_condition*. The base class
+for event handlers currently defines those conditions. So all event handlers come with
+the same conditions.
+
+.. note:: In contrast to other conditions, the condition checking for
+   ``tokenrealms``, ``tokenresolvers``, ``serial`` and ``user_token_number``
+   also evaluates to *true*, if this information
+   can not be checked. I.e. if a request does not contain a *serial* or if the serial
+   can not be determined, this condition will be evaluated as fulfilled.
+
+   Event Handlers are a mighty and complex tool to tweek the functioning of your
+   privacyIDEA system. We recommend to test your definitions thoroughly to assure
+   your expected outcome.
 
 Basic conditions
 ~~~~~~~~~~~~~~~~
