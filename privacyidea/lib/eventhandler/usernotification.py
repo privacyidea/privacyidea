@@ -155,19 +155,19 @@ class UserNotificationEventHandler(BaseEventHandler):
                         NOTIFY_TYPE.INTERNAL_ADMIN,
                         NOTIFY_TYPE.ADMIN_REALM,
                         NOTIFY_TYPE.EMAIL]},
-                "To "+NOTIFY_TYPE.ADMIN_REALM: {
+                "To " + NOTIFY_TYPE.ADMIN_REALM: {
                     "type": "str",
                     "value": get_app_config_value("SUPERUSER_REALM", []),
                     "visibleIf": "To",
                     "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
-                "To "+NOTIFY_TYPE.INTERNAL_ADMIN: {
+                "To " + NOTIFY_TYPE.INTERNAL_ADMIN: {
                     "type": "str",
                     "value": [a.username for a in
                               get_db_admins()],
                     "visibleIf": "To",
                     "visibleValue":
                         NOTIFY_TYPE.INTERNAL_ADMIN},
-                "To "+NOTIFY_TYPE.EMAIL: {
+                "To " + NOTIFY_TYPE.EMAIL: {
                     "type": "str",
                     "description": _("Any email address, to which the notification "
                                      "should be sent."),
