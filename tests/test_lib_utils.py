@@ -804,4 +804,3 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(realm, "domain")
         self.assertEqual(adminuser, "hans")
         self.assertEqual(adminrealm, "realm1")
-
