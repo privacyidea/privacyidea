@@ -1,3 +1,18 @@
+Version 3.3, 2020-XX-XX
+
+  Enhancements:
+  * Policies:
+    * Improve destincion between the username of the administrator
+      and the username of the user. Add an admin username to policies. (#1867)
+      Thus allowing:
+      * User attribute conditions in admin policies
+      * default settings for hashlib and otplen for HOTP and TOTP token 
+        and default timestep for TOTP token can now be dependent on
+	admin user and for which user the admin does the enrollment
+      * Enrollment settings for push tokens can distinguish better
+        between admin users and user
+      * Random PIN settings can be user dependent
+
 Version 3.2.2, 2020-01-17
 
   Fixes:
