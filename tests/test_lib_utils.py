@@ -22,7 +22,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid)
+                                   check_serial_valid, determine_logged_in_userparams)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -781,3 +781,27 @@ class UtilsTestCase(MyTestCase):
 
         # an empty serial is not allowed
         self.assertRaises(Exception, check_serial_valid, "")
+
+    def test_33_determine_logged_in_user(self):
+        (scope, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"}, {})
+
+        self.assertEqual(scope, "user")
+        self.assertEqual(user, "hans")
+        self.assertEqual(realm, "realm1")
+        self.assertEqual(adminuser, None)
+        self.assertEqual(adminrealm, None)
+
+        (scope, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"},
+                                                                                     {"user": "peter",
+                                                                                      "realm": "domain"})
+
+        self.assertEqual(scope, "admin")
+        self.assertEqual(user, "peter")
+        self.assertEqual(realm, "domain")
+        self.assertEqual(adminuser, "hans")
+        self.assertEqual(adminrealm, "realm1")
+

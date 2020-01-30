@@ -59,7 +59,7 @@ from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
-                                   hexlify_and_unicode)
+                                   hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.lib import _
@@ -688,11 +688,15 @@ class HotpTokenClass(TokenClass):
         ret = {}
         if not logged_in_user:
             return ret
+        (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+                                                                                             params)
         hashlib_pol = policy_object.get_action_values(
             action="hotp_hashlib",
-            scope=logged_in_user.get('role'),
-            user=logged_in_user.get("username"),
-            realm=logged_in_user.get("realm"),
+            scope=scope,
+            user=username,
+            realm=userrealm,
+            adminrealm=adminrealm,
+            adminuser=adminuser,
             client=client_ip,
             unique=True)
         if hashlib_pol:
@@ -700,9 +704,11 @@ class HotpTokenClass(TokenClass):
 
         otplen_pol = policy_object.get_action_values(
             action="hotp_otplen",
-            scope=logged_in_user.get('role'),
-            user=logged_in_user.get("username"),
-            realm=logged_in_user.get("realm"),
+            scope=scope,
+            user=username,
+            realm=userrealm,
+            adminrealm=adminrealm,
+            adminuser=adminuser,
             client=client_ip,
             unique=True)
         if otplen_pol:

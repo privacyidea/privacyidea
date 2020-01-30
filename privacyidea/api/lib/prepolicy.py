@@ -71,7 +71,8 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
 from privacyidea.lib.utils import (get_client_ip,
-                                   parse_timedelta, is_true, check_pin_policy, get_module_class)
+                                   parse_timedelta, is_true, check_pin_policy, get_module_class,
+                                   determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam
@@ -143,25 +144,19 @@ def set_random_pin(request=None, action=None):
     """
     params = request.all_data
     policy_object = g.policy_object
-    # Fixme: we need to allow passing the user
-    #user_object = get_user_from_param(params)
+    # Determine the user and admin. We still pass the "username" and "realm" explicitly,
+    # since we could have an admin request with only a realm, but not a complete user_object.
+    user_object = request.User
+    (scope, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
     # get the length of the random PIN from the policies
-    role = g.logged_in_user.get("role")
-    username = g.logged_in_user.get("username")
-    if role == ROLE.ADMIN:
-        scope = SCOPE.ADMIN
-        admin_realm = g.logged_in_user.get("realm")
-        realm = params.get("realm", "")
-    else:
-        scope = SCOPE.USER
-        realm = g.logged_in_user.get("realm")
-        admin_realm = None
     pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
                                                scope=scope,
-                                               adminrealm=admin_realm,
+                                               adminrealm=adminrealm,
+                                               adminuser=adminuser,
                                                user=username,
                                                realm=realm,
-                                               #user_object=user_object,
+                                               user_object=user_object,
                                                client=g.client_ip,
                                                unique=True,
                                                audit_data=g.audit_object.audit_data)

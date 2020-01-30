@@ -654,7 +654,10 @@ class PolicyClass(object):
         :return: a list of policy dictionaries
         """
         if user_object is not None:
-            if not (user is None and realm is None and resolver is None):
+            # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
+            if (user and user != user_object.login) \
+                    or (resolver and resolver != user_object.resolver) \
+                    or (realm and realm != user_object.realm):
                 raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
             user = user_object.login
             realm = user_object.realm
@@ -870,7 +873,7 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None,
+                          allow_white_space_in_action=False, adminrealm=None, adminuser=None,
                           user_object=None, audit_data=None):
         """
         Get the defined action values for a certain action like
@@ -897,7 +900,7 @@ class PolicyClass(object):
             the value of the action needs to be evaluated in a more special case.
         :rtype: dict
         """
-        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm, adminuser=adminuser,
                                        action=action, active=True,
                                        realm=realm, resolver=resolver, user=user, user_object=user_object,
                                        client=client, sort_by_priority=True)
