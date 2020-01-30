@@ -30,17 +30,20 @@ from flask import request
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ParameterError, RegistrationError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
-                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode)
+                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
+                                             WebAuthnMakeCredentialOptions)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
+from privacyidea.lib.utils import hexlify_and_unicode
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -141,13 +144,12 @@ You need to call the javascript function
         .catch(function(error) { <errorHandler> });
 
 Here *nonce*, *relyingParty*, *serialNumber*, *preferredAlgorithm*,
-*alternativeAlgorithm*, *authenticatorSelection*, *timeout*, *attestation*, and
-*authenticatorSelectionList* are the values provided by the server in the first
-step, *name* is the user name the user uses to log in (often an email address),
-and *displayName* is the human-readable name used to address the user (usually
-the users full name). *alternativeAlgorithm*, *authenticatorSelection*,
+*alternativeAlgorithm*, *authenticatorSelection*, *timeout*, *attestation*,
+*authenticatorSelectionList*, *name*, and *displayName* are the values
+provided by the server in the *webAuthnRegisterRequest* field in the response
+from the first step. *alternativeAlgorithm*, *authenticatorSelection*,
 *timeout*, *attestation*, and *authenticatorSelectionList* are optional and any
-of these values should simply be omitted, if the server has not sent it.
+of these values should simply be omitted, if the server has not sent them.
 
 If an *authenticationSelectionList* was given, the *responseHandler* needs to
 verify, that the field *authnSel* of *credential.getExtensionResults()*
@@ -157,7 +159,9 @@ company-provided token.
 
 The *responseHandler* needs to then send the *id* to the server along with the
 *clientDataJSON* and the *attestationObject* contained in the *response* field
-of the *credential* (2. step).
+of the *credential* (2. step). If enrollment succeeds, the server will send a
+response with a *webAuthnRegisterResponse* field, containing a *subject* field
+with the description of the newly created token.
 
 The server expects the *clientDataJSON* as a JSON-encoded string. This means,
 that it is the clients responsibility to run UTF-8 decoding on the
@@ -362,8 +366,6 @@ above.
     authenticatordata=<authenticatorData>
 
 """
-
-from privacyidea.lib.utils import hexlify_and_unicode
 
 IMAGES = IMAGES
 
@@ -643,7 +645,6 @@ class WebAuthnTokenClass(TokenClass):
 
         return webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey()))
 
-
     def update(self, param, reset_failcount=True):
         """
         This method is called during the initialization process.
@@ -711,7 +712,6 @@ class WebAuthnTokenClass(TokenClass):
             self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.credential_id)))
             self.set_otp_count(webAuthnCredential.sign_count)
             self.add_tokeninfo("pubKey", hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.public_key)))
-            self.add_tokeninfo("relying_party_id", webAuthnCredential.rp_id)
             self.add_tokeninfo("origin", webAuthnCredential.origin)
             self.add_tokeninfo("attestation_level", webAuthnCredential.attestation_level)
 
@@ -743,3 +743,95 @@ class WebAuthnTokenClass(TokenClass):
             self.challenge_janitor()
         else:
             self.set_description("WebAuthn initialization")
+
+    @log_with(log)
+    def get_init_detail(self, params=None, user=None):
+        """
+        At the end of the initialization we ask the user to confirm the enrollment with his token.
+
+        This will prepare all the information the client needs to build the
+        publicKeyCredentialCreationOptions to call
+        navigator.credentials.create() with. It will then be called again,
+        once the token is created and provide confirmation of the successful
+        enrollment to the client.
+
+        :param params: A dictionary with parameters from the request.
+        :type params: dict
+        :param user: The user enrolling the token.
+        :type user: User
+        :return: The response detail returned to the client.
+        :rtype: dict
+        """
+
+        if self.init_step == 1:
+            response_detail = TokenClass.get_init_detail(self, params, user)
+
+            publicKeyCredentialCreationOptions = WebAuthnMakeCredentialOptions(
+                challenge=webauthn_b64_encode(geturandom(32)),
+                rp_name=getParam(params,
+                                 WEBAUTHNACTION.RELYING_PARTY_NAME,
+                                 required),
+                rp_id=getParam(params,
+                               WEBAUTHNACTION.RELYING_PARTY_ID,
+                               required),
+                user_id=self.token.serial,
+                user_name=user.login,
+                user_display_name=str(user),
+                timeout=getParam(params,
+                                 WEBAUTHNACTION.TIMEOUT_ENROLL,
+                                 required),
+                attestation=getParam(params,
+                                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                                     required),
+                user_verification=getParam(params,
+                                           WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+                                           required),
+                public_key_credential_algorithms=getParam(params,
+                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                          required),
+                authenticator_attachment=getParam(params,
+                                                  WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                                                  optional),
+                authenticator_selection_list=getParam(params,
+                                                      WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                                                      optional)
+            ).registration_dict
+
+            response_detail["webAuthnRegisterRequest"] = {
+                "nonce": publicKeyCredentialCreationOptions["challenge"],
+                "relyingParty": publicKeyCredentialCreationOptions["rp"],
+                "serialNumber": publicKeyCredentialCreationOptions["user"]["id"],
+                "preferredAlgorithm": publicKeyCredentialCreationOptions["pubKeyCredParams"][0],
+                "name": publicKeyCredentialCreationOptions["user"]["name"],
+                "displayName": publicKeyCredentialCreationOptions["user"]["displayName"]
+            }
+            if len(publicKeyCredentialCreationOptions["pubKeyCredParams"]) < 1:
+                response_detail["webAuthnRegisterRequest"]["alternativeAlgorithm"] \
+                    = publicKeyCredentialCreationOptions["pubKeyCredParams"][1]
+            if publicKeyCredentialCreationOptions["authenticatorSelection"]:
+                response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
+                    = publicKeyCredentialCreationOptions["authenticatorSelection"]
+            if publicKeyCredentialCreationOptions["timeout"]:
+                response_detail["webAuthnRegisterRequest"]["timeout"] \
+                    = publicKeyCredentialCreationOptions["timeout"]
+            if publicKeyCredentialCreationOptions["attestation"]:
+                response_detail["webAuthnRegisterRequest"]["attestation"] \
+                    = publicKeyCredentialCreationOptions["attestation"]
+            if publicKeyCredentialCreationOptions["extensions"]["authnSel"]:
+                response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
+                    = publicKeyCredentialCreationOptions["extensions"]["authnSel"]
+
+            self.add_tokeninfo("relying_party_id", publicKeyCredentialCreationOptions["rp"]["id"])
+            self.add_tokeninfo("relying_party_name", publicKeyCredentialCreationOptions["rp"]["name"])
+
+        if self.init_step == 2:
+            # This is the second step of the init request. The registration
+            # ceremony has been successfully performed.
+            response_detail = {
+                "webAuthnRegisterResponse": {"subject": self.token.description}
+            }
+
+        else:
+            response_detail = {}
+
+        return response_detail

@@ -1514,13 +1514,15 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.RELYING_PARTY_NAME and WEBAUTHNACTION.RELYING_PARTY_ID,
     respectively, along with the enrollment timeout, authenticator attachment
     preference, user verification requirement level, public key credential
-    algorithm preferences, authenticator attestation requirement level, and
-    authenticator attestation requirement form, as specified by the actions
-    WEBAUTHNACTION.TIMEOUT_ENROLL, WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+    algorithm preferences, authenticator attestation requirement level,
+    authenticator attestation requirement form, and allowed AAGUIDs, as
+    specified by the actions WEBAUTHNACTION.TIMEOUT_ENROLL,
+    WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
     WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, and
-    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM, respectively.
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM, and
+    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, respectively.
 
     Setting WEBAUTHNACTION.RELYING_PARTY_NAME and
     WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
@@ -1631,6 +1633,19 @@ def webauthntoken_enroll(request, action):
                 "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
                                                     ', '.join(ATTESTATION_LEVELS)))
 
+        allowed_aaguids_pols = Match \
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                  user_object=request.User if request.User else None) \
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
+
         authenticator_attestation_form_policies = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
@@ -1656,6 +1671,8 @@ def webauthntoken_enroll(request, action):
             = authenticator_attestation_level
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
             = authenticator_attestation_form
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
+            = allowed_aaguids if allowed_aaguids else None
 
     return True
 
@@ -1711,18 +1728,7 @@ def webauthntoken_allowed(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=False)
 
-        allowed_aaguids_pols = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if request.User else None)\
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
-        allowed_aaguids = set(
-            aaguid
-            for allowed_aaguid_pol in allowed_aaguids_pols
-            for aaguid in allowed_aaguid_pol.split()
-        )
+        allowed_aaguids = getParam(request.all_data, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
 
         # attestation_cert is of type X509. If you get a warning from your IDE
         # here, it is because your IDE mistakenly assumes it to be of type PKey,
@@ -1732,8 +1738,8 @@ def webauthntoken_allowed(request, action):
         #
         # See also:
         # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols)\
-                or len(allowed_aaguids) and aaguid not in allowed_aaguids:
+        if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols)\
+                or allowed_aaguids and aaguid not in allowed_aaguids:
             log.warning(
                 "The WebAuthn token {0!s} is not allowed to be registered due to policy restrictions.".format(serial))
             raise PolicyError("The WebAuthn token is not allowed to be registered due to policy restrictions.")
