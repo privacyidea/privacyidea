@@ -1,6 +1,9 @@
 """
 This test file tests the lib/smtpserver.py
 """
+import email
+from email.mime.image import MIMEImage
+import binascii
 from privacyidea.lib.queue import get_job_queue
 
 from tests.queuemock import MockQueueTestCase
@@ -9,9 +12,14 @@ from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer)
-from privacyidea.models import SMTPServer as SMTPServerDB
 from . import smtpmock
 from smtplib import SMTPException
+
+PNG_IMG = 'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABmJLR0QA/wD/AP+gv' \
+          'aeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5AEeDxMYtXhk0QAAAB1pVF' \
+          'h0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAO0lEQVQY02P8///' \
+          '/fwYiABMDkYAFXYCRkRGFD7MQq4n///9nQHcRCzaF6KbiVIjNf0R7hnyFuIKVaBMB' \
+          '6yUTDUpeapUAAAAASUVORK5CYII='
 
 
 class SMTPServerTestCase(MyTestCase):
@@ -103,6 +111,21 @@ class SMTPServerTestCase(MyTestCase):
                                   "Test Email from privacyIDEA",
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
+        assert r
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        assert parsed_email.get_content_type() == 'text/plain'
+        assert parsed_email.get('To') == recipient
+        assert parsed_email.get('Subject') == "Test Email from privacyIDEA"
+
+        # Now with an already prepared MIME email
+        msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
+        r = SMTPServer.test_email(s, recipient, "Test Email with image",
+                                  msg)
+        assert r
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        assert parsed_email.get_content_type() == 'image/png'
+        assert parsed_email.get('To') == recipient
+        assert parsed_email.get('Subject') == "Test Email with image"
 
 
 class SMTPServerQueueTestCase(MockQueueTestCase):

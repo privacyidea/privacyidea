@@ -2147,6 +2147,8 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        assert 'To: user@localhost.localdomain' in msg
 
     @smtpmock.activate
     def test_03_sendsms(self):
@@ -2388,7 +2390,6 @@ class UserNotificationTestCase(MyTestCase):
         r = uhandler.do("sendmail", options=options)
         self.assertEqual(r, True)
 
-    @smtpmock.activate
     def test_08_check_conditions_serial(self):
         uhandler = UserNotificationEventHandler()
         # check a serial with regexp
@@ -2957,15 +2958,13 @@ class UserNotificationTestCase(MyTestCase):
         """
         Unassign a token from a user that does not exist anymore.
 
-        There is a token which is owned by a user, who was deleted fromt he
+        There is a token which is owned by a user, who was deleted from the
         userstore.
-        An Event Handler, to notifiy the user via email on unassign is defined.
+        An Event Handler to notify the user via email on unassign is defined.
         This testcase must NOT throw an exception. Well, the user can not be
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
-        # Create admin authentication token
-        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",
@@ -2992,7 +2991,7 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(len(fail), 0)
 
         # Create a user
-        ## First delete it, in case the user exist
+        # First delete it, in case the user exist
         User("notify_user", "notify_realm").delete()
         uid = create_user("notify_resolver", {"username": "notify_user"})
         self.assertTrue(uid)
@@ -3005,17 +3004,43 @@ class UserNotificationTestCase(MyTestCase):
                         "serial": "SPNOTIFY"}, user=user)
         self.assertTrue(r)
 
-        # create notification handler
-        eid = set_event("This definition sends emails", "token_unassign",
-                        "UserNotification", "sendmail", position="post")
-        self.assertTrue(eid)
-
         # delete the user
         r = user.delete()
         self.assertTrue(r)
 
+        # create the "options" object for the handler
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        env = EnvironBuilder().get_environ()
+        g.client_ip = env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"serial": "SPNOTIFY",
+                        "user": "notify_user"}
+        req.User = User("notify_user", "notify_realm")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        # If we send a plain email, we do not escape HTML
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def": {
+                "options": {
+                    "emailconfig": "myserver",
+                    "body": "Hello {user}, your token {serial} has been unassigned"}}}
+
         # unassign the token from the non-existing user
-        # call the notification handler implicitly
+        # this should not send an email and should not throw an error
+        uhandler = UserNotificationEventHandler()
+        res = uhandler.do('sendmail', options)
+        # TODO: the handler should return False here
+        # TODO: Also we should check that no email was sent (i.e. call of smtpserver)
+        assert res
+        """
         with self.app.test_request_context('/token/unassign',
                                            method='POST',
                                            data={"serial": "SPNOTIFY"},
@@ -3024,9 +3049,8 @@ class UserNotificationTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result.get("value"), 1)
-
+"""
         # Cleanup
-        delete_event(eid)
         delete_realm("notify_realm")
         delete_resolver("notify_resolver")
         remove_token("SPNOTIFY")
@@ -3347,7 +3371,85 @@ class UserNotificationTestCase(MyTestCase):
                          "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
                          "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
 
-    def test_21_save_notification(self):
+    @smtpmock.activate
+    def test_21_sendmail_attachment(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{
+            "detail": {
+                "googleurl": {
+                    "description": "URL for google Authenticator",
+                    "img": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFjCXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA/soeYABe9lgo1mE4qeKphdpN901+WlRpDP9iEwQUnySHGXOBVv/uEKDcOHChQsXLly48HtxC+sxG08DTmMdT7N5N7M5XUK6NDOz+b7Vhb8ajru7M7m7+9a5ux/A4O7L4MlgOIhP0y2ZWL70bxf+q/G9hC/AF05j2oDVenyhc7MxPjWz/ubVhb82bvP+loopZmaRa+E0Jj9++urCXxRf3w/sr0dPinUM7jbvPbGv+8mrC38pfHD3Jb08jfX9AIYjuZ4vdO4Lp/kCxNbvztWFvxYeaiKsc6btx3/yrVITwp83/2jx7nDgy3BEmHOPV6F1i8nrhD9ltQ6SAtm0dQ4ppXYOg5cI1xWfVOVE+BXLNZB9hPXdgf00Zx+NyU9z9v5wdmD650+A7gDOjH3p3y78V+E5w6YSMKTacMmmNddmwREBTxlW+AWrXhdpNvsakWYhXA+K/x1SE8KvWNYQJdYVXytFk6ph0y3uh2Kd8CsWamLLyoEP3dcqM1I4BGCS1wm/Zp81bOtrXeOEtfsPpYYirxP+lDX7uhrrlrJzSyl1gybDlmEUeZ3w56zNpnWWaQtfayRtEhfDoX2d8JtiXXhTqf7WzR0Q83X1EqRhhd+A7z0xWmJmsFsaHnb3A6ZHX6bqIuDdu7rw18LbDFtGhnNbLJSrL4N7Uq5Lqdwpwwq/iMdG7tFjM3WWuHObAaaHmf9dJ4hvXl34q+Fl5qQEsqJhS5O/zncmwbEM6v4Lv2TV66iTJuFckU2hvgdo5kT4LXh6FGfyA5vTgxIAlIrwRp5gH0JchP/9Dl9e+JfD017N1/nNYR9x9hEYDizy6oav798Mhn/NAQekYYVfstybIPdXPza+ylhA06pN05/KsMIv4uvYOexvbvZ+NAnXF04zG6Hd5qleJ/ya5Z5D6fRnlRoNio3y8ES5VB9W+DWLPtjGh+pveUai1Ivb6ROX1wm/Be/c5sGddQwNm1NqPPbvyx5n7+jECeE3qgnIw8PU0ZKt1PCaS3XEhN+FRx/iNKZHnw7WSQU6hm8p/sURO8OBzXevLvx18NL9d8/P43gefKq6glpIgTr4pFgn/Dn7pA/qmRLRbt1ywi3d13S6k+p1wp+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC",
+                    "value": "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56EMV3&counter=1&digits=6&issuer=privacyIDEA"
+                },
+                "rollout_state": "",
+                "serial": "OATH0001D8B6",
+                "threadid": 140437172639168
+            },
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {
+                "status": true,
+                "value": true
+            },
+            "signature": "foo",
+            "time": 1561549651.093083,
+            "version": "privacyIDEA 3.0.1.dev2",
+            "versionnumber": "3.0.1.dev2"
+        }
+        """
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "<img src='cid:token_image' />",
+                                   "mimetype": "html",
+                                   "attachment": True,
+                                   "emailconfig": "myserver"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        assert res
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        assert parsed_email.get_content_maintype() == 'multipart'
+        payload = parsed_email.get_payload()
+        assert len(payload) == 2
+        assert payload[0].get_content_type() == "text/html"
+        assert payload[1].get_content_type() == 'image/png'
+        assert payload[1].get_content_disposition() == 'inline'
+        assert payload[1].get_filename() == 'SomeSerial.png'
+
+    def test_22_save_notification(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin",
