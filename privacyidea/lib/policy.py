@@ -177,7 +177,8 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
-                                   fetch_one_resource, is_true, check_ip_in_policy)
+                                   fetch_one_resource, is_true, check_ip_in_policy,
+                                   determine_logged_in_userparams)
 from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
     COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
@@ -1025,21 +1026,15 @@ class PolicyClass(object):
         :type logged_in_user: dict
         :return: list of token types, the user may enroll
         """
-        from privacyidea.lib.auth import ROLE
         enroll_types = {}
-        role = logged_in_user.get("role")
-        if role == ROLE.ADMIN:
-            # If the logged-in user is an admin, we match for username/adminrealm
-            admin_user = logged_in_user.get("username")
-            admin_realm = logged_in_user.get("realm")
-            user_object = None
-        else:
-            # If the logged-in user is a user, we pass an user object to allow
-            # matching for userinfo attributes
-            user_object = User(logged_in_user.get("username"),
-                               logged_in_user.get("realm"))
-            admin_user = None
-            admin_realm = None
+        # In this case we do not distinguish the userobject as for whom an administrator would enroll a token
+        # We simply want to know, which tokentypes a user or an admin in generally allowed to enroll. This is
+        # why we pass an empty params.
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user, {})
+        user_object = None
+        if username and userrealm:
+            # We need a user_object to do user-attribute specific policy matching
+            user_object = User(username, userrealm)
         # check, if we have a policy definition at all.
         pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
@@ -1056,11 +1051,13 @@ class PolicyClass(object):
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
+                                               user=username,
+                                               realm=userrealm,
                                                user_object=user_object,
                                                active=True,
                                                action="enroll"+tokentype.upper(),
-                                               adminrealm=admin_realm,
-                                               adminuser=admin_user)
+                                               adminrealm=adminrealm,
+                                               adminuser=adminuser)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.

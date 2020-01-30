@@ -582,27 +582,21 @@ def twostep_enrollment_parameters(request=None, action=None):
     role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    if role == ROLE.ADMIN:
-        adminrealm = g.logged_in_user.get("realm")
-    else:
-        adminrealm = None
-    realm = user_object.realm
-    # In any case, the policy's user attribute is matched against the
-    # currently logged-in user (which may be the admin or the
-    # self-enrolling user).
-    user = g.logged_in_user.get("username")
+    (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                         request.all_data)
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
         for parameter in parameters:
             action = u"{}_{}".format(token_type, parameter)
+            # SCOPE.ENROLL does not have an admin realm
             action_values = policy_object.get_action_values(action=action,
                                                             scope=SCOPE.ENROLL,
                                                             unique=True,
-                                                            user=user,
-                                                            realm=realm,
+                                                            user=username,
+                                                            realm=userrealm,
+                                                            user_object=request.User,
                                                             client=g.client_ip,
-                                                            adminrealm=adminrealm,
                                                             audit_data=g.audit_object.audit_data)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
@@ -1057,49 +1051,22 @@ def check_token_init(request=None, action=None):
                       "enroll this token type!"}
     params = request.all_data
     policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    if role == ROLE.USER:
-        # If the logged-in user enrolls the token, we pass a user object to match_policies
-        # to allow matching for userinfo attributes
-        scope = SCOPE.USER
-        username = resolver = realm = None
-        admin_realm = None
-        user_object = User(g.logged_in_user.get("username"),
-                           g.logged_in_user.get("realm"))
-    elif role == ROLE.ADMIN:
-        # If the logged-in admin enrolls the token, the "user"/"adminrealm" parameters match
-        # the administrator.  If the token is enrolled *for* a user, the "resolver" and "realm"
-        # fields match the token owner's resolver and realm.
-        scope = SCOPE.ADMIN
-        username = g.logged_in_user.get("username")
-        new_token_owner = get_user_from_param(params)
-        if new_token_owner:
-            resolver = new_token_owner.resolver
-            realm = new_token_owner.realm
-        else:
-            resolver = realm = None
-        admin_realm = g.logged_in_user.get("realm")
-        # ... but we cannot pass a user object to match_policies, because "username" is
-        # taken from the admin and "resolver"/"realm" are taken from the user.
-        user_object = None
-    else:
-        raise PolicyError(u"Unknown role: {}".format(role))
-
+    (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.match_policies(action=action,
                                           user=username,
-                                          realm=realm,
-                                          resolver=resolver,
+                                          realm=userrealm,
                                           scope=scope,
                                           client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          user_object=user_object,
+                                          adminrealm=adminrealm,
+                                          adminuser=adminuser,
+                                          user_object=request.User,
                                           active=True,
                                           audit_data=g.audit_object.audit_data)
     action_at_all = policy_object.list_policies(scope=scope, active=True)
     if action_at_all and len(action) == 0:
-        raise PolicyError(ERROR.get(role))
+        raise PolicyError(ERROR.get(scope))
     return True
 
 

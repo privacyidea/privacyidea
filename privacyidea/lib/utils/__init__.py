@@ -50,7 +50,7 @@ import pkg_resources
 import time
 import cgi
 
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
 ENCODING = "utf-8"
 
@@ -1365,5 +1365,9 @@ def determine_logged_in_userparams(logged_in_user, params):
         admin_user = username
         username = params.get("user")
         realm = params.get("realm")
+    elif role == "user":
+        pass
+    else:
+        raise PolicyError(u"Unknown role: {}".format(role))
 
     return role, username, realm, admin_user, admin_realm
