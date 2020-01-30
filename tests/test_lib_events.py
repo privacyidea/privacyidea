@@ -3434,8 +3434,8 @@ class UserNotificationTestCase(MyTestCase):
             "detail": {{
                 "googleurl": {{
                     "description": "URL for google Authenticator",
-                    "img": {0!s},
-                    "value": {1!s}
+                    "img": "{0!s}",
+                    "value": "{1!s}"
                 }},
                 "rollout_state": "",
                 "serial": "OATH0001D8B6",
