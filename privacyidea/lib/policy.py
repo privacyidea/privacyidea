@@ -2387,3 +2387,21 @@ class Match(object):
                    resolver=None, user=username, user_object=None,
                    client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
                    sort_by_priority=True)
+
+    @classmethod
+    def generic(cls, g, scope, realm, resolver=None, user=None, user_object=None,
+                client=None, action=None, adminrealm=None, adminuser=None, time=None,
+                active=True, sort_by_priority=True):
+        """
+        Low-level legacy policy matching interface: Search for active policies and return
+        them sorted by priority. All parameters that should be used for matching have to
+        be passed explicitly.
+        The client IP has to be passed explicitly.
+        See ``PolicyClass.match_policies`` for details.
+        :rtype: ``Match``
+        """
+        return cls(g, name=None, scope=scope, realm=realm, active=active,
+                   resolver=resolver, user=user, user_object=user_object,
+                   client=client, action=action, adminrealm=adminrealm,
+                   adminuser=adminuser, time=time,
+                   sort_by_priority=sort_by_priority)
