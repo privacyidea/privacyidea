@@ -2277,6 +2277,29 @@ class Match(object):
                     self._g.audit_object.audit_data.setdefault("policies", []).append(p_name)
         return action_values
 
+    def allowed(self, write_to_audit_log=True):
+        """
+        Determine if the matched action is allowed in the scope 'admin' or 'user'.
+        This is the case
+         * *either* if there are no active policies defined in the matched scope
+         * *or* the action is explicitly allowed by a policy in the matched scope
+        Example usage::
+            is_allowed = Match.user(g, scope=SCOPE.USER, action=ACTION.ENROLLPIN, user=user_object).allowed()
+            # is_allowed is now true
+            # * *either* if there is no active policy defined with scope=SCOPE.USER at all
+            # * *or* if there is a policy matching the given scope, action, user and client IP.
+        :param write_to_audit_log: If True, write the list of matching policies to the audit log
+        :return: True or False
+        """
+        policies_defined = self.any(write_to_audit_log=write_to_audit_log)
+        policies_at_all = self._g.policy_object.list_policies(scope=self._match_kwargs["scope"], active=True)
+        # The action is *allowed* if a matched policy explicitly mentions it (``policies_defined`` is non-empty)
+        # or if no policies are defined in the given scope (``policies_at_all`` is empty)
+        if policies_defined or not policies_at_all:
+            return True
+        else:
+            return False
+
     @classmethod
     def action_only(cls, g, scope, action):
         """
