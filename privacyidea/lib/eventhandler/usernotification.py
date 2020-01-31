@@ -55,7 +55,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 try:
     from urllib.request import urlopen
-except ImportError:
+except ImportError:  # pragma: no cover
     from urllib import urlopen
 import logging
 import os
@@ -306,8 +306,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     with open(filename, "r", encoding="utf-8") as f:
                         body = f.read()
                 except Exception as e:
-                    log.warning(u"Failed to read email template from file "
-                                u"{0!r}: {1!r}".format(filename, e))
+                    log.warning(u"Failed to read email template from file {0!r}: {1!r}".format(filename, e))
                     log.debug(u"{0!s}".format(traceback.format_exc()))
 
             subject = handler_options.get("subject") or \
@@ -356,7 +355,6 @@ class UserNotificationEventHandler(BaseEventHandler):
                 if attachment and googleurl_img:
                     # get the image part of the googleurl
                     googleurl = urlopen(googleurl_img)
-                    assert googleurl.headers.get('Content-Type') == 'image/png'
                     mail_body = MIMEMultipart('related')
                     mail_body.attach(MIMEText(body, 'html'))
                     mail_img = MIMEImage(googleurl.read())

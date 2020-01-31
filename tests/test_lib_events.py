@@ -3065,17 +3065,7 @@ class UserNotificationTestCase(MyTestCase):
         res = uhandler.do('sendmail', options)
         # TODO: the handler should return False here
         # TODO: Also we should check that no email was sent (i.e. call of smtpserver)
-        assert res
-        """
-        with self.app.test_request_context('/token/unassign',
-                                           method='POST',
-                                           data={"serial": "SPNOTIFY"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertEqual(result.get("value"), 1)
-"""
+        self.assertTrue(res)
         # Cleanup
         delete_realm("notify_realm")
         delete_resolver("notify_resolver")
@@ -3465,15 +3455,16 @@ class UserNotificationTestCase(MyTestCase):
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
-        assert res
+        self.assertTrue(res)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        assert parsed_email.get_content_maintype() == 'multipart'
+        self.assertEqual(parsed_email.get_content_maintype(), 'multipart', parsed_email)
         payload = parsed_email.get_payload()
-        assert len(payload) == 2
-        assert payload[0].get_content_type() == "text/html"
-        assert payload[1].get_content_type() == 'image/png'
-        assert payload[1]['Content-Disposition'] == 'inline; filename="SomeSerial.png"'
-        assert payload[1].get_filename() == 'SomeSerial.png'
+        self.assertEqual(len(payload), 2, payload)
+        self.assertEqual(payload[0].get_content_type(), "text/html", payload)
+        self.assertEqual(payload[1].get_content_type(), 'image/png', payload)
+        self.assertEqual(payload[1]['Content-Disposition'], 'inline; filename="SomeSerial.png"',
+                         payload)
+        self.assertEqual(payload[1].get_filename(), 'SomeSerial.png', payload)
 
     def test_22_save_notification(self):
         g = FakeFlaskG()

@@ -15,11 +15,10 @@ from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
 from . import smtpmock
 from smtplib import SMTPException
 
-PNG_IMG = 'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABmJLR0QA/wD/AP+gv' \
-          'aeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5AEeDxMYtXhk0QAAAB1pVF' \
-          'h0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAO0lEQVQY02P8///' \
-          '/fwYiABMDkYAFXYCRkRGFD7MQq4n///9nQHcRCzaF6KbiVIjNf0R7hnyFuIKVaBMB' \
-          '6yUTDUpeapUAAAAASUVORK5CYII='
+PNG_IMG = 'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAA' \
+          'ALEwEAmpwYAAAAB3RJTUUH5AEeDxMYtXhk0QAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBk' \
+          'LmUHAAAAO0lEQVQY02P8////fwYiABMDkYAFXYCRkRGFD7MQq4n///9nQHcRCzaF6KbiVIjNf0R7hnyFuIKVaB' \
+          'MB6yUTDUpeapUAAAAASUVORK5CYII='
 
 
 class SMTPServerTestCase(MyTestCase):
@@ -27,16 +26,21 @@ class SMTPServerTestCase(MyTestCase):
     def test_01_create_smtpserver(self):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4")
         self.assertTrue(r > 0)
-        r = add_smtpserver(identifier="myserver1", server="1.2.3.4")
+        r = add_smtpserver(identifier="myserver1", server="5.4.3.2")
+        self.assertTrue(r)
         r = add_smtpserver(identifier="myserver2", server="1.2.3.4")
+        self.assertTrue(r)
 
         server_list = get_smtpservers()
         self.assertTrue(server_list)
         self.assertEqual(len(server_list), 3)
         server_list = get_smtpservers(identifier="myserver")
+        self.assertEqual(len(server_list), 1)
         self.assertTrue(server_list[0].config.identifier, "myserver")
         self.assertTrue(server_list[0].config.port, 25)
 
+        servers_by_ip = get_smtpservers(server='1.2.3.4')
+        self.assertEqual(len(servers_by_ip), 2)
         for server in ["myserver", "myserver1", "myserver2"]:
             r = delete_smtpserver(server)
             self.assertTrue(r > 0)
@@ -111,21 +115,21 @@ class SMTPServerTestCase(MyTestCase):
                                   "Test Email from privacyIDEA",
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
-        assert r
+        self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        assert parsed_email.get_content_type() == 'text/plain'
-        assert parsed_email.get('To') == recipient
-        assert parsed_email.get('Subject') == "Test Email from privacyIDEA"
+        self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
+        self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
+        self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
 
         # Now with an already prepared MIME email
         msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
-        assert r
+        self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        assert parsed_email.get_content_type() == 'image/png'
-        assert parsed_email.get('To') == recipient
-        assert parsed_email.get('Subject') == "Test Email with image"
+        self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
+        self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
+        self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
 
 
 class SMTPServerQueueTestCase(MockQueueTestCase):
