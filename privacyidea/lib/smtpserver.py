@@ -24,13 +24,14 @@ from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_bytes
+from privacyidea.lib.utils import fetch_one_resource, to_bytes, to_unicode
 import logging
 from privacyidea.lib.log import log_with
 from time import gmtime, strftime
 import smtplib
+from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from privacyidea.lib.error import ConfigAdminError
+
 __doc__ = """
 This is the library for creating, listing and deleting SMTPServer objects in
 the Database.
@@ -75,11 +76,11 @@ class SMTPServer(object):
         :param config: The email configuration
         :type config: dict
         :param recipient: The recipients of the email
-        :type recipient: list
+        :type recipient: list or str
         :param subject: The subject of the email
         :type subject: basestring
         :param body: The body of the email
-        :type body: basestring
+        :type body: email.mime.base.MIMEBase or str
         :param sender: An optional sender of the email. The SMTP database
             object has its own sender. This parameter can be used to override
             the internal sender.
@@ -93,7 +94,10 @@ class SMTPServer(object):
             recipient = [recipient]
         mail_from = sender or config['sender']
         reply_to = reply_to or mail_from
-        msg = MIMEText(body.encode('utf-8'), mimetype, 'utf-8')
+        if isinstance(body, MIMEBase):
+            msg = body
+        else:
+            msg = MIMEText(to_unicode(body), mimetype, 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)

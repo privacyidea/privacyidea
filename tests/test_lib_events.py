@@ -47,7 +47,33 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from privacyidea.app import PiResponseClass as Response
-import json
+
+PNG_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFj" \
+            "CXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA/soeYABe9lgo1mE4q" \
+            "eKphdpN901+WlRpDP9iEwQUnySHGXOBVv/uEKDcOHChQsXLly48HtxC+sxG08DTm" \
+            "MdT7N5N7M5XUK6NDOz+b7Vhb8ajru7M7m7+9a5ux/A4O7L4MlgOIhP0y2ZWL70bx" \
+            "f+q/G9hC/AF05j2oDVenyhc7MxPjWz/ubVhb82bvP+loopZmaRa+E0Jj9++urCXx" \
+            "Rf3w/sr0dPinUM7jbvPbGv+8mrC38pfHD3Jb08jfX9AIYjuZ4vdO4Lp/kCxNbvzt" \
+            "WFvxYeaiKsc6btx3/yrVITwp83/2jx7nDgy3BEmHOPV6F1i8nrhD9ltQ6SAtm0dQ" \
+            "4ppXYOg5cI1xWfVOVE+BXLNZB9hPXdgf00Zx+NyU9z9v5wdmD650+A7gDOjH3p3y" \
+            "78V+E5w6YSMKTacMmmNddmwREBTxlW+AWrXhdpNvsakWYhXA+K/x1SE8KvWNYQJd" \
+            "YVXytFk6ph0y3uh2Kd8CsWamLLyoEP3dcqM1I4BGCS1wm/Zp81bOtrXeOEtfsPpY" \
+            "YirxP+lDX7uhrrlrJzSyl1gybDlmEUeZ3w56zNpnWWaQtfayRtEhfDoX2d8JtiXX" \
+            "hTqf7WzR0Q83X1EqRhhd+A7z0xWmJmsFsaHnb3A6ZHX6bqIuDdu7rw18LbDFtGhn" \
+            "NbLJSrL4N7Uq5Lqdwpwwq/iMdG7tFjM3WWuHObAaaHmf9dJ4hvXl34q+Fl5qQEsq" \
+            "JhS5O/zncmwbEM6v4Lv2TV66iTJuFckU2hvgdo5kT4LXh6FGfyA5vTgxIAlIrwRp" \
+            "5gH0JchP/9Dl9e+JfD017N1/nNYR9x9hEYDizy6oav798Mhn/NAQekYYVfstybIP" \
+            "dXPza+ylhA06pN05/KsMIv4uvYOexvbvZ+NAnXF04zG6Hd5qleJ/ya5Z5D6fRnlR" \
+            "oNio3y8ES5VB9W+DWLPtjGh+pveUai1Ivb6ROX1wm/Be/c5sGddQwNm1NqPPbvyx" \
+            "5n7+jECeE3qgnIw8PU0ZKt1PCaS3XEhN+FRx/iNKZHnw7WSQU6hm8p/sURO8OBzX" \
+            "evLvx18NL9d8/P43gefKq6glpIgTr4pFgn/Dn7pA/qmRLRbt1ywi3d13S6k+p1wp" \
+            "+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo" \
+            "2QlhJpnvRsTFVi4bfi7o+3dFYdq/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLM" \
+            "NQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV/qx91rBTVg5VvjaVkxgjVr1O+BUz/f" \
+            "c64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC"
+
+OAUTH_URL = "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56E" \
+            "MV3&counter=1&digits=6&issuer=privacyIDEA"
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -2147,6 +2173,8 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        assert 'To: user@localhost.localdomain' in msg
 
     @smtpmock.activate
     def test_03_sendsms(self):
@@ -2388,7 +2416,6 @@ class UserNotificationTestCase(MyTestCase):
         r = uhandler.do("sendmail", options=options)
         self.assertEqual(r, True)
 
-    @smtpmock.activate
     def test_08_check_conditions_serial(self):
         uhandler = UserNotificationEventHandler()
         # check a serial with regexp
@@ -2957,15 +2984,13 @@ class UserNotificationTestCase(MyTestCase):
         """
         Unassign a token from a user that does not exist anymore.
 
-        There is a token which is owned by a user, who was deleted fromt he
+        There is a token which is owned by a user, who was deleted from the
         userstore.
-        An Event Handler, to notifiy the user via email on unassign is defined.
+        An Event Handler to notify the user via email on unassign is defined.
         This testcase must NOT throw an exception. Well, the user can not be
         notified anymore, since the email also does not exist in the
         userstore anymore.
         """
-        # Create admin authentication token
-        self.authenticate()
         # Create our realm and resolver
         parameters = {'resolver': "notify_resolver",
                       "type": "sqlresolver",
@@ -2992,7 +3017,7 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(len(fail), 0)
 
         # Create a user
-        ## First delete it, in case the user exist
+        # First delete it, in case the user exist
         User("notify_user", "notify_realm").delete()
         uid = create_user("notify_resolver", {"username": "notify_user"})
         self.assertTrue(uid)
@@ -3005,28 +3030,43 @@ class UserNotificationTestCase(MyTestCase):
                         "serial": "SPNOTIFY"}, user=user)
         self.assertTrue(r)
 
-        # create notification handler
-        eid = set_event("This definition sends emails", "token_unassign",
-                        "UserNotification", "sendmail", position="post")
-        self.assertTrue(eid)
-
         # delete the user
         r = user.delete()
         self.assertTrue(r)
 
-        # unassign the token from the non-existing user
-        # call the notification handler implicitly
-        with self.app.test_request_context('/token/unassign',
-                                           method='POST',
-                                           data={"serial": "SPNOTIFY"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertEqual(result.get("value"), 1)
+        # create the "options" object for the handler
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        g.audit_object = audit_object
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        env = EnvironBuilder().get_environ()
+        g.client_ip = env["REMOTE_ADDR"] = "10.0.0.1"
+        req = Request(env)
+        req.all_data = {"serial": "SPNOTIFY",
+                        "user": "notify_user"}
+        req.User = User("notify_user", "notify_realm")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        # If we send a plain email, we do not escape HTML
+        options = {
+            "g": g,
+            "request": req,
+            "response": resp,
+            "handler_def": {
+                "options": {
+                    "emailconfig": "myserver",
+                    "body": "Hello {user}, your token {serial} has been unassigned"}}}
 
+        # unassign the token from the non-existing user
+        # this should not send an email and should not throw an error
+        uhandler = UserNotificationEventHandler()
+        res = uhandler.do('sendmail', options)
+        # TODO: the handler should return False here
+        # TODO: Also we should check that no email was sent (i.e. call of smtpserver)
+        self.assertTrue(res)
         # Cleanup
-        delete_event(eid)
         delete_realm("notify_realm")
         delete_resolver("notify_resolver")
         remove_token("SPNOTIFY")
@@ -3347,7 +3387,86 @@ class UserNotificationTestCase(MyTestCase):
                          "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
                          "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
 
-    def test_21_save_notification(self):
+    @smtpmock.activate
+    def test_21_sendmail_attachment(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{{
+            "detail": {{
+                "googleurl": {{
+                    "description": "URL for google Authenticator",
+                    "img": "{0!s}",
+                    "value": "{1!s}"
+                }},
+                "rollout_state": "",
+                "serial": "OATH0001D8B6",
+                "threadid": 140437172639168
+            }},
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": {{
+                "status": true,
+                "value": true
+            }},
+            "signature": "foo",
+            "time": 1561549651.093083,
+            "version": "privacyIDEA 3.0.1.dev2",
+            "versionnumber": "3.0.1.dev2"
+        }}
+        """.format(PNG_IMAGE, OAUTH_URL)
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "<img src='cid:token_image' />",
+                                   "mimetype": "html",
+                                   "attach_qrcode": True,
+                                   "emailconfig": "myserver"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        self.assertEqual(parsed_email.get_content_maintype(), 'multipart', parsed_email)
+        payload = parsed_email.get_payload()
+        self.assertEqual(len(payload), 2, payload)
+        self.assertEqual(payload[0].get_content_type(), "text/html", payload)
+        self.assertEqual(payload[1].get_content_type(), 'image/png', payload)
+        self.assertEqual(payload[1]['Content-Disposition'], 'inline; filename="SomeSerial.png"',
+                         payload)
+        self.assertEqual(payload[1].get_filename(), 'SomeSerial.png', payload)
+
+    def test_22_save_notification(self):
         g = FakeFlaskG()
         audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin",
