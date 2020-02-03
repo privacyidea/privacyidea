@@ -27,6 +27,7 @@ from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.error import PolicyError
 import binascii
 
 
@@ -804,3 +805,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(realm, "domain")
         self.assertEqual(adminuser, "hans")
         self.assertEqual(adminrealm, "realm1")
+
+        self.assertRaises(PolicyError, determine_logged_in_userparams,
+                          {"role": "marshal",
+                           "username": "Wyatt Earp",
+                           "realm": "Wild West"},
+                          {"user": "Dave Rudabaugh",
+                           "realm": "Dodge City"})
