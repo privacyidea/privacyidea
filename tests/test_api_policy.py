@@ -109,6 +109,8 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(pol1.get("check_all_resolvers"), False)
             self.assertEqual(pol1.get("priority"), 5)
 
+        delete_policy("pol1")
+
     def test_02_set_policy_conditions(self):
         # set a policy with conditions
         with self.app.test_request_context('/policy/cond1',
@@ -297,8 +299,8 @@ class APIPolicyTestCase(MyApiTestCase):
             data = res.json
             result = data.get("result")
             policies = result.get("value")
-            # We have two polices
-            self.assertEqual(2, len(policies))
+            self.assertEqual(1, len(policies))
+            self.assertEqual("pol1adminuser", policies[0].get("name"))
 
         # The admin is not allowed to enroll a token!
         with self.app.test_request_context('/token/init',
