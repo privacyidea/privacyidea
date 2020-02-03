@@ -129,9 +129,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "type": "str",
                     "description": _("Either send email as plain text or HTML."),
                     "value": ["plain", "html"]},
-                "attachment": {
+                "attach_qrcode": {
                     "type": "bool",
-                    "description": _("Send QR-Code image as attachment "
+                    "description": _("Send QR-Code image as an attachment "
                                      "(cid URL: token_image)")},
                 "subject": {
                     "type": "str",
@@ -350,9 +350,9 @@ class UserNotificationEventHandler(BaseEventHandler):
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
-                attachment = handler_options.get("attachment", False)
+                attach_qrcode = handler_options.get("attach_qrcode", False)
 
-                if attachment and googleurl_img:
+                if attach_qrcode and googleurl_img:
                     # get the image part of the googleurl
                     googleurl = urlopen(googleurl_img)
                     mail_body = MIMEMultipart('related')
