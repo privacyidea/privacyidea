@@ -8,7 +8,7 @@ Version 3.3, 2020-XX-XX
       * User attribute conditions in admin policies
       * default settings for hashlib and otplen for HOTP and TOTP token 
         and default timestep for TOTP token can now be dependent on
-	admin user and for which user the admin does the enrollment
+        admin user and for which user the admin does the enrollment
       * Enrollment settings for push tokens can distinguish better
         between admin users and user
       * Random PIN settings can be user dependent
