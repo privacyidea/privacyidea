@@ -676,11 +676,11 @@ class TotpTokenClass(HotpTokenClass):
         ret = {}
         if not logged_in_user:
             return ret
-        (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
-                                                                                             params)
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+                                                                                            params)
         hashlib_pol = policy_object.get_action_values(
             action="totp_hashlib",
-            scope=scope,
+            scope=role,
             user=username,
             realm=userrealm,
             adminuser=adminuser,
@@ -692,7 +692,7 @@ class TotpTokenClass(HotpTokenClass):
 
         timestep_pol = policy_object.get_action_values(
             action="totp_timestep",
-            scope=scope,
+            scope=role,
             user=username,
             realm=userrealm,
             adminuser=adminuser,
@@ -704,7 +704,7 @@ class TotpTokenClass(HotpTokenClass):
 
         otplen_pol = policy_object.get_action_values(
             action="totp_otplen",
-            scope=scope,
+            scope=role,
             user=username,
             realm=userrealm,
             adminuser=adminuser,

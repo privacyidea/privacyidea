@@ -688,11 +688,11 @@ class HotpTokenClass(TokenClass):
         ret = {}
         if not logged_in_user:
             return ret
-        (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
-                                                                                             params)
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+                                                                                            params)
         hashlib_pol = policy_object.get_action_values(
             action="hotp_hashlib",
-            scope=scope,
+            scope=role,
             user=username,
             realm=userrealm,
             adminrealm=adminrealm,
@@ -704,7 +704,7 @@ class HotpTokenClass(TokenClass):
 
         otplen_pol = policy_object.get_action_values(
             action="hotp_otplen",
-            scope=scope,
+            scope=role,
             user=username,
             realm=userrealm,
             adminrealm=adminrealm,

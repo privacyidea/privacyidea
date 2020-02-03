@@ -147,11 +147,11 @@ def set_random_pin(request=None, action=None):
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
-    (scope, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
     pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
-                                               scope=scope,
+                                               scope=role,
                                                adminrealm=adminrealm,
                                                adminuser=adminuser,
                                                user=username,
@@ -164,7 +164,7 @@ def set_random_pin(request=None, action=None):
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
         raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
-                              "{1!s}.".format(ACTION.OTPPINSETRANDOM, scope))
+                              "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
         log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
         request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
@@ -579,10 +579,9 @@ def twostep_enrollment_parameters(request=None, action=None):
         if len(tokensobject_list) == 1:
             token_type = tokensobject_list[0].token.tokentype
     token_type = token_type.lower()
-    role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                          request.all_data)
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
@@ -1051,22 +1050,22 @@ def check_token_init(request=None, action=None):
                       "enroll this token type!"}
     params = request.all_data
     policy_object = g.policy_object
-    (scope, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
     action = policy_object.match_policies(action=action,
                                           user=username,
                                           realm=userrealm,
-                                          scope=scope,
+                                          scope=role,
                                           client=g.client_ip,
                                           adminrealm=adminrealm,
                                           adminuser=adminuser,
                                           user_object=request.User,
                                           active=True,
                                           audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
+    action_at_all = policy_object.list_policies(scope=role, active=True)
     if action_at_all and len(action) == 0:
-        raise PolicyError(ERROR.get(scope))
+        raise PolicyError(ERROR.get(role))
     return True
 
 

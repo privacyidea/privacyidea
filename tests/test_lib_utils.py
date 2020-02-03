@@ -783,23 +783,23 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, check_serial_valid, "")
 
     def test_33_determine_logged_in_user(self):
-        (scope, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
                                                                                       "username": "hans",
                                                                                       "realm": "realm1"}, {})
 
-        self.assertEqual(scope, "user")
+        self.assertEqual(role, "user")
         self.assertEqual(user, "hans")
         self.assertEqual(realm, "realm1")
         self.assertEqual(adminuser, None)
         self.assertEqual(adminrealm, None)
 
-        (scope, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
                                                                                       "username": "hans",
                                                                                       "realm": "realm1"},
                                                                                      {"user": "peter",
                                                                                       "realm": "domain"})
 
-        self.assertEqual(scope, "admin")
+        self.assertEqual(role, "admin")
         self.assertEqual(user, "peter")
         self.assertEqual(realm, "domain")
         self.assertEqual(adminuser, "hans")
