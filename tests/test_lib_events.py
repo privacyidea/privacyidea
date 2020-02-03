@@ -3450,7 +3450,7 @@ class UserNotificationTestCase(MyTestCase):
                        "conditions": {"serial": "123.*"},
                        "options": {"body": "<img src='cid:token_image' />",
                                    "mimetype": "html",
-                                   "attachment": True,
+                                   "attach_qrcode": True,
                                    "emailconfig": "myserver"}}}
 
         un_handler = UserNotificationEventHandler()
