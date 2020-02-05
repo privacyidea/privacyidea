@@ -835,3 +835,29 @@ class WebAuthnTokenClass(TokenClass):
             response_detail = {}
 
         return response_detail
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        Check if the request would start a challenge.
+
+        Every request that is not a response needs to spawn a challenge.
+
+        Note:
+        This function does not need to be decorated with
+        @challenge_response_allowed, as the WebAuthn token is always
+        a challenge response token!
+
+        :param passw:  The PIN of the token
+        :type passw: basestring
+        :param user: The User making the request
+        :type user: User
+        :param options: Dictionary of additional request parameters
+        :type options: dict
+        :return: Whether to trigger a challenge
+        :rtype: bool
+        """
+
+        return self.check_pin(passw,
+                              user=user,
+                              options=options or {})
