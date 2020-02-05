@@ -99,7 +99,8 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_TIMEOU
                                                   DEFAULT_TIMEOUT_AUTH, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM, WebAuthnTokenClass,
+                                                  DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -1433,15 +1434,17 @@ def allowed_audit_realm(request=None, action=None):
 
 def webauthntoken_auth(request, action):
     """
-    This is a WebAuthn specific wrapper token for the endpoints /validate/triggerechallenge and /validate/check.
+    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerechallenge and /validate/check.
 
     This will enrich the challenge creation request for WebAuthn tokens with the
     necessary configuration information from policy actions with
     scope=SCOPE.AUTH. The request will be augmented with the timeout for
-    authentication, the allowed transports, and the user verification
-    requirement, as specified by the actions WEBAUTHNACTION.TIMEOUT_AUTH,
-    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and
-    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH, respectively.
+    authentication, the allowed transports, the user verification
+    requirement, and the text to display to the user when asking to confirm
+    the challenge on the token, as specified by the actions
+    WEBAUTHNACTION.TIMEOUT_AUTH, WEBAUTHNACTION.ALLOWED_TRANSPORTS,
+    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH, and
+    ACTION.CHALLENGETEXT, respectively.
 
     All of these policies are optional, and have sensible defaults.
 
@@ -1461,7 +1464,7 @@ def webauthntoken_auth(request, action):
                   action=WEBAUTHNACTION.TIMEOUT_AUTH,
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
-        timeout = int(list(timeout_policies)[0]) if len(timeout_policies) else DEFAULT_TIMEOUT_AUTH
+        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_AUTH
 
         allowed_transports_policies = Match\
             .user(g,
@@ -1472,11 +1475,13 @@ def webauthntoken_auth(request, action):
                            allow_white_space_in_action=True)
         allowed_transports = set(
             transport
-            for allowed_transports_policy in allowed_transports_policies
+            for allowed_transports_policy in (
+                list(allowed_transports_policies)
+                if allowed_transports_policies
+                else DEFAULT_ALLOWED_TRANSPORTS
+            )
             for transport in allowed_transports_policy.split()
-        ) \
-            if len(allowed_transports_policies) \
-            else DEFAULT_ALLOWED_TRANSPORTS
+        )
 
         user_verification_requirement_policies = Match\
             .user(g,
@@ -1484,8 +1489,8 @@ def webauthntoken_auth(request, action):
                   action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
-        user_verification_requirement = user_verification_requirement_policies[0] \
-            if len(user_verification_requirement_policies) \
+        user_verification_requirement = list(user_verification_requirement_policies)[0] \
+            if user_verification_requirement_policies \
             else DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH
         if user_verification_requirement not in USER_VERIFICATION_LEVELS:
             raise PolicyError(
@@ -1493,12 +1498,26 @@ def webauthntoken_auth(request, action):
                     .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
                             ", ".join(USER_VERIFICATION_LEVELS)))
 
+        challengetext_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True,
+                           allow_white_space_in_action=True,
+                           write_to_audit_log=False)
+        challengetext = list(challengetext_policies)[0] \
+            if challengetext_policies \
+            else DEFAULT_CHALLENGE_TEXT_AUTH
+
         request.all_data[WEBAUTHNACTION.TIMEOUT_AUTH] \
             = timeout * 1000
         request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
-            = allowed_transports
+            = list(allowed_transports)
         request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH] \
             = user_verification_requirement
+        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
+            = challengetext
 
     return True
 
@@ -1515,14 +1534,16 @@ def webauthntoken_enroll(request, action):
     respectively, along with the enrollment timeout, authenticator attachment
     preference, user verification requirement level, public key credential
     algorithm preferences, authenticator attestation requirement level,
-    authenticator attestation requirement form, and allowed AAGUIDs, as
-    specified by the actions WEBAUTHNACTION.TIMEOUT_ENROLL,
+    authenticator attestation requirement form, allowed AAGUIDs, and the text
+    to display to the user when asking to confirm the challenge on the token,
+    as specified by the actions WEBAUTHNACTION.TIMEOUT_ENROLL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
     WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, and
-    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM, and
-    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, respectively.
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
+    ACTION.CHALLENGETEXT, respectively.
 
     Setting WEBAUTHNACTION.RELYING_PARTY_NAME and
     WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
@@ -1544,7 +1565,7 @@ def webauthntoken_enroll(request, action):
                   action=WEBAUTHNACTION.RELYING_PARTY_ID,
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
-        if len(rp_id_policies):
+        if rp_id_policies:
             rp_id = list(rp_id_policies)[0]
         else:
             raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
@@ -1556,7 +1577,7 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True,
                            allow_white_space_in_action=True)
-        if len(rp_name_policies):
+        if rp_name_policies:
             rp_name = list(rp_name_policies)[0]
         else:
             raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
@@ -1576,7 +1597,7 @@ def webauthntoken_enroll(request, action):
                   action=WEBAUTHNACTION.TIMEOUT_ENROLL,
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
-        timeout = int(list(timeout_policies)[0]) if len(timeout_policies) else DEFAULT_TIMEOUT_ENROLL
+        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_ENROLL
 
         authenticator_attachment_policies = Match\
             .user(g,
@@ -1585,7 +1606,7 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
         authenticator_attachment = list(authenticator_attachment_policies)[0] \
-            if len(authenticator_attachment_policies) \
+            if authenticator_attachment_policies \
                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
             else None
 
@@ -1596,7 +1617,7 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
         user_verification_requirement = list(user_verification_requirement_policies)[0] \
-            if len(user_verification_requirement_policies) \
+            if user_verification_requirement_policies \
             else DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL
         if user_verification_requirement not in USER_VERIFICATION_LEVELS:
             raise PolicyError(
@@ -1611,7 +1632,7 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
         public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
-            if len(public_key_credential_algorithm_preference_policies) \
+            if public_key_credential_algorithm_preference_policies \
             else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         if public_key_credential_algorithm_preference not in PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys():
             raise PolicyError(
@@ -1626,7 +1647,7 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
         authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
-            if len(authenticator_attestation_level_policies) \
+            if authenticator_attestation_level_policies \
             else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
         if authenticator_attestation_level not in ATTESTATION_LEVELS:
             raise PolicyError(
@@ -1653,8 +1674,20 @@ def webauthntoken_enroll(request, action):
                   user_object=request.User if request.User else None)\
             .action_values(unique=True)
         authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
-            if len(authenticator_attestation_form_policies) \
+            if authenticator_attestation_form_policies \
             else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+
+        challengetext_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=True,
+                           allow_white_space_in_action=True,
+                           write_to_audit_log=False)
+        challengetext = list(challengetext_policies)[0] \
+            if challengetext_policies \
+            else DEFAULT_CHALLENGE_TEXT_ENROLL
 
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
@@ -1673,6 +1706,8 @@ def webauthntoken_enroll(request, action):
             = authenticator_attestation_form
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
             = allowed_aaguids if allowed_aaguids else None
+        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
+            = challengetext
 
     return True
 

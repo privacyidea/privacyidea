@@ -549,7 +549,7 @@ class WebAuthnAssertionOptions(object):
             raise ValueError('The challenge may not be empty.')
 
         self.webauthn_users = webauthn_user if isinstance(webauthn_user, list) else [webauthn_user]
-        if len(self.webauthn_users) < 1:
+        if not self.webauthn_users:
             raise ValueError('webauthn_user may not be empty.')
         for user in self.webauthn_users:
             if not isinstance(user, WebAuthnUser):
@@ -568,7 +568,7 @@ class WebAuthnAssertionOptions(object):
             raise ValueError('timeout must be a positive integer.')
 
         self.transports = transports
-        if len(self.transports) < 1:
+        if not self.transports:
             raise ValueError('transports may not be empty.')
 
         self.user_verification_requirement = str(user_verification_requirement).lower()
@@ -647,6 +647,8 @@ class WebAuthnUser(object):
 
         if not credential_id:
             raise WebAuthnUserDataMissing("credential_id missing")
+        if not public_key:
+            raise WebAuthnUserDataMissing("public_key missing")
         if not rp_id:
             raise WebAuthnUserDataMissing("rp_id missing")
 
@@ -1344,7 +1346,7 @@ class WebAuthnRegistrationResponse(object):
                                             public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
                                             attestation_level=attestation_level,
-                                            attestation_cert=trust_path[0] if len(trust_path) else None)
+                                            attestation_cert=trust_path[0] if trust_path else None)
             if is_trusted_attestation_cert:
                 return credential
 

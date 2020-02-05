@@ -37,7 +37,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
-                                             WebAuthnMakeCredentialOptions)
+                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
@@ -87,9 +87,10 @@ it in two steps:
     type=webauthn
     
 This step returns a nonce, a relying party (containing a name and an ID
-generated from your domain), and a serial number, along with a transaction ID.
-It will also pass some additional options regarding timeout, which
-authenticators are acceptable, and what key types are acceptable to the server.
+generated from your domain), and a serial number, along with a transaction ID,
+and a message to display to the user. It will also pass some additional options
+regarding timeout, which authenticators are acceptable, and what key types are
+acceptable to the server.
 
 2. Step
 ~~~~~~~
@@ -214,13 +215,15 @@ for the token (without requiring any special permissions).
             "attributes": {
                 "hideResponseInput": true,
                 "img": <imageUrl>,
-                "webauthnSignRequest": {
+                "webAuthnSignRequest": {
                     "challenge": <nonce>,
                     "allowCredentials": [{
                         "id": <credentialId>,
+                        "type": <credentialType>,
                         "transports": <allowedTransports>,
-                        "userVerification": <userVerificationRequirement>
                     }],
+                    "rpId": <relyingPartyId>,
+                    "userVerification": <userVerificationRequirement>,
                     "timeout": <timeout>
                 }
             },
@@ -270,13 +273,15 @@ challenge will be triggered for every challenge response token the user has.
             "attributes": {
                 "hideResponseInput": true,
                 "img": <imageUrl>,
-                "webauthnSignRequest": {
+                "webAuthnSignRequest": {
                     "challenge": <nonce>,
                     "allowCredentials": [{
                         "id": <credentialId>,
+                        "type": <credentialType>,
                         "transports": <allowedTransports>,
-                        "userVerification": <userVerificationRequirement>
                     }],
+                    "rpId": <relyingPartyId>,
+                    "userVerification": <userVerificationRequirement>,
                     "timeout": <timeout>
                 }
             },
@@ -286,13 +291,15 @@ challenge will be triggered for every challenge response token the user has.
                 "attributes": {
                     "hideResponseInput": true,
                     "img": <imageUrl>,
-                    "webauthnSignRequest": {
+                    "webAuthnSignRequest": {
                         "challenge": <nonce>,
                         "allowCredentials": [{
                             "id": <credentialId>,
+                            "type": <credentialType>,
                             "transports": <allowedTransports>,
-                            "userVerification": <userVerificationRequirement>
                         }],
+                        "rpId": <relyingPartyId>,
+                        "userVerification": <userVerificationRequirement>,
                         "timeout": <timeout>
                     }
                 },
@@ -328,10 +335,11 @@ and *timeout* from the server.
         challenge: Uint8Array.from(<nonce>, c => c.charCodeAt(0)),
         allowCredentials: [{
             id: Uint8Array.from(<credentialId>, c=> c.charCodeAt(0)),
-            type: 'public-key',
+            type: <credentialType>,
             transports: <allowedTransports>
         }],
         userVerification: <userVerificationRequirement>,
+        rpId: <relyingPartyId>,
         timeout: <timeout>
     }
     navigator
@@ -367,9 +375,11 @@ above.
 
 """
 
+from privacyidea.models import Challenge
+
 IMAGES = IMAGES
 
-DEFAULT_DESCRIPTION = "Generic WebAuthn Token"
+DEFAULT_DESCRIPTION = _(u'Generic WebAuthn Token')
 
 # Policy defaults
 DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal lightning"
@@ -381,6 +391,8 @@ DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL = 'preferred'
 DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'ecdsa_preferred'
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
+DEFAULT_CHALLENGE_TEXT_AUTH = _(u'Please confirm with your WebAuthn token ({0!s})')
+DEFAULT_CHALLENGE_TEXT_ENROLL = _(u'Please confirm with your WebAuthn token')
 
 PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS = {
     'ecdsa_preferred': [
@@ -414,6 +426,12 @@ class WEBAUTHNCONFIG(object):
     CHALLENGE_VALIDITY_TIME = 'WebauthnChallengeValidityTime'
 
 
+WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
+    WEBAUTHNCONFIG.TRUST_ANCHOR_DIR: 'public',
+    WEBAUTHNCONFIG.APP_ID: 'public'
+}
+
+
 class WEBAUTHNACTION(object):
     """
     Policy actions defined for WebAuthn
@@ -434,10 +452,34 @@ class WEBAUTHNACTION(object):
     REQ = 'webauthn_req'
 
 
+class WEBAUTHNINFO(object):
+    """
+    Token info fields used by WebAuthn
+    """
+
+    PUB_KEY = "pubKey"
+    ORIGIN = "origin"
+    ATTESTATION_LEVEL = "attestation_level"
+    ATTESTATION_ISSUER = "attestation_issuer"
+    ATTESTATION_SERIAL = "attestation_serial"
+    ATTESTATION_SUBJECT = "attestation_subject"
+    RELYING_PARTY_ID = "relying_party_id"
+    RELYING_PARTY_NAME = "relying_party_name"
+
+
 class WebAuthnTokenClass(TokenClass):
     """
     The WebAuthn Token implementation.
     """
+
+    @staticmethod
+    def _get_challenge_validity_time():
+        return int(get_from_config(WEBAUTHNCONFIG.CHALLENGE_VALIDITY_TIME,
+                                   get_from_config('DefaultChallengeValidityTime', 120)))
+
+    @staticmethod
+    def _get_nonce():
+        return geturandom(32)
 
     @staticmethod
     def get_class_type():
@@ -604,6 +646,11 @@ class WebAuthnTokenClass(TokenClass):
                         'type': 'int',
                         'desc': _('The user may only have this number of active WebAuthn tokens assigned.'),
                         'group': GROUP.TOKEN
+                    },
+                    ACTION.CHALLENGETEXT: {
+                        'type': 'str',
+                        'desc': _('Use an alternate challenge text for telling the '
+                                  'user to confirm with his WebAuthn device')
                     }
                 }
             }
@@ -616,6 +663,29 @@ class WebAuthnTokenClass(TokenClass):
                 ret = res
         return ret
 
+    @staticmethod
+    def get_setting_type(key):
+        """
+        Fetch the type of a setting specific to WebAuthn tokens.
+
+        The WebAuthn token defines several public settings. When these are
+        written to the database, the type of the setting is automatically
+        stored along with the setting by set_privacyidea_config().
+
+        The key name needs to be in WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys()
+        and match /^webauthn\./. If the specified setting does not exist,
+        a ValueError will be thrown.
+
+        :param key: The token specific setting key
+        :type key: basestring
+        :return: The setting type
+        :rtype: "public"
+        """
+
+        if key not in WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys():
+            raise ValueError('key must be one of {0!s}'.format(', '.join(WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys())))
+        return WEBAUTHN_TOKEN_SPECIFIC_SETTINGS[key]
+
     @log_with(log)
     def __init__(self, db_token):
         """
@@ -625,9 +695,13 @@ class WebAuthnTokenClass(TokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"webauthn")
+        self.set_type(self.get_class_type())
         self.hKeyRequired = False
         self.init_step = 1
+
+    def _get_message(self, options):
+        challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), required)
+        return challengetext.format(self.token.description)
 
     def decrypt_otpkey(self):
         """
@@ -659,7 +733,7 @@ class WebAuthnTokenClass(TokenClass):
 
         TokenClass.update(self, param)
 
-        transaction_id = getParam(param, "transaction_id")
+        transaction_id = getParam(param, "transaction_id", required)
 
         if transaction_id:
             self.init_step = 2
@@ -711,9 +785,12 @@ class WebAuthnTokenClass(TokenClass):
 
             self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.credential_id)))
             self.set_otp_count(webAuthnCredential.sign_count)
-            self.add_tokeninfo("pubKey", hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.public_key)))
-            self.add_tokeninfo("origin", webAuthnCredential.origin)
-            self.add_tokeninfo("attestation_level", webAuthnCredential.attestation_level)
+            self.add_tokeninfo(WEBAUTHNINFO.PUB_KEY,
+                               hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.public_key)))
+            self.add_tokeninfo(WEBAUTHNINFO.ORIGIN,
+                               webAuthnCredential.origin)
+            self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
+                               webAuthnCredential.attestation_level)
 
             # Add attestation info.
             if webAuthnCredential.attestation_cert:
@@ -726,9 +803,12 @@ class WebAuthnTokenClass(TokenClass):
                 # See also:
                 # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
                 attestation_cert = crypto.X509.from_cryptography(webAuthnCredential.attestation_cert)
-                self.add_tokeninfo("attestation_issuer", x509name_to_string(attestation_cert.get_issuer()))
-                self.add_tokeninfo("attestation_serial", x509name_to_string(attestation_cert.get_serial_number()))
-                self.add_tokeninfo("attestation_subject", x509name_to_string(attestation_cert.get_subject()))
+                self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER,
+                                   x509name_to_string(attestation_cert.get_issuer()))
+                self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
+                                   x509name_to_string(attestation_cert.get_serial_number()))
+                self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT,
+                                   x509name_to_string(attestation_cert.get_subject()))
 
                 if not description:
                     cn = webAuthnCredential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
@@ -766,8 +846,19 @@ class WebAuthnTokenClass(TokenClass):
         if self.init_step == 1:
             response_detail = TokenClass.get_init_detail(self, params, user)
 
+            nonce = self._get_nonce()
+
+            # Create the challenge in the database
+            challenge = Challenge(serial=self.token.serial,
+                                  transaction_id=getParam(params, 'transaction_id', optional),
+                                  challenge=hexlify_and_unicode(nonce),
+                                  data=None,
+                                  session=getParam(params, 'session', optional),
+                                  validitytime=self._get_challenge_validity_time())
+            challenge.save()
+
             publicKeyCredentialCreationOptions = WebAuthnMakeCredentialOptions(
-                challenge=webauthn_b64_encode(geturandom(32)),
+                challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
                                  WEBAUTHNACTION.RELYING_PARTY_NAME,
                                  required),
@@ -798,6 +889,8 @@ class WebAuthnTokenClass(TokenClass):
             ).registration_dict
 
             response_detail["webAuthnRegisterRequest"] = {
+                "transaction_id": challenge.transaction_id,
+                "message": self._get_message(params),
                 "nonce": publicKeyCredentialCreationOptions["challenge"],
                 "relyingParty": publicKeyCredentialCreationOptions["rp"],
                 "serialNumber": publicKeyCredentialCreationOptions["user"]["id"],
@@ -821,8 +914,10 @@ class WebAuthnTokenClass(TokenClass):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
                     = publicKeyCredentialCreationOptions["extensions"]["authnSel"]
 
-            self.add_tokeninfo("relying_party_id", publicKeyCredentialCreationOptions["rp"]["id"])
-            self.add_tokeninfo("relying_party_name", publicKeyCredentialCreationOptions["rp"]["name"])
+            self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID,
+                               publicKeyCredentialCreationOptions["rp"]["id"])
+            self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME,
+                               publicKeyCredentialCreationOptions["rp"]["name"])
 
         if self.init_step == 2:
             # This is the second step of the init request. The registration
@@ -861,3 +956,80 @@ class WebAuthnTokenClass(TokenClass):
         return self.check_pin(passw,
                               user=user,
                               options=options or {})
+
+
+    def create_challenge(self, transactionid=None, options=None):
+        """
+        Create a challenge for challenge-response authentication.
+
+        This method creates a challenge, which is submitted to the user. The
+        submitted challenge will be preserved in the challenge database.
+
+        If no transaction id is given, the system will create a transaction id
+        and return it, so that the response can refer to this transaction.
+
+        This method will return a tuple containing a bool value, indicating
+        wthether a challenge was successfully created, along with a message to
+        display to the user, the transaction id, and a dictionary containing
+        all parameters and data needed to respond to the challenge, as per the
+        api.
+
+        :param transactionid:  The id of this challenge
+        :type transactionid: basestring
+        :param options: The request context parameters and data
+        :type options: dict
+        :return: Success status, message, transaction id and response details
+        :rtype: (bool, basestring, basestring, dict)
+        """
+
+        if not options:
+            raise ValueError("Creating a WebAuthn challenge requires options ot be provided")
+
+        user = options.get("user")
+        if not user:
+            raise ValueError("When creating a WebAuthn challenge, options must contains user")
+
+        image_url = IMAGES.get(self.token.description.lower().split()[0], "")
+        message = self._get_message(options)
+
+        nonce = self._get_nonce()
+
+        # Create the challenge in the database
+        challenge = Challenge(serial=self.token.serial,
+                              transaction_id=transactionid,
+                              challenge=hexlify_and_unicode(nonce),
+                              data=None,
+                              session=options.get("session"),
+                              validitytime=self._get_challenge_validity_time())
+        challenge.save()
+
+        publicKeyCredentialRequestOptions = WebAuthnAssertionOptions(
+            challenge=webauthn_b64_encode(nonce),
+            webauthn_user=WebAuthnUser(
+                user_id=self.token.serial,
+                user_name=user.login,
+                user_display_name=str(user),
+                icon_url=image_url,
+                credential_id=webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey())),
+                public_key=self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY),
+                sign_count=self.get_otp_count(),
+                rp_id=self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID)
+            ),
+            transports=getParam(options,
+                                WEBAUTHNACTION.ALLOWED_TRANSPORTS,
+                                required),
+            user_verification_requirement=getParam(options,
+                                                   WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
+                                                   required),
+            timeout=getParam(options,
+                             WEBAUTHNACTION.TIMEOUT_AUTH,
+                             required)
+        ).assertion_dict
+
+        response_details = {
+            "webAuthnSignRequest": publicKeyCredentialRequestOptions,
+            "hideResponseInput": True,
+            "img": image_url
+        }
+
+        return True, message, challenge.transaction_id, response_details
