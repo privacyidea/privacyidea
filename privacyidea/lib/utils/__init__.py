@@ -1345,7 +1345,7 @@ def determine_logged_in_userparams(logged_in_user, params):
     from the params.
 
     If an administrator is acting, the "adminuser" and "adminrealm" are set from the logged_in_user
-    information and the user parameters are takdetermine_en from the request parameters.
+    information and the user parameters are taken from the request parameters.
     Thus an admin can act on a user.
 
     If a user is acting, the adminuser and adminrealm are None, the username and userrealm are taken from
