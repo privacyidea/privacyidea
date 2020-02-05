@@ -177,7 +177,8 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, reload_db,
-                                   fetch_one_resource, is_true, check_ip_in_policy)
+                                   fetch_one_resource, is_true, check_ip_in_policy,
+                                   determine_logged_in_userparams)
 from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
     COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
@@ -473,7 +474,7 @@ class PolicyClass(object):
     @log_with(log)
     def list_policies(self, name=None, scope=None, realm=None, active=None,
                       resolver=None, user=None, client=None, action=None,
-                      adminrealm=None, sort_by_priority=True):
+                      adminrealm=None, adminuser=None, sort_by_priority=True):
         """
         Return the policies, filtered by the given values.
 
@@ -500,6 +501,8 @@ class PolicyClass(object):
         :param action: Only policies, that contain this very action.
         :param adminrealm: This is the realm of the admin. This is only
             evaluated in the scope admin.
+        :param adminuser: This is the username of the admin. This in only
+            evaluated in the scope admin.
         :param sort_by_priority: If true, sort the resulting list by priority, ascending
         by their policy numbers.
         :type sort_by_priority: bool
@@ -520,8 +523,9 @@ class PolicyClass(object):
 
         p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
-        if scope == "admin":
+        if scope == SCOPE.ADMIN:
             p.append(("adminrealm", adminrealm))
+            p.append(("adminuser", adminuser))
         for searchkey, searchvalue in p:
             if searchvalue is not None:
                 new_policies = []
@@ -615,7 +619,7 @@ class PolicyClass(object):
 
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None,
-                       client=None, action=None, adminrealm=None, time=None,
+                       client=None, action=None, adminrealm=None, adminuser=None, time=None,
                        sort_by_priority=True, audit_data=None, request_headers=None):
         """
         Return all policies matching the given context.
@@ -638,6 +642,7 @@ class PolicyClass(object):
         :param client: see ``list_policies``
         :param action: see ``list_policies``
         :param adminrealm: see ``list_policies``
+        :param adminuser: see ``list_policies``
         :param sort_by_priority:
         :param user_object: the currently active user, or None
         :type user_object: User or None
@@ -650,7 +655,10 @@ class PolicyClass(object):
         :return: a list of policy dictionaries
         """
         if user_object is not None:
-            if not (user is None and realm is None and resolver is None):
+            # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
+            if (user and user != user_object.login) \
+                    or (resolver and resolver != user_object.resolver) \
+                    or (realm and realm != user_object.realm):
                 raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
             user = user_object.login
             realm = user_object.realm
@@ -658,7 +666,8 @@ class PolicyClass(object):
 
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
-                                              adminrealm=adminrealm, sort_by_priority=sort_by_priority)
+                                              adminrealm=adminrealm, adminuser=adminuser,
+                                              sort_by_priority=sort_by_priority)
 
         # filter policy for time. If no time is set or is a time is set and
         # it matches the time_range, then we add this policy
@@ -865,7 +874,7 @@ class PolicyClass(object):
     @log_with(log)
     def get_action_values(self, action, scope=SCOPE.AUTHZ, realm=None,
                           resolver=None, user=None, client=None, unique=False,
-                          allow_white_space_in_action=False, adminrealm=None,
+                          allow_white_space_in_action=False, adminrealm=None, adminuser=None,
                           user_object=None, audit_data=None):
         """
         Get the defined action values for a certain action like
@@ -892,7 +901,7 @@ class PolicyClass(object):
             the value of the action needs to be evaluated in a more special case.
         :rtype: dict
         """
-        policies = self.match_policies(scope=scope, adminrealm=adminrealm,
+        policies = self.match_policies(scope=scope, adminrealm=adminrealm, adminuser=adminuser,
                                        action=action, active=True,
                                        realm=realm, resolver=resolver, user=user, user_object=user_object,
                                        client=client, sort_by_priority=True)
@@ -955,20 +964,20 @@ class PolicyClass(object):
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
-            match_username = username
+            admin_user = username
+            admin_realm = realm
             user_object = None
-            adminrealm = realm
         elif scope == SCOPE.USER:
             # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
-            match_username = None
-            adminrealm = None
+            admin_user = None
+            admin_realm = None
             user_object = User(username, realm)
         else:
             raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
-                                   user=match_username,
                                    user_object=user_object,
-                                   adminrealm=adminrealm,
+                                   adminrealm=admin_realm,
+                                   adminuser=admin_user,
                                    active=True,
                                    client=client)
         for pol in pols:
@@ -1017,20 +1026,15 @@ class PolicyClass(object):
         :type logged_in_user: dict
         :return: list of token types, the user may enroll
         """
-        from privacyidea.lib.auth import ROLE
         enroll_types = {}
-        role = logged_in_user.get("role")
-        if role == ROLE.ADMIN:
-            # If the logged-in user is an admin, we match for username/adminrealm
-            user_name = logged_in_user.get("username")
-            user_object = None
-            admin_realm = logged_in_user.get("realm")
-        else:
-            # If the logged-in user is a user, we pass an user object to allow matching for userinfo attributes
-            user_name = None
-            user_object = User(logged_in_user.get("username"),
-                               logged_in_user.get("realm"))
-            admin_realm = None
+        # In this case we do not distinguish the userobject as for whom an administrator would enroll a token
+        # We simply want to know, which tokentypes a user or an admin in generally allowed to enroll. This is
+        # why we pass an empty params.
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user, {})
+        user_object = None
+        if username and userrealm:
+            # We need a user_object to do user-attribute specific policy matching
+            user_object = User(username, userrealm)
         # check, if we have a policy definition at all.
         pols = self.list_policies(scope=role, active=True)
         tokenclasses = get_token_classes()
@@ -1047,11 +1051,13 @@ class PolicyClass(object):
             for tokentype in enroll_types.keys():
                 # determine, if there is a enrollment policy for this very type
                 typepols = self.match_policies(scope=role, client=client,
-                                               user=user_name,
+                                               user=username,
+                                               realm=userrealm,
                                                user_object=user_object,
                                                active=True,
                                                action="enroll"+tokentype.upper(),
-                                               adminrealm=admin_realm)
+                                               adminrealm=adminrealm,
+                                               adminuser=adminuser)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -1070,7 +1076,7 @@ class PolicyClass(object):
 @log_with(log)
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
-               adminrealm=None, priority=None, check_all_resolvers=False,
+               adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
                conditions=None):
     """
     Function to set a policy.
@@ -1087,6 +1093,10 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param client: A client IP with optionally a subnet like 172.16.0.0/16
     :param active: If the policy is active or not
     :type active: bool
+    :param adminrealm: The name of the realm of administrators
+    :type adminrealm: str
+    :param adminuser: A comma separated list of administrators
+    :type adminuser: str
     :param priority: the priority of the policy (smaller values having higher priority)
     :type priority: int
     :param check_all_resolvers: If all the resolvers of a user should be
@@ -1120,6 +1130,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         adminrealm = ", ".join(adminrealm)
     if type(user) == list:
         user = ", ".join(user)
+    if type(adminuser) == list:
+        adminuser = ", ".join(adminuser)
     if type(resolver) == list:
         resolver = ", ".join(resolver)
     if type(client) == list:
@@ -1151,6 +1163,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.resolver = resolver
         if user is not None:
             p1.user = user
+        if adminuser is not None:
+            p1.adminuser = adminuser
         if client is not None:
             p1.client = client
         if time is not None:
@@ -1169,7 +1183,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         ret = Policy(name, action=action, scope=scope, realm=realm,
                      user=user, time=time, client=client, active=active,
                      resolver=resolver, adminrealm=adminrealm,
-                     priority=priority,
+                     adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
                      conditions=conditions).save()
     return ret

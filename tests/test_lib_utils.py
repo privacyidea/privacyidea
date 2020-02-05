@@ -22,11 +22,12 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid)
+                                   check_serial_valid, determine_logged_in_userparams)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.error import PolicyError
 import binascii
 
 
@@ -781,3 +782,33 @@ class UtilsTestCase(MyTestCase):
 
         # an empty serial is not allowed
         self.assertRaises(Exception, check_serial_valid, "")
+
+    def test_33_determine_logged_in_user(self):
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"}, {})
+
+        self.assertEqual(role, "user")
+        self.assertEqual(user, "hans")
+        self.assertEqual(realm, "realm1")
+        self.assertEqual(adminuser, None)
+        self.assertEqual(adminrealm, None)
+
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"},
+                                                                                     {"user": "peter",
+                                                                                      "realm": "domain"})
+
+        self.assertEqual(role, "admin")
+        self.assertEqual(user, "peter")
+        self.assertEqual(realm, "domain")
+        self.assertEqual(adminuser, "hans")
+        self.assertEqual(adminrealm, "realm1")
+
+        self.assertRaises(PolicyError, determine_logged_in_userparams,
+                          {"role": "marshal",
+                           "username": "Wyatt Earp",
+                           "realm": "Wild West"},
+                          {"user": "Dave Rudabaugh",
+                           "realm": "Dodge City"})

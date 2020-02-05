@@ -201,6 +201,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "totp"}
+        req.User = None
 
         # Set a policy, that does allow the action
         set_policy(name="pol1",
@@ -1582,6 +1583,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "totp"}
+        req.User = User("cornelius", realm)
         g.policy_object = PolicyClass()
         r = check_token_init(req)
         self.assertTrue(r)
@@ -1604,6 +1606,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "hotp"}
+        req.User = User("corny", realm)
         g.policy_object = PolicyClass()
         r = check_token_init(req)
         self.assertTrue(r)

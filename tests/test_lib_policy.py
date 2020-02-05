@@ -117,7 +117,7 @@ class PolicyTestCase(MyTestCase):
                        action="enroll, init, disable , enable",
                        scope="admin",
                        realm="realm2",
-                       user="admin, superroot")
+                       adminuser=["admin", "superroot"])
         self.assertTrue(p > 0)
 
         # enable and disable policies
@@ -149,7 +149,7 @@ class PolicyTestCase(MyTestCase):
         policies = P.match_policies(action="tokentype", scope=SCOPE.AUTHZ)
         self.assertTrue(len(policies) == 2, policies)
         # find policies with user admin
-        policies = P.match_policies(scope="admin", user="admin")
+        policies = P.match_policies(scope="admin", adminuser="admin")
         self.assertTrue(len(policies) == 1, "{0!s}".format(len(policies)))
         # find policies with resolver2 and authorization. THe result should
         # be pol2 and pol2a
@@ -263,6 +263,41 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(_check_policy_name("pol4", p), p)
         # get policies for empty user
         p = P.match_policies(user="")
+        self.assertEqual(len(p), 3)
+        self.assertTrue(_check_policy_name("pol1", p), p)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
+
+    def test_08a_adminuser_policies(self):
+        set_policy(name="pol1", scope="admin", adminuser="*", user="")
+        set_policy(name="pol2", scope="admin", adminuser="admin, root, user1", user="*")
+        set_policy(name="pol3", scope="admin", adminuser="*, !user1", user="")
+        set_policy(name="pol4", scope="admin", adminuser="*, -root", user="")
+
+        # get policies for user1
+        P = PolicyClass()
+        p = P.match_policies(scope=SCOPE.ADMIN, adminuser="user1")
+        self.assertTrue(len(p) == 3, (len(p), p))
+        self.assertTrue(_check_policy_name("pol1", p), p)
+        self.assertTrue(_check_policy_name("pol2", p), p)
+        self.assertFalse(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
+        # get policies for root
+        p = P.match_policies(scope=SCOPE.ADMIN, adminuser="root")
+        self.assertTrue(len(p) == 3, p)
+        self.assertTrue(_check_policy_name("pol1", p), p)
+        self.assertTrue(_check_policy_name("pol2", p), p)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertFalse(_check_policy_name("pol4", p), p)
+        # get policies for admin
+        p = P.match_policies(scope=SCOPE.ADMIN, adminuser="admin")
+        self.assertTrue(len(p) == 4, p)
+        self.assertTrue(_check_policy_name("pol1", p), p)
+        self.assertTrue(_check_policy_name("pol2", p), p)
+        self.assertTrue(_check_policy_name("pol3", p), p)
+        self.assertTrue(_check_policy_name("pol4", p), p)
+        # get policies for empty user
+        p = P.match_policies(scope=SCOPE.ADMIN, adminuser="")
         self.assertEqual(len(p), 3)
         self.assertTrue(_check_policy_name("pol1", p), p)
         self.assertTrue(_check_policy_name("pol3", p), p)
@@ -455,9 +490,9 @@ class PolicyTestCase(MyTestCase):
         # adminA is allowed to enroll tokens in all realms
         # adminB is allowed to enroll tokens only in realmB
 
-        set_policy(name="polAdminA", scope=SCOPE.ADMIN, user="adminA",
+        set_policy(name="polAdminA", scope=SCOPE.ADMIN, adminuser="adminA",
                    action="enrollHOTP, enrollTOTP")
-        set_policy(name="polAdminB", scope=SCOPE.ADMIN, user="adminB",
+        set_policy(name="polAdminB", scope=SCOPE.ADMIN, adminuser="adminB",
                    realm="realmB",
                    action="enrollHOTP")
         P = PolicyClass()
@@ -498,9 +533,12 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue("yubikey" in tt)
         self.assertTrue("radius" in tt)
 
-        # An admin in realm1 may only enroll Yubikeys
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
-                   adminrealm="realm1",
+                   adminrealm=["realm2"],
+                   action="enrollYUBIKEY")
+        # Update policy: An admin in realm1 may only enroll Yubikeys
+        set_policy(name="tokenEnroll", scope=SCOPE.ADMIN,
+                   adminrealm=["realm1"],
                    action="enrollYUBIKEY")
         P = PolicyClass()
 
@@ -564,9 +602,9 @@ class PolicyTestCase(MyTestCase):
         # Two admins:
         # adminA is allowed to enroll tokens in all realms
         # adminB is allowed to enroll tokens only in realmB
-        set_policy(name="polAdminA", scope=SCOPE.ADMIN, user="adminA",
+        set_policy(name="polAdminA", scope=SCOPE.ADMIN, adminuser="adminA",
                    action="enrollHOTP, enrollTOTP")
-        set_policy(name="polAdminB", scope=SCOPE.ADMIN, user="adminB",
+        set_policy(name="polAdminB", scope=SCOPE.ADMIN, adminuser="adminB",
                    realm="realmB",
                    action="enrollHOTP")
         P = PolicyClass()
@@ -682,7 +720,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.MACHINES in menus)
 
         # Admin has only right to enroll HOTP! :-)
-        set_policy("pol1", scope=SCOPE.ADMIN, user="admin",
+        set_policy("pol1", scope=SCOPE.ADMIN, adminuser="admin",
                    action="enrollHOTP")
         P = PolicyClass()
         menus = P.ui_get_main_menus(luser)
@@ -693,7 +731,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.CONFIG not in menus)
         self.assertTrue(MAIN_MENU.MACHINES not in menus)
 
-        set_policy("pol2", scope=SCOPE.ADMIN, user="admin",
+        set_policy("pol2", scope=SCOPE.ADMIN, adminuser="admin",
                    action=ACTION.USERLIST)
         P = PolicyClass()
         menus = P.ui_get_main_menus(luser)
@@ -704,7 +742,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.CONFIG not in menus)
         self.assertTrue(MAIN_MENU.MACHINES not in menus)
 
-        set_policy("pol3", scope=SCOPE.ADMIN, user="admin",
+        set_policy("pol3", scope=SCOPE.ADMIN, adminuser="admin",
                    action=ACTION.MACHINELIST)
         P = PolicyClass()
         menus = P.ui_get_main_menus(luser)
@@ -715,7 +753,7 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.CONFIG not in menus)
         self.assertTrue(MAIN_MENU.MACHINES in menus)
 
-        set_policy("pol4", scope=SCOPE.ADMIN, user="admin",
+        set_policy("pol4", scope=SCOPE.ADMIN, adminuser="admin",
                    action=ACTION.SYSTEMDELETE)
         P = PolicyClass()
         menus = P.ui_get_main_menus(luser)
@@ -1277,7 +1315,7 @@ class PolicyMatchTestCase(MyTestCase):
                    action="enroll, init, disable , enable, audit",
                    scope="admin",
                    realm="realm2",
-                   user="admin, superroot")
+                   adminuser="admin, superroot")
 
     def check_names(self, policies, names):
         self.assertEqual(set(p["name"] for p in policies), set(names))

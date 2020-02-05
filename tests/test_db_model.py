@@ -425,6 +425,16 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(Policy.query.filter_by(name="pol3").one().get()["conditions"], [])
         self.assertEqual(PolicyCondition.query.count(), 0)
 
+        # Test policies with adminusers
+        p = Policy("pol1admin", active="true",
+                   scope="admin", action="action1",
+                   adminuser="jan, hein, klaas, pit")
+        r = p.save()
+        adminusers = p.get("adminuser")
+        self.assertEqual([u"jan", u"hein", u"klaas", u"pit"], adminusers)
+        p2 = Policy.query.filter_by(id=r).one()
+        self.assertEqual("jan, hein, klaas, pit", p2.adminuser)
+
     def test_12_challenge(self):
         c = Challenge("S123456")
         self.assertTrue(len(c.transaction_id) == 20, c.transaction_id)

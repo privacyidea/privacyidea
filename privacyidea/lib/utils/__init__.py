@@ -50,7 +50,7 @@ import pkg_resources
 import time
 import cgi
 
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
 ENCODING = "utf-8"
 
@@ -1337,3 +1337,37 @@ def check_serial_valid(serial):
     if not re.match(ALLOWED_SERIAL, serial):
         raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
     return True
+
+
+def determine_logged_in_userparams(logged_in_user, params):
+    """
+    Determines the normal user and admin parameters from the logged_in user information and
+    from the params.
+
+    If an administrator is acting, the "adminuser" and "adminrealm" are set from the logged_in_user
+    information and the user parameters are taken from the request parameters.
+    Thus an admin can act on a user.
+
+    If a user is acting, the adminuser and adminrealm are None, the username and userrealm are taken from
+    the logged_in_user information.
+
+    :param logged_in_user: Logged in user dictionary.
+    :param params: Request parameters (all_data)
+    :return: Tupe of (scope, username, realm, adminuser, adminrealm)
+    """
+    role = logged_in_user.get("role")
+    username = logged_in_user.get("username")
+    realm = logged_in_user.get("realm")
+    admin_realm = None
+    admin_user = None
+    if role == "admin":
+        admin_realm = realm
+        admin_user = username
+        username = params.get("user")
+        realm = params.get("realm")
+    elif role == "user":
+        pass
+    else:
+        raise PolicyError(u"Unknown role: {}".format(role))
+
+    return role, username, realm, admin_user, admin_realm

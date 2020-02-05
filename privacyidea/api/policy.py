@@ -112,6 +112,7 @@ def set_policy_api(name=None):
     :jsonparam scope: the scope of the policy like "admin", "system",
         "authentication" or "selfservice"
     :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
+    :jsonparam adminuser: Username of the administrator. (only for admin scope)
     :jsonparam action: which action may be executed
     :jsonparam realm: For which realm this policy is valid
     :jsonparam resolver: This policy is valid for this resolver
@@ -190,6 +191,7 @@ def set_policy_api(name=None):
     active = getParam(param, "active", optional)
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
+    admin_user = getParam(param, "adminuser", optional)
     priority = int(getParam(param, "priority", optional, default=1))
     conditions = getParam(param, "conditions", optional)
 
@@ -198,6 +200,7 @@ def set_policy_api(name=None):
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
+                     adminuser=admin_user,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))

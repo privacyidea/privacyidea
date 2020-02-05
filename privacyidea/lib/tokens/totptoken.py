@@ -46,6 +46,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP
+from privacyidea.lib.utils import determine_logged_in_userparams
 from privacyidea.lib import _
 
 optional = True
@@ -675,11 +676,15 @@ class TotpTokenClass(HotpTokenClass):
         ret = {}
         if not logged_in_user:
             return ret
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+                                                                                            params)
         hashlib_pol = policy_object.get_action_values(
             action="totp_hashlib",
-            scope=logged_in_user.get('scope'),
-            user=logged_in_user.get("username"),
-            realm=logged_in_user.get("realm"),
+            scope=role,
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
             client=client_ip,
             unique=True)
         if hashlib_pol:
@@ -687,9 +692,11 @@ class TotpTokenClass(HotpTokenClass):
 
         timestep_pol = policy_object.get_action_values(
             action="totp_timestep",
-            scope=logged_in_user.get('scope'),
-            user=logged_in_user.get("username"),
-            realm=logged_in_user.get("realm"),
+            scope=role,
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
             client=client_ip,
             unique=True)
         if timestep_pol:
@@ -697,9 +704,11 @@ class TotpTokenClass(HotpTokenClass):
 
         otplen_pol = policy_object.get_action_values(
             action="totp_otplen",
-            scope=logged_in_user.get('scope'),
-            user=logged_in_user.get("username"),
-            realm=logged_in_user.get("realm"),
+            scope=role,
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
             client=client_ip,
             unique=True)
         if otplen_pol:
