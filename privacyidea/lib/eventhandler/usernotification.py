@@ -356,7 +356,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     # get the image part of the googleurl
                     googleurl = urlopen(googleurl_img)
                     mail_body = MIMEMultipart('related')
-                    mail_body.attach(MIMEText(body, 'html'))
+                    mail_body.attach(MIMEText(body, mimetype))
                     mail_img = MIMEImage(googleurl.read())
                     mail_img.add_header('Content-ID', '<token_image>')
                     mail_img.add_header('Content-Disposition',

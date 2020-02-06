@@ -3408,7 +3408,6 @@ class UserNotificationTestCase(MyTestCase):
         g.audit_object = audit_object
 
         builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
                                  headers={})
 
         env = builder.get_environ()
@@ -3461,6 +3460,20 @@ class UserNotificationTestCase(MyTestCase):
         payload = parsed_email.get_payload()
         self.assertEqual(len(payload), 2, payload)
         self.assertEqual(payload[0].get_content_type(), "text/html", payload)
+        self.assertEqual(payload[1].get_content_type(), 'image/png', payload)
+        self.assertEqual(payload[1]['Content-Disposition'], 'inline; filename="SomeSerial.png"',
+                         payload)
+        self.assertEqual(payload[1].get_filename(), 'SomeSerial.png', payload)
+
+        # check sending attachment with "plain" mimetype for body
+        options['handler_def']['options']['mimetype'] = 'plain'
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        self.assertEqual(parsed_email.get_content_maintype(), 'multipart', parsed_email)
+        payload = parsed_email.get_payload()
+        self.assertEqual(len(payload), 2, payload)
+        self.assertEqual(payload[0].get_content_type(), "text/plain", payload)
         self.assertEqual(payload[1].get_content_type(), 'image/png', payload)
         self.assertEqual(payload[1]['Content-Disposition'], 'inline; filename="SomeSerial.png"',
                          payload)
