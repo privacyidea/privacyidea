@@ -78,10 +78,10 @@ This will add the QR Code as an inline data image into the HTML email.
 **attach_qrcode**
 
 Instead of sending the QR-Code as an inline data image (which is not supported
-by some email clients / webmailer), enabling this option sends the email as a
-multipart message with the QR-Code image as an attachment.
-The attached image can be referenced in a HTML body via CID URL [#cidurl]_ with
-the *Content-ID* ``token_image``::
+by some email clients (i.e. Outlook) or GMail [#gmailimg]_), enabling this
+option sends the email as a multipart message with the QR-Code image as an
+attachment. The attached image can be referenced in a HTML body via CID
+URL [#cidurl]_ with the *Content-ID* ``token_image``::
 
   <img src="cid:token_image" alt="Token Image" style="..."/>
 
@@ -182,4 +182,5 @@ Code
 
 .. rubric:: Footnotes
 
+.. [#gmailimg] https://stackoverflow.com/a/42014708/7036742
 .. [#cidurl] https://tools.ietf.org/html/rfc2392
