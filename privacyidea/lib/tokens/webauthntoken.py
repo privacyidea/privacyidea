@@ -769,7 +769,7 @@ class WebAuthnTokenClass(TokenClass):
 
         TokenClass.update(self, param)
 
-        transaction_id = getParam(param, "transaction_id", required)
+        transaction_id = getParam(param, "transaction_id", optional)
 
         if transaction_id:
             self.init_step = 2
