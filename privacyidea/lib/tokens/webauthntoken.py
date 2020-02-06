@@ -1026,7 +1026,7 @@ class WebAuthnTokenClass(TokenClass):
             raise ValueError("Creating a WebAuthn challenge requires options to be provided")
 
         try:
-            user = self._get_webauthn_user(getParam(options, "user", optional))
+            user = self._get_webauthn_user(getParam(options, "user", required))
         except ParameterError:
             raise ValueError("When creating a WebAuthn challenge, options must contain user")
 
