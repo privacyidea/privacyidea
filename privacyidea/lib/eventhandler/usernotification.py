@@ -35,6 +35,7 @@ It can be bound to each event and can perform the action:
 
   * sendmail: Send an email to the user/token owner
   * sendsms: We can also notify the user with an SMS.
+  * savefile: Create a file which can be processed later
 
 The module is tested in tests/test_lib_events.py
 """
