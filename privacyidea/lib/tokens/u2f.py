@@ -46,13 +46,13 @@ def url_decode(url):
     """
     Decodes a base64 encoded, not padded string as used in FIDO U2F
     :param url: base64 urlsafe encoded string
-    :type url: str
+    :type url: basestring or bytes
     :return: the decoded string
     :rtype: bytes
     """
     pad_len = -len(url) % 4
     padding = pad_len * "="
-    res = base64.urlsafe_b64decode(to_bytes(url + padding))
+    res = base64.urlsafe_b64decode(to_bytes(url) + to_bytes(padding))
     return res
 
 
