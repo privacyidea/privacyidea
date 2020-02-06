@@ -348,3 +348,28 @@ def check_policy_name(name):
                                "the characters a-zA-Z0-9_. -"))
 
 
+def attestation_certificate_allowed(cert_info, allowed_certs_pols):
+    """
+    Check a certificate against a set of policies.
+
+    This will check an attestation certificate of a U2F-, or WebAuthn-Token,
+    against a list of policies. It is used to verify, whether a token with the
+    given attestation may be enrolled, or authorized, respectively.
+
+    :param cert_info: The `attestation_issuer`, `attestation_serial`, and `attestation_subject` of the cert.
+    :type cert_info: dict
+    :param allowed_certs_pols: The policies restricting enrollment, or authorization.
+    :type allowed_certs_pols: Match
+    :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
+    :rtype: bool
+    """
+
+    for allowed_cert in allowed_certs_pols:
+        tag, matching, _rest = allowed_cert.split("/", 3)
+        tag_value = cert_info.get("attestation_{0!s}".format(tag))
+        # if we do not get a match, we bail out
+        m = re.search(matching, tag_value)
+        if not m:
+            return False
+
+    return True

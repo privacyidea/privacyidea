@@ -81,7 +81,7 @@ from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
 import functools
@@ -1784,20 +1784,9 @@ def webauthntoken_allowed(request, action):
 
 def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     cert_info = {
-        "attestation_issuer":
-            x509name_to_string(attestation_cert.get_issuer()),
-        "attestation_serial": "{!s}".format(
-            attestation_cert.get_serial_number()),
-        "attestation_subject": x509name_to_string(
-            attestation_cert.get_subject())}
+        "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
+        "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
+        "attestation_subject": x509name_to_string(attestation_cert.get_subject())
+    }
 
-    for allowed_cert in allowed_certs_pols:
-        tag, matching, _rest = allowed_cert.split("/", 3)
-        tag_value = cert_info.get("attestation_{0!s}".format(tag))
-        # if we do not get a match, we bail out
-        m = re.search(matching, tag_value)
-        if not m:
-            return False
-
-    return True
-
+    return attestation_certificate_allowed(cert_info, allowed_certs_pols)

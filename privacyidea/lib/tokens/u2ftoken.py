@@ -27,7 +27,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
@@ -504,25 +504,25 @@ class U2fTokenClass(TokenClass):
                     # At this point we can check, if the attestation
                     # certificate is authorized.
                     # If not, we can raise a policy exception
-                    g = options.get("g")
-                    user_object = self.user
-                    allowed_certs_pols = Match.user(g, scope=SCOPE.AUTHZ, action=U2FACTION.REQ,
-                                                    user_object=user_object if user_object else None)\
-                        .action_values(unique=False)
-                    for allowed_cert in allowed_certs_pols:
-                        tag, matching, _rest = allowed_cert.split("/", 3)
-                        tag_value = self.get_tokeninfo(
-                            "attestation_{0!s}".format(tag))
-                        # if we do not get a match, we bail out
-                        m = re.search(matching, tag_value)
-                        if not m:
-                            log.warning("The U2F device {0!s} is not "
-                                        "allowed to authenticate due to policy "
-                                        "restriction".format(
-                                self.token.serial))
-                            raise PolicyError("The U2F device is not allowed "
-                                              "to authenticate due to policy "
-                                              "restriction.")
+                    if not attestation_certificate_allowed(
+                        {
+                            "attestation_issuer": self.get_tokeninfo("attestation_issuer"),
+                            "attestation_serial": self.get_tokeninfo("attestation_serial"),
+                            "attestation_subject": self.get_tokeninfo("attestation_subject")
+                        },
+                        Match\
+                            .user(options.get("g"),
+                                  scope=SCOPE.AUTHZ,
+                                  action=U2FACTION.REQ,
+                                  user_object=self.user if self.user else None) \
+                            .action_values(unique=False)
+                    ):
+                        log.warning(
+                            "The U2F device {0!s} is not allowed to authenticate due to policy restriction"
+                                .format(self.token.serial))
+                        raise PolicyError("The U2F device is not allowed "
+                                          "to authenticate due to policy "
+                                          "restriction.")
 
                 else:
                     log.warning("The signature of %s was valid, but contained "
