@@ -673,6 +673,7 @@ class WebAuthnCredential(object):
     def __init__(self,
                  rp_id,
                  origin,
+                 aaguid,
                  credential_id,
                  public_key,
                  sign_count,
@@ -685,6 +686,8 @@ class WebAuthnCredential(object):
         :type rp_id: basestring
         :param origin: The origin of the user the credential is for.
         :type origin: basestring
+        :param aaguid: The aaguid of the token used to create the credential
+        :type aaguid: basestring
         :param credential_id: The ID of the credential.
         :type credential_id: basestring or bytes
         :param public_key: The public key of the credential.
@@ -701,6 +704,7 @@ class WebAuthnCredential(object):
 
         self.rp_id = rp_id
         self.origin = origin
+        self.aaguid = aaguid
         self.credential_id = to_bytes(credential_id)
         self.public_key = to_bytes(public_key)
         self.sign_count = sign_count
@@ -842,7 +846,7 @@ class WebAuthnRegistrationResponse(object):
         :param none_attestation_permitted: Whether to allow for the attestation type to be none or unsupported.
         :type none_attestation_permitted: bool
         :return: The attestation type, trust path, credential public key, credential id and aaguid.
-        :rtype: set
+        :rtype: (basestring, Certificate[], basestring, basestring, basestring)
         """
 
         attestation_data = auth_data[37:]
@@ -1132,8 +1136,12 @@ class WebAuthnRegistrationResponse(object):
         """
         Verify the WebAuthnRegistrationResponse.
 
+        This will perform the registration ceremony for the
+        WebAuthnRegistrationResponse. It will only return on successful
+        verification. In any other case, an appropriate error will be raised.
+
         :param existing_credential_ids: A list of existing credential ids to check for duplicates.
-        :type existing_credential_ids: list of basestring
+        :type existing_credential_ids: basestring[]
         :return: The WebAuthnCredential produced by the registration ceremony.
         :rtype: WebAuthnCredential
         """
@@ -1342,6 +1350,7 @@ class WebAuthnRegistrationResponse(object):
             # Relying Party's system.
             credential = WebAuthnCredential(rp_id=self.rp_id,
                                             origin=self.origin,
+                                            aaguid=aaguid,
                                             credential_id=b64_cred_id,
                                             public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
@@ -1399,7 +1408,7 @@ class WebAuthnAssertionResponse(object):
         :param origin: The origin of the user.
         :type origin: basestring
         :param allow_credentials: Which existing credentials to allow for the authentication.
-        :type allow_credentials: list of dict
+        :type allow_credentials: list of basestring
         :param uv_required: Whether user verification is required.
         :type uv_required: bool
         :param expected_assertion_client_extensions: A dict whose keys indicate which client extensions are expected.
@@ -1427,6 +1436,17 @@ class WebAuthnAssertionResponse(object):
         self.webauthn_user = webauthn_user
 
     def verify(self):
+        """
+        Verify the WebAuthnAssertionResponse.
+
+        This will perform the authentication ceremony for the
+        WebAuthnAssertionResponse. It will only return on successful
+        verification. In any other case, an appropriate error will be raised.
+
+        :return: The new sign count of the authenticated credential.
+        :rtype: int
+        """
+
         try:
             # Step 1.
             #
@@ -1442,7 +1462,7 @@ class WebAuthnAssertionResponse(object):
             # identified by this value is the owner of the public key credential
             # identified by credential.id.
             user_handle = self.assertion_response.get('userHandle')
-            if user_handle and not user_handle == self.webauthn_user.user_name:
+            if user_handle and not user_handle == self.webauthn_user.user_id:
                 raise AuthenticationRejectedException('Invalid credential.')
 
             # Step 3.
@@ -1463,7 +1483,7 @@ class WebAuthnAssertionResponse(object):
             # respectively.
             c_data = webauthn_b64_decode(self.assertion_response.get('clientData'))
             a_data = webauthn_b64_decode(self.assertion_response.get('authData'))
-            sig = binascii.unhexlify(self.assertion_response.get('signature'))
+            sig = webauthn_b64_decode(self.assertion_response.get('signature'))
 
             # Step 5.
             #
@@ -1605,7 +1625,7 @@ class WebAuthnAssertionResponse(object):
             if not isinstance(self.webauthn_user.sign_count, int) or self.webauthn_user.sign_count < 0:
                 raise WebAuthnUserDataMissing('sign_count missing from WebAuthnUser.')
             if sign_count <= self.webauthn_user.sign_count:
-                raise  AuthenticationRejectedException('Duplicate authentication detected.')
+                raise AuthenticationRejectedException('Duplicate authentication detected.')
 
             # Step 18.
             #

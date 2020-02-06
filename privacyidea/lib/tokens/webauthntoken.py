@@ -27,22 +27,24 @@ from OpenSSL import crypto
 from cryptography import x509
 from flask import request
 
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import ParameterError, RegistrationError
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
-                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser)
+                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
+                                             WebAuthnAssertionResponse, AuthenticationRejectedException)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, GROUP, ACTION
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION, Match
 from privacyidea.lib.utils import hexlify_and_unicode
 
 __doc__ = """
@@ -104,9 +106,10 @@ acceptable to the server.
     type=webauthn
     serial=<serial>
     transaction_id=<transaction_id>
+    description=<description>
     clientdata=<clientDataJSON>
     regdata=<attestationObject>
-    description=<description>
+    registrationclientextensions=<registrationClientExtensions>
 
 *clientDataJSON* and *attestationObject* are the values returned by the
 WebAuthn authenticator. *description* is an optional description string for 
@@ -159,17 +162,22 @@ call the *errorHandler*, displaying an error telling the user to use his
 company-provided token.
 
 The *responseHandler* needs to then send the *id* to the server along with the
-*clientDataJSON* and the *attestationObject* contained in the *response* field
-of the *credential* (2. step). If enrollment succeeds, the server will send a
-response with a *webAuthnRegisterResponse* field, containing a *subject* field
-with the description of the newly created token.
+*clientDataJSON*, *attestationObject*, and *registrationClientExtensions* 
+contained in the *response* field of the *credential* (2. step) back to the
+server. If enrollment succeeds, the server will send a response with a
+*webAuthnRegisterResponse* field, containing a *subject* field with the
+description of the newly created token.
 
-The server expects the *clientDataJSON* as a JSON-encoded string. This means,
-that it is the clients responsibility to run UTF-8 decoding on the
-*clientDataJSON* and to strip the leading byte order mark, if any.
+The *registrationClientExtensions* are optional and should simply be omitted,
+if the client does not provide them. It the *registrationClientExtensions* are
+available, they must be sent to the server as a JSON-encoded string.
 
-The *attestationObject* is a binary and needs to be passed to the server
-encoded as base64. Please beware that the btoa() function provided by
+The server expects the *clientDataJSON* and *attestationObject* encoded as
+web-safe base64 as defined by the WebAuthn standard. This encoding is similar
+to standard base64, but '-' and '_' should be used in the alphabet instead of
+'+' and '/', respectively, and any padding should be omitted.
+
+Please beware that the btoa() function provided by
 ECMA-Script expects a 16-bit encoded string where all characters are in the
 range 0x0000 to 0x00FF. The *attestationObject* contains CBOR-encoded binary
 data, returned as an ArrayBuffer.
@@ -349,15 +357,20 @@ and *timeout* from the server.
         .catch(function(error) { <errorHandler> });
 
 The *responseHandler* needs to call the */validate/check* API providing the
-*serial* of the token the user is signing in with, along with the *id*,
-returned by the WebAuthn device in the *assertion* and the *authenticatorData*,
-*clientDataJSON* and *signature* contained in the *response* field of the
-*assertion*.
+*serial* of the token the user is signing in with, and the *transaction_id*,
+for the current challenge, along with the *id*, returned by the WebAuthn
+device in the *assertion* and the *authenticatorData*, *clientDataJSON* and
+*signature*, *userHandle*, and *assertionClientExtensions* contained in the
+*response* field of the *assertion*.
 
-The *clientDataJSON* should again be encoded as a JSON-string. The
-*authenticatorData* and *signature* are both binary and need to be encoded as
-base64. For more detailed instructions, refer to “2. Step” under “Enrollment”
-above. 
+*clientDataJSON*, *authenticatorData* and *signature* should be encoded as
+web-safe base64 without padding. For more detailed instructions, refer to
+“2. Step” under “Enrollment” above. 
+
+The *userHandle* and *assertionClientExtensions* are optional and should be
+omitted, if not provided by the authenticator. The
+*assertionClientExtensions* – if available – must be transmitted to the
+server as a JSON-encoded string.
 
 .. sourcecode:: http
 
@@ -367,11 +380,14 @@ above.
     
     user=<user>
     pass=
+    serial=<serial>
     transaction_id=<transaction_id>
-    id=<id>
+    credentialid=<id>
     clientdata=<clientDataJSON>
     signaturedata=<signature>
     authenticatordata=<authenticatorData>
+    userhandle=<userHandle>
+    assertionclientextensions=<assertionClientExtensions>
 
 """
 
@@ -438,14 +454,12 @@ class WEBAUTHNACTION(object):
     """
 
     ALLOWED_TRANSPORTS = 'webauthn_allowed_transports'
-    TIMEOUT_AUTH = 'webauthn_timeout_auth'
-    TIMEOUT_ENROLL = 'webauthn_timeout_enroll'
+    TIMEOUT = 'webauthn_timeout'
     RELYING_PARTY_NAME = 'webauthn_relying_party_name'
     RELYING_PARTY_ID = 'webauthn_relying_party_id'
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
-    USER_VERIFICATION_REQUIREMENT_ENROLL = 'webauthn_user_verification_requirement_enroll'
-    USER_VERIFICATION_REQUIREMENT_AUTH = 'webauthn_user_verification_requirement_auth'
+    USER_VERIFICATION_REQUIREMENT = 'webauthn_user_verification_requirement'
     PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_credential_algorithm_preference'
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
@@ -459,6 +473,7 @@ class WEBAUTHNINFO(object):
 
     PUB_KEY = "pubKey"
     ORIGIN = "origin"
+    AAGUID = "aaguid"
     ATTESTATION_LEVEL = "attestation_level"
     ATTESTATION_ISSUER = "attestation_issuer"
     ATTESTATION_SERIAL = "attestation_serial"
@@ -530,13 +545,13 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("A list of transports to prefer to communicate with WebAuthn tokens."
                                   "Default: usb ble nfc internal lightning (All standard transports)")
                     },
-                    WEBAUTHNACTION.TIMEOUT_AUTH: {
+                    WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. " 
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60")
                     },
-                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH: {
+                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when authenticating with a WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
@@ -552,6 +567,17 @@ class WebAuthnTokenClass(TokenClass):
                                   'user to confirm with his WebAuthn device')
                     }
                 },
+                SCOPE.AUTHZ: {
+                    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: {
+                        'type': 'str',
+                        'desc': _("A list of WebAuthn authenticators acceptable for authorization, given as"
+                                  "a space-separated list of AAGUIDs. Per default all authenticators are acceptable.")
+                    },
+                    WEBAUTHNACTION.REQ: {
+                        'type': 'str',
+                        'desc': _("Only the specified WebAuthn-tokens are authorized.")
+                    }
+                },
                 SCOPE.ENROLL: {
                     WEBAUTHNACTION.RELYING_PARTY_NAME: {
                         'type': 'str',
@@ -562,7 +588,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("A domain name that is a subset of the respective FQDNs for all the webservices the "
                                   "users should be able to sign in to using WebAuthn tokens.")
                     },
-                    WEBAUTHNACTION.TIMEOUT_ENROLL: {
+                    WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm enrollment on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
@@ -585,7 +611,7 @@ class WebAuthnTokenClass(TokenClass):
                                   "space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
                         'group': GROUP.TOKEN
                     },
-                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL: {
+                    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
@@ -634,7 +660,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.REQ: {
                         'type': 'str',
-                        'desc': _("Only the specified WebauthnTokens are allowed to be registered."),
+                        'desc': _("Only the specified WebAuthn-tokens are allowed to be registered."),
                         'group': GROUP.TOKEN
                     },
                     ACTION.MAXTOKENUSER: {
@@ -703,6 +729,16 @@ class WebAuthnTokenClass(TokenClass):
         challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), required)
         return challengetext.format(self.token.description)
 
+    def _get_webauthn_user(self, user):
+        return WebAuthnUser(user_id=self.token.serial,
+                            user_name=user.login,
+                            user_display_name=str(user),
+                            icon_url=IMAGES.get(self.token.description.lower().split()[0], ""),
+                            credential_id=self.decrypt_otpkey(),
+                            public_key=self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY),
+                            sign_count=self.get_otp_count(),
+                            rp_id=self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID))
+
     def decrypt_otpkey(self):
         """
         This method fetches a decrypted version of the otp_key.
@@ -741,10 +777,11 @@ class WebAuthnTokenClass(TokenClass):
             serial = self.token.serial
             reg_data = getParam(param, "regdata", required)
             client_data = getParam(param, "clientdata", required)
+            registration_client_extensions = getParam(param, "registrationclientextensions", optional)
             description = getParam(param, "description", optional)
 
             rp_id = getParam(param, WEBAUTHNACTION.RELYING_PARTY_ID, required)
-            uv_req = getParam(param, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL, optional)
+            uv_req = getParam(param, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
             attestation_level = getParam(param, WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, required)
 
             if 'HTTP_ORIGIN' not in request.environ:
@@ -773,7 +810,8 @@ class WebAuthnTokenClass(TokenClass):
                 origin=request.environ['HTTP_ORIGIN'],
                 registration_response={
                     'clientData': client_data,
-                    'attObj': reg_data
+                    'attObj': reg_data,
+                    'registrationClientExtensions': registration_client_extensions
                 },
                 challenge=webauthn_b64_encode(challenge),
                 attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
@@ -791,6 +829,8 @@ class WebAuthnTokenClass(TokenClass):
                                webAuthnCredential.origin)
             self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
                                webAuthnCredential.attestation_level)
+            self.add_tokeninfo(WEBAUTHNINFO.AAGUID,
+                               webAuthnCredential.aaguid)
 
             # Add attestation info.
             if webAuthnCredential.attestation_cert:
@@ -869,13 +909,13 @@ class WebAuthnTokenClass(TokenClass):
                 user_name=user.login,
                 user_display_name=str(user),
                 timeout=getParam(params,
-                                 WEBAUTHNACTION.TIMEOUT_ENROLL,
+                                 WEBAUTHNACTION.TIMEOUT,
                                  required),
                 attestation=getParam(params,
                                      WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
                                      required),
                 user_verification=getParam(params,
-                                           WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+                                           WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                                            required),
                 public_key_credential_algorithms=getParam(params,
                                                           WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
@@ -983,13 +1023,13 @@ class WebAuthnTokenClass(TokenClass):
         """
 
         if not options:
-            raise ValueError("Creating a WebAuthn challenge requires options ot be provided")
+            raise ValueError("Creating a WebAuthn challenge requires options to be provided")
 
-        user = options.get("user")
-        if not user:
-            raise ValueError("When creating a WebAuthn challenge, options must contains user")
+        try:
+            user = self._get_webauthn_user(getParam(options, "user", optional))
+        except ParameterError:
+            raise ValueError("When creating a WebAuthn challenge, options must contain user")
 
-        image_url = IMAGES.get(self.token.description.lower().split()[0], "")
         message = self._get_message(options)
 
         nonce = self._get_nonce()
@@ -999,37 +1039,155 @@ class WebAuthnTokenClass(TokenClass):
                               transaction_id=transactionid,
                               challenge=hexlify_and_unicode(nonce),
                               data=None,
-                              session=options.get("session"),
+                              session=getParam(options, "session", optional),
                               validitytime=self._get_challenge_validity_time())
         challenge.save()
 
         publicKeyCredentialRequestOptions = WebAuthnAssertionOptions(
             challenge=webauthn_b64_encode(nonce),
-            webauthn_user=WebAuthnUser(
-                user_id=self.token.serial,
-                user_name=user.login,
-                user_display_name=str(user),
-                icon_url=image_url,
-                credential_id=webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey())),
-                public_key=self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY),
-                sign_count=self.get_otp_count(),
-                rp_id=self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID)
-            ),
+            webauthn_user=user,
             transports=getParam(options,
                                 WEBAUTHNACTION.ALLOWED_TRANSPORTS,
                                 required),
             user_verification_requirement=getParam(options,
-                                                   WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
+                                                   WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                                                    required),
             timeout=getParam(options,
-                             WEBAUTHNACTION.TIMEOUT_AUTH,
+                             WEBAUTHNACTION.TIMEOUT,
                              required)
         ).assertion_dict
 
         response_details = {
             "webAuthnSignRequest": publicKeyCredentialRequestOptions,
             "hideResponseInput": True,
-            "img": image_url
+            "img": user.icon_url
         }
 
         return True, message, challenge.transaction_id, response_details
+    
+    @check_token_locked
+    def check_otp(self, otpval, counter=None, window=None, options=None):
+        """
+        This checks the response of a previous challenge.
+
+        Since this is not a traditional token, otpval and window are unused.
+        The information from the client is instead passed in the fields
+        `serial`, `id`, `assertion`, `authenticatorData`, `clientDataJSON`,
+        and `signature` of the options dictionary.
+
+        :param otpval: Unused for this token type
+        :type otpval: None
+        :param counter: The authentication counter
+        :type counter: int
+        :param window: Unused for this token type
+        :type window: None
+        :param options: Contains the data from the client, along with policy configurations.
+        :type options: dict
+        :return: A numerical value where values larger than zero indicate success.
+        :rtype: int
+        """
+
+        if is_webauthn_assertion_response(options) and getParam(options, "challenge", optional):
+            serial = getParam(options, "serial", optional)
+            transaction_id = getParam(options, "transaction_id", optional)
+            credential_id = getParam(options, "credentialid", optional)
+            authenticator_data = getParam(options, "authenticatordata", optional)
+            client_data = getParam(options, "clientdata", optional)
+            signature_data = getParam(options, "signaturedata", optional)
+            user_handle = getParam(options, "userhandle", optional)
+            assertion_client_extensions = getParam(options, "assertionclientextensions", optional)
+
+            try:
+                user = self._get_webauthn_user(getParam(options, "user", required))
+            except ParameterError:
+                raise ValueError("When performing WebAuthn authorization, options must contain user")
+
+            uv_req = getParam(options, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
+
+            if 'HTTP_ORIGIN' not in request.environ:
+                raise ParameterError("The ORIGIN HTTP header must be included, when performing WebAuthn authorization")
+
+            challenge = binascii.unhexlify(getParam(options, "challenge", optional))
+
+            try:
+                # This does the heavy lifting.
+                #
+                # All data is parsed and verified. If any errors occur, an exception
+                # will be raised.
+                self.set_otp_count(WebAuthnAssertionResponse(
+                                       webauthn_user=user,
+                                       assertion_response={
+                                           'id': credential_id,
+                                           'userHandle': user_handle,
+                                           'clientData': client_data,
+                                           'authData': authenticator_data,
+                                           'signature': signature_data,
+                                           'assertionClientExtensions': assertion_client_extensions
+                                       },
+                                       challenge=webauthn_b64_encode(challenge),
+                                       origin=request.environ['HTTP_ORIGIN'],
+                                       allow_credentials=[user.credential_id],
+                                       uv_required=uv_req
+                                   ).verify())
+            except AuthenticationRejectedException as e:
+                # The authentication ceremony failed.
+                log.warning("Checking response for token {0!s} failed. {1!s}".format(self.token.serial, e))
+                return -1
+
+            # At this point we can check, if the attestation certificate is
+            # authorized. If not, we can raise a policy exception.
+            if not attestation_certificate_allowed(
+                    {
+                        "attestation_issuer": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER),
+                        "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
+                        "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
+                    },
+                    Match.user(options.get("g"),
+                               scope=SCOPE.AUTHZ,
+                               action=WEBAUTHNACTION.REQ,
+                               user_object=self.user if self.user else None)
+                         .action_values(unique=False)
+            ):
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
+                        .format(self.token.serial, WEBAUTHNACTION.REQ))
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+
+            # Now we need to check, if a whitelist for AAGUIDs exists, and if
+            # so, if this device is whitelisted. If not, we again raise a
+            # policy exception.
+            allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
+            if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
+                log.warning(
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
+                        .format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+
+            # All clear? Nice!
+            return self.get_otp_count()
+
+        else:
+            # Not all necessary data provided.
+            return -1
+
+
+def is_webauthn_assertion_response(request_data):
+    """
+    Verify the request received is an assertion response.
+
+    This will check whether the given request contains all parameters
+    mandatory for a WebAuthn assertion response in privacyIDEA. If
+    this is not the case, check_otp() will immediately fail.
+
+    :param request_data: The parameters passed in the request.
+    :type request_data: dict
+    :return: Whether all data necessary to verify the assertion is available.
+    :rtype: bool
+    """
+
+    return bool(getParam(request_data, "serial", optional)
+                and getParam(request_data, "transaction_id", optional)
+                and getParam(request_data, "credentialid", optional)
+                and getParam(request_data, "authenticatordata", optional)
+                and getParam(request_data, "clientdata", optional)
+                and getParam(request_data, "signaturedata", optional))

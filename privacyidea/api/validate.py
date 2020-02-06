@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2020-01-30 Jean-Pierre Höhmann <jean-pierre.hohemann@netknights.it>
+#            Add WebAuthn token
 # 2018-01-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add offline refill
 # 2016-12-20 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -80,7 +82,8 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action, pushtoken_wait, webauthntoken_auth)
+                                           check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
+                                           webauthntoken_request)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -201,6 +204,8 @@ def offlinerefill():
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
+@prepolicy(webauthntoken_request, request=request)
+@prepolicy(webauthntoken_authz, request=request)
 @prepolicy(webauthntoken_auth, request=request)
 @check_user_or_serial_in_request(request)
 @CheckSubscription(request)
@@ -356,6 +361,8 @@ def check():
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(save_client_application_type, request=request)
+@prepolicy(webauthntoken_request, request=request)
+@prepolicy(webauthntoken_authz, request=request)
 @prepolicy(webauthntoken_auth, request=request)
 @check_user_or_serial_in_request(request)
 @CheckSubscription(request)
@@ -452,6 +459,7 @@ def samlcheck():
 @postpolicy(mangle_challenge_response, request=request)
 @check_user_or_serial_in_request(request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
+@prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_auth, request=request)
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():

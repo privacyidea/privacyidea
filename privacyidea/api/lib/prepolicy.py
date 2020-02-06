@@ -92,15 +92,14 @@ import importlib
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHENTICATOR_ATTACHMENT_TYPES,
                                              USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_TIMEOUT_ENROLL,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_TIMEOUT_AUTH, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM, WebAuthnTokenClass,
-                                                  DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL)
+                                                  DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  is_webauthn_assertion_response)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
@@ -1432,21 +1431,22 @@ def allowed_audit_realm(request=None, action=None):
     return True
 
 
-def webauthntoken_auth(request, action):
+def webauthntoken_request(request, action):
     """
-    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerechallenge and /validate/check.
+    This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
 
-    This will enrich the challenge creation request for WebAuthn tokens with the
-    necessary configuration information from policy actions with
-    scope=SCOPE.AUTH. The request will be augmented with the timeout for
-    authentication, the allowed transports, the user verification
-    requirement, and the text to display to the user when asking to confirm
-    the challenge on the token, as specified by the actions
-    WEBAUTHNACTION.TIMEOUT_AUTH, WEBAUTHNACTION.ALLOWED_TRANSPORTS,
-    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH, and
-    ACTION.CHALLENGETEXT, respectively.
+    This wraps the endpoints /token/init, /validate/triggerchallenge, and
+    /validate/check. It will add WebAuthn configuration information to the
+    requests, wherever a piece of information is needed for several different
+    requests and thus cannot be provided by one of the more specific wrappers
+    without adding unnecessary redundancy.
 
-    All of these policies are optional, and have sensible defaults.
+    Depending on the type of request, the request will be augmented with some
+    (or all) of the authenticator timeout, user verification requirement and
+    list of allowed AAGUIDs for the current scope, as specified by the
+    policies with the determined scope and the actions WEBAUTHNACTION.TIMEOUT,
+    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, and
+    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, respectively.
 
     :param request:
     :type request:
@@ -1457,15 +1457,138 @@ def webauthntoken_auth(request, action):
     """
 
     ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == "webauthn":
-        timeout_policies = Match\
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action=WEBAUTHNACTION.TIMEOUT_AUTH,
-                  user_object=request.User if request.User else None)\
-            .action_values(unique=True)
-        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_AUTH
 
+    # If this is a WebAuthn token
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
+        scope = request.all_data.get("scope")
+        actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
+
+        if WEBAUTHNACTION.TIMEOUT in actions:
+            timeout_policies = Match \
+                .user(g,
+                      scope=scope,
+                      action=WEBAUTHNACTION.TIMEOUT,
+                      user_object=request.User if request.User else None) \
+                .action_values(unique=True)
+            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_AUTH
+
+            request.all_data[WEBAUTHNACTION.TIMEOUT] \
+                = timeout * 1000
+
+        if WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT in actions:
+            user_verification_requirement_policies = Match \
+                .user(g,
+                      scope=scope,
+                      action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                      user_object=request.User if request.User else None) \
+                .action_values(unique=True)
+            user_verification_requirement = list(user_verification_requirement_policies)[0] \
+                if user_verification_requirement_policies \
+                else DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH
+            if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+                raise PolicyError(
+                    "{0!s} must be one of {1!s}"
+                        .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                ", ".join(USER_VERIFICATION_LEVELS)))
+
+            request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] \
+                = user_verification_requirement
+
+        if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
+            allowed_aaguids_pols = Match \
+                .user(g,
+                      scope=SCOPE.ENROLL,
+                      action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                      user_object=request.User if request.User else None) \
+                .action_values(unique=False,
+                               allow_white_space_in_action=True)
+            allowed_aaguids = set(
+                aaguid
+                for allowed_aaguid_pol in allowed_aaguids_pols
+                for aaguid in allowed_aaguid_pol.split()
+            )
+
+            if allowed_aaguids:
+                request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
+                    = list(allowed_aaguids)
+
+    return True
+
+
+def webauthntoken_authz(request, action):
+    """
+    This is a WebAuthn token specific wrapper for the /validate/check endpoint.
+
+    This will enrich the authorization request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.AUTHZ. This is currently the authorization pendant to
+    webauthntoken_allowed(), but maybe expanded to cover other authorization
+    policies in the future, should any be added. The request will as of now
+    simply be augmented with the policies the attestation certificate is to be
+    matched against.
+
+    This will also add a parameter called `scope` to the request, with a value
+    of SCOPE.AUTHZ. This is later consumed by the webauthn_request() decodator.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype
+    """
+
+    ttype = request.all_data.get("type")
+
+    # If a WebAuthn token is being authorized.
+    if ttype \
+            and ttype.lower() == WebAuthnTokenClass.get_class_type() \
+            and is_webauthn_assertion_response(request.all_data):
+        allowed_certs_pols = Match\
+            .user(g,
+                  scope=SCOPE.AUTHZ,
+                  action=WEBAUTHNACTION.REQ,
+                  user_object=request.User if request.User else None)\
+            .action_values(unique=False)
+
+        request.all_data[WEBAUTHNACTION.REQ] \
+            = list(allowed_certs_pols)
+
+        request.all_data["scope"] = SCOPE.AUTHZ
+
+    return True
+
+
+def webauthntoken_auth(request, action):
+    """
+    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerechallenge and /validate/check.
+
+    This will enrich the challenge creation request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.AUTH. The request will be augmented with the allowed
+    transports and the text to display to the user when asking to confirm
+    the challenge on the token, as specified by the actions
+    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and ACTION.CHALLENGETEXT, respectively.
+
+    Both of these policies are optional, and have sensible defaults.
+
+    This will also add a parameter called `scope` to the request, with a value
+    of SCOPE.AUTH. This is later consumed by the webauthn_request() decodator.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+
+    # If a Webauthn token is being authenticated (as opposed to being authorized).
+    if ttype \
+            and ttype.lower() == WebAuthnTokenClass.get_class_type() \
+            and not is_webauthn_assertion_response(request.all_data):
         allowed_transports_policies = Match\
             .user(g,
                   scope=SCOPE.AUTH,
@@ -1483,21 +1606,6 @@ def webauthntoken_auth(request, action):
             for transport in allowed_transports_policy.split()
         )
 
-        user_verification_requirement_policies = Match\
-            .user(g,
-                  scope=SCOPE.AUTH,
-                  action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
-                  user_object=request.User if request.User else None)\
-            .action_values(unique=True)
-        user_verification_requirement = list(user_verification_requirement_policies)[0] \
-            if user_verification_requirement_policies \
-            else DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH
-        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
-            raise PolicyError(
-                "{0!s} must be one of {1!s}"
-                    .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH,
-                            ", ".join(USER_VERIFICATION_LEVELS)))
-
         challengetext_policies = Match\
             .user(g,
                   scope=SCOPE.AUTH,
@@ -1510,14 +1618,12 @@ def webauthntoken_auth(request, action):
             if challengetext_policies \
             else DEFAULT_CHALLENGE_TEXT_AUTH
 
-        request.all_data[WEBAUTHNACTION.TIMEOUT_AUTH] \
-            = timeout * 1000
         request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
             = list(allowed_transports)
-        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_AUTH] \
-            = user_verification_requirement
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
+
+        request.all_data["scope"] = SCOPE.AUTH
 
     return True
 
@@ -1531,14 +1637,11 @@ def webauthntoken_enroll(request, action):
     scope=SCOPE.ENROLL. The request will be augmented with a name and id for
     the relying party, as specified by the with actions
     WEBAUTHNACTION.RELYING_PARTY_NAME and WEBAUTHNACTION.RELYING_PARTY_ID,
-    respectively, along with the enrollment timeout, authenticator attachment
-    preference, user verification requirement level, public key credential
+    respectively, authenticator attachment preference, public key credential
     algorithm preferences, authenticator attestation requirement level,
     authenticator attestation requirement form, allowed AAGUIDs, and the text
     to display to the user when asking to confirm the challenge on the token,
-    as specified by the actions WEBAUTHNACTION.TIMEOUT_ENROLL,
-    WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
+    as specified by the actions WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
@@ -1549,6 +1652,9 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
     set, we bail out.
 
+    This will also add a parameter called `scope` to the request, with a value
+    of SCOPE.ENROLL. This is later consumed by the webauthn_request() decodator.
+
     :param request:
     :type request:
     :param action:
@@ -1558,7 +1664,7 @@ def webauthntoken_enroll(request, action):
     """
 
     ttype = request.all_data.get("type")
-    if ttype and ttype.lower() == "webauthn":
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
         rp_id_policies = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
@@ -1591,14 +1697,6 @@ def webauthntoken_enroll(request, action):
                 "Illegal value for {0!s} (must be a domain name)."
                     .format(WEBAUTHNACTION.RELYING_PARTY_ID))
 
-        timeout_policies = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.TIMEOUT_ENROLL,
-                  user_object=request.User if request.User else None)\
-            .action_values(unique=True)
-        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_ENROLL
-
         authenticator_attachment_policies = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
@@ -1609,21 +1707,6 @@ def webauthntoken_enroll(request, action):
             if authenticator_attachment_policies \
                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
             else None
-
-        user_verification_requirement_policies = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
-                  user_object=request.User if request.User else None)\
-            .action_values(unique=True)
-        user_verification_requirement = list(user_verification_requirement_policies)[0] \
-            if user_verification_requirement_policies \
-            else DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL
-        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
-            raise PolicyError(
-                "{0!s} must be one of {1!s}"
-                    .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL,
-                            ', '.join(USER_VERIFICATION_LEVELS)))
 
         public_key_credential_algorithm_preference_policies = Match\
             .user(g,
@@ -1654,19 +1737,6 @@ def webauthntoken_enroll(request, action):
                 "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
                                                     ', '.join(ATTESTATION_LEVELS)))
 
-        allowed_aaguids_pols = Match \
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                  user_object=request.User if request.User else None) \
-            .action_values(unique=False,
-                           allow_white_space_in_action=True)
-        allowed_aaguids = set(
-            aaguid
-            for allowed_aaguid_pol in allowed_aaguids_pols
-            for aaguid in allowed_aaguid_pol.split()
-        )
-
         authenticator_attestation_form_policies = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
@@ -1692,22 +1762,18 @@ def webauthntoken_enroll(request, action):
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
 
-        request.all_data[WEBAUTHNACTION.TIMEOUT_ENROLL] \
-            = timeout * 1000
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
             = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT_ENROLL] \
-            = user_verification_requirement
         request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE] \
             = PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[public_key_credential_algorithm_preference]
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
             = authenticator_attestation_level
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
             = authenticator_attestation_form
-        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
-            = allowed_aaguids if allowed_aaguids else None
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
+
+        request.all_data["scope"] = SCOPE.ENROLL
 
     return True
 
@@ -1728,6 +1794,10 @@ def webauthntoken_allowed(request, action):
     If the token, which is being enrolled does not contain an allowed attestation
     certificate, or does not have an allowed AAGUID, we bail out.
 
+    A very similar check (same policy actions, different policy scope) is
+    performed during authorization,  however due to architectural limitations,
+    this lives within the token implementation itself.
+
     :param request:
     :type request:
     :param action:
@@ -1741,8 +1811,8 @@ def webauthntoken_allowed(request, action):
     # Get the registration data of the 2nd step of enrolling a WebAuthn token
     reg_data = request.all_data.get("regdata")
 
-    if ttype and ttype.lower() == "webauthn" and reg_data:
-        # We have a registered webauthn token!
+    # If a WebAuthn token is being enrolled.
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type() and reg_data:
         serial = request.all_data.get("serial")
         att_obj = WebAuthnRegistrationResponse.parse_attestation_object(reg_data)
         (
@@ -1755,7 +1825,7 @@ def webauthntoken_allowed(request, action):
                                                                       att_stmt=att_obj.get('attStmt'),
                                                                       auth_data=att_obj.get('authData'))
 
-        attestation_cert = crypto.X509.from_cryptography(trust_path[0])
+        attestation_cert = crypto.X509.from_cryptography(trust_path[0]) if trust_path else None
         allowed_certs_pols = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
@@ -1773,16 +1843,25 @@ def webauthntoken_allowed(request, action):
         #
         # See also:
         # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-        if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols)\
-                or allowed_aaguids and aaguid not in allowed_aaguids:
+        if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
             log.warning(
-                "The WebAuthn token {0!s} is not allowed to be registered due to policy restrictions.".format(serial))
-            raise PolicyError("The WebAuthn token is not allowed to be registered due to policy restrictions.")
+                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                    .format(serial, WEBAUTHNACTION.REQ))
+            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
+
+        if allowed_aaguids and aaguid not in allowed_aaguids:
+            log.warning(
+                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                    .format(serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
 
     return True
 
 
 def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+    if not attestation_cert:
+        return False
+
     cert_info = {
         "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
         "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
