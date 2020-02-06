@@ -961,7 +961,7 @@ def init_token(param, user=None, tokenrealms=None,
     """
     create a new token or update an existing token
 
-    :param param: initialization parameters like:
+    :param param: initalization parameters like:
                   serial (optional)
                   type (optionl, default=hotp)
                   otpkey
@@ -1005,7 +1005,7 @@ def init_token(param, user=None, tokenrealms=None,
         old_typ = db_token.tokentype
         if old_typ.lower() != tokentype.lower():
             msg = ('token %r already exist with type %r. '
-                   'Can not initialize token with new type %r' % (serial,
+                   'Can not initalize token with new type %r' % (serial,
                                                                   old_typ,
                                                                   tokentype))
             log.error(msg)
@@ -1162,7 +1162,7 @@ def set_defaults(serial):
 def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     """
     Assign token to a user.
-    If the PIN is given, the PIN is reset.
+    If the PIN is given, the PIN is resetted.
 
     :param serial: The serial number of the token
     :type serial: basestring
@@ -1180,7 +1180,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     # Check if the token already belongs to another user
     old_user = tokenobject.user
     if old_user:
-        log.warning("token already assigned to user: {0!r}".format(old_user))
+        log.warning("token already asigned to user: {0!r}".format(old_user))
         err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
         raise TokenAdminError(err_message, id=1103)
 
@@ -1225,7 +1225,7 @@ def unassign_token(serial, user=None):
             log.error('update token DB failed')
             raise TokenAdminError("Token unassign failed for {0!r}/{1!r}: {2!r}".format(serial, user, e), id=1105)
 
-        log.debug("successfully unassigned token with serial {0!r}".format(tokenobject))
+        log.debug("successfuly unassignd token with serial {0!r}".format(tokenobject))
     # TODO: test with more than 1 token
     return len(tokenobject_list)
 
@@ -1296,7 +1296,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))
-        raise ParameterError("Parameter user must not be a string: {0!r}".format(
+        raise ParameterError("Paramter user must not be a string: {0!r}".format(
                              user), id=1212)
 
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
@@ -1669,7 +1669,7 @@ def set_description(serial, description, user=None):
     :type serial: basestring
     :param description: The description for the token
     :type description: str
-    :param user: The owner of the tokens, which should be modified
+    :param user: The owner of the tokens, which should be modifid
     :type user: User object
     :return: number of modified tokens
     :rtype: int
