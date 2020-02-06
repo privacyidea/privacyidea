@@ -25,7 +25,6 @@ import binascii
 
 from OpenSSL import crypto
 from cryptography import x509
-from flask import request
 
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.challenge import get_challenges
@@ -45,6 +44,7 @@ from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, Match
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 
 __doc__ = """
@@ -399,11 +399,9 @@ DEFAULT_DESCRIPTION = _(u'Generic WebAuthn Token')
 
 # Policy defaults
 DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal lightning"
-DEFAULT_TIMEOUT_AUTH = 60
-DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH = 'preferred'
-DEFAULT_TIMEOUT_ENROLL = 60
+DEFAULT_TIMEOUT = 60
+DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
-DEFAULT_USER_VERIFICATION_REQUIREMENT_ENROLL = 'preferred'
 DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'ecdsa_preferred'
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
@@ -726,18 +724,20 @@ class WebAuthnTokenClass(TokenClass):
         self.init_step = 1
 
     def _get_message(self, options):
-        challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), required)
-        return challengetext.format(self.token.description)
+        challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), optional)
+        return challengetext.format(self.token.description) if challengetext else ''
 
     def _get_webauthn_user(self, user):
-        return WebAuthnUser(user_id=self.token.serial,
-                            user_name=user.login,
-                            user_display_name=str(user),
-                            icon_url=IMAGES.get(self.token.description.lower().split()[0], ""),
-                            credential_id=self.decrypt_otpkey(),
-                            public_key=self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY),
-                            sign_count=self.get_otp_count(),
-                            rp_id=self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID))
+        return WebAuthnUser(
+            user_id=self.token.serial,
+            user_name=user.login,
+            user_display_name=str(user),
+            icon_url=IMAGES.get(self.token.description.lower().split()[0], ""),
+            credential_id=self.decrypt_otpkey(),
+            public_key=webauthn_b64_encode(binascii.unhexlify(self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY))),
+            sign_count=self.get_otp_count(),
+            rp_id=self.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID)
+        )
 
     def decrypt_otpkey(self):
         """
@@ -770,13 +770,13 @@ class WebAuthnTokenClass(TokenClass):
         TokenClass.update(self, param)
 
         transaction_id = getParam(param, "transaction_id", optional)
+        reg_data = getParam(param, "regdata", optional)
+        client_data = getParam(param, "clientdata", optional)
 
-        if transaction_id:
+        if reg_data and client_data:
             self.init_step = 2
 
             serial = self.token.serial
-            reg_data = getParam(param, "regdata", required)
-            client_data = getParam(param, "clientdata", required)
             registration_client_extensions = getParam(param, "registrationclientextensions", optional)
             description = getParam(param, "description", optional)
 
@@ -784,8 +784,10 @@ class WebAuthnTokenClass(TokenClass):
             uv_req = getParam(param, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
             attestation_level = getParam(param, WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL, required)
 
-            if 'HTTP_ORIGIN' not in request.environ:
-                raise ParameterError("The ORIGIN HTTP header must be included, when enrolling a new WebAuthn token.")
+            try:
+                http_origin = getParam(param, "HTTP_ORIGIN", required, allow_empty=False)
+            except ParameterError:
+                raise ValueError("The ORIGIN HTTP header must be included, when enrolling a new WebAuthn token.")
 
             challengeobject_list = [
                 challengeobject
@@ -807,7 +809,7 @@ class WebAuthnTokenClass(TokenClass):
             # will be raised.
             webAuthnCredential = WebAuthnRegistrationResponse(
                 rp_id=rp_id,
-                origin=request.environ['HTTP_ORIGIN'],
+                origin=http_origin,
                 registration_response={
                     'clientData': client_data,
                     'attObj': reg_data,
@@ -845,14 +847,14 @@ class WebAuthnTokenClass(TokenClass):
                 attestation_cert = crypto.X509.from_cryptography(webAuthnCredential.attestation_cert)
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER,
                                    x509name_to_string(attestation_cert.get_issuer()))
-                self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
-                                   x509name_to_string(attestation_cert.get_serial_number()))
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT,
                                    x509name_to_string(attestation_cert.get_subject()))
+                self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
+                                   attestation_cert.get_serial_number())
 
                 if not description:
                     cn = webAuthnCredential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                    description = cn[0] if len(cn) else DEFAULT_DESCRIPTION
+                    description = cn[0].value if len(cn) else DEFAULT_DESCRIPTION
 
             self.set_description(description)
 
@@ -886,7 +888,13 @@ class WebAuthnTokenClass(TokenClass):
         if self.init_step == 1:
             response_detail = TokenClass.get_init_detail(self, params, user)
 
-            nonce = self._get_nonce()
+            if not params:
+                raise ValueError("Creating a WebAuthn token requires params to be provided")
+            if not user:
+                raise ValueError("Creating a WebAuthn token requires user to be provided")
+
+            # To aid with unit testing a fixed nonce may be passed in.
+            nonce = params['nonce'] if 'nonce' in params else self._get_nonce()
 
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
@@ -938,19 +946,19 @@ class WebAuthnTokenClass(TokenClass):
                 "name": publicKeyCredentialCreationOptions["user"]["name"],
                 "displayName": publicKeyCredentialCreationOptions["user"]["displayName"]
             }
-            if len(publicKeyCredentialCreationOptions["pubKeyCredParams"]) < 1:
+            if len(publicKeyCredentialCreationOptions.get("pubKeyCredParams")) > 1:
                 response_detail["webAuthnRegisterRequest"]["alternativeAlgorithm"] \
                     = publicKeyCredentialCreationOptions["pubKeyCredParams"][1]
-            if publicKeyCredentialCreationOptions["authenticatorSelection"]:
+            if publicKeyCredentialCreationOptions.get("authenticatorSelection"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
                     = publicKeyCredentialCreationOptions["authenticatorSelection"]
-            if publicKeyCredentialCreationOptions["timeout"]:
+            if publicKeyCredentialCreationOptions.get("timeout"):
                 response_detail["webAuthnRegisterRequest"]["timeout"] \
                     = publicKeyCredentialCreationOptions["timeout"]
-            if publicKeyCredentialCreationOptions["attestation"]:
+            if publicKeyCredentialCreationOptions.get("attestation"):
                 response_detail["webAuthnRegisterRequest"]["attestation"] \
                     = publicKeyCredentialCreationOptions["attestation"]
-            if publicKeyCredentialCreationOptions["extensions"]["authnSel"]:
+            if (publicKeyCredentialCreationOptions.get("extensions") or {}).get("authnSel"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
                     = publicKeyCredentialCreationOptions["extensions"]["authnSel"]
 
@@ -1032,7 +1040,8 @@ class WebAuthnTokenClass(TokenClass):
 
         message = self._get_message(options)
 
-        nonce = self._get_nonce()
+        # To aid with unit testing a fixed nonce may be passed in.
+        nonce = options['nonce'] if 'nonce' in options else self._get_nonce()
 
         # Create the challenge in the database
         challenge = Challenge(serial=self.token.serial,
@@ -1088,12 +1097,10 @@ class WebAuthnTokenClass(TokenClass):
         """
 
         if is_webauthn_assertion_response(options) and getParam(options, "challenge", optional):
-            serial = getParam(options, "serial", optional)
-            transaction_id = getParam(options, "transaction_id", optional)
-            credential_id = getParam(options, "credentialid", optional)
-            authenticator_data = getParam(options, "authenticatordata", optional)
-            client_data = getParam(options, "clientdata", optional)
-            signature_data = getParam(options, "signaturedata", optional)
+            credential_id = getParam(options, "credentialid", required)
+            authenticator_data = getParam(options, "authenticatordata", required)
+            client_data = getParam(options, "clientdata", required)
+            signature_data = getParam(options, "signaturedata", required)
             user_handle = getParam(options, "userhandle", optional)
             assertion_client_extensions = getParam(options, "assertionclientextensions", optional)
 
@@ -1104,10 +1111,12 @@ class WebAuthnTokenClass(TokenClass):
 
             uv_req = getParam(options, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
 
-            if 'HTTP_ORIGIN' not in request.environ:
-                raise ParameterError("The ORIGIN HTTP header must be included, when performing WebAuthn authorization")
+            try:
+                http_origin = getParam(options, "HTTP_ORIGIN", required, allow_empty=False)
+            except ParameterError:
+                raise ValueError("The ORIGIN HTTP header must be included, when authenticating with a WebAuthn token")
 
-            challenge = binascii.unhexlify(getParam(options, "challenge", optional))
+            challenge = binascii.unhexlify(getParam(options, "challenge", required))
 
             try:
                 # This does the heavy lifting.
@@ -1125,7 +1134,7 @@ class WebAuthnTokenClass(TokenClass):
                                            'assertionClientExtensions': assertion_client_extensions
                                        },
                                        challenge=webauthn_b64_encode(challenge),
-                                       origin=request.environ['HTTP_ORIGIN'],
+                                       origin=http_origin,
                                        allow_credentials=[user.credential_id],
                                        uv_required=uv_req
                                    ).verify())
@@ -1142,11 +1151,7 @@ class WebAuthnTokenClass(TokenClass):
                         "attestation_serial": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL),
                         "attestation_subject": self.get_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT)
                     },
-                    Match.user(options.get("g"),
-                               scope=SCOPE.AUTHZ,
-                               action=WEBAUTHNACTION.REQ,
-                               user_object=self.user if self.user else None)
-                         .action_values(unique=False)
+                    getParam(options, WEBAUTHNACTION.REQ, optional)
             ):
                 log.warning(
                     "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
@@ -1185,9 +1190,7 @@ def is_webauthn_assertion_response(request_data):
     :rtype: bool
     """
 
-    return bool(getParam(request_data, "serial", optional)
-                and getParam(request_data, "transaction_id", optional)
-                and getParam(request_data, "credentialid", optional)
+    return bool(getParam(request_data, "credentialid", optional)
                 and getParam(request_data, "authenticatordata", optional)
                 and getParam(request_data, "clientdata", optional)
                 and getParam(request_data, "signaturedata", optional))

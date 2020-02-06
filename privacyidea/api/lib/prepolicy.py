@@ -94,8 +94,8 @@ from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHE
                                              USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
-                                                  DEFAULT_TIMEOUT_AUTH, DEFAULT_ALLOWED_TRANSPORTS,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH,
+                                                  DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM, WebAuthnTokenClass,
                                                   DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL,
@@ -1448,6 +1448,10 @@ def webauthntoken_request(request, action):
     WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, and
     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, respectively.
 
+    The value of the ORIGIN http header will also be added to the request for
+    the ENROLL and AUTHZ scopes. This is to make the unit tests not require
+    mocking.
+
     :param request:
     :type request:
     :param action:
@@ -1470,7 +1474,7 @@ def webauthntoken_request(request, action):
                       action=WEBAUTHNACTION.TIMEOUT,
                       user_object=request.User if request.User else None) \
                 .action_values(unique=True)
-            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT_AUTH
+            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
             request.all_data[WEBAUTHNACTION.TIMEOUT] \
                 = timeout * 1000
@@ -1484,7 +1488,7 @@ def webauthntoken_request(request, action):
                 .action_values(unique=True)
             user_verification_requirement = list(user_verification_requirement_policies)[0] \
                 if user_verification_requirement_policies \
-                else DEFAULT_USER_VERIFICATION_REQUIREMENT_AUTH
+                else DEFAULT_USER_VERIFICATION_REQUIREMENT
             if user_verification_requirement not in USER_VERIFICATION_LEVELS:
                 raise PolicyError(
                     "{0!s} must be one of {1!s}"
@@ -1511,6 +1515,9 @@ def webauthntoken_request(request, action):
             if allowed_aaguids:
                 request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
                     = list(allowed_aaguids)
+
+        if scope in [SCOPE.ENROLL, SCOPE.AUTHZ]:
+            request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 
     return True
 

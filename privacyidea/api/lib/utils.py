@@ -364,12 +364,13 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     :rtype: bool
     """
 
-    for allowed_cert in allowed_certs_pols:
-        tag, matching, _rest = allowed_cert.split("/", 3)
-        tag_value = cert_info.get("attestation_{0!s}".format(tag))
-        # if we do not get a match, we bail out
-        m = re.search(matching, tag_value)
-        if not m:
-            return False
+    if allowed_certs_pols:
+        for allowed_cert in allowed_certs_pols:
+            tag, matching, _rest = allowed_cert.split("/", 3)
+            tag_value = cert_info.get("attestation_{0!s}".format(tag))
+            # if we do not get a match, we bail out
+            m = re.search(matching, tag_value)
+            if not m:
+                return False
 
     return True

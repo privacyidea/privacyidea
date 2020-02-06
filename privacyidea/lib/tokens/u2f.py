@@ -332,7 +332,7 @@ def x509name_to_string(x509name):
     """
     converts a X509Name to a string as in a DN
 
-    :param x509name: THe X509Name object
+    :param x509name: The X509Name object
     :return:
     """
     components = x509name.get_components()
