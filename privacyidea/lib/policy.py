@@ -151,7 +151,7 @@ the 172.16.0.17.
 
 time
 ----
-You can specify a time in which the policy should be active.
+You can specify a time in wich the policy should be active.
 Time formats are
 
 <dow>-<dow>:<hh>:<mm>-<hh>:<mm>, ...
@@ -194,7 +194,7 @@ required = False
 
 
 class SCOPE(object):
-    __doc__ = """This is the list of the allowed scopes that can be used in
+    __doc__ = """This is the list of the allowd scopes that can be used in
     policy definitions.
     """
     AUTHZ = "authorization"
@@ -364,7 +364,7 @@ class GROUP(object):
 
 class MAIN_MENU(object):
     __doc__ = """These are the allowed top level menu items. These are used
-    to toggle the visibility of the menu items depending on the rights of the
+    to toggle the visibility of the menu items depnding on the rights of the
     user"""
     TOKENS = "tokens"
     USERS = "users"
@@ -515,7 +515,7 @@ class PolicyClass(object):
             if searchvalue is not None:
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
-                log.debug("Policies after matching {1!s}: {0!s}".format(
+                log.debug("Policies after mathing {1!s}: {0!s}".format(
                     reduced_policies, searchkey))
 
         p = [("action", action), ("user", user), ("realm", realm)]
@@ -740,7 +740,7 @@ class PolicyClass(object):
         else:  # pragma: no cover
             log.error(u"Policy {!r} has conditions on headers {!r}, but http header"
                       u" is not available. This should not happen.".format(policy["name"], key))
-            raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but http header"
+            raise PolicyError(u"Policy {!r} has conditions on headrs {!r}, but http header"
                         u" is not available".format(policy["name"], key))
 
     @staticmethod
@@ -1317,7 +1317,7 @@ def get_static_policy_definitions(scope=None):
         },
         SCOPE.ADMIN: {
             ACTION.ENABLE: {'type': 'bool',
-                            'desc': _('Admin is allowed to enable tokens.'),
+                            'desc': _('Admin is allowd to enable tokens.'),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
             ACTION.DISABLE: {'type': 'bool',

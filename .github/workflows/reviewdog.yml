@@ -9,7 +9,19 @@ jobs:
         uses: actions/checkout@v1
       - name: misspell
         uses: reviewdog/action-misspell@v1
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.reviewdog_secret }}
         with:
-          github_token: ${{ secrets.reviewdog_secret }}
-          locale: "US"
-          reporter: github-pr-review
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-check
+          level: info
+
+# add my own codespell action
+  codespell:
+    name: codespell action
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: codespell
+        uses: plettich/python_codespell_action@master
