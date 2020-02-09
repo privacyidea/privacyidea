@@ -967,7 +967,7 @@ class WebAuthnTokenClass(TokenClass):
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME,
                                publicKeyCredentialCreationOptions["rp"]["name"])
 
-        if self.init_step == 2:
+        elif self.init_step == 2:
             # This is the second step of the init request. The registration
             # ceremony has been successfully performed.
             response_detail = {
