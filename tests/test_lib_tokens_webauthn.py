@@ -160,8 +160,14 @@ class WebAuthnTokenTestCase(MyTestCase):
                 .get("webAuthnRegisterRequest")
 
         self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
-        self.assertEqual(RP_ID, web_authn_register_request.get("relyingParty"))
-        self.assertEqual(COSE_ALGORITHM.ES256, web_authn_register_request.get("preferredAlgorithm"))
+        self.assertIn('id', web_authn_register_request.get("relyingParty"))
+        self.assertIn('name', web_authn_register_request.get("relyingParty"))
+        self.assertEqual(RP_ID, web_authn_register_request.get("relyingParty").get('id'))
+        self.assertEqual(RP_NAME, web_authn_register_request.get("relyingParty").get('name'))
+        self.assertIn('alg', web_authn_register_request.get("preferredAlgorithm"))
+        self.assertIn('type', web_authn_register_request.get("preferredAlgorithm"))
+        self.assertEqual('public-key', web_authn_register_request.get("preferredAlgorithm").get("type"))
+        self.assertEqual(COSE_ALGORITHM.ES256, web_authn_register_request.get("preferredAlgorithm").get("alg"))
         self.assertEqual(USER_NAME, web_authn_register_request.get("name"))
 
         self.assertEqual(RP_ID, self.token.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID))
