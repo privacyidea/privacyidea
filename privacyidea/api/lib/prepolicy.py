@@ -1793,10 +1793,9 @@ def webauthntoken_allowed(request, action):
     action=WEBAUTHNACTION.REQ it checks, if the assertion certificate is
     for an allowed WebAuthn token type. According to the policy
     scope=SCOPE.ENROLL, action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
-    it checks, whether the AAGUID is whitelisted. Note: Depending on the
-    format of the attestation statement, it may be possible to spoof this.
-
-    TODO: Add support for disallowing certain attestation statement formats.
+    it checks, whether the AAGUID is whitelisted. Note: If self-attestation
+    is allowed, it is – of course – possible to bypass the check for
+    WEBAUTHNACTION.REQ
 
     If the token, which is being enrolled does not contain an allowed attestation
     certificate, or does not have an allowed AAGUID, we bail out.

@@ -26,7 +26,6 @@ import time
 import ecdsa
 import struct
 import six
-import codecs
 from cryptography.hazmat.primitives.asymmetric.utils import (encode_dss_signature,
                                                              decode_dss_signature)
 

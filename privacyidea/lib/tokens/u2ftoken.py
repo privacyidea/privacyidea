@@ -43,11 +43,9 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
 from privacyidea.lib.policy import Match
-from privacyidea.lib.utils import (is_true, hexlify_and_unicode, to_unicode,
-                                   urlsafe_b64encode_and_unicode)
+from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode
 import binascii
 import json
-import re
 
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
@@ -510,11 +508,11 @@ class U2fTokenClass(TokenClass):
                             "attestation_serial": self.get_tokeninfo("attestation_serial"),
                             "attestation_subject": self.get_tokeninfo("attestation_subject")
                         },
-                        Match\
+                        Match
                             .user(options.get("g"),
                                   scope=SCOPE.AUTHZ,
                                   action=U2FACTION.REQ,
-                                  user_object=self.user if self.user else None) \
+                                  user_object=self.user if self.user else None)
                             .action_values(unique=False)
                     ):
                         log.warning(
@@ -564,5 +562,3 @@ class U2fTokenClass(TokenClass):
                                  ]
                }
         return "fido.trusted-apps+json", res
-
-

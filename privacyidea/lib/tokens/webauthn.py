@@ -93,6 +93,18 @@ DEFAULT_AUTHENTICATOR_EXTENSIONS = {}
 log = logging.getLogger(__name__)
 
 
+class COSE_PUBLIC_KEY(object):
+    """
+    The indices of the various parameters in a COSE-formatted public key.
+    """
+
+    ALG = 3
+    X = -2
+    Y = -3
+    E = -2
+    N = -1
+
+
 class ATTESTATION_TYPE(object):
     """
     Attestation types known to this implementation.
@@ -1072,7 +1084,8 @@ class WebAuthnRegistrationResponse(object):
                         raise RegistrationRejectedException("Attestation certificate's 'id-fido-gen-ce-aaguid' "
                                                             "extension must not be marked critical.")
                 except x509.ExtensionNotFound:
-                    pass # This extension is optional.
+                    # This extension is optional.
+                    pass
 
                 # The Basic Constraints extension MUST have the CA
                 # component set to false.
@@ -1085,6 +1098,14 @@ class WebAuthnRegistrationResponse(object):
                 # attestation trust path x5c.
                 attestation_type = ATTESTATION_TYPE.BASIC
                 trust_path = [x509_att_cert]
+
+                return (
+                    attestation_type,
+                    trust_path,
+                    credential_pub_key,
+                    cred_id,
+                    aaguid
+                )
             elif 'ecdaaKeyId' in att_stmt:
                 # We do not support this. If attestation is optional, have it go through anyways.
                 if none_attestation_permitted:
@@ -1578,7 +1599,7 @@ class WebAuthnAssertionResponse(object):
             #
             # Let hash be the result of computing a hash over the cData
             # using SHA-256.
-            hash = _get_client_data_hash(c_data)
+            client_data_hash = _get_client_data_hash(c_data)
 
             # Step 16.
             #
@@ -1590,7 +1611,7 @@ class WebAuthnAssertionResponse(object):
                                   alg=public_key_alg,
                                   data=b''.join([
                                       a_data,
-                                      hash
+                                      client_data_hash
                                   ]),
                                   signature=sig)
             except InvalidSignature:
@@ -1687,55 +1708,50 @@ def _encode_public_key(public_key):
 
 
 def _load_cose_public_key(key_bytes):
-    ALG_KEY = 3
 
     cose_public_key = cbor2.loads(key_bytes)
 
-    if ALG_KEY not in cose_public_key:
+    if COSE_PUBLIC_KEY.ALG not in cose_public_key:
         raise COSEKeyException('Public key missing required algorithm parameter.')
 
-    alg = cose_public_key[ALG_KEY]
+    alg = cose_public_key[COSE_PUBLIC_KEY.ALG]
 
     if alg == COSE_ALGORITHM.ES256:
-        X_KEY = -2
-        Y_KEY = -3
 
         required_keys = {
-            ALG_KEY,
-            X_KEY,
-            Y_KEY
+            COSE_PUBLIC_KEY.ALG,
+            COSE_PUBLIC_KEY.X,
+            COSE_PUBLIC_KEY.Y
         }
 
         if not set(cose_public_key.keys()).issuperset(required_keys):
             raise COSEKeyException('Public key must match COSE_Key spec.')
 
-        if len(cose_public_key[X_KEY]) != 32:
+        if len(cose_public_key[COSE_PUBLIC_KEY.X]) != 32:
             raise RegistrationRejectedException('Bad public key.')
-        x = int(codecs.encode(cose_public_key[X_KEY], 'hex'), 16)
+        x = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.X], 'hex'), 16)
 
-        if len(cose_public_key[Y_KEY]) != 32:
+        if len(cose_public_key[COSE_PUBLIC_KEY.Y]) != 32:
             raise RegistrationRejectedException('Bad public key.')
-        y = int(codecs.encode(cose_public_key[Y_KEY], 'hex'), 16)
+        y = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.Y], 'hex'), 16)
 
         return alg, EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key(backend=default_backend())
     elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256):
-        E_KEY = -2
-        N_KEY = -1
 
         required_keys = {
-            ALG_KEY,
-            E_KEY,
-            N_KEY
+            COSE_PUBLIC_KEY.ALG,
+            COSE_PUBLIC_KEY.E,
+            COSE_PUBLIC_KEY.N
         }
 
         if not set(cose_public_key.keys()).issuperset(required_keys):
             raise COSEKeyException('Public key must match COSE_Key spec.')
 
-        if len(cose_public_key[E_KEY]) != 3 or len(cose_public_key[N_KEY]) != 256:
+        if len(cose_public_key[COSE_PUBLIC_KEY.E]) != 3 or len(cose_public_key[COSE_PUBLIC_KEY.N]) != 256:
             raise COSEKeyException('Bad public key.')
 
-        e = int(codecs.encode(cose_public_key[E_KEY], 'hex'), 16)
-        n = int(codecs.encode(cose_public_key[N_KEY], 'hex'), 16)
+        e = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.E], 'hex'), 16)
+        n = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.N], 'hex'), 16)
 
         return alg, RSAPublicNumbers(e, n).public_key(backend=default_backend())
     else:
@@ -1779,7 +1795,6 @@ def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
     if not trust_path or not isinstance(trust_path, list) or not trust_anchors or not isinstance(trust_anchors, list):
         return False
 
-    # FIXME Only using the first attestation certificate in the trust path for now, should be able to build a chain.
     attestation_cert = trust_path[0]
     store = crypto.X509Store()
     for i in trust_anchors:
@@ -1796,7 +1811,7 @@ def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
 
 
 def _is_trusted_ecdaa_attestation_certificate(ecdaa_issuer_public_key, trust_anchors):
-    # TODO Unsupported
+    # Unsupported
     return False
 
 
@@ -1843,8 +1858,6 @@ def _verify_token_binding_id(client_data):
     :rtype: bool
     """
 
-    # TODO Add support for verifying the token binding ID.
-
     return client_data['tokenBinding']['status'] in ('supported', 'not_supported')
 
 
@@ -1862,7 +1875,8 @@ def _verify_client_extensions(client_extensions, expected_client_extensions):
     :return: Whether there were any unexpected extensions.
     :rtype: bool
     """
-    return not client_extensions or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
+    return not client_extensions \
+           or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
 
 
 def _verify_authenticator_extensions(auth_data, expected_authenticator_extensions):
@@ -1871,7 +1885,7 @@ def _verify_authenticator_extensions(auth_data, expected_authenticator_extension
 
     This implementation does not currently support any authenticator
     extensions, so the authenticator is expected to never send any. Thus,
-    this function will simply return false if there is any autheticator
+    this function will simply return false if there is any authenticator
     extensions at all for now.
 
     :param auth_data: The authenticator data.
@@ -1899,7 +1913,6 @@ def _verify_attestation_statement_format(fmt):
     :rtype: bool
     """
 
-    # TODO Handle more attestation statement formats
     return isinstance(fmt, six.string_types) and fmt in SUPPORTED_ATTESTATION_FORMATS
 
 

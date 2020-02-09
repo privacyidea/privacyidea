@@ -43,7 +43,7 @@ from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, GROUP, ACTION, Match
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 
@@ -647,7 +647,7 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: {
                         'type': 'str',
                         'desc': _("Whether and how strictly to check authenticator attestation data."
-                                  "Note: If the attestation for is none, the needs to also be none."
+                                  "Note: If the attestation form is none, the attestation level needs to also be none."
                                   "Default: untrusted (attestation is required, but can be unknown or self-signed)"),
                         'group': GROUP.TOKEN,
                         'value': [
@@ -697,7 +697,7 @@ class WebAuthnTokenClass(TokenClass):
         stored along with the setting by set_privacyidea_config().
 
         The key name needs to be in WEBAUTHN_TOKEN_SPECIFIC_SETTINGS.keys()
-        and match /^webauthn\./. If the specified setting does not exist,
+        and match /^webauthn\\./. If the specified setting does not exist,
         a ValueError will be thrown.
 
         :param key: The token specific setting key
@@ -807,7 +807,7 @@ class WebAuthnTokenClass(TokenClass):
             #
             # All data is parsed and verified. If any errors occur an exception
             # will be raised.
-            webAuthnCredential = WebAuthnRegistrationResponse(
+            web_authn_credential = WebAuthnRegistrationResponse(
                 rp_id=rp_id,
                 origin=http_origin,
                 registration_response={
@@ -823,19 +823,19 @@ class WebAuthnTokenClass(TokenClass):
                 token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
             ])
 
-            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.credential_id)))
-            self.set_otp_count(webAuthnCredential.sign_count)
+            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.credential_id)))
+            self.set_otp_count(web_authn_credential.sign_count)
             self.add_tokeninfo(WEBAUTHNINFO.PUB_KEY,
-                               hexlify_and_unicode(webauthn_b64_decode(webAuthnCredential.public_key)))
+                               hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.public_key)))
             self.add_tokeninfo(WEBAUTHNINFO.ORIGIN,
-                               webAuthnCredential.origin)
+                               web_authn_credential.origin)
             self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
-                               webAuthnCredential.attestation_level)
+                               web_authn_credential.attestation_level)
             self.add_tokeninfo(WEBAUTHNINFO.AAGUID,
-                               webAuthnCredential.aaguid)
+                               web_authn_credential.aaguid)
 
             # Add attestation info.
-            if webAuthnCredential.attestation_cert:
+            if web_authn_credential.attestation_cert:
                 # attestation_cert is of type X509. If you get warnings from your IDE
                 # here, it is because your IDE mistakenly assumes it to be of type PKey,
                 # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
@@ -844,7 +844,7 @@ class WebAuthnTokenClass(TokenClass):
                 #
                 # See also:
                 # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-                attestation_cert = crypto.X509.from_cryptography(webAuthnCredential.attestation_cert)
+                attestation_cert = crypto.X509.from_cryptography(web_authn_credential.attestation_cert)
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER,
                                    x509name_to_string(attestation_cert.get_issuer()))
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT,
@@ -853,7 +853,7 @@ class WebAuthnTokenClass(TokenClass):
                                    attestation_cert.get_serial_number())
 
                 if not description:
-                    cn = webAuthnCredential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                    cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
                     description = cn[0].value if len(cn) else DEFAULT_DESCRIPTION
 
             self.set_description(description)
@@ -905,7 +905,7 @@ class WebAuthnTokenClass(TokenClass):
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
-            publicKeyCredentialCreationOptions = WebAuthnMakeCredentialOptions(
+            public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
                                  WEBAUTHNACTION.RELYING_PARTY_NAME,
@@ -939,33 +939,33 @@ class WebAuthnTokenClass(TokenClass):
             response_detail["webAuthnRegisterRequest"] = {
                 "transaction_id": challenge.transaction_id,
                 "message": self._get_message(params),
-                "nonce": publicKeyCredentialCreationOptions["challenge"],
-                "relyingParty": publicKeyCredentialCreationOptions["rp"],
-                "serialNumber": publicKeyCredentialCreationOptions["user"]["id"],
-                "preferredAlgorithm": publicKeyCredentialCreationOptions["pubKeyCredParams"][0],
-                "name": publicKeyCredentialCreationOptions["user"]["name"],
-                "displayName": publicKeyCredentialCreationOptions["user"]["displayName"]
+                "nonce": public_key_credential_creation_options["challenge"],
+                "relyingParty": public_key_credential_creation_options["rp"],
+                "serialNumber": public_key_credential_creation_options["user"]["id"],
+                "preferredAlgorithm": public_key_credential_creation_options["pubKeyCredParams"][0],
+                "name": public_key_credential_creation_options["user"]["name"],
+                "displayName": public_key_credential_creation_options["user"]["displayName"]
             }
-            if len(publicKeyCredentialCreationOptions.get("pubKeyCredParams")) > 1:
+            if len(public_key_credential_creation_options.get("pubKeyCredParams")) > 1:
                 response_detail["webAuthnRegisterRequest"]["alternativeAlgorithm"] \
-                    = publicKeyCredentialCreationOptions["pubKeyCredParams"][1]
-            if publicKeyCredentialCreationOptions.get("authenticatorSelection"):
+                    = public_key_credential_creation_options["pubKeyCredParams"][1]
+            if public_key_credential_creation_options.get("authenticatorSelection"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
-                    = publicKeyCredentialCreationOptions["authenticatorSelection"]
-            if publicKeyCredentialCreationOptions.get("timeout"):
+                    = public_key_credential_creation_options["authenticatorSelection"]
+            if public_key_credential_creation_options.get("timeout"):
                 response_detail["webAuthnRegisterRequest"]["timeout"] \
-                    = publicKeyCredentialCreationOptions["timeout"]
-            if publicKeyCredentialCreationOptions.get("attestation"):
+                    = public_key_credential_creation_options["timeout"]
+            if public_key_credential_creation_options.get("attestation"):
                 response_detail["webAuthnRegisterRequest"]["attestation"] \
-                    = publicKeyCredentialCreationOptions["attestation"]
-            if (publicKeyCredentialCreationOptions.get("extensions") or {}).get("authnSel"):
+                    = public_key_credential_creation_options["attestation"]
+            if (public_key_credential_creation_options.get("extensions") or {}).get("authnSel"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
-                    = publicKeyCredentialCreationOptions["extensions"]["authnSel"]
+                    = public_key_credential_creation_options["extensions"]["authnSel"]
 
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID,
-                               publicKeyCredentialCreationOptions["rp"]["id"])
+                               public_key_credential_creation_options["rp"]["id"])
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME,
-                               publicKeyCredentialCreationOptions["rp"]["name"])
+                               public_key_credential_creation_options["rp"]["name"])
 
         elif self.init_step == 2:
             # This is the second step of the init request. The registration
@@ -1004,7 +1004,6 @@ class WebAuthnTokenClass(TokenClass):
         return self.check_pin(passw,
                               user=user,
                               options=options or {})
-
 
     def create_challenge(self, transactionid=None, options=None):
         """
@@ -1052,7 +1051,7 @@ class WebAuthnTokenClass(TokenClass):
                               validitytime=self._get_challenge_validity_time())
         challenge.save()
 
-        publicKeyCredentialRequestOptions = WebAuthnAssertionOptions(
+        public_key_credential_request_options = WebAuthnAssertionOptions(
             challenge=webauthn_b64_encode(nonce),
             webauthn_user=user,
             transports=getParam(options,
@@ -1067,7 +1066,7 @@ class WebAuthnTokenClass(TokenClass):
         ).assertion_dict
 
         response_details = {
-            "webAuthnSignRequest": publicKeyCredentialRequestOptions,
+            "webAuthnSignRequest": public_key_credential_request_options,
             "hideResponseInput": True,
             "img": user.icon_url
         }
