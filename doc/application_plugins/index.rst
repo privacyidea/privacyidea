@@ -300,10 +300,9 @@ The Apache plugin uses ``mod_wsgi`` and ``redis`` to provide a basic
 authentication on Apache2 side and validating the credentials against
 privacyIDEA.
 
-On Ubuntu 14.04 LTS you can easily install the module from the PPA repository
-by issuing::
-
-   apt-get install privacyidea-apache-client
+You need the authentication script ``privacyidea_apache.py`` and a valid
+configuration in ``/etc/privacyidea/apache.conf``. Both can be found on
+`GitHub <https://github.com/privacyidea/privacyidea/tree/master/authmodules/apache2>`_.
 
 To activate the OTP authentication on a "Location" or "Directory" you need to
 configure Apache2 like this::
@@ -318,8 +317,8 @@ configure Apache2 like this::
 
 .. note:: Basic Authentication sends the base64 encoded password on each
    request. So the browser will send the same one time password with each
-   reqeust. Thus the authentication module needs to cache the password as the
-   successful authentication. Redis is used for caching the password.
+   request. Thus the authentication module needs to cache the password when the
+   authentication is successful. Redis is used for caching the password.
 
 .. warning:: As redis per default is accessible by every user on the machine,
    you need to use this plugin with caution! Every user on the machine can
