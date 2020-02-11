@@ -540,6 +540,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
     def test_01_import_aladdin_xml(self):
+        self.assertRaises(ImportException, parseSafeNetXML, 'no xml')
         tokens = parseSafeNetXML(ALADDINXML)
         self.assertTrue(len(tokens) == 2)
         self.assertTrue("00040008CFA52" in tokens, tokens)
@@ -554,6 +555,8 @@ class ImportOTPTestCase(MyTestCase):
         self.assertTrue("UBAM00508326_1" in tokens, tokens)
 
     def test_03_import_pskc(self):
+        self.assertRaises(ImportException, parsePSKCdata, 'not xml')
+
         tokens = parsePSKCdata(XML_PSKC)
         self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
