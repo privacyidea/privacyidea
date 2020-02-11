@@ -8,7 +8,7 @@ import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from six.moves.urllib.parse import urlencode
@@ -2202,3 +2202,65 @@ class API00TokenPerformance(MyApiTestCase):
             result = res.json.get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
+
+
+class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
+    """
+    This Testclass verifies if a request, that only contains a serial will also
+    honour policies, that are configured for users, if the serial is assigned to such a user.
+    """
+
+    def test_00_setup(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+    def test_01_disabling_token(self):
+        serial = "SPASS001"
+        polname = "disabletokens"
+
+        t = init_token({"type": "spass", "serial": serial}, user=User("cornelius", self.realm1))
+
+        # We are using the "testadmin"
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertEqual(1, result.get("value"))
+
+        enable_token(serial)
+        # create a policy for realm1, the admin is allowed to disable the token
+        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm1, adminuser="testadmin")
+
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertEqual(1, result.get("value"))
+
+        enable_token(serial)
+        # change the policy for realm2, the admin is NOT allowed to disable the token
+        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm2, adminuser="testadmin")
+
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertFalse(result.get("status"))
+            self.assertEqual(303, result.get("error").get("code"))
+            self.assertEqual(u"Admin actions are defined, but the action disable is not allowed!",
+                             result.get("error").get("message"))
+
+        remove_token(serial)
+        delete_policy(polname)
