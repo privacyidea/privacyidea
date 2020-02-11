@@ -53,7 +53,7 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          delete_realm)
-from ..lib.policy import ACTION
+from ..lib.policy import ACTION, Match
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
 from flask import g
@@ -196,11 +196,11 @@ def get_realms_api():
     g.audit_object.log({"success": True})
     # This endpoint is called by admins anyways
     luser = g.logged_in_user
-    policies = g.policy_object.match_policies(scope=luser.get("role", ROLE.ADMIN),
-                                              client=g.client_ip,
-                                              adminrealm=luser.get("realm"),
-                                              user=luser.get("username"),
-                                              active=True)
+    policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
+                             client=g.client_ip,
+                             adminrealm=luser.get("realm"),
+                             adminuser=luser.get("username"),
+                             active=True ).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)

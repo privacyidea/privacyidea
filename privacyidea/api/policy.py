@@ -46,7 +46,7 @@ from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators)
+                          get_policy_condition_comparators, Match)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode, is_true
@@ -491,10 +491,8 @@ def check_policy_api():
     client = getParam(param, "client", optional)
     resolver = getParam(param, "resolver", optional)
 
-    P = g.policy_object
-    policies = P.match_policies(user=user, realm=realm, resolver=resolver,
-                                scope=scope, action=action, client=client,
-                                active=True)
+    policies = Match.generic(g, scope=scope, user=user, resolver=resolver, realm=realm,
+                             action=action, client=client, active=True).policies()
     if policies:
         res["allowed"] = True
         res["policy"] = policies
