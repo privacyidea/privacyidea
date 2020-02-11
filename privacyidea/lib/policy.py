@@ -2412,7 +2412,7 @@ class Match(object):
                    sort_by_priority=True)
 
     @classmethod
-    def generic(cls, g, scope, realm, resolver=None, user=None, user_object=None,
+    def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
                 client=None, action=None, adminrealm=None, adminuser=None, time=None,
                 active=True, sort_by_priority=True):
         """

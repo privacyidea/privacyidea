@@ -31,7 +31,7 @@ Other html code is dynamically loaded via angularJS and located in
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
-                   current_app)
+                   current_app, g)
 from privacyidea.api.lib.utils import send_html
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
@@ -46,6 +46,17 @@ from privacyidea.lib.queue import has_job_queue
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 
 login_blueprint = Blueprint('login_blueprint', __name__)
+
+
+@login_blueprint.before_request
+def before_request():
+    """
+    This is executed before the request
+    """
+    g.policy_object = PolicyClass()
+    g.audit_object = None
+    # access_route contains the ip adresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
 @login_blueprint.route('/', methods=['GET'])
@@ -110,7 +121,7 @@ def single_page_application():
     try:
         if is_remote_user_allowed(request):
             remote_user = request.remote_user
-        password_reset = is_password_reset()
+        password_reset = is_password_reset(g)
         hsm_ready = True
     except HSMException:
         hsm_ready = False
