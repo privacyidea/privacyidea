@@ -4,7 +4,7 @@ This test file tests the lib.tokenclass
 The lib.tokenclass depends on the DB model and lib.user
 """
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
@@ -675,7 +675,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(r, "")
 
     def test_34_get_default_settings(self):
-        r = TokenClass.get_default_settings({})
+        r = TokenClass.get_default_settings(FakeFlaskG(), {})
         self.assertEqual(r, {})
 
     def test_35_next_pin_change(self):

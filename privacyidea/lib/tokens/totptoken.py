@@ -651,8 +651,7 @@ class TotpTokenClass(HotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -662,21 +661,15 @@ class TotpTokenClass(HotpTokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
-        :param client_ip: The client IP address
-        :type client_ip: basestring
         :return: default parameters
         """
         ret = {}
-        if not logged_in_user:
+        if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
         hashlib_pol = Match.generic(g, scope=role,
                                     action="totp_hashlib",
@@ -684,7 +677,7 @@ class TotpTokenClass(HotpTokenClass):
                                     realm=userrealm,
                                     adminuser=adminuser,
                                     adminrealm=adminrealm,
-                                    client=client_ip).action_values(unique=True)
+                                    client=g.client_ip).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
@@ -694,7 +687,7 @@ class TotpTokenClass(HotpTokenClass):
                                      realm=userrealm,
                                      adminuser=adminuser,
                                      adminrealm=adminrealm,
-                                     client=client_ip).action_values(unique=True)
+                                     client=g.client_ip).action_values(unique=True)
         if timestep_pol:
             ret["timeStep"] = list(timestep_pol)[0]
 
@@ -704,7 +697,7 @@ class TotpTokenClass(HotpTokenClass):
                                    realm=userrealm,
                                    adminuser=adminuser,
                                    adminrealm=adminrealm,
-                                   client=client_ip).action_values(unique=True)
+                                   client=g.client_ip).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 

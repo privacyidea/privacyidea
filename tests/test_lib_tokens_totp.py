@@ -5,14 +5,12 @@ The lib.tokenclass depends on the DB model and lib.user
 """
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy,
-                                    SCOPE, ACTION)
+from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -714,37 +712,35 @@ class TOTPTokenTestCase(MyTestCase):
 
     def test_27_get_default_settings(self):
         params = {}
-        logged_in_user = {"user": "hans",
-                          "realm": "default",
-                          "role": "user"}
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"user": "hans",
+                            "realm": "default",
+                            "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="totp_hashlib=sha256,"
                                                     "totp_timestep=60,"
                                                     "totp_otplen=8")
-        pol = PolicyClass()
-        p = TotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         self.assertEqual(p.get("timeStep"), "60")
         delete_policy("pol1")
 
         # the same should work for admins
-        logged_in_user = {"user": "admin",
-                          "realm": "super",
-                          "role": "admin"}
+        g.logged_in_user = {"user": "admin",
+                            "realm": "super",
+                            "role": "admin"}
         set_policy("pol1", scope=SCOPE.ADMIN, action="totp_hashlib=sha512,"
                                                     "totp_timestep=60,"
                                                     "totp_otplen=8")
-        pol = PolicyClass()
-        p = TotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha512")
         self.assertEqual(p.get("timeStep"), "60")
         # test check if there is no logged in user
-        p = TotpTokenClass.get_default_settings(params,
-                                                policy_object=pol)
+        g.logged_in_user = None
+        p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
