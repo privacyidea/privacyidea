@@ -1884,8 +1884,36 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(10, len(detail.get("pin")))
 
+        # What happens, if we have two contradicting policies:
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            # contradicting values
+            self.assertEqual(303, result.get("error").get("code"))
+
+        # Now we adapt the priority of the policies:
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM), priority=1)
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(ACTION.OTPPINSETRANDOM), priority=2)
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertEqual(9, len(detail.get("pin")))
+
         delete_policy("allowed_to_set_pin")
         delete_policy("pinpolrandom")
+        delete_policy("pinpolrandom2")
 
 
 class API00TokenPerformance(MyApiTestCase):

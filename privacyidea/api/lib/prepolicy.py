@@ -150,16 +150,14 @@ def set_random_pin(request=None, action=None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
-                                               scope=role,
-                                               adminrealm=adminrealm,
-                                               adminuser=adminuser,
-                                               user=username,
-                                               realm=realm,
-                                               user_object=user_object,
-                                               client=g.client_ip,
-                                               unique=True,
-                                               audit_data=g.audit_object.audit_data)
+    pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
+                             scope=role,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object,
+                             client=g.client_ip).action_values(unique=True)
 
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
@@ -588,14 +586,12 @@ def twostep_enrollment_parameters(request=None, action=None):
         for parameter in parameters:
             action = u"{}_{}".format(token_type, parameter)
             # SCOPE.ENROLL does not have an admin realm
-            action_values = policy_object.get_action_values(action=action,
-                                                            scope=SCOPE.ENROLL,
-                                                            unique=True,
-                                                            user=username,
-                                                            realm=userrealm,
-                                                            user_object=request.User,
-                                                            client=g.client_ip,
-                                                            audit_data=g.audit_object.audit_data)
+            action_values = Match.generic(g, action=action,
+                                          scope=SCOPE.ENROLL,
+                                          user=username,
+                                          realm=userrealm,
+                                          user_object=request.User,
+                                          client=g.client_ip).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
 
@@ -1148,25 +1144,11 @@ def is_remote_user_allowed(req):
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
-
-        # Check if the remote user is allowed
-        if "client_ip" not in g:
-            g.client_ip = get_client_ip(req,
-                                        get_from_config(SYSCONF.OVERRIDECLIENT))
-        if "policy_object" not in g:
-            g.policy_object = PolicyClass()
-        if "audit_object" in g:
-            audit_data = g.audit_object.audit_data
-        else:
-            audit_data = None
-
-        ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
-                                                         scope=SCOPE.WEBUI,
-                                                         user=loginname,
-                                                         realm=realm,
-                                                         client=g.client_ip,
-                                                         audit_data=audit_data)
-
+        ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
+                                     action=ACTION.REMOTE_USER,
+                                     user=loginname,
+                                     realm=realm,
+                                     client=g.client_ip).action_values(unique=False)
         res = bool(ruser_active)
 
     return res

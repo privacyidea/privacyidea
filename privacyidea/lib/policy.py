@@ -2429,20 +2429,3 @@ class Match(object):
                    adminuser=adminuser, time=time,
                    sort_by_priority=sort_by_priority)
 
-    @classmethod
-    def action_only(cls, g, scope, action):
-        """
-        Match active policies solely based on a scope and an action, which may also be None.
-        This is used in the WebUI before a user has logged in, when there is no other information.
-        The client IP is matched implicitly.
-        :param g: context object
-        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
-        :param action: the policy action, or None
-        :rtype: ``Match``
-        """
-        if scope == SCOPE.ADMIN:
-            raise MatchingError("Match.action_only cannot be used for policies with scope ADMIN")
-        return cls(g, name=None, scope=scope, realm=None, active=True,
-                   resolver=None, user=None, user_object=None,
-                   client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)

@@ -61,7 +61,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib import _
 import traceback
 import logging
@@ -690,27 +690,23 @@ class HotpTokenClass(TokenClass):
             return ret
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
                                                                                             params)
-        hashlib_pol = policy_object.get_action_values(
-            action="hotp_hashlib",
-            scope=role,
-            user=username,
-            realm=userrealm,
-            adminrealm=adminrealm,
-            adminuser=adminuser,
-            client=client_ip,
-            unique=True)
+        hashlib_pol = Match.generic(g, scope=role,
+                                    action="hotp_hashlib",
+                                    user=username,
+                                    realm=userrealm,
+                                    adminrealm=adminrealm,
+                                    adminuser=adminuser,
+                                    client=client_ip).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
-        otplen_pol = policy_object.get_action_values(
-            action="hotp_otplen",
-            scope=role,
-            user=username,
-            realm=userrealm,
-            adminrealm=adminrealm,
-            adminuser=adminuser,
-            client=client_ip,
-            unique=True)
+        otplen_pol = Match.generic(g, scope=role,
+                                   action="hotp_otplen",
+                                   user=username,
+                                   realm=userrealm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser,
+                                   client=client_ip).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 
