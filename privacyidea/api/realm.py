@@ -200,7 +200,7 @@ def get_realms_api():
                              client=g.client_ip,
                              adminrealm=luser.get("realm"),
                              adminuser=luser.get("username"),
-                             active=True ).policies()
+                             active=True).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)
