@@ -412,22 +412,15 @@ def enroll_pin(request=None, action=None):
     It checks, if the user or the admin is allowed to set a token PIN during
     enrollment. If not, it deleted the PIN from the request.
     """
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    adminuser = None
-    adminrealm = None
-    if role == ROLE.USER:
-        scope = SCOPE.USER
-        user_obj = User(g.logged_in_user.get("username"), g.logged_in_user.get("realm"))
-    else:
-        scope = SCOPE.ADMIN
-        user_obj = request.User
-        adminrealm = g.logged_in_user.get("realm")
-        adminuser = g.logged_in_user.get("username")
-
-    allowed_action = Match.generic(g, scope=scope,
+    resolver = request.User.resolver if request.User else None
+    (role, username, userrealm, adminuser, adminrealm ) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                         request.all_data)
+    allowed_action = Match.generic(g, scope=role,
                                    action=ACTION.ENROLLPIN,
-                                   user_object=user_obj,
+                                   user_object=request.User,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=userrealm,
                                    adminrealm=adminrealm,
                                    adminuser=adminuser,
                                    client=g.client_ip,

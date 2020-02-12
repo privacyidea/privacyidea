@@ -708,7 +708,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        req.User = User()
+        req.User = User("cornelius", self.realm1)
 
         # Set a policy that defines the PIN to be encrypted
         set_policy(name="pol1",
@@ -719,7 +719,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
         enroll_pin(req)
 
         # Check, if the PIN was removed
@@ -728,8 +728,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol1")
 
     def test_08b_enroll_pin_user(self):
-        g.logged_in_user = {"username": "user1",
-                            "realm": "",
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": self.realm1,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -749,7 +749,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
+        req.User = User("cornelius", self.realm1)
         enroll_pin(req)
 
         # Check, if the PIN was removed
