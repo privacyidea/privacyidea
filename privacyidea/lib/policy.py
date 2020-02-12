@@ -2423,6 +2423,8 @@ class Match(object):
         See ``PolicyClass.match_policies`` for details.
         :rtype: ``Match``
         """
+        if client is None:
+            client = g.client_ip if hasattr(g, "client_ip") else None
         return cls(g, name=None, scope=scope, realm=realm, active=active,
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,

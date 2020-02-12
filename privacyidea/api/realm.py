@@ -197,7 +197,6 @@ def get_realms_api():
     # This endpoint is called by admins anyways
     luser = g.logged_in_user
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
-                             client=g.client_ip,
                              adminrealm=luser.get("realm"),
                              adminuser=luser.get("username"),
                              active=True).policies()

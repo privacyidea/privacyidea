@@ -156,8 +156,7 @@ def set_random_pin(request=None, action=None):
                              adminuser=adminuser,
                              user=username,
                              realm=realm,
-                             user_object=user_object,
-                             client=g.client_ip).action_values(unique=True)
+                             user_object=user_object).action_values(unique=True)
 
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
@@ -423,7 +422,6 @@ def enroll_pin(request=None, action=None):
                                    realm=userrealm,
                                    adminrealm=adminrealm,
                                    adminuser=adminuser,
-                                   client=g.client_ip,
                                    active=True).allowed()
 
     if not allowed_action:
@@ -580,8 +578,7 @@ def twostep_enrollment_parameters(request=None, action=None):
                                           scope=SCOPE.ENROLL,
                                           user=username,
                                           realm=userrealm,
-                                          user_object=request.User,
-                                          client=g.client_ip).action_values(unique=True)
+                                          user_object=request.User).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
 
@@ -984,8 +981,7 @@ def check_base_action(request=None, action=None, anonymous=False):
                                    resolver=resolver,
                                    realm=realm,
                                    adminrealm=adminrealm,
-                                   adminuser=adminuser,
-                                   client=g.client_ip).allowed()
+                                   adminuser=adminuser).allowed()
     if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
@@ -1030,7 +1026,6 @@ def check_token_init(request=None, action=None):
                                  resolver=resolver,
                                  realm=userrealm,
                                  scope=role,
-                                 client=g.client_ip,
                                  adminrealm=adminrealm,
                                  adminuser=adminuser,
                                  user_object=request.User).allowed()
@@ -1137,8 +1132,7 @@ def is_remote_user_allowed(req):
         ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
                                      action=ACTION.REMOTE_USER,
                                      user=loginname,
-                                     realm=realm,
-                                     client=g.client_ip).action_values(unique=False)
+                                     realm=realm).action_values(unique=False)
         res = bool(ruser_active)
 
     return res

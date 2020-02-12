@@ -142,7 +142,6 @@ def is_password_reset(g):
     rlist = get_resolver_list(editable=True)
     log.debug("Number of editable resolvers: {0!s}".format(len(rlist)))
     pwreset = Match.generic(g, scope=SCOPE.USER,
-                            action=ACTION.PASSWORDRESET,
-                            client=g.client_ip).allowed(write_to_audit_log=False)
+                            action=ACTION.PASSWORDRESET).allowed(write_to_audit_log=False)
     log.debug("Password reset allowed via policies: {0!s}".format(pwreset))
     return bool(rlist and pwreset)

@@ -676,8 +676,7 @@ class TotpTokenClass(HotpTokenClass):
                                     user=username,
                                     realm=userrealm,
                                     adminuser=adminuser,
-                                    adminrealm=adminrealm,
-                                    client=g.client_ip).action_values(unique=True)
+                                    adminrealm=adminrealm).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
@@ -686,8 +685,7 @@ class TotpTokenClass(HotpTokenClass):
                                      user=username,
                                      realm=userrealm,
                                      adminuser=adminuser,
-                                     adminrealm=adminrealm,
-                                     client=g.client_ip).action_values(unique=True)
+                                     adminrealm=adminrealm).action_values(unique=True)
         if timestep_pol:
             ret["timeStep"] = list(timestep_pol)[0]
 
@@ -696,8 +694,7 @@ class TotpTokenClass(HotpTokenClass):
                                    user=username,
                                    realm=userrealm,
                                    adminuser=adminuser,
-                                   adminrealm=adminrealm,
-                                   client=g.client_ip).action_values(unique=True)
+                                   adminrealm=adminrealm).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 

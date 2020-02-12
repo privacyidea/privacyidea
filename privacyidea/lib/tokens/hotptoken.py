@@ -688,8 +688,7 @@ class HotpTokenClass(TokenClass):
                                     user=username,
                                     realm=userrealm,
                                     adminrealm=adminrealm,
-                                    adminuser=adminuser,
-                                    client=g.client_ip).action_values(unique=True)
+                                    adminuser=adminuser).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
@@ -698,8 +697,7 @@ class HotpTokenClass(TokenClass):
                                    user=username,
                                    realm=userrealm,
                                    adminrealm=adminrealm,
-                                   adminuser=adminuser,
-                                   client=g.client_ip).action_values(unique=True)
+                                   adminuser=adminuser).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 
