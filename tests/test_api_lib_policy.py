@@ -92,6 +92,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SomeSerial"}
+        req.User = User()
 
         # Set a policy, that does allow the action
         set_policy(name="pol1",
@@ -137,6 +138,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Token in realm1 can not be deleted
         req.all_data = {"serial": "POL001"}
+        req.User = User()
         self.assertRaises(PolicyError,
                           check_base_action, req, "delete")
         # while token in realm2 can be deleted
@@ -176,6 +178,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         # admin1 is allowed to do everything
@@ -705,6 +708,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
 
         # Set a policy that defines the PIN to be encrypted
         set_policy(name="pol1",
@@ -715,7 +719,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
         enroll_pin(req)
 
         # Check, if the PIN was removed
@@ -724,8 +728,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol1")
 
     def test_08b_enroll_pin_user(self):
-        g.logged_in_user = {"username": "user1",
-                            "realm": "",
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": self.realm1,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -745,7 +749,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
+        req.User = User("cornelius", self.realm1)
         enroll_pin(req)
 
         # Check, if the PIN was removed
@@ -1185,6 +1190,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         req = Request(env)
+        req.User = User()
         req.all_data = {"name": "newpol",
                         "scope": SCOPE.WEBUI,
                         "action": ["loginmode=privacyIDEA"],
@@ -1214,7 +1220,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "fetch_authentication_items, enrollDAPLUG, "
                           "mresolverwrite, losttoken, enrollSSHKEY, "
                           "importtokens, assign, delete",
-                   user="admin[aA]",
+                   adminuser="admin[aA]",
                    realm="realmA, realmB",
                    resolver="resolverA, resolverB",
                    )
@@ -1226,7 +1232,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           " assign, delete ",
                    realm="realmB",
                    resolver="resolverB",
-                   user="adminB")
+                   adminuser="adminB")
         g.policy_object = PolicyClass()
         # Test AdminA
         g.logged_in_user = {"username": "adminA",
@@ -1258,7 +1264,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # adminA is allowed to add users to resolverA but not to resolverB
         set_policy("userAdd", scope=SCOPE.ADMIN,
                    action="adduser",
-                   user="adminA",
+                   adminuser="adminA",
                    realm="realmA",
                    resolver="resolverA",
                    )
@@ -1266,6 +1272,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         req = Request(env)
+        req.User = User()
         req.all_data = {"user": "new_user",
                         "resolver": "resolverA"}
         g.policy_object = PolicyClass()

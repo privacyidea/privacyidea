@@ -5,8 +5,13 @@
 * PostgreSQL database adapter removed from default installation
 
   When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package
-  wont be installed anymore. Instead one can use 
+  won't be installed anymore. Instead one can use
   ``pip install privacyIDEA[postgres]`` to also install the required packages.
+
+* Internal signature of the tokenclass method   
+  ``get_default_settings`` changed.
+  If you added your own tokenclass, please assure to update
+  your function signature.
 
 ## Update from 3.1 to 3.2
 
@@ -19,7 +24,7 @@
   and the WebUI could result in not being accessable.
   This could be relevant when using ``PI_CUSTOM_CSS = True``
   or ``PI_CUSTOMIZATION`` in your pi.cfg file.
-  
+
   You will have to move the corresponding files to
   /opt/privacyidea/lib/python3.x/...
 
@@ -27,15 +32,15 @@
 
   With the change to Python 3 the MySQL DB driver has become
   obsolete since it is not supported under Python 3 anymore.
-  If your current DB URI starts with "mysql://", the 
-  update script wil automatically change this to 
+  If your current DB URI starts with "mysql://", the
+  update script will automatically change this to
   "mysql+pymysql://" to assure further operation under Python 3.
 
 * REST API
 
   The endpoints "GET /event" has been changed to "GET /event/"
   since it returns a list of events.
-  The endpoints "GET /smsgateway" has been changed to 
+  The endpoints "GET /smsgateway" has been changed to
   "GET /smsgateway/"  since it returns a list of events.
 
 ## Update from 3.0 to 3.1
@@ -67,7 +72,7 @@
   migrated to the "tokenowner" table.   
 
 * The packaging for ubuntu has changed. While privacyIDEA 2.23 was
-  installed into the system environment, the ubuntu packages 
+  installed into the system environment, the ubuntu packages
   starting with privacyIDEA 3.0 will install the software in the
   Python virtual environment at /opt/privacyidea.
   However, the debian package update process will take care of this.

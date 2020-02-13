@@ -150,16 +150,13 @@ def set_random_pin(request=None, action=None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINSETRANDOM,
-                                               scope=role,
-                                               adminrealm=adminrealm,
-                                               adminuser=adminuser,
-                                               user=username,
-                                               realm=realm,
-                                               user_object=user_object,
-                                               client=g.client_ip,
-                                               unique=True,
-                                               audit_data=g.audit_object.audit_data)
+    pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
+                             scope=role,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object).action_values(unique=True)
 
     if len(pin_pols) == 0:
         # We do this to avoid that an admin sets a random PIN manually!
@@ -414,29 +411,20 @@ def enroll_pin(request=None, action=None):
     It checks, if the user or the admin is allowed to set a token PIN during
     enrollment. If not, it deleted the PIN from the request.
     """
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    if role == ROLE.USER:
-        scope = SCOPE.USER
-        username = g.logged_in_user.get("username")
-        realm = g.logged_in_user.get("realm")
-        adminrealm = None
-    else:
-        scope = SCOPE.ADMIN
-        username = g.logged_in_user.get("username")
-        realm = getParam(request.all_data, "realm")
-        adminrealm = g.logged_in_user.get("realm")
-    pin_pols = policy_object.match_policies(action=ACTION.ENROLLPIN,
-                                            scope=scope,
-                                            user=username,
-                                            realm=realm,
-                                            adminrealm=adminrealm,
-                                            client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
+    resolver = request.User.resolver if request.User else None
+    (role, username, userrealm, adminuser, adminrealm ) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                         request.all_data)
+    allowed_action = Match.generic(g, scope=role,
+                                   action=ACTION.ENROLLPIN,
+                                   user_object=request.User,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=userrealm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser,
+                                   active=True).allowed()
 
-    if action_at_all and not pin_pols:
+    if not allowed_action:
         # Not allowed to set a PIN during enrollment!
         if "pin" in request.all_data:
             del request.all_data["pin"]
@@ -452,10 +440,7 @@ def init_token_defaults(request=None, action=None):
     params = request.all_data
     ttype = params.get("type") or "hotp"
     token_class = get_token_class(ttype)
-    default_settings = token_class.get_default_settings(params,
-                                                        g.logged_in_user,
-                                                        g.policy_object,
-                                                        g.client_ip)
+    default_settings = token_class.get_default_settings(g, params)
     log.debug("Adding default settings {0!s} for token type {1!s}".format(
         default_settings, ttype))
     request.all_data.update(default_settings)
@@ -589,14 +574,11 @@ def twostep_enrollment_parameters(request=None, action=None):
         for parameter in parameters:
             action = u"{}_{}".format(token_type, parameter)
             # SCOPE.ENROLL does not have an admin realm
-            action_values = policy_object.get_action_values(action=action,
-                                                            scope=SCOPE.ENROLL,
-                                                            unique=True,
-                                                            user=username,
-                                                            realm=userrealm,
-                                                            user_object=request.User,
-                                                            client=g.client_ip,
-                                                            audit_data=g.audit_object.audit_data)
+            action_values = Match.generic(g, action=action,
+                                          scope=SCOPE.ENROLL,
+                                          user=username,
+                                          realm=userrealm,
+                                          user_object=request.User).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
 
@@ -909,9 +891,8 @@ def check_anonymous_user(request=None, action=None):
     policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
-    action = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).policies()
-    action_at_all = policy_object.list_policies(scope=SCOPE.USER, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR)
     return True
 
@@ -971,26 +952,16 @@ def check_base_action(request=None, action=None, anonymous=False):
              "admin": "Admin actions are defined, but the action %s is not "
                       "allowed!" % action}
     params = request.all_data
-    policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    role = g.logged_in_user.get("role")
-    scope = SCOPE.ADMIN
-    admin_realm = g.logged_in_user.get("realm")
-    realm = None
-    resolver = None
-
-    if role == ROLE.USER:
-        scope = SCOPE.USER
-        # Reset the admin realm
-        admin_realm = None
-        realm = realm or g.logged_in_user.get("realm")
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
     if action not in [ACTION.AUDIT]:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
-        resolver = params.get("resolver")
+        resolver = resolver or params.get("resolver")
         # get the realm by the serial:
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
@@ -1002,17 +973,16 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(request.view_args.get("serial"),
                                         only_first_realm=True)
 
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          scope=scope,
-                                          resolver=resolver,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    # In this case we do not pass the user_object, since the realm is also determined
+    # by the pure serial number given.
+    action_allowed = Match.generic(g, scope=role,
+                                   action=action,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=realm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -1026,10 +996,8 @@ def check_token_upload(request=None, action=None):
     :return:
     """
     params = request.all_data
-    policy_object = g.policy_object
-    action = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).policies()
-    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
-    if action_at_all and len(action) == 0:
+    upload_allowed = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).allowed()
+    if not upload_allowed:
         raise PolicyError("Admin actions are defined, but you are not allowed"
                           " to upload token files.")
     return True
@@ -1049,22 +1017,19 @@ def check_token_init(request=None, action=None):
              "admin": "Admin actions are defined, but you are not allowed to "
                       "enroll this token type!"}
     params = request.all_data
-    policy_object = g.policy_object
+    resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=userrealm,
-                                          scope=role,
-                                          client=g.client_ip,
-                                          adminrealm=adminrealm,
-                                          adminuser=adminuser,
-                                          user_object=request.User,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=role, active=True)
-    if action_at_all and len(action) == 0:
+    init_allowed = Match.generic(g, action=action,
+                                 user=username,
+                                 resolver=resolver,
+                                 realm=userrealm,
+                                 scope=role,
+                                 adminrealm=adminrealm,
+                                 adminuser=adminuser,
+                                 user_object=request.User).allowed()
+    if not init_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -1164,25 +1129,10 @@ def is_remote_user_allowed(req):
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
-
-        # Check if the remote user is allowed
-        if "client_ip" not in g:
-            g.client_ip = get_client_ip(req,
-                                        get_from_config(SYSCONF.OVERRIDECLIENT))
-        if "policy_object" not in g:
-            g.policy_object = PolicyClass()
-        if "audit_object" in g:
-            audit_data = g.audit_object.audit_data
-        else:
-            audit_data = None
-
-        ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
-                                                         scope=SCOPE.WEBUI,
-                                                         user=loginname,
-                                                         realm=realm,
-                                                         client=g.client_ip,
-                                                         audit_data=audit_data)
-
+        ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
+                                     action=ACTION.REMOTE_USER,
+                                     user=loginname,
+                                     realm=realm).action_values(unique=False)
         res = bool(ruser_active)
 
     return res

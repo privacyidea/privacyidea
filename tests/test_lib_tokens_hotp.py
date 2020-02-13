@@ -6,7 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -23,7 +23,6 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
 import binascii
 import datetime
 import hashlib
-import base64
 from dateutil.tz import tzlocal
 
 from passlib.utils.pbkdf2 import pbkdf2
@@ -683,33 +682,31 @@ class HOTPTokenTestCase(MyTestCase):
 
     def test_27_get_default_settings(self):
         params = {}
-        logged_in_user = {"user": "hans",
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"user": "hans",
                           "realm": "default",
                           "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256,"
                                                     "hotp_otplen=8")
-        pol = PolicyClass()
-        p = HotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         delete_policy("pol1")
         # the same should work for an admin user
-        logged_in_user = {"user": "admin",
-                          "realm": "super",
-                          "role": "admin"}
+        g.logged_in_user = {"user": "admin",
+                            "realm": "super",
+                            "role": "admin"}
         set_policy("pol1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512,"
                                                      "hotp_otplen=8")
-        pol = PolicyClass()
-        p = HotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha512")
         # test check if there is no logged in user
-        p = HotpTokenClass.get_default_settings(params,
-                                                policy_object=pol)
+        g.logged_in_user = None
+        p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
 

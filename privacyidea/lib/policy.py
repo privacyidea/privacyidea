@@ -2277,6 +2277,29 @@ class Match(object):
                     self._g.audit_object.audit_data.setdefault("policies", []).append(p_name)
         return action_values
 
+    def allowed(self, write_to_audit_log=True):
+        """
+        Determine if the matched action is allowed in the scope 'admin' or 'user'.
+        This is the case
+         * *either* if there are no active policies defined in the matched scope
+         * *or* the action is explicitly allowed by a policy in the matched scope
+        Example usage::
+            is_allowed = Match.user(g, scope=SCOPE.USER, action=ACTION.ENROLLPIN, user=user_object).allowed()
+            # is_allowed is now true
+            # * *either* if there is no active policy defined with scope=SCOPE.USER at all
+            # * *or* if there is a policy matching the given scope, action, user and client IP.
+        :param write_to_audit_log: If True, write the list of matching policies to the audit log
+        :return: True or False
+        """
+        policies_defined = self.any(write_to_audit_log=write_to_audit_log)
+        policies_at_all = self._g.policy_object.list_policies(scope=self._match_kwargs["scope"], active=True)
+        # The action is *allowed* if a matched policy explicitly mentions it (``policies_defined`` is non-empty)
+        # or if no policies are defined in the given scope (``policies_at_all`` is empty)
+        if policies_defined or not policies_at_all:
+            return True
+        else:
+            return False
+
     @classmethod
     def action_only(cls, g, scope, action):
         """
@@ -2387,3 +2410,23 @@ class Match(object):
                    resolver=None, user=username, user_object=None,
                    client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
                    sort_by_priority=True)
+
+    @classmethod
+    def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
+                client=None, action=None, adminrealm=None, adminuser=None, time=None,
+                active=True, sort_by_priority=True):
+        """
+        Low-level legacy policy matching interface: Search for active policies and return
+        them sorted by priority. All parameters that should be used for matching have to
+        be passed explicitly.
+        The client IP has to be passed explicitly.
+        See ``PolicyClass.match_policies`` for details.
+        :rtype: ``Match``
+        """
+        if client is None:
+            client = g.client_ip if hasattr(g, "client_ip") else None
+        return cls(g, name=None, scope=scope, realm=realm, active=active,
+                   resolver=resolver, user=user, user_object=user_object,
+                   client=client, action=action, adminrealm=adminrealm,
+                   adminuser=adminuser, time=time,
+                   sort_by_priority=sort_by_priority)

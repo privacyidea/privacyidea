@@ -61,7 +61,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib import _
 import traceback
 import logging
@@ -663,8 +663,7 @@ class HotpTokenClass(TokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -674,43 +673,31 @@ class HotpTokenClass(TokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
-        :param client_ip: The client IP address
-        :type client_ip: basestring
         :return: default parameters
         """
         ret = {}
-        if not logged_in_user:
+        if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user,
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
-        hashlib_pol = policy_object.get_action_values(
-            action="hotp_hashlib",
-            scope=role,
-            user=username,
-            realm=userrealm,
-            adminrealm=adminrealm,
-            adminuser=adminuser,
-            client=client_ip,
-            unique=True)
+        hashlib_pol = Match.generic(g, scope=role,
+                                    action="hotp_hashlib",
+                                    user=username,
+                                    realm=userrealm,
+                                    adminrealm=adminrealm,
+                                    adminuser=adminuser).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
-        otplen_pol = policy_object.get_action_values(
-            action="hotp_otplen",
-            scope=role,
-            user=username,
-            realm=userrealm,
-            adminrealm=adminrealm,
-            adminuser=adminuser,
-            client=client_ip,
-            unique=True)
+        otplen_pol = Match.generic(g, scope=role,
+                                   action="hotp_otplen",
+                                   user=username,
+                                   realm=userrealm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 
