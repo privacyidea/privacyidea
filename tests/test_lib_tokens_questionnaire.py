@@ -20,6 +20,8 @@ class QuestionnaireTokenTestCase(MyTestCase):
                  }
     j_questions = json.dumps(questions)
 
+    dumb_questions = {"dumb questiontype": "answer"}
+    j_dumb_questions = json.dumps(dumb_questions)
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_users(self):
@@ -71,3 +73,15 @@ class QuestionnaireTokenTestCase(MyTestCase):
     def test_03_get_setting_type(self):
         r = QuestionnaireTokenClass.get_setting_type("question.question.1")
         self.assertEqual(r, "public")
+
+    def test_04_dumb_question(self):
+        set_privacyidea_config("question.num_answers", 1)
+        token = init_token({"type": "question",
+                            "pin": self.pin,
+                            "serial": "2ndtoken",
+                            "user": "cornelius",
+                            "realm": self.realm1,
+                            "questions": self.j_dumb_questions
+                            })
+        _r, question, _transaction, _none = token.create_challenge()
+        self.assertEqual("dumb questiontype", question)
