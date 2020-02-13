@@ -17,6 +17,9 @@ When forwarding the authentication request, you can
 
 and mangle the password.
 
+The serial number of the token, that was used on the other privacyIDEA server, is stored in the tokeninfo
+of the remote token object in the key ``last_matching_remote_serial``. This serial number can then be used in
+further workflows and e.g. be processed in event handlers.
 
 .. figure:: images/enroll_remote.png
    :width: 500
