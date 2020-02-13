@@ -43,10 +43,9 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejecte
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
                                              ATTESTATION_LEVEL, AuthenticatorDataFlags, WebAuthnAssertionResponse,
                                              WebAuthnUser)
-from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
+from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, WEBAUTHNACTION, WEBAUTHNCONFIG,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT, WEBAUTHNINFO)
 from privacyidea.lib.token import init_token
@@ -54,13 +53,32 @@ from privacyidea.lib.policy import set_policy, SCOPE
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
 REGISTRATION_RESPONSE_TMPL = {
-    'clientData': b'eyJ0eXBlIjogIndlYmF1dGhuLmNyZWF0ZSIsICJjbGllbnRFeHRlbnNpb25zIjoge30sICJjaGFsbGVuZ2UiOiAiYlB6cFgzaEhRdHNwOWV2eUtZa2FadFZjOVVOMDdQVWRKMjJ2WlVkRHA5NCIsICJvcmlnaW4iOiAiaHR0cHM6Ly93ZWJhdXRobi5pbyJ9',
-    'attObj': b'o2NmbXRoZmlkby11MmZnYXR0U3RtdKJjc2lnWEgwRgIhAI1qbvWibQos_t3zsTU05IXw1Ek3SDApATok09uc4UBwAiEAv0fB_lgb5Ot3zJ691Vje6iQLAtLhJDiA8zDxaGjcE3hjeDVjgVkCUzCCAk8wggE3oAMCAQICBDxoKU0wDQYJKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBSb290IENBIFNlcmlhbCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwMDAwMDBaMDExLzAtBgNVBAMMJll1YmljbyBVMkYgRUUgU2VyaWFsIDIzOTI1NzM0ODExMTE3OTAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEvd9nk9t3lMNQMXHtLE1FStlzZnUaSLql2fm1ajoggXlrTt8rzXuSehSTEPvEaEdv_FeSqX22L6Aoa8ajIAIOY6M7MDkwIgYJKwYBBAGCxAoCBBUxLjMuNi4xLjQuMS40MTQ4Mi4xLjUwEwYLKwYBBAGC5RwCAQEEBAMCBSAwDQYJKoZIhvcNAQELBQADggEBAKrADVEJfuwVpIazebzEg0D4Z9OXLs5qZ_ukcONgxkRZ8K04QtP_CB5x6olTlxsj-SXArQDCRzEYUgbws6kZKfuRt2a1P-EzUiqDWLjRILSr-3_o7yR7ZP_GpiFKwdm-czb94POoGD-TS1IYdfXj94mAr5cKWx4EKjh210uovu_pLdLjc8xkQciUrXzZpPR9rT2k_q9HkZhHU-NaCJzky-PTyDbq0KKnzqVhWtfkSBCGw3ezZkTS-5lrvOKbIa24lfeTgu7FST5OwTPCFn8HcfWZMXMSD_KNU-iBqJdAwTLPPDRoLLvPTl29weCAIh-HUpmBQd0UltcPOrA_LFvAf61oYXV0aERhdGFYwnSm6pITyZwvdLIkkrMgz0AmKpTBqVCgOX8pJQtghB7wQQAAAAAAAAAAAAAAAAAAAAAAAAAAAECKU1ppjl9gmhHWyDkgHsUvZmhr6oF3_lD3llzLE2SaOSgOGIsIuAQqgp8JQSUu3r_oOaP8RS44dlQjrH-ALfYtpAECAyYhWCAxnqAfESXOYjKUc2WACuXZ3ch0JHxV0VFrrTyjyjIHXCJYIFnx8H87L4bApR4M-hPcV-fHehEOeW-KCyd0H-WGY8s6'
+    'clientData': b'eyJ0eXBlIjogIndlYmF1dGhuLmNyZWF0ZSIsICJjbGllbnRFeHRlbnNpb25zIjoge30sICJjaGFsbGVu'
+                  b'Z2UiOiAiYlB6cFgzaEhRdHNwOWV2eUtZa2FadFZjOVVOMDdQVWRKMjJ2WlVkRHA5NCIsICJvcmlnaW4i'
+                  b'OiAiaHR0cHM6Ly93ZWJhdXRobi5pbyJ9',
+    'attObj': b'o2NmbXRoZmlkby11MmZnYXR0U3RtdKJjc2lnWEgwRgIhAI1qbvWibQos_t3zsTU05IXw1Ek3SDApATok'
+              b'09uc4UBwAiEAv0fB_lgb5Ot3zJ691Vje6iQLAtLhJDiA8zDxaGjcE3hjeDVjgVkCUzCCAk8wggE3oAMC'
+              b'AQICBDxoKU0wDQYJKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBSb290IENBIFNlcmlh'
+              b'bCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwMDAwMDBaMDExLzAtBgNVBAMMJll1'
+              b'YmljbyBVMkYgRUUgU2VyaWFsIDIzOTI1NzM0ODExMTE3OTAxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcD'
+              b'QgAEvd9nk9t3lMNQMXHtLE1FStlzZnUaSLql2fm1ajoggXlrTt8rzXuSehSTEPvEaEdv_FeSqX22L6Ao'
+              b'a8ajIAIOY6M7MDkwIgYJKwYBBAGCxAoCBBUxLjMuNi4xLjQuMS40MTQ4Mi4xLjUwEwYLKwYBBAGC5RwC'
+              b'AQEEBAMCBSAwDQYJKoZIhvcNAQELBQADggEBAKrADVEJfuwVpIazebzEg0D4Z9OXLs5qZ_ukcONgxkRZ'
+              b'8K04QtP_CB5x6olTlxsj-SXArQDCRzEYUgbws6kZKfuRt2a1P-EzUiqDWLjRILSr-3_o7yR7ZP_GpiFK'
+              b'wdm-czb94POoGD-TS1IYdfXj94mAr5cKWx4EKjh210uovu_pLdLjc8xkQciUrXzZpPR9rT2k_q9HkZhH'
+              b'U-NaCJzky-PTyDbq0KKnzqVhWtfkSBCGw3ezZkTS-5lrvOKbIa24lfeTgu7FST5OwTPCFn8HcfWZMXMS'
+              b'D_KNU-iBqJdAwTLPPDRoLLvPTl29weCAIh-HUpmBQd0UltcPOrA_LFvAf61oYXV0aERhdGFYwnSm6pIT'
+              b'yZwvdLIkkrMgz0AmKpTBqVCgOX8pJQtghB7wQQAAAAAAAAAAAAAAAAAAAAAAAAAAAECKU1ppjl9gmhHW'
+              b'yDkgHsUvZmhr6oF3_lD3llzLE2SaOSgOGIsIuAQqgp8JQSUu3r_oOaP8RS44dlQjrH-ALfYtpAECAyYh'
+              b'WCAxnqAfESXOYjKUc2WACuXZ3ch0JHxV0VFrrTyjyjIHXCJYIFnx8H87L4bApR4M-hPcV-fHehEOeW-K'
+              b'Cyd0H-WGY8s6'
 }
 ASSERTION_RESPONSE_TMPL = {
     'authData': b'dKbqkhPJnC90siSSsyDPQCYqlMGpUKA5fyklC2CEHvABAAACfQ',
-    'clientData': b'eyJjaGFsbGVuZ2UiOiJlLWctblhhUnhNYWdFaXFUSlN5RDgyUnNFYzVpZl82anlmSkR5OGJOS2x3Iiwib3JpZ2luIjoiaHR0cHM6Ly93ZWJhdXRobi5pbyIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ',
-    'signature': b'MEUCIEp28FzVKneM3U3xVl4ABOXMHq02BBnQ9cOgFDvzfn8VAiEAkytcMIpWDP5PJEIUhDB1uQSz7aZOhdZGYqgRmMOGzd4='
+    'clientData': b'eyJjaGFsbGVuZ2UiOiJlLWctblhhUnhNYWdFaXFUSlN5RDgyUnNFYzVpZl82anlmSkR5OGJOS2x3Iiwi'
+                  b'b3JpZ2luIjoiaHR0cHM6Ly93ZWJhdXRobi5pbyIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ',
+    'signature': b'MEUCIEp28FzVKneM3U3xVl4ABOXMHq02BBnQ9cOgFDvzfn8VAiEAkytcMIpWDP5PJEIUhDB1uQSz7aZO'
+                 b'hdZGYqgRmMOGzd4='
 }
 CRED_KEY = {
     'alg': -7,
@@ -94,7 +112,8 @@ PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = [
 ]
 ALLOWED_TRANSPORTS = "usb ble nfc"
 CRED_ID = 'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_EUuOHZUI6x_gC32LQ'
-PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c22582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a'
+PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c'\
+          '22582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a'
 
 
 class WebAuthnTokenTestCase(MyTestCase):
@@ -138,8 +157,8 @@ class WebAuthnTokenTestCase(MyTestCase):
 
         set_policy(name="WebAuthn",
                    scope=SCOPE.ENROLL,
-                   action=WEBAUTHNACTION.RELYING_PARTY_NAME+"="+RP_NAME+","
-                          +WEBAUTHNACTION.RELYING_PARTY_ID+"="+RP_ID)
+                   action=WEBAUTHNACTION.RELYING_PARTY_NAME + "=" + RP_NAME + ","
+                         +WEBAUTHNACTION.RELYING_PARTY_ID   + "=" + RP_ID)
         set_privacyidea_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
         set_privacyidea_config(WEBAUTHNCONFIG.APP_ID, APP_ID)
 
@@ -153,11 +172,10 @@ class WebAuthnTokenTestCase(MyTestCase):
             self.token.get_init_detail()
 
     def test_02_token_init(self):
-        web_authn_register_request \
-            = self\
-                .token\
-                .get_init_detail(self.init_params, self.user)\
-                .get("webAuthnRegisterRequest")
+        web_authn_register_request = self\
+            .token\
+            .get_init_detail(self.init_params, self.user)\
+            .get("webAuthnRegisterRequest")
 
         self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
         self.assertIn('id', web_authn_register_request.get("relyingParty"))
@@ -254,6 +272,8 @@ class WebAuthnTokenTestCase(MyTestCase):
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+
+
 class WebAuthnTestCase(unittest.TestCase):
     @staticmethod
     def getWebAuthnCredential():
@@ -314,10 +334,9 @@ class WebAuthnTestCase(unittest.TestCase):
         self.assertTrue(CRED_KEY in registration_dict['pubKeyCredParams'])
 
     def test_01_validate_registration(self):
-        webAuthnCredential = self.getWebAuthnCredential()
-        self.assertEqual(RP_ID, webAuthnCredential.rp_id)
-        self.assertEqual(ORIGIN, webAuthnCredential.origin)
-
+        web_authn_credential = self.getWebAuthnCredential()
+        self.assertEqual(RP_ID, web_authn_credential.rp_id)
+        self.assertEqual(ORIGIN, web_authn_credential.origin)
 
     def test_02_registration_invalid_user_verification(self):
         registration_response = WebAuthnRegistrationResponse(
