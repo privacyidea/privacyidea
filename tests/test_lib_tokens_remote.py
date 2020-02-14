@@ -110,6 +110,8 @@ class RemoteTokenTestCase(MyTestCase):
         otpcount = token.check_otp("123456")
         self.assertTrue(otpcount > 0, otpcount)
 
+        remote_serial = token.get_tokeninfo("last_matching_remote_serial")
+        self.assertEqual("PISP0000AB00", remote_serial)
 
     @responses.activate
     def test_05_do_request_fail(self):

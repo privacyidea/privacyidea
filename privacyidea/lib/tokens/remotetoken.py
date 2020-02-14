@@ -282,6 +282,8 @@ class RemoteTokenClass(TokenClass):
                 result = response.get("result")
                 if result.get("value"):
                     otp_count = 1
+                    # Add the serial of the used remote token in the tokeninfo parameters
+                    self.add_tokeninfo("last_matching_remote_serial", response.get("detail", {}).get("serial"))
 
         except Exception as exx:  # pragma: no cover
             log.error("Error getting response from "
