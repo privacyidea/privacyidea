@@ -4,18 +4,18 @@ This tests the files
   lib/audit.py and
   lib/auditmodules/sqlaudit.py
 """
+import datetime
 import os
+import time
 
-from .base import MyTestCase, OverrideConfigTestCase
 from mock import mock
+
 from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search
-from privacyidea.lib.auditmodules.sqlaudit import column_length
-import datetime
-import time
-from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
-
+from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
+from privacyidea.lib.auditmodules.sqlaudit import column_length
+from .base import MyTestCase, OverrideConfigTestCase
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -29,14 +29,18 @@ class AuditTestCase(MyTestCase):
 
     def setUp(self):
         self.Audit = getAudit(self.app.config)
+        self.assertEqual(self.Audit.name, 'sqlaudit')
         self.Audit.clear()
 
     def tearDown(self):
         pass
 
     def test_00_write_audit(self):
+        self.assertFalse(self.Audit.has_data)
         self.Audit.log({"action": "action1"})
+        self.assertTrue(self.Audit.has_data)
         self.Audit.finalize_log()
+        self.assertFalse(self.Audit.has_data)
 
         # next audit entry
         self.Audit.log({"action": "action2"})
@@ -298,6 +302,24 @@ class AuditTestCase(MyTestCase):
         # The tokentype was actually written as token_type
         self.assertEqual(audit_log.auditdata[0].get("token_type"), "spass")
 
+
+class AuditFileTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        # this needs to available on app creation
+        PI_LOGCONFIG = "tests/testdata/logging.cfg"
+
+    def test_10_external_file_audit(self):
+        a = LoggerAudit(config={})
+        self.assertFalse(a.has_data)
+        a.log({"action": "action1"})
+        self.assertTrue(a.has_data)
+        a.finalize_log()
+        self.assertFalse(a.has_data)
+        with open("audit.log") as file:
+            c = file.readlines()
+            self.assertIn("action1", c[-1])
+        os.unlink('audit.log')
+
     def test_20_logger_audit(self):
         a = LoggerAudit()
         a.log({"action": "something"})
@@ -307,17 +329,25 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(r.auditdata, [])
         self.assertEqual(r.total, 0)
 
-    def test_30_container_audit(self):
+
+class ContainerAuditTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        # this needs to available on app creation
+        PI_LOGCONFIG = "tests/testdata/logging.cfg"
+
+    def test_10_container_audit(self):
         import os
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        basedir = "/".join(basedir.split("/")[:-1]) + "/"
+        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
                             "PI_AUDIT_NO_SIGN": True,
                             "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
+        self.assertFalse(a.has_data)
         a.log({"action": "something_test_30"})
+        self.assertTrue(a.has_data)
         a.finalize_log()
+        self.assertFalse(a.has_data)
         c = a.get_count({})
         self.assertEqual(c, 1)
         t = a.get_total({})
@@ -337,37 +367,34 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(r.total, 0)
         self.assertEqual(r.auditdata, [])
 
-    def test_31_container_audit_wrong_module(self):
-        # Test what happens with a non-existing module
+    def test_15_container_audit_check_audit(self):
         import os
-        basedir = os.path.abspath(os.path.dirname(__file__))
-        basedir = "/".join(basedir.split("/")[:-1]) + "/"
-        module_config = {"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.doesnotexist",
+        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+        a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
-                         "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
-                         "PI_AUDIT_NO_SIGN": True,
-                         "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
-        self.assertRaises(ImportError, ContainerAudit, module_config)
-
-
-class AuditFileTestCase(OverrideConfigTestCase):
-    class Config(TestingConfig):
-        PI_LOGCONFIG = "tests/testdata/logging.cfg"
-        PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
-
-    def test_01_external_file_audit(self):
-        self.authenticate()
-        c = []
-        # do a simple GET /token/
-        with self.app.test_request_context('/token/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"))
+                            "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
+                            "PI_AUDIT_NO_SIGN": True,
+                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
+        a.log({"action": "something_test_35"})
+        a.finalize_log()
+        r = a.search({"action": "*something_test_35*"})
+        # The search should go to the sql audit
+        self.assertEqual(r.total, 1)
+        self.assertEqual(r.auditdata[0].get("action"), u"something_test_35")
+        # now check the log file
         with open("audit.log") as file:
             c = file.readlines()
-
-        self.assertIn("GET /token/", c[-1])
+            self.assertIn("something_test_35", c[-1])
         os.unlink('audit.log')
+
+    def test_20_container_audit_wrong_module(self):
+        # Test what happens with a non-existing module
+        import os
+        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+        module_config = {
+            "PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.doesnotexist",
+                                         "privacyidea.lib.auditmodules.sqlaudit"],
+            "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
+            "PI_AUDIT_NO_SIGN": True,
+            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
+        self.assertRaises(ImportError, ContainerAudit, module_config)

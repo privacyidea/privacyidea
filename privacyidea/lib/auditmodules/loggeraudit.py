@@ -71,9 +71,8 @@ class Audit(AuditBase):
     """
 
     def __init__(self, config=None):
+        super(Audit, self).__init__(config)
         self.name = "loggeraudit"
-        self.audit_data = {}
-        self.config = config or {}
 
     def finalize_log(self):
         """
@@ -83,5 +82,7 @@ class Audit(AuditBase):
         self.audit_data["policies"] = ",".join(self.audit_data.get("policies", []))
         self.audit_data["timestamp"] = datetime.datetime.utcnow()
         log.info(u"{0!s}".format(self.audit_data))
+        self.audit_data = {}
+        self.have_data = False
 
 

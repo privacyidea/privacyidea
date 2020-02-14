@@ -47,9 +47,8 @@ class Audit(AuditBase):
     """
 
     def __init__(self, config=None):
+        super(Audit, self).__init__(config)
         self.name = "containeraudit"
-        self.audit_data = {}
-        self.config = config or {}
         write_conf = self.config.get('PI_AUDIT_CONTAINER_WRITE')
         read_conf = self.config.get('PI_AUDIT_CONTAINER_READ')
         # Initialize all modules
@@ -64,6 +63,7 @@ class Audit(AuditBase):
         """
         for module in self.write_modules:
             module.log(param)
+        self.have_data = True
 
     def search(self, search_dict, page_size=15, page=1, sortorder="asc",
                timelimit=None):
@@ -91,4 +91,4 @@ class Audit(AuditBase):
         """
         for module in self.write_modules:
             module.finalize_log()
-
+        self.have_data = False
