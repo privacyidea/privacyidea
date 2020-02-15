@@ -1034,7 +1034,7 @@ def e_import(filename, cleanup=False):
                       ordering=event.get("ordering"),
                       options=event.get("options"),
                       active=event.get("active"),
-                      position=event.get("position"))
+                      position=event.get("position", "post"))
         print("Added event '{0!s}' with result {1!s}".format(name, r))
 
 
