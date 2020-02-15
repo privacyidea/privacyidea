@@ -348,6 +348,9 @@ class ACTION(object):
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
     DIALOG_NO_TOKEN = "dialog_no_token"
+    SHOW_ANDROID_AUTHENTICATOR = "show_android_privacyidea_authenticator"
+    SHOW_IOS_AUTHENTICATOR = "show_ios_privacyidea_authenticator"
+    SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
 
 
 class GROUP(object):
@@ -2140,6 +2143,26 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this is checked, the seed "
                           "will be displayed as text during enrollment.")
+            },
+            ACTION.SHOW_ANDROID_AUTHENTICATOR: {
+                'type': 'bool',
+                'desc': _("If this is checked, the enrollment page for HOTP, "
+                          "TOTP and Push tokens will contain a QR code that leads "
+                          "to the privacyIDEA Authenticator in the Google Play Store."),
+                'group': 'QR Codes'
+            },
+            ACTION.SHOW_IOS_AUTHENTICATOR: {
+                'type': 'bool',
+                'desc': _("If this is checked, the enrollment page for HOTP, "
+                          "TOTP and Push tokens will contain a QR code that leads "
+                          "to the privacyIDEA Authenticator in the iOS App Store."),
+                'group': 'QR Codes'
+            },
+            ACTION.SHOW_CUSTOM_AUTHENTICATOR: {
+                'type': 'str',
+                'desc': _("This action adds a QR code in the enrollment page for "
+                          "HOTP, TOTP and Push tokens, that lead to this given URL."),
+                'group': 'QR Codes'
             }
         }
 

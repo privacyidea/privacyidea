@@ -302,3 +302,46 @@ also depend on the IP address of the client, you can also choose different login
 on from where a user tries to log in.
 
 (Since privacyIDEA 3.0)
+
+show_android_privacyidea_authenticator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
+will contain a QR code, that leads the user to the Google Play Store where he can
+directly install the privacyIDEA Authenticator App for Android devices.
+
+(Since privacyIDEA 3.3)
+
+show_ios_privacyidea_authenticator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
+will contain a QR code, that leads the user to the Apple App Store where he can
+directly install the privacyIDEA Authenticator App for iOS devices.
+
+type: bool
+
+(Since privacyIDEA 3.3)
+
+show_custom_authenticator
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
+will contain a QR code, that leads the user to the given URL.
+
+The idea is, that an organization running privacyIDEA can create its own URL,
+where the user is taken to, e.g.
+
+* Show information about the used Authenticator apps...
+* Do a device identification and automatically redirect the user to Google Play Store
+  or Apple App Store. Thus only need the user to show *one* QR code...
+* If an organization has it's own customized app or chooses to use another app, lead
+  the user to another App in the Google Play Store or Appe App Store.
+
+Other scenarios are possible.
+
+(Since privacyIDEA 3.3)
