@@ -59,6 +59,7 @@ import passlib
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.utils import create_img
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -2384,8 +2385,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR)
         set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR)
         set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
-                   action="{0!s}=Hallo".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
+                   action="{0!s}=http://privacyidea.org".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
 
+        custom_url = create_img("http://privacyidea.org")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -2423,16 +2425,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                          "wnxqI78ji75E8YgcLyLTsJR/5W7nYr/CbI18SbJ8Aq31ThPFt+7F5NrBs3u/08i3Jr98B61uba71D8HWGuusf"
                          "8jIP0nrYwTYDnfsp4S2rtjulJDVy4zsRewb50YaaaSRRhpp5P+c/A3Ni1KFc5UNygAAAABJRU5ErkJggg==",
                          jresult.get("result").get("value").get("qr_image_ios"))
-        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUoAAAFKAQAAAABTUiuoAAAB9klEQVR4nO2bTYrb"
-                         "QBBGX0WCWbZgDtS6QY405GbSUXKAAfXS0ObLotWyYjxBTpClQNVCWO23+KCpf9vERhu/bSXBUUcdddRRR/dEbb"
-                         "YW65MZo5lZn+pxv7sAR59BoyRpAggSBEkDjSRJv6P7CHD0GTTNLqQf3dUgteXYzNrXCHB0g7V37wZvXxT1h2t1"
-                         "9B6VJrAPXWq2erUAR/9g1beCgASMPaaxmwQJ1m52uFZHWdcRNCJOt0c9jpI0HK7V0eJbKxcauwYIF5v9bW8Bjj"
-                         "7fby1dloZwMQ2ppRSGY3f1fus0aImEGkqXldGwhEOC1uaR8Hh0zlu3HAWUK9NQPi0XerhWRysaJKIyRGWsDxn7"
-                         "mBo9QvcR4OgGqxV8es8arRGkDo3fr+ULI3y2Fof9BDj6F3kLaqEeMpIyrAp6j4TnQJfu+LMV6T1bnJDF4RYEr6"
-                         "Y9BTj6fAX/8fNNc5cFQKq7E0J+hQBHt9lcn09zEVjOBqpvxQmfZZwODblcCtDI+tXriwQ4uhm97Y6BZb+VWjwS"
-                         "ngqt3XENh5RKsJ6V+YZ3xydB17OMODVzBb/KW8td+m0djz7cHRuAxr7JRur2FeDoP6HhYkTVxzzpfaUAR7+0+9"
-                         "2xANloMM+grPHfPJ0GfbA7XmbwSznoeeskqPm/Fhx11FFHHf2P0F+SMjeGY83d9AAAAABJRU5ErkJggg==",
-                         jresult.get("result").get("value").get("qr_image_custom"))
+        qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
+        self.assertEqual(len(custom_url), len(qr_image_custom))
+        self.assertEqual(custom_url, qr_image_custom)
         delete_policy("pol_qr1")
         delete_policy("pol_qr2")
         delete_policy("pol_qr3")

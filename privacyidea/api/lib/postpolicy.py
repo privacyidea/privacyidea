@@ -533,7 +533,7 @@ def get_webui_settings(request, response):
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
-        qr_image_custom = create_img(qr_custom_authenticator_url) if qr_custom_authenticator_url else None
+        qr_image_custom = create_img(list(qr_custom_authenticator_url)[0]) if qr_custom_authenticator_url else None
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
