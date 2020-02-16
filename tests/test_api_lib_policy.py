@@ -2380,6 +2380,63 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
             ACTION.DIALOG_NO_TOKEN), True)
         delete_policy("pol_dialog")
 
+        # Set a policy for the QR codes
+        set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR)
+        set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR)
+        set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
+                   action="{0!s}=Hallo".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
+
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADkElEQVR4nO2cTW"
+                         "7bMBBG35QEsqQBH6BHoW7WM/UG0lFygALiMgCF6YI/ouJ0k9iI7c4sHEHRAyXgw/CbISVRPhfLj0+CYKSRRh"
+                         "pppJFGGnl/pNTwyMQmIieQKYkAW/mRKbWrpm++WyPvi/TlT5wB0hklncopXU4uC2FVwCkklwGQr45p5HOSqe"
+                         "cXnBJfa0aipyAARMRfb0wjn5OUiU10BoiaIa7AcgKZbjamkY9N+stTLgs4IJ2VRUCX6apjGvlcZNNQUCABhDc"
+                         "h/j6jpE0Al4nrOQvA2JB8rOc08ubkIlKqMUgvRSky4ZS47tPYVsqya41p5JOQJQ+N+SVkgE10OTl0OTnaJcdl"
+                         "kcd6TiNvR6KqqkTVknOIq1MIqqpruyb2I0K9WOfHek4jb0cWDRW9xHqsTUi1LitlGkHLuXKNacjIFoOGwKnOY"
+                         "RSSziF3DWV0xqlpyMhjNA05VdWeZHCqMzUFVYU1NZmGjPyIXH6+iUzJwyIe+bVuIlNx1yBTyOg8FGzffLdG3h"
+                         "U5eGqdiwFyvf6quamabdVmti0PGTlG0RCtF9SEBLsfatdlwPyQkR+TqusmtTWUXmr5VeSTfE1By4lDlf+Iz2n"
+                         "kLcjSYxRC9roICGzCIiBx3vzYVkx+aDk+2nMaeTuyF2JQG0KaqWVar+2LKSpzntVlRr6P5odozZ+hK+S0SYqi"
+                         "q+KRTENGHmJoCA2rHpqp9ijUFLSbbdOQkcdotXpuJ4pytHasazKq013rRZqGjBxin8sOjie32p62XhabKTING"
+                         "XmMqqHQbM88dIp2cfUsZf0hIy+iuaDcjtZDP3EOrYtdlvZXZ3s/jHwXY20Pg3/e9w+paltunTFPbeT72LPPXo"
+                         "gNTrrLp21Ts7nMyPdRJbG2oqu6IFd+2gzW7JFpyMh/kkFV5GeG+OrZd57VffpQ9oOUo+lKYxr5HOS4bl9MdO9"
+                         "O1yV7p+NKq9VlRl6EHmPcjh+aH9JWje31m2nIyCO5f/eDuG7CcgLVV49MyVN3NCb/Afkdd2vkfZHjPsa+3Fqi"
+                         "Lpr11lCf86w/ZORHZPvuh0zJsxdnOidPeS1o2V9xvdKYRj4nOWx+ncsWxjeBJFJ7jD1L3cXdGnkP5MV3P+Lri"
+                         "wph87pMDiH8qR+tius5Q/JZvzqmkc9FXvqh/V+hr3r04qwT5oeM7NH6Q8DwcgfdXYe9om9raOapjRxD7BvnRh"
+                         "pppJFGGmnkf07+BXIeTK/jr1P8AAAAAElFTkSuQmCC",
+                         jresult.get("result").get("value").get("qr_image_android"))
+        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADr0lEQVR4nO2cXYr"
+                         "jOBCAv1oJ8mhDHyBHkW827JH6BtZRcoCA9BiwqXmQZCvpaRaGhCS9VQ8hsv1hCYpS/cmi/J3Ef/4SBCONNNJI"
+                         "I4000sjXI6WKL/+I4yrAKjJlEZFxFcjtqenJszXytUhUVZWgqqrJqc6Dqqou6Dws6DyoAq7e3R+e32udRj6ez"
+                         "Jt9yR7i6FQmnAKrqOpFABARf793GvkzSH8zFoazKNkvhE+/SDh55M7vNPJnkbc6BNkjQUHj6FBYvMYJJHze65"
+                         "1G/iyy6dCgQAYYEgKrp1iksqG5BTL0Ccn3WqeRDyejiIiMQDh5IB+UcDqoTNkjvxLIxFrCsufP1siXIosd6ux"
+                         "LHBGFhfITj5cS5VdTdY93GvmzyC62JyQAnOqMa9f2oB+AwWJ7I2+k+UN5RONx8QqrENIHWq6NZ0+YL0JQiqOk"
+                         "z5utka9IFjtUjVHLMcLQcoyqC4REGVKyjWaHjOylqkSi5qRDSUcv7X5LW7ddrRGmQ0Y2ubJDQNBmbroyR1Mp1"
+                         "fKI6ZCRnTQ75LQVyNrm1V0DijtN2d9Mh4zspGpESSVWS7OXW80fMvK/ZfeHum1M03Y3OS03yk8yHTLyVoortG"
+                         "lOMzzbMG27GtRdzfwhI6+kWpXm51RjNGhvfRi2a8niMiNv5coOtW0spJanBjp/SGfzh4z8Il1Yz7B51+1fNVB"
+                         "b8tHskJHfkPrvURWyCCGtonMWgeEikA8qE7Wfeo/f3nOdRj6C7Pup99TQ3BygPUIrTlFQyw8Z+Q2Zpdgc4rhl"
+                         "ik4e4gg1gZ2AKAezQ0ZeS+0fisfFS9BVlDwKIa20aOzsS+tQHM8QPj+eOVsjX5HsfOrWNXQV5ZdhqqmhvbHI9"
+                         "jIjN+l0aKtrtLhsL7I2vaplfNMhI3fZemEXXxrRQFur2XD2xAk0CghDohwaet5sjXxFcuv92Ctie321f6SW7J"
+                         "Plh4z8IykyOiWKp7Z45EM9NT3jVCagHDybgDp8x3Ua+QiyO9ehABIFYDgL4eQXYBWN4hbCDNId7nivdRr5OLL"
+                         "oUDsz5hbALWUYjwsSdPUS0geQP/oN7s3WaeTDydCaiPZorBY88qF8uKGki6J9s8HIL9LVXENqxbCqUnsTkdMb"
+                         "wnxqI78ji75E8YgcLyLTsJR/5W7nYr/CbI18SbJ8Aq31ThPFt+7F5NrBs3u/08i3Jr98B61uba71D8HWGuusf"
+                         "8jIP0nrYwTYDnfsp4S2rtjulJDVy4zsRewb50YaaaSRRhpp5P+c/A3Ni1KFc5UNygAAAABJRU5ErkJggg==",
+                         jresult.get("result").get("value").get("qr_image_ios"))
+        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUoAAAFKAQAAAABTUiuoAAAB9klEQVR4nO2bTYrb"
+                         "QBBGX0WCWbZgDtS6QY405GbSUXKAAfXS0ObLotWyYjxBTpClQNVCWO23+KCpf9vERhu/bSXBUUcdddRRR/dEbb"
+                         "YW65MZo5lZn+pxv7sAR59BoyRpAggSBEkDjSRJv6P7CHD0GTTNLqQf3dUgteXYzNrXCHB0g7V37wZvXxT1h2t1"
+                         "9B6VJrAPXWq2erUAR/9g1beCgASMPaaxmwQJ1m52uFZHWdcRNCJOt0c9jpI0HK7V0eJbKxcauwYIF5v9bW8Bjj"
+                         "7fby1dloZwMQ2ppRSGY3f1fus0aImEGkqXldGwhEOC1uaR8Hh0zlu3HAWUK9NQPi0XerhWRysaJKIyRGWsDxn7"
+                         "mBo9QvcR4OgGqxV8es8arRGkDo3fr+ULI3y2Fof9BDj6F3kLaqEeMpIyrAp6j4TnQJfu+LMV6T1bnJDF4RYEr6"
+                         "Y9BTj6fAX/8fNNc5cFQKq7E0J+hQBHt9lcn09zEVjOBqpvxQmfZZwODblcCtDI+tXriwQ4uhm97Y6BZb+VWjwS"
+                         "ngqt3XENh5RKsJ6V+YZ3xydB17OMODVzBb/KW8td+m0djz7cHRuAxr7JRur2FeDoP6HhYkTVxzzpfaUAR7+0+9"
+                         "2xANloMM+grPHfPJ0GfbA7XmbwSznoeeskqPm/Fhx11FFHHf2P0F+SMjeGY83d9AAAAABJRU5ErkJggg==",
+                         jresult.get("result").get("value").get("qr_image_custom"))
+        delete_policy("pol_qr1")
+        delete_policy("pol_qr2")
+        delete_policy("pol_qr3")
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",

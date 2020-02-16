@@ -193,6 +193,8 @@ log = logging.getLogger(__name__)
 optional = True
 required = False
 
+DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
+DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 
 class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
