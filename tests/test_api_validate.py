@@ -5,9 +5,10 @@ from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.models import (Token, Challenge, AuthCache, db)
 from privacyidea.lib.authcache import _hash_password
-from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
+from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
@@ -19,8 +20,7 @@ from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.radiusserver import add_radius, delete_radius
+from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib import _
 
 import datetime
@@ -2674,7 +2674,7 @@ class RegistrationValidity(MyApiTestCase):
 
         # The enddate is 17 minutes in the past
         end_date = datetime.datetime.now() - datetime.timedelta(minutes=17)
-        end_date_str = end_date.strftime("%Y-%m-%dT%H:%M%z")
+        end_date_str = end_date.strftime(DATE_FORMAT)
         r.set_validity_period_end(end_date_str)
         # now check if authentication fails
         with self.app.test_request_context('/validate/check',
