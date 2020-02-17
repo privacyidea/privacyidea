@@ -11,8 +11,6 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 
 PWFILE = "tests/testdata/passwords"
-POLICYFILE = "tests/testdata/policy.cfg"
-POLICYEMPTY = "tests/testdata/policy_empty_file.cfg"
 
 
 class APIAuditTestCase(MyApiTestCase):
@@ -27,6 +25,10 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue(json_response.get("result").get("value").get(
                 "current") == 1, res)
+        # check for entry in audit log
+        aentry = self.find_most_recent_audit_entry(action='GET /audit/')
+        self.assertEqual(aentry['action'], 'GET /audit/', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
 
     def test_01_get_audit_csv(self):
         @contextmanager
@@ -227,4 +229,3 @@ class APIAuditTestCase(MyApiTestCase):
         # delete policy
         delete_policy("audit01")
         delete_policy("audit02")
-

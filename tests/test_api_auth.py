@@ -24,6 +24,9 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
 
         # test failed auth
         with self.app.test_request_context('/auth',
