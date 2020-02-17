@@ -266,7 +266,6 @@ class Audit(AuditBase):
             self.session.close()
             # clear the audit data
             self.audit_data = {}
-            self.have_data = False
 
     def _check_missing(self, audit_id):
         """

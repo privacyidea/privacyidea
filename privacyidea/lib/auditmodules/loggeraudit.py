@@ -83,6 +83,5 @@ class Audit(AuditBase):
         self.audit_data["timestamp"] = datetime.datetime.utcnow()
         log.info(u"{0!s}".format(self.audit_data))
         self.audit_data = {}
-        self.have_data = False
 
 

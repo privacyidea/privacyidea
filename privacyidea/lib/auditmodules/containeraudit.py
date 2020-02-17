@@ -57,13 +57,16 @@ class Audit(AuditBase):
         if not self.read_module.is_readable:
             log.warning(u"The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
 
+    @property
+    def has_data(self):
+        return any([x.has_data for x in self.write_modules])
+
     def log(self, param):
         """
         Call the log method for all writeable modules
         """
         for module in self.write_modules:
             module.log(param)
-        self.have_data = True
 
     def search(self, search_dict, page_size=15, page=1, sortorder="asc",
                timelimit=None):
@@ -91,4 +94,3 @@ class Audit(AuditBase):
         """
         for module in self.write_modules:
             module.finalize_log()
-        self.have_data = False

@@ -92,7 +92,6 @@ class Audit(object):  # pragma: no cover
         self.config = config or {}
         self.private = ""
         self.public = ""
-        self.have_data = False
 
     @log_with(log)
     def initialize(self):
@@ -164,7 +163,7 @@ class Audit(object):  # pragma: no cover
 
     @property
     def has_data(self):
-        return self.have_data
+        return bool(self.audit_data)
 
     @log_with(log)
     def log(self, param):
@@ -181,7 +180,6 @@ class Audit(object):  # pragma: no cover
         """
         for k, v in param.items():
             self.audit_data[k] = v
-        self.have_data = True
 
     def add_to_log(self, param, add_with_comma=False):
         """
