@@ -22,8 +22,8 @@ from privacyidea.lib.config import (set_privacyidea_config, get_token_types, del
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
 import datetime
+from dateutil import parser
 import hashlib
-import base64
 import binascii
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
@@ -657,7 +657,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r.get("init"), r)
         self.assertTrue(r.get("user"), r)
         self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
-        self.assertTrue(datetime.datetime.strptime(r.get("end_date"), DATE_FORMAT) <= end_date, r)
+        self.assertTrue(parser.parse(r.get("end_date")) <= end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
 
