@@ -340,7 +340,7 @@ where the user is taken to, e.g.
 * Do a device identification and automatically redirect the user to Google Play Store
   or Apple App Store. Thus only need the user to show *one* QR code...
 * If an organization has it's own customized app or chooses to use another app, lead
-  the user to another App in the Google Play Store or Appe App Store.
+  the user to another App in the Google Play Store or Apple App Store.
 
 Other scenarios are possible.
 
