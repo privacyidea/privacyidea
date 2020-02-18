@@ -349,6 +349,13 @@ angular.module("privacyideaApp")
             if ($scope.dialogNoToken) {
                 $('#dialogNoToken').modal("show");
             }
+            $scope.qr_image_android = data.result.value.qr_image_android || "";
+            $scope.qr_image_ios = data.result.value.qr_image_ios || "";
+            $scope.qr_image_custom = data.result.value.qr_image_custom || "";
+            // This is a helper variable to get the number of qr images to display
+            $scope.qr_image_count = Number($scope.qr_image_android.length > 0)
+                + Number($scope.qr_image_ios.length > 0)
+                + Number($scope.qr_image_custom.length > 0);
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;

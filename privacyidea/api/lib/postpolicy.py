@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenwizard
 #  2015-10-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -45,6 +47,7 @@ import traceback
 from privacyidea.lib.error import PolicyError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
@@ -59,6 +62,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.utils import create_img
 
 log = logging.getLogger(__name__)
 
@@ -520,6 +524,16 @@ def get_webui_settings(request, response):
                                             realm=realm).action_values(unique=True)
         show_seed = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
                                 realm=realm).any()
+        qr_ios_authenticator = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR,
+                                           realm=realm).any()
+        qr_android_authenticator = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR,
+                                               realm=realm).any()
+        qr_custom_authenticator_url = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_CUSTOM_AUTHENTICATOR,
+                                                  realm=realm).action_values(unique=True)
+
+        qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
+        qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
+        qr_image_custom = create_img(list(qr_custom_authenticator_url)[0]) if qr_custom_authenticator_url else None
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
@@ -559,6 +573,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["subscription_status"] = subscription_status()
+        content["result"]["value"]["qr_image_android"] = qr_image_android
+        content["result"]["value"]["qr_image_ios"] = qr_image_ios
+        content["result"]["value"]["qr_image_custom"] = qr_image_custom
         response.set_data(json.dumps(content))
     return response
 
