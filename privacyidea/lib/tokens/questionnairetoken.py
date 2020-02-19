@@ -241,7 +241,7 @@ class QuestionnaireTokenClass(TokenClass):
         res = -1
         question = challenge_object.challenge
         answer = self.get_tokeninfo(question)
-        if answer.decode('utf-8') == given_answer:
+        if answer.encode().decode('utf-8') == given_answer:
             res = 1
         else:
             log.debug("The answer for token {0!s} does not match.".format(
