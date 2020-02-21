@@ -34,7 +34,7 @@ angular.module("privacyideaApp")
                                       $state, ConfigFactory, inform,
                                       PolicyTemplateFactory, gettextCatalog,
                                       hotkeys, RegisterFactory,
-                                      U2fFactory, instanceUrl,
+                                      U2fFactory, webAuthnToken, instanceUrl,
                                       PollingAuthFactory,
                                       resourceNamePatterns) {
 
@@ -218,6 +218,7 @@ angular.module("privacyideaApp")
                     {type: "warning", ttl:5000});
                 $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
+                $scope.webAuthnSignRequests = [];
                 $scope.transactionid = error.detail["transaction_id"];
 
                 // Challenge Response always containes mult_challenge!
@@ -240,6 +241,9 @@ angular.module("privacyideaApp")
                     if (attributes !== null) {
                         if (attributes.u2fSignRequest) {
                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
+                        }
+                        if (attributes.webAuthnSignRequest) {
+                            $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);
                         }
                         if (attributes.img) {
                             $scope.image = attributes.img;
@@ -267,6 +271,18 @@ angular.module("privacyideaApp")
                         $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
+
+                // In case of webAuthn we do:
+                if ($scope.webAuthnSignRequests.length > 0) {
+                    $scope.webauthn_first_error = error;
+                    webAuthnToken.sign_request(
+                        $scope.webauthn_first_error,
+                        $scope.webAuthnSignRequests,
+                        $scope.login.username,
+                        $scope.transactionid,
+                        $scope.do_login_stuff
+                    );
+                }
             } else {
                 if ($state.current.name === "response") {
                     // We are already in the response state, but the first
@@ -282,6 +298,17 @@ angular.module("privacyideaApp")
                             $scope.u2fSignRequests,
                             $scope.login.username,
                             $scope.transactionid, $scope.do_login_stuff);
+                    }
+
+                    // In case of WebAuthn we try for a 2nd signature:
+                    if ($scope.webauthn_first_error) {
+                        webAuthnToken.sign_request(
+                            $scope.webauthn_first_error,
+                            $scope.webAuthnSignRequests,
+                            $scope.login.username,
+                            $scope.transactionid,
+                            $scope.do_login_stuff
+                        )
                     }
                 } else {
                         // TODO: Do we want to display the error message?
