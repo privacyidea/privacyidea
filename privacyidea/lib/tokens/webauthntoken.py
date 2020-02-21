@@ -492,6 +492,14 @@ class WEBAUTHNINFO(object):
     RELYING_PARTY_NAME = "relying_party_name"
 
 
+class WEBAUTHNGROUP(object):
+    """
+    Categories used to group WebAuthn token actions.
+    """
+
+    WEBAUTHN = "WebAuthn"
+
+
 class WebAuthnTokenClass(TokenClass):
     """
     The WebAuthn Token implementation.
@@ -592,23 +600,26 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human readable name for the organization rolling out WebAuthn tokens."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     },
                     WEBAUTHNACTION.RELYING_PARTY_ID: {
                         'type': 'str',
                         'desc': _("A domain name that is a subset of the respective FQDNs for all the webservices the "
-                                  "users should be able to sign in to using WebAuthn tokens.")
+                                  "users should be able to sign in to using WebAuthn tokens."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
                         'desc': _("The time in seconds the user has to confirm enrollment on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
-                                  "Default: 60")
+                                  "Default: 60"),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
                         'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform attachments, "
                                   "or only cross-platform attachments. Default: either"),
-                        'group': GROUP.TOKEN,
+                        'group': WEBAUTHNGROUP.WEBAUTHN,
                         'value': [
                             "platform",
                             "cross-platform",
@@ -619,14 +630,14 @@ class WebAuthnTokenClass(TokenClass):
                         'type': 'str',
                         'desc': _("A list of WebAuthn authenticators acceptable for enrollment, given as a "
                                   "space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
-                        'group': GROUP.TOKEN
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     },
                     WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
                                   "token. Default: preferred (verify the user if supported by the token)"),
-                        'group': GROUP.TOKEN,
-                        'value':    [
+                        'group': WEBAUTHNGROUP.WEBAUTHN,
+                        'value': [
                             "required",
                             "preferred",
                             "discouraged"
@@ -636,7 +647,7 @@ class WebAuthnTokenClass(TokenClass):
                         'type': 'str',
                         'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens. "
                                   "Default: ecdsa_preferred"),
-                        'group': GROUP.TOKEN,
+                        'group': WEBAUTHNGROUP.WEBAUTHN,
                         'value': [
                             "ecdsa_preferred",
                             "ecdsa_only",
@@ -649,7 +660,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Whether to request attestation data when enrolling a new WebAuthn token. "
                                   "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
                                   "Default: direct (ask for non-anonymized attestation data)"),
-                        'group': GROUP.TOKEN,
+                        'group': WEBAUTHNGROUP.WEBAUTHN,
                         'value': [
                             "none",
                             "indirect",
@@ -661,7 +672,7 @@ class WebAuthnTokenClass(TokenClass):
                         'desc': _("Whether and how strictly to check authenticator attestation data. "
                                   "Note: If the attestation form is none, the attestation level needs to also be none. "
                                   "Default: untrusted (attestation is required, but can be unknown or self-signed)"),
-                        'group': GROUP.TOKEN,
+                        'group': WEBAUTHNGROUP.WEBAUTHN,
                         'value': [
                             "none",
                             "untrusted",
@@ -671,7 +682,7 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.REQ: {
                         'type': 'str',
                         'desc': _("Only the specified WebAuthn-tokens are allowed to be registered."),
-                        'group': GROUP.TOKEN
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     },
                     ACTION.MAXTOKENUSER: {
                         'type': 'int',
