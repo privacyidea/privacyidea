@@ -38,7 +38,8 @@ from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
                                              WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
-                                             WebAuthnAssertionResponse, AuthenticationRejectedException)
+                                             WebAuthnAssertionResponse, AuthenticationRejectedException,
+                                             USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
@@ -104,7 +105,6 @@ acceptable to the server.
     Accept: application/json
     
     type=webauthn
-    serial=<serial>
     transaction_id=<transaction_id>
     description=<description>
     clientdata=<clientDataJSON>
@@ -152,8 +152,13 @@ Here *nonce*, *relyingParty*, *serialNumber*, *preferredAlgorithm*,
 *authenticatorSelectionList*, *name*, and *displayName* are the values
 provided by the server in the *webAuthnRegisterRequest* field in the response
 from the first step. *alternativeAlgorithm*, *authenticatorSelection*,
-*timeout*, *attestation*, and *authenticatorSelectionList* are optional and any
-of these values should simply be omitted, if the server has not sent them.
+*timeout*, *attestation*, and *authenticatorSelectionList* are optional. If
+*attestation* is not provided, the client should default to `direct`
+attestation. If *timeout* is not provided, it may be omitted, or a sensible
+default chosen. Any other optional values must be omiffed, if the server has
+not sent them. Please note that the nonce will be a binary, encoded using the
+web-safe base64 algorithm specified by WebAuthn, and needs to be decoded and
+passed as Uint8Array.
 
 If an *authenticationSelectionList* was given, the *responseHandler* needs to
 verify, that the field *authnSel* of *credential.getExtensionResults()*
@@ -161,21 +166,22 @@ contains true. If this is not the case, the *responseHandler* should abort and
 call the *errorHandler*, displaying an error telling the user to use his
 company-provided token.
 
-The *responseHandler* needs to then send the *id* to the server along with the
-*clientDataJSON*, *attestationObject*, and *registrationClientExtensions* 
-contained in the *response* field of the *credential* (2. step) back to the
-server. If enrollment succeeds, the server will send a response with a
+The *responseHandler* needs to then send the *clientDataJSON*,
+*attestationObject*, and *registrationClientExtensions* contained in the
+*response* field of the *credential* (2. step) back to the server. If
+enrollment succeeds, the server will send a response with a
 *webAuthnRegisterResponse* field, containing a *subject* field with the
 description of the newly created token.
-
-The *registrationClientExtensions* are optional and should simply be omitted,
-if the client does not provide them. It the *registrationClientExtensions* are
-available, they must be sent to the server as a JSON-encoded string.
 
 The server expects the *clientDataJSON* and *attestationObject* encoded as
 web-safe base64 as defined by the WebAuthn standard. This encoding is similar
 to standard base64, but '-' and '_' should be used in the alphabet instead of
 '+' and '/', respectively, and any padding should be omitted.
+
+The *registrationClientExtensions* are optional and should simply be omitted,
+if the client does not provide them. It the *registrationClientExtensions* are
+available, they must be encoded as a utf-8 JSON string, then sent to the server
+as web-safe base64.
 
 Please beware that the btoa() function provided by
 ECMA-Script expects a 16-bit encoded string where all characters are in the
@@ -335,12 +341,15 @@ Send the Response
 ~~~~~~~~~~~~~~~~~
 
 The application now needs to call the javascript function
-*navigator.credentials.get* with *publicKeyCredentialRequstOptions* built using
+*navigator.credentials.get* with *publicKeyCredentialRequestOptions* built using
 the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
-and *timeout* from the server.
+and *timeout* from the server.  The timeout is optional and may be omitted, if
+not provided, the client may also pick a sensible default. Please note that the
+nonce will be a binary, encoded using the web-safe base64 algorithm specified by
+WebAuthn, and needs to be decoded and passed as Uint8Array.
 
     const publicKeyCredentialRequestOptions = {
-        challenge: Uint8Array.from(<nonce>, c => c.charCodeAt(0)),
+        challenge: <nonce>,
         allowCredentials: [{
             id: Uint8Array.from(<credentialId>, c=> c.charCodeAt(0)),
             type: <credentialType>,
@@ -369,8 +378,12 @@ web-safe base64 without padding. For more detailed instructions, refer to
 
 The *userHandle* and *assertionClientExtensions* are optional and should be
 omitted, if not provided by the authenticator. The
-*assertionClientExtensions* – if available – must be transmitted to the
-server as a JSON-encoded string.
+*assertionClientExtensions* – if available – must be encoded as a utf-8 JSON
+string, and transmitted to the server as web-safe base64. The *userHandle*
+is simply passed as a string, note – however – that it may be necessary to
+reencode this to utf-16, since the authenticator will return utf-8, while the
+library making the http request will likely require all parameters in the
+native encoding of the language (usually utf-16).
 
 .. sourcecode:: http
 
@@ -380,7 +393,6 @@ server as a JSON-encoded string.
     
     user=<user>
     pass=
-    serial=<serial>
     transaction_id=<transaction_id>
     credentialid=<id>
     clientdata=<clientDataJSON>
@@ -540,7 +552,7 @@ class WebAuthnTokenClass(TokenClass):
                 SCOPE.AUTH: {
                     WEBAUTHNACTION.ALLOWED_TRANSPORTS: {
                         'type': 'str',
-                        'desc': _("A list of transports to prefer to communicate with WebAuthn tokens."
+                        'desc': _("A list of transports to prefer to communicate with WebAuthn tokens. "
                                   "Default: usb ble nfc internal lightning (All standard transports)")
                     },
                     WEBAUTHNACTION.TIMEOUT: {
@@ -561,8 +573,8 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
-                        'desc': _('Use an alternate challenge text for telling the '
-                                  'user to confirm with his WebAuthn device')
+                        'desc': _('Use an alternate challenge text for telling the user to confirm with his WebAuthn '
+                                  'token.')
                     }
                 },
                 SCOPE.AUTHZ: {
@@ -813,12 +825,15 @@ class WebAuthnTokenClass(TokenClass):
                 registration_response={
                     'clientData': client_data,
                     'attObj': reg_data,
-                    'registrationClientExtensions': registration_client_extensions
+                    'registrationClientExtensions':
+                        webauthn_b64_decode(registration_client_extensions)
+                            if registration_client_extensions
+                            else None
                 },
                 challenge=webauthn_b64_encode(challenge),
                 attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
                 trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
-                uv_required=uv_req
+                uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
             ).verify([
                 token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
             ])
@@ -831,8 +846,9 @@ class WebAuthnTokenClass(TokenClass):
                                web_authn_credential.origin)
             self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
                                web_authn_credential.attestation_level)
+
             self.add_tokeninfo(WEBAUTHNINFO.AAGUID,
-                               web_authn_credential.aaguid)
+                               hexlify_and_unicode(web_authn_credential.aaguid))
 
             # Add attestation info.
             if web_authn_credential.attestation_cert:
@@ -1016,7 +1032,7 @@ class WebAuthnTokenClass(TokenClass):
         and return it, so that the response can refer to this transaction.
 
         This method will return a tuple containing a bool value, indicating
-        wthether a challenge was successfully created, along with a message to
+        whether a challenge was successfully created, along with a message to
         display to the user, the transaction id, and a dictionary containing
         all parameters and data needed to respond to the challenge, as per the
         api.
@@ -1130,7 +1146,10 @@ class WebAuthnTokenClass(TokenClass):
                                            'clientData': client_data,
                                            'authData': authenticator_data,
                                            'signature': signature_data,
-                                           'assertionClientExtensions': assertion_client_extensions
+                                           'assertionClientExtensions':
+                                               webauthn_b64_decode(assertion_client_extensions)
+                                                   if assertion_client_extensions
+                                                   else None
                                        },
                                        challenge=webauthn_b64_encode(challenge),
                                        origin=http_origin,

@@ -1870,7 +1870,7 @@ def webauthntoken_allowed(request, action):
                     .format(serial, WEBAUTHNACTION.REQ))
             raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
 
-        if allowed_aaguids and aaguid not in allowed_aaguids:
+        if allowed_aaguids and aaguid not in [allowed_aaguid.replace("-", "") for allowed_aaguid in allowed_aaguids]:
             log.warning(
                 "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
                     .format(serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
