@@ -573,14 +573,14 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
-                        'desc': _('Use an alternate challenge text for telling the user to confirm with his WebAuthn '
-                                  'token.')
+                        'desc': _("Use an alternate challenge text for telling the user to confirm with his WebAuthn "
+                                  "token.")
                     }
                 },
                 SCOPE.AUTHZ: {
                     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: {
                         'type': 'str',
-                        'desc': _("A list of WebAuthn authenticators acceptable for authorization, given as"
+                        'desc': _("A list of WebAuthn authenticators acceptable for authorization, given as "
                                   "a space-separated list of AAGUIDs. Per default all authenticators are acceptable.")
                     },
                     WEBAUTHNACTION.REQ: {
@@ -634,7 +634,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: {
                         'type': 'str',
-                        'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens"
+                        'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens. "
                                   "Default: ecdsa_preferred"),
                         'group': GROUP.TOKEN,
                         'value': [
@@ -646,7 +646,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
-                        'desc': _("Whether to request attestation data when enrolling a new WebAuthn token."
+                        'desc': _("Whether to request attestation data when enrolling a new WebAuthn token. "
                                   "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
                                   "Default: direct (ask for non-anonymized attestation data)"),
                         'group': GROUP.TOKEN,
@@ -658,8 +658,8 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: {
                         'type': 'str',
-                        'desc': _("Whether and how strictly to check authenticator attestation data."
-                                  "Note: If the attestation form is none, the attestation level needs to also be none."
+                        'desc': _("Whether and how strictly to check authenticator attestation data. "
+                                  "Note: If the attestation form is none, the attestation level needs to also be none. "
                                   "Default: untrusted (attestation is required, but can be unknown or self-signed)"),
                         'group': GROUP.TOKEN,
                         'value': [
@@ -685,8 +685,8 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
-                        'desc': _('Use an alternate challenge text for telling the '
-                                  'user to confirm with his WebAuthn device')
+                        'desc': _("Use an alternate challenge text for telling the "
+                                  "user to confirm with his WebAuthn device.")
                     }
                 }
             }
