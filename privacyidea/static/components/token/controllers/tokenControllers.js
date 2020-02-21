@@ -156,7 +156,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     ConfigFactory, instanceUrl,
                                                     $http, hotkeys,
                                                     gettextCatalog,
-                                                    inform, U2fFactory) {
+                                                    inform, U2fFactory, webAuthnToken) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -188,6 +188,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.instanceUrl = instanceUrl;
     $scope.click_wait = true;
     $scope.U2FToken = {};
+    $scope.webAuthnToken = {};
     // System default values for enrollment
     $scope.systemDefault = {};
     // questions for questionnaire token
@@ -232,6 +233,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
+            "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
             "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
@@ -393,6 +395,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
+        $scope.webAuthnToken = {};
         $scope.enrolledToken = data.detail;
         $scope.click_wait=false;
         if ($scope.enrolledToken.otps) {
@@ -416,12 +419,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
         }
         if ($scope.enrolledToken.u2fRegisterRequest) {
-            // This is the first step of U2F registering
-            // save serial
+            // This is the first step of U2F registering, save serial.
             $scope.serial = data.detail.serial;
-            // We need to send the 2nd stage of the U2F enroll
-            $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
-            $scope.click_wait=true;
+
+            $scope.register_fido($scope.enrolledToken.u2fRegisterRequest, U2fFactory, $scope.U2FToken);
+        }
+        if ($scope.enrolledToken.webAuthnRegisterRequest) {
+            // This is the first step of U2F registering, save serial.
+            $scope.serial = data.detail.serial;
+
+            $scope.register_fido($scope.enrolledToken.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
         }
         if ($scope.enrolledToken.rollout_state === "clientwait") {
             $scope.pollTokenInfo();
@@ -486,18 +493,20 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
     };
 
-    // U2F
-    $scope.register_u2f = function (registerRequest) {
-        U2fFactory.register_request(registerRequest, function (params) {
+    // U2F and WebAuthn
+    $scope.register_fido = function (registerRequest, Factory, token) {
+        // We need to send the 2nd stage of the U2F enroll
+        Factory.register_request(registerRequest, function (params) {
             params.serial = $scope.serial;
             TokenFactory.enroll($scope.newUser,
                 params, function (response) {
                     $scope.click_wait = false;
-                    $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
-                    $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
-                    //debug: console.log($scope.U2FToken);
+                    token.subject = response.detail.u2fRegisterResponse.subject;
+                    token.vendor = token.subject.split(" ")[0];
+                    console.log(token);
                 });
         });
+        $scope.click_wait = true;
     };
 
     // get the list of configured RADIUS server identifiers
