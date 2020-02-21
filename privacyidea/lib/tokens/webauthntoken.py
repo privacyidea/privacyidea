@@ -573,7 +573,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
-                        'desc': _("Use an alternate challenge text for telling the user to confirm with his WebAuthn "
+                        'desc': _("Use an alternative challenge text for telling the user to confirm with his WebAuthn "
                                   "token.")
                     }
                 },
