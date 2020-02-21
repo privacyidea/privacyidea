@@ -271,6 +271,7 @@ class WebAuthnTokenTestCase(MyTestCase):
                                           })
         self.assertTrue(sign_count > 0)
 
+
 class WebAuthnTestCase(unittest.TestCase):
     @staticmethod
     def getWebAuthnCredential():
