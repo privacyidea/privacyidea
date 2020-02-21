@@ -180,9 +180,15 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 
 """
 
+# Images of the keys shown during enrollment.
+#
+# The solokeys image is copyright (C) 2020 Solokeys. License: CC-BY-SA 4.0
+#
 IMAGES = {"yubico": "static/img/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "static/img/plugup.jpg",
-          "u2fzero.com": "static/img/u2fzero.png"}
+          "u2fzero.com": "static/img/u2fzero.png",
+          "solokeys": "static/img/solokeys.png"}
+
 U2F_Version = "U2F_V2"
 
 log = logging.getLogger(__name__)
