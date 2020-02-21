@@ -1435,7 +1435,7 @@ def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
 
-    This wraps the endpoints /token/init, /validate/triggerchallenge, and
+    This wraps the endpoints /token/init, /validate/triggerchallenge, /auth, and
     /validate/check. It will add WebAuthn configuration information to the
     requests, wherever a piece of information is needed for several different
     requests and thus cannot be provided by one of the more specific wrappers
@@ -1460,11 +1460,38 @@ def webauthntoken_request(request, action):
     :rtype:
     """
 
-    ttype = request.all_data.get("type")
+    webauthn = False
+    scope = None
 
-    # If this is a WebAuthn token
+    # Check if this is an enrollment request for a WebAuthn token.
+    ttype = request.all_data.get("type")
     if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
-        scope = request.all_data.get("scope")
+        webauthn = True
+        scope = SCOPE.ENROLL
+
+    # Check if this is an authentication request (as opposed to an authorization
+    # request), and the request is either for authentication with a WebAuthn
+    # token, or for authentication with any token of a particular user.
+    #
+    # This logic means that we will add WebAuthn specific information to any
+    # unspecific authentication request, even if the user does not actually
+    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
+    # passive and will just pull values from policies and add them to properly
+    # prefixed fields in the request data, this is not a problem.
+    if 'pass' in request.all_data \
+            or 'password' in request.all_data \
+            and ('serial' not in request.all_data
+                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+        webauthn = True
+        scope = SCOPE.AUTH
+
+    # Check if a WebAuthn token is being authorized.
+    if is_webauthn_assertion_response(request.all_data):
+        webauthn = True
+        scope = SCOPE.AUTHZ
+
+    # If this is a WebAuthn token, or an authentication request for no particular token.
+    if webauthn:
         actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
 
         if WEBAUTHNACTION.TIMEOUT in actions:
@@ -1472,7 +1499,7 @@ def webauthntoken_request(request, action):
                 .user(g,
                       scope=scope,
                       action=WEBAUTHNACTION.TIMEOUT,
-                      user_object=request.User if request.User else None) \
+                      user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=True)
             timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
@@ -1484,7 +1511,7 @@ def webauthntoken_request(request, action):
                 .user(g,
                       scope=scope,
                       action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
-                      user_object=request.User if request.User else None) \
+                      user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=True)
             user_verification_requirement = list(user_verification_requirement_policies)[0] \
                 if user_verification_requirement_policies \
@@ -1503,7 +1530,7 @@ def webauthntoken_request(request, action):
                 .user(g,
                       scope=SCOPE.ENROLL,
                       action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                      user_object=request.User if request.User else None) \
+                      user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,
                                allow_white_space_in_action=True)
             allowed_aaguids = set(
@@ -1516,15 +1543,14 @@ def webauthntoken_request(request, action):
                 request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
                     = list(allowed_aaguids)
 
-        if scope in [SCOPE.ENROLL, SCOPE.AUTHZ]:
-            request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
+        request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 
     return True
 
 
 def webauthntoken_authz(request, action):
     """
-    This is a WebAuthn token specific wrapper for the /validate/check endpoint.
+    This is a WebAuthn token specific wrapper for the /auth, and /validate/check endpoints.
 
     This will enrich the authorization request for WebAuthn tokens with the
     necessary configuration information from policy actions with
@@ -1534,9 +1560,6 @@ def webauthntoken_authz(request, action):
     simply be augmented with the policies the attestation certificate is to be
     matched against.
 
-    This will also add a parameter called `scope` to the request, with a value
-    of SCOPE.AUTHZ. This is later consumed by the webauthn_request() decodator.
-
     :param request:
     :type request:
     :param action:
@@ -1545,30 +1568,25 @@ def webauthntoken_authz(request, action):
     :rtype
     """
 
-    ttype = request.all_data.get("type")
-
     # If a WebAuthn token is being authorized.
-    if ttype \
-            and ttype.lower() == WebAuthnTokenClass.get_class_type() \
-            and is_webauthn_assertion_response(request.all_data):
+    if is_webauthn_assertion_response(request.all_data):
         allowed_certs_pols = Match\
             .user(g,
                   scope=SCOPE.AUTHZ,
                   action=WEBAUTHNACTION.REQ,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False)
 
         request.all_data[WEBAUTHNACTION.REQ] \
             = list(allowed_certs_pols)
-
-        request.all_data["scope"] = SCOPE.AUTHZ
 
     return True
 
 
 def webauthntoken_auth(request, action):
     """
-    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerechallenge and /validate/check.
+    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerchallenge,
+    /validate/check, and /auth.
 
     This will enrich the challenge creation request for WebAuthn tokens with the
     necessary configuration information from policy actions with
@@ -1579,9 +1597,6 @@ def webauthntoken_auth(request, action):
 
     Both of these policies are optional, and have sensible defaults.
 
-    This will also add a parameter called `scope` to the request, with a value
-    of SCOPE.AUTH. This is later consumed by the webauthn_request() decodator.
-
     :param request:
     :type request:
     :param action:
@@ -1590,17 +1605,24 @@ def webauthntoken_auth(request, action):
     :rtype:
     """
 
-    ttype = request.all_data.get("type")
-
-    # If a Webauthn token is being authenticated (as opposed to being authorized).
-    if ttype \
-            and ttype.lower() == WebAuthnTokenClass.get_class_type() \
-            and not is_webauthn_assertion_response(request.all_data):
+    # If this is an authentication request (as opposed to an authorization
+    # request), and the request is either for authentication with a WebAuthn
+    # token, or for authentication with any token of a particular user.
+    #
+    # This logic means that we will add WebAuthn specific information to any
+    # unspecific authentication request, even if the user does not actually
+    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
+    # passive and will just pull values from policies and add them to properly
+    # prefixed fields in the request data, this is not a problem.
+    if 'pass' in request.all_data \
+            or 'password' in request.all_data \
+            and ('serial' not in request.all_data
+                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
         allowed_transports_policies = Match\
             .user(g,
                   scope=SCOPE.AUTH,
                   action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False,
                            allow_white_space_in_action=True)
         allowed_transports = set(
@@ -1608,7 +1630,7 @@ def webauthntoken_auth(request, action):
             for allowed_transports_policy in (
                 list(allowed_transports_policies)
                 if allowed_transports_policies
-                else DEFAULT_ALLOWED_TRANSPORTS
+                else [DEFAULT_ALLOWED_TRANSPORTS]
             )
             for transport in allowed_transports_policy.split()
         )
@@ -1617,7 +1639,7 @@ def webauthntoken_auth(request, action):
             .user(g,
                   scope=SCOPE.AUTH,
                   action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True,
                            allow_white_space_in_action=True,
                            write_to_audit_log=False)
@@ -1629,8 +1651,6 @@ def webauthntoken_auth(request, action):
             = list(allowed_transports)
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
-
-        request.all_data["scope"] = SCOPE.AUTH
 
     return True
 
@@ -1659,9 +1679,6 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
     set, we bail out.
 
-    This will also add a parameter called `scope` to the request, with a value
-    of SCOPE.ENROLL. This is later consumed by the webauthn_request() decodator.
-
     :param request:
     :type request:
     :param action:
@@ -1676,7 +1693,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.RELYING_PARTY_ID,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True)
         if rp_id_policies:
             rp_id = list(rp_id_policies)[0]
@@ -1687,7 +1704,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.RELYING_PARTY_NAME,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True,
                            allow_white_space_in_action=True)
         if rp_name_policies:
@@ -1695,8 +1712,8 @@ def webauthntoken_enroll(request, action):
         else:
             raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
 
-        # The RP ID is a domain name and thus may not contain any punctuation except '-'.
-        if not set(string.punctuation).intersection(rp_id).issubset(set('-')):
+        # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
+        if not set(string.punctuation).intersection(rp_id).issubset({'-', '.'}):
             log.warning(
                 "Illegal value for {0!s} (must be a domain name): {1!s}"
                     .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))
@@ -1708,7 +1725,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True)
         authenticator_attachment = list(authenticator_attachment_policies)[0] \
             if authenticator_attachment_policies \
@@ -1719,7 +1736,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True)
         public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
             if public_key_credential_algorithm_preference_policies \
@@ -1734,7 +1751,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True)
         authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
             if authenticator_attestation_level_policies \
@@ -1748,7 +1765,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True)
         authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
             if authenticator_attestation_form_policies \
@@ -1758,7 +1775,7 @@ def webauthntoken_enroll(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=True,
                            allow_white_space_in_action=True,
                            write_to_audit_log=False)
@@ -1779,8 +1796,6 @@ def webauthntoken_enroll(request, action):
             = authenticator_attestation_form
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
-
-        request.all_data["scope"] = SCOPE.ENROLL
 
     return True
 
@@ -1836,7 +1851,7 @@ def webauthntoken_allowed(request, action):
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=WEBAUTHNACTION.REQ,
-                  user_object=request.User if request.User else None)\
+                  user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False)
 
         allowed_aaguids = getParam(request.all_data, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
