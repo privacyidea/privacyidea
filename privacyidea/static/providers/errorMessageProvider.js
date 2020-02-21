@@ -79,7 +79,7 @@ angular
                     "The operation is insecure."
                 ),
                 "NetworkError": gettextCatalog.getString(
-                    "A network error occured."
+                    "A network error occurred."
                 ),
                 "AbortError": gettextCatalog.getString(
                     "The operation was aborted."

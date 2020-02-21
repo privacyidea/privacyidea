@@ -381,7 +381,7 @@ omitted, if not provided by the authenticator. The
 *assertionClientExtensions* – if available – must be encoded as a utf-8 JSON
 string, and transmitted to the server as web-safe base64. The *userHandle*
 is simply passed as a string, note – however – that it may be necessary to
-reencode this to utf-16, since the authenticator will return utf-8, while the
+re-encode this to utf-16, since the authenticator will return utf-8, while the
 library making the http request will likely require all parameters in the
 native encoding of the language (usually utf-16).
 
