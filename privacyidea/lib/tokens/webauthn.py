@@ -1517,7 +1517,7 @@ class WebAuthnAssertionResponse(object):
             #
             # Let JSONtext be the result of running UTF-8 decode on the
             # value of cData.
-            json_text = c_data
+            json_text = to_unicode(c_data)
 
             # Step 6.
             #
