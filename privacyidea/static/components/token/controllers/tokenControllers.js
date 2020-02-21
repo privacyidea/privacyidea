@@ -501,7 +501,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             TokenFactory.enroll($scope.newUser,
                 params, function (response) {
                     $scope.click_wait = false;
-                    token.subject = response.detail.u2fRegisterResponse.subject;
+                    token.subject
+                        = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
                     token.vendor = token.subject.split(" ")[0];
                     console.log(token);
                 });
