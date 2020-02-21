@@ -3,6 +3,12 @@
 Upgrading
 ---------
 
+In any case before upgrading a major version read the document
+[READ_BEFORE_UPDATE](https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md)
+which is continously updated in the Github repository.
+Note, that when you are upgrading over several major versions, read all the comments
+for all versions.
+
 If you installed privacyIDEA via DEB or RPM repository you can use the normal
 system ways of *apt-get*, *aptitude* and *rpm* to upgrade privacyIDEA to the
 current version.
