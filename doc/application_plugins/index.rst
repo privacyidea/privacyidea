@@ -23,9 +23,9 @@ Pluggable Authentication Module
 
 .. index:: offline, PAM
 
-The PAM module of privacyIDEA directly communicates with the privacyIDEA
-server via the API. The PAM module also supports offline authentication. In
-this case you need to configure an offline machine application. (See
+The `PAM module of privacyIDEA <https://github.com/privacyidea/pam_python>`_ directly
+communicates with the privacyIDEA server via the API. The PAM module also supports offline
+authentication. In this case you need to configure an offline machine application. (See
 :ref:`application_offline`)
 
 You can install the PAM module with a ready made Debian package for Ubuntu or
@@ -122,8 +122,8 @@ by ":", for example::
 
    <username>:<serial number1>:<prefix1>:<prefix2>
 
-... doc/configuration/tokenconfig, add yubikey.rst to describe
-how to configure Client ID/apiid and API key
+.. doc/configuration/tokenconfig, add yubikey.rst to describe how to configure Client ID/apiid and API key
+
 
 Now create a second token representing the Yubikey, but this time
 use the ``Yubico Cloud mode``. Go to Tokens -> Enroll Token and select
@@ -165,17 +165,18 @@ With either setup, you can test the RADIUS setup using a command like this::
 Microsoft NPS server
 --------------------
 You can also use the Microsoft Network Protection Server with privacyIDEA.
-A full featured integration guide can be found at the NetKnights webpage
-[#NPS]_.
+A full featured integration guide can be found at the
+`NetKnights webpage <https://netknights
+.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/>`_.
 
 
 .. _simplesaml_plugin:
 
 simpleSAMLphp Plugin
 --------------------
-You can install the plugin for simpleSAMLphp on Ubuntu 14.04 LTS (see
-:ref:`install_ubuntu_simplesaml`) or on any other distribution using the
-source files from [#simpleSAML]_.
+You can install the plugin for simpleSAMLphp using the
+source files from the GitHub Repository `privacyidea-owncloud-app <https://netknights
+.it/en/produkte/privacyidea-owncloud-app/>`_.
 
 Follow the simpleSAMLphp instructions to configure your authsources.php.
 A usual configuration will look like this::
@@ -266,15 +267,10 @@ Anyway, in a productive environment you probably want to uncheck this feature.
 OTRS
 ----
 
-There are two plugins for OTRS. For OTRS version 4.0 and higher use
-*privacyIDEA-4_0.pm*.
+The OTRS Plugin can be found in its own
+`GitHub Repository <https://github.com/privacyidea/otrs>`__.
 
 This perl module needs to be installed to the directory ``Kernel/System/Auth``.
-
-On Ubuntu 14.04 LTS you can also install the module using the PPA repository
-and installing::
-
-   apt-get install privacyidea-otrs
 
 To activate the OTP authentication you need to add the following to
 ``Kernel/Config.pm``::
@@ -302,7 +298,7 @@ privacyIDEA.
 
 You need the authentication script ``privacyidea_apache.py`` and a valid
 configuration in ``/etc/privacyidea/apache.conf``. Both can be found on
-`GitHub <https://github.com/privacyidea/privacyidea/tree/master/authmodules/apache2>`_.
+`GitHub <https://github.com/privacyidea/privacyidea/tree/master/authmodules/apache2>`__.
 
 To activate the OTP authentication on a "Location" or "Directory" you need to
 configure Apache2 like this::
@@ -334,12 +330,8 @@ The NGINX plugin uses the internal scripting language ``lua`` of the NGINX
 webserver and ``redis`` as caching backend to provide basic authentication
 against privacyIDEA.
 
-On Ubuntu 14.04 LTS or Debian Jessi 8 you can easyly install the module
-by installing the following packages::
-
-    nginx-extras lua-nginx-redis lua-cjson redis-server
-
-You can retrieve the nginx plugin here: [#nginxPlugin]_
+You can retrieve the nginx plugin from `GitHub <https://github
+.com/dhoffend/lua-nginx-privacyidea>`__.
 
 To activate the OTP authentication on a "Location" you need to include the
 ``lua`` script that basically verifies the given credentials against the
@@ -348,7 +340,7 @@ location via subrequest which points to the privacyIDEA authentication backend
 (via proxy_pass).
 
 For the basic configuration you need to include the following lines to your
-``location`` block
+``location`` block::
 
     location / {
         # additional plugin configuration goes here #
@@ -397,9 +389,6 @@ ownCloud
 
 .. index:: ownCloud
 
-ownCloud < 9
-............
-
 The ownCloud plugin is a ownCloud user backend. The directory
 ``user_privacyidea`` needs to be copied to your owncloud ``apps`` directory.
 
@@ -421,27 +410,26 @@ original password from the original user backend.
 .. note:: At the moment using a desktop client with a one time password is not
    supported.
 
-ownCloud >= 9.1 and Nextcloud >= 10
-....................................
-
-ownCloud 9.1 and Nextcloud 10 come with a new two factor framework. The new
+**ownCloud 9.1 and Nextcloud 10** come with a new two factor framework. The new
 privacyIDEA ownCloud App allows you to add a second factor, that is centrally
 managed by privacyIDEA to the ownCloud or Nextcloud installation.
 
-The ownCloud privacyIDEA App is available here [#owncloud]_.
+The ownCloud privacyIDEA App is available from the `ownCloud App Store <https://marketplace
+.owncloud.com/apps/twofactor_privacyidea>`_.
 
 The App requires a subscription file to work for more than ten users. You can
- get the subscription file at NetKnights [#owncloudSubscription]_.
+get the subscription file from `NetKnights <https://netknights
+.it/en/produkte/privacyidea-owncloud-app/>`_.
 
 Django
 ------
 
 .. index:: Django
 
-You can add two factor authentication with privacyIDEA to Django using this
-Django plugin. See :ref:`django`.
+You can add two factor authentication with privacyIDEA to Django using `this
+Django plugin <https://github.com/jeweber/django-privacyidea-auth>`_.
 
-You can simple add ``PrivacyIDEA`` class to ``AUTHENTICATION_BACKENDS``
+You can simply add ``PrivacyIDEA`` class to the ``AUTHENTICATION_BACKENDS``
 settings of Django.
 
 
@@ -476,14 +464,6 @@ Further plugins
 .. index:: Dokuwiki, Wordpress, Contao, Django
 
 You can find further plugins for
-Dokuwiki, Wordpress, Contao and Django at [#cornelinuxGithub]_.
+Dokuwiki, Wordpress, Contao and Django at `cornelinux Github page <https://github
+.com/cornelinux?tab=repositories>`_.
 
-
-.. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
-.. [#privacyideaGithub] https://github.com/privacyidea/privacyidea/tree/master/authmodules
-.. [#cornelinuxGithub] https://github.com/cornelinux?tab=repositories
-.. [#nginxPlugin] https://github.com/dhoffend/lua-nginx-privacyidea
-.. [#NPS] https://netknights.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/
-.. [#django] https://github.com/jeweber/django-privacyidea-auth
-.. [#owncloud] https://apps.owncloud.com/content/show.php/privacyIDEA+ownCloud+App?content=174779
-.. [#owncloudSubscription] https://netknights.it/en/produkte/privacyidea-owncloud-app/
