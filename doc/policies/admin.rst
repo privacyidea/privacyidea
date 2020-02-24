@@ -201,7 +201,7 @@ characters ``+`` and ``-``.
 
    The PIN must not contain a character and must not contain a number.
    *test1234* would not be a valid PIN, since it does contains numbers and characters.
-   *test///* would not be a valid PIN, since it contains numbers.
+   *test///* would not be a valid PIN, since it contains characters.
 
 ``-s`` (denial)
 
@@ -214,7 +214,8 @@ characters ``+`` and ``-``.
    characters from the sum of the two groups.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
-   Note, how this is different to ``-s``.
+   Note, how this is different to ``-s``, since it allows special characters to be
+   included.
 
 ``[123456]``
 

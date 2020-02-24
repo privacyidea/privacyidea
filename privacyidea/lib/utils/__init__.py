@@ -1121,9 +1121,9 @@ def check_pin_policy(pin, policy):
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = {"c": "[a-zA-Z]",
-             "n": "[0-9]",
-             "s": "[\[\].:,;_<>+*!/()=?$§%&#~\^-]"}
+    chars = {"c": r"[a-zA-Z]",
+             "n": r"[0-9]",
+             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
     ret = True
     comment = []
 
