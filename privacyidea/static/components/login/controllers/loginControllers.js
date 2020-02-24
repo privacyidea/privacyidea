@@ -198,11 +198,12 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
-        }).error(function (error) {
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
+        }, function (response) {
             //debug: console.log("challenge response");
             //debug: console.log(error);
+            let error = response.data;
             $scope.login.password = "";
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
@@ -294,7 +295,7 @@ angular.module("privacyideaApp")
                             {type: "danger", ttl: 10000});
                 }
             }
-        }).then(function () {
+        }).finally(function () {
             // We delete the login object, so that the password is not
             // contained in the scope
             $scope.login = {username: "", password: ""};
@@ -312,8 +313,8 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
             PollingAuthFactory.stop();
         });
     };

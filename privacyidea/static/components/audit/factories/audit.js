@@ -34,15 +34,15 @@ myApp.factory("AuditFactory", function (AuthFactory,
                 $http.get(auditUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             download: function(params, filename, callback) {
                 $http.get(auditUrl + "/" + filename, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             }
         }
     });

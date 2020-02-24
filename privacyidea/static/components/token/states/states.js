@@ -48,12 +48,12 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "tokenAssignController"
                 })
                 .state('token.details', {
-                    url: "/details/{tokenSerial:.*}",
+                    url: "/details/:tokenSerial",
                     templateUrl: tokenpath + "token.details.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokenDetailController"
+                    controller: "tokenDetailController",
                 })
                 .state('token.lost', {
-                    url: "/lost/{tokenSerial:.*}",
+                    url: "/lost/:tokenSerial",
                     templateUrl: tokenpath + "token.lost.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokenLostController"
                 })
@@ -63,9 +63,10 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "tokenGetSerialController"
                 })
                 .state('token.enroll', {
-                    url: "/enroll/{realmname:.*}/{username:.*}",
+                    url: "/enroll/:realmname/:username",
                     templateUrl: tokenpath + "token.enroll.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokenEnrollController"
+                    controller: "tokenEnrollController",
+                    params: { realmname: null, username: null },
                 })
                 .state('token.wizard', {
                     url: "/wizard",

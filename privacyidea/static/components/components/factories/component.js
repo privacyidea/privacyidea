@@ -29,8 +29,8 @@ myApp.factory("ComponentFactory", function (AuthFactory,
             getClientType: function(callback) {
                 $http.get(clientUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             }
         }
     });
@@ -43,14 +43,14 @@ myApp.factory("SubscriptionFactory", function (AuthFactory, $http, $state,
         get: function(callback) {
             $http.get(subscriptionsUrl + "/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-            }).success(callback
-            ).error(AuthFactory.authError);
+            }).then(function(response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
         },
         delete: function(application, callback) {
             $http.delete(subscriptionsUrl + "/" + application, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-            }).success(callback
-            ).error(AuthFactory.authError);
+            }).then(function(response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
 
         }
     }
