@@ -8,7 +8,7 @@ Ubuntu Packages
 
 There are ready made packages for Ubuntu.
 Up to privacyIDEA 2.23 packages are available for 
-Ubuntu 16.04 LTS [#ubuntu1604]_.
+Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_.
 These are available via a public ppa repository [#ppa]_.
 
 Starting with privacyIDEA 3.0 packages are available 
