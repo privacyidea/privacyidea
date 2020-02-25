@@ -169,40 +169,7 @@ contents: cns
 This defines what characters an OTP PIN should contain when the user
 sets it.
 
-**c** are letters matching [a-zA-Z].
-
-**n** are digits matching [0-9].
-
-**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
-
-**Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
-require the user to choose OTP PINs that consist of letters and digits
-which have a minimum length of 8.
-
-``cn``
-
-   *test1234* and *test12$$* would be valid OTP PINs. *testABCD* would 
-   not be a valid OTP PIN.
-
-The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
-characters ``+`` and ``-``.
-
-``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
-and it must not contain any other characters.
-
-``-cn`` (substraction)
-
-   *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
-   not be valid OTP PINs. The later since it does not contain digits, the first 
-   (*test12$$*) since it does contain a special character ($), which it should not.
-
-``+cn`` (grouping)
-
-   combines the two required groups. I.e. the OTP PIN should contain
-   characters from the sum of the two groups.
-   *test1234*, *test12$$*, *test*
-   and *1234* would all be valid OTP PINs.
-
+This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
 auditlog
 ~~~~~~~~

@@ -1567,7 +1567,8 @@ def get_static_policy_definitions(scope=None):
                                     "desc": _("Specifiy the required "
                                               "contents of the OTP PIN. "
                                               "(c)haracters, (n)umeric, "
-                                              "(s)pecial, (o)thers. [+/-]!"),
+                                              "(s)pecial. Use modifiers +/- or a list "
+                                              "of allowed characters [1234567890]"),
                                     'group': GROUP.PIN},
             ACTION.OTPPINSETRANDOM: {
                 'type': 'int',
@@ -1788,7 +1789,8 @@ def get_static_policy_definitions(scope=None):
                                     "desc": _("Specifiy the required "
                                               "contents of the OTP PIN. "
                                               "(c)haracters, (n)umeric, "
-                                              "(s)pecial, (o)thers. [+/-]!"),
+                                              "(s)pecial. Use modifiers +/- or a list "
+                                              "of allowed characters [1234567890]"),
                                     'group': GROUP.PIN},
 
             ACTION.AUDIT: {

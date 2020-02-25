@@ -1115,21 +1115,25 @@ def check_pin_policy(pin, policy):
     "cn" means, that the PIN should contain a character and a number.
     "+cn" means, that the PIN should contain elements from the group of characters and numbers
     "-ns" means, that the PIN must not contain numbers or special characters
+    "[12345]" means, that the PIN may only consist of the characters 1,2,3,4 and 5.
 
     :param pin: The PIN to check
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = {"c": "[a-zA-Z]",
-             "n": "[0-9]",
-             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
-    exclusion = False
-    grouping = False
+    chars = {"c": r"[a-zA-Z]",
+             "n": r"[0-9]",
+             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
     ret = True
     comment = []
 
     if not policy:
         return False, "No policy given."
+
+    if policy[0] in ["+", "-"] or policy[0] is not "[":
+        for char in policy[1:]:
+            if char not in chars.keys():
+                raise PolicyError("Unknown character specifier in PIN policy.")
 
     if policy[0] == "+":
         # grouping
@@ -1151,6 +1155,13 @@ def check_pin_policy(pin, policy):
             ret = False
             comment.append("Not allowed character in PIN!")
 
+    elif policy[0] == "[" and policy[-1] == "]":
+        # only allowed characters
+        allowed_chars = policy[1:-1]
+        for ch in pin:
+            if ch not in allowed_chars:
+                ret = False
+                comment.append("Not allowed character in PIN!")
     else:
         for c in chars:
             if c in policy and not re.search(chars[c], pin):
