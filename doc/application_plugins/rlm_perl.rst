@@ -6,8 +6,8 @@ RADIUS plugin
 Installation
 ------------
 
-If you want to install the FreeRADIUS Plugin on Ubuntu 14.04 LTS or 16.04 LTS, this can be
-easily done, since there is a ready made package (see
+If you want to install the FreeRADIUS Plugin on Ubuntu 16.04 LTS or 18.04 LTS,
+this can be easily done since there is a ready made package (see
 :ref:`install_ubuntu_freeradius`).
 
 However, it can also be installed on other distributions.
@@ -54,7 +54,6 @@ While you define the default authenticate type to be ``Perl`` in the
    safe in the
    past. So in case you are using old perl dependencies and are experiencing
    thread problems, please start FreeRADIUS with the -t switch.
-   (Everything works fine with Ubuntu 14.04 and Debian 7.)
 
 Configuration
 -------------

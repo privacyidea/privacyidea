@@ -8,7 +8,7 @@ Ubuntu Packages
 
 There are ready made packages for Ubuntu.
 Up to privacyIDEA 2.23 packages are available for 
-Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_. 
+Ubuntu 14.04 LTS and 16.04 LTS [#ubuntu1604]_.
 These are available via a public ppa repository [#ppa]_.
 
 Starting with privacyIDEA 3.0 packages are available 
@@ -146,53 +146,6 @@ To install this module run::
    apt-get install privacyidea-radius
 
 For further details see :ref:`rlm_perl`.
-
-.. _install_ubuntu_simplesaml:
-
-SimpleSAMLphp
-.............
-
-Starting with 1.4 privacyIDEA also supports SAML via a plugin
-for simpleSAMLphp [#simpleSAML]_.
-The simpleSAMLphp service does not need to run on the same machine
-like the privacyIDEA server.
-
-To install it on a Ubuntu 14.04 system please run::
-
-   apt-get install privacyidea-simplesamlphp
-
-For further details see :ref:`simplesaml_plugin`.
-
-PAM
-....
-
-.. index:: PAM
-
-privacyIDEA also comes with a PAM library to add two factor authentication to
-any Linux system. You can run one central privacyIDEA server and configure
-all other systems using the PAM library to authenticate against this
-privacyIDEA.
-
-To install it on a Ubuntu 14.04 system please run::
-
-   apt-get install privacyidea-pam
-
-For further details see :ref:`pam_plugin`.
-
-OTRS
-....
-
-.. index:: OTRS
-
-OTRS is an important Open Source Ticket Request System. It is written in Perl
-and privacyIDEA provides an authentication plugin to authenticate at OTRS
-with two factors.
-
-To install it on Ubuntu 14.04 please run::
-
-   apt-get install privacyidea-otrs
-
-For further details and configuration see :ref:`otrs_plugin`.
 
 .. rubric:: Footnotes
 
