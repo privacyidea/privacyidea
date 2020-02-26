@@ -89,7 +89,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                 ($scope.subscription_state === 1) ||
                 ($scope.subscription_state === 2)) {
                 $('#dialogWelcome').modal("show");
-                $("body").addClass("modal-open");
             }
         }
     }
