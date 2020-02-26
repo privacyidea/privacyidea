@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 This test file tests the lib.tokens.questionnairetoken
 This depends on lib.tokenclass
@@ -69,6 +71,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                                            options={"transaction_id":
                                                         transactionid})
         self.assertEqual(r, 1)
+        token.delete_token()
 
     def test_03_get_setting_type(self):
         r = QuestionnaireTokenClass.get_setting_type("question.question.1")
@@ -85,3 +88,54 @@ class QuestionnaireTokenTestCase(MyTestCase):
                             })
         _r, question, _transaction, _none = token.create_challenge()
         self.assertEqual("dumb questiontype", question)
+        token.delete_token()
+
+    def test_05_unicode_question(self):
+        questions = {u'cité': u'Nîmes',
+                     u'城市': u'北京',
+                     'ciudad': u'Almería'}
+        set_privacyidea_config("question.num_answers", 2)
+        token = init_token({"type": "question",
+                            "pin": self.pin,
+                            "user": "cornelius",
+                            "realm": self.realm1,
+                            "questions": json.dumps(questions)
+                            })
+        self.assertEqual(token.type, "question")
+        r = token.create_challenge()
+        self.assertEqual(r[0], True)
+        question = r[1]
+        transactionid = r[2]
+        self.assertTrue(question in questions)
+
+        # Now that we have the question, we can give the answer
+        r = token.check_challenge_response(passw=questions[question],
+                                           options={"transaction_id": transactionid})
+        self.assertEqual(r, 1)
+        token.delete_token()
+
+    def test_06_wrong_answer(self):
+        questions = {'ciudad': u'Almería'}
+        set_privacyidea_config("question.num_answers", 1)
+        token = init_token({"type": "question",
+                            "pin": self.pin,
+                            "user": "cornelius",
+                            "realm": self.realm1,
+                            "questions": json.dumps(questions)
+                            })
+        self.assertEqual(token.type, "question")
+        r = token.create_challenge()
+        self.assertEqual(r[0], True)
+        question = r[1]
+        transactionid = r[2]
+        self.assertTrue(question in questions)
+
+        # What happens if the answer is wrong?
+        r = token.check_challenge_response(passw=u'Málaga',
+                                           options={"transaction_id": transactionid})
+        self.assertEqual(r, -1)
+        # Try to answer again
+        r = token.check_challenge_response(passw=u'Almería',
+                                           options={"transaction_id": transactionid})
+        self.assertEqual(r, 1)
+        token.delete_token()

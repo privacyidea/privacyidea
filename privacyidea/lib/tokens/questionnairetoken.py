@@ -263,7 +263,7 @@ class QuestionnaireTokenClass(TokenClass):
         :param options: additional arguments from the request, which could
                         be token specific. Usually "transaction_id"
         :type options: dict
-        :return: return otp_counter. If -1, challenge does not match
+        :return: return 1 if the answer to the question is correct, -1 otherwise.
         :rtype: int
         """
         options = options or {}
