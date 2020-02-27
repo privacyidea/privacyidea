@@ -439,3 +439,26 @@ In this case the *challenge_text_footer* also should contain the closing
 tag.
 
 .. note:: The footer will only be used, if the header is also set.
+
+.. _policy_indexedsecret:
+
+indexedsecret_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the user to provide the characters of the
+secret from certain positions. The default text is:
+
+*Please enter the position 3,1,6,7 from your secret.*
+
+with *3,1,6,7* being the positions of the characters, the user is supposed to
+enter. This text can be changed with this policy setting.
+The next needs to contain the python formatting tag *{0!s}* which will
+be replaced with the list of the requested positions.
+
+indexedsecret_count
+~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the used for a number of characters from
+a shared secret. The default number to ask is 2.
+
+The number of requested positions can be changed using this policy.

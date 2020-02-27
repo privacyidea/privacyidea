@@ -2,11 +2,12 @@
 This test file tests the lib.tokens.smstoken
 """
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass
+from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION, PolicyClass
 from privacyidea.models import Token
 from privacyidea.lib.token import init_token, remove_token
 
@@ -97,10 +98,41 @@ class IndexedSecretTokenTestCase(MyTestCase):
 
     def test_02_init_token(self):
         # Create the tokenclass via init_token
+        my_secret = "mysimplesecret"
         t = init_token({"type": "indexedsecret",
-                        "otpkey": "MySecret",
+                        "otpkey": my_secret,
                         "serial": "PIIX1234"})
         self.assertEqual(t.token.tokentype, "indexedsecret")
         self.assertEqual(t.token.serial, "PIIX1234")
 
+        remove_token("PIIX1234")
+
+    def test_03_challenge_text_position_count(self):
+        # test challenge text and position count
+        my_secret = "mysimplesecret"
+        set_policy("pol1", scope=SCOPE.AUTH, action="indexedsecret_{0!s}=5".format(PIIXACTION.COUNT))
+        set_policy("pol2", scope=SCOPE.AUTH,
+                   action="indexedsecret_challenge_text=Hier sind die Positionen: {0!s}")
+
+        t = init_token({"type": "indexedsecret",
+                        "otpkey": my_secret,
+                        "serial": "PIIX1234"})
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit
+        g.policy_object = PolicyClass()
+
+        # Create a challenge
+        r, message, transaction_id, attribute = t.create_challenge(options={"g": g})
+        # The challenge text from the policy is used.
+        self.assertIn("Hier sind die Positionen:", message)
+        password_list = [my_secret[x - 1] for x in attribute.get("random_positions")]
+        password = "".join(password_list)
+        # The password has length 5, due to the pol2
+        self.assertEqual(5, len(password))
+        # Successful auth
+        r = t.check_challenge_response(passw=password, options={"transaction_id": transaction_id})
+        self.assertEqual(1, r)
+
+        delete_policy("pol1")
+        delete_policy("pol2")
         remove_token("PIIX1234")

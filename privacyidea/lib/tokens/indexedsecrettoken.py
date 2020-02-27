@@ -54,6 +54,7 @@ DEFAULT_POSITION_COUNT = 2
 
 class PIIXACTION(object):
     ATTRIBUTE = "indexedsecretattribute"
+    COUNT = "count"
 
 
 class IndexedSecretTokenClass(TokenClass):
@@ -102,8 +103,15 @@ class IndexedSecretTokenClass(TokenClass):
                    ACTION.CHALLENGETEXT: {
                        'type': 'str',
                        'desc': _('Use an alternate challenge text for telling the '
-                                 'user which positions of the secret he should enter.')
+                                 'user which positions of the secret he should enter.'),
+                       'group': "Indexed Secret Token"
                    },
+                   PIIXACTION.COUNT: {
+                       'type': 'int',
+                       'desc': _('Number of necessary positions to be answered by the user.'),
+                       'group': "Indexed Secret Token"
+                   }
+
                },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
@@ -166,13 +174,18 @@ class IndexedSecretTokenClass(TokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or DEFAULT_CHALLENGE_TEXT
+        position_count = int(get_action_values_from_options(SCOPE.AUTH,
+                                                            "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                                 PIIXACTION.COUNT),
+                                                            options) or DEFAULT_POSITION_COUNT)
+
         attributes = {'state': transactionid}
         validity = 120
 
         if self.is_active() is True:
             # We need to get a number of random positions from the secret string
             secret_length = len(self.token.get_otpkey().getKey())
-            random_positions = [random.randint(1, secret_length) for _x in range(0, DEFAULT_POSITION_COUNT)]
+            random_positions = [random.randint(1, secret_length) for _x in range(0, position_count)]
             position_str = ",".join(["{0!s}".format(x) for x in random_positions])
             attributes["random_positions"] = random_positions
 
