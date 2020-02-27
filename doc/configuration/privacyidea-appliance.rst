@@ -12,7 +12,7 @@ It can be found in a Github repository [#applianceGithub]_.
 This tool is supposed to run on Ubuntu 16.04 LTS.
 You can find a ready install ISO at another Github reposity [#applianceISO]_.
 
-.. note:: The ready made Ubuntu package is only available with a Service Level Agreement from
+.. note:: The ready made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
    the company NetKnights [#applianceNetKnights]_.
 
 To configure the system, login as the user root on your machine and
