@@ -16,7 +16,7 @@
             <input name="identifier" id="identifier" class="form-control"
                    ng-model="params.identifier" required
                    placeholder="myRadiusServer"
-                   pattern="{{ inputNamePatterns.withoutTestRequest.pattern }}"
+                   ng-pattern="inputNamePatterns.withoutTestRequest.pattern"
                    title="{{ inputNamePatterns.withoutTestRequest.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
