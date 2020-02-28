@@ -198,11 +198,12 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
-        }).error(function (error) {
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
+        }, function (response) {
             //debug: console.log("challenge response");
             //debug: console.log(error);
+            let error = response.data;
             $scope.login.password = "";
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
@@ -294,7 +295,7 @@ angular.module("privacyideaApp")
                             {type: "danger", ttl: 10000});
                 }
             }
-        }).then(function () {
+        }).finally(function () {
             // We delete the login object, so that the password is not
             // contained in the scope
             $scope.login = {username: "", password: ""};
@@ -312,8 +313,8 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
             PollingAuthFactory.stop();
         });
     };
@@ -378,10 +379,7 @@ angular.module("privacyideaApp")
             //debug: console.log("successfully authenticated");
             //debug: console.log($scope.loggedInUser);
             if ( $scope.unlocking ) {
-                $('#dialogLock').modal().hide();
-                // Hack, since we can not close the modal and thus the body
-                // keeps the modal-open and thus has no scroll-bars
-                $("body").removeClass("modal-open");
+                $('#dialogLock').modal('hide');
             } else {
                 // if we are unlocking we do NOT go to the tokens
                 $location.path("/token");
@@ -412,9 +410,6 @@ angular.module("privacyideaApp")
         $scope.welcomeStep += 1;
         if ($scope.welcomeStep === 4) {
             $('#dialogWelcome').modal("hide");
-            // Hack, since we can not close the modal and thus the body
-            // keeps the modal-open and thus has no scroll-bars
-            $("body").removeClass("modal-open");
         }
     };
     $scope.resetWelcome = function() {
@@ -424,9 +419,6 @@ angular.module("privacyideaApp")
     $scope.closeNoToken = function() {
         $scope.dialogNoToken = false;
         $('#dialogNoToken').modal('hide');
-        // Hack, since we can not close the modal and thus the body
-        // keeps the modal-open and thus has no scroll-bars
-        $("body").removeClass("modal-open");
     };
 
     $scope.lock_screen = function () {
@@ -434,7 +426,10 @@ angular.module("privacyideaApp")
         $scope.loggedInUser.auth_token = null;
         $scope.welcomeStep = 0;
         Idle.unwatch();
-        $('#dialogLock').modal().show();
+        $('#dialogLock').modal({
+            keyboard: false,
+            backdrop: 'static',
+        }).show();
     };
 
     $scope.about = function() {

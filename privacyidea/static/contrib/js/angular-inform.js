@@ -151,7 +151,7 @@ angular.module('inform-exception', ['inform'])
           inform = inform || $injector.get('inform');
           inform.add(exception.toString(), { type: 'danger', ttl: 0 });
         } catch(ex) {
-          //debug: console.log('$exceptionHandler', ex);
+          console.log('$exceptionHandler', ex);
         }
         $delegate(exception, cause);
       };
@@ -167,7 +167,7 @@ angular.module('inform-http-exception', ['inform'])
         var msg = 'Network error (' + rejection.status + '): ' + rejection.statusText;
         inform.add(msg, { type: 'danger', ttl: 0});
       } catch(ex) {
-        //debug: console.log('$httpProvider', ex);
+        console.log('$httpProvider', ex);
       }
 
       return $q.reject(rejection);
@@ -191,3 +191,4 @@ angular.module('inform').run(['$templateCache', function($templateCache){
   $templateCache.put('angular-inform/directive.ng.html', '<div class=\"inform\"><div ng-repeat=\"msg in messages | orderBy:\'-tickCount\'\" class=\"inform-message-wrap\"><div class=\"inform-message alert alert-{{ msg.type }} alert-dismissible\" role=\"alert\" ng-mouseenter=\"cancelTimeout(msg)\" ng-mouseleave=\"setTimeout(msg)\"><button type=\"button\" class=\"close\" ng-click=\"remove(msg)\"><span>&times;</span></button> <span class=\"inform-message-content\"><span class=\"badge inform-badge\" ng-if=\"msg.count > 1\">{{ msg.count }}</span> <span ng-if=\"msg.html\" ng-bind-html=\"msg.content\"></span> <span ng-if=\"!msg.html\" ng-bind=\"msg.content\"></span></span></div></div></div>');
 }]);
 })(angular);
+//# sourceMappingURL=angular-inform.js.map

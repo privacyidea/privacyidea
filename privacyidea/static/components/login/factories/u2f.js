@@ -93,9 +93,11 @@ angular.module("privacyideaAuth")
                                 transaction_id: transactionid
                             }, {
                                 withCredentials: true
-                            }).success(function (data) {
-                                login_callback(data);
-                            }).error(function (data) {
+                            }).then(function (response) {
+                                login_callback(response.data);
+                            }, function (error) {
+                                //debug console.log("U2F error:");
+                                //debug console.log(error);
                                 inform.add(gettextCatalog.getString("Error in U2F response."),
                                     {type: "danger", ttl: 10000});
                             });

@@ -33,7 +33,7 @@
         <div class="col-sm-6">
             <input name="policyname" id="policyname" class="form-control"
                    ng-model="policyname" placeholder="policy1"
-                   pattern="{{ inputNamePatterns.simple.pattern }}"
+                   ng-pattern="inputNamePatterns.simple.pattern"
                    title="{{ inputNamePatterns.simple.title | translate }}"
                    autofocus required/>
             <p class="help-block"
