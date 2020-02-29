@@ -81,7 +81,7 @@ from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
 import functools
@@ -1719,7 +1719,7 @@ def webauthntoken_enroll(request, action):
             raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
 
         # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
-        if not set(string.punctuation).intersection(rp_id).issubset({'-', '.'}):
+        if not is_fqdn(rp_id):
             log.warning(
                 "Illegal value for {0!s} (must be a domain name): {1!s}"
                     .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))

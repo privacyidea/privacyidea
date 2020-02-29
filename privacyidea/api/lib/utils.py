@@ -23,6 +23,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import string
+
 from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
@@ -374,3 +376,24 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
                 return False
 
     return True
+
+def is_fqdn(x):
+    """
+    Check whether a given string could plausibly be a FQDN.
+
+    This checks, whether a string could be a FQDN. Please note, that this
+    function will currently return true for plenty of strings, that are not
+    actually valid FQDNs. This is expected. This function performs a simple
+    plausibility check to ward against obvious mistakes, like a user
+    accidentally putting in a full url with protocol. The caller should not
+    rely on this function, if it is absolutely crucial, that the checked
+    string is a valid FQDN. It is solely intended to be used to implement user
+    convenience, by alerting the user early on, if they have misunderstood
+    a particular fields purpose.
+
+    :param x: String to check.
+    :type x: basestring
+    :return: Whether the given string may plausibly be a FQDN.
+    :rtype: bool
+    """
+    return set(string.punctuation).intersection(x).issubset({'-', '.'})
