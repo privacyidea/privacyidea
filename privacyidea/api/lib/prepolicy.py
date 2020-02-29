@@ -91,7 +91,7 @@ import importlib
 
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHENTICATOR_ATTACHMENT_TYPES,
-                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS)
+                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS, ATTESTATION_FORMS)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
@@ -1469,26 +1469,29 @@ def webauthntoken_request(request, action):
         webauthn = True
         scope = SCOPE.ENROLL
 
-    # Check if this is an authentication request (as opposed to an authorization
-    # request), and the request is either for authentication with a WebAuthn
-    # token, or for authentication with any token of a particular user.
+    # Check if a WebAuthn token is being authorized.
+    if is_webauthn_assertion_response(request.all_data):
+        webauthn = True
+        scope = SCOPE.AUTHZ
+
+    # Check if this is an auth request (as opposed to an enrollment), and it
+    # is not a WebAuthn authorization, and the request is either for
+    # authentication with a WebAuthn token, or not for any particular token at
+    # all (since authentication requests contain almost no parameters, it is
+    # necessary to define them by what they are not, rather than by what they
+    # are).
     #
     # This logic means that we will add WebAuthn specific information to any
     # unspecific authentication request, even if the user does not actually
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if 'pass' in request.all_data \
-            or 'password' in request.all_data \
+    if not request.all_data.get("type") \
+            and not is_webauthn_assertion_response(request.all_data) \
             and ('serial' not in request.all_data
-                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+                or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
         webauthn = True
         scope = SCOPE.AUTH
-
-    # Check if a WebAuthn token is being authorized.
-    if is_webauthn_assertion_response(request.all_data):
-        webauthn = True
-        scope = SCOPE.AUTHZ
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
     if webauthn:
@@ -1528,7 +1531,7 @@ def webauthntoken_request(request, action):
         if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
             allowed_aaguids_pols = Match \
                 .user(g,
-                      scope=SCOPE.ENROLL,
+                      scope=scope,
                       action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
                       user_object=request.User if hasattr(request, 'User') else None) \
                 .action_values(unique=False,
@@ -1605,17 +1608,20 @@ def webauthntoken_auth(request, action):
     :rtype:
     """
 
-    # If this is an authentication request (as opposed to an authorization
-    # request), and the request is either for authentication with a WebAuthn
-    # token, or for authentication with any token of a particular user.
+    # Check if this is an auth request (as opposed to an enrollment), and it
+    # is not a WebAuthn authorization, and the request is either for
+    # authentication with a WebAuthn token, or not for any particular token at
+    # all (since authentication requests contain almost no parameters, it is
+    # necessary to define them by what they are not, rather than by what they
+    # are).
     #
     # This logic means that we will add WebAuthn specific information to any
     # unspecific authentication request, even if the user does not actually
     # have any WebAuthn tokens enrolled, but  since this decorator is entirely
     # passive and will just pull values from policies and add them to properly
     # prefixed fields in the request data, this is not a problem.
-    if 'pass' in request.all_data \
-            or 'password' in request.all_data \
+    if not request.all_data.get("type") \
+            and not is_webauthn_assertion_response(request.all_data) \
             and ('serial' not in request.all_data
                  or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
         allowed_transports_policies = Match\
@@ -1770,6 +1776,10 @@ def webauthntoken_enroll(request, action):
         authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
             if authenticator_attestation_form_policies \
             else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+        if authenticator_attestation_form not in ATTESTATION_FORMS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                                                    ', '.join(ATTESTATION_FORMS)))
 
         challengetext_policies = Match\
             .user(g,
@@ -1854,7 +1864,18 @@ def webauthntoken_allowed(request, action):
                   user_object=request.User if hasattr(request, 'User') else None) \
             .action_values(unique=False)
 
-        allowed_aaguids = getParam(request.all_data, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
+        allowed_aaguids_pols = Match \
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
 
         # attestation_cert is of type X509. If you get a warning from your IDE
         # here, it is because your IDE mistakenly assumes it to be of type PKey,
