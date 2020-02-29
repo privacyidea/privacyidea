@@ -1901,6 +1901,25 @@ def webauthntoken_allowed(request, action):
 
 
 def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+    """
+    Check a certificate against a set of policies.
+
+    This will check an attestation certificate of a U2F-, or WebAuthn-Token,
+    against a list of policies. It is used to verify, whether a token with the
+    given attestation may be enrolled, or authorized, respectively.
+
+    This is a wrapper for attestation_certificate_allowed(). It is needed,
+    because during enrollment, we still have an actual certificate to check
+    against, while attestation_certificate_required() expects the plain fields
+    from the token info, containing just the issuer, serial and subject.
+
+    :param cert_info: The cert.
+    :type cert_info: X509
+    :param allowed_certs_pols: The policies restricting enrollment, or authorization.
+    :type allowed_certs_pols: Match
+    :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
+    :rtype: bool
+    """
     if not attestation_cert:
         return False
 
