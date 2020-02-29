@@ -55,6 +55,8 @@ DEFAULT_POSITION_COUNT = 2
 class PIIXACTION(object):
     ATTRIBUTE = "indexedsecretattribute"
     COUNT = "count"
+    PRESET_ATTRIBUTE = "preset_attribute"
+    FORCE_ATTRIBUTE = "force_attribute"
 
 
 class IndexedSecretTokenClass(TokenClass):
@@ -111,8 +113,27 @@ class IndexedSecretTokenClass(TokenClass):
                        'desc': _('Number of necessary positions to be answered by the user.'),
                        'group': "Indexed Secret Token"
                    }
-
                },
+                   SCOPE.WEBUI: {
+                       PIIXACTION.PRESET_ATTRIBUTE: {
+                           'type': 'str',
+                           'desc': _("Preset the enrollment with the value of the given attribute.")
+                       }
+                   },
+                   SCOPE.USER: {
+                       PIIXACTION.FORCE_ATTRIBUTE: {
+                           'type': 'str',
+                           'desc': _("The attribute whose value should be force set during enrollment."),
+                           'group': "enrollment"
+                       }
+                   },
+                   SCOPE.ADMIN: {
+                       PIIXACTION.FORCE_ATTRIBUTE: {
+                           'type': 'str',
+                           'desc': _("The attribute whose value should be force set during enrollment."),
+                           'group': "enrollment"
+                       }
+                   },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',

@@ -658,3 +658,14 @@ This policy takes a blank-separated list of configured SMS gateways.
 It allows the administrator to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
+
+indexedsecret_force_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+If an administrator enrolls an indexedsecret token then the value of the given
+user attribute is set as the secret.
+The admin does not know the secret and can not change the secret.
+
+New in version 3.3.

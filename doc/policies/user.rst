@@ -296,3 +296,14 @@ type: int
 Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
 Possible values are *30* or *60*, default is *30*.
+
+indexedsecret_force_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+If a user enrolls an indexedsecret token then the value of the given
+user attribute is set as the secret.
+The user does not see the value and can not change the value.
+
+New in version 3.3.
