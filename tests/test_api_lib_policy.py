@@ -2037,7 +2037,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         class RequestMock(object):
             pass
 
-        # Missing policies
+        rp_id = RP_ID
+        rp_name = RP_NAME
+
+        # Missing RP_ID
         request = RequestMock()
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type()
@@ -2045,8 +2048,33 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         with self.assertRaises(PolicyError):
             webauthntoken_enroll(request, None)
 
-        rp_id = RP_ID
-        rp_name = RP_NAME
+        # Malformed RP_ID
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + 'https://' + rp_id + ','
+                  +WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
+        # Missing RP_NAME
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + rp_id
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
         set_policy(
             name="WebAuthn1",
             scope=SCOPE.ENROLL,
