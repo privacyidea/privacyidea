@@ -232,6 +232,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
+            "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
             "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
@@ -280,7 +281,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
             $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
         }
-        if ($scope.form.type === "vasco") {
+        if (["vasco", "indexedsecret"].indexOf($scope.form.type) >= 0) {
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;

@@ -284,3 +284,19 @@ class IndexedSecretTokenClass(TokenClass):
 
         self.challenge_janitor()
         return r_success
+
+    @log_with(log)
+    def is_challenge_request(self, passw, user=None, options=None):
+        """
+        check, if the request would start a challenge
+
+        We need to define the function again, to get rid of the
+        is_challenge_request-decorator of the HOTP-Token
+
+        :param passw: password, which might be pin or pin+otp
+        :param options: dictionary of additional request parameters
+
+        :return: returns true or false
+        """
+        return self.check_pin(passw, user=user, options=options)
+    

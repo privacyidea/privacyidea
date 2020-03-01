@@ -3560,6 +3560,38 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
+    def test_13_chal_resp_indexed_secret(self):
+        my_secret = "HelloMyFriend"
+        tok = init_token({"otpkey": my_secret,
+                          "pin": "test",
+                          "type": "indexedsecret"},
+                         user=User("cornelius", self.realm1))
+        # Trigger a challenge
+        transaction_id = None
+        password = None
+        with self.app.test_request_context("/validate/check",
+                                           data={"user": "cornelius",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            response = res.json
+            self.assertTrue(response.get("result").get("status"))
+            self.assertFalse(response.get("result").get("value"))
+            transaction_id = response.get("detail").get("transaction_id")
+            random_positions = response.get("detail").get("attributes").get("random_positions")
+            password_list = [my_secret[x - 1] for x in random_positions]
+            password = "".join(password_list)
+
+        with self.app.test_request_context("/validate/check",
+                                           data={"user": "cornelius",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": password}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            response = res.json
+            # successful authentication
+            self.assertTrue(response.get("result").get("value"))
+
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
 
