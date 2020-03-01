@@ -76,7 +76,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
         self.assertTrue(r)
         self.assertIn("Please enter the position", message)
 
-        password_list = [my_secret[x-1] for x in attribute.get("random_positions")]
+        password_list = [my_secret[x - 1] for x in attribute.get("random_positions")]
         password = "".join(password_list)
         # Wrong transaction_id
         r = token.check_challenge_response(passw=password, options={"transaction_id": "wrong"})

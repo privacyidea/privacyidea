@@ -21,7 +21,7 @@
 #
 __doc__ = """This is the implementation of an Indexed Secret-Token.
 It is a challenge response token, that asks the user for certain positions
-of the secret string. 
+of the secret string.
 The user must now the secret and return the characters from the requested positions.
 
 The secret is stored in the encrypted OTP KEY.
@@ -29,7 +29,7 @@ The secret is stored in the encrypted OTP KEY.
 The code is tested in tests/test_lib_tokens_indexedsecret
 
 Note that this token has no "check_otp" function. So it is not even
-possible to do a "single shot" authentication, since the base class check_otp always 
+possible to do a "single shot" authentication, since the base class check_otp always
 returns -1.
 """
 
@@ -267,7 +267,7 @@ class IndexedSecretTokenClass(TokenClass):
                     # Now see if the answer is the right indexes
                     secret_string = to_unicode(self.token.get_otpkey().getKey())
                     if len(options["data"]) == len(passw):
-                        expected_answer = "".join([secret_string[x-1] for x in options["data"]])
+                        expected_answer = "".join([secret_string[x - 1] for x in options["data"]])
                         if passw == expected_answer:
                             r_success = 1
                             challengeobject.delete()
