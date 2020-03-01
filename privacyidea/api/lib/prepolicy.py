@@ -86,6 +86,7 @@ import importlib
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 log = logging.getLogger(__name__)
 
@@ -1333,3 +1334,29 @@ def allowed_audit_realm(request=None, action=None):
     return True
 
 
+def indexedsecret_force_attribute(request, action):
+    """
+    This is a token specific wrapper for indexedsecret token for the endpoint
+    /token/init
+    The otpkey is overwritten with the value from
+    the user attribute specified in
+    policy scope=SCOPE.USER and SCOPE.ADMIN,
+    action=PIIXACTION.FORCE_ATTRIBUTE.
+    :param request:
+    :param action:
+    :return:
+    """
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "indexedsecret" and request.User:
+        # We only need to check the policies, if the token is actually enrolled
+        # to a user.
+        attributes = Match.admin_or_user(PIIXACTION.FORCE_ATTRIBUTE,
+                                         realm=request.User.realm).action_values(unique=True)
+        if not attributes:
+            # If there is no policy set, we simply do nothing
+            return True
+
+        attribute_value = request.User.info.get(attributes[0])
+        request.all_data["otpkey"] = attribute_value
+
+    return True

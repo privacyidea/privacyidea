@@ -169,7 +169,6 @@ class IndexedSecretTokenClass(TokenClass):
         :return: nothing
 
         """
-        # TODO: Here we need to react to the policies
         if 'genkey' not in param and 'otpkey' not in param:
             param['genkey'] = 1
 
