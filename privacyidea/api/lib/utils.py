@@ -358,21 +358,28 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     against a list of policies. It is used to verify, whether a token with the
     given attestation may be enrolled, or authorized, respectively.
 
+    The certificate info may be None, in which case, true will be returned iff
+    the policies are also empty.
+
     :param cert_info: The `attestation_issuer`, `attestation_serial`, and `attestation_subject` of the cert.
-    :type cert_info: dict
+    :type cert_info: dict or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
-    :type allowed_certs_pols: Match
+    :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
     :rtype: bool
     """
+
+    if not cert_info:
+        return not allowed_certs_pols
+
 
     if allowed_certs_pols:
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)
             tag_value = cert_info.get("attestation_{0!s}".format(tag))
             # if we do not get a match, we bail out
-            m = re.search(matching, tag_value)
-            if not m:
+            m = re.search(matching, tag_value) if matching and tag_value else None
+            if matching and not m:
                 return False
 
     return True

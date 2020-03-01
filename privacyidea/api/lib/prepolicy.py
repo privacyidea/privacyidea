@@ -1908,25 +1908,28 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     against a list of policies. It is used to verify, whether a token with the
     given attestation may be enrolled, or authorized, respectively.
 
+    The certificate info may be None, in which case, true will be returned iff
+    the policies are also empty.
+
     This is a wrapper for attestation_certificate_allowed(). It is needed,
     because during enrollment, we still have an actual certificate to check
     against, while attestation_certificate_required() expects the plain fields
     from the token info, containing just the issuer, serial and subject.
 
     :param cert_info: The cert.
-    :type cert_info: X509
+    :type cert_info: X509 or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
-    :type allowed_certs_pols: Match
+    :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
     :rtype: bool
     """
-    if not attestation_cert:
-        return False
 
     cert_info = {
         "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
         "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
         "attestation_subject": x509name_to_string(attestation_cert.get_subject())
-    }
+    } \
+        if attestation_cert \
+        else None
 
     return attestation_certificate_allowed(cert_info, allowed_certs_pols)
