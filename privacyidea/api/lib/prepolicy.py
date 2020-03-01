@@ -1350,13 +1350,13 @@ def indexedsecret_force_attribute(request, action):
     if ttype and ttype.lower() == "indexedsecret" and request.User:
         # We only need to check the policies, if the token is actually enrolled
         # to a user.
-        attributes = Match.admin_or_user(PIIXACTION.FORCE_ATTRIBUTE,
+        attributes = Match.admin_or_user(g, "indexedsecret_{0!s}".format(PIIXACTION.FORCE_ATTRIBUTE),
                                          realm=request.User.realm).action_values(unique=True)
         if not attributes:
             # If there is no policy set, we simply do nothing
             return True
 
-        attribute_value = request.User.info.get(attributes[0])
+        attribute_value = request.User.info.get(list(attributes)[0])
         request.all_data["otpkey"] = attribute_value
 
     return True

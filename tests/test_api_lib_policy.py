@@ -27,7 +27,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist, pushtoken_disable_wait)
+                                           check_admin_tokenlist, pushtoken_disable_wait,
+                                           indexedsecret_force_attribute)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -47,6 +48,7 @@ from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -1741,6 +1743,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
             delete_policy(pol)
+
+    def test_26_indexedsecret_force_set(self):
+
+        # We send a fake push_wait, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       'realm': self.realm1,
+                                       'type': "indexedsecret"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": self.realm1,
+                            "role": ROLE.USER}
+        req.all_data = {"type": "indexedsecret"}
+        g.policy_object = PolicyClass()
+        indexedsecret_force_attribute(req, None)
+        # request.all_data is unchanged
+        self.assertNotIn("otpkey", req.all_data)
+
+        # Now we use the policy, to set the otpkey
+        set_policy(name="Indexed", scope=SCOPE.USER,
+                   action="indexedsecret_{0!s}=username".format(PIIXACTION.FORCE_ATTRIBUTE))
+        req.all_data = {"type": "indexedsecret"}
+        g.policy_object = PolicyClass()
+        indexedsecret_force_attribute(req, None)
+        # Now the request.all_data contains the otpkey from the user attributes.
+        self.assertIn("otpkey", req.all_data)
+        self.assertEqual("cornelius", req.all_data.get("otpkey"))
+
+        delete_policy("Indexed")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
