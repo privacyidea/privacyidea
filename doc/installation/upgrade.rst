@@ -14,10 +14,13 @@ system ways of *apt-get*, *aptitude* and *rpm* to upgrade privacyIDEA to the
 current version.
 
 If you want to upgrade your Ubuntu installation from privacyIDEA 2.23 to
-privacyIDEA 3.0, please read :ref:`upgrade_ubuntu`.
+privacyIDEA 3.0, please read :ref:`upgrade_packaged`.
 
-Basic pip upgrade process
+Basic upgrade process
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Upgrading a pip installation
+...............
 
 If you install privacyIDEA into a python virtualenv like */opt/privacyidea*,
 you can follow this basic upgrade process.
@@ -36,7 +39,7 @@ and your database:
    pi-manage backup create
 
 Running upgrade
-...............
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Starting with version 2.17 the script ``privacyidea-pip-update`` performs the
 update of the python virtualenv and the DB schema.
@@ -56,7 +59,7 @@ The following parameters are allowed:
 
 
 Manual upgrade
-..............
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now you can upgrade the installation:
 
@@ -73,6 +76,50 @@ Usually you will need to upgrade/migrate the database:
 
 Now you need to restart your webserver for the new code to take effect.
 
+.. _upgrade_packaged:
+
+Upgrading a packaged installation
+...............
+
+In general, the upgrade of a packaged version of privacyIDEA should be done using the
+default tools (e.g. apt and yum). In any case, read the
+`READ_BEFORE_UPDATE <https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md>`_
+file. As there is a vast amount of possible custom installation cases, it cannot be guaranteed
+that the upgrade process always succeeds. It is a good idea to backup your system before upgrading.
+
+Ubuntu upgrade
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you use the Ubuntu packages in a default setup, the upgrade can should be done
+using::
+
+   apt update
+   apt dist-upgrade
+
+In case you upgrade from the old privacyIDEA 2.23.x to the version 3.x you have to
+change from your ppa sources to the new repositories. If you are upgrading your
+Ubuntu release, e.g. from 14.04 to 16.04 the principal steps are
+
+* Bring your Ubuntu 14.04 system up-to-date
+* Run the release upgrade (do-release-upgrade)
+* Eventually remove old repositories and add recent repositories as described in :ref:`add_ubuntu_repository`.
+* Reinstall/Upgrade privacyIDEA 3.x
+
+privacyIDEA 2.x installed the python packages to the system directly. The packages
+in the repository instead come with a virtual python environmentThis may cause lots
+of obsolete packages after upgrading which may be removed with::
+
+   apt autoremove
+
+
+CentOS upgrade
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For a default community CentOS installation run::
+
+ yum update
+
+to upgrade.
 
 Upgrade to privacyIDEA 2.12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
