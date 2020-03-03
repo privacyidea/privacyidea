@@ -494,15 +494,15 @@
     <h4 translate>Machines this token is attached to</h4>
 
 
-    <pagination ng-show="machineCount > machinesPerPage"
-                previous-text="{{ 'Previous'|translate }}"
-                next-text="{{ 'Next'|translate }}"
-                last-text="{{ 'Last'|translate }}"
-                first-text="{{ 'First'|translate }}"
-                total-items="machineCount" ng-model="params.page"
-                items-per-page="{{ machinesPerPage }}"
-                max-size="5"
-                boundary-links="true" ng-change="pageChanged()"></pagination>
+    <div uib-pagination ng-show="machineCount > machinesPerPage"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         total-items="machineCount" ng-model="params.page"
+         items-per-page="{{ machinesPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()"></div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">

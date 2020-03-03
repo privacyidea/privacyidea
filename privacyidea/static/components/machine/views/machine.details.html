@@ -33,15 +33,15 @@
     </div>
     <h3 translate>Tokens and Applications for machine {{ machineid }}</h3>
 
-    <pagination ng-show="tokenCount > tokensPerPage"
-                total-items="tokenCount" ng-model="params.page"
-                items-per-page="{{ tokensPerPage }}"
-                max-size="5"
-                previous-text="{{ 'Previous'|translate }}"
-                next-text="{{ 'Next'|translate }}"
-                last-text="{{ 'Last'|translate }}"
-                first-text="{{ 'First'|translate }}"
-                boundary-links="true" ng-change="pageChanged()"></pagination>
+    <div uib-pagination ng-show="tokenCount > tokensPerPage"
+         total-items="tokenCount" ng-model="params.page"
+         items-per-page="{{ tokensPerPage }}"
+         max-size="5"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         boundary-links="true" ng-change="pageChanged()"></div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
