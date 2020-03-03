@@ -617,8 +617,8 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT: {
                         'type': 'str',
-                        'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform attachments, "
-                                  "or only cross-platform attachments. Default: either"),
+                        'desc': _("Whether to limit roll out of WebAuthn tokens to either only platform "
+                                  "authenticators, or only cross-platform authenticators. Default: either"),
                         'group': WEBAUTHNGROUP.WEBAUTHN,
                         'value': [
                             "platform",
