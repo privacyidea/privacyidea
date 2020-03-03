@@ -69,10 +69,9 @@ privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
-(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F devices 
-like Yubikey and Plug-Up, smartphone
-Apps like Google Authenticator, FreeOTP, Token2  or TiQR,
-SMS, Email, SSH keys, x509 certificates 
+(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F, as well
+as FIDO2 WebAuthn devices like Yubikey and Plug-Up, smartphone Apps like Google
+Authenticator, FreeOTP, Token2  or TiQR, SMS, Email, SSH keys, x509 certificates
 and Registration Codes for easy deployment.
 
 privacyIDEA is based on Flask and SQLAlchemy as the python backend. The

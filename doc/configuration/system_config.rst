@@ -249,6 +249,8 @@ Count Window
 ``DefaultCountWindow`` defines how many OTP values will be calculated during
 an authentication request.
 
+.. _challenge_validity_time:
+
 Challenge Validity Time
 ~~~~~~~~~~~~~~~~~~~~~~~
 
