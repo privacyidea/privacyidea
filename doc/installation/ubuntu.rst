@@ -34,7 +34,7 @@ On Ubuntu 16.04 check the fingerprint of the key::
 
 On 18.04 you need to run::
 
-   gpg --dry-run --import --with-fingerprint NetKnights-Release.asc
+   gpg --import --import-options show-only --with-fingerprint NetKnights-Release.asc
 
 The fingerprint of the key is::
 
