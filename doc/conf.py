@@ -58,7 +58,8 @@ sys.path.insert(0, os.path.abspath('../privacyidea'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 
-              'sphinxcontrib.autohttp.flask', 'sphinxcontrib.plantuml']
+              'sphinxcontrib.autohttp.flask', 'sphinxcontrib.plantuml',
+              'sphinxcontrib.spelling', 'sphinx.ext.todo']
 http_index_ignore_prefixes = ['/token']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -199,6 +200,14 @@ html_css_files = [
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'privacyIDEAdoc'
 
+# Include to do items of sphinx.ext.todo.
+# Alternatively, set to true on compiling by
+# "sphinx-build -b html -D todo_include_todos=1"
+# todo_include_todos = True
+
+# sphinx spell checking via extension sphinxcontrib.spelling
+spelling_lang='en_US'
+spelling_word_list_filename = ['spelling_wordlist.txt']
 
 # -- Options for LaTeX output --------------------------------------------------
 
