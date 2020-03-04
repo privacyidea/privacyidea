@@ -1,5 +1,5 @@
 
-.. _hotp_otp_token:
+.. _hotp_otp_tokenconfig:
 
 HOTP Token Config
 .................

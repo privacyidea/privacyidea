@@ -11,6 +11,7 @@ scanning a QR code.
 
 The TiQR token implements the
 :ref:`outofband authentication mode <authentication_mode_outofband>`.
+The configuration is described in :ref:`tiqr_otp_tokenconfig`.
 
 The token is also enrolled by scanning a QR code.
 

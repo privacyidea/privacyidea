@@ -1,4 +1,4 @@
-.. _u2f_otp_token:
+.. _u2f_otp_tokenconfig:
 
 U2F Token Config
 ................

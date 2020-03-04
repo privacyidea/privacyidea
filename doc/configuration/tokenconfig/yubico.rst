@@ -1,5 +1,5 @@
 
-.. _yubico_token_config:
+.. _yubico_token_configconfig:
 
 Yubico Cloud mode
 .................

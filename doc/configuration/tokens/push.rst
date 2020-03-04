@@ -148,6 +148,9 @@ More information
 For a more detailed insight see the code documentation :ref:`code_push_token`.
 
 For an in depth view of the protocol see
-[the github issue](https://github.com/privacyidea/privacyidea/issues/1342)
-and
-[the wiki page](https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
+`the github issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
+`the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
+https://www.privacyidea.org/tag/push-token/>`_.
+
+For recent information and a setup guide, visit the
+`community blog <https://www.privacyidea.org/tag/push-token/>`_

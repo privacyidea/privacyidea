@@ -1,5 +1,5 @@
 
-.. _totp_otp_token:
+.. _totp_otp_tokenconfig:
 
 TOTP Token Config
 .................

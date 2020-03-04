@@ -15,6 +15,14 @@ any arbitrary order.
 A *tan* token can either be initialized with random OTP values. In this case the HOTP mechanism is used.
 Or it can be initialized or imported with a dedicated list of TANs.
 
+After enrollment, you are prompted to print the generated TAN list.
+
+.. figure:: images/enroll_tan1.png
+   :width: 500
+
+.. figure:: images/enroll_tan2.png
+   :width: 500
+
 Import of TAN token
 ~~~~~~~~~~~~~~~~~~~
 

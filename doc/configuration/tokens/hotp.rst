@@ -1,6 +1,6 @@
 .. _hotp_token:
 
-HOTP
+HOTP Token
 ----
 
 The HOTP token is - together with the :ref:`totp_token` - the most common token.
@@ -31,7 +31,7 @@ Preseeded or Seedable
 .. index:: preseeded, seedable
 
 Usually the hardware tokens like keyfobs or display cards contain a secret
-key that was generated and implanted at the vendors factory. The vender ships
+key that was generated and implanted at the vendors factory. The vendor ships
 the tokens and a seed file.
 
 .. warning:: In this case privacyIDEA can not guarantee that the secret seed of

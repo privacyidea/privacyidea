@@ -1,6 +1,6 @@
 .. _paper_token:
 
-Paper Token
+Paper Token (PPR)
 -----------
 
 .. index:: Paper Token

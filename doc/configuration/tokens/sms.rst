@@ -1,12 +1,12 @@
-.. _sms:
+.. _sms_token:
 
-SMS
----
+SMS Token
+--------
 
 .. index:: SMS token
 
 The token type *sms* sends the OTP value via an SMS service. You can
-configure the SMS service in :ref:`sms_otp_token`.
+configure the SMS service in :ref:`sms_otp_tokenconfig`.
 
 
 .. figure:: images/enroll_sms.png

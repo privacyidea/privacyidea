@@ -11,14 +11,15 @@ Starting with privacyIDEA 2.10 you can define SMTP server configurations.
 An SMTP server configuration contains the
 
    * server as FQDN or IP address,
-   * the port,
+   * the port (defaults to 25),
    * the sender email address,
-   * a username and password in case of authentication and
+   * a username and password in case of authentication
+   * an optional description
    * a TLS flag.
 
-Each SMTP server configuration is address via a *unique identifier*.
+Each SMTP server configuration is addressed via a *unique identifier*.
 You can then use such a configuration for Email or SMS token, for PIN
-handling or for :ref:`user_registration`.
+handling or in policies for :ref:`user_registration`.
 
 Under *Config->Sytem->SMTP servers* you can get a list of all configured SMTP
 servers, create new server definitions and delete them.
@@ -27,9 +28,6 @@ servers, create new server definitions and delete them.
    :width: 500
 
    *The list of SMTP servers.*
-
-Using the unique identifier like *themis* you can use this SMTP server
-definition in e.g. a policy for user registraion.
 
 .. figure:: images/smtp-server-edit.png
    :width: 500
