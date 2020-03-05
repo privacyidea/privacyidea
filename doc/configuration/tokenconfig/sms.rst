@@ -1,5 +1,5 @@
 
-.. _sms_otp_tokenconfig:
+.. _sms_token_config:
 
 SMS Token Configuration
 .............

@@ -40,10 +40,9 @@ Table of Contents
    overview/index
    installation/index
    firststeps/index
+   webui/index
    configuration/index
-   components/index
-   tokenview/index
-   userview/index
+   tokens/index
    policies/index
    eventhandler/index
    periodictask/index

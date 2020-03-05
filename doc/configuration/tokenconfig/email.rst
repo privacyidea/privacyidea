@@ -1,5 +1,5 @@
 
-.. _email_otp_tokenconfig:
+.. _email_token_config:
 
 Email OTP Token Configuration
 ...............

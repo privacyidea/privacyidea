@@ -1,5 +1,5 @@
 
-.. _yubikey_token_configconfig:
+.. _yubikey_token_config:
 
 Yubikey AES mode
 ................

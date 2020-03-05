@@ -26,9 +26,3 @@ If you want to upgrade please read :ref:`upgrade`.
    system/securitymodule
 
 After installation you might want to take a look at :ref:`first_steps`.
-
-
-.. rubric:: Footnotes
-
-.. [#ppa] https://launchpad.net/~privacyidea
-.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp

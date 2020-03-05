@@ -22,7 +22,7 @@ run the command::
 
 This will bring you to this start screen.
 
-.. figure:: appliance/start-screen.png
+.. figure:: images/appliance/start-screen.png
    :scale: 50 %
 
    Start screen of the appliance setup tool.
@@ -30,18 +30,18 @@ This will bring you to this start screen.
 You can configure privacyidea settings, the log level, administrators, encryption key and
 much more. You can configure the webserver settings and RADIUS clients.
 
-.. figure:: appliance/configure-privacyidea.png
+.. figure:: images/appliance/configure-privacyidea.png
    :scale: 40 %   
 
    Configure privacyidea
 
-.. figure:: appliance/manage-admins.png
+.. figure:: images/appliance/manage-admins.png
    :scale: 40 %   
 
    You can create new token administrators, delete them and change
    their passwords.
 
-.. figure:: appliance/manage-radius-clients.png
+.. figure:: images/appliance/manage-radius-clients.png
    :scale: 40 %   
 
    In the FreeRADIUS settings you can create and delete RADIUS
@@ -72,7 +72,7 @@ administrators, the complete token database (MySQL) and Audit log.
 Furthermore if you are running FreeRADIUS the backup also contains
 the `/etc/freeradius/clients.conf` file.
 
-.. figure:: appliance/backup1.png
+.. figure:: images/appliance/backup1.png
    :scale: 50%
 
 Schedulded backup
@@ -82,7 +82,7 @@ At the configuration point *Configure Backup* you can define times
 when a scheduled backup should be performed. This information is
 written to the file `/etc/crontab`.
 
-.. figure:: appliance/backup2.png
+.. figure:: images/appliance/backup2.png
    :scale: 50%
 
    Scheduled backup
@@ -111,7 +111,7 @@ Restore
 
 The entry `View Backups` will list all the backups available.
 
-.. figure:: appliance/backup3.png
+.. figure:: images/appliance/backup3.png
    :scale: 50%
 
    All available backups
