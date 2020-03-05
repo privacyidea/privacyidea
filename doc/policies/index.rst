@@ -3,6 +3,9 @@
 Policies
 ========
 
+.. todo:: Policies may be outdated. How to check which components are missing?
+   And do we want to document all actions? I added a link to the :ref:`code_policy`.
+
 .. index:: policies, scope
 
 Policies can be used to define the reaction and behaviour of the system.
@@ -68,6 +71,10 @@ Each policy can contain the following attributes:
   tokens.
   `string` and `integer` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
+
+  .. note:: The number of supported policies increases gradually as sometimes special
+     requirements arise often. Thus, the list of documented actions documented here
+     may not be complete. A list of all available actions are found in the :ref:`code_policy`.
 
 **user**
 

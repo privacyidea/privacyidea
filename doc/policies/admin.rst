@@ -24,7 +24,7 @@ more information on the admin realms.
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.
 
-.. figure:: admin_policies.png
+.. figure:: images/admin_policies.png
    :width: 500
 
    *The Admin scope provides an additional field 'admin realm'.*

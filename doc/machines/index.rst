@@ -1,7 +1,7 @@
 .. _machines:
 
-Client machines
-===============
+Machines
+========
 
 .. index:: machines, client machines
 

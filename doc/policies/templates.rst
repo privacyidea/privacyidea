@@ -37,4 +37,7 @@ A template must be referenced in a special ``index.json`` file::
    }
 
 where the key is the name of the template file and the value is a description
-displayed in the WebUI.
+displayed in the WebUI. A number of policies come preinstalled with privacyIDEA.
+
+.. figure:: images/default_templates.png
+   :width: 500
