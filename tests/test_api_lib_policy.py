@@ -2465,6 +2465,18 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
         self.assertEqual(len(custom_url), len(qr_image_custom))
         self.assertEqual(custom_url, qr_image_custom)
+
+        # Test if the webui gets the information about the preset attribute for indexedsecret token
+        set_policy(name="pol_indexed1", scope=SCOPE.WEBUI,
+                   action="indexedsecret_{0!s}=preattr".format(PIIXACTION.PRESET_ATTRIBUTE))
+
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual("preattr",
+                         jresult.get("result").get("value").get("indexedsecret_preset_attribute"))
+
+        delete_policy("pol_indexed1")
         delete_policy("pol_qr1")
         delete_policy("pol_qr2")
         delete_policy("pol_qr3")
