@@ -53,7 +53,6 @@ DEFAULT_POSITION_COUNT = 2
 
 
 class PIIXACTION(object):
-    ATTRIBUTE = "indexedsecretattribute"
     COUNT = "count"
     PRESET_ATTRIBUTE = "preset_attribute"
     FORCE_ATTRIBUTE = "force_attribute"
@@ -117,7 +116,8 @@ class IndexedSecretTokenClass(TokenClass):
                    SCOPE.WEBUI: {
                        PIIXACTION.PRESET_ATTRIBUTE: {
                            'type': 'str',
-                           'desc': _("Preset the enrollment with the value of the given attribute.")
+                           'desc': _("Preset the enrollment with the value of the given attribute."),
+                           'group': "token"
                        }
                    },
                    SCOPE.USER: {

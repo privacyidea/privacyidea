@@ -366,6 +366,10 @@ angular.module("privacyideaApp")
             $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
+            // Token specific settings
+            $scope.tokensettings = {indexedsecret:
+                    {preset_attribute: data.result.value.indexedsecret_preset_attribute}
+            };
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             //debug: console.log(timeout);

@@ -286,6 +286,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         } else {
             $scope.form.genkey = true;
         }
+
+        $scope.preset_indexedsecret();
+
         if ($scope.form.type === "radius") {
             // only load RADIUS servers when the user actually tries to enroll a RADIUS token,
             // because the user might not be allowed to list RADIUS servers
@@ -296,6 +299,25 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
+    };
+
+    // helper function for setting indexed secret attribute
+    $scope.preset_indexedsecret = function() {
+        if ($scope.form.type === "indexedsecret") {
+            // Only fetch, if a preset_attribute is defined
+            if ($scope.tokensettings.indexedsecret.preset_attribute) {
+                // getUsers will only work, if we are admin
+                if (AuthFactory.getRole() === 'admin') {
+                    UserFactory.getUsers({realm: $scope.newUser.realm,
+                        username: fixUser($scope.newUser.user)},
+                        function(data) {
+                            var userObject = data.result.value[0];
+                            // preset for indexedsecret token
+                            $scope.form.otpkey = userObject[$scope.tokensettings.indexedsecret.preset_attribute];
+                    });
+                }
+            }
+        }
     };
 
     // Set the default value of the "2stepinit" field if twostep enrollment should be forced
@@ -318,6 +340,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             if (newValue != '') {
                 $scope.form.phone = newValue;
             }
+        });
+    $scope.$watch(function(scope) {return fixUser(scope.newUser.user);},
+        function(newValue, oldValue) {
+            // The newUser was changed
+            $scope.preset_indexedsecret();
         });
 
     // Get the realms and fill the realm dropdown box
