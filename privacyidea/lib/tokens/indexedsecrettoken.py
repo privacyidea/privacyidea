@@ -299,4 +299,3 @@ class IndexedSecretTokenClass(TokenClass):
         :return: returns true or false
         """
         return self.check_pin(passw, user=user, options=options)
-    
