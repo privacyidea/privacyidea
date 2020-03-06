@@ -1,6 +1,6 @@
 .. _certificate_token:
 
-Certificates
+Certificate Token
 ------------
 
 .. index:: certificates, client certificates, request, CSR, CA

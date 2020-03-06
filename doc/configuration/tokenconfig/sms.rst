@@ -50,8 +50,6 @@ For configuring SMS Gateways read :ref:`sms_gateway_config`.
 I this token configuration you can select on defined gateway to send SMS for
 authentication.
 
-.. todo:: ``sms.concurrent_challenges`` is default empty/false?
-
 Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,3 +58,4 @@ Configuration Parameters
 If set to True in :ref:`cfgfile`, the config entry ``sms.concurrent_challenges``
 will save the sent OTP value in the challenge database. This way several challenges can
 be open at the same time. The user can answer the challenges in an arbitrary order.
+Defaults to off.

@@ -6,8 +6,8 @@ Application Plugins
 .. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM, ownCloud
 
 privacyIDEA comes with application plugins. These are plugins for
-applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud or simpleSAMLphp
-which enable these
+applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
+or Keycloak which enable these
 application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
@@ -21,6 +21,8 @@ various :ref:`authentication_modes`.
 Pluggable Authentication Module
 -------------------------------
 
+.. todo:: Note: privacyidea-pam is not in the ubuntu 18.04 repository.
+
 .. index:: offline, PAM
 
 The `PAM module of privacyIDEA <https://github.com/privacyidea/pam_python>`_ directly
@@ -29,7 +31,12 @@ authentication. In this case you need to configure an offline machine applicatio
 :ref:`application_offline`)
 
 You can install the PAM module by using the source code file. It is a python module, that
-requires pam-python.
+requires python-pam::
+
+  git clone https://github.com/privacyidea/pam_python.git
+  cd pam_python
+  pip install -r requirements.txt
+  python ./setup.py install
 
 The configuration could look like this::
 
@@ -39,7 +46,7 @@ The configuration could look like this::
 The URL parameter defaults to ``https://localhost``. You can also add the
 parameters ``realm=`` and ``debug``.
 
-If you want to disable certificate validation, which you should not do in a
+If you want to disable certificate validation, which you should **not** do in a
 productive environment, you can use the parameter ``nosslverify``.
 
 A new parameter ``cacerts=`` lets you define a CA Cert-Bundle file, that
@@ -66,7 +73,19 @@ additional OTP value.
    policy. In this case users with no tokens will be able to login with only
    the password in the PAM stack.
 
+
+.. _pam_ssh:
+Use cases SSH and VPN
+~~~~~~~~~~~~~~~~~~~~~~
+
+PrivacyIDEA can be easily used to setup a secure SSH login combining SSH keys
+with a second factor. The configuration is given in
+`SSH Keys and OTP: Really strong two factor authentication
+<https://www.privacyidea.org/ssh-keys-and-otp-really-strong-two-factor-authentication/>`_
+on the privacyIDEA website.
+
 Read more about how to use PAM to do :ref:`openvpn`.
+
 
 .. _pam_yubico:
 
@@ -175,8 +194,8 @@ A full featured integration guide can be found at the
 simpleSAMLphp Plugin
 --------------------
 You can install the plugin for simpleSAMLphp using the
-source files from the GitHub Repository `privacyidea-owncloud-app <https://netknights
-.it/en/produkte/privacyidea-owncloud-app/>`_.
+source files from the GitHub Repository
+`simplesamplphp-module-privacyidea <https://github.com/privacyidea/simplesamlphp-module-privacyidea>`_.
 
 Follow the simpleSAMLphp instructions to configure your authsources.php.
 A usual configuration will look like this::
@@ -221,6 +240,19 @@ A usual configuration will look like this::
                                  'mobile' => 'mobilePhone',
                                  ),
     ),
+
+
+.. _keycloak_plugin:
+
+Keycloak
+--------
+
+With the privacyIDEA keycloak-provider, there is a plugin available for the Keycloak identity manager.
+It is available from the GitHub repository `keycloak-provider <https://github.com/privacyidea/keycloak-
+provider>`_.
+
+Like simpleSAMLphp, it can be used to realize single sign-on use cases with a strong second factor authentication.
+
 
 TYPO3
 -----

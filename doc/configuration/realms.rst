@@ -27,7 +27,7 @@ Relate User to a Realm
 
 There are several options to relate a user to a specific realm during
 authentication. Usually, if only a login name is given, the user will be
-searched in the default realm ``defrealm``.
+searched in the default realm, indicated with ``defrealm`` in the mapping table below.
 
 If a *realm* parameter is given in a :ref:`/auth<rest_auth>` or
 :ref:`/validate/check<rest_validate>` request, it supersedes a possible

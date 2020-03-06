@@ -1,10 +1,10 @@
 .. _supported_tokens:
 
 Hardware and Software Tokens
-................
+............................
 
 privacyIDEA supports a wide variety of tokens by different hardware vendors.
-It also supports token apps on the smartphone.
+It also supports token apps on the smartphone which handle software tokens.
 
 Tokens not listed, will be probably supported, too, since most tokens use
 standard algorithms.

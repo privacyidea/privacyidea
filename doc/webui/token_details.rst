@@ -176,7 +176,7 @@ the token will be assigned.
 When enrolling a token, you can select the token type and according to the
 token type other necessary information.
 
-.. figure:: token-enroll.png
+.. figure:: images/token-enroll.png
    :width: 500
 
    *Token enrollment dialog*

@@ -307,7 +307,7 @@ than 5 hours in the past.
 **tokenrealm**
 
 In contrast to the *realm* this is the realm of the token - the *tokenrealm*.
-The action is only triggerd, if the token within the event has the given
+The action is only triggered, if the token within the event has the given
 tokenrealm. This can be used in workflows, when e.g. hardware tokens which
 are not assigned to a user are pushed into a kind of storage realm.
 

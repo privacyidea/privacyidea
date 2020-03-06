@@ -11,7 +11,7 @@ In this configuration dialog you can define default values for these token
 types. Some token additionally require :ref:`configuration` such as the configuration
 of an SMTP server.
 
-.. figure:: token-config.png
+.. figure:: images/token-config.png
    :width: 500
 
    *Examplary token configuration for an SMS Token*

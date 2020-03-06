@@ -1,18 +1,15 @@
 .. _webui:
 
 WebUI
-=========
+=====
 
 privacyIDEA comes with a web-based user interface which is used to manage and configure
-the privacyIDEA server. With the correct policies, it is also used a self-service portal
-for the average user. This section gives an overview on the interface and links the
+the privacyIDEA server. It is also used a self-service portal for the average user, who
+manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
 
-.. note:: For productive environments, it is absolutely necessary to secure the connection with HTTPS.
-   PrivacyIDEA only comes with a self-signed certificate, which serves for testing environments.
-
 Tokens
--------
+------
 
 .. index:: tokensview
 
@@ -28,9 +25,10 @@ user. The administrator can see all the details of the token.
 The administrator can click on one token, to show more details of this token
 and to perform actions on this token. Read on in :ref:`token_details`.
 
+.. _usersview::
 
 Users
--------
+-----
 
 The administrator can see all users fetched by :ref:`useridresolvers` located in
 :ref:`realms` he is allowed to manage.
@@ -65,11 +63,11 @@ Read about the functionality of the users view in the following sections.
 
 
 Machines
--------
+--------
 
-.. todo:: Short sentence about the purpose of machine-resolving.
-
-The :ref:`machines` which are...
+In this view :ref:`machines` are listed which are fetched by the configured machine resolvers.
+Machines are only necessary if you plan special use cases like managing SSH keys or doing offline OTP.
+In most cases there is no need to manage machines and this view is empty.
 
 .. figure:: images/machinesview.png
    :width: 500
@@ -79,7 +77,7 @@ The :ref:`machines` which are...
 
 
 Config
--------
+------
 
 The configuration tab is the heart of the privacyIDEA server. It contains the general
 :ref:`system_config`, allows configuring :ref:`policies` which are important to configure
@@ -109,7 +107,8 @@ Components
 
 Starting with privacyIDEA 2.15 you can see privacyIDEA components in the Web UI.
 privacyIDEA collects authenticating clients with their User Agent. Usually
-this is a type like *PAM*, *FreeRADIUS*, *OTRS*, *Wordpress*...
+this is a type like *PAM*, *FreeRADIUS*, *Wordpress*, *OwnCloud*, ...
+For more information, you may read on :ref:`application_plugins`.
 This overview helps you to understand your network and keep track which clients
 are connected to your network.
 
@@ -118,7 +117,6 @@ are connected to your network.
 
    *The Components display client applications and subscriptions*
 
-.. todo:: Add link to subscriptions possible with netknights or not?
 
 Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
 company behind privacyIDEA, can also be viewed and managed in this tab.

@@ -7,7 +7,7 @@ User Details
 When clicking on a username, you can see the users details and perform
 several actions on the user.
 
-.. figure:: user-detail.png
+.. figure:: images/user-detail.png
    :width: 500
 
    *User Details.*

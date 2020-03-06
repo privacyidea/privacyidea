@@ -28,7 +28,7 @@ privacyIDEA knows the scopes:
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
 
-.. figure:: policies.png
+.. figure:: images/policies.png
    :width: 500
 
    *Policy Definition*
@@ -71,10 +71,6 @@ Each policy can contain the following attributes:
   tokens.
   `string` and `integer` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
-
-  .. note:: The number of supported policies increases gradually as sometimes special
-     requirements arise often. Thus, the list of documented actions documented here
-     may not be complete. A list of all available actions are found in the :ref:`code_policy`.
 
 **user**
 
@@ -121,8 +117,8 @@ Each policy can contain the following attributes:
   allowed to manage his tokens from different IP addresses like the internal
   network or remotely via the firewall.
 
-  You can enter several IP addresses or subnets divided by comma
-  (like ``10.2.0.0/16, 192.168.0.1``).
+  You can enter several IP addresses or subnets divided by comma. Exclude item
+  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
 **time**
 

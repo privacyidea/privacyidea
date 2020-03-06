@@ -1,7 +1,7 @@
 
 .. _email_token_config:
 
-Email OTP Token Configuration
+Email Token Configuration
 ...............
 
 .. index:: Email Token
@@ -40,8 +40,6 @@ sent to him in the response during the first step and only the OTP value. The
 *transaction_id* assures that the user already presented the first factor (OTP
 PIN) successfully.
 
-.. todo:: ``email.concurrent_challenges`` is default empty/false?
-
 Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -50,7 +48,7 @@ Configuration Parameters
 The config entry ``email.concurrent_challenges`` set in :ref:`cfgfile` will save the sent OTP
 value in the challenge database. This way several challenges can be open at the same
 time. The user can answer the challenges in an arbitrary order.
-Set this to a true value.
+Set this to a true value. Defaults to off.
 
 Deprecated Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~

@@ -11,7 +11,7 @@ resolvers. At the moment this is possible for SQL resolvers.
 In the resolver definition you need to check the new checkbox **Edit user
 store**.
 
-.. figure:: edit_user_store.png
+.. figure:: images/edit_user_store.png
    :width: 500
 
    *Users in SQL can be edited, when checking the checkbox.*
@@ -19,7 +19,7 @@ store**.
 In the Users Detail view, the administrator then can click the button "Edit"
 and modify the user data and also set a new password.
 
-.. figure:: user_edit.png
+.. figure:: images/user_edit.png
    :width: 500
 
    *Edit the attributes of an existing user.*
@@ -31,7 +31,7 @@ and modify the user data and also set a new password.
 
 If you want to add a user, you can click on *Add User* in the *User View*.
 
-.. figure:: user_add.png
+.. figure:: images/user_add.png
    :width: 500
 
    *Add a new user.*

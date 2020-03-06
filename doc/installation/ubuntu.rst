@@ -75,8 +75,8 @@ or::
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
 
 
-Installation of privacyIDEA 3.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installation of privacyIDEA 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After having added the repositories, run::
 
@@ -85,28 +85,6 @@ After having added the repositories, run::
 
 If you do not like the Apache2 webserver you could
 alternatively use the meta package ``privacyidea-nginx``.
-
-
-Installing privacyIDEA 2.23
-...........................
-
-If you want to for any reason install the old version 2.23.x, this
-is still available in a public ppa repository [#ppa]_.
-Install it like this::
-
-   add-apt-repository ppa:privacyidea/privacyidea
-   apt-get update
-
-There are the base packages ``python-privacyidea`` and the administrator
-tool ``privacyideaadm``.
-
-But we recommend installing the meta package::
-
-   apt-get install privacyidea-apache2
-
-which will install the code, the webserver and the database and configure
-everything accordingly. Also in the ppa, the package ``privacyidea-nginx``
-is available.
 
 ------------
 

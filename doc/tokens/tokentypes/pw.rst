@@ -1,6 +1,6 @@
 .. _pw_token:
 
-Lost Password Token (pw)
+Password Token
 ---------
 
 This token is not enrolled by the user. It is automatically created whenever an
