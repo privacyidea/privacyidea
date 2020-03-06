@@ -19,7 +19,7 @@
  *
  */
 myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
-                                           validateUrl, inform) {
+                                           validateUrl, inform, AuthFactory) {
     /**
      Each service - just like this service factory - is a singleton.
      */

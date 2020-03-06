@@ -358,3 +358,260 @@ This way even different Firebase configurations could be
 used depending on the user's realm or the IP address.
 
 This is new in version 3.0.
+
+.. _webauthn_enroll_relying_party_id:
+
+webauthn_relying_party_id
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action sets the relying party id to use for the enrollment of new WebAuthn
+tokens, at defined by the WebAuthn specification [#rpid]_. Please note, that a
+token will be rolled out with one particular ID and that the relying party of an
+existing token can not be changed. In order to change the relying party id for
+existing tokens, they need to be deleted and new tokens need to be enrolled.
+This is a limitation of the WebAuthn standard and is unlikely to change in the
+future.
+
+The relying party id is a valid domain string that identifies the WebAuthn
+Relying Party on whose behalf a given registration or authentication
+ceremony is being performed. A public key credential can only be used for
+authentication with the same entity (as identified by RP ID) it was registered
+with.
+
+This id needs to be a registrable suffix of or equal to the effective domain
+for each webservice the tokens should be used with. This means if the token is
+being enrolled on – for example – `https://login.example.com`, them the relying
+party ID may be either `login.example.com`, or `example.com`, but not – for
+instance – `m.login.example.com`, or `com`. Similarly, a token enrolled with a
+relying party ID of `login.example.com` might be used by
+`https://login.example.com`, or even `https://m.login.example.com:1337`, but not
+by `https://example.com` (because the RP ID `login.example.com` is not a valid
+relying party ID for the domain `example.com`).
+
+.. note:: This action needs to be set to be able to enroll WebAuthn tokens. For
+    an overview of all the settings required for the use of WebAuthn, see
+    :ref:`webauthn_otp_token`.
+
+.. _webauthn_enroll_relying_party_name:
+
+webauthn_relying_party_name
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action sets the human-readable name for the relying party, as defined by
+the WebAuthn specification [#webauthnrelyingparty]_. It should be the name of
+the entity whose web applications the WebAuthn tokens are used for.
+
+.. note:: This action needs to be set to be able to enroll WebAuthn tokens. For
+    an overview of all the settings required for the use of WebAuthn, see
+    :ref:`webauthn_otp_token`.
+
+.. _webauthn_enroll_timeout:
+
+webauthn_timeout
+~~~~~~~~~~~~~~~~
+
+type: integer
+
+This action sets the time in seconds the user has to confirm enrollment on his
+WebAuthn authenticator.
+
+This is a client-side setting, that governs how long the client waits for the
+authenticator. It is independent of the time for which a challenge for a
+challenge response token is valid, which is governed by the server and
+controlled by a separate setting. This means, that if you want to increase this
+timeout beyond two minutes, you will have to also increase the challenge
+validity time, as documented in :ref:`challenge_validity_time`.
+
+This setting is a hint. It is interpreted by the client and may be adjusted by
+an arbitrary amount in either direction, or even ignored entirely.
+
+The default timeout is 60 seconds.
+
+.. note:: If you set this policy you may also want to set
+    :ref:`webauthn_authn_timeout`.
+
+.. _webauthn_enroll_authenticator_attachment:
+
+webauthn_authenticator_attachment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures whether to limit roll out of WebAuthn tokens to either
+only platform authenticators, or only platform authenticators. Cross-platform
+authenticators are authenticators, that are intended to be plugged into
+different devices, whereas platform authenticators are those, that are built
+directly into one particular device and can not (easily) be removed and plugged
+into a different device.
+
+The default is to allow both `platform` and `cross-platform` attachment for
+authenticators.
+
+.. _webauthn_enroll_authenticator_selection_list:
+
+webauthn_authenticator_selection_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures a whitelist of authenticator models which may be
+enrolled. It is a space-separated list of AAGUIDs. An AAGUID is a
+hexadecimal string (usually grouped using dashes, although these are
+optional) identifying one particular model of authenticator. To limit
+enrollment to a few known-good authenticator models, simply specify the AAGUIDs
+for each model of authenticator that is acceptable. If multiple policies with
+this action apply, the set of acceptable authenticators will be the union off
+all authenticators allowed by the various policies.
+
+If this action is not configured, all authenticators will be deemed acceptable,
+unless limited through some other action.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`webauthn_authz_authenticator_selection_list`.
+
+.. _webauthn_enroll_user_verification_requirement:
+
+webauthn_user_verification_requirement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures whether the user's identity should be checked when
+rolling out a new WebAuthn token. If this is set to required, any user rolling
+out a new WebAuthn token will have to provide some form of verification. This
+might be biometric identification, or knowledge-based, depending on the
+authenticator used.
+
+This defaults to `preferred`, meaning user verification will be performed if
+supported by the token.
+
+.. note:: User verification is different from user presence checking. The
+    presence of a user will always be confirmed (by asking the user to take
+    action on the token, which is usually done by tapping a button on the
+    authenticator). User verification goes beyond this by ascertaining, that the
+    user is indeed the same user each time (for example through biometric
+    means), only set this to `required`, if you know for a fact, that you have
+    authenticators, that actually support some form of user verification (these
+    are still quite rare in practice).
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`webauthn_authz_user_verification_requirement`.
+
+.. _webauthn_enroll_public_key_credential_algorithm_preference:
+
+webauthn_public_key_credential_algorithm_preference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures which algorithms should be preferred for the creation
+of WebAuthn asymmetric cryptography key pairs, and in which order. privacyIDEA
+currently supports ECDSA as well as RSASSA-PSS. Please check back with the
+manufacturer of your authenticators to get information on which algorithms are
+acceptable to your model of authenticator.
+
+The default is to allow both ECDSA and RSASSA-PSS, but to prefer ECDSA over
+RSASSA-PSS.
+
+.. note:: Not all authenticators will supports all algorithms. It should not
+    usually be necessary to configure this action. Do *not* change this
+    preference, unless you are sure you know what you are doing!
+
+.. _webauthn_enroll_authenticator_attestation_form:
+
+webauthn_authenticator_attestation_form
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures whether to request attestation data when enrolling a new
+WebAuthn token. Attestation is used to verify, that the authenticator being
+enrolled has been made by a trusted manufacturer. Since depending on the
+authenticator this may include personally identifying information, `indirect`
+attestation can be requested. If `indirect` attestation is requested the client
+may pseudonymize the attestation data. Attestation can also be turned off
+entirely.
+
+The default is to request `direct` (full) attestation from the authenticator.
+
+.. note:: In a normal business-context it will not be necessary to change this.
+    If this is set to `none`,
+    :ref:`webauthn_enroll_authenticator_attestation_level` must also be none.
+
+.. note:: Authenticators enrolled with this option set to `none` can not be
+    filtered using :ref:`webauthn_enroll_req` and
+    :ref:`webauthn_enroll_authenticator_selection_list` or
+    :ref:`webauthn_authz_req` and
+    :ref:`webauthn_authz_authenticator_selection_list`, respectively. Applying
+    these filters is not possible without attestation information, since the
+    fields these actions rely upon will be missing. With `indirect` attestation,
+    checking may be possible (depending on the client). If any of
+    :ref:`webauthn_enroll_req`,
+    :ref:`webauthn_enroll_authenticator_selection_list`,
+    :ref:`webauthn_authz_req`, or
+    :ref:`webauthn_authz_authenticator_selection_list` are set and apply to a
+    request for a token without attestation information, access will be denied.
+
+.. _webauthn_enroll_authenticator_attestation_level:
+
+webauthn_authenticator_attestation_level
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action determines whether and how strictly to check authenticator
+attestation data. Set this to `none`, to allow any authenticator, even if the
+attestation information is missing completely. If this is set to `trusted`,
+strict checking is performed. No authenticator is allowed, unless it contains
+attestation information signed by a certificate trusted for attestation.
+
+.. note:: Currently the certificate that signed the attestation needs to be
+    trusted directly. Traversal of the trust path is not yet supported!
+
+The default is `untrusted`. This will perform the attestation check like normal,
+but will not fail the attestation, if the attestation is self-signed, or signed
+by an unknown certificate.
+
+.. note:: In order to be able to use `trusted` attestation, a directory needs
+    to be provided, containing the certificates trusted for attestation. See
+    :ref:`webauthn_otp_token` for details.
+
+.. note:: If this is set to `untrusted`, a manipulated token could send a
+    self-signed attestation message with modified a modified AAGUID and faked
+    certificate fields in order to bypass :ref:`webauthn_enroll_req` and
+    :ref:`webauthn_enroll_authenticator_selection_list`, or
+    :ref:`webauthn_authz_req` and
+    :ref:`webauthn_authz_authenticator_selection_list`, respectively. If this
+    is of concern for your attack scenarios, please make sure to properly
+    configure your attestation roots!
+
+.. _webauthn_enroll_req:
+
+webauthn_req
+~~~~~~~~~~~~
+
+type: string
+
+This action allows filtering of WebAuthn tokens by the fields of the
+attestation certificate.
+
+The action can be specified like this:
+
+    webauthn_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the WebAuthn authenticator the
+information is fetched from the attestation certificate. Only if the attribute
+in the attestation certificate matches accordingly the token can be enrolled.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`webauthn_authz_req`.
+
+.. rubric:: Footnotes
+
+.. [#rpid] https://w3.org/TR/webauthn-2/#rp-id
+.. [#webauthnrelyingparty] https://w3.org/TR/webauthn-2/#webauthn-relying-party

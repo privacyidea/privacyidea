@@ -18,7 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-angular.module("privacyideaAuth", [])
+angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
     .factory("AuthFactory", function (inform, gettextCatalog, $state) {
         /*
         Each service - just like this service factory - is a singleton.

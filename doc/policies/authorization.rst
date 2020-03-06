@@ -256,3 +256,47 @@ type: bool
 In case of a successful authentication the resolver and realm of the user are added
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
+
+.. _webauthn_authz_authenticator_selection_list:
+
+webauthn_authenticator_selection_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures a whitelist of authenticator models which may be
+authorized. It is a space-separated list of AAGUIDs. An AAGUID is a
+hexadecimal string (usually grouped using dashes, although these are
+optional) identifying one particular model of authenticator. To limit
+enrollment to a few known-good authenticator models, simply specify the AAGUIDs
+for each model of authenticator that is acceptable. If multiple policies with
+this action apply, the set of acceptable authenticators will be the union off
+all authenticators allowed by the various policies.
+
+If this action is not configured, all authenticators will be deemed acceptable,
+unless limited through some other action.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`webauthn_enroll_authenticator_selection_list`
+
+.. _webauthn_authz_req:
+
+webauthn_req
+~~~~~~~~~~~~
+
+type: string
+
+This action allows filtering of WebAuthn tokens by the fields of the
+attestation certificate.
+
+The action can be specified like this:
+
+    webauthn_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the WebAuthn authenticator the
+information is fetched from the attestation certificate. Only if the attribute
+in the attestation certificate matches accordingly the token can be enrolled.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`webauthn_enroll_req`

@@ -6,7 +6,7 @@ from .base import MyApiTestCase
 
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
-                                       verify_auth_token)
+                                       verify_auth_token, is_fqdn, attestation_certificate_allowed)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
@@ -109,3 +109,50 @@ class UtilsTestCase(MyApiTestCase):
         # We see the user from the trusted JWT in the audit log.
         ae = self.find_most_recent_audit_entry(action="GET /token/")
         self.assertEqual(ae.get("user"), u"userA")
+
+    def test_05_is_fqdn(self):
+        self.assertTrue(is_fqdn('example.com'))
+        self.assertFalse(is_fqdn('https://example.com'))
+
+    def test_06_attestation_certificate_allowed(self):
+        # No policies, return True.
+        self.assertTrue(attestation_certificate_allowed(None, None))
+        self.assertTrue(attestation_certificate_allowed({}, {}))
+
+        # Policy but no info, return False.
+        self.assertFalse(attestation_certificate_allowed(None, {"subject/.*Yubico.*/": ['WebAuthn']}))
+        self.assertFalse(attestation_certificate_allowed({}, {"subject/.*Yubico.*/": ['WebAuthn']}))
+
+        # Certificate allowed, return True.
+        self.assertTrue(attestation_certificate_allowed({"attestation_subject": "C=SE,O=Yubico AB"},
+                                                        {"subject/.*Yubico.*/": ['WebAuthn']}))
+
+        # Certificate not allowed, return False.
+        self.assertFalse(attestation_certificate_allowed({"attestation_subject": "C=SE,O=Frobnicate"},
+                                                         {"subject/.*Yubico.*/": ['WebAuthn']}))
+
+        # Multiple Policies, match iff all match.
+        self.assertTrue(
+            attestation_certificate_allowed(
+                {
+                    "attestation_subject": "C=SE,O=Yubico AB",
+                    "attestation_serial": "61730834"
+                },
+                {
+                    "subject/.*Yubico.*/": ['WebAuthn1'],
+                    "serial/61730834/": ['WebAuthn2']
+                }
+            )
+        )
+        self.assertFalse(
+            attestation_certificate_allowed(
+                {
+                    "attestation_subject": "C=SE,O=Yubico AB",
+                    "attestation_serial": "61730834"
+                },
+                {
+                    "subject/.*Yubico.*/": ['WebAuthn1'],
+                    "serial/12345678/": ['WebAuthn2']
+                }
+            )
+        )

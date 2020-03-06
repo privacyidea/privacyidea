@@ -6,6 +6,17 @@ The api.lib.policy.py depends on lib.policy and on flask!
 from __future__ import print_function
 import json
 
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE, ATTESTATION_LEVEL,
+                                             ATTESTATION_FORM, USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS, WebAuthnTokenClass,
+                                                  DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT)
+from privacyidea.lib.utils import hexlify_and_unicode
 from .base import (MyApiTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
@@ -27,7 +38,9 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist, pushtoken_disable_wait)
+                                           check_admin_tokenlist, pushtoken_disable_wait, webauthntoken_auth,
+                                           webauthntoken_authz, webauthntoken_enroll, webauthntoken_request,
+                                           webauthntoken_allowed)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -59,6 +72,8 @@ import passlib
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
+                                       RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
 from privacyidea.lib.utils import create_img
 
 
@@ -1741,6 +1756,937 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
             delete_policy(pol)
+
+    def test_26a_webauthn_auth_validate_triggerchallenge(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(DEFAULT_ALLOWED_TRANSPORTS.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_AUTH)
+
+        # Request via serial
+        request = RequestMock()
+        request.all_data = {
+            'serial': WebAuthnTokenClass.get_class_prefix() + '123'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(DEFAULT_ALLOWED_TRANSPORTS.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_AUTH)
+
+        # Not a WebAuthn token
+        request = RequestMock()
+        request.all_data = {
+            'serial': 'FOO123'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
+                         None)
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         None)
+
+        # With policies
+        allowed_transports = ALLOWED_TRANSPORTS
+        challengetext = "Lorem Ipsum"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+        )
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(allowed_transports.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         challengetext)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_26b_webauthn_auth_validate_check(self):
+        class RequestMock(object):
+            pass
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo',
+            'pass': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(DEFAULT_ALLOWED_TRANSPORTS.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_AUTH)
+
+        # Request via serial
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo',
+            'serial': WebAuthnTokenClass.get_class_prefix() + '123',
+            'pass': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(DEFAULT_ALLOWED_TRANSPORTS.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_AUTH)
+
+        # Not a WebAuthn token
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo',
+            'serial': 'FOO123',
+            'pass': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS),
+                         None)
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         None)
+
+        # With policies
+        allowed_transports = ALLOWED_TRANSPORTS
+        challengetext = "Lorem Ipsum"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+        )
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo',
+            'pass': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(allowed_transports.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         challengetext)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_26c_webauthn_auth_auth(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'username': 'foo',
+            'password': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(DEFAULT_ALLOWED_TRANSPORTS.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_AUTH)
+
+        # With policies
+        allowed_transports = ALLOWED_TRANSPORTS
+        challengetext = "Lorem Ipsum"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.ALLOWED_TRANSPORTS + '=' + allowed_transports + ','
+                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+        )
+        request = RequestMock()
+        request.all_data = {
+            'username': 'foo',
+            'password': '1234'
+        }
+        webauthntoken_auth(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.ALLOWED_TRANSPORTS)),
+                         set(allowed_transports.split()))
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         challengetext)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_27a_webauthn_authz_validate_check(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": "foo",
+            "pass": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         list())
+
+        # Not a WebAuthn authorization
+        request = RequestMock()
+        request.all_data = {
+            "user": "foo",
+            "pass": ""
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         None)
+
+        # With policies
+        allowed_certs = "subject/.*Yubico.*/"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=WEBAUTHNACTION.REQ + '=' + allowed_certs
+        )
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": "foo",
+            "pass": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         [allowed_certs])
+
+        # Reset policies.
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=''
+        )
+
+    def test_27b_webauthn_authz_auth(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "username": "foo",
+            "password": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         list())
+
+        # Not a WebAuthn authorization
+        request = RequestMock()
+        request.all_data = {
+            "username": "foo",
+            "password": ""
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         None)
+
+        # With policies
+        allowed_certs = "subject/.*Yubico.*/"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=WEBAUTHNACTION.REQ + '=' + allowed_certs
+        )
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "username": "foo",
+            "password": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        webauthntoken_authz(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.REQ),
+                         [allowed_certs])
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=''
+        )
+
+    def test_28_webauthn_enroll(self):
+        class RequestMock(object):
+            pass
+
+        rp_id = RP_ID
+        rp_name = RP_NAME
+
+        # Missing RP_ID
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
+        # Malformed RP_ID
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + 'https://' + rp_id + ','
+                  +WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
+        # Missing RP_NAME
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + rp_id
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.RELYING_PARTY_ID + '=' + rp_id + ','
+                   +WEBAUTHNACTION.RELYING_PARTY_NAME + '=' + rp_name
+        )
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        webauthntoken_enroll(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID),
+                         rp_id)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME),
+                         rp_name)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
+                             DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+                         ])
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
+                         DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
+                         DEFAULT_AUTHENTICATOR_ATTESTATION_FORM)
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         DEFAULT_CHALLENGE_TEXT_ENROLL)
+
+        # Not a WebAuthn token
+        request = RequestMock()
+        request.all_data = {
+            "type": "footoken"
+        }
+        webauthntoken_enroll(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_ID),
+                         None),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.RELYING_PARTY_NAME),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
+                         None)
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         None)
+
+        # With policies
+        authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
+        public_key_credential_algorithm_preference = 'ecdsa_only'
+        authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
+        authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
+        challengetext = "Lorem Ipsum"
+        set_policy(
+            name="WebAuthn2",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
+                  +WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + public_key_credential_algorithm_preference + ','
+                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
+                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
+                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        webauthntoken_enroll(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
+                         authenticator_attachment)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
+                             public_key_credential_algorithm_preference
+                         ])
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
+                         authenticator_attestation_level)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
+                         authenticator_attestation_form)
+        self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT),
+                         challengetext)
+
+        # Malformed policies
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        set_policy(
+            name="WebAuthn2",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + 'b0rked'
+        )
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+        set_policy(
+            name="WebAuthn2",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + 'b0rked'
+        )
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+        set_policy(
+            name="WebAuthn2",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + 'b0rked'
+        )
+        with self.assertRaises(PolicyError):
+            webauthntoken_enroll(request, None)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn1",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
+        set_policy(
+            name="WebAuthn2",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
+
+    def test_29a_webauthn_request_token_init(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         DEFAULT_TIMEOUT * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST),
+                         None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # Not a WebAuthn token
+        request = RequestMock()
+        request.all_data = {
+            "type": "footoken"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST),
+                         None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         None)
+
+        # With policies
+        timeout = 30
+        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        authenticator_selection_list = 'foo bar baz'
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
+                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement + ','
+                  +WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+        )
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         timeout * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         user_verification_requirement)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST)),
+                         set(authenticator_selection_list.split()))
+
+        # Malformed policies
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type()
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + 'b0rked'
+        )
+        with self.assertRaises(PolicyError):
+            webauthntoken_request(request, None)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
+
+    def test_29b_webauthn_request_validate_triggerchallenge(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo'
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         DEFAULT_TIMEOUT * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # Request via serial
+        request = RequestMock()
+        request.all_data = {
+            'serial': WebAuthnTokenClass.get_class_prefix() + '123'
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         DEFAULT_TIMEOUT * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # Not a WebAuthn token
+        request = RequestMock()
+        request.all_data = {
+            'serial': 'FOO123'
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         None)
+
+        # With policies
+        timeout = 30
+        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
+                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+        )
+        request = RequestMock()
+        request.all_data = {
+            "user": "foo"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         timeout * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         user_verification_requirement)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_29c_webauthn_request_auth_authn(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'username': 'foo',
+            'password': '1234'
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         DEFAULT_TIMEOUT * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # With policies
+        timeout = 30
+        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
+                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+        )
+        request = RequestMock()
+        request.all_data = {
+            "username": "foo",
+            "password": "1234"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         timeout * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         user_verification_requirement)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_29d_webauthn_request_auth_authz(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "username": "foo",
+            "password": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST),
+                         None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # With policies
+        authenticator_selection_list = 'foo bar baz'
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+        )
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "username": "foo",
+            "password": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST)),
+                         set(authenticator_selection_list.split()))
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=''
+        )
+
+    def test_29e_webauthn_request_validate_check_authn(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            'user': 'foo',
+            'pass': '1234'
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         DEFAULT_TIMEOUT * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # With policies
+        timeout = 30
+        user_verification_requirement = USER_VERIFICATION_LEVEL.REQUIRED
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=WEBAUTHNACTION.TIMEOUT + '=' + str(timeout) + ','
+                  +WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT + '=' + user_verification_requirement
+        )
+        request = RequestMock()
+        request.all_data = {
+            "user": "foo",
+            "pass": "1234"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.TIMEOUT),
+                         timeout * 1000)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT),
+                         user_verification_requirement)
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTH,
+            action=''
+        )
+
+    def test_29f_webauthn_request_validate_check_authz(self):
+        class RequestMock(object):
+            pass
+
+        # Normal request
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": "foo",
+            "pass": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST),
+                         None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
+                         ORIGIN)
+
+        # With policies
+        authenticator_selection_list = 'foo bar baz'
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+        )
+        request = RequestMock()
+        request.all_data = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": "foo",
+            "pass": "",
+            "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE))
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(set(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST)),
+                         set(authenticator_selection_list.split()))
+
+        # Reset policies
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.AUTHZ,
+            action=''
+        )
+
+    def test_30_webauthn_allowed_req(self):
+        class RequestMock(object):
+            pass
+
+        allowed_certs = "subject/.*Yubico.*/"
+
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type(),
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
+        }
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.REQ + "=" + allowed_certs
+        )
+
+        self.assertTrue(webauthntoken_allowed(request, None))
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
+
+    def test_31_webauthn_disallowed_req(self):
+        class RequestMock(object):
+            pass
+
+        allowed_certs = "subject/.*Frobnicate.*/"
+
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type(),
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
+        }
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.REQ + "=" + allowed_certs
+        )
+
+        with self.assertRaises(PolicyError):
+            webauthntoken_allowed(request, None)
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
+
+    def test_32_webauthn_allowed_aaguid(self):
+        class RequestMock(object):
+            pass
+
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type(),
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
+        }
+
+        self.assertTrue(webauthntoken_allowed(request, None))
+
+    def test_33_webauthn_disallowed_aaguid(self):
+        class RequestMock(object):
+            pass
+
+        authenticator_selection_list = 'foo bar baz'
+
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type(),
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
+        }
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
+        )
+
+        with self.assertRaises(PolicyError):
+            webauthntoken_allowed(request, None)
+
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=''
+        )
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

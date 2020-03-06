@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#            Add WebAuthn token
 # 2018-06-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add tantoken wrapper
 # 2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -90,7 +92,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
                                            sms_identifiers, pushtoken_add_config,
-                                           check_admin_tokenlist)
+                                           check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
+                                           webauthntoken_request)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -132,6 +135,9 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(u2ftoken_allowed, request)
 @prepolicy(u2ftoken_verify_cert, request)
 @prepolicy(pushtoken_add_config, request)
+@prepolicy(webauthntoken_allowed, request)
+@prepolicy(webauthntoken_request, request)
+@prepolicy(webauthntoken_enroll, request)
 @postpolicy(save_pin_change, request)
 @CheckSubscription(request)
 @event("token_init", request, g)
