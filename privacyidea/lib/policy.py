@@ -659,7 +659,7 @@ class PolicyClass(object):
         :param request_headers: A dict with HTTP headers
         :return: a list of policy dictionaries
         """
-        if user_object:
+        if user_object is not None:
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
             if (user and user != user_object.login) \
                     or (resolver and resolver != user_object.resolver) \
