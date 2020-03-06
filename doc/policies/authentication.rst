@@ -117,6 +117,8 @@ Examples are
 .. warning:: This can be very time consuming if the OTP values to check is set to high!
 
 
+.. _passonnotoken:
+
 passOnNoToken
 ~~~~~~~~~~~~~
 
@@ -305,7 +307,7 @@ You need to specify a list of FQDNs without the https scheme like:
 
 *"host1.example.com host2.exmaple.com firewall.example.com"*
 
-For more information on configuring U2F see :ref:`u2f_otp_token`.
+For more information on configuring U2F see :ref:`u2f_token`.
 
 
 .. [#pythonre] https://docs.python.org/2/library/re.html

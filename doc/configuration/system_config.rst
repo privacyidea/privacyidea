@@ -110,9 +110,10 @@ Prepend PIN
 ``PrependPin`` defines if the OTP PIN should be given in front ("pin123456") 
 or in the back ("12345pin") of the OTP value.
 
-.. _autosync:
 
 .. index:: autoresync, autosync
+
+.. _autosync:
 
 AutoResync
 ~~~~~~~~~~

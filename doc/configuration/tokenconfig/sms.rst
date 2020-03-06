@@ -1,7 +1,7 @@
 
-.. _sms_otp_token:
+.. _sms_token_config:
 
-SMS OTP Token
+SMS Token Configuration
 .............
 
 .. index:: SMS Token
@@ -55,7 +55,7 @@ Configuration Parameters
 
 **Concurrent Challenges**
 
-The config entry ``sms.concurrent_challenges`` will save the sent OTP
-value in the challenge database. This way several challenges can be open at the same
-time. The user can answer the challenges in an arbitrary order.
-Set this to a true value.
+If set to True in :ref:`cfgfile`, the config entry ``sms.concurrent_challenges``
+will save the sent OTP value in the challenge database. This way several challenges can
+be open at the same time. The user can answer the challenges in an arbitrary order.
+Defaults to off.

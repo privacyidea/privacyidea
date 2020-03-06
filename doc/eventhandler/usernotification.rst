@@ -90,14 +90,10 @@ URL [#cidurl]_ with the *Content-ID* ``token_image``::
 sendsms
 .......
 
+.. todo:: Are SMS sent as utf-8? This might be expensive. Add a note to here.
+
 The *sendsms* action sends an SMS to the specified number each time the event
 handler is triggered.
-
-**smsconfig**
-
-  * *required* Option
-
-The :ref:`sms_gateway_config` for sending the notification.
 
 **To**
 
@@ -106,6 +102,13 @@ The :ref:`sms_gateway_config` for sending the notification.
 Possible recipients are:
 
   * tokenowner
+
+
+**smsconfig**
+
+  * *required* Option
+
+The :ref:`sms_gateway_config` for sending the notification.
 
 .. _savefile_action:
 

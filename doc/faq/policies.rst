@@ -62,7 +62,7 @@ decoratros at the end of the request.
 A policy decorator uses one of the methods get_action_value or get_policies.
 
 get_policies is used to determine boolean actions like
-:ref:`passonnotoken_policy`.
+:ref:`passonnotoken`.
 
 get_action_value is used to get the defined value of non-boolean policies
 like :ref:`otppin_policy`.

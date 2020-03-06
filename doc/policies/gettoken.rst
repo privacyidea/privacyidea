@@ -10,7 +10,7 @@ that may be retrieved from an OTP token by an administrator.
 
 The user attribute may hold a list of administrators.
 
-Technically the gettoken policies control the use of the
+Technically, the gettoken policies control the use of the
 :ref:`gettoken_controller`.
 
 The following actions are available in the scope 
