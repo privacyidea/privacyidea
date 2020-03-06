@@ -358,7 +358,7 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     against a list of policies. It is used to verify, whether a token with the
     given attestation may be enrolled, or authorized, respectively.
 
-    The certificate info may be None, in which case, true will be returned iff
+    The certificate info may be None, in which case, true will be returned if
     the policies are also empty.
 
     :param cert_info: The `attestation_issuer`, `attestation_serial`, and `attestation_subject` of the cert.
