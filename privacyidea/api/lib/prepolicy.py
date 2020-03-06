@@ -1908,7 +1908,7 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     against a list of policies. It is used to verify, whether a token with the
     given attestation may be enrolled, or authorized, respectively.
 
-    The certificate info may be None, in which case, true will be returned iff
+    The certificate info may be None, in which case, true will be returned if
     the policies are also empty.
 
     This is a wrapper for attestation_certificate_allowed(). It is needed,
