@@ -1,12 +1,12 @@
-<pagination ng-show="machinecount > machinesPerPage"
-            previous-text="{{ 'Previous'|translate }}"
-            next-text="{{ 'Next'|translate }}"
-            last-text="{{ 'Last'|translate }}"
-            first-text="{{ 'First'|translate }}"
-            total-items="machinecount" ng-model="params.page"
-            items-per-page="{{ machinesPerPage }}"
-            max-size="5"
-            boundary-links="true" ng-change="pageChanged()"></pagination>
+<div uib-pagination ng-show="machinecount > machinesPerPage"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     total-items="machinecount" ng-model="params.page"
+     items-per-page="{{ machinesPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
 
 <div class="table-responsive">
     <table class="table table-bordered table-striped" id="tablemachinelist">

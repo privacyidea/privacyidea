@@ -341,7 +341,11 @@ def parseSafeNetXML(xml):
     """
 
     TOKENS = {}
-    elem_tokencontainer = etree.fromstring(xml)
+    try:
+        elem_tokencontainer = etree.fromstring(xml)
+    except etree.ParseError as e:
+        log.debug(traceback.format_exc())
+        raise ImportException('Could not parse XML data: {0!s}'.format(e))
 
     if getTagName(elem_tokencontainer) != "Tokens":
         raise ImportException("No toplevel element Tokens")
@@ -461,9 +465,11 @@ def parsePSKCdata(xml_data,
     """
 
     tokens = {}
-    #xml = BeautifulSoup(xml_data, "lxml")
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
+    if not xml.keycontainer:
+        raise ImportException("No KeyContainer found in PSKC data. Could not "
+                              "import any tokens.")
     if xml.keycontainer.encryptionkey and \
             xml.keycontainer.encryptionkey.derivedkey:
         # If we have a password we also need a tag EncryptionKey in the

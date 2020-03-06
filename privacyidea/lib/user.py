@@ -94,6 +94,7 @@ class User(object):
             resolver = ""
         self.resolver = resolver or ""
         self.uid = None
+        self.rtype = None
         # Enrich user object with information from the userstore or from the
         # usercache
         if login:

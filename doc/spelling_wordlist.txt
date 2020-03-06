@@ -1,0 +1,12 @@
+Wordlist for sphinxcontrib-spelling
+https://readthedocs.org/projects/sphinxcontrib-spelling/downloads/pdf/latest/
+
+Custom filters would help to filter acronyms.
+
+.. spelling::
+
+privacyIDEA
+Yubikey
+Yubico
+simpleSAMLphp
+ownCloud

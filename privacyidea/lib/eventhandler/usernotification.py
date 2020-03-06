@@ -35,6 +35,7 @@ It can be bound to each event and can perform the action:
 
   * sendmail: Send an email to the user/token owner
   * sendsms: We can also notify the user with an SMS.
+  * savefile: Create a file which can be processed later
 
 The module is tested in tests/test_lib_events.py
 """
@@ -50,6 +51,13 @@ from privacyidea.lib.user import User, get_user_list
 from privacyidea.lib.utils import create_tag_dict
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+try:
+    from urllib.request import urlopen
+except ImportError:  # pragma: no cover
+    from urllib import urlopen
 import logging
 import os
 import traceback
@@ -111,94 +119,92 @@ class UserNotificationEventHandler(BaseEventHandler):
         smsgateway_dicts = get_smsgateway()
         smsgateways = [sms.identifier for sms in smsgateway_dicts]
         smtpservers = [s.config.identifier for s in smtpserver_objs]
-        actions = {"sendmail": {"emailconfig":
-                                     {"type": "str",
-                                      "required": True,
-                                      "description": _("Send notification "
-                                                       "email via this "
-                                                       "email server."),
-                                      "value": smtpservers},
-                                "mimetype": {"type": "str",
-                                             "description": _("Either send "
-                                                              "email as plain text or HTML."),
-                                             "value": ["plain", "html"]},
-                                "subject": {"type": "str",
-                                            "required": False,
-                                            "description": _("The subject of "
-                                                             "the mail that "
-                                                             "is sent.")},
-                                "reply_to": {"type": "str",
-                                             "required": False,
-                                             "description": _("The Reply-To "
-                                                              "header in the "
-                                                              "sent email.")},
-                                "body": {"type": "text",
-                                         "required": False,
-                                         "description": _("The body of the "
-                                                          "mail that is "
-                                                          "sent.")},
-                                "To": {"type": "str",
-                                       "required": True,
-                                       "description": _("Send notification to "
-                                                        "this user."),
-                                       "value": [
-                                           NOTIFY_TYPE.TOKENOWNER,
-                                           NOTIFY_TYPE.LOGGED_IN_USER,
-                                           NOTIFY_TYPE.INTERNAL_ADMIN,
-                                           NOTIFY_TYPE.ADMIN_REALM,
-                                           NOTIFY_TYPE.EMAIL]},
-                                "To "+NOTIFY_TYPE.ADMIN_REALM: {
-                                    "type": "str",
-                                    "value": get_app_config_value("SUPERUSER_REALM", []),
-                                    "visibleIf": "To",
-                                    "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
-                                "To "+NOTIFY_TYPE.INTERNAL_ADMIN: {
-                                    "type": "str",
-                                    "value": [a.username for a in
-                                              get_db_admins()],
-                                    "visibleIf": "To",
-                                    "visibleValue":
-                                         NOTIFY_TYPE.INTERNAL_ADMIN},
-                                "To "+NOTIFY_TYPE.EMAIL: {
-                                    "type": "str",
-                                    "description": _("Any email address, to "
-                                                     "which the notification "
-                                                     "should be sent."),
-                                    "visibleIf": "To",
-                                    "visibleValue": NOTIFY_TYPE.EMAIL}
-                                },
-                   "sendsms": {"smsconfig":
-                                   {"type": "str",
-                                    "required": True,
-                                    "description": _("Send the user "
-                                                     "notification via a "
-                                                     "predefined SMS "
-                                                     "gateway."),
-                                    "value": smsgateways},
-                               "body": {"type": "text",
-                                        "required": False,
-                                        "description": _("The text of the "
-                                                         "SMS.")},
-                               "To": {"type": "str",
-                                      "required": True,
-                                      "description": _("Send notification to "
-                                                       "this user."),
-                                      "value": [NOTIFY_TYPE.TOKENOWNER]}
-                               },
-                   "savefile": {"body":
-                                    {"type": "text",
-                                     "required": True,
-                                     "description": _("This is the template content of "
-                                                      "the new file. Can contain the tags "
-                                                      "as specified in the documentation.")},
-                                "filename":
-                                    {"type": "str",
-                                     "required": True,
-                                     "description": _("The filename of the notification. Existing files "
-                                                      "are overwritten. The name can contain tags as specified "
-                                                      "in the documentation and can also contain the tag {random}.")}
-                   }
-                   }
+        actions = {
+            "sendmail": {
+                "emailconfig": {
+                    "type": "str",
+                    "required": True,
+                    "description": _("Send notification email via this email server."),
+                    "value": smtpservers},
+                "mimetype": {
+                    "type": "str",
+                    "description": _("Either send email as plain text or HTML."),
+                    "value": ["plain", "html"]},
+                "attach_qrcode": {
+                    "type": "bool",
+                    "description": _("Send QR-Code image as an attachment "
+                                     "(cid URL: token_image)")},
+                "subject": {
+                    "type": "str",
+                    "required": False,
+                    "description": _("The subject of the mail that is sent.")},
+                "reply_to": {
+                    "type": "str",
+                    "required": False,
+                    "description": _("The Reply-To header in the sent email.")},
+                "body": {
+                    "type": "text",
+                    "required": False,
+                    "description": _("The body of the mail that is sent.")},
+                "To": {
+                    "type": "str",
+                    "required": True,
+                    "description": _("Send notification to this user."),
+                    "value": [
+                        NOTIFY_TYPE.TOKENOWNER,
+                        NOTIFY_TYPE.LOGGED_IN_USER,
+                        NOTIFY_TYPE.INTERNAL_ADMIN,
+                        NOTIFY_TYPE.ADMIN_REALM,
+                        NOTIFY_TYPE.EMAIL]},
+                "To " + NOTIFY_TYPE.ADMIN_REALM: {
+                    "type": "str",
+                    "value": get_app_config_value("SUPERUSER_REALM", []),
+                    "visibleIf": "To",
+                    "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
+                "To " + NOTIFY_TYPE.INTERNAL_ADMIN: {
+                    "type": "str",
+                    "value": [a.username for a in
+                              get_db_admins()],
+                    "visibleIf": "To",
+                    "visibleValue":
+                        NOTIFY_TYPE.INTERNAL_ADMIN},
+                "To " + NOTIFY_TYPE.EMAIL: {
+                    "type": "str",
+                    "description": _("Any email address, to which the notification "
+                                     "should be sent."),
+                    "visibleIf": "To",
+                    "visibleValue": NOTIFY_TYPE.EMAIL}
+            },
+            "sendsms": {
+                "smsconfig": {
+                    "type": "str",
+                    "required": True,
+                    "description": _("Send the user notification via a "
+                                     "predefined SMS gateway."),
+                    "value": smsgateways},
+                "body": {"type": "text",
+                         "required": False,
+                         "description": _("The text of the SMS.")},
+                "To": {"type": "str",
+                       "required": True,
+                       "description": _("Send notification to this user."),
+                       "value": [NOTIFY_TYPE.TOKENOWNER]}
+            },
+            "savefile": {
+                "body": {
+                    "type": "text",
+                    "required": True,
+                    "description": _("This is the template content of "
+                                     "the new file. Can contain the tags "
+                                     "as specified in the documentation.")},
+                "filename": {
+                    "type": "str",
+                    "required": True,
+                    "description": _("The filename of the notification. Existing files "
+                                     "are overwritten. The name can contain tags as specified "
+                                     "in the documentation and can also contain the tag {random}.")}
+            }
+        }
         return actions
 
     def do(self, action, options=None):
@@ -345,7 +351,19 @@ class UserNotificationEventHandler(BaseEventHandler):
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
+                attach_qrcode = handler_options.get("attach_qrcode", False)
 
+                if attach_qrcode and googleurl_img:
+                    # get the image part of the googleurl
+                    googleurl = urlopen(googleurl_img)
+                    mail_body = MIMEMultipart('related')
+                    mail_body.attach(MIMEText(body, mimetype))
+                    mail_img = MIMEImage(googleurl.read())
+                    mail_img.add_header('Content-ID', '<token_image>')
+                    mail_img.add_header('Content-Disposition',
+                                        'inline; filename="{0!s}.png"'.format(serial))
+                    mail_body.attach(mail_img)
+                    body = mail_body
                 try:
                     ret = send_email_identifier(emailconfig,
                                                 recipient=useremail,

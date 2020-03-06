@@ -1371,6 +1371,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     action = db.Column(db.Unicode(2000), default=u"")
     realm = db.Column(db.Unicode(256), default=u"")
     adminrealm = db.Column(db.Unicode(256), default=u"")
+    adminuser = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(256), default=u"")
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
@@ -1389,7 +1390,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
-                 active=True, scope="", action="", realm="", adminrealm="",
+                 active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", priority=1,
                  check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
@@ -1400,6 +1401,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.active = active
         self.realm = realm
         self.adminrealm = adminrealm
+        self.adminuser = adminuser
         self.resolver = resolver
         self.user = user
         self.client = client
@@ -1458,6 +1460,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "scope": self.scope,
              "realm": self._split_string(self.realm),
              "adminrealm": self._split_string(self.adminrealm),
+             "adminuser": self._split_string(self.adminuser),
              "resolver": self._split_string(self.resolver),
              "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),

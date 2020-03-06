@@ -24,7 +24,7 @@ more information on the admin realms.
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.
 
-.. figure:: admin_policies.png
+.. figure:: images/admin_policies.png
    :width: 500
 
    *The Admin scope provides an additional field 'admin realm'.*
@@ -165,6 +165,8 @@ range: 0 - 31
 This is the minimum required PIN the admin must use when setting the
 OTP PIN.
 
+.. _admin_policies_otp_pin_contents:
+
 otp_pin_contents
 ~~~~~~~~~~~~~~~~
 
@@ -179,7 +181,9 @@ sets it.
 
 **n** are digits matching [0-9].
 
-**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
+**s** are special characters matching [\[\].:,;-_<>+*!/()=?$§%&#~\^].
+
+**[allowedchars]** is a specific list of allowed characters.
 
 **Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
 require the admin to choose OTP PINs that consist of letters and digits
@@ -193,14 +197,16 @@ which have a minimum length of 8.
 The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
 characters ``+`` and ``-``.
 
-``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
-and it must not contain any other characters.
+``-cn`` (denial)
 
-``-cn`` (substraction)
+   The PIN must not contain a character and must not contain a number.
+   *test1234* would not be a valid PIN, since it does contains numbers and characters.
+   *test///* would not be a valid PIN, since it contains characters.
 
-   *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
-   not be valid OTP PINs. The later since it does not contain digits, the first
-   (*test12$$*) since it does contain a special character ($), which it should not.
+``-s`` (denial)
+
+   The PIN must not contain a special character.
+   **test1234* would be a valid PIN. *test12$$* would not.
 
 ``+cn`` (grouping)
 
@@ -208,6 +214,15 @@ and it must not contain any other characters.
    characters from the sum of the two groups.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
+   Note, how this is different to ``-s``, since it allows special characters to be
+   included.
+
+``[123456]``
+
+   allows the digtits 1-6 to be used.
+   *1122* would be a valid PIN.
+   *1177* would not be a valid PIN.
+
 
 otp_pin_set_random
 ~~~~~~~~~~~~~~~~~~

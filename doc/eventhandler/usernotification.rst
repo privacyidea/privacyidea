@@ -11,34 +11,106 @@ administrators in case of any event.
 Possible Actions
 ~~~~~~~~~~~~~~~~
 
+.. _sendmail_action:
+
 sendmail
 ........
 
-The *sendmail* action sends an email to the tokenowner user. The email is
-sent, if an administrator managed the users token.
+The *sendmail* action sends an email to the specified email address each time
+the event handler is triggered.
 
 **emailconfig**
 
   * *required* Option
-  * The email is sent via this :ref:`smtpserver`.
+
+The email is sent via this :ref:`smtpserver`.
+
+**To**
+
+  * *required* Option
+
+This specifies to which type of user the notification should be sent.
+Possible recipient types are:
+
+  * token owner,
+  * logged in user,
+  * admin realm,
+  * internal admin,
+  * email address.
+
+Depending on the recipient type you can enter additional information. The
+recipient type *email* takes a comma separated list of email addresses.
+
+**reply_to**
+
+Adds the specified ``Reply-To`` header to the email.
 
 **subject**
 
-  * optional
+The subject can take the same tags as the body, except for the ``{googleurl_img}``.
 
-The subject line of the mail that is sent.
+**mimetype**
+
+Possible mime types are:
+
+  * plain (default)
+  * html
+
+You can choose if the email should be sent as plain text or HTML. If the
+email is sent as HTML, you can do the following::
+
+   <a href={googleurl_value}>Your new token</a>
+
+Which will create a clickable link. Clicked on the smartphone, the token will
+be imported to the smartphone app.
+
+You can also do this::
+
+  <img src={googleurl_img}>
+
+This will add the QR Code as an inline data image into the HTML email.
+
+.. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
+   text. Everyone who receives this data has a detailed copy of this token.
+   Thus we very much recommend to **never** send these data in an unencrypted
+   email!
+
+**attach_qrcode**
+
+Instead of sending the QR-Code as an inline data image (which is not supported
+by some email clients (i.e. Outlook) or GMail [#gmailimg]_), enabling this
+option sends the email as a multipart message with the QR-Code image as an
+attachment. The attached image can be referenced in a HTML body via CID
+URL [#cidurl]_ with the *Content-ID* ``token_image``::
+
+  <img src="cid:token_image" alt="Token Image" style="..."/>
+
+.. _sendsms_action:
 
 sendsms
 .......
 
-The *sendsms* action sends an SMS to the tokenowner. The SMS is sent, if an
-administrator managed the users token.
+.. todo:: Are SMS sent as utf-8? This might be expensive. Add a note to here.
+
+The *sendsms* action sends an SMS to the specified number each time the event
+handler is triggered.
+
+**To**
+
+  * *required* Option
+
+Possible recipients are:
+
+  * tokenowner
+
 
 **smsconfig**
 
   * *required* Option
-  * The SMS Gateway configuration.
 
+The :ref:`sms_gateway_config` for sending the notification.
+
+.. _savefile_action:
 
 savefile
 ........
@@ -71,8 +143,8 @@ All actions take the common option *body*:
 
 **body**
 
-  * optional for sendsms and sendemail
-  * required for savefile
+  * optional for :ref:`sendmail_action` and :ref:`sendsms_action`
+  * required for :ref:`savefile_action`
 
 Here the administrator can specify the body of the notification, that is sent or saved.
 The body may contain the following tags
@@ -102,54 +174,6 @@ The body may contain the following tags
     PIN from the response using the *response mangler*.
 
 
-
-
-Options for sendmail and sendsms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Both actions **sendmail** and **sendsms** take several common options.
-
-**subject**
-
-The subject can take the same tags as the body, except for the ``{googleurl_img}``.
-
-**mimetype**
-
-You can choose if the email should be sent as plain text or HTML. If the
-email is sent as HTML, you can do the following:
-
-   <a href={googleurl_value}>Your new token</a>
-
-Which will create a clickable link. Clicked on the smartphone, the token will
-be imported to the smartphone app.
-
-You can also do this:
-
-  <img src={googleurl_img}>
-
-This will add the QR Code into the HTML email.
-
-.. warning:: The KEY URI and the QR Code contain the secret OTP key in plain
-   text. Everyone who receives this data has a detailed copy of this token.
-   Thus we very much recommend to **never** send these data in an unencrypted
-   email!
-
-**To**
-
-  * required
-
-This specifies to which type of user the notification should be sent.
-Possible recipient types are:
-
-  * token owner,
-  * logged in user,
-  * admin realm,
-  * internal admin,
-  * email address.
-
-Depending on the recipient type you can enter additional information. The
-recipient type *email* takes a comma separated list of email addresses.
-
 Code
 ~~~~
 
@@ -157,3 +181,9 @@ Code
 .. automodule:: privacyidea.lib.eventhandler.usernotification
    :members:
    :undoc-members:
+
+
+.. rubric:: Footnotes
+
+.. [#gmailimg] https://stackoverflow.com/a/42014708/7036742
+.. [#cidurl] https://tools.ietf.org/html/rfc2392

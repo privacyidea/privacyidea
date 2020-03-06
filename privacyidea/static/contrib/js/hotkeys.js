@@ -1,7 +1,7 @@
 /*! 
- * angular-hotkeys v1.5.0
+ * angular-hotkeys v1.7.0
  * https://chieffancypants.github.io/angular-hotkeys
- * Copyright (c) 2015 Wes Cruver
+ * Copyright (c) 2016 Wes Cruver
  * License: MIT
  */
 /*
@@ -9,7 +9,7 @@
  *
  * Automatic keyboard shortcuts for your angular apps
  *
- * (c) 2014 Wes Cruver
+ * (c) 2016 Wes Cruver
  * License: MIT
  */
 
@@ -62,7 +62,7 @@
                         '</tr>' +
                       '</tbody></table>' +
                       '<div ng-bind-html="footer" ng-if="footer"></div>' +
-                      '<div class="cfp-hotkeys-close" ng-click="toggleCheatSheet()">×</div>' +
+                      '<div class="cfp-hotkeys-close" ng-click="toggleCheatSheet()">&#215;</div>' +
                     '</div></div>';
 
     /**
@@ -79,10 +79,24 @@
 
     this.$get = ['$rootElement', '$rootScope', '$compile', '$window', '$document', function ($rootElement, $rootScope, $compile, $window, $document) {
 
+      var mouseTrapEnabled = true;
+
+      function pause() {
+        mouseTrapEnabled = false;
+      }
+
+      function unpause() {
+        mouseTrapEnabled = true;
+      }
+
       // monkeypatch Mousetrap's stopCallback() function
       // this version doesn't return true when the element is an INPUT, SELECT, or TEXTAREA
       // (instead we will perform this check per-key in the _add() method)
       Mousetrap.prototype.stopCallback = function(event, element) {
+        if (!mouseTrapEnabled) {
+          return true;
+        }
+
         // if the element has the class "mousetrap" then no need to stop
         if ((' ' + element.className + ' ').indexOf(' mousetrap ') > -1) {
           return false;
@@ -98,14 +112,14 @@
        */
       function symbolize (combo) {
         var map = {
-          command   : '⌘',
-          shift     : '⇧',
-          left      : '←',
-          right     : '→',
-          up        : '↑',
-          down      : '↓',
-          'return'  : '↩',
-          backspace : '⌫'
+          command   : '\u2318',     // ⌘
+          shift     : '\u21E7',     // ⇧
+          left      : '\u2190',     // ←
+          right     : '\u2192',     // →
+          up        : '\u2191',     // ↑
+          down      : '\u2193',     // ↓
+          'return'  : '\u23CE',     // ⏎
+          backspace : '\u232B'      // ⌫
         };
         combo = combo.split('+');
 
@@ -157,7 +171,7 @@
        *
        */
       Hotkey.prototype.format = function() {
-        if(this._formated === null) {
+        if (this._formated === null) {
           // Don't show all the possible key combos, just the first one.  Not sure
           // of usecase here, so open a ticket if my assumptions are wrong
           var combo = this.combo[0];
@@ -221,9 +235,9 @@
        * attached.  This is useful to catch when the scopes are `$destroy`d and
        * then automatically unbind the hotkey.
        *
-       * @type {Array}
+       * @type {Object}
        */
-      var boundScopes = [];
+      var boundScopes = {};
 
       if (this.useNgRoute) {
         $rootScope.$on('$routeChangeSuccess', function (event, route) {
@@ -341,6 +355,9 @@
           combo       = combo.combo;
         }
 
+        // no duplicates please
+        _del(combo);
+
         // description is optional:
         if (description instanceof Function) {
           action = callback;
@@ -383,18 +400,23 @@
           // create the new wrapper callback
           callback = function(event) {
             var shouldExecute = true;
-            var target = event.target || event.srcElement; // srcElement is IE only
-            var nodeName = target.nodeName.toUpperCase();
 
-            // check if the input has a mousetrap class, and skip checking preventIn if so
-            if ((' ' + target.className + ' ').indexOf(' mousetrap ') > -1) {
-              shouldExecute = true;
-            } else {
-              // don't execute callback if the event was fired from inside an element listed in preventIn
-              for (var i=0; i<preventIn.length; i++) {
-                if (preventIn[i] === nodeName) {
-                  shouldExecute = false;
-                  break;
+            // if the callback is executed directly `hotkey.get('w').callback()`
+            // there will be no event, so just execute the callback.
+            if (event) {
+              var target = event.target || event.srcElement; // srcElement is IE only
+              var nodeName = target.nodeName.toUpperCase();
+
+              // check if the input has a mousetrap class, and skip checking preventIn if so
+              if ((' ' + target.className + ' ').indexOf(' mousetrap ') > -1) {
+                shouldExecute = true;
+              } else {
+                // don't execute callback if the event was fired from inside an element listed in preventIn
+                for (var i=0; i<preventIn.length; i++) {
+                  if (preventIn[i] === nodeName) {
+                    shouldExecute = false;
+                    break;
+                  }
                 }
               }
             }
@@ -442,6 +464,15 @@
             if (scope.hotkeys[index].combo.length > 1) {
               scope.hotkeys[index].combo.splice(scope.hotkeys[index].combo.indexOf(combo), 1);
             } else {
+
+              // remove hotkey from bound scopes
+              angular.forEach(boundScopes, function (boundScope) {
+                var scopeIndex = boundScope.indexOf(scope.hotkeys[index]);
+                if (scopeIndex !== -1) {
+                    boundScope.splice(scopeIndex, 1);
+                }
+              });
+
               scope.hotkeys.splice(index, 1);
             }
             return true;
@@ -546,7 +577,6 @@
         };
       }
 
-
       var publicApi = {
         add                   : _add,
         del                   : _del,
@@ -559,7 +589,9 @@
         cheatSheetDescription : this.cheatSheetDescription,
         useNgRoute            : this.useNgRoute,
         purgeHotkeys          : purgeHotkeys,
-        templateTitle         : this.templateTitle
+        templateTitle         : this.templateTitle,
+        pause                 : pause,
+        unpause               : unpause
       };
 
       return publicApi;
@@ -573,13 +605,14 @@
     return {
       restrict: 'A',
       link: function (scope, el, attrs) {
-        var key, allowIn;
+        var keys = [],
+            allowIn;
 
         angular.forEach(scope.$eval(attrs.hotkey), function (func, hotkey) {
           // split and trim the hotkeys string into array
           allowIn = typeof attrs.hotkeyAllowIn === "string" ? attrs.hotkeyAllowIn.split(/[\s,]+/) : [];
 
-          key = hotkey;
+          keys.push(hotkey);
 
           hotkeys.add({
             combo: hotkey,
@@ -592,7 +625,7 @@
 
         // remove the hotkey if the directive is destroyed:
         el.bind('$destroy', function() {
-          hotkeys.del(key);
+          angular.forEach(keys, hotkeys.del);
         });
       }
     };

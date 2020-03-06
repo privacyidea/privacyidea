@@ -198,11 +198,12 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
-        }).error(function (error) {
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
+        }, function (response) {
             //debug: console.log("challenge response");
             //debug: console.log(error);
+            let error = response.data;
             $scope.login.password = "";
             if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
@@ -321,7 +322,7 @@ angular.module("privacyideaApp")
                             {type: "danger", ttl: 10000});
                 }
             }
-        }).then(function () {
+        }).finally(function () {
             // We delete the login object, so that the password is not
             // contained in the scope
             $scope.login = {username: "", password: ""};
@@ -339,8 +340,8 @@ angular.module("privacyideaApp")
             transaction_id: $scope.transactionid
         }, {
             withCredentials: true
-        }).success(function (data) {
-            $scope.do_login_stuff(data);
+        }).then(function (response) {
+            $scope.do_login_stuff(response.data);
             PollingAuthFactory.stop();
         });
     };
@@ -376,6 +377,13 @@ angular.module("privacyideaApp")
             if ($scope.dialogNoToken) {
                 $('#dialogNoToken').modal("show");
             }
+            $scope.qr_image_android = data.result.value.qr_image_android || "";
+            $scope.qr_image_ios = data.result.value.qr_image_ios || "";
+            $scope.qr_image_custom = data.result.value.qr_image_custom || "";
+            // This is a helper variable to get the number of qr images to display
+            $scope.qr_image_count = Number($scope.qr_image_android.length > 0)
+                + Number($scope.qr_image_ios.length > 0)
+                + Number($scope.qr_image_custom.length > 0);
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;
@@ -398,10 +406,7 @@ angular.module("privacyideaApp")
             //debug: console.log("successfully authenticated");
             //debug: console.log($scope.loggedInUser);
             if ( $scope.unlocking ) {
-                $('#dialogLock').modal().hide();
-                // Hack, since we can not close the modal and thus the body
-                // keeps the modal-open and thus has no scroll-bars
-                $("body").removeClass("modal-open");
+                $('#dialogLock').modal('hide');
             } else {
                 // if we are unlocking we do NOT go to the tokens
                 $location.path("/token");
@@ -432,9 +437,6 @@ angular.module("privacyideaApp")
         $scope.welcomeStep += 1;
         if ($scope.welcomeStep === 4) {
             $('#dialogWelcome').modal("hide");
-            // Hack, since we can not close the modal and thus the body
-            // keeps the modal-open and thus has no scroll-bars
-            $("body").removeClass("modal-open");
         }
     };
     $scope.resetWelcome = function() {
@@ -444,9 +446,6 @@ angular.module("privacyideaApp")
     $scope.closeNoToken = function() {
         $scope.dialogNoToken = false;
         $('#dialogNoToken').modal('hide');
-        // Hack, since we can not close the modal and thus the body
-        // keeps the modal-open and thus has no scroll-bars
-        $("body").removeClass("modal-open");
     };
 
     $scope.lock_screen = function () {
@@ -454,7 +453,10 @@ angular.module("privacyideaApp")
         $scope.loggedInUser.auth_token = null;
         $scope.welcomeStep = 0;
         Idle.unwatch();
-        $('#dialogLock').modal().show();
+        $('#dialogLock').modal({
+            keyboard: false,
+            backdrop: 'static',
+        }).show();
     };
 
     $scope.about = function() {

@@ -47,9 +47,8 @@ class Audit(AuditBase):
     """
 
     def __init__(self, config=None):
+        super(Audit, self).__init__(config)
         self.name = "containeraudit"
-        self.audit_data = {}
-        self.config = config or {}
         write_conf = self.config.get('PI_AUDIT_CONTAINER_WRITE')
         read_conf = self.config.get('PI_AUDIT_CONTAINER_READ')
         # Initialize all modules
@@ -57,6 +56,10 @@ class Audit(AuditBase):
         self.read_module = get_module_class(read_conf, "Audit", "log")(config)
         if not self.read_module.is_readable:
             log.warning(u"The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
+
+    @property
+    def has_data(self):
+        return any([x.has_data for x in self.write_modules])
 
     def log(self, param):
         """
@@ -91,4 +94,3 @@ class Audit(AuditBase):
         """
         for module in self.write_modules:
             module.finalize_log()
-

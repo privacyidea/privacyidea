@@ -1,6 +1,6 @@
-.. _tiqr_otp_token:
+.. _tiqr_token_config:
 
-TiQR Token Config
+TiQR Token Configuration
 .................
 
 .. index:: TiQR Token

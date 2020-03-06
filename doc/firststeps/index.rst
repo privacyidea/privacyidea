@@ -3,9 +3,7 @@
 First Steps
 ===========
 
-You installed privacyIDEA successfully according to :ref:`installation` and
-created an administrator using the command ``pi-manage admin`` as e.g.
-described in :ref:`install_ubuntu`.
+You installed privacyIDEA successfully according to :ref:`installation`.
 
 These first steps will guide you through the tasks of logging in to the
 management web UI, attaching your first users and enrolling the first token.
@@ -13,6 +11,7 @@ management web UI, attaching your first users and enrolling the first token.
 .. toctree::
    :maxdepth: 1
 
+   add_admin
    login
    realm
    token
@@ -29,5 +28,6 @@ You can
 
 To attach applications read the chapter :ref:`application_plugins`.
 
-You may also go on reading the chapter :ref:`configuration` to get a deeper
+You may also go on reading the next chapter which gives an overview on the :ref:`webui`
+or you directly skip to :ref:`configuration` to get a deeper
 insight in the configuration possibilities.

@@ -3,7 +3,7 @@
 Code Documentation
 ==================
 
-The code roughly has three levels.
+The code roughly has three levels: API, LIB and DB.
 
 .. index:: JWT, JSON Web Token
 

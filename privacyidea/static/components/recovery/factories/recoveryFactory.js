@@ -7,12 +7,13 @@ myApp.factory("RecoveryFactory", function ($http, $state, $rootScope,
         recover: function (params, callback) {
             // THis sends the recovery code to reset the password
             $http.post(recoveryUrl, params, {}
-            ).success(callback
-            ).error(AuthFactory.authError);
+            ).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
         },
         reset: function (params, callback) {
             $http.post(recoveryUrl + "/reset", params, {}
-            ).success(callback).error(AuthFactory.authError);
+            ).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
         }
     };
 });

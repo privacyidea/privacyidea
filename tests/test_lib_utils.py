@@ -22,11 +22,12 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid)
+                                   check_serial_valid, determine_logged_in_userparams)
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.error import PolicyError
 import binascii
 
 
@@ -510,7 +511,19 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(r, "12,+")
 
     def test_20_pin_policy(self):
+        # Unspecified character specifier
+        self.assertRaises(PolicyError, check_pin_policy, "1234", "+o")
+
         r, c = check_pin_policy("1234", "n")
+        self.assertTrue(r)
+
+        r, c = check_pin_policy("[[[", "n")
+        self.assertFalse(r)
+
+        r, c = check_pin_policy("[[[", "c")
+        self.assertFalse(r)
+
+        r, c = check_pin_policy("[[[", "s")
         self.assertTrue(r)
 
         r, c = check_pin_policy("abc", "nc")
@@ -519,12 +532,12 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("123", "nc")
         self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: [a-zA-Z]", c)
+        self.assertEqual(r"Missing character in PIN: [a-zA-Z]", c)
 
         r, c = check_pin_policy("123", "ncs")
         self.assertFalse(r)
-        self.assertTrue("Missing character in PIN: [a-zA-Z]" in c, c)
-        self.assertTrue("Missing character in PIN: [.:,;_<>+*!/()=?$§%&#~\^-]" in c, c)
+        self.assertTrue(r"Missing character in PIN: [a-zA-Z]" in c, c)
+        self.assertTrue(r"Missing character in PIN: [\[\].:,;_<>+*!/()=?$§%&#~^-]" in c, c)
 
         r, c = check_pin_policy("1234", "")
         self.assertFalse(r)
@@ -539,6 +552,10 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("xxxx", "+cn")
         self.assertTrue(r)
+        self.assertTrue(check_pin_policy("test1234", "+cn")[0])
+        self.assertTrue(check_pin_policy("test12$$", "+cn")[0])
+        self.assertTrue(check_pin_policy("test12", "+cn")[0])
+        self.assertTrue(check_pin_policy("1234", "+cn")[0])
 
         r, c = check_pin_policy("@@@@", "+cn")
         self.assertFalse(r)
@@ -548,13 +565,35 @@ class UtilsTestCase(MyTestCase):
         # No special character
         r, c = check_pin_policy("1234", "-s")
         self.assertTrue(r)
+        r, c = check_pin_policy("1234aaaa", "-s")
+        self.assertTrue(r)
+        r, c = check_pin_policy("1234aaaa//", "-s")
+        self.assertFalse(r)
 
-        r, c = check_pin_policy("1234", "-sn")
+        # A pin that falsely contains a number
+        r, c = check_pin_policy("1234aaa", "-sn")
         self.assertFalse(r)
         self.assertEqual(c, "Not allowed character in PIN!")
+        r, c = check_pin_policy("///aaa", "-sn")
+        self.assertFalse(r)
+        # A pin without a number and without a special
+        r, c = check_pin_policy("xxxx", "-sn")
+        self.assertTrue(r)
 
         r, c = check_pin_policy("1234@@@@", "-c")
         self.assertTrue(r)
+
+        # A pin with only digits allowed
+        r, c = check_pin_policy("1234", "-cs")
+        self.assertTrue(r)
+        r, c = check_pin_policy("a1234", "-cs")
+        self.assertFalse(r)
+
+        # A pin with only a specified list of chars
+        r, c = check_pin_policy("1234111", "[1234]")
+        self.assertTrue(r)
+        r, c = check_pin_policy("12345", "[1234]")
+        self.assertFalse(r)
 
     def test_21_get_module_class(self):
         r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
@@ -781,3 +820,33 @@ class UtilsTestCase(MyTestCase):
 
         # an empty serial is not allowed
         self.assertRaises(Exception, check_serial_valid, "")
+
+    def test_33_determine_logged_in_user(self):
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"}, {})
+
+        self.assertEqual(role, "user")
+        self.assertEqual(user, "hans")
+        self.assertEqual(realm, "realm1")
+        self.assertEqual(adminuser, None)
+        self.assertEqual(adminrealm, None)
+
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
+                                                                                      "username": "hans",
+                                                                                      "realm": "realm1"},
+                                                                                     {"user": "peter",
+                                                                                      "realm": "domain"})
+
+        self.assertEqual(role, "admin")
+        self.assertEqual(user, "peter")
+        self.assertEqual(realm, "domain")
+        self.assertEqual(adminuser, "hans")
+        self.assertEqual(adminrealm, "realm1")
+
+        self.assertRaises(PolicyError, determine_logged_in_userparams,
+                          {"role": "marshal",
+                           "username": "Wyatt Earp",
+                           "realm": "Wild West"},
+                          {"user": "Dave Rudabaugh",
+                           "realm": "Dodge City"})

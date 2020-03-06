@@ -89,6 +89,7 @@ class Audit(object):  # pragma: no cover
         """
         self.name = "AuditBase"
         self.audit_data = {}
+        self.config = config or {}
         self.private = ""
         self.public = ""
 
@@ -159,6 +160,10 @@ class Audit(object):  # pragma: no cover
         in the audit store
         """
         return None
+
+    @property
+    def has_data(self):
+        return bool(self.audit_data)
 
     @log_with(log)
     def log(self, param):

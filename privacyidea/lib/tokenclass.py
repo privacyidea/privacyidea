@@ -1566,8 +1566,7 @@ class TokenClass(object):
         return ""
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -1575,13 +1574,9 @@ class TokenClass(object):
         policies.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
         :return: default parameters
         """
         return {}

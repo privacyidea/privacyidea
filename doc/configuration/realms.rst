@@ -27,15 +27,15 @@ Relate User to a Realm
 
 There are several options to relate a user to a specific realm during
 authentication. Usually, if only a login name is given, the user will be
-searched in the default realm.
+searched in the default realm, indicated with ``defrealm`` in the mapping table below.
 
 If a *realm* parameter is given in a :ref:`/auth<rest_auth>` or
 :ref:`/validate/check<rest_validate>` request, it supersedes a possible
 :ref:`split<splitatsign>` realm.
 
 The following table shows different combinations of *user(name)*-parameter
-and *realm*-parameter. Depending on the :ref:`splitatsign`-setting, this shows
-in which realm the user will be searched:
+and *realm*-parameter. Depending on the :ref:`splitatsign`-setting, the
+following table shows in which realm the user will be searched.
 
 =============  =======  ========================  ========================
   Input parameter       :ref:`splitatsign`-setting
@@ -133,7 +133,7 @@ Autocreate Realm
 .. index:: realm autocreation
 
 .. figure:: images/ask-create-realm.png
-   :scale: 40 %
+   :scale: 80%
 
 If you have a fresh installation, no resolver and no realm is
 defined. To get you up and running faster, the system

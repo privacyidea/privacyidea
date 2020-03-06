@@ -350,7 +350,7 @@ push_firebase_configuration
 
 type: string
 
-For enrolling a :ref:`push token`, the administrator can select which
+For enrolling a :ref:`push_token`, the administrator can select which
 Firebase configuration should be used.
 The administrator can create several connections to the Firebase service
 (see :ref:`firebase_provider`).

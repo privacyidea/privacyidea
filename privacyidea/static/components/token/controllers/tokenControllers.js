@@ -89,7 +89,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                 ($scope.subscription_state === 1) ||
                 ($scope.subscription_state === 2)) {
                 $('#dialogWelcome').modal("show");
-                $("body").addClass("modal-open");
             }
         }
     }
@@ -355,7 +354,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                             $scope.form.phone = userObject.mobile;
                         } else {
                             $scope.phone_list = userObject.mobile;
-                            if ($scope.phone_list.length === 1) {
+                            if ($scope.phone_list && $scope.phone_list.length === 1) {
                                 $scope.form.phone = $scope.phone_list[0];
                             }
                         }
@@ -612,7 +611,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 });
 
 
-myApp.controller("tokenImportController", function ($scope, $upload,
+myApp.controller("tokenImportController", function ($scope, Upload,
                                                     AuthFactory, tokenUrl,
                                                     ConfigFactory, inform) {
     $scope.formInit = {
@@ -640,32 +639,28 @@ myApp.controller("tokenImportController", function ($scope, $upload,
         $scope.pgpkeys = data.result.value;
     });
 
-    $scope.upload = function (files) {
-        if (files && files.length) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                $upload.upload({
-                    url: tokenUrl + '/load/filename',
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    fields: {type: $scope.form.type,
-                             psk: $scope.form.psk,
-                             password: $scope.form.password,
-                             tokenrealms: $scope.form.realm},
-                    file: file
-                }).progress(function (evt) {
-                    $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
-                }).success(function (data, status, headers, config) {
-                    $scope.uploadedFile = config.file.name;
-                    $scope.uploadedTokens = data.result.value;
-                }).error(function (error) {
-                    if (error.result.error.code === -401) {
-                        $state.go('login');
-                    } else {
-                        inform.add(error.result.error.message,
-                                {type: "danger", ttl: 10000});
-                    }
-                });
-            }
+    $scope.upload = function (file) {
+        if (file) {
+            Upload.upload({
+                url: tokenUrl + '/load/filename',
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                data: {file: file,
+                    type: $scope.form.type,
+                    psk: $scope.form.psk,
+                    password: $scope.form.password,
+                    tokenrealms: $scope.form.realm},
+            }).then(function (resp) {
+                $scope.uploadedFile = resp.config.data.file.name;
+                $scope.uploadedTokens = resp.data.result.value;
+            }, function (error) {
+                if (error.data.result.error.code === -401) {
+                    $state.go('login');
+                } else {
+                    inform.add(error.data.result.error.message,
+                        {type: "danger", ttl: 10000});
+                }
+            }, function (evt) {
+                $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total)});
         }
     };
 });

@@ -50,7 +50,7 @@ import pkg_resources
 import time
 import cgi
 
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
 ENCODING = "utf-8"
 
@@ -1115,21 +1115,25 @@ def check_pin_policy(pin, policy):
     "cn" means, that the PIN should contain a character and a number.
     "+cn" means, that the PIN should contain elements from the group of characters and numbers
     "-ns" means, that the PIN must not contain numbers or special characters
+    "[12345]" means, that the PIN may only consist of the characters 1,2,3,4 and 5.
 
     :param pin: The PIN to check
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = {"c": "[a-zA-Z]",
-             "n": "[0-9]",
-             "s": "[.:,;_<>+*!/()=?$§%&#~\^-]"}
-    exclusion = False
-    grouping = False
+    chars = {"c": r"[a-zA-Z]",
+             "n": r"[0-9]",
+             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
     ret = True
     comment = []
 
     if not policy:
         return False, "No policy given."
+
+    if policy[0] in ["+", "-"] or policy[0] is not "[":
+        for char in policy[1:]:
+            if char not in chars.keys():
+                raise PolicyError("Unknown character specifier in PIN policy.")
 
     if policy[0] == "+":
         # grouping
@@ -1151,6 +1155,13 @@ def check_pin_policy(pin, policy):
             ret = False
             comment.append("Not allowed character in PIN!")
 
+    elif policy[0] == "[" and policy[-1] == "]":
+        # only allowed characters
+        allowed_chars = policy[1:-1]
+        for ch in pin:
+            if ch not in allowed_chars:
+                ret = False
+                comment.append("Not allowed character in PIN!")
     else:
         for c in chars:
             if c in policy and not re.search(chars[c], pin):
@@ -1337,3 +1348,37 @@ def check_serial_valid(serial):
     if not re.match(ALLOWED_SERIAL, serial):
         raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
     return True
+
+
+def determine_logged_in_userparams(logged_in_user, params):
+    """
+    Determines the normal user and admin parameters from the logged_in user information and
+    from the params.
+
+    If an administrator is acting, the "adminuser" and "adminrealm" are set from the logged_in_user
+    information and the user parameters are taken from the request parameters.
+    Thus an admin can act on a user.
+
+    If a user is acting, the adminuser and adminrealm are None, the username and userrealm are taken from
+    the logged_in_user information.
+
+    :param logged_in_user: Logged in user dictionary.
+    :param params: Request parameters (all_data)
+    :return: Tupe of (scope, username, realm, adminuser, adminrealm)
+    """
+    role = logged_in_user.get("role")
+    username = logged_in_user.get("username")
+    realm = logged_in_user.get("realm")
+    admin_realm = None
+    admin_user = None
+    if role == "admin":
+        admin_realm = realm
+        admin_user = username
+        username = params.get("user")
+        realm = params.get("realm")
+    elif role == "user":
+        pass
+    else:
+        raise PolicyError(u"Unknown role: {}".format(role))
+
+    return role, username, realm, admin_user, admin_realm

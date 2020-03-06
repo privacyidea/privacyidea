@@ -207,7 +207,7 @@ class QuestionnaireTokenClass(TokenClass):
                 # This is "Question1?.type" of type "password"
                 # So this is actually a question and we add the question to
                 # the list
-                questions.append(question.strip(".type"))
+                questions.append(question[:-5])
         message = random.choice(questions)
         attributes = None
 
@@ -263,7 +263,7 @@ class QuestionnaireTokenClass(TokenClass):
         :param options: additional arguments from the request, which could
                         be token specific. Usually "transaction_id"
         :type options: dict
-        :return: return otp_counter. If -1, challenge does not match
+        :return: return 1 if the answer to the question is correct, -1 otherwise.
         :rtype: int
         """
         options = options or {}

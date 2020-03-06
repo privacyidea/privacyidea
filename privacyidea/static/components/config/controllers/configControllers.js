@@ -338,6 +338,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             //debug: console.log(policy);
             // fill $scope.params
             $scope.params.user = policy.user;
+            $scope.params.adminuser = policy.adminuser;
             $scope.params.active = policy.active;
             $scope.params.check_all_resolvers = policy.check_all_resolvers;
             $scope.params.client = policy.client;

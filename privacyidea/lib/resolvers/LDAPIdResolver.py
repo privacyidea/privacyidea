@@ -1008,7 +1008,7 @@ class IdResolver (UserIdResolver):
                                       receive_timeout=timeout,
                                       auto_referrals=not param.get(
                                            "NOREFERRALS"),
-                                      start_tls=param.get("START_TLS", False))
+                                      start_tls=is_true(param.get("START_TLS", False)))
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not l.bind():
                 raise Exception("Wrong credentials")

@@ -8,7 +8,7 @@ import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from six.moves.urllib.parse import urlencode
@@ -18,7 +18,6 @@ from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_co
 from dateutil.tz import tzlocal
 from privacyidea.lib import _
 
-PWFILE = "tests/testdata/passwords"
 IMPORTFILE = "tests/testdata/import.oath"
 IMPORTFILE_GPG = "tests/testdata/import.oath.asc"
 IMPORTFILE2 = "tests/testdata/empty.oath"
@@ -28,44 +27,6 @@ PSK_HEX = "12345678901234567890123456789012"
 YUBICOFILE = "tests/testdata/yubico-oath.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
-OTPVALUES2 = ["551536", "703671", "316522", "413789"]
-CERT = """-----BEGIN CERTIFICATE-----
-MIIGXDCCBUSgAwIBAgITYwAAAA27DqXl0fVdOAAAAAAADTANBgkqhkiG9w0BAQsF
-ADBCMRMwEQYKCZImiZPyLGQBGRYDb3JnMRkwFwYKCZImiZPyLGQBGRYJYXV0aC10
-ZXN0MRAwDgYDVQQDEwdDQTJGMDAxMB4XDTE1MDIxMTE2NDE1M1oXDTE2MDIxMTE2
-NDE1M1owgYExEzARBgoJkiaJk/IsZAEZFgNvcmcxGTAXBgoJkiaJk/IsZAEZFglh
-dXRoLXRlc3QxDjAMBgNVBAMTBVVzZXJzMRowGAYDVQQDExFDb3JuZWxpdXMgS29l
-bGJlbDEjMCEGCSqGSIb3DQEJARYUY29ybmVsaXVzQGJhbGZvby5uZXQwggEiMA0G
-CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCN5xYqSoKhxKgywdWOjZTgOobPN5lN
-DbSKQktdiG7asH0/Bzg8DIyd+k6wj5yncNhHKBhDJC/cAz3YAYY+KJj/tECLyt5V
-AqZLuf3sTA/Ak/neHzXwrlo9PB67JxY4tgJcaR0Cml5oSx4ofRowOCrXv60Asfkl
-+3lMRaNyEpQiSVdqIzGZAM1FIy0chwknMB8PfQhlC3v60rGiWoG65Rl5zuGl9lJC
-nR990FGSIUW2GLCtI57QCCdBVHIBL+M0WNbdonk9qYSHm8ArFeoftsw2UxHQazM9
-KftS7osJnQWOeNw+iIQIgZxLlyC9CBeKBCj3gIwLMEZRz6y951A9nngbAgMBAAGj
-ggMJMIIDBTAOBgNVHQ8BAf8EBAMCBLAwHQYDVR0OBBYEFGFYluib3gs1BQQNB25A
-FyEvQuoxMB8GA1UdIwQYMBaAFO9tVOusjflOf/y1lJuQ0YZej3vuMIHHBgNVHR8E
-gb8wgbwwgbmggbaggbOGgbBsZGFwOi8vL0NOPUNBMkYwMDEsQ049Z2FuZGFsZixD
-Tj1DRFAsQ049UHVibGljJTIwS2V5JTIwU2VydmljZXMsQ049U2VydmljZXMsQ049
-Q29uZmlndXJhdGlvbixEQz1hdXRoLXRlc3QsREM9b3JnP2NlcnRpZmljYXRlUmV2
-b2NhdGlvbkxpc3Q/YmFzZT9vYmplY3RDbGFzcz1jUkxEaXN0cmlidXRpb25Qb2lu
-dDCBuwYIKwYBBQUHAQEEga4wgaswgagGCCsGAQUFBzAChoGbbGRhcDovLy9DTj1D
-QTJGMDAxLENOPUFJQSxDTj1QdWJsaWMlMjBLZXklMjBTZXJ2aWNlcyxDTj1TZXJ2
-aWNlcyxDTj1Db25maWd1cmF0aW9uLERDPWF1dGgtdGVzdCxEQz1vcmc/Y0FDZXJ0
-aWZpY2F0ZT9iYXNlP29iamVjdENsYXNzPWNlcnRpZmljYXRpb25BdXRob3JpdHkw
-PQYJKwYBBAGCNxUHBDAwLgYmKwYBBAGCNxUIheyJB4SuoT6EjYcBh+WGHoXd8y83
-g7DpBYPZgFwCAWQCAQgwKQYDVR0lBCIwIAYKKwYBBAGCNxQCAgYIKwYBBQUHAwIG
-CCsGAQUFBwMEMDUGCSsGAQQBgjcVCgQoMCYwDAYKKwYBBAGCNxQCAjAKBggrBgEF
-BQcDAjAKBggrBgEFBQcDBDBEBgNVHREEPTA7oCMGCisGAQQBgjcUAgOgFQwTY29y
-bnlAYXV0aC10ZXN0Lm9yZ4EUY29ybmVsaXVzQGJhbGZvby5uZXQwRAYJKoZIhvcN
-AQkPBDcwNTAOBggqhkiG9w0DAgICAIAwDgYIKoZIhvcNAwQCAgCAMAcGBSsOAwIH
-MAoGCCqGSIb3DQMHMA0GCSqGSIb3DQEBCwUAA4IBAQCVI9ULYQgLxOcDWAlWPE4g
-ZRcbg65oCNdB0MBzTFhQZC/YFlSTNAGU2gUhnW+LoQ4N4sVnwxPbCRpsiA0ImqFU
-hh/qcIV4JYthUGYdYkGjsc1YQjdLpYsg0GRUXTQHYjMQo6gvg1z/iMhzCCU8DbjT
-DkTm/0JYVCt+vpvpigX/XWLWeHLHzPHFYAdBVAYgnwbTV4hgNIO98YRiMWsXOAIR
-S/IreZ58alclwJJRIGTuOTKSCd+uE7QMALztDty7cjtpMANGrz1k/uUWg9T+UgQs
-czZ68tF258iaWLPbsdRWqO160iy7eDSKWFFMR4HnfLHX/UPRSpBNGSHmvT1hbkUr
------END CERTIFICATE-----"""
-
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
@@ -883,6 +844,9 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertTrue(value == 3, result)
+        # check for a successful audit entry
+        entry = self.find_most_recent_audit_entry(action='*/token/load/*')
+        self.assertEqual(entry['success'], 1, entry)
 
         # Load GPG encrypted OATH CSV
         with self.app.test_request_context('/token/load/import.oath.asc',
@@ -927,6 +891,9 @@ class APITokenTestCase(MyApiTestCase):
                                             headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+        # check for a failed audit entry
+        entry = self.find_most_recent_audit_entry(action='*/token/load/*')
+        self.assertEqual(entry['success'], 0, entry)
 
         # Try to load unknown file type
         with self.app.test_request_context('/token/load/import.oath',
@@ -1884,8 +1851,36 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(10, len(detail.get("pin")))
 
+        # What happens, if we have two contradicting policies:
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM))
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            # contradicting values
+            self.assertEqual(303, result.get("error").get("code"))
+
+        # Now we adapt the priority of the policies:
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(ACTION.OTPPINSETRANDOM), priority=1)
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(ACTION.OTPPINSETRANDOM), priority=2)
+
+        with self.app.test_request_context('/token/setrandompin',
+                                           method='POST',
+                                           data={"serial": t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertEqual(9, len(detail.get("pin")))
+
         delete_policy("allowed_to_set_pin")
         delete_policy("pinpolrandom")
+        delete_policy("pinpolrandom2")
 
 
 class API00TokenPerformance(MyApiTestCase):
@@ -2174,3 +2169,65 @@ class API00TokenPerformance(MyApiTestCase):
             result = res.json.get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
+
+
+class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
+    """
+    This Testclass verifies if a request, that only contains a serial will also
+    honour policies, that are configured for users, if the serial is assigned to such a user.
+    """
+
+    def test_00_setup(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+    def test_01_disabling_token(self):
+        serial = "SPASS001"
+        polname = "disabletokens"
+
+        t = init_token({"type": "spass", "serial": serial}, user=User("cornelius", self.realm1))
+
+        # We are using the "testadmin"
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertEqual(1, result.get("value"))
+
+        enable_token(serial)
+        # create a policy for realm1, the admin is allowed to disable the token
+        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm1, adminuser="testadmin")
+
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertEqual(1, result.get("value"))
+
+        enable_token(serial)
+        # change the policy for realm2, the admin is NOT allowed to disable the token
+        set_policy(polname, scope=SCOPE.ADMIN, action=ACTION.DISABLE, realm=self.realm2, adminuser="testadmin")
+
+        with self.app.test_request_context('/token/disable',
+                                           method='POST',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json.get("result")
+            # One token disabled
+            self.assertFalse(result.get("status"))
+            self.assertEqual(303, result.get("error").get("code"))
+            self.assertEqual(u"Admin actions are defined, but the action disable is not allowed!",
+                             result.get("error").get("message"))
+
+        remove_token(serial)
+        delete_policy(polname)

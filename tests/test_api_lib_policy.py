@@ -74,6 +74,8 @@ from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
                                        RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
+from privacyidea.lib.utils import create_img
+
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -106,6 +108,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SomeSerial"}
+        req.User = User()
 
         # Set a policy, that does allow the action
         set_policy(name="pol1",
@@ -151,6 +154,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Token in realm1 can not be deleted
         req.all_data = {"serial": "POL001"}
+        req.User = User()
         self.assertRaises(PolicyError,
                           check_base_action, req, "delete")
         # while token in realm2 can be deleted
@@ -190,6 +194,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
         req.all_data = {}
 
         # admin1 is allowed to do everything
@@ -215,6 +220,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "totp"}
+        req.User = None
 
         # Set a policy, that does allow the action
         set_policy(name="pol1",
@@ -718,6 +724,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
 
         # Set a policy that defines the PIN to be encrypted
         set_policy(name="pol1",
@@ -728,7 +735,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
         enroll_pin(req)
 
         # Check, if the PIN was removed
@@ -737,8 +744,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol1")
 
     def test_08b_enroll_pin_user(self):
-        g.logged_in_user = {"username": "user1",
-                            "realm": "",
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": self.realm1,
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
@@ -758,7 +765,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {"pin": "test",
                         "user": "cornelius",
-                        "realm": "home"}
+                        "realm": self.realm1}
+        req.User = User("cornelius", self.realm1)
         enroll_pin(req)
 
         # Check, if the PIN was removed
@@ -1198,6 +1206,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         req = Request(env)
+        req.User = User()
         req.all_data = {"name": "newpol",
                         "scope": SCOPE.WEBUI,
                         "action": ["loginmode=privacyIDEA"],
@@ -1227,7 +1236,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           "fetch_authentication_items, enrollDAPLUG, "
                           "mresolverwrite, losttoken, enrollSSHKEY, "
                           "importtokens, assign, delete",
-                   user="admin[aA]",
+                   adminuser="admin[aA]",
                    realm="realmA, realmB",
                    resolver="resolverA, resolverB",
                    )
@@ -1239,7 +1248,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                           " assign, delete ",
                    realm="realmB",
                    resolver="resolverB",
-                   user="adminB")
+                   adminuser="adminB")
         g.policy_object = PolicyClass()
         # Test AdminA
         g.logged_in_user = {"username": "adminA",
@@ -1271,7 +1280,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # adminA is allowed to add users to resolverA but not to resolverB
         set_policy("userAdd", scope=SCOPE.ADMIN,
                    action="adduser",
-                   user="adminA",
+                   adminuser="adminA",
                    realm="realmA",
                    resolver="resolverA",
                    )
@@ -1279,6 +1288,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         req = Request(env)
+        req.User = User()
         req.all_data = {"user": "new_user",
                         "resolver": "resolverA"}
         g.policy_object = PolicyClass()
@@ -1596,6 +1606,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "totp"}
+        req.User = User("cornelius", realm)
         g.policy_object = PolicyClass()
         r = check_token_init(req)
         self.assertTrue(r)
@@ -1618,6 +1629,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"type": "hotp"}
+        req.User = User("corny", realm)
         g.policy_object = PolicyClass()
         r = check_token_init(req)
         self.assertTrue(r)
@@ -3314,6 +3326,57 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(jresult.get("result").get("value").get(
             ACTION.DIALOG_NO_TOKEN), True)
         delete_policy("pol_dialog")
+
+        # Set a policy for the QR codes
+        set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR)
+        set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR)
+        set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
+                   action="{0!s}=http://privacyidea.org".format(ACTION.SHOW_CUSTOM_AUTHENTICATOR))
+
+        custom_url = create_img("http://privacyidea.org")
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADkElEQVR4nO2cTW"
+                         "7bMBBG35QEsqQBH6BHoW7WM/UG0lFygALiMgCF6YI/ouJ0k9iI7c4sHEHRAyXgw/CbISVRPhfLj0+CYKSRRh"
+                         "pppJFGGnl/pNTwyMQmIieQKYkAW/mRKbWrpm++WyPvi/TlT5wB0hklncopXU4uC2FVwCkklwGQr45p5HOSqe"
+                         "cXnBJfa0aipyAARMRfb0wjn5OUiU10BoiaIa7AcgKZbjamkY9N+stTLgs4IJ2VRUCX6apjGvlcZNNQUCABhDc"
+                         "h/j6jpE0Al4nrOQvA2JB8rOc08ubkIlKqMUgvRSky4ZS47tPYVsqya41p5JOQJQ+N+SVkgE10OTl0OTnaJcdl"
+                         "kcd6TiNvR6KqqkTVknOIq1MIqqpruyb2I0K9WOfHek4jb0cWDRW9xHqsTUi1LitlGkHLuXKNacjIFoOGwKnOY"
+                         "RSSziF3DWV0xqlpyMhjNA05VdWeZHCqMzUFVYU1NZmGjPyIXH6+iUzJwyIe+bVuIlNx1yBTyOg8FGzffLdG3h"
+                         "U5eGqdiwFyvf6quamabdVmti0PGTlG0RCtF9SEBLsfatdlwPyQkR+TqusmtTWUXmr5VeSTfE1By4lDlf+Iz2n"
+                         "kLcjSYxRC9roICGzCIiBx3vzYVkx+aDk+2nMaeTuyF2JQG0KaqWVar+2LKSpzntVlRr6P5odozZ+hK+S0SYqi"
+                         "q+KRTENGHmJoCA2rHpqp9ijUFLSbbdOQkcdotXpuJ4pytHasazKq013rRZqGjBxin8sOjie32p62XhabKTING"
+                         "XmMqqHQbM88dIp2cfUsZf0hIy+iuaDcjtZDP3EOrYtdlvZXZ3s/jHwXY20Pg3/e9w+paltunTFPbeT72LPPXo"
+                         "gNTrrLp21Ts7nMyPdRJbG2oqu6IFd+2gzW7JFpyMh/kkFV5GeG+OrZd57VffpQ9oOUo+lKYxr5HOS4bl9MdO9"
+                         "O1yV7p+NKq9VlRl6EHmPcjh+aH9JWje31m2nIyCO5f/eDuG7CcgLVV49MyVN3NCb/Afkdd2vkfZHjPsa+3Fqi"
+                         "Lpr11lCf86w/ZORHZPvuh0zJsxdnOidPeS1o2V9xvdKYRj4nOWx+ncsWxjeBJFJ7jD1L3cXdGnkP5MV3P+Lri"
+                         "wph87pMDiH8qR+tius5Q/JZvzqmkc9FXvqh/V+hr3r04qwT5oeM7NH6Q8DwcgfdXYe9om9raOapjRxD7BvnRh"
+                         "pppJFGGmnkf07+BXIeTK/jr1P8AAAAAElFTkSuQmCC",
+                         jresult.get("result").get("value").get("qr_image_android"))
+        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADr0lEQVR4nO2cXYr"
+                         "jOBCAv1oJ8mhDHyBHkW827JH6BtZRcoCA9BiwqXmQZCvpaRaGhCS9VQ8hsv1hCYpS/cmi/J3Ef/4SBCONNNJI"
+                         "I4000sjXI6WKL/+I4yrAKjJlEZFxFcjtqenJszXytUhUVZWgqqrJqc6Dqqou6Dws6DyoAq7e3R+e32udRj6ez"
+                         "Jt9yR7i6FQmnAKrqOpFABARf793GvkzSH8zFoazKNkvhE+/SDh55M7vNPJnkbc6BNkjQUHj6FBYvMYJJHze65"
+                         "1G/iyy6dCgQAYYEgKrp1iksqG5BTL0Ccn3WqeRDyejiIiMQDh5IB+UcDqoTNkjvxLIxFrCsufP1siXIosd6ux"
+                         "LHBGFhfITj5cS5VdTdY93GvmzyC62JyQAnOqMa9f2oB+AwWJ7I2+k+UN5RONx8QqrENIHWq6NZ0+YL0JQiqOk"
+                         "z5utka9IFjtUjVHLMcLQcoyqC4REGVKyjWaHjOylqkSi5qRDSUcv7X5LW7ddrRGmQ0Y2ubJDQNBmbroyR1Mp1"
+                         "fKI6ZCRnTQ75LQVyNrm1V0DijtN2d9Mh4zspGpESSVWS7OXW80fMvK/ZfeHum1M03Y3OS03yk8yHTLyVoortG"
+                         "lOMzzbMG27GtRdzfwhI6+kWpXm51RjNGhvfRi2a8niMiNv5coOtW0spJanBjp/SGfzh4z8Il1Yz7B51+1fNVB"
+                         "b8tHskJHfkPrvURWyCCGtonMWgeEikA8qE7Wfeo/f3nOdRj6C7Pup99TQ3BygPUIrTlFQyw8Z+Q2Zpdgc4rhl"
+                         "ik4e4gg1gZ2AKAezQ0ZeS+0fisfFS9BVlDwKIa20aOzsS+tQHM8QPj+eOVsjX5HsfOrWNXQV5ZdhqqmhvbHI9"
+                         "jIjN+l0aKtrtLhsL7I2vaplfNMhI3fZemEXXxrRQFur2XD2xAk0CghDohwaet5sjXxFcuv92Ctie321f6SW7J"
+                         "Plh4z8IykyOiWKp7Z45EM9NT3jVCagHDybgDp8x3Ua+QiyO9ehABIFYDgL4eQXYBWN4hbCDNId7nivdRr5OLL"
+                         "oUDsz5hbALWUYjwsSdPUS0geQP/oN7s3WaeTDydCaiPZorBY88qF8uKGki6J9s8HIL9LVXENqxbCqUnsTkdMb"
+                         "wnxqI78ji75E8YgcLyLTsJR/5W7nYr/CbI18SbJ8Aq31ThPFt+7F5NrBs3u/08i3Jr98B61uba71D8HWGuusf"
+                         "8jIP0nrYwTYDnfsp4S2rtjulJDVy4zsRewb50YaaaSRRhpp5P+c/A3Ni1KFc5UNygAAAABJRU5ErkJggg==",
+                         jresult.get("result").get("value").get("qr_image_ios"))
+        qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
+        self.assertEqual(len(custom_url), len(qr_image_custom))
+        self.assertEqual(custom_url, qr_image_custom)
+        delete_policy("pol_qr1")
+        delete_policy("pol_qr2")
+        delete_policy("pol_qr3")
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

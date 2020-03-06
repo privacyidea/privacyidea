@@ -1,21 +1,22 @@
 <div class="well">
-    <csv-download url="{{ instanceUrl }}/audit/audit.csv"
-                  filename="audit.csv"
-                  ng-show="loggedInUser.role === 'admin' &&
+    <div uib-pagination ng-show="auditdata.count > 10"
+         total-items="auditdata.count" ng-model="params.page"
+         items-per-page="10"
+         max-size="10"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         boundary-links="true" ng-change="pageChanged()"></div>
+
+    <div class="row-fluid">
+        <csv-download url="{{ instanceUrl }}/audit/audit.csv"
+                      filename="audit.csv"
+                      ng-show="loggedInUser.role === 'admin' &&
                         checkRight('auditlog_download')">
-    </csv-download>
-
-    <pagination ng-show="auditdata.count > 10"
-                total-items="auditdata.count" ng-model="params.page"
-                items-per-page="10"
-                max-size="10"
-                previous-text="{{ 'Previous'|translate }}"
-                next-text="{{ 'Next'|translate }}"
-                last-text="{{ 'Last'|translate }}"
-                first-text="{{ 'First'|translate }}"
-                boundary-links="true" ng-change="pageChanged()"></pagination>
-
-    <translate>{{ auditdata.count }} entries found.</translate>
+        </csv-download>
+        <translate>{{ auditdata.count }} entries found.</translate>
+    </div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped" id="tableauditlog">

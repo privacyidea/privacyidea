@@ -30,8 +30,10 @@ While logged in, the user can enroll a token on his own.
 Automatic initial synchronization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. todo:: What is autosync? (has incorrect reference)
+
 Hardware TOTP tokens may get out of sync due to clock shift. HOTP tokens may
-get out of sync due to unused keypresses. To cope with this you can activate
+get out of sync due to unused key presses. To cope with this you can activate
 :ref:`autosync`.
 
 But if you are importing hardware tokens, the clock in the TOTP token may
