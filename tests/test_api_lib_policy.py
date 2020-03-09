@@ -3378,6 +3378,61 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol_qr2")
         delete_policy("pol_qr3")
 
+    def test_09_get_webui_settings(self):
+        # Test that policies like tokenpagesize are also user dependent
+        self.setUp_user_realms()
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"user": "cornelius",
+                        "pass": "offline287082"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "user",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(jresult.get("result").get("value").get(
+            "token_wizard"), False)
+
+        # Set a policy. User has not token, so "token_wizard" will be True
+        set_policy(name="pol_pagesize",
+                   scope=SCOPE.WEBUI,
+                   realm=self.realm1,
+                   action="{0!s}=177".format(ACTION.TOKENPAGESIZE))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(jresult.get("result").get("value").get(
+            ACTION.TOKENPAGESIZE), 177)
+
+        # Now we change the policy pol_pagesize this way, that it is only valid for the user "root"
+        set_policy(name="pol_pagesize",
+                   scope=SCOPE.WEBUI,
+                   realm=self.realm1,
+                   user="root",
+                   action="{0!s}=177".format(ACTION.TOKENPAGESIZE))
+        # This way the user "cornelius" gets the default pagesize again
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(jresult.get("result").get("value").get(
+            ACTION.TOKENPAGESIZE), 15)
+
+        delete_policy("pol_pagesize")
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",
