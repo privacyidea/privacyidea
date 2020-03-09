@@ -4,11 +4,13 @@
         <img width="250" ng-src="{{ enrolledToken.motpurl.img }}"/>
     </div>
     <div class="col-sm-6">
-        <accordion close-others="oneAtATime">
-            <accordion-group heading="{{ 'The OTP key'|translate }}">
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'The OTP key'|translate }}">
                 {{ enrolledToken.otpkey.value }}
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
         <p translate>
             Click <a href="{{ enrolledToken.motpurl.value }}">here</a> or scan
             the QR Code, if you
