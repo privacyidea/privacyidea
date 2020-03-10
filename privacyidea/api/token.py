@@ -885,7 +885,7 @@ def loadtokens_api(filename=None):
     :jsonparam filename: The name of the token file, that is imported
     :jsonparam type: The file type. Can be "aladdin-xml",
         "oathcsv" or "yubikeycsv".
-    :jsonparam tokenrealms: comma separated list of tokens.
+    :jsonparam tokenrealms: comma separated list of realms.
     :jsonparam psk: Pre Shared Key, when importing PSKC
     :return: The number of the imported tokens
     :rtype: int

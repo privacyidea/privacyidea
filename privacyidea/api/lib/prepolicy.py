@@ -988,10 +988,15 @@ def check_token_upload(request=None, action=None):
     :param filename:
     :return:
     """
-    upload_allowed = Match.admin(g, action=ACTION.IMPORT, user_obj=request.User).allowed()
-    if not upload_allowed:
-        raise PolicyError("Admin actions are defined, but you are not allowed"
-                          " to upload token files.")
+    tokenrealms = request.all_data.get("tokenrealms")
+    if tokenrealms:
+        for trealm in tokenrealms.split(","):
+
+            upload_allowed = Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
+                                           adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed()
+            if not upload_allowed:
+                raise PolicyError("Admin actions are defined, but you are not allowed"
+                                  " to upload token files.")
     return True
 
 
