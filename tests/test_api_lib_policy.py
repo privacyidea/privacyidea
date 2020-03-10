@@ -240,7 +240,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
 
-
     def test_03_check_token_upload(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
