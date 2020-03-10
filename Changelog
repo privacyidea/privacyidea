@@ -1,17 +1,57 @@
-Version 3.3, 2020-XX-XX
+Version 3.3, *2020-XX-XX*
+
+  Features:
+    * New token type: WebAuthn/FIDO2 token (#1468)
+      * WebAuthn hardware tokens can now be used with privacyIDEA
+    * New token type: Indexed Secret. (#1986)
+      * A challenge-response token that asks the user for positions from a list of secrets.
+    * *OPEN New sophisticated logging facility (#1580)*
+      * *TEXT TEXT TEXT*
+
+  Fixes:
+    * Fixed unauthorized statistics view (#1238)
+    * Fixed API endpoints to avoid redirects (#1999)
+    * Fixes a bug which caused an exception during PSKC key file container import (#1915)
+    * Fixed url_decode padding before it could cause any issues (#2000)
+    * Initialize rtype in user_object correctly (#2007)
+    * Fixed an inconsistency of start_tls with postgres SQL (#2025)
+    * Fix wrong type splitting of questionaire token (#2026)
+    * Fixed a bug which could cause missing audit entries when using the 
+      ContainerAudit module (#2029)
+    * Fixed a bug which prevented defining an SQL resolver without a password (#2030)
+    * Fixed missing "position" argument on event import with pi-manage (#2036)
+    * Fixed an issue that lead to failing tests in some cases (#2041)
 
   Enhancements:
-  * Policies:
-    * Improve destincion between the username of the administrator
-      and the username of the user. Add an admin username to policies. (#1867)
-      Thus allowing:
-      * User attribute conditions in admin policies
-      * default settings for hashlib and otplen for HOTP and TOTP token 
-        and default timestep for TOTP token can now be dependent on
-        admin user and for which user the admin does the enrollment
-      * Enrollment settings for push tokens can distinguish better
-        between admin users and user
-      * Random PIN settings can be user dependent
+    * Added the remote serial to the tokeninfo of a remote token to better track 
+      authenticated devices (#2031)
+    * Event Handler:
+      * The OTP token QR code can now be added not only inline but also as an attachment 
+        to email notifications (#1226)
+    * Policies:
+      * Improved distinction between the username of the administrator
+        and the username of the user. Add an admin username to policies. (#1867)
+        Thus allowing:
+        * User attribute conditions in admin policies
+        * default settings for hashlib and otplen for HOTP and TOTP token
+         and default timestep for TOTP token can now be dependent on
+         admin user and for which user the admin does the enrollment
+        * Enrollment settings for push tokens can distinguish better
+         between admin users and user
+        * Random PIN settings can be user dependent
+      * Added a policy to define the allowed characters for PINs (#2049)
+    * WebUI
+      * Added the option to filter tokens by tokenrealm (#545)
+      * A QR code is displayed during enrollment of HOTP, TOTP and PUSH tokens which 
+        can be scanned with the authenticator app for quick key import (#1919).
+      * Adding version hashes to WebUI components to avoid working with outdated data (#1871)
+      * Updated bootstrap and JQuery to new versions (#830 #2061 #2064)
+      * Rework policy matching (#1691 #2024 #2038)  
+    * Documentation
+      * The documentation was restructured and updated (#1967 #1504 #2049).
+      * OPEN Started cleaning up pi.cfg templates (#1831)
+    * Tools
+      * Added a migration script to update the database schema from 2.23.5 to 3.2.2 (#2040)
 
 Version 3.2.2, 2020-01-17
 
