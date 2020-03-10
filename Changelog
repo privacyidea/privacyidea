@@ -49,7 +49,7 @@ Version 3.3, *2020-XX-XX*
       * Rework policy matching (#1691 #2024 #2038)  
     * Documentation
       * The documentation was restructured and updated (#1967 #1504 #2049).
-      * OPEN Started cleaning up pi.cfg templates (#1831)
+      * Started cleaning up pi.cfg templates (#1831)
     * Tools
       * Added a migration script to update the database schema from 2.23.5 to 3.2.2 (#2040)
 
