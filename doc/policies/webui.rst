@@ -354,4 +354,6 @@ type: str
 The secret in the enrollment dialog of the tokentype *indexedsecret* is preset
 with the value of the given user attribute.
 
+For more details of this token type see :ref:`indexedsecret_token`.
+
 (Since privacyIDEA 3.3)

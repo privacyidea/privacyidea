@@ -452,8 +452,10 @@ secret from certain positions. The default text is:
 
 with *3,1,6,7* being the positions of the characters, the user is supposed to
 enter. This text can be changed with this policy setting.
-The next needs to contain the python formatting tag *{0!s}* which will
+The text needs to contain the python formatting tag *{0!s}* which will
 be replaced with the list of the requested positions.
+
+For more details of this token type see :ref:`indexedsecret_token`.
 
 indexedsecret_count
 ~~~~~~~~~~~~~~~~~~~

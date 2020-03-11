@@ -306,4 +306,6 @@ If a user enrolls an indexedsecret token then the value of the given
 user attribute is set as the secret.
 The user does not see the value and can not change the value.
 
+For more details of this token type see :ref:`indexedsecret_token`.
+
 New in version 3.3.

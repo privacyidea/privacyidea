@@ -668,4 +668,6 @@ If an administrator enrolls an indexedsecret token then the value of the given
 user attribute is set as the secret.
 The admin does not know the secret and can not change the secret.
 
+For more details of this token type see :ref:`indexedsecret_token`.
+
 New in version 3.3.
