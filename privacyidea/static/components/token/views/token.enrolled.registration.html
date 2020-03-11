@@ -1,10 +1,11 @@
-        <accordion close-others="oneAtATime">
-            <accordion-group heading="{{ 'Registration Code'|translate }}">
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'Registration Code'|translate }}">
                 {{ enrolledToken.registrationcode }}
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
 
         <p class="help-block" translate>
             You may pass this registration code to the user.
         </p>
-

@@ -77,7 +77,7 @@
                ng-model="form.password">
     </div>
 
-    <div >
+    <div class="mt-5px">
         <p class="help help-block" translate>
             You can choose a realm to which the tokens should be imported.
             You can also change the realms of each token later.
@@ -89,11 +89,13 @@
         </select>
     </div>
     <div>
-        <accordion close-others="false">
-        <accordion-group ng-repeat="(keyid, key) in pgpkeys">
-            <accordion-heading>
+        <uib-accordion close-others="false">
+        <div uib-accordion-group
+             class="panel-default"
+             ng-repeat="(keyid, key) in pgpkeys">
+            <uib-accordion-heading>
                 <span translate>PGP Key</span> {{ keyid }}
-            </accordion-heading>
+            </uib-accordion-heading>
             <p class="help-block" translate>
                 Please pass the public key and the fingerprint to the token
                 provider.
@@ -101,8 +103,8 @@
             <pre>{{ key.armor }}</pre>
             <span translate>Fingerprint</span>:
             {{ key.fingerprint }}
-        </accordion-group>
-        </accordion>
+        </div>
+        </uib-accordion>
     </div>
 
     <div class="text-center">
