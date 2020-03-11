@@ -181,12 +181,13 @@ class IndexedSecretTokenClass(TokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
-        :return: tuple of (bool, message and data)
-                 bool, if the challenge was created successfully
-                 message that is submitted to the user
-                 data is preserved in the challenge
-                 attributes - additional attributes, which are displayed in the
-                    output
+        :return: tuple of (bool, message, transactionid, attributes)
+        :rtype: tuple
+
+        The return tuple builds up like this:
+        ``bool`` if submit was successful;
+        ``message`` which is displayed in the JSON response;
+        additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
