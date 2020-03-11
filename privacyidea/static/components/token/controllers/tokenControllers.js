@@ -281,7 +281,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
             $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
         }
-        if (["vasco", "indexedsecret"].indexOf($scope.form.type) >= 0) {
+        if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;
@@ -304,6 +304,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // helper function for setting indexed secret attribute
     $scope.preset_indexedsecret = function() {
         if ($scope.form.type === "indexedsecret") {
+            // in case of indexedsecret we do never generate a key from the UI
+            $scope.form.genkey = false;
             // Only fetch, if a preset_attribute is defined
             if ($scope.tokensettings.indexedsecret.preset_attribute) {
                 // getUsers will only work, if we are admin
