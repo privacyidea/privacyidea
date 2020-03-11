@@ -37,6 +37,7 @@ import logging
 import datetime
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.crypto import urandom
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.lib.utils import to_unicode
@@ -205,7 +206,7 @@ class IndexedSecretTokenClass(TokenClass):
         if self.is_active() is True:
             # We need to get a number of random positions from the secret string
             secret_length = len(self.token.get_otpkey().getKey())
-            random_positions = [random.randint(1, secret_length) for _x in range(0, position_count)]
+            random_positions = [urandom.randint(1, secret_length) for _x in range(0, position_count)]
             position_str = ",".join(["{0!s}".format(x) for x in random_positions])
             attributes["random_positions"] = random_positions
 
