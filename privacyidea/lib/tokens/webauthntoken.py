@@ -697,7 +697,8 @@ class WebAuthnTokenClass(TokenClass):
                     ACTION.CHALLENGETEXT: {
                         'type': 'str',
                         'desc': _("Use an alternate challenge text for telling the "
-                                  "user to confirm with his WebAuthn device.")
+                                  "user to confirm with his WebAuthn device."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
                     }
                 }
             }
