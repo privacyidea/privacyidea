@@ -2386,7 +2386,7 @@ class Match(object):
                    sort_by_priority=True)
 
     @classmethod
-    def admin(cls, g, action, user_obj):
+    def admin(cls, g, action, user_obj=None):
         """
         Match admin policies with an action and, optionally, a realm.
         Assumes that the currently logged-in user is an admin, and throws an error otherwise.

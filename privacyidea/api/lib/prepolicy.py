@@ -226,7 +226,7 @@ def realmadmin(request=None, action=None):
         params = request.all_data
         if not "realm" in params:
             # add the realm to params
-            po = Match.admin(g, action=action, user_obj=None).policies()
+            po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -911,7 +911,7 @@ def check_admin_tokenlist(request=None, action=None):
         return True
 
     policy_object = g.policy_object
-    pols = Match.admin(g, action=ACTION.TOKENLIST, user_obj=None).policies()
+    pols = Match.admin(g, action=ACTION.TOKENLIST).policies()
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
@@ -1320,7 +1320,7 @@ def allowed_audit_realm(request=None, action=None):
     # for admins, as users are only allowed to view their own realm anyway (this
     # is ensured by the fixed "realm" parameter)
     if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=ACTION.AUDIT, user_obj=None).policies()
+        pols = Match.admin(g, action=ACTION.AUDIT).policies()
         if pols:
             # get all values in realm:
             allowed_audit_realms = []
