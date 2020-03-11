@@ -621,7 +621,7 @@ Version 2.19, 2017-05-25
   * Restrict U2F registration based on assertion certificte (#648)
   * Restrict authentication with U2F devices based on assertion
     certificate (#648)
-  * Add privacyidea-token-janitor script, that can clean orpaned or
+  * Add privacyidea-token-janitor script, that can clean orphaned or
     expired tokens (#692)
   * Add API for mutual key generation during enrollment for easy
     Smartphone App development by introducing a generic
@@ -764,7 +764,7 @@ Version 2.17, 2016-12-29
     If the user from the request only has one token assigned. (#571)
   * Allow event definitions to be disabled (#537)
   * Allow event to be addressed by a destinct name (#522)
-  * Improving LDAP performace by addressing different functionality
+  * Improving LDAP performance by addressing different functionality
     of ldap3 version 1.x and 2.x. (#549)
   * Improve SQL Audit by adding the SQL Audit table to the schema.
     Table is not created during HTTP request. (#557)
