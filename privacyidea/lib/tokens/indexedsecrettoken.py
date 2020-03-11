@@ -22,7 +22,7 @@
 __doc__ = """This is the implementation of an Indexed Secret-Token.
 It is a challenge response token, that asks the user for certain positions
 of the secret string.
-The user must now the secret and return the characters from the requested positions.
+The user must know the secret and return the characters from the requested positions.
 
 The secret is stored in the encrypted OTP KEY.
 
@@ -46,9 +46,8 @@ from privacyidea.lib.decorators import check_token_locked
 import random
 
 log = logging.getLogger(__name__)
-TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
 
-DEFAULT_CHALLENGE_TEXT = _("Please enter the position {0!s} from your secret.")
+DEFAULT_CHALLENGE_TEXT = _("Please enter the positions {0!s} from your secret.")
 DEFAULT_POSITION_COUNT = 2
 
 
