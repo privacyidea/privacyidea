@@ -8,11 +8,11 @@ import codecs
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
-from privacyidea.lib.token import get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token
+from privacyidea.lib.token import (get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token,
+                                   check_serial_pass, get_realms_of_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.caconnector import save_caconnector
 from six.moves.urllib.parse import urlencode
-from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
@@ -933,6 +933,71 @@ class APITokenTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertTrue(value == 1, result)
 
+    def test_11_load_tokens_only_to_specific_realm(self):
+        # Load token to a realm
+        def _clean_up_tokens():
+            remove_token("token01")
+            remove_token("token02")
+            remove_token("token03")
+
+        _clean_up_tokens()
+        with self.app.test_request_context('/token/load/import.oath',
+                                           method="POST",
+                                           data={"type": "oathcsv",
+                                                 "tokenrealms": self.realm1,
+                                                 "file": (IMPORTFILE,
+                                                          "import.oath")},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            self.assertTrue(value == 3, result)
+        # Now check, if the tokens are in the realm
+        from privacyidea.lib.token import get_realms_of_token
+        r = get_realms_of_token("token01")
+        self.assertIn(self.realm1, r)
+
+        # Now set a policy, that allows the admin to upload the tokens into this realm
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm=self.realm1,
+                   adminuser="testadmin")
+        _clean_up_tokens()
+        with self.app.test_request_context('/token/load/import.oath',
+                                           method="POST",
+                                           data={"type": "oathcsv",
+                                                 "tokenrealms": self.realm1,
+                                                 "file": (IMPORTFILE,
+                                                          "import.oath")},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            self.assertTrue(value == 3, result)
+        # Now check, if the tokens are in the realm
+        r = get_realms_of_token("token01")
+        self.assertIn(self.realm1, r)
+
+        # Now define a policy, that allows the user to upload tokens to some other realm
+        set_policy(name="tokupload", scope=SCOPE.ADMIN, action=ACTION.IMPORT, realm="otherrealm",
+                   adminuser="testadmin")
+        _clean_up_tokens()
+        with self.app.test_request_context('/token/load/import.oath',
+                                           method="POST",
+                                           data={"type": "oathcsv",
+                                                 "tokenrealms": self.realm1,
+                                                 "file": (IMPORTFILE,
+                                                          "import.oath")},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(u"Admin actions are defined, but you are not allowed to upload token files.",
+                             result.get("error").get("message"))
+
+        delete_policy("tokupload")
+
     def test_12_copy_token(self):
         self._create_temp_token("FROM001")
         self._create_temp_token("TO001")
@@ -1047,7 +1112,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             value = result.get("value")
-            self.assertEqual(value.get("count"), 28)
+            self.assertEqual(value.get("count"), 25)
             self.assertEqual(value.get("serial"), None)
 
         # multiple tokens are matching!

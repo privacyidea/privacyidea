@@ -1411,14 +1411,14 @@ class PolicyMatchTestCase(MyTestCase):
 
         self.check_names(Match.admin(g, "enable", None).policies(),
                          {"pol4"})
-        self.check_names(Match.admin(g, "enable", "realm2").policies(),
+        self.check_names(Match.admin(g, "enable", User("cornelius", "realm2")).policies(),
                          {"pol4"})
-        self.check_names(Match.admin(g, "enable", "realm1").policies(),
+        self.check_names(Match.admin(g, "enable", User("cornelius", "realm1")).policies(),
                          {})
 
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.USER}
         with self.assertRaises(MatchingError):
-            self.check_names(Match.admin(g, "enable", "realm1").policies(),
+            self.check_names(Match.admin(g, "enable", User("cornelius", "realm1")).policies(),
                              {"pol4"})
 
     def test_05_admin_or_user(self):
@@ -1430,18 +1430,21 @@ class PolicyMatchTestCase(MyTestCase):
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.ADMIN}
         self.check_names(Match.admin_or_user(g, "audit", None).policies(),
                          {"pol4"})
-        self.check_names(Match.admin_or_user(g, "audit", "realm2").policies(),
+        self.check_names(Match.admin_or_user(g, "audit", User("cornelius", "realm2")).policies(),
                          {"pol4"})
-        self.check_names(Match.admin_or_user(g, "audit", "realm1").policies(),
+        self.check_names(Match.admin_or_user(g, "audit", User("cornelius", "realm1")).policies(),
                          {})
 
-        g.logged_in_user = {"username": "foobar", "realm": "asdf", "role": ROLE.USER}
+        g.logged_in_user = {"username": "foobar", "realm": "realm1", "role": ROLE.USER}
+        # The user foobar@realm1 matches pol1
         self.check_names(Match.admin_or_user(g, "audit", None).policies(),
                          {"pol1"})
-        self.check_names(Match.admin_or_user(g, "audit", "realm2").policies(),
+        # A user in a different realm does not match!
+        self.check_names(Match.admin_or_user(g, "audit", User("cornelius", "realm2")).policies(),
                          {})
-        self.check_names(Match.admin_or_user(g, "audit", "realm1").policies(),
-                         {"pol1"})
+        # A wrong user in a realm does not match!
+        self.check_names(Match.admin_or_user(g, "audit", User("cornelius", "realm1")).policies(),
+                         {})
 
         g.logged_in_user = {"username": "baz", "realm": "asdf", "role": ROLE.USER}
         self.check_names(Match.admin_or_user(g, "audit", None).policies(),
@@ -1449,7 +1452,7 @@ class PolicyMatchTestCase(MyTestCase):
 
         g.logged_in_user = {"username": "baz", "realm": "asdf", "role": "something"}
         with self.assertRaises(MatchingError):
-            self.check_names(Match.admin_or_user(g, "enable", "realm1").policies(),
+            self.check_names(Match.admin_or_user(g, "enable", User("cornelius", "realm1")).policies(),
                              {"pol4"})
 
     @classmethod
