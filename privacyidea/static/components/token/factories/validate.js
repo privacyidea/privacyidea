@@ -19,15 +19,15 @@
  *
  */
 myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
-                                           validateUrl, inform) {
-        /**
-         Each service - just like this service factory - is a singleton.
-         */
-        return {
-            check: function (params, callback) {
-                $http.post(validateUrl + "/check", params
-                ).success(callback)
-                .error(AuthFactory.authError);
-            }
-        };
-        });
+                                           validateUrl, inform, AuthFactory) {
+    /**
+     Each service - just like this service factory - is a singleton.
+     */
+    return {
+        check: function (params, callback) {
+            $http.post(validateUrl + "/check", params
+            ).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
+        }
+    };
+});

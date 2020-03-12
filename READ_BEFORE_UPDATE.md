@@ -8,10 +8,20 @@
   won't be installed anymore. Instead one can use
   ``pip install privacyIDEA[postgres]`` to also install the required packages.
 
-* Internal signature of the tokenclass method   
+* Internal signature of the tokenclass method
+
   ``get_default_settings`` changed.
   If you added your own tokenclass, please assure to update
   your function signature.
+
+* Update of some HTML templates due to update of UI components
+
+  Some HTML templates changed and might render custom templates unusable. Please check
+  your custom templates and compare to these changes:
+   - ``components/views/component.subscriptions.html`` (File upload changed)
+   - ``config/views/*.html`` (switch ``pattern`` to ``ng-pattern`` to avoid error message in
+    console)
+   - ``token/views/token.import.html`` (File upload and progress variable changed)
 
 ## Update from 3.1 to 3.2
 

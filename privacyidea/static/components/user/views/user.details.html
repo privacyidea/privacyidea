@@ -68,11 +68,11 @@
 
     <h3 translate>Tokens for user {{ username }}</h3>
     <!-- Tokens for user -->
-    <pagination ng-show="tokendata.count > 5"
-                total-items="tokendata.count" ng-model="params.page"
-                items-per-page="{{ tokensPerPage }}"
-                max-size="5"
-                boundary-links="true" ng-change="pageChanged()"></pagination>
+    <div uib-pagination ng-show="tokendata.count > 5"
+         total-items="tokendata.count" ng-model="params.page"
+         items-per-page="{{ tokensPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()"></div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">

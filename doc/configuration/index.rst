@@ -11,11 +11,15 @@ set the system config and the token config.
 It also contains a shortcut to the policy tab (see :ref:`policies`).
 
 .. toctree::
-   useridresolvers
-   realms
-   system_config
-   token_config
-   caconnectors
-   smtpserver_config
-   sms_gateway_config
-   privacyidea-appliance
+   :maxdepth: 1
+   :glob:
+   :numbered:
+
+   useridresolvers.rst
+   realms.rst
+   system_config.rst
+   caconnectors.rst
+   smtpserver_config.rst
+   sms_gateway_config.rst
+   token_config.rst
+   privacyidea-appliance.rst

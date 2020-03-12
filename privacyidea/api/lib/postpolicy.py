@@ -484,20 +484,21 @@ def get_webui_settings(request, response):
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
         loginname = content.get("result").get("value").get("username")
-        realm = content.get("result").get("value").get("realm")
-        realm = realm or get_default_realm()
+        realm = content.get("result").get("value").get("realm") or get_default_realm()
 
-        logout_time_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUTTIME,
-                                      realm=realm).action_values(unique=True)
-        timeout_action_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.TIMEOUT_ACTION,
-                                         realm=realm).action_values(unique=True)
-        token_page_size_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.TOKENPAGESIZE,
-                                          realm=realm).action_values(unique=True)
-        user_page_size_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
-                                         realm=realm).action_values(unique=True)
+        # At this point the logged in user is not necessarily a user object. It can
+        # also be a local admin.
+        logout_time_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUTTIME,
+                                        user=loginname, realm=realm).action_values(unique=True)
+        timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TIMEOUT_ACTION,
+                                           user=loginname, realm=realm).action_values(unique=True)
+        token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENPAGESIZE,
+                                            user=loginname, realm=realm).action_values(unique=True)
+        user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
+                                           user=loginname, realm=realm).action_values(unique=True)
         token_wizard_2nd = (role == ROLE.USER and
-                            Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
-                                        realm=realm).policies())
+                            Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
+                                          user=loginname, realm=realm).policies())
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
@@ -512,24 +513,24 @@ def get_webui_settings(request, response):
             dialog_no_token_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN,
                                              user_object=user_obj).any()
             dialog_no_token = dialog_no_token_pol and (user_token_num == 0)
-        user_details_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
-                                       realm=realm).policies()
-        search_on_enter = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SEARCH_ON_ENTER,
-                                      realm=realm).policies()
-        hide_welcome = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME,
-                                   realm=realm).any()
-        hide_buttons = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
-                                   realm=realm).any()
-        default_tokentype_pol = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
-                                            realm=realm).action_values(unique=True)
-        show_seed = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
-                                realm=realm).any()
-        qr_ios_authenticator = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR,
-                                           realm=realm).any()
-        qr_android_authenticator = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR,
-                                               realm=realm).any()
-        qr_custom_authenticator_url = Match.realm(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_CUSTOM_AUTHENTICATOR,
-                                                  realm=realm).action_values(unique=True)
+        user_details_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
+                                         user=loginname, realm=realm).policies()
+        search_on_enter = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SEARCH_ON_ENTER,
+                                        user=loginname, realm=realm).policies()
+        hide_welcome = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME,
+                                     user=loginname, realm=realm).any()
+        hide_buttons = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
+                                     user=loginname, realm=realm).any()
+        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
+                                              user=loginname, realm=realm).action_values(unique=True)
+        show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
+                                  user=loginname, realm=realm).any()
+        qr_ios_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR,
+                                             user=loginname, realm=realm).any()
+        qr_android_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR,
+                                                 user=loginname, realm=realm).any()
+        qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_CUSTOM_AUTHENTICATOR,
+                                                    user=loginname, realm=realm).action_values(unique=True)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None

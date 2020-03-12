@@ -4,12 +4,14 @@
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
     <div class="col-sm-6" ng-hide="form['2stepinit']">
-        <accordion close-others="oneAtATime" ng-show="show_seed">
-            <accordion-group heading="{{ 'The OTP key'|translate }}">
+        <uib-accordion close-others="oneAtATime" ng-show="show_seed">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'The OTP key'|translate }}">
                 Hex: {{ enrolledToken.otpkey.value }}
                 Base32: {{ enrolledToken.otpkey.value_b32 }}
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
 
         <div class="col-sm-12" ng-hide="$state.includes('token.wizard')">
         <p translate>

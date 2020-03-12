@@ -56,7 +56,8 @@ Flatfile resolvers read files like ``/etc/passwd``.
 .. note:: The file ``/etc/passwd`` does not contain the unix password.
    Thus, if you create a flatfile resolver from this file the functionality
    with ``otppin=userstore`` is not available. You can create a flatfile with
-   passwords using the tool ``privacyidea-create-pwidresolver-user``.
+   passwords using the tool ``privacyidea-create-pwidresolver-user`` which is
+   usually found in ``/opt/privacyidea/bin/``.
 
 Create a flat file like this::
    
@@ -194,10 +195,10 @@ which a LDAP server from the pool is down for extended periods of time.
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.18 in case of encrypted LDAPS
-connections privacyIDEA can verify  the TLS
+Starting with privacyIDEA 2.18, in case of encrypted LDAPS
+connections privacyIDEA can verify the TLS
 certificate. (Python >= 2.7.9 required)
-To have privacyIDEA verify the TLS certificate you need to check the
+To have privacyIDEA verify the TLS certificate, you need to check the
 according checkbox.
 
 You can specify a file with the trusted CA certificate, that signed the
@@ -210,7 +211,7 @@ or */etc/ssl/certs/ca-bundle.crt*).
 Modifying users
 ~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.12 you can define the LDAP resolver as editable.
+Starting with privacyIDEA 2.12, you can define the LDAP resolver as editable.
 I.e. you can create and modify users from within privacyIDEA.
 
 There are two additional configuration parameters for this case.
@@ -270,7 +271,7 @@ identified.
 
 The ``Database table`` contains the users. 
 
-.. note:: At the moment only one table 
+.. note:: At the moment, only one table
    is supported, i.e. if some of the user data like email address or telephone
    number is located in a second table, those data can not be retrieved.
   
@@ -294,14 +295,14 @@ password. This is used, if you are doing user authentication against the SQL
 database.
 
 .. note:: There is no standard way to store passwords in an SQL database.
-   There are several different ways to do this. privacyIDEA supports the most
+   privacyIDEA supports the most
    common ways like Wordpress hashes starting with *$P* or *$S*. Secure hashes
    starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
 
 You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
-used to determine wich hash algorithm should be used, if a password of an
+used to determine which hash algorithm should be used, if a password of an
 editable user is written to the database.
 
 You can add an additional ``Where statement`` if you do not want to use
@@ -312,7 +313,7 @@ The ``poolSize`` and ``poolTimeout`` determine the pooling behaviour. The
 pool. The ``poolTimeout`` (default 10) specifies how long the application
 waits to get a connection from the pool.
 
-.. note:: The pooling parameters only have effect if the ``PI_ENGINE_REGISTRY_CLASS``
+.. note:: The pooling parameters only have an effect if the ``PI_ENGINE_REGISTRY_CLASS``
    config option is set to ``"shared"`` (see :ref:`engine-registry`).
    If you then have several SQL resolvers with the same connection and pooling settings,
    they will use the same shared connection pool.
@@ -332,14 +333,17 @@ SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based
 protocol that can be used to ease identity management in the cloud.
 
 The SCIM resolver is tested in basic functions with OSIAM [#osiam]_,
-the "Open Source Idenitty & Access Management".
+the "Open Source Idenity & Access Management".
 
 To connect to a SCIM service you need to provide a URL to an authentication 
 server and a URL to the resource server. The authentication server is used to
-authenticate the privacyIDEA server. The authentication is based on a ``client``
+authenticate the privacyIDEA server. The authentication is based on a ``Client``
 name and the ``Secret`` for this client.
 
-Userinformation is then retrieved from the resource server.
+.. figure:: images/scim-resolver.png
+   :width: 500
+
+User information is then retrieved from the resource server.
 
 The available attributes for the ``Attribute mapping`` are:
 

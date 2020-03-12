@@ -5,11 +5,77 @@ SMS Gateway configuration
 
 .. index:: SMS Gateway, SMS Provider
 
-You can centrally define SMS gateways that can be used to send SMS with the
-SMS token (:ref:`sms_otp_token`) or to use the SMS gateway for sending
-notifications.
+You can centrally define SMS gateways that can be used to send SMS with :ref:`sms_token`
+or to use the SMS gateway for sending notifications.
 
 There are different providers (gateways) to deliver SMS.
+
+.. figure:: images/sms_gateway_new.png
+   :width: 500
+
+.. _firebase_provider:
+
+Firebase Provider
+~~~~~~~~~~~~~~~~~
+
+The Firebase provider was added in privacyIDEA 3.0. It sends notifications
+via the Google Firebase service and this is used for the :ref:`push_token`.
+For an exemplary configuration, you may have a look on the articles on the
+privacyIDEA community website `tagged with push token <https://www.privacyidea.org/tag/push-token/>`_.
+
+**JSON config file**
+
+   This is the location of the configuration file of
+   the Firebase service. It has to be located on the privacyIDEA
+   server.
+
+**apikey**
+
+   The API key your Android app should use to connect to the Firebase service.
+
+**apiios**
+
+   The API key your iOS app should use to connect to the Firebase service.
+
+**appid**
+
+   The app ID your Android app should use to connect to the Firebase service.
+
+**appidios**
+
+   The app ID your iOS app should use to connect to the Firebase service.
+
+**projectid**
+
+   The project ID of the Firebase project, that is used to connect
+   the app to.
+
+**projectnumber***
+
+   The project number of the Firebase project, that is used to
+   connect the app to.
+
+**registration URL**
+
+   This is the URL of your privacyIDEA server, which the push App should
+   connect to for the second registration step.
+   This URL usually ends with ``/ttype/push``. Note, that the FQDN
+   of your privacyIDEA server could be different for the smartphone
+   App to connect to, than you usually use for connecting via the
+   Web interface.
+
+**time to live**
+
+   This is the time (in seconds) how long the privacyIDEA server
+   accepts the response of the second registration step.
+   The smartphone could have connection issues, so the second step
+   could take some time to happen.
+
+
+You can get all the necessary values *JSON config file*,
+*project ID*, *project number*, *app ID* and *API key*
+from your Firebase console.
+
 
 HTTP provider
 ~~~~~~~~~~~~~
@@ -23,25 +89,24 @@ Each provider type defines its own set of parameters.
 The following parameters can be used. These are parameters, that define the
 behaviour of the SMS Gateway definition.
 
+**CHECK_SSL**
 
-**URL**
+   If the URL is secured via TLS (HTTPS), you can select, if the
+   certificate should be verified or not.
 
-   This is the URL for the gateway.
+**PROXY**, **HTTP_PROXY** and **HTTP_PROXY**
+
+   You can specify a proxy to connect to the HTTP gateway. Use the specific values
+   to separate HTTP and HTTPS.
+
+**REGEXP**
+
+   Regular expression to modify the phone number to make it compatible with provider.
 
 **HTTP_METHOD**
 
    Can be GET or POST.
 
-**USERNAME** and **PASSWORD**
-
-   These are the username and the password if the HTTP request requires
-   **basic authentication**.
-
-**RETURN_SUCCESS**
-
-   You can either use ``RETURN_SUCCESS`` or ``RETURN_FAIL``.
-   If the text of ``RETURN_SUCCESS`` is found in the HTTP response
-   of the gateway privacyIDEA assumes that the SMS was sent successfully.
 
 **RETURN_FAIL**
 
@@ -49,24 +114,32 @@ behaviour of the SMS Gateway definition.
    of the gateway privacyIDEA assumes that the SMS could not be sent
    and an error occurred.
 
-**PROXY**
+**RETURN_SUCCESS**
 
-   You can specify a proxy to connect to the HTTP gateway.
+   You can either use ``RETURN_SUCCESS`` or ``RETURN_FAIL``.
+   If the text of ``RETURN_SUCCESS`` is found in the HTTP response
+   of the gateway privacyIDEA assumes that the SMS was sent successfully.
+
+**TIMEOUT**
+
+   The timeout for contacting the API and receiving a response.
+
+**URL**
+
+   This is the URL for the gateway.
+
+**USERNAME** and **PASSWORD**
+
+   These are the username and the password if the HTTP request requires
+   **basic authentication**.
+
+.. todo:: PARAMETER in HTTP SMS Provider deprecated?
 
 **PARAMETER**
 
    This can contain a dictionary of arbitrary fixed additional
    parameters. Usually this would also contain an ID or a password
    to identify you as a sender.
-
-**CHECK_SSL**
-
-   If the URL is secured via TLS (HTTPS), you can select, if the
-   certificate should be verified or not.
-
-**TIMEOUT**
-
-   The timeout for contacting the API and receiving a response.
 
 Options
 .......
@@ -178,43 +251,6 @@ It takes not options.
 If you activate debug log level you will see the submitted SMS and the response
 content from the Sipgate gateway.
 
-SMTP provider
-~~~~~~~~~~~~~
-
-The SMTP provider sends an email to an email gateway. This is a specified,
-fixed mail address.
-
-The mail should contain the phone number and the OTP value. The email gateway
-will send the OTP via SMS to the given phone number.
-
-**SMTPIDENTIFIED**
-
-   Here you can select on of your centrally defined SMTP servers.
-
-**MAILTO**
-
-   This is the address where the email with the OTP value will be sent.
-   Usually this is a fixed email address provided by your SMTP Gateway
-   provider. But you can also use the tags ``{phone}`` and ``{otp}`` to
-   replace the phone number or the one time password.
-
-**SUBJECT**
-
-   This is the subject of the email to be sent.
-   You can use the tags ``{phone}`` and ``{otp}`` to
-   replace the phone number or the one time password.
-
-**BODY**
-
-   This is the body of the email. You can use this to explain the user, what
-   he should do with this email.
-   You can use the tags ``{phone}`` and ``{otp}`` to
-   replace the phone number or the one time password.
-
-The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
-You may change the *SUBJECT* and the *BODY* accordingly.
-
-
 SMPP Provider
 ~~~~~~~~~~~~~
 
@@ -231,56 +267,38 @@ For the other parameters contact your SMS center operator.
 .. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
 .. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
 
+SMTP provider
+~~~~~~~~~~~~~
 
-.. _firebase_provider:
+The SMTP provider sends an email to an email gateway. This is a specified,
+fixed mail address.
 
-Firebase Provider
-~~~~~~~~~~~~~~~~~
+The mail should contain the phone number and the OTP value. The email gateway
+will send the OTP via SMS to the given phone number.
 
-The Firebase provider was added in privacyIDEA 3.0. It sends notifications
-via the Google Firebase service and this is used for the :ref:`push_token`.
+**BODY**
 
-**registration URL**
+   This is the body of the email. You can use this to explain the user, what
+   he should do with this email.
+   You can use the tags ``{phone}`` and ``{otp}`` to
+   replace the phone number or the one time password.
 
-   This is the URL of your privacyIDEA server, which the push App should
-   connect to for the second registration step.
-   This URL usually ends with ``/ttype/push``. Note, that the FQDN
-   of your privacyIDEA server could be different for the smartphone
-   App to connect to, than you usually use for connecting via the
-   Web interface.
+**MAILTO**
 
-**time to live**
+   This is the address where the email with the OTP value will be sent.
+   Usually this is a fixed email address provided by your SMTP Gateway
+   provider. But you can also use the tags ``{phone}`` and ``{otp}`` to
+   replace the phone number or the one time password.
 
-   This is the time (in seconds) how long the privacyIDEA server
-   accepts the response of the second registration step.
-   The smartphone could have connection issues, so the second step
-   could take some time to happen.
+**SMTPIDENTIFIED**
 
-**JSON config file**
+   Here you can select on of your centrally defined SMTP servers.
 
-   This is the location of the configuration file of
-   the Firebase service. It has to be located on the privacyIDEA
-   server.
+**SUBJECT**
 
-**projectid**
+   This is the subject of the email to be sent.
+   You can use the tags ``{phone}`` and ``{otp}`` to
+   replace the phone number or the one time password.
 
-   The project ID of the Firebase project, that is used to connect
-   the app to.
-
-**projectnumber***
-
-   The project number of the Firebase project, that is used to
-   connect the app to.
-
-**appid**
-
-   The app ID your app should use to connect to the Firebase service.
-
-**apikey**
-
-   The API key your app should use to connect to the Firebase service.
-
-
-You can get all the necessary values *JSON config file*,
-*project ID*, *project number*, *app ID* and *API key*
-from your Firebase console.
+The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
+You may change the *SUBJECT* and the *BODY* accordingly.

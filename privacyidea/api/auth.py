@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+# 2020-02-15 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#            Add webAuthn token
 # 2018-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add translation for authentication failure - since
 #            this is a message that is displayed in the UI.
@@ -63,7 +65,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_
                                             check_tokeninfo, check_serial, no_detail_on_fail, no_detail_on_success,
                                             get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
-                                           pushtoken_disable_wait)
+                                           pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
+                                           webauthntoken_auth)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode
@@ -104,6 +107,9 @@ def before_request():
 
 @jwtauth.route('', methods=['POST'])
 @prepolicy(pushtoken_disable_wait, request)
+@prepolicy(webauthntoken_request, request=request)
+@prepolicy(webauthntoken_authz, request=request)
+@prepolicy(webauthntoken_auth, request=request)
 @postpolicy(get_webui_settings)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)

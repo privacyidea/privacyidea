@@ -2,17 +2,15 @@
     {{ challengedata.count }}
 </p>
 
-<pagination ng-show="challengedata.count > 15"
-            total-items="challengedata.count" ng-model="params.page"
-            previous-text="{{ 'Previous'|translate }}"
-            next-text="{{ 'Next'|translate }}"
-            last-text="{{ 'Last'|translate }}"
-            first-text="{{ 'First'|translate }}"
-            items-per-page="15"
-            max-size="5"
-            boundary-links="true" ng-change="challengePageChanged()">
-
-</pagination>
+<div uib-pagination ng-show="challengedata.count > 15"
+     total-items="challengedata.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="15"
+     max-size="5"
+     boundary-links="true" ng-change="challengePageChanged()"></div>
 
 <div class="table-responsive">
     <table class="table table-bordered table-striped" id="tabletokenchallenges">

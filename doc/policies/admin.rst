@@ -24,7 +24,7 @@ more information on the admin realms.
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.
 
-.. figure:: admin_policies.png
+.. figure:: images/admin_policies.png
    :width: 500
 
    *The Admin scope provides an additional field 'admin realm'.*
@@ -277,6 +277,9 @@ type: bool
 If the ``import`` action is defined, the administrator is 
 allowed to import token seeds from a token file, thus
 creating many new token objects in the systems database.
+
+The right to upload tokens can be limited to certain realms.
+Thus the administrator could only upload tokens into realm he is allowed to manage.
 
 remove
 ~~~~~~

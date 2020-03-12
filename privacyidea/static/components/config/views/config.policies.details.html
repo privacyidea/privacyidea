@@ -33,7 +33,7 @@
         <div class="col-sm-6">
             <input name="policyname" id="policyname" class="form-control"
                    ng-model="policyname" placeholder="policy1"
-                   pattern="{{ inputNamePatterns.simple.pattern }}"
+                   ng-pattern="inputNamePatterns.simple.pattern"
                    title="{{ inputNamePatterns.simple.title | translate }}"
                    autofocus required/>
             <p class="help-block"
@@ -273,16 +273,6 @@
                 </label>
 
                 <div class="col-sm-9">
-                    <div isteven-multi-select
-                         ng-hide="isActionValues"
-                         input-model="actions"
-                         output-model="selectedActions"
-                         button-label="name"
-                         item-label="icon name"
-                         tick-property="ticked"
-                         group-property="multiSelectGroup"
-                    >
-                    </div>
                     <div class="input-group">
                         <input type="text" ng-model="action_filter"
                                placeholder="{{ 'filter action...'|translate }}"
@@ -291,15 +281,16 @@
                                aria-describedby="filter-delete">
                         <span class="input-group-addon" id="filter-delete"
                               ng-click="action_filter=''">
-                    <span class="glyphicon glyphicon-remove-circle"></span>
-                </span>
+                            <span class="glyphicon glyphicon-remove-circle"></span>
+                        </span>
                     </div>
-                    <div ng-show="isActionValues">
-                        <accordion close-others="false">
-                            <accordion-group
-                                    is-open="isOpen"
-                                    heading="{{ actionGroup || 'miscellaneous'}}"
-                                    ng-repeat="actionGroup in actionGroups">
+                    <div ng-show="isActionValues" class="mt-5px">
+                        <uib-accordion close-others="false">
+                            <div uib-accordion-group
+                                 class="panel-default"
+                                 is-open="isOpen"
+                                 heading="{{ actionGroup || 'miscellaneous'}}"
+                                 ng-repeat="actionGroup in actionGroups">
                                 <table class="table table-hover">
                                     <tr ng-repeat="action in actions"
                                         ng-show="(actionCheckBox[action.name] ||
@@ -376,8 +367,8 @@
                                         </td>
                                     </tr>
                                 </table>
-                            </accordion-group>
-                        </accordion>
+                            </div>
+                        </uib-accordion>
                     </div>
                 </div>
             </div>

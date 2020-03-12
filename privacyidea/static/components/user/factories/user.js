@@ -34,28 +34,30 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                     headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params,
                     timeout: canceller.promise
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
             },
             getUserDetails: function(params, callback) {
                 // get user information without cancelling the call.
                 $http.get(userUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
             },
             updateUser: function(resolver, params, callback) {
                 params.resolver = resolver;
                 params.user = params.username;
                 $http.put(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
             },
             deleteUser: function(resolver, username, callback) {
                 $http.delete(userUrl + "/" + resolver + "/" + username,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
             },
             createUser: function(resolver, User, callback) {
                 var params = User;
@@ -63,7 +65,8 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 params.resolver = resolver;
                 $http.post(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
             }
         };
 

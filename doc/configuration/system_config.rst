@@ -110,9 +110,10 @@ Prepend PIN
 ``PrependPin`` defines if the OTP PIN should be given in front ("pin123456") 
 or in the back ("12345pin") of the OTP value.
 
-.. _autosync:
 
 .. index:: autoresync, autosync
+
+.. _autosync:
 
 AutoResync
 ~~~~~~~~~~
@@ -248,6 +249,8 @@ Count Window
 
 ``DefaultCountWindow`` defines how many OTP values will be calculated during
 an authentication request.
+
+.. _challenge_validity_time:
 
 Challenge Validity Time
 ~~~~~~~~~~~~~~~~~~~~~~~

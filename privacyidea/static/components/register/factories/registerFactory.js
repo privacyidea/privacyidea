@@ -6,11 +6,12 @@ myApp.factory("RegisterFactory", function ($http, $state, $rootScope,
     return {
         register: function (params, callback) {
             $http.post(registerUrl, params, {}
-            ).success(callback
-            ).error(AuthFactory.authError);
+            ).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
         },
         status: function (callback) {
-            $http.get(registerUrl).success(callback).error(AuthFactory.authError);
+            $http.get(registerUrl).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
         }
     };
 });

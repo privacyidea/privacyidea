@@ -12,8 +12,8 @@ subdirectory.
 privacyIDEA can run with Python 2.7 and 3.5, 3.6 or 3.7. Other versions either do not work
 or are not tested.
 
-You first need to install some development packages. E.g. on debian based
-distributions the packages are called
+You first need to install some development packages. E.g. on Debian-based
+distributions like Ubuntu the packages are called
 
 * libjpeg-dev
 * libz-dev
@@ -21,6 +21,10 @@ distributions the packages are called
 * libffi-dev
 * libssl-dev
 * libxslt1-dev
+
+Eventually you may have to install database-related packages such as
+
+* libpq-dev
 
 Now you can install privacyIDEA like this::
 
@@ -64,4 +68,4 @@ This is important for later update processes::
 
    pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations
 
-Depending on the database you want to use, you may have to install additional packages.
+Depending on the database you want to use, you may have to install additional packages (see above).

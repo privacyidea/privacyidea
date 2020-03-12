@@ -18,7 +18,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-angular.module("privacyideaAuth", [])
+angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
     .factory("AuthFactory", function (inform, gettextCatalog, $state) {
         /*
         Each service - just like this service factory - is a singleton.
@@ -38,6 +38,10 @@ angular.module("privacyideaAuth", [])
             },
             authError: function(error) {
                 var authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
+                if (error === null) {
+                    console.warn('No error object available, maybe the request was aborted?')
+                    return
+                }
                 if (typeof (error) === "string") {
                     inform.add(gettextCatalog.getString("Failed to get a valid JSON response from the privacyIDEA server."),
                         {type: "danger", ttl: 10000});

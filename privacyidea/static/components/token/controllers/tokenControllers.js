@@ -89,7 +89,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
                 ($scope.subscription_state === 1) ||
                 ($scope.subscription_state === 2)) {
                 $('#dialogWelcome').modal("show");
-                $("body").addClass("modal-open");
             }
         }
     }
@@ -156,7 +155,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                                                     ConfigFactory, instanceUrl,
                                                     $http, hotkeys,
                                                     gettextCatalog,
-                                                    inform, U2fFactory) {
+                                                    inform, U2fFactory, webAuthnToken) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -188,6 +187,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.instanceUrl = instanceUrl;
     $scope.click_wait = true;
     $scope.U2FToken = {};
+    $scope.webAuthnToken = {};
     // System default values for enrollment
     $scope.systemDefault = {};
     // questions for questionnaire token
@@ -233,6 +233,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 " a QR code."),
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
             "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
+            "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
             "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
@@ -385,7 +386,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                             $scope.form.phone = userObject.mobile;
                         } else {
                             $scope.phone_list = userObject.mobile;
-                            if ($scope.phone_list.length === 1) {
+                            if ($scope.phone_list && $scope.phone_list.length === 1) {
                                 $scope.form.phone = $scope.phone_list[0];
                             }
                         }
@@ -425,6 +426,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
+        $scope.webAuthnToken = {};
         $scope.enrolledToken = data.detail;
         $scope.click_wait=false;
         if ($scope.enrolledToken.otps) {
@@ -448,12 +450,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
         }
         if ($scope.enrolledToken.u2fRegisterRequest) {
-            // This is the first step of U2F registering
-            // save serial
+            // This is the first step of U2F registering, save serial.
             $scope.serial = data.detail.serial;
-            // We need to send the 2nd stage of the U2F enroll
-            $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
-            $scope.click_wait=true;
+
+            $scope.register_fido($scope.enrolledToken.u2fRegisterRequest, U2fFactory, $scope.U2FToken);
+        }
+        if ($scope.enrolledToken.webAuthnRegisterRequest) {
+            // This is the first step of U2F registering, save serial.
+            $scope.serial = data.detail.serial;
+
+            $scope.register_fido($scope.enrolledToken.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
         }
         if ($scope.enrolledToken.rollout_state === "clientwait") {
             $scope.pollTokenInfo();
@@ -518,18 +524,21 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
     };
 
-    // U2F
-    $scope.register_u2f = function (registerRequest) {
-        U2fFactory.register_request(registerRequest, function (params) {
+    // U2F and WebAuthn
+    $scope.register_fido = function (registerRequest, Factory, token) {
+        // We need to send the 2nd stage of the U2F enroll
+        Factory.register_request(registerRequest, function (params) {
             params.serial = $scope.serial;
             TokenFactory.enroll($scope.newUser,
                 params, function (response) {
                     $scope.click_wait = false;
-                    $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
-                    $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
-                    //debug: console.log($scope.U2FToken);
+                    token.subject
+                        = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
+                    token.vendor = token.subject.split(" ")[0];
+                    console.log(token);
                 });
         });
+        $scope.click_wait = true;
     };
 
     // get the list of configured RADIUS server identifiers
@@ -634,7 +643,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 });
 
 
-myApp.controller("tokenImportController", function ($scope, $upload,
+myApp.controller("tokenImportController", function ($scope, Upload,
                                                     AuthFactory, tokenUrl,
                                                     ConfigFactory, inform) {
     $scope.formInit = {
@@ -662,32 +671,28 @@ myApp.controller("tokenImportController", function ($scope, $upload,
         $scope.pgpkeys = data.result.value;
     });
 
-    $scope.upload = function (files) {
-        if (files && files.length) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                $upload.upload({
-                    url: tokenUrl + '/load/filename',
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    fields: {type: $scope.form.type,
-                             psk: $scope.form.psk,
-                             password: $scope.form.password,
-                             tokenrealms: $scope.form.realm},
-                    file: file
-                }).progress(function (evt) {
-                    $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
-                }).success(function (data, status, headers, config) {
-                    $scope.uploadedFile = config.file.name;
-                    $scope.uploadedTokens = data.result.value;
-                }).error(function (error) {
-                    if (error.result.error.code === -401) {
-                        $state.go('login');
-                    } else {
-                        inform.add(error.result.error.message,
-                                {type: "danger", ttl: 10000});
-                    }
-                });
-            }
+    $scope.upload = function (file) {
+        if (file) {
+            Upload.upload({
+                url: tokenUrl + '/load/filename',
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                data: {file: file,
+                    type: $scope.form.type,
+                    psk: $scope.form.psk,
+                    password: $scope.form.password,
+                    tokenrealms: $scope.form.realm},
+            }).then(function (resp) {
+                $scope.uploadedFile = resp.config.data.file.name;
+                $scope.uploadedTokens = resp.data.result.value;
+            }, function (error) {
+                if (error.data.result.error.code === -401) {
+                    $state.go('login');
+                } else {
+                    inform.add(error.data.result.error.message,
+                        {type: "danger", ttl: 10000});
+                }
+            }, function (evt) {
+                $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total)});
         }
     };
 });

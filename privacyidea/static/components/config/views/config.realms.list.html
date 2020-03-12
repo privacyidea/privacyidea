@@ -95,7 +95,7 @@
                                class="form-control"
                                ng-model="realm.name" required
                                placeholder="{{ 'new realm'|translate }}"
-                               pattern="{{ inputNamePatterns.simple.pattern }}"
+                               ng-pattern="inputNamePatterns.simple.pattern"
                                title="{{ inputNamePatterns.simple.title | translate }}"
                                autofocus/>
                     </div>

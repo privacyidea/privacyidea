@@ -26,7 +26,6 @@ import time
 import ecdsa
 import struct
 import six
-import codecs
 from cryptography.hazmat.primitives.asymmetric.utils import (encode_dss_signature,
                                                              decode_dss_signature)
 
@@ -46,13 +45,13 @@ def url_decode(url):
     """
     Decodes a base64 encoded, not padded string as used in FIDO U2F
     :param url: base64 urlsafe encoded string
-    :type url: str
+    :type url: basestring or bytes
     :return: the decoded string
     :rtype: bytes
     """
     pad_len = -len(url) % 4
     padding = pad_len * "="
-    res = base64.urlsafe_b64decode(to_bytes(url + padding))
+    res = base64.urlsafe_b64decode(to_bytes(url) + to_bytes(padding))
     return res
 
 
@@ -332,7 +331,7 @@ def x509name_to_string(x509name):
     """
     converts a X509Name to a string as in a DN
 
-    :param x509name: THe X509Name object
+    :param x509name: The X509Name object
     :return:
     """
     components = x509name.get_components()

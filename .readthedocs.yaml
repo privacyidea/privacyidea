@@ -17,12 +17,12 @@ formats: all
 # documentation building process.  Also allow access to python packages that are globally installed by default, even if
 # they are not explicitly listed.
 python:
-  version: 2.7
+  version: 3.6
   install:
     - requirements: doc/requirements.txt
-    - method: setuptools
+    - method: pip
       path: .
-  system_packages: true
+  system_packages: false
 
 # This is not currently needed, it is included so documentation will not break, if functionality is moved into
 # submodules.

@@ -1,5 +1,7 @@
 .. _tools:
 
+.. todo:: Extend description and add more tools from /opt/privacyidea/bin?
+
 Tools
 =====
 
