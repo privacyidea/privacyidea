@@ -3564,6 +3564,7 @@ class AChallengeResponse(MyApiTestCase):
         my_secret = "HelloMyFriend"
         tok = init_token({"otpkey": my_secret,
                           "pin": "test",
+                          "serial": "PIIX01",
                           "type": "indexedsecret"},
                          user=User("cornelius", self.realm1))
         # Trigger a challenge
@@ -3591,6 +3592,26 @@ class AChallengeResponse(MyApiTestCase):
             response = res.json
             # successful authentication
             self.assertTrue(response.get("result").get("value"))
+
+        # ennroll an empty indexedsecret token and check the raised exception
+        remove_token("PIIX01")
+        tok = init_token({"otpkey": "",
+                          "pin": "test",
+                          "serial": "PIIX01",
+                          "type": "indexedsecret"},
+                         user=User("cornelius", self.realm1))
+        with self.app.test_request_context("/validate/check",
+                                           data={"user": "cornelius",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            response = res.json
+            result = response.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(u'ERR401: The indexedsecret token has an empty secret '
+                             u'and can not be used for authentication.',
+                             result.get("error").get("message"))
+        remove_token("PIIX01")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

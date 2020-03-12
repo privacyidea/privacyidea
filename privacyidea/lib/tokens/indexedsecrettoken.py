@@ -44,7 +44,7 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
-import random
+from privacyidea.lib.error import ValidateError
 
 log = logging.getLogger(__name__)
 
@@ -206,6 +206,9 @@ class IndexedSecretTokenClass(TokenClass):
         if self.is_active() is True:
             # We need to get a number of random positions from the secret string
             secret_length = len(self.token.get_otpkey().getKey())
+            if not secret_length:
+                raise ValidateError("The indexedsecret token has an empty secret and "
+                                    "can not be used for authentication.")
             random_positions = [urandom.randint(1, secret_length) for _x in range(0, position_count)]
             position_str = ",".join(["{0!s}".format(x) for x in random_positions])
             attributes["random_positions"] = random_positions
