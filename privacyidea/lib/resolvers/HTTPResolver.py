@@ -37,6 +37,7 @@ ENCODING = "utf-8"
 
 log = logging.getLogger(__name__)
 
+
 class HTTPResolver(UserIdResolver):
 
     fields = {}
@@ -92,7 +93,7 @@ class HTTPResolver(UserIdResolver):
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.HTTPResolver.HTTPResolver"
-        descriptor['config'] = {'endpoint':'string'}
+        descriptor['config'] = {'endpoint': 'string'}
         return {typ: descriptor}
 
     @staticmethod
@@ -258,8 +259,7 @@ class HTTPResolver(UserIdResolver):
         :rtype: tuple
         """
         desc = ""
-        success = False
-        
+        success = False        
         try:
             response = requests.get(param.get('endpoint') % param.get('testEmail')).json()
             desc = {k.lower(): v for k, v in response.items()}
@@ -267,7 +267,6 @@ class HTTPResolver(UserIdResolver):
         except Exception as e:
             success = False
             desc = "failed: {0!s}".format(e)
-
         return success, desc
 
     @property
@@ -289,7 +288,6 @@ class HTTPResolver(UserIdResolver):
     #
     #   Private methods
     #
-
     def _getUser(self, userid):
         response = requests.get(self.endpoint % userid).json()
         return {k.lower(): v for k, v in response.items()}
