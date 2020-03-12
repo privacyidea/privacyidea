@@ -446,7 +446,7 @@ def encrypt_enckey(encfile):
 
 
 @manager.command
-def create_enckey():
+def create_enckey(enckey=None):
     """
     If the key of the given configuration does not exist, it will be created
     """
@@ -457,8 +457,14 @@ def create_enckey():
               filename)
         sys.exit(1)
     with open(filename, "wb") as f:
-        f.write(DefaultSecurityModule.random(96))
-
+        if enckey is None:
+            f.write(DefaultSecurityModule.random(96))
+        else:
+            print("Warning: Passing enckey via cli input is considered harmful.")
+            if not len(enckey.encode()) is 96:
+                print("enckey must be 96 bytes length")
+                sys.exit(1)
+            f.write(enckey.encode())
     print("Encryption key written to %s" % filename)
     os.chmod(filename, 0o400)
     print("The file permission of %s was set to 400!" % filename)
