@@ -3,11 +3,13 @@
         <img width="250" ng-src="{{ enrolledToken.tiqrenroll.img }}"/>
     </div>
     <div class="col-sm-6">
-        <accordion close-others="oneAtATime">
-            <accordion-group heading="{{ 'The Enrollment URL'|translate }}">
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'The Enrollment URL'|translate }}">
                 {{ enrolledToken.tiqrenroll.value }}
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
         <p translate>
             Click <a href="{{ enrolledToken.tiqrenroll.value }}">here</a> or
             scan

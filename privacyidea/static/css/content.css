@@ -67,3 +67,7 @@ input[type="checkbox"] {
     /* 14px font-size * 1.42857143 line-height */
     height: 20px;
 }
+
+.mt-5px {
+    margin-top: 5px;
+}

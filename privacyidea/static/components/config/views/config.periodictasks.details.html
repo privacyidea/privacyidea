@@ -50,15 +50,17 @@
                 Please use crontab notation to specify the times at which the periodic task
                 should be run.
             </p>
-            <accordion>
-                <accordion-group heading="{{ 'Examples'|translate}}">
+            <uib-accordion>
+                <div uib-accordion-group
+                     class="panel-default"
+                     heading="{{ 'Examples'|translate}}">
                     <ul translate>
                         <li><b>"5 10 * * *"</b> runs the task every day at 10:05 am.</li>
                         <li><b>"*/10 * * * *"</b> runs the task every ten minutes.</li>
                         <li><b>"1 23 * * 7"</b> runs the task at 11:01pm on Sundays.</li>
                     </ul>
-                </accordion-group>
-            </accordion>
+                </div>
+            </uib-accordion>
         </div>
     </div>
     <div class="form-group">

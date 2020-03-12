@@ -278,6 +278,9 @@ If the ``import`` action is defined, the administrator is
 allowed to import token seeds from a token file, thus
 creating many new token objects in the systems database.
 
+The right to upload tokens can be limited to certain realms.
+Thus the administrator could only upload tokens into realm he is allowed to manage.
+
 remove
 ~~~~~~
 

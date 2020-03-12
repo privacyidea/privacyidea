@@ -52,9 +52,11 @@
         </div>
 
         <!-- Extended attributes -->
-        <accordion ng-hide="$state.includes('token.wizard') ||
+        <uib-accordion ng-hide="$state.includes('token.wizard') ||
                         loggedInUser.role=='user'">
-            <accordion-group heading="{{ 'Extended Attributes'|translate }}">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'Extended Attributes'|translate }}">
                 <div class="form-group col-sm-6">
                     <label for="validity_start"
                            translate>Validity Start
@@ -102,8 +104,8 @@
                     should be entered in the format
                     <em>YYYY-MM-DDThh:mm+oooo</em>.
                 </p>
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
 
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"

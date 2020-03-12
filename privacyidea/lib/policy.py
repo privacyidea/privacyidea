@@ -2386,57 +2386,60 @@ class Match(object):
                    sort_by_priority=True)
 
     @classmethod
-    def admin(cls, g, action, realm):
+    def admin(cls, g, action, user_obj=None):
         """
         Match admin policies with an action and, optionally, a realm.
         Assumes that the currently logged-in user is an admin, and throws an error otherwise.
         Policies will be matched against the admin's username and adminrealm,
-        and optionally also the provided user realm.
+        and optionally also the provided user_obj on which the admin is acting
         The client IP is matched implicitly.
         :param g: context object
         :param action: the policy action
-        :param realm: the user realm against which policies should be matched. Can be None.
-        :type realm: str or None
+        :param user_obj: the user against which policies should be matched. Can be None.
+        :type user_obj: User or None
         :rtype: ``Match``
         """
-        username = g.logged_in_user["username"]
+        adminuser = g.logged_in_user["username"]
         adminrealm = g.logged_in_user["realm"]
         from privacyidea.lib.auth import ROLE
         if g.logged_in_user["role"] != ROLE.ADMIN:
             raise MatchingError("Policies with scope ADMIN can only be retrieved by admins")
-        return cls(g, name=None, scope=SCOPE.ADMIN, realm=realm, active=True,
-                   resolver=None, user=username, user_object=None,
-                   client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
+        return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
+                   resolver=None, client=g.client_ip, action=action,
+                   adminuser=adminuser, adminrealm=adminrealm, time=None,
                    sort_by_priority=True)
 
     @classmethod
-    def admin_or_user(cls, g, action, realm):
+    def admin_or_user(cls, g, action, user_obj):
         """
         Depending on the role of the currently logged-in user, match either scope=ADMIN or scope=USER policies.
         If the currently logged-in user is an admin, match policies against the username, adminrealm
-        and the given user realm.
+        and the given user_obj on which the admin is acting.
         If the currently logged-in user is a user, match policies against the username and the given realm.
         The client IP is matched implicitly.
         :param g: context object
         :param action: the policy action
-        :param realm: the given realm
+        :param user_obj: the user_obj on which the administrator is acting
         :rtype: ``Match``
         """
         from privacyidea.lib.auth import ROLE
-        if g.logged_in_user["role"] == ROLE.ADMIN:
-            scope = SCOPE.ADMIN
-            username = g.logged_in_user["username"]
+        adminrealm = adminuser = username = userrealm = None
+        scope = g.logged_in_user["role"]
+        if scope == ROLE.ADMIN:
+            adminuser = g.logged_in_user["username"]
             adminrealm = g.logged_in_user["realm"]
-        elif g.logged_in_user["role"] == ROLE.USER:
-            scope = SCOPE.USER
-            username = g.logged_in_user["username"]
-            adminrealm = None
+        elif scope == ROLE.USER:
+            if not user_obj:
+                # If we have a user object (including resolver) in a request, we use this on.
+                # Otherwise we take the user from the logged in user.
+                username = g.logged_in_user["username"]
+                userrealm = g.logged_in_user["realm"]
         else:
             raise MatchingError("Unknown role")
-        return cls(g, name=None, scope=scope, realm=realm, active=True,
-                   resolver=None, user=username, user_object=None,
-                   client=g.client_ip, action=action, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True)
+        return cls(g, name=None, scope=scope, realm=userrealm, active=True,
+                   resolver=None, user=username, user_object=user_obj,
+                   client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
+                   time=None, sort_by_priority=True)
 
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,

@@ -244,7 +244,7 @@ def realmadmin(request=None, action=None):
         params = request.all_data
         if not "realm" in params:
             # add the realm to params
-            po = Match.admin(g, action=action, realm=None).policies()
+            po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -285,25 +285,24 @@ def check_otp_pin(request=None, action=None):
             tokentype = tokensobject_list[0].token.tokentype
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
-    if g.logged_in_user.get("role") == ROLE.ADMIN:
-        realm = params.get("realm", "")
-    else:
-        realm = g.logged_in_user.get("realm")
     # get the policies for minimum length, maximum length and PIN contents
     # first try to get a token specific policy - otherwise fall back to
     # default policy
     pol_minlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
-                                     realm=realm).action_values(unique=True)
+                                     user_obj=request.User).action_values(unique=True)
     if not pol_minlen:
-        pol_minlen = Match.admin_or_user(g, action=ACTION.OTPPINMINLEN, realm=realm).action_values(unique=True)
+        pol_minlen = Match.admin_or_user(g, action=ACTION.OTPPINMINLEN,
+                                         user_obj=request.User).action_values(unique=True)
     pol_maxlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
-                                     realm=realm).action_values(unique=True)
+                                     user_obj=request.User).action_values(unique=True)
     if not pol_maxlen:
-        pol_maxlen = Match.admin_or_user(g, action=ACTION.OTPPINMAXLEN, realm=realm).action_values(unique=True)
+        pol_maxlen = Match.admin_or_user(g, action=ACTION.OTPPINMAXLEN,
+                                         user_obj=request.User).action_values(unique=True)
     pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
-                                       realm=realm).action_values(unique=True)
+                                       user_obj=request.User).action_values(unique=True)
     if not pol_contents:
-        pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS, realm=realm).action_values(unique=True)
+        pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                           user_obj=request.User).action_values(unique=True)
 
     if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
         # check the minimum length requirement
@@ -338,12 +337,7 @@ def sms_identifiers(request=None, action=None):
     sms_identifier = request.all_data.get("sms.identifier")
     if sms_identifier:
         from privacyidea.lib.tokens.smstoken import SMSACTION
-        if g.logged_in_user.get("role") == ROLE.USER:
-            realm = g.logged_in_user.get("realm")
-        else:
-            realm = getParam(request.all_data, "realm")
-
-        pols = Match.admin_or_user(g, action=SMSACTION.GATEWAYS, realm=realm).action_values(unique=False)
+        pols = Match.admin_or_user(g, action=SMSACTION.GATEWAYS, user_obj=request.User).action_values(unique=False)
         gateway_identifiers = []
 
         for p in pols:
@@ -538,7 +532,7 @@ def twostep_enrollment_activation(request=None, action=None):
     # self-enrolling user).
     # Tokentypes have separate twostep actions
     action = "{}_2step".format(token_type)
-    twostep_enabled_pols = Match.admin_or_user(g, action=action, realm=user_object.realm).action_values(unique=True)
+    twostep_enabled_pols = Match.admin_or_user(g, action=action, user_obj=user_object).action_values(unique=True)
     if twostep_enabled_pols:
         enabled_setting = list(twostep_enabled_pols)[0]
         if enabled_setting == "allow":
@@ -831,8 +825,7 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    user_object = request.User
-    audit_age = Match.admin_or_user(g, action=ACTION.AUDIT_AGE, realm=user_object.realm).action_values(unique=True)
+    audit_age = Match.admin_or_user(g, action=ACTION.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -936,7 +929,7 @@ def check_admin_tokenlist(request=None, action=None):
         return True
 
     policy_object = g.policy_object
-    pols = Match.admin(g, action=ACTION.TOKENLIST, realm=None).policies()
+    pols = Match.admin(g, action=ACTION.TOKENLIST).policies()
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
@@ -1013,11 +1006,18 @@ def check_token_upload(request=None, action=None):
     :param filename:
     :return:
     """
-    params = request.all_data
-    upload_allowed = Match.admin(g, action=ACTION.IMPORT, realm=params.get("realm")).allowed()
+    tokenrealms = request.all_data.get("tokenrealms")
+    upload_allowed = True
+    if tokenrealms:
+        for trealm in tokenrealms.split(","):
+            if not Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
+                                           adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
+                upload_allowed = False
+    else:
+        upload_allowed = Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
+                                        adminrealm=g.logged_in_user.get("realm")).allowed()
     if not upload_allowed:
-        raise PolicyError("Admin actions are defined, but you are not allowed"
-                          " to upload token files.")
+        raise PolicyError("Admin actions are defined, but you are not allowed to upload token files.")
     return True
 
 
@@ -1329,7 +1329,7 @@ def allowed_audit_realm(request=None, action=None):
     # for admins, as users are only allowed to view their own realm anyway (this
     # is ensured by the fixed "realm" parameter)
     if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=ACTION.AUDIT, realm=None).policies()
+        pols = Match.admin(g, action=ACTION.AUDIT).policies()
         if pols:
             # get all values in realm:
             allowed_audit_realms = []

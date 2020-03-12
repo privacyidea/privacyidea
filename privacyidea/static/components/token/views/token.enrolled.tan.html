@@ -1,7 +1,9 @@
 <div class="row">
     <div class="col-sm-12">
-        <accordion close-others="oneAtATime">
-            <accordion-group heading="{{ 'The OTP values'|translate }}">
+        <uib-accordion close-others="oneAtATime">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'The OTP values'|translate }}">
                 <div id="paperOtpTable">
                     <div ng-include="instanceUrl+'/'+piCustomization+
                     '/views/includes/token.enrolled.tan.top.html'"></div>
@@ -45,8 +47,8 @@
                     <div ng-include="instanceUrl+'/'+piCustomization+
                     '/views/includes/token.enrolled.tan.bottom.html'"></div>
                 </div>
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
     </div>
 </div>
 <button class="btn-default btn"

@@ -255,7 +255,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
 
-
     def test_03_check_token_upload(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -269,7 +268,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"filename": "token.xml"}
-
+        req.User = User()
         # Set a policy, that does allow the action
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
@@ -287,6 +286,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"filename": "token.xml"}
+        req.User = User()
         self.assertRaises(PolicyError,
                           check_token_upload, req)
         # finally delete policy
@@ -775,6 +775,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol1")
 
     def test_09_pin_policies(self):
+        create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -798,6 +799,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {
                         "user": "cornelius",
                         "realm": "home"}
+        req.User = User("cornelius", "home")
         # The minimum OTP length is 4
         self.assertRaises(PolicyError, check_otp_pin, req)
 
@@ -842,8 +844,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("pol1")
+        delete_realm("home")
 
     def test_09_pin_policies_admin(self):
+        create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -867,6 +871,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         req.all_data = {"user": "cornelius",
                         "realm": "home"}
+        req.User = User("cornelius", "home")
         # The minimum OTP length is 4
         self.assertRaises(PolicyError, check_otp_pin, req)
 
@@ -909,8 +914,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("pol1")
+        delete_realm("home")
 
     def test_01b_token_specific_pin_policy(self):
+        create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -946,6 +953,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "realm": "home",
                         "pin": "123456",
                         "type": "spass"}
+        req.User = User("cornelius", "home")
         # The minimum OTP length is 8
         self.assertRaises(PolicyError, check_otp_pin, req)
 
@@ -966,6 +974,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("pol1")
+        delete_realm("home")
 
     def test_10_check_external(self):
         g.logged_in_user = {"username": "user1",
@@ -1500,7 +1509,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Users are allowed to choose gw4
         set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
 
-        g.logged_in_user = {"username": "hans",
+        g.logged_in_user = {"username": "root",
                             "realm": "",
                             "role": "user"}
         builder = EnvironBuilder(method='POST',
@@ -1508,7 +1517,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                  headers={})
         env = builder.get_environ()
         req = Request(env)
-        req.User = User()
+        req.User = User("root")
         req.all_data = {"sms.identifier": "gw4"}
         g.policy_object = PolicyClass()
         r = sms_identifiers(req)
