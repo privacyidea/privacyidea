@@ -1360,7 +1360,7 @@ def indexedsecret_force_attribute(request, action):
         # We only need to check the policies, if the token is actually enrolled
         # to a user.
         attributes = Match.admin_or_user(g, "indexedsecret_{0!s}".format(PIIXACTION.FORCE_ATTRIBUTE),
-                                         realm=request.User.realm).action_values(unique=True)
+                                         user_obj=request.User).action_values(unique=True)
         if not attributes:
             # If there is no policy set, we simply do nothing
             return True
