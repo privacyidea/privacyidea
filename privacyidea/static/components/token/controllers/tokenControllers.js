@@ -308,16 +308,18 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.form.genkey = false;
             // Only fetch, if a preset_attribute is defined
             if ($scope.tokensettings.indexedsecret.preset_attribute) {
-                // getUsers will only work, if we are admin
+                // In case of a normal logged in user, an empty params is fine
+                var params = {};
                 if (AuthFactory.getRole() === 'admin') {
-                    UserFactory.getUsers({realm: $scope.newUser.realm,
-                        username: fixUser($scope.newUser.user)},
+                    params = {realm: $scope.newUser.realm,
+                        username: fixUser($scope.newUser.user)};
+                }
+                UserFactory.getUsers(params,
                         function(data) {
                             var userObject = data.result.value[0];
                             // preset for indexedsecret token
                             $scope.form.otpkey = userObject[$scope.tokensettings.indexedsecret.preset_attribute];
                     });
-                }
             }
         }
     };
