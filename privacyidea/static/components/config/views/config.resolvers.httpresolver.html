@@ -1,0 +1,71 @@
+<div ng-controller="HTTPResolverController">
+
+    <h2 class="form-signin-heading"
+        ng-show="resolvername"
+            translate>Edit HTTP Resolver {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="resolvername"
+            translate>Create a new HTTP Resolver</h2>
+
+    <form name="formResolverAddPassword" role="form" validate>
+
+        <div class="form-group">
+            <label for="resolvername" class="col-sm-3 control-label"
+                    translate>Resolver name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername"
+                       class="form-control"
+                       ng-model="resolvername" required placeholder="resolver1"
+                       pattern="{{ inputNamePatterns.withoutTest.pattern }}"
+                       title="{{ inputNamePatterns.withoutTest.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="resolverurl"
+                   class="col-sm-3 control-label"
+                    translate>Endpoint</label>
+
+            <div class="col-sm-9">
+                <input name="resolverfile" id="resolverfile"
+                       class="form-control"
+                       ng-model="params.endpoint" required
+                       placeholder="http://example.com/path/to/users/:userid"/>
+            </div>
+        </div>
+        <div class="text-center" ng-show="showResult">
+            <label class="label" ng-class="{'label-success':result.result,
+                       'label-danger':!result.result}">
+                {{ result.description }}<span class="glyphicon glyphicon-remove" ng-click="showResult=false"></span>
+            </label>
+        </div>
+        <div class="container-fluid">
+            <div class="text-right">
+                <div class="form-group form-inline">
+                    <input 
+                        name="testEmail" 
+                        id="testEmail" 
+                        class="form-control" 
+                        ng-model="params.testEmail" 
+                        placeholder="foo@bar.com" 
+                    />
+                    <button ng-click="testResolver()" ng-disabled="formResolverAddHttp.$invalid" class="btn btn-success" translate>
+                        Test HTTP Resolver
+                    </button>
+                </div>
+            </div>
+            <div class="text-right">
+                <button ng-click="setResolver()"
+                    ng-show="checkRight('resolverwrite')"
+                    ng-disabled="formResolverAddPassword.$invalid"
+                    class="btn btn-primary"
+                    translate>Save resolver
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+</div>

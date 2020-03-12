@@ -32,3 +32,10 @@ __pycache__/
 /enckey
 /public.pem
 /private.pem
+
+# virtualenv
+bin/
+include/
+
+share/
+lib/
