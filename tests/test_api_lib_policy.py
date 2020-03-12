@@ -2466,6 +2466,10 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(len(custom_url), len(qr_image_custom))
         self.assertEqual(custom_url, qr_image_custom)
 
+        delete_policy("pol_qr1")
+        delete_policy("pol_qr2")
+        delete_policy("pol_qr3")
+
         # Test if the webui gets the information about the preset attribute for indexedsecret token
         set_policy(name="pol_indexed1", scope=SCOPE.WEBUI,
                    action="indexedsecret_{0!s}=preattr".format(PIIXACTION.PRESET_ATTRIBUTE))
@@ -2477,9 +2481,16 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                          jresult.get("result").get("value").get("indexedsecret_preset_attribute"))
 
         delete_policy("pol_indexed1")
-        delete_policy("pol_qr1")
-        delete_policy("pol_qr2")
-        delete_policy("pol_qr3")
+
+        # Test if the webui gets the information, that a normal user has force_attribute
+        set_policy(name="pol_indexed_force", scope=SCOPE.USER,
+                   action="indexedsecret_{0!s}=force".format(PIIXACTION.FORCE_ATTRIBUTE))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        # Check that the force_attribute indicator is set to "1"
+        self.assertEqual(1, jresult.get("result").get("value").get("indexedsecret_force_attribute"))
+        delete_policy("pol_indexed_force")
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

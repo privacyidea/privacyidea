@@ -563,6 +563,11 @@ def get_webui_settings(request, response):
         if len(indexed_preset_attribute) == 1:
             content["result"]["value"]["indexedsecret_preset_attribute"] = list(indexed_preset_attribute)[0]
 
+        # This only works for users, because the value of the policy does not change while logged in.
+        if role == ROLE.USER and \
+                Match.user(g, SCOPE.USER, "indexedsecret_force_attribute", user_obj).action_values(unique=False):
+            content["result"]["value"]["indexedsecret_force_attribute"] = 1
+
         content["result"]["value"]["logout_time"] = logout_time
         content["result"]["value"]["token_page_size"] = token_page_size
         content["result"]["value"]["user_page_size"] = user_page_size
