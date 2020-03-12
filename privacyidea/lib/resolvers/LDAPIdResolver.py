@@ -322,7 +322,7 @@ class IdResolver (UserIdResolver):
             # In fact we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
-            bind_user = u"{0!s}\{1!s}".format(domain_name, uinfo.get("username"))
+            bind_user = u"{0!s}\\{1!s}".format(domain_name, uinfo.get("username"))
         else:
             bind_user = self._getDN(uid)
 

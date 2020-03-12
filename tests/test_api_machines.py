@@ -116,9 +116,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
+            self.assertEqual(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
-            self.assertEquals(result['value']['deleted'], 0, result)
+            self.assertEqual(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -137,8 +137,8 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
-            self.assertEquals(result["value"]["added"], 0, result)
+            self.assertEqual(result["status"], True, result)
+            self.assertEqual(result["value"]["added"], 0, result)
             self.assertGreaterEqual(result['value']['deleted'], 1, result)
 
         # check if the options were set.
@@ -160,9 +160,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
+            self.assertEqual(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
-            self.assertEquals(result['value']['deleted'], 0, result)
+            self.assertEqual(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -193,8 +193,6 @@ class APIMachinesTestCase(MyApiTestCase):
             self.assertEqual(result["status"], True)
             self.assertEqual(len(result["value"]), 1)
             self.assertTrue(result["value"][0]["application"] == "luks")
-
-
 
     def test_99_detach_token(self):
         serial = "S1"

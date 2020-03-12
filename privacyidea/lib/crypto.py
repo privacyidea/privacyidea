@@ -74,12 +74,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 import passlib.hash
-if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
-    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
-elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
-    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
-else:
-    raise Exception("No password hashing method available")
+hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
 
 if not PY2:
     long = int

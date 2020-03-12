@@ -74,7 +74,7 @@ from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
 import jwt
-import passlib
+from passlib.hash import pbkdf2_sha512
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -818,7 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                              {"base": default_chars,
                               "requirements": required})
 
-        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\]"]
+        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\\]"]
         for policy in policies:
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
@@ -1307,7 +1307,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action="{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
+                   action=r"{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -3419,10 +3419,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline287082",
-                                                          response.get('1')))
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline516516",
-                                                          response.get('99')))
+        self.assertTrue(pbkdf2_sha512.verify("offline287082", response.get('1')))
+        self.assertTrue(pbkdf2_sha512.verify("offline516516", response.get('99')))
         res = tokenobject.check_otp("516516") # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value

@@ -38,7 +38,7 @@
 #
 #
 
-__doc__="""This is the SMSClass to send SMS via HTTP Gateways
+__doc__ = """This is the SMSClass to send SMS via HTTP Gateways
 It can handle HTTP/HTTPS PUT and GET requests also with Proxy support
 
 The code is tested in tests/test_lib_smsprovider
@@ -206,9 +206,9 @@ class HttpSMSProvider(ISMSProvider):
                 log.warning("failed to send sms. Reply %s does not match "
                             "the RETURN_SUCCESS definition" % reply)
                 raise SMSError(response.status_code,
-                           "We received a none success reply from the "
-                           "SMS Gateway: {0!s} ({1!s})".format(reply,
-                                                               return_success))
+                               "We received a none success reply from the "
+                               "SMS Gateway: {0!s} ({1!s})".format(reply,
+                                                                   return_success))
 
         elif return_fail:
             if return_fail in reply:
@@ -269,17 +269,17 @@ class HttpSMSProvider(ISMSProvider):
                       "REGEXP": {
                           "description": _("Regular expression to modify the phone number "                 
                                            "to make it compatible with provider. "
-                                           "Enter something like '/[\+/]//' to remove "
+                                           "Enter something like '/[\\+/]//' to remove "
                                            "pluses and slashes.")
                       },
-                      "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
-                                                 "this anymore. Rather use HTTP_PROXY for http connections and"
-                                                 "HTTPS_PROXY for https connection. The PROXY option will be"
-                                                 "removed in future.")},
+                      "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use "
+                                                 "this anymore. Rather use HTTP_PROXY for http "
+                                                 "connections and HTTPS_PROXY for https "
+                                                 "connection. The PROXY option will be removed in "
+                                                 "future.")},
                       "HTTP_PROXY": {"description": _("Proxy setting for HTTP connections.")},
-                      "HTTPS_PROXY": {"description":_("Proxy setting for HTTPS connections.")},
+                      "HTTPS_PROXY": {"description": _("Proxy setting for HTTPS connections.")},
                       "TIMEOUT": {"description": _("The timeout in seconds.")}
                   }
                   }
         return params
-        

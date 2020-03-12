@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
+
 """
 This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-
-PWFILE = "tests/testdata/passwords"
+import warnings
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
@@ -25,7 +26,10 @@ import datetime
 import hashlib
 from dateutil.tz import tzlocal
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
+
+PWFILE = "tests/testdata/passwords"
+
 
 class HOTPTokenTestCase(MyTestCase):
     """
@@ -729,7 +733,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 8)
         self.assertEqual(len(secret), 20)
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(secret, expected_secret)
 
     def test_29_2step_generation_custom(self):
@@ -770,7 +775,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, len(secret))
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
 
@@ -792,14 +798,16 @@ class HOTPTokenTestCase(MyTestCase):
         client_component = b'abcdefghijkl'
         checksum = hashlib.sha1(client_component).digest()[:4]
         # wrong checksum
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Incorrect checksum",
-            token.update,
-            {
-                "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
-                "otpkeyformat": "base32check",
-            })
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                ParameterError,
+                "Incorrect checksum",
+                token.update,
+                {
+                    "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
+                    "otpkeyformat": "base32check",
+                })
         # construct a secret
         token.update({
             "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
@@ -816,6 +824,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, len(secret))
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)

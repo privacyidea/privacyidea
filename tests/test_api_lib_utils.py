@@ -12,6 +12,7 @@ from privacyidea.lib.error import ParameterError
 import jwt
 import mock
 import datetime
+import warnings
 from privacyidea.lib.error import AuthError
 
 
@@ -75,8 +76,12 @@ class UtilsTestCase(MyApiTestCase):
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        self.assertRaisesRegexp(AuthError, "The username hanswurst is not allowed to impersonate via JWT.",
-                                verify_auth_token, auth_token=auth_token, required_role="user")
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                AuthError,
+                "The username hanswurst is not allowed to impersonate via JWT.",
+                verify_auth_token, auth_token=auth_token, required_role="user")
 
         # A user ending with hans is not allowed
         # A user starting with hans and ending with "t" is not allowed
@@ -86,8 +91,12 @@ class UtilsTestCase(MyApiTestCase):
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        self.assertRaisesRegexp(AuthError, "The username kleinerhans is not allowed to impersonate via JWT.",
-                                verify_auth_token, auth_token=auth_token, required_role="user")
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                AuthError,
+                "The username kleinerhans is not allowed to impersonate via JWT.",
+                verify_auth_token, auth_token=auth_token, required_role="user")
 
         # Successful authentication with dedicated user
         with mock.patch("logging.Logger.warning") as mock_log:

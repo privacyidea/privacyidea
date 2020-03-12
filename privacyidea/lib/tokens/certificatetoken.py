@@ -279,7 +279,7 @@ class CertificateTokenClass(TokenClass):
         passphrase = self.token.get_pin()
         if passphrase == -1:
             passphrase = ""
-        pkcs12_bin = pkcs12.export(passphrase=passphrase)
+        pkcs12_bin = pkcs12.export(passphrase=passphrase.encode('utf8'))
         return pkcs12_bin
 
     def get_as_dict(self):

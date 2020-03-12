@@ -120,7 +120,7 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertIn("do not have the necessary role", result["error"]["message"])
 
@@ -149,10 +149,10 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 
@@ -163,10 +163,10 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 

@@ -66,7 +66,7 @@ from privacyidea.lib import _
 import traceback
 import logging
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 
 optional = True
 required = False
@@ -731,10 +731,11 @@ class HotpTokenClass(TokenClass):
         # Based on the two components, we generate a symmetric key using PBKDF2
         # We pass the hex-encoded server component as the password and the
         # client component as the salt.
-        secret = pbkdf2(server_component.lower(),
-                        decoded_client_component,
-                        rounds,
-                        keysize)
+        secret = pbkdf2_hmac(digest='sha1',
+                             secret=server_component.lower(),
+                             salt=decoded_client_component,
+                             rounds=rounds,
+                             keylen=keysize)
         return hexlify_and_unicode(secret)
 
     @staticmethod

@@ -199,7 +199,7 @@ def set_realm(realm, resolvers=None, priority=None):
     realm_created = False
     realm = realm.lower().strip()
     realm = realm.replace(" ", "-")
-    nameExp = "^[A-Za-z0-9_\-\.]*$"
+    nameExp = r"^[A-Za-z0-9_\-\.]*$"
     sanity_name_check(realm, nameExp)
 
     # create new realm if it does not exist

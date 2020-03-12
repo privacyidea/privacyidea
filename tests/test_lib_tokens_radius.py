@@ -14,7 +14,7 @@ from . import radiusmock
 from privacyidea.lib.token import init_token
 from privacyidea.lib.radiusserver import add_radius
 
-DICT_FILE="tests/testdata/dictionary"
+DICT_FILE = "tests/testdata/dictionary"
 
 
 class RadiusTokenTestCase(MyTestCase):
@@ -34,26 +34,6 @@ class RadiusTokenTestCase(MyTestCase):
                "radius.dictfile": "tests/testdata/dictfile"}
     serial3 = "serial3"
     params3 = {"radius.server": "my.other.radiusserver:1812"}
-
-    success_body = {"detail": {"message": "matching 1 tokens",
-                               "serial": "PISP0000AB00",
-                               "type": "spass"},
-                    "id": 1,
-                    "jsonrpc": "2.0",
-                    "result": {"status": True,
-                               "value": True
-                    },
-                    "version": "privacyIDEA unknown"
-    }
-
-    fail_body = {"detail": {"message": "wrong otp value"},
-                    "id": 1,
-                    "jsonrpc": "2.0",
-                    "result": {"status": True,
-                               "value": False
-                    },
-                    "version": "privacyIDEA unknown"
-    }
 
     def test_01_create_token(self):
         db_token = Token(self.serial3, tokentype="radius")
@@ -242,7 +222,8 @@ class RadiusTokenTestCase(MyTestCase):
 
         # Now check, if the answer for the challenge is correct
         radiusmock.setdata(response=radiusmock.AccessAccept)
-        r = token.check_challenge_response(passw="radiuscode",options={"transaction_id": transaction_id})
+        r = token.check_challenge_response(passw="radiuscode",
+                                           options={"transaction_id": transaction_id})
         self.assertTrue(r)
 
     @radiusmock.activate
@@ -289,12 +270,14 @@ class RadiusTokenTestCase(MyTestCase):
 
         # Check what happens if the RADIUS server rejects the response
         radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
-        r = token.check_challenge_response(passw="some_response", options={"transaction_id": transaction_id})
+        r = token.check_challenge_response(passw="some_response",
+                                           options={"transaction_id": transaction_id})
         self.assertLess(r, 0)
 
         # Now checking the response to the challenge and we issue a RADIUS request
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
-        r = token.check_challenge_response(passw="some_response", options={"transaction_id": transaction_id})
+        r = token.check_challenge_response(passw="some_response",
+                                           options={"transaction_id": transaction_id})
         self.assertGreaterEqual(r, 0)
 
     @radiusmock.activate
@@ -339,8 +322,8 @@ class RadiusTokenTestCase(MyTestCase):
         # Now checking the response to the challenge and we issue a RADIUS request
         # But the RADIUS server answers with a second AccessChallenge
         radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge,
-                                              response_data={"State": state2,
-                                                             "Reply_Message": ["Please provide even more information."]})
+                           response_data={"State": state2,
+                                          "Reply_Message": ["Please provide even more information."]})
         opts2 = {"transaction_id": transaction_id}
         r = token.check_challenge_response(passw="some_response", options=opts2)
         # The answer might be correct, but since the RADIUS server want to get more answers, we get a -1

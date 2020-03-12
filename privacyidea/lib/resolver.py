@@ -56,9 +56,9 @@ from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
-from .crypto import encryptPassword, decryptPassword
-from privacyidea.lib.utils import sanity_name_check
-from privacyidea.lib.utils import is_true
+from .crypto import encryptPassword
+from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
+                                   is_true)
 import copy
 
 CENSORED = "__CENSORED__"
@@ -112,38 +112,9 @@ def save_resolver(params):
     resolver_config = get_resolver_config_description(resolvertype)
     config_description = resolver_config.get(resolvertype).get('config', {})
 
-    types = {}
-    desc = {}
-    data = {}
-    for k in params:
-        if k not in ['resolver', 'type']:
-            if k.startswith('type.') is True:
-                key = k[len('type.'):]
-                types[key] = params.get(k)
-            elif k.startswith('desc.') is True:
-                key = k[len('desc.'):]
-                desc[key] = params.get(k)
-            else:
-                data[k] = params.get(k)
-                if k in config_description:
-                    types[k] = config_description.get(k)
-                else:
-                    log.warn("the passed key %r is not a "
-                             "parameter for the resolver %r" % (k,
-                                                                resolvertype))
-                        
-    # Check that there is no type or desc without the data itself.
-    # i.e. if there is a type.BindPW=password, then there must be a
-    # BindPW=....
-    _missing = False
-    for t in types:
-        if t not in data:
-            _missing = True
-    for t in desc:
-        if t not in data:
-            _missing = True
-    if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(params))
+    data, types, desc = get_data_from_params(params, ['resolver', 'type'],
+                                             config_description, resolvertype,
+                                             resolvername)
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:

@@ -47,10 +47,12 @@ class NoQueueTestCase(OverrideConfigTestCase):
 
     def test_02_collector(self):
         self.assertIsInstance(JOB_COLLECTOR, JobCollector)
-        self.assertDictContainsSubset({
-            "test.my_add": (my_add, (), {}),
-            "test.my_send_mail": (my_send_mail, (), {})
-        }, JOB_COLLECTOR.jobs)
+        test_dict = {"test.my_add": (my_add, (), {}),
+                     "test.my_send_mail": (my_send_mail, (), {})}
+        try:
+            self.assertTrue(test_dict.viewitems() <= JOB_COLLECTOR.jobs.viewitems())
+        except AttributeError:
+            self.assertTrue(test_dict.items() <= JOB_COLLECTOR.jobs.items())
 
 
 class InvalidQueueTestCase(MyTestCase):
@@ -66,12 +68,12 @@ class HueyQueueTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
         PI_JOB_QUEUE_CLASS = "privacyidea.lib.queues.huey_queue.HueyQueue"
         PI_JOB_QUEUE_NAME = "myqueuename"
-        PI_JOB_QUEUE_ALWAYS_EAGER = True # avoid redis server for testing
+        PI_JOB_QUEUE_IMMEDIATE = True  # avoid redis server for testing
 
     def test_01_app_job_queue(self):
         queue = get_job_queue()
         self.assertIsInstance(queue, HueyQueue)
-        self.assertEqual(queue.options, {"name": "myqueuename", "always_eager": True})
+        self.assertEqual(queue.options, {"name": "myqueuename", "immediate": True})
         self.assertTrue({"test.my_add", "test.my_send_mail"}.issubset(set(queue.jobs)))
         self.assertIsInstance(queue.huey, RedisHuey)
         self.assertEqual(queue.huey.name, "myqueuename")

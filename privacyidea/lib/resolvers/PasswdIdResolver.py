@@ -171,10 +171,9 @@ class IdResolver (UserIdResolver):
                 if len(descriptions) >= 5:
                     for field in descriptions[4:]:
                         # very basic e-mail regex
-                        email_match = re.search('.+@.+\..+', field)
+                        email_match = re.search(r'.+@.+\..+', field)
                         if email_match:
                             self.emailDict[fields[ID]] = email_match.group(0)
-
 
     def checkPass(self, uid, password):
         """
