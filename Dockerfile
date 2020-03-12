@@ -4,6 +4,8 @@ ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN useradd -ms /bin/bash pi -u 1000
 
+RUN mkdir /etc/privacyidea && chown -R pi /etc/privacyidea
+
 WORKDIR /home/pi
 
 COPY --chown=pi:pi requirements.txt requirements.txt
