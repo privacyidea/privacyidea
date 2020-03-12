@@ -259,7 +259,7 @@ class HTTPResolver(UserIdResolver):
         :rtype: tuple
         """
         desc = ""
-        success = False        
+        success = False
         try:
             response = requests.get(param.get('endpoint') % param.get('testEmail')).json()
             desc = {k.lower(): v for k, v in response.items()}
@@ -276,7 +276,7 @@ class HTTPResolver(UserIdResolver):
         :return:
         """
         return False
- 
+
     @property
     def has_multiple_loginnames(self):
         """
