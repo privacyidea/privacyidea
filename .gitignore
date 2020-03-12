@@ -34,8 +34,8 @@ __pycache__/
 /private.pem
 
 # virtualenv
-bin/
-include/
+/bin/
+/include/
 
-share/
-lib/
+/share/
+/lib/
