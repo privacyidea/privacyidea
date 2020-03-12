@@ -95,7 +95,7 @@ def save_resolver(params):
     # check the type
     resolvertypes = get_resolver_types()
     if resolvertype not in resolvertypes:
-            raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, unicode(resolvertypes)))
+            raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, str(resolvertypes)))
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
