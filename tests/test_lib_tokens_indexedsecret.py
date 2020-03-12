@@ -16,7 +16,7 @@ PWFILE = "tests/testdata/passwords"
 
 class IndexedSecretTokenTestCase(MyTestCase):
     """
-    Test the Email Token
+    Test the IndexedSecret Token
     """
     email = "pi_tester@privacyidea.org"
     otppin = "topsecret"
