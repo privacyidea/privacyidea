@@ -103,7 +103,7 @@ This command also generates an admin account name. But it does not create
 this admin account. You need to do so using ``pi-manage admin``.
 You can now use this API key to enroll tokens as administrator.
 
-.. note:: These API keys are not persistant. They are not stored in the
+.. note:: These API keys are not persistent. They are not stored in the
    privacyIDEA server. The API key is connected to the username, that is also
    generated. This means you have to create an administrative account with
    this very username to use this API key for this admin user.

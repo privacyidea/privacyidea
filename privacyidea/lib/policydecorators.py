@@ -402,7 +402,7 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                   success=True,
                                                   timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
-                          "succesful authentications with /validate/check" %
+                          "successful authentications with /validate/check" %
                           (list(max_success_dict)[0], succ_c))
                 succ_auth_c = g.audit_object.get_count({"user": user_object.login,
                                                    "realm": user_object.realm,
@@ -411,11 +411,11 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
                                                   success=True,
                                                   timedelta=tdelta)
                 log.debug("Checking users timelimit %s: %s "
-                          "succesful authentications with /auth" %
+                          "successful authentications with /auth" %
                           (list(max_success_dict)[0], succ_auth_c))
                 if succ_c + succ_auth_c >= policy_count:
                     res = False
-                    reply_dict["message"] = ("Only %s successfull "
+                    reply_dict["message"] = ("Only %s successful "
                                              "authentications per %s"
                                              % (policy_count, tdelta))
 

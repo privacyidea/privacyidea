@@ -57,7 +57,7 @@ A good example for the ``token.enrolled.paper.top.html`` is:
 A good example for the ``token.enrolled.paper.bottom.html`` is:
 
     <p>
-      The paper token is a weak second factor. Please assure, that noone gets
+      The paper token is a weak second factor. Please assure, that no one gets
       hold  of this paper and can make a copy of it.
     </p>
     <p>

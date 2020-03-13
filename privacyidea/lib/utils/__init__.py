@@ -68,7 +68,7 @@ def check_time_in_range(time_range, check_time=None):
      <DOW>-<DOW>: <h:mm>-<hh:mm>,  <DOW>: <h:mm>-<hh:mm>
      <DOW>: <h>-<hh>
 
-    DOW beeing the day of the week: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    DOW being the day of the week: Mon, Tue, Wed, Thu, Fri, Sat, Sun
     hh: 00-23
     mm: 00-59
 

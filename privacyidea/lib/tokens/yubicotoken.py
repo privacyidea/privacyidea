@@ -138,7 +138,7 @@ class YubicoTokenClass(TokenClass):
         if len(tokenid) > YUBICO_LEN_ID:
             tokenid = tokenid[:YUBICO_LEN_ID]
         self.tokenid = tokenid
-        # overwrite the maybe wrong lenght given at the command line
+        # overwrite the maybe wrong length given at the command line
         param['otplen'] = 44
         TokenClass.update(self, param)
         self.add_tokeninfo("yubico.tokenid", self.tokenid)

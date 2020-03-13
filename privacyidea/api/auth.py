@@ -216,7 +216,7 @@ def get_auth_token():
     if realm_param:
         realm = realm_param
 
-    # and finaly check if there is a realm
+    # and finally check if there is a realm
     realm = realm or get_default_realm()
 
     # Failsafe to have the user attempt in the log, whatever happens

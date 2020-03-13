@@ -305,7 +305,7 @@ also use a U2F device that was registered with privacyIDEA.
 
 You need to specify a list of FQDNs without the https scheme like:
 
-*"host1.example.com host2.exmaple.com firewall.example.com"*
+*"host1.example.com host2.example.com firewall.example.com"*
 
 For more information on configuring U2F see :ref:`u2f_token`.
 
