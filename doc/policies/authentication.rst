@@ -442,6 +442,32 @@ tag.
 
 .. note:: The footer will only be used, if the header is also set.
 
+.. _policy_indexedsecret:
+
+indexedsecret_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the user to provide the characters of the
+secret from certain positions. The default text is:
+
+*Please enter the position 3,1,6,7 from your secret.*
+
+with *3,1,6,7* being the positions of the characters, the user is supposed to
+enter. This text can be changed with this policy setting.
+The text needs to contain the python formatting tag *{0!s}* which will
+be replaced with the list of the requested positions.
+
+For more details of this token type see :ref:`indexedsecret_token`.
+
+indexedsecret_count
+~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the used for a number of characters from
+a shared secret. The default number to ask is 2.
+
+The number of requested positions can be changed using this policy.
+
+
 .. _webauthn_authn_allowed_transports:
 
 webauthn_allowed_transports

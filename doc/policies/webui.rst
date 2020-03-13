@@ -345,3 +345,15 @@ where the user is taken to, e.g.
 Other scenarios are possible.
 
 (Since privacyIDEA 3.3)
+
+indexedsecret_preset_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+The secret in the enrollment dialog of the tokentype *indexedsecret* is preset
+with the value of the given user attribute.
+
+For more details of this token type see :ref:`indexedsecret_token`.
+
+(Since privacyIDEA 3.3)

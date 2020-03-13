@@ -2332,6 +2332,7 @@ def get_dynamic_policy_definitions(scope=None):
            SCOPE.USER: {},
            SCOPE.AUTH: {},
            SCOPE.ENROLL: {},
+           SCOPE.WEBUI: {},
            SCOPE.AUTHZ: {}}
     for ttype in get_token_types():
         pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
