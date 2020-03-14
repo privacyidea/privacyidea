@@ -1106,7 +1106,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")
             self.assertEqual(details.get("message"),
-                             "Only 2 successfull authentications per 0:00:20",
+                             "Only 2 successful authentications per 0:00:20",
                              details)
 
         # ... and not with the wrong PIN
