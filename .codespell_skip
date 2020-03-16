@@ -1,2 +1,4 @@
 ./privacyidea/static/contrib/*
+./privacyidea/static/components/translation/*
 ./privacyidea/translations/*
+./po/*
