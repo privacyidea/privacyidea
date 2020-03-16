@@ -26,8 +26,9 @@ import logging.config
 import sys
 import yaml
 from flask import Flask, request, Response
+from flask_babel import Babel
+from flask_migrate import Migrate
 from flaskext.versioned import Versioned
-from privacyidea.lib import queue
 
 # we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
@@ -59,12 +60,10 @@ from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
+from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
-from flask_migrate import Migrate
-from flask_babel import Babel
-
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
@@ -173,42 +172,36 @@ def create_app(config_name="development",
     app.response_class = PiResponseClass
 
     # Setup logging
-    have_logging_conf = False
     try:
         # Try to read logging config from file
         log_config_file = app.config.get("PI_LOGCONFIG",
                                          "/etc/privacyidea/logging.cfg")
         if os.path.isfile(log_config_file):
-            logging.config.fileConfig(log_config_file)
-            have_logging_conf = True
+            _, ext = os.path.splitext(log_config_file)
+            if ext.upper() in ['.YML', '.YAML']:
+                log_cnf_dict = yaml.safe_load(open(log_config_file, 'r').read())
+                logging.config.dictConfig(log_cnf_dict)
+            else:
+                logging.config.fileConfig(log_config_file)
             if not silent:
-                print("Read Logging settings from {0!s}".format(log_config_file))
-        # now try to read from yaml config
-        log_conf_yaml = app.config.get("PI_LOGCONFIG_YAML",
-                                       "/etc/privacyidea/logging.yml")
-        if os.path.isfile(log_conf_yaml):
-            log_cnf_dict = yaml.safe_load(open(log_conf_yaml, 'r').read())
-            logging.config.dictConfig(log_cnf_dict)
-            have_logging_conf = True
-            if not silent:
-                print("Read Logging settings from {0!s}".format(log_conf_yaml))
+                sys.stdout.write("Read Logging settings from {0!s}".format(log_config_file))
+        else:
+            raise OSError('Unable to use logging configuration file {0!s}'.format(log_config_file))
     except Exception as exx:
         sys.stderr.write("Error reading logging config: {0!s}\n".format(exx))
-    finally:
-        if not have_logging_conf:
-            if not silent:
-                sys.stderr.write("Could not use PI_LOGCONFIG or PI_LOGCONFIG_YAML! "
-                                 "Using PI_LOGLEVEL and PI_LOGFILE.\n")
-            level = app.config.get("PI_LOGLEVEL", logging.INFO)
-            # If there is another logfile in pi.cfg we use this.
-            logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
-            if not silent:
-                sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
-                sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
-            DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
-            DEFAULT_LOGGING_CONFIG["handlers"]["file"]["level"] = level
-            DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
-            logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
+        if not silent:
+            sys.stderr.write("Could not use PI_LOGCONFIG! "
+                             "Using PI_LOGLEVEL and PI_LOGFILE.\n")
+        level = app.config.get("PI_LOGLEVEL", logging.INFO)
+        # If there is another logfile in pi.cfg we use this.
+        logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
+        if not silent:
+            sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
+            sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
+        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
+        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["level"] = level
+        DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
+        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     babel = Babel(app)
 

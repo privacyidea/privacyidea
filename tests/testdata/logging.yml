@@ -1,0 +1,31 @@
+formatters:
+  detail:
+    (): privacyidea.lib.log.SecureFormatter
+    format: '[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(name)s:%(lineno)d]
+      %(message)s'
+handlers:
+  file:
+    backupCount: 5
+    class: logging.handlers.RotatingFileHandler
+    filename: privacyidea.log
+    formatter: detail
+    level: DEBUG
+    maxBytes: 10000000
+  file_audit:
+    class: logging.handlers.RotatingFileHandler
+    backupCount: 14
+    filename: audit.log
+    level: INFO
+    maxBytes: 10000000
+loggers:
+  privacyidea:
+    handlers:
+    - file
+    level: INFO
+    qualname: privacyidea
+  audit:
+    handlers:
+    - file_audit
+    level: INFO
+    qualname: pi-audit
+version: 1
