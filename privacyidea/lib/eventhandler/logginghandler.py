@@ -131,9 +131,9 @@ class LoggingEventHandler(BaseEventHandler):
             response = options.get("response")
             tokenowner = self._get_tokenowner(request)
             content = self._get_response_content(response)
-            serial = (request.all_data.get("serial") or
-                      content.get("detail", {}).get("serial") or
-                      g.audit_object.audit_data.get("serial"))
+            serial = (request.all_data.get("serial")
+                      or content.get("detail", {}).get("serial")
+                      or g.audit_object.audit_data.get("serial"))
             if serial:
                 tokens = get_tokens(serial=serial)
                 if tokens:
