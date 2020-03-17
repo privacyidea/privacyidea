@@ -147,3 +147,25 @@ class AppTestCase(unittest.TestCase):
                            formatter=None,
                            strict=False)
             ], logger.handlers)
+
+    def test_05_logging_config_broken_yaml(self):
+        class Config(TestingConfig):
+            PI_LOGCONFIG = "tests/testdata/logging_broken.yaml"
+        with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
+            app = create_app(config_name='testing')
+            # check the correct initialization of the logging with the default
+            # values since the yaml file is broken
+            logger = logging.getLogger('privacyidea')
+            self.assertEqual(logger.level, logging.INFO, logger)
+            compare([
+                Comparison('logging.handlers.RotatingFileHandler',
+                           baseFilename=os.path.join(dirname, 'privacyidea.log'),
+                           formatter=Comparison('privacyidea.lib.log.SecureFormatter',
+                                                _fmt="[%(asctime)s][%(process)d]"
+                                                     "[%(thread)d][%(levelname)s]"
+                                                     "[%(name)s:%(lineno)d] "
+                                                     "%(message)s",
+                                                strict=False),
+                           level=logging.INFO,
+                           strict=False)
+            ], logger.handlers)

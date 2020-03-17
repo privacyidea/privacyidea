@@ -172,26 +172,29 @@ def create_app(config_name="development",
     app.response_class = PiResponseClass
 
     # Setup logging
-    try:
-        # Try to read logging config from file
-        log_config_file = app.config.get("PI_LOGCONFIG",
-                                         "/etc/privacyidea/logging.cfg")
-        if os.path.isfile(log_config_file):
-            _, ext = os.path.splitext(log_config_file)
-            if ext.upper() in ['.YML', '.YAML']:
-                log_cnf_dict = yaml.safe_load(open(log_config_file, 'r').read())
-                logging.config.dictConfig(log_cnf_dict)
-            else:
-                logging.config.fileConfig(log_config_file)
-            if not silent:
-                sys.stdout.write("Read Logging settings from {0!s}".format(log_config_file))
-        else:
-            raise OSError('Unable to use logging configuration file {0!s}'.format(log_config_file))
-    except Exception as exx:
-        sys.stderr.write("Error reading logging config: {0!s}\n".format(exx))
+    log_read_func = {
+        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
+        'cnf': lambda x: logging.config.fileConfig(x)
+    }
+    have_config = False
+    log_exx = None
+    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    if os.path.isfile(log_config_file):
+        for cnf_type in ['cnf', 'yaml']:
+            try:
+                log_read_func[cnf_type](log_config_file)
+                if not silent:
+                    print('Read Logging settings from {0!s}'.format(log_config_file))
+                have_config = True
+                break
+            except Exception as exx:
+                log_exx = exx
+                pass
+    if not have_config:
+        if log_exx:
+            sys.stderr.write("Could not use PI_LOGCONFIG: " + str(log_exx) + "\n")
         if not silent:
-            sys.stderr.write("Could not use PI_LOGCONFIG! "
-                             "Using PI_LOGLEVEL and PI_LOGFILE.\n")
+            sys.stderr.write("Using PI_LOGLEVEL and PI_LOGFILE.\n")
         level = app.config.get("PI_LOGLEVEL", logging.INFO)
         # If there is another logfile in pi.cfg we use this.
         logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
