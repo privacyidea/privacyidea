@@ -33,11 +33,13 @@ You can create an encryption key and encrypt the encryption key.
 
 Create encryption key::
 
-   pi-manage create_enckey
+   pi-manage create_enckey [--enckey_b64=BASE64_ENCODED_ENCKEY]
 
-.. note:: This command takes no parameters. The filename of the encryption
+.. note:: The filename of the encryption
    key is read from the configuration. The key will not be created, if it
-   already exists.
+   already exists. 
+   Optionally, enckey can be passed via `--enckey_b64` argument, but it is not recommended.
+   `--enckey_b64` must be a string with 96 bytes, encoded in base 64 in order to avoid ambiguous chars.
 
 The encryption key is a plain file on your hard drive. You need to take care,
 to set the correct access rights.
