@@ -26,7 +26,7 @@ Run the command like this::
    yubikey_mass_enroll --yubimode YUBICO
 
 This command initializes the token and stores the AES secret and prefix
-in privacyidea, so the token is immediatly useful. You can choose the slot
+in privacyidea, so the token is immediately useful. You can choose the slot
 with ``--yubislot``. For further help call
 ``privcyidea yubikey_mass_enroll`` with the ``--help`` option.
 
@@ -57,7 +57,7 @@ copy and paste in the field "OTP Key" in the privacyIDEA Web UI.
    *Enroll a Yubikey AES mode token*
 
 In the field "Test Yubikey" push the Yubikey button. This will grab the
-yubikey's public identifier and also determine the lenght of the *otp value*.
+yubikey's public identifier and also determine the length of the *otp value*.
 The field *OTP value* is automatically filled.
 
 Redirect api url to privacyideas /ttype/yubikey

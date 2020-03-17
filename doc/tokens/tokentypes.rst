@@ -17,11 +17,13 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
 * :ref:`email_token` - A token that sends the OTP value to the EMail address of
   the user.
 * :ref:`hotp_token` - event based One Time Password tokens based on
-  `RFC4225 <https://tools.ietf.org/html/rfc4226>`_.
-* :ref:`ocra_token` - A basic OATH Challenge Response token.
+  `RFC4226 <https://tools.ietf.org/html/rfc4226>`_.
+* :ref:`indexedsecret_token` - a challenge response token that asks the user for random positions
+  from a secret string.
 * Daplug - A hardware OTP token similar to the Yubikey.
 * :ref:`motp_token` - time based One Time Password tokens for mobile phones based on an
   a `public Algorithm <http://motp.sourceforge.net>`_.
+* :ref:`ocra_token` - A basic OATH Challenge Response token.
 * :ref:`paper_token` - event based One Time Password tokens that get
   you list of one time passwords on a sheet of paper.
 * :ref:`push_token` - A challenge response token, that sends a
@@ -54,6 +56,8 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
 * :ref:`u2f_token` - A U2F device as specified by the FIDO Alliance. This is a USB
   device to be used for challenge response authentication.
 * :ref:`vasco_token` - The proprietary VASCO token.
+* :ref:`webauthn` - The WebAuthn or FIDO2 token which can use several different mechanisms like
+  USB tokens or TPMs to authenticate via public key cryptography.
 * :ref:`yubikey_token` - A Yubikey hardware initialized in the AES mode, that
   authenticates against privacyIDEA.
 * :ref:`yubico_token` - A Yubikey hardware that authenticates against the Yubico

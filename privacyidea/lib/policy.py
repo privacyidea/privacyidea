@@ -206,7 +206,6 @@ class SCOPE(object):
     AUDIT = "audit"
     USER = "user"   # was selfservice
     ENROLL = "enrollment"
-    GETTOKEN = "gettoken"
     WEBUI = "webui"
     REGISTER = "register"
 

@@ -16,7 +16,7 @@
 # 2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            save client application type to database
 # 2016-08-09 Cornelius Kölbel <cornelius@privacyidea.org>
-#            Add possiblity to check OTP only
+#            Add possibility to check OTP only
 # 2015-11-19 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add support for transaction_id to saml_check
 # 2015-06-17 Cornelius Kölbel <cornelius@privacyidea.org>

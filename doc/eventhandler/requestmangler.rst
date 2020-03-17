@@ -68,7 +68,7 @@ sign. The python tag "{0}" will be replaced with the matching domainname.
 
 To simply change the domain name in the very same parameter::
 
-   paramter: user
+   parameter: user
    match_parameter: user
    match_pattern: (.*)@example.com
    value: {0}@newcompany.com

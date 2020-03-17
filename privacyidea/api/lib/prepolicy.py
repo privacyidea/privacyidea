@@ -466,7 +466,7 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    In addtion it adds the tokenissuer to the params like this:
+    In addition it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
     It also checks if the force_app_pin policy is set and adds the corresponding

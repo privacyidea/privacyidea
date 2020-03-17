@@ -813,7 +813,7 @@ def generate_otpkey(key_size=20):
 def generate_password(size=6, characters=string.ascii_lowercase +
                         string.ascii_uppercase + string.digits):
     """
-    Generate a random password of the specified lenght of the given characters
+    Generate a random password of the specified length of the given characters
 
     :param size: The length of the password
     :param characters: The characters the password may consist of

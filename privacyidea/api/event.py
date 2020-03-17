@@ -138,7 +138,7 @@ def set_eventhandling():
     :param name: A describing name of the event.bool
     :param id: (optional) when updating an existing event you need to
         specify the id
-    :param event: A comma seperated list of events
+    :param event: A comma separated list of events
     :param handlermodule: A handlermodule
     :param action: The action to perform
     :param ordering: An integer number

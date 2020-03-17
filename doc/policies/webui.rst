@@ -220,7 +220,7 @@ The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realmnames are displayed in
 the dropdown box.
 
-.. note:: The realm names in the policy are not checked, if they realy exist!
+.. note:: The realm names in the policy are not checked, if they really exist!
 
 search_on_enter
 ~~~~~~~~~~~~~~~

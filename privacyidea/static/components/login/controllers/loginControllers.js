@@ -222,7 +222,7 @@ angular.module("privacyideaApp")
                 $scope.webAuthnSignRequests = [];
                 $scope.transactionid = error.detail["transaction_id"];
 
-                // Challenge Response always containes mult_challenge!
+                // Challenge Response always contains multi_challenge!
                 var multi_challenge = error.detail.multi_challenge;
                 if (multi_challenge.length > 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');

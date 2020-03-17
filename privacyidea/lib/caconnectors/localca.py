@@ -84,7 +84,7 @@ crl		    = $dir/crl.pem 		# The current CRL
 private_key	= $dir/cakey.pem	# The private key
 RANDFILE	= $dir/.rand		# private random number file
 
-x509_extensions	= usr_cert		# The extentions to add to the cert
+x509_extensions	= usr_cert		# The extensions to add to the cert
 
 default_days	= {ca_days} 	# how long to certify for
 default_crl_days= {crl_days}	# how long before next CRL
@@ -107,7 +107,7 @@ default_bits		= 2048
 default_keyfile 	= privkey.pem
 distinguished_name	= req_distinguished_name
 attributes		= req_attributes
-x509_extensions	= v3_ca	# The extentions to add to the self signed cert
+x509_extensions	= v3_ca	# The extensions to add to the self signed cert
 string_mask = nombstr
 
 
@@ -407,7 +407,7 @@ class LocalCAConnector(BaseCAConnector):
         with open(os.path.join(csrdir, csr_filename), "w") as f:
             f.write(csr)
 
-        # TODO: use the template name to set the days and the extention!
+        # TODO: use the template name to set the days and the extension!
         if spkac:
             cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
                                        days=days, config=config,

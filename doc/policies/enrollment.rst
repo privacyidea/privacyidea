@@ -397,7 +397,7 @@ relying party ID for the domain `example.com`).
 .. _webauthn_enroll_relying_party_name:
 
 webauthn_relying_party_name
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
