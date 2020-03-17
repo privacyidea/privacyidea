@@ -283,7 +283,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:261
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 msgid "Action"
-msgstr "Aktion "
+msgstr "Aktion"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
