@@ -358,3 +358,4 @@ Available Handler Modules
    federationhandler
    requestmangler
    responsemangler
+   logginghandler

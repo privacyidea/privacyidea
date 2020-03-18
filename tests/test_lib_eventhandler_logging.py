@@ -112,11 +112,16 @@ class LoggingTestCase(MyTestCase):
 
     @log_capture()
     def test_05_loggingevent_tags(self, capture):
+        class UserAgentMock:
+            string = "hello world"
+            browser = "browser"
+
         # simple logging event with all tags
         self.setUp_sqlite_resolver_realm('testuser.sqlite', 'sqliterealm')
         available_tags = ['admin', 'realm', 'action', 'serial', 'url', 'user',
                           'surname', 'givenname', 'username', 'userrealm',
-                          'tokentype', 'time', 'date', 'client_ip']
+                          'tokentype', 'time', 'date', 'client_ip',
+                          'ua_browser', 'ua_string']
         tok = init_token({"serial": "testserial", "type": "spass",
                           "pin": "pin"}, user=User("cornelius", "sqliterealm"))
         g = FakeFlaskG()
@@ -125,6 +130,7 @@ class LoggingTestCase(MyTestCase):
                             "realm": "super"}
         env = EnvironBuilder(method='POST', headers={}, path='/auth').get_environ()
         req = Request(env)
+        req.user_agent = UserAgentMock()
         req.all_data = {'serial': 'testserial'}
         req.User = User("cornelius", 'sqliterealm')
         resp = Response(response="""{"result": {"value": true}}""")
@@ -150,5 +156,6 @@ class LoggingTestCase(MyTestCase):
                  u'admin=admin realm=super action=/auth serial=testserial '
                  u'url=http://localhost/ user=Cornelius surname=Kölbel '
                  u'givenname=None username=cornelius userrealm=sqliterealm '
-                 u'tokentype=spass time=05:06:08 date=2018-03-04 client_ip=None')
+                 u'tokentype=spass time=05:06:08 date=2018-03-04 '
+                 u'client_ip=None ua_browser=browser ua_string=hello world')
             )
