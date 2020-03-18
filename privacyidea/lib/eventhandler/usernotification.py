@@ -37,7 +37,7 @@ It can be bound to each event and can perform the action:
   * sendsms: We can also notify the user with an SMS.
   * savefile: Create a file which can be processed later
 
-The module is tested in tests/test_lib_events.py
+The module is tested in tests/test_lib_eventhandler_usernotification.py
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
@@ -48,7 +48,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list
-from privacyidea.lib.utils import create_tag_dict
+from privacyidea.lib.utils import create_tag_dict, to_unicode
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 from email.mime.multipart import MIMEMultipart
@@ -343,7 +343,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
 
-            body = body.format(googleurl_img=googleurl_img, **tags)
+            body = to_unicode(body).format(googleurl_img=googleurl_img, **tags)
             subject = subject.format(**tags)
             # Send notification
             if action.lower() == "sendmail":
@@ -412,5 +412,3 @@ class UserNotificationEventHandler(BaseEventHandler):
                                 "{0}".format(recipient))
 
         return ret
-
-
