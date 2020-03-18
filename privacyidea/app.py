@@ -174,13 +174,13 @@ def create_app(config_name="development",
     # Setup logging
     log_read_func = {
         'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
-        'cnf': lambda x: logging.config.fileConfig(x)
+        'cfg': lambda x: logging.config.fileConfig(x)
     }
     have_config = False
     log_exx = None
     log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
     if os.path.isfile(log_config_file):
-        for cnf_type in ['cnf', 'yaml']:
+        for cnf_type in ['cfg', 'yaml']:
             try:
                 log_read_func[cnf_type](log_config_file)
                 if not silent:

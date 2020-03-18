@@ -22,11 +22,15 @@ Advanced Logging
 ~~~~~~~~~~~~~~~~
 
 You can also define a more detailed logging by specifying a
-log configuration file in :ref:`cfgfile` like this::
+log configuration file. By default the file is ``/etc/privacyidea/logging.cfg``.
 
-   PI_LOGCONFIG = "/etc/privacyidea/logging.yml"
+You can change the location of the logging configuration file
+in :ref:`cfgfile` like this::
 
-Such a YAML [#yaml]_ based configuration could look like this:
+   PI_LOGCONFIG = "/path/to/logging.yml"
+
+Since Version 3.3 the logging configuration can be written in YAML [#yaml]_.
+Such a YAML based configuration could look like this:
 
 .. code-block:: yaml
 
@@ -56,18 +60,20 @@ Such a YAML [#yaml]_ based configuration could look like this:
         level: INFO
         filename: /var/log/privacyidea/privacyidea.log
     loggers:
+      # The logger name is the qualname
       privacyidea:
         handlers:
         - file
         - mail
-        qualname: privacyidea
-        level: DEBUG
+        level: INFO
+    root:
+      level: WARNING
 
 Different handlers can be used to send log messages to log-aggregators like
 splunk [#splunk]_ or logstash [#logstash]_.
 
 The old `python logging config file format <https://docs.python.org/3/library/logging.config
-.html#logging-config-fileformat>`_ is also still supoorted::
+.html#logging-config-fileformat>`_ is also still supported::
 
    [formatters]
    keys=detail
@@ -110,6 +116,8 @@ The old `python logging config file format <https://docs.python.org/3/library/lo
 .. note:: These examples define a mail handler, that will send emails
    to certain email addresses, if an ERROR occurs. All other DEBUG messages will
    be logged to a file.
+
+.. note:: The filename extension is irrelevant in this case
 
 .. rubric:: Footnotes
 
