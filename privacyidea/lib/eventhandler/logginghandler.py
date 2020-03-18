@@ -29,7 +29,7 @@ The module is tested in tests/test_lib_eventhandler_logging.py
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.utils import create_tag_dict
+from privacyidea.lib.utils import create_tag_dict, to_unicode
 from privacyidea.lib import _
 import logging
 
@@ -41,7 +41,7 @@ class LOGGING_LEVEL(object):
     Allowed logging levels
     """
     ERROR = logging.getLevelName(logging.ERROR)
-    WARN = logging.getLevelName(logging.WARN)
+    WARNING = logging.getLevelName(logging.WARNING)
     INFO = logging.getLevelName(logging.INFO)
     DEBUG = logging.getLevelName(logging.DEBUG)
 
@@ -99,7 +99,7 @@ class LoggingEventHandler(BaseEventHandler):
                     'description': _('The logging level for this logging notification'),
                     'value': [
                         LOGGING_LEVEL.ERROR,
-                        LOGGING_LEVEL.WARN,
+                        LOGGING_LEVEL.WARNING,
                         LOGGING_LEVEL.INFO,
                         LOGGING_LEVEL.DEBUG
                     ]
@@ -151,10 +151,11 @@ class LoggingEventHandler(BaseEventHandler):
 
             logger_name = handler_options.get('name', DEFAULT_LOGGER_NAME)
             log_action = logging.getLogger(logger_name)
-            log_level = getattr(logging, handler_options.get('level', DEFAULT_LOGLEVEL))
-            log_template = handler_options.get('message', DEFAULT_LOGMSG)
-            log_action.log(log_level,
-                           log_template.format(event=options.get('eventname', ''), **tags))
+            log_level = getattr(logging,
+                                handler_options.get('level', DEFAULT_LOGLEVEL),
+                                logging.INFO)
+            log_template = handler_options.get('message') or DEFAULT_LOGMSG
+            log_action.log(log_level, to_unicode(log_template).format(**tags))
             ret = True
 
         return ret

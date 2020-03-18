@@ -305,7 +305,7 @@ class AuditTestCase(MyTestCase):
 
 class AuditFileTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
-        # this needs to available on app creation
+        # this needs to exist on app creation
         PI_LOGCONFIG = "tests/testdata/logging.cfg"
 
     def test_10_external_file_audit(self):
