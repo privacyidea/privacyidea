@@ -257,7 +257,7 @@ In case of a successful authentication the resolver and realm of the user are ad
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
 
-.. _webauthn_authz_authenticator_selection_list:
+.. _policy_webauthn_authz_authenticator_selection_list:
 
 webauthn_authenticator_selection_list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,9 +277,9 @@ If this action is not configured, all authenticators will be deemed acceptable,
 unless limited through some other action.
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_enroll_authenticator_selection_list`
+    :ref:`policy_webauthn_enroll_authenticator_selection_list`
 
-.. _webauthn_authz_req:
+.. _policy_webauthn_authz_req:
 
 webauthn_req
 ~~~~~~~~~~~~
@@ -299,4 +299,4 @@ information is fetched from the attestation certificate. Only if the attribute
 in the attestation certificate matches accordingly the token can be enrolled.
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_enroll_req`
+    :ref:`policy_webauthn_enroll_req`

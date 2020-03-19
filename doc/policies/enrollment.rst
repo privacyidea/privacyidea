@@ -359,7 +359,7 @@ used depending on the user's realm or the IP address.
 
 This is new in version 3.0.
 
-.. _webauthn_enroll_relying_party_id:
+.. _policy_webauthn_enroll_relying_party_id:
 
 webauthn_relying_party_id
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -394,7 +394,7 @@ relying party ID for the domain `example.com`).
     an overview of all the settings required for the use of WebAuthn, see
     :ref:`webauthn_otp_token`.
 
-.. _webauthn_enroll_relying_party_name:
+.. _policy_webauthn_enroll_relying_party_name:
 
 webauthn_relying_party_name
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -409,7 +409,7 @@ the entity whose web applications the WebAuthn tokens are used for.
     an overview of all the settings required for the use of WebAuthn, see
     :ref:`webauthn_otp_token`.
 
-.. _webauthn_enroll_timeout:
+.. _policy_webauthn_enroll_timeout:
 
 webauthn_timeout
 ~~~~~~~~~~~~~~~~
@@ -432,9 +432,9 @@ an arbitrary amount in either direction, or even ignored entirely.
 The default timeout is 60 seconds.
 
 .. note:: If you set this policy you may also want to set
-    :ref:`webauthn_authn_timeout`.
+    :ref:`policy_webauthn_authn_timeout`.
 
-.. _webauthn_enroll_authenticator_attachment:
+.. _policy_webauthn_enroll_authenticator_attachment:
 
 webauthn_authenticator_attachment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -451,7 +451,7 @@ into a different device.
 The default is to allow both `platform` and `cross-platform` attachment for
 authenticators.
 
-.. _webauthn_enroll_authenticator_selection_list:
+.. _policy_webauthn_enroll_authenticator_selection_list:
 
 webauthn_authenticator_selection_list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -471,9 +471,9 @@ If this action is not configured, all authenticators will be deemed acceptable,
 unless limited through some other action.
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_authz_authenticator_selection_list`.
+    :ref:`policy_webauthn_authz_authenticator_selection_list`.
 
-.. _webauthn_enroll_user_verification_requirement:
+.. _policy_webauthn_enroll_user_verification_requirement:
 
 webauthn_user_verification_requirement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -499,9 +499,9 @@ supported by the token.
     are still quite rare in practice).
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_authn_user_verification_requirement`.
+    :ref:`policy_webauthn_authn_user_verification_requirement`.
 
-.. _webauthn_enroll_public_key_credential_algorithm_preference:
+.. _policy_webauthn_enroll_public_key_credential_algorithm_preference:
 
 webauthn_public_key_credential_algorithm_preference
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -521,7 +521,7 @@ RSASSA-PSS.
     usually be necessary to configure this action. Do *not* change this
     preference, unless you are sure you know what you are doing!
 
-.. _webauthn_enroll_authenticator_attestation_form:
+.. _policy_webauthn_enroll_authenticator_attestation_form:
 
 webauthn_authenticator_attestation_form
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -540,23 +540,24 @@ The default is to request `direct` (full) attestation from the authenticator.
 
 .. note:: In a normal business-context it will not be necessary to change this.
     If this is set to `none`,
-    :ref:`webauthn_enroll_authenticator_attestation_level` must also be none.
+    :ref:`policy_webauthn_enroll_authenticator_attestation_level` must also be none.
 
 .. note:: Authenticators enrolled with this option set to `none` can not be
-    filtered using :ref:`webauthn_enroll_req` and
-    :ref:`webauthn_enroll_authenticator_selection_list` or
-    :ref:`webauthn_authz_req` and
-    :ref:`webauthn_authz_authenticator_selection_list`, respectively. Applying
+    filtered using :ref:`policy_webauthn_enroll_req` and
+    :ref:`policy_webauthn_enroll_authenticator_selection_list` or
+    :ref:`policy_webauthn_authz_req` and
+    :ref:`policy_webauthn_authz_authenticator_selection_list`, respectively. Applying
     these filters is not possible without attestation information, since the
     fields these actions rely upon will be missing. With `indirect` attestation,
     checking may be possible (depending on the client). If any of
-    :ref:`webauthn_enroll_req`,
-    :ref:`webauthn_enroll_authenticator_selection_list`,
-    :ref:`webauthn_authz_req`, or
-    :ref:`webauthn_authz_authenticator_selection_list` are set and apply to a
-    request for a token without attestation information, access will be denied.
+    :ref:`policy_webauthn_enroll_req`,
+    :ref:`policy_webauthn_enroll_authenticator_selection_list`,
+    :ref:`policy_webauthn_authz_req`, or
+    :ref:`policy_webauthn_authz_authenticator_selection_list` are set and apply
+    to a request for a token without attestation information, access will be
+    denied.
 
-.. _webauthn_enroll_authenticator_attestation_level:
+.. _policy_webauthn_enroll_authenticator_attestation_level:
 
 webauthn_authenticator_attestation_level
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -582,14 +583,14 @@ by an unknown certificate.
 
 .. note:: If this is set to `untrusted`, a manipulated token could send a
     self-signed attestation message with modified a modified AAGUID and faked
-    certificate fields in order to bypass :ref:`webauthn_enroll_req` and
-    :ref:`webauthn_enroll_authenticator_selection_list`, or
-    :ref:`webauthn_authz_req` and
-    :ref:`webauthn_authz_authenticator_selection_list`, respectively. If this
-    is of concern for your attack scenarios, please make sure to properly
+    certificate fields in order to bypass :ref:`policy_webauthn_enroll_req` and
+    :ref:`policy_webauthn_enroll_authenticator_selection_list`, or
+    :ref:`policy_webauthn_authz_req` and
+    :ref:`policy_webauthn_authz_authenticator_selection_list`, respectively. If
+    this is of concern for your attack scenarios, please make sure to properly
     configure your attestation roots!
 
-.. _webauthn_enroll_req:
+.. _policy_webauthn_enroll_req:
 
 webauthn_req
 ~~~~~~~~~~~~
@@ -609,7 +610,7 @@ information is fetched from the attestation certificate. Only if the attribute
 in the attestation certificate matches accordingly the token can be enrolled.
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_authz_req`.
+    :ref:`policy_webauthn_authz_req`.
 
 .. rubric:: Footnotes
 
