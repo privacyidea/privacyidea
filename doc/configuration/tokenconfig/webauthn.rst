@@ -17,8 +17,8 @@ directory will be trusted to correctly attest authenticators during enrollment.
 this does not need to be set for WebAuthn to work, however without this,
 privacyIDEA can not check, whether an attestation certificate is actually
 trusted (it will still be checked for validity). Therefore it is mandatory to
-set this, if `webauthn_authenticator_attestation_level` is set to “trusted”
-through policy for any user.
+set this, if :ref:`policy_webauthn_enroll_authenticator_attestation_level` is
+set to “trusted” through policy for any user.
 
 WebAuthn Required Policies
 ..........................
@@ -41,7 +41,7 @@ sign in to `privacyidea.example.com` and `owncloud.example.com`. This token
 will – however – not be able to sign in to a service under `example.de`, or any
 other webservice that is not hosted on a subdomain of `example.com`.
 
-See also: :ref:`policy_webauthn_relying_party_id`.
+See also: :ref:`policy_webauthn_enroll_relying_party_id`.
 
 Relying Party Name
 ~~~~~~~~~~~~~~~~~~
@@ -51,4 +51,4 @@ usually be either the name of your company (if there is just one relying
 party for the entire company), or the name of the department or other
 organizational unit the relying party represents.
 
-See also: :ref:`policy_webauthn_relying_party_name`.
+See also: :ref:`policy_webauthn_enroll_relying_party_name`.

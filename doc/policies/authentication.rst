@@ -468,7 +468,7 @@ a shared secret. The default number to ask is 2.
 The number of requested positions can be changed using this policy.
 
 
-.. _webauthn_authn_allowed_transports:
+.. _policy_webauthn_authn_allowed_transports:
 
 webauthn_allowed_transports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -484,7 +484,7 @@ space-separated list.
 The default is to allow all transports (equivalent to a value of `usb ble nfc
 internal lightning`).
 
-.. _webauthn_authn_timeout:
+.. _policy_webauthn_authn_timeout:
 
 webauthn_timeout
 ~~~~~~~~~~~~~~~~
@@ -507,9 +507,9 @@ an arbitrary amount in either direction, or even ignored entirely.
 The default timeout is 60 seconds.
 
 .. note:: If you set this policy you may also want to set
-    :ref:`webauthn_enroll_timeout`.
+    :ref:`policy_webauthn_enroll_timeout`.
 
-.. _webauthn_authn_user_verification_requirement:
+.. _policy_webauthn_authn_user_verification_requirement:
 
 webauthn_user_verification_requirement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -535,4 +535,4 @@ supported by the token.
     are still quite rare in practice).
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_enroll_user_verification_requirement`.
+    :ref:`policy_webauthn_enroll_user_verification_requirement`.
