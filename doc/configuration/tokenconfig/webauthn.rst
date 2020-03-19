@@ -41,7 +41,7 @@ sign in to `privacyidea.example.com` and `owncloud.example.com`. This token
 will – however – not be able to sign in to a service under `example.de`, or any
 other webservice that is not hosted on a subdomain of `example.com`.
 
-See also: :ref:`policy_webauthn_relying_party_id`.
+See also: :ref:`webauthn_enroll_relying_party_id`.
 
 Relying Party Name
 ~~~~~~~~~~~~~~~~~~
@@ -51,4 +51,4 @@ usually be either the name of your company (if there is just one relying
 party for the entire company), or the name of the department or other
 organizational unit the relying party represents.
 
-See also: :ref:`policy_webauthn_relying_party_name`.
+See also: :ref:`webauthn_enroll_relying_party_name`.

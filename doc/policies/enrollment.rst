@@ -499,7 +499,7 @@ supported by the token.
     are still quite rare in practice).
 
 .. note:: If you configure this, you will likely also want to configure
-    :ref:`webauthn_authz_user_verification_requirement`.
+    :ref:`webauthn_authn_user_verification_requirement`.
 
 .. _webauthn_enroll_public_key_credential_algorithm_preference:
 
