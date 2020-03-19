@@ -16,12 +16,12 @@
 
 * Update of some HTML templates due to update of UI components
 
-  Some HTML templates changed and might render custom templates unusable. Please check
-  your custom templates and compare to these changes:
-   - ``components/views/component.subscriptions.html`` (File upload changed)
-   - ``config/views/*.html`` (switch ``pattern`` to ``ng-pattern`` to avoid error message in
-    console)
-   - ``token/views/token.import.html`` (File upload and progress variable changed)
+  Several HTML templates have changed and might render custom templates unusable.
+  Please check your custom templates and compare to these changes:
+   - File upload component changed
+   - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
+   - Accordion component changed
+   - Pagination component changed
 
 ## Update from 3.1 to 3.2
 
