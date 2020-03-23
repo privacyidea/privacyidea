@@ -89,6 +89,12 @@ class TestingConfig(Config):
                       {"public_key": pubtest_key,
                        "algorithm": "RS256",
                        "role": "user",
+                       "realm": "realmX",
+                       "resolver": "resolverX",
+                       "username": ".*"},
+                      {"public_key": pubtest_key,
+                       "algorithm": "RS256",
+                       "role": "user",
                        "realm": "realm1",
                        "username": "userA",
                        "resolver": "resolverX"}]

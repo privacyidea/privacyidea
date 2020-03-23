@@ -180,6 +180,10 @@ This entry means, that the private key, that corresponds to the given
 public key can sign a JWT, that can impersonate as the *userA* in resolver
 *resolverX* in *realmA*.
 
+.. note:: The ``username`` can be a regular expression like ".*".
+   This way you could allow a private signing key to impersonate every
+   user in a realm. (Starting with version 3.3)
+
 A JWT can be created like this::
 
    auth_token = jwt.encode(payload={"role": "user",

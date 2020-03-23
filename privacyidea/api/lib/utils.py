@@ -300,10 +300,11 @@ def verify_auth_token(auth_token, required_role=None):
                     j = jwt.decode(auth_token,
                                    trusted_jwt.get("public_key"),
                                    algorithms=TRUSTED_JWT_ALGOS)
-                    if dict((k, j.get(k)) for k in ("role", "username", "resolver", "realm")) == \
-                            dict((k, trusted_jwt.get(k)) for k in ("role", "username", "resolver", "realm")):
-                        r = j
-                        break
+                    if dict((k, j.get(k)) for k in ("role", "resolver", "realm")) == \
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm")):
+                        if re.match(trusted_jwt.get("username"), j.get("username")):
+                            r = j
+                            break
                 else:
                     log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.DecodeError as err:

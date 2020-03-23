@@ -53,6 +53,34 @@ class UtilsTestCase(MyApiTestCase):
         with open("tests/testdata/jwt_sign.key", "r") as f:
             key = f.read()
 
+        # successful authentication with wildcard user
+        auth_token = jwt.encode(payload={"role": "user",
+                                         "username": "hans",
+                                         "realm": "realmX",
+                                         "resolver": "resolverX"},
+                                key=key,
+                                algorithm="RS256")
+        r = verify_auth_token(auth_token=auth_token,
+                              required_role="user")
+        self.assertEqual(r.get("realm"), "realmX")
+        self.assertEqual(r.get("username"), "hans")
+        self.assertEqual(r.get("resolver"), "resolverX", )
+        self.assertEqual(r.get("role"), "user")
+
+        auth_token = jwt.encode(payload={"role": "user",
+                                         "username": "fritz",
+                                         "realm": "realmX",
+                                         "resolver": "resolverX"},
+                                key=key,
+                                algorithm="RS256")
+        r = verify_auth_token(auth_token=auth_token,
+                              required_role="user")
+        self.assertEqual(r.get("realm"), "realmX")
+        self.assertEqual(r.get("username"), "fritz")
+        self.assertEqual(r.get("resolver"), "resolverX", )
+        self.assertEqual(r.get("role"), "user")
+
+        # Successful authentication with dedicated user
         with mock.patch("logging.Logger.warning") as mock_log:
             auth_token = jwt.encode(payload={"role": "user",
                                              "username": "userA",
@@ -66,6 +94,7 @@ class UtilsTestCase(MyApiTestCase):
             self.assertEqual(r.get("username"), "userA")
             self.assertEqual(r.get("resolver"), "resolverX",)
             self.assertEqual(r.get("role"), "user")
+            # ...but there is an unsupported configuration
             mock_log.assert_called_once_with("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
 
         # The signature has expired
