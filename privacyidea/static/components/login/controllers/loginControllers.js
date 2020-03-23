@@ -35,7 +35,7 @@ angular.module("privacyideaApp")
                                       PolicyTemplateFactory, gettextCatalog,
                                       hotkeys, RegisterFactory,
                                       U2fFactory, webAuthnToken, instanceUrl,
-                                      PollingAuthFactory,
+                                      PollingAuthFactory, $transitions,
                                       resourceNamePatterns) {
 
     $scope.instanceUrl = instanceUrl;
@@ -102,19 +102,22 @@ angular.module("privacyideaApp")
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
-    $rootScope.$on('$stateChangeSuccess',
-        function (ev, to, toParams, from, fromParams) {
-            //debug: console.log("we changed the state from " + from + " to " + to);
-            //debug: console.log(from);
-            //debug: console.log(fromParams);
-            //debug: console.log(to);
+    $transitions.onBefore({},
+        function () {
+            // The stateParams or $state.params are always changed as a reference.
+            // So we need to do a deep copy, to preserve it between state transitions
+            var oldParams = {};
+            angular.copy($state.params, oldParams);
             $rootScope.previousState = {
-                state: from.name,
-                params: fromParams
+                state: $state.current.name,
+                params: oldParams
             };
-
+        });
+    $transitions.onSuccess({},
+        function() {
             $scope.checkReloadListeners();
         });
+
     $scope.$on('IdleStart', function () {
         //debug: console.log("start idle");
     });
