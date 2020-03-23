@@ -106,10 +106,8 @@ angular.module("privacyideaApp")
         function () {
             // The stateParams or $state.params are always changed as a reference.
             // So we need to do a deep copy, to preserve it between state transitions
-            var oldParams = new Array();
-            for (let [key, value] of Object.entries($state.params)) {
-                oldParams[key] = value;
-            }
+            var oldParams = {};
+            angular.copy($state.params, oldParams);
             $rootScope.previousState = {
                 state: $state.current.name,
                 params: oldParams
