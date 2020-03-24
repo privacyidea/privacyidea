@@ -16,6 +16,7 @@ from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 from .base import MyTestCase, OverrideConfigTestCase
+from testfixtures import log_capture
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -329,6 +330,16 @@ class AuditFileTestCase(OverrideConfigTestCase):
         self.assertEqual(r.auditdata, [])
         self.assertEqual(r.total, 0)
 
+    # todo: test changing the audit qualname via PI_AUDIT_LOGGER_QUALNAME. Qualname should default to privacyidea.lib.auditmodules.loggeraudit
+    @log_capture()
+    def test_30_logger_audit_qualname(self, capture):
+        PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
+        a = LoggerAudit(config={})
+        a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
+        a.finalize_log()
+        capture.check_present(
+             ('pi-audit', {'action': 'PI_AUDIT_LOGGER_QUALNAME given'})
+        )
 
 class ContainerAuditTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):

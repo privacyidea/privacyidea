@@ -59,7 +59,6 @@ import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase)
 import datetime
 
-log = logging.getLogger(__name__)
 
 
 class Audit(AuditBase):
@@ -73,6 +72,8 @@ class Audit(AuditBase):
     def __init__(self, config=None):
         super(Audit, self).__init__(config)
         self.name = "loggeraudit"
+        self.qualname = self.config.get('PI_AUDIT_LOGGER_QUALNAME', __name__)
+        self.logger = logging.getLogger(self.qualname)
 
     def finalize_log(self):
         """
@@ -81,7 +82,7 @@ class Audit(AuditBase):
         """
         self.audit_data["policies"] = ",".join(self.audit_data.get("policies", []))
         self.audit_data["timestamp"] = datetime.datetime.utcnow()
-        log.info(u"{0!s}".format(self.audit_data))
+        self.logger.info(u"{0!s}".format(self.audit_data))
         self.audit_data = {}
 
 
