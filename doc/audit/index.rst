@@ -163,6 +163,11 @@ settings in your ``pi.cfg`` file::
    PI_AUDIT_SERVERNAME = "your choice"
    PI_LOGCONFIG = "/etc/privacyidea/logging.cfg"
 
+You can optionally set a custom logging name for the logger audit with::
+
+   PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
+
+It defaults to the module name ``privacyidea.lib.auditmodules.loggeraudit``.
 In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
 the *Logger Audit* will not work correctly.
 
