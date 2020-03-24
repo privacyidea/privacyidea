@@ -91,7 +91,7 @@ class TestingConfig(Config):
                        "role": "user",
                        "realm": "realmX",
                        "resolver": "resolverX",
-                       "username": ".*"},
+                       "username": "h.*s"},
                       {"public_key": pubtest_key,
                        "algorithm": "RS256",
                        "role": "user",

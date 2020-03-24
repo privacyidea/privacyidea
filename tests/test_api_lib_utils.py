@@ -53,7 +53,7 @@ class UtilsTestCase(MyApiTestCase):
         with open("tests/testdata/jwt_sign.key", "r") as f:
             key = f.read()
 
-        # successful authentication with wildcard user
+        # successful authentication with wildcard user, starting with an "h" and ending with "s"
         auth_token = jwt.encode(payload={"role": "user",
                                          "username": "hans",
                                          "realm": "realmX",
@@ -67,18 +67,26 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(r.get("resolver"), "resolverX", )
         self.assertEqual(r.get("role"), "user")
 
+        # A user starting with hans and ending with "t" is not allowed
         auth_token = jwt.encode(payload={"role": "user",
-                                         "username": "fritz",
+                                         "username": "hanswurst",
                                          "realm": "realmX",
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        r = verify_auth_token(auth_token=auth_token,
-                              required_role="user")
-        self.assertEqual(r.get("realm"), "realmX")
-        self.assertEqual(r.get("username"), "fritz")
-        self.assertEqual(r.get("resolver"), "resolverX", )
-        self.assertEqual(r.get("role"), "user")
+        self.assertRaisesRegexp(AuthError, "Your username is not allowed",
+                                verify_auth_token, auth_token=auth_token, required_role="user")
+
+        # A user ending with hans is not allowed
+        # A user starting with hans and ending with "t" is not allowed
+        auth_token = jwt.encode(payload={"role": "user",
+                                         "username": "kleinerhans",
+                                         "realm": "realmX",
+                                         "resolver": "resolverX"},
+                                key=key,
+                                algorithm="RS256")
+        self.assertRaisesRegexp(AuthError, "Your username is not allowed",
+                                verify_auth_token, auth_token=auth_token, required_role="user")
 
         # Successful authentication with dedicated user
         with mock.patch("logging.Logger.warning") as mock_log:
