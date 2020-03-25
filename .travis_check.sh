@@ -14,7 +14,12 @@ ignore_patterns=(
   "READ_BEFORE_UPDATE.md"
   "README.rst"
   "SECURITY.md"
-  "^.*/"
+  "^\.circleci/"
+  "^\.codespell_skip"
+  "^\.github/"
+  "^\.gitignore"
+  "^\.pep8speaks.yml"
+  "^\.readthedocs.yaml"
   )
 
 # get the base branch for checking changes
@@ -60,3 +65,4 @@ if [[ ${IGNORE_BUILD} == True ]]; then
 else
   echo "Changes to build-essential files found, continuing with tests."
 fi
+
