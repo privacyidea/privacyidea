@@ -47,7 +47,6 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "PS256", "PS384", "PS512"]
 
 SESSION_KEY_LENGTH = 32
-WRONG_USERNAME = "wrong username"
 
 optional = True
 required = False
@@ -292,6 +291,7 @@ def verify_auth_token(auth_token, required_role=None):
 
     headers = jwt.get_unverified_header(auth_token)
     algorithm = headers.get("alg")
+    wrong_username = None
     if algorithm in TRUSTED_JWT_ALGOS:
         # The trusted JWTs are RSA, PSS or eliptic curve signed
         trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
@@ -307,7 +307,7 @@ def verify_auth_token(auth_token, required_role=None):
                             r = j
                             break
                         else:
-                            r = WRONG_USERNAME
+                            r = wrong_username = j.get("username")
                 else:
                     log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.DecodeError as err:
@@ -326,8 +326,9 @@ def verify_auth_token(auth_token, required_role=None):
         except jwt.ExpiredSignature as err:
             raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
                             id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
-    if r == WRONG_USERNAME:
-        raise AuthError(_("Authentication failure. Your username is not allowed."))
+    if wrong_username:
+        raise AuthError(_("Authentication failure. The username {0!s} is not allowed to "
+                          "impersonate via JWT.".format(wrong_username)))
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match

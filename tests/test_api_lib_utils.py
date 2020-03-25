@@ -74,7 +74,7 @@ class UtilsTestCase(MyApiTestCase):
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        self.assertRaisesRegexp(AuthError, "Your username is not allowed",
+        self.assertRaisesRegexp(AuthError, "The username hanswurst is not allowed to impersonate via JWT.",
                                 verify_auth_token, auth_token=auth_token, required_role="user")
 
         # A user ending with hans is not allowed
@@ -85,7 +85,7 @@ class UtilsTestCase(MyApiTestCase):
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        self.assertRaisesRegexp(AuthError, "Your username is not allowed",
+        self.assertRaisesRegexp(AuthError, "The username kleinerhans is not allowed to impersonate via JWT.",
                                 verify_auth_token, auth_token=auth_token, required_role="user")
 
         # Successful authentication with dedicated user
