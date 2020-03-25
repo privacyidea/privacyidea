@@ -11,6 +11,10 @@ ignore_patterns=(
   "^migrations/"
   "^deploy/"
   "^contrib/"
+  "READ_BEFORE_UPDATE.md"
+  "README.rst"
+  "SECURITY.md"
+  "^.*/"
   )
 
 # get the base branch for checking changes
