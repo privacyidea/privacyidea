@@ -120,20 +120,23 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"action": "/validate/check",
                         "success": False})
         self.Audit.finalize_log()
-        time.sleep(2)
+
         # remember the current time for later
         current_timestamp = datetime.datetime.now()
 
-        self.Audit.log({"action": "/validate/check",
-                        "success": True})
-        self.Audit.finalize_log()
+        # create a new audit log entry 2 seconds after the previous ones
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2)
+            self.Audit.log({"action": "/validate/check",
+                            "success": True})
+            self.Audit.finalize_log()
 
-        # freeze time at ``current_timestamp`` + 0.5s.
+        # freeze time at ``current_timestamp`` + 2.5s.
         # This is necessary because when doing unit tests on a CI server,
         # things will sometimes go slower than expected, which will
         # cause the very last assertion to fail.
         with mock.patch('datetime.datetime') as mock_dt:
-            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=0.5)
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2.5)
 
             # get 4 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
@@ -149,8 +152,8 @@ class AuditTestCase(MyTestCase):
             self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
-        res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
-            "asc"})
+        res = search(self.app.config, {"page": 1, "page_size": 10,
+                                       "sortorder": "asc"})
         self.assertTrue(res.get("count") == 0, res)
 
         res = search(self.app.config, {"timelimit": "-1d"})
@@ -330,16 +333,19 @@ class AuditFileTestCase(OverrideConfigTestCase):
         self.assertEqual(r.auditdata, [])
         self.assertEqual(r.total, 0)
 
-    # todo: test changing the audit qualname via PI_AUDIT_LOGGER_QUALNAME. Qualname should default to privacyidea.lib.auditmodules.loggeraudit
     @log_capture()
     def test_30_logger_audit_qualname(self, capture):
-        PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
-        a = LoggerAudit(config={})
-        a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
-        a.finalize_log()
-        capture.check_present(
-             ('pi-audit', {'action': 'PI_AUDIT_LOGGER_QUALNAME given'})
-        )
+        current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
+            a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
+            a.finalize_log()
+            capture.check_present(
+                ('pi-audit', 'INFO',
+                 "{{'action': 'PI_AUDIT_LOGGER_QUALNAME given', 'policies': '', "
+                 "'timestamp': '{timestamp}'}}".format(timestamp=current_utc_time.isoformat())))
+
 
 class ContainerAuditTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):

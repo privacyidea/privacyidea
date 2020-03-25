@@ -57,8 +57,7 @@ args=('/var/log/privacyidea/audit.log',)
 
 import logging
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase)
-import datetime
-
+from datetime import datetime
 
 
 class Audit(AuditBase):
@@ -81,8 +80,6 @@ class Audit(AuditBase):
         e.g. write the data to a file.
         """
         self.audit_data["policies"] = ",".join(self.audit_data.get("policies", []))
-        self.audit_data["timestamp"] = datetime.datetime.utcnow()
+        self.audit_data["timestamp"] = datetime.utcnow().isoformat()
         self.logger.info(u"{0!s}".format(self.audit_data))
         self.audit_data = {}
-
-
