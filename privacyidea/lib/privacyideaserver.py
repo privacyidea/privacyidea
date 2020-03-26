@@ -75,7 +75,7 @@ class PrivacyIDEAServer(object):
                   "{0!s}".format(response.status_code))
         if response.status_code != 200:
             log.warning("The request to the remote privacyIDEA server {0!s} "
-                        "returned a status code: {0!s}".format(config.url,
+                        "returned a status code: {1!s}".format(config.url,
                                                                response.status_code))
             return False
 

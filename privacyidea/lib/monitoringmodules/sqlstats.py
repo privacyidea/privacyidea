@@ -91,7 +91,7 @@ class Monitoring(MonitoringBase):
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))
-            log.error(u"DATA: {0!s} -> {0!s}".format(stats_key, stats_value))
+            log.error(u"DATA: {0!s} -> {1!s}".format(stats_key, stats_value))
             log.debug(u"{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 

@@ -613,7 +613,7 @@ class PolicyClass(object):
                 if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
-            log.debug("Policies after matching client".format(
+            log.debug("Policies after matching client: {0!s}".format(
                 reduced_policies))
 
         if sort_by_priority:
