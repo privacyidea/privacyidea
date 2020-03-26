@@ -6,7 +6,6 @@ This tests the files
 """
 import datetime
 import os
-import time
 
 from mock import mock
 
@@ -16,6 +15,7 @@ from privacyidea.lib.auditmodules.containeraudit import Audit as ContainerAudit
 from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules.sqlaudit import column_length
 from .base import MyTestCase, OverrideConfigTestCase
+from testfixtures import log_capture
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -119,20 +119,23 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"action": "/validate/check",
                         "success": False})
         self.Audit.finalize_log()
-        time.sleep(2)
+
         # remember the current time for later
         current_timestamp = datetime.datetime.now()
 
-        self.Audit.log({"action": "/validate/check",
-                        "success": True})
-        self.Audit.finalize_log()
+        # create a new audit log entry 2 seconds after the previous ones
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2)
+            self.Audit.log({"action": "/validate/check",
+                            "success": True})
+            self.Audit.finalize_log()
 
-        # freeze time at ``current_timestamp`` + 0.5s.
+        # freeze time at ``current_timestamp`` + 2.5s.
         # This is necessary because when doing unit tests on a CI server,
         # things will sometimes go slower than expected, which will
         # cause the very last assertion to fail.
         with mock.patch('datetime.datetime') as mock_dt:
-            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=0.5)
+            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2.5)
 
             # get 4 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
@@ -148,8 +151,8 @@ class AuditTestCase(MyTestCase):
             self.assertEqual(r, 1)
 
     def test_03_lib_search(self):
-        res = search(self.app.config, {"page": 1, "page_size": 10, "sortorder":
-            "asc"})
+        res = search(self.app.config, {"page": 1, "page_size": 10,
+                                       "sortorder": "asc"})
         self.assertTrue(res.get("count") == 0, res)
 
         res = search(self.app.config, {"timelimit": "-1d"})
@@ -244,8 +247,8 @@ class AuditTestCase(MyTestCase):
         self.Audit.session.commit()
         # and check if we get a failed signature check
         audit_log = self.Audit.search({"user": u"kölbel"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
 
     def test_08_policies(self):
         self.Audit.log({"action": "validate/check"})
@@ -266,29 +269,29 @@ class AuditTestCase(MyTestCase):
         self.app.config["PI_AUDIT_SQL_URI"] = AUDIT_DB
         audit = getAudit(self.app.config)
         total = audit.get_count({})
-        self.assertEquals(total, 5)
+        self.assertEqual(total, 5)
         # check that we have old style signatures in the DB
         db_entries = audit.search_query({"user": "testuser"})
         db_entry = next(db_entries)
         self.assertTrue(db_entry.signature.startswith('213842441384'), db_entry)
         # by default, PI_CHECK_OLD_SIGNATURES is false and thus the signature check fails
         audit_log = audit.search({"user": "testuser"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
 
         # they validate correctly when PI_CHECK_OLD_SIGNATURES is true
         # we need to create a new audit object to enable the new config
         self.app.config['PI_CHECK_OLD_SIGNATURES'] = True
         audit = getAudit(self.app.config)
         total = audit.get_count({})
-        self.assertEquals(total, 5)
+        self.assertEqual(total, 5)
         audit_log = audit.search({"user": "testuser"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "OK")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
         # except for entry number 4 where the 'realm' was added afterwards
         audit_log = audit.search({"realm": "realm1"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
         # remove the audit SQL URI from app config
         self.app.config.pop("PI_AUDIT_SQL_URI", None)
@@ -310,6 +313,7 @@ class AuditFileTestCase(OverrideConfigTestCase):
 
     def test_10_external_file_audit(self):
         a = LoggerAudit(config={})
+        self.assertFalse(a.is_readable)
         self.assertFalse(a.has_data)
         a.log({"action": "action1"})
         self.assertTrue(a.has_data)
@@ -328,6 +332,32 @@ class AuditFileTestCase(OverrideConfigTestCase):
         # This is a non readable audit, so we got nothing
         self.assertEqual(r.auditdata, [])
         self.assertEqual(r.total, 0)
+
+    @log_capture()
+    def test_30_logger_audit_qualname(self, capture):
+        # Check that the default qualname is 'privacyidea.lib.auditmodules.loggeraudit'
+        current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            a = LoggerAudit(config={})
+            a.log({"action": "No PI_AUDIT_LOGGER_QUALNAME given"})
+            a.finalize_log()
+            capture.check_present(
+                ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
+                 '{{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
+                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
+
+        # Now change the qualname to 'pi-audit'
+        current_utc_time = datetime.datetime(2020, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
+            a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
+            a.finalize_log()
+            capture.check_present(
+                ('pi-audit', 'INFO',
+                 '{{"action": "PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
+                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
 
 
 class ContainerAuditTestCase(OverrideConfigTestCase):
