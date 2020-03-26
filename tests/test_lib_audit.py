@@ -6,7 +6,6 @@ This tests the files
 """
 import datetime
 import os
-import time
 
 from mock import mock
 
@@ -314,6 +313,7 @@ class AuditFileTestCase(OverrideConfigTestCase):
 
     def test_10_external_file_audit(self):
         a = LoggerAudit(config={})
+        self.assertFalse(a.is_readable)
         self.assertFalse(a.has_data)
         a.log({"action": "action1"})
         self.assertTrue(a.has_data)
@@ -335,7 +335,20 @@ class AuditFileTestCase(OverrideConfigTestCase):
 
     @log_capture()
     def test_30_logger_audit_qualname(self, capture):
+        # Check that the default qualname is 'privacyidea.lib.auditmodules.loggeraudit'
         current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
+            mock_dt.utcnow.return_value = current_utc_time
+            a = LoggerAudit(config={})
+            a.log({"action": "No PI_AUDIT_LOGGER_QUALNAME given"})
+            a.finalize_log()
+            capture.check_present(
+                ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
+                 '{{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
+                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
+
+        # Now change the qualname to 'pi-audit'
+        current_utc_time = datetime.datetime(2020, 3, 4, 5, 6, 8)
         with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
             mock_dt.utcnow.return_value = current_utc_time
             a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
