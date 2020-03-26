@@ -248,8 +248,8 @@ class AuditTestCase(MyTestCase):
         self.Audit.session.commit()
         # and check if we get a failed signature check
         audit_log = self.Audit.search({"user": u"kölbel"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
 
     def test_08_policies(self):
         self.Audit.log({"action": "validate/check"})
@@ -270,29 +270,29 @@ class AuditTestCase(MyTestCase):
         self.app.config["PI_AUDIT_SQL_URI"] = AUDIT_DB
         audit = getAudit(self.app.config)
         total = audit.get_count({})
-        self.assertEquals(total, 5)
+        self.assertEqual(total, 5)
         # check that we have old style signatures in the DB
         db_entries = audit.search_query({"user": "testuser"})
         db_entry = next(db_entries)
         self.assertTrue(db_entry.signature.startswith('213842441384'), db_entry)
         # by default, PI_CHECK_OLD_SIGNATURES is false and thus the signature check fails
         audit_log = audit.search({"user": "testuser"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
 
         # they validate correctly when PI_CHECK_OLD_SIGNATURES is true
         # we need to create a new audit object to enable the new config
         self.app.config['PI_CHECK_OLD_SIGNATURES'] = True
         audit = getAudit(self.app.config)
         total = audit.get_count({})
-        self.assertEquals(total, 5)
+        self.assertEqual(total, 5)
         audit_log = audit.search({"user": "testuser"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "OK")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
         # except for entry number 4 where the 'realm' was added afterwards
         audit_log = audit.search({"realm": "realm1"})
-        self.assertEquals(audit_log.total, 1)
-        self.assertEquals(audit_log.auditdata[0].get("sig_check"), "FAIL")
+        self.assertEqual(audit_log.total, 1)
+        self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
         # TODO: add new audit entry and check for new style signature
         # remove the audit SQL URI from app config
         self.app.config.pop("PI_AUDIT_SQL_URI", None)
@@ -343,8 +343,8 @@ class AuditFileTestCase(OverrideConfigTestCase):
             a.finalize_log()
             capture.check_present(
                 ('pi-audit', 'INFO',
-                 "{{'action': 'PI_AUDIT_LOGGER_QUALNAME given', 'policies': '', "
-                 "'timestamp': '{timestamp}'}}".format(timestamp=current_utc_time.isoformat())))
+                 '{{"action": "PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
+                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
 
 
 class ContainerAuditTestCase(OverrideConfigTestCase):
