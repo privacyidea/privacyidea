@@ -400,14 +400,14 @@
 
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpButton"
-                        tooltip="{{ 'Check with OTP PIN.'|translate }}"
+                        uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test token</span>
                 </button>
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpOnlyButton"
-                        tooltip="{{ 'Check OTP only.'|translate }}"
+                        uib-tooltip="{{ 'Check OTP only.'|translate }}"
                         ng-click="testOtp('1')">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test OTP only</span>
