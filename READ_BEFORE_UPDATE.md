@@ -14,6 +14,12 @@
   If you added your own tokenclass, please assure to update
   your function signature.
 
+* Output of Logger Audit changed
+
+  The log-message of the Logger Audit is now converted to a JSON-encoded string
+  sorted by keywords. This could potentially mess up subsequent reporting
+  configurations.
+
 * Update of some HTML templates due to update of UI components
 
   Several HTML templates have changed and might render custom templates unusable.
@@ -22,6 +28,7 @@
    - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
    - Accordion component changed
    - Pagination component changed
+   - Tooltip component changed
 
 ## Update from 3.1 to 3.2
 
