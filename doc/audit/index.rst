@@ -152,7 +152,8 @@ Logger Audit
 The *Logger Audit* module can be used to write audit log information to
 the Python logging facility and thus write log messages to a plain file,
 a syslog daemon, an email address or any destination that is supported
-by the Python logging mechanism.
+by the Python logging mechanism. The log message passed to the python logging
+facility is a JSON-encoded string of the fields of the audit entry.
 
 You can find more information about this in :ref:`advanced_logging`.
 
