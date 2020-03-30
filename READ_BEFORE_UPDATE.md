@@ -2,6 +2,13 @@
 
 ## Update from 3.2 to 3.3
 
+* Admin policies now do have a destinct admin username field.
+
+  The normal username field will not be used for the admin user
+  anymore but can be used for normal users.
+  The SQL migration script migrates existing admin policies by moving
+  the usernames of administrators to the new username field.
+
 * PostgreSQL database adapter removed from default installation
 
   When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package
