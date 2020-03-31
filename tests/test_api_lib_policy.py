@@ -38,6 +38,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
+                                           check_admin_tokenlist, pushtoken_disable_wait,
+                                           indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait, webauthntoken_auth,
                                            webauthntoken_authz, webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed)
@@ -60,6 +62,7 @@ from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -1766,6 +1769,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         for pol in ["pol-realm1", "pol-all-realms", "pol-only-init"]:
             delete_policy(pol)
 
+    def test_26_indexedsecret_force_set(self):
+
+        # We send a fake push_wait, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       'realm': self.realm1,
+                                       'type': "indexedsecret"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        g.logged_in_user = {"username": "cornelius",
+                            "realm": self.realm1,
+                            "role": ROLE.USER}
+        req.all_data = {"type": "indexedsecret"}
+        g.policy_object = PolicyClass()
+        indexedsecret_force_attribute(req, None)
+        # request.all_data is unchanged
+        self.assertNotIn("otpkey", req.all_data)
+
+        # Now we use the policy, to set the otpkey
+        set_policy(name="Indexed", scope=SCOPE.USER,
+                   action="indexedsecret_{0!s}=username".format(PIIXACTION.FORCE_ATTRIBUTE))
+        req.all_data = {"type": "indexedsecret"}
+        g.policy_object = PolicyClass()
+        indexedsecret_force_attribute(req, None)
+        # Now the request.all_data contains the otpkey from the user attributes.
+        self.assertIn("otpkey", req.all_data)
+        self.assertEqual("cornelius", req.all_data.get("otpkey"))
+
+        delete_policy("Indexed")
+
     def test_26a_webauthn_auth_validate_triggerchallenge(self):
         class RequestMock(object):
             pass
@@ -3383,9 +3421,32 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
         self.assertEqual(len(custom_url), len(qr_image_custom))
         self.assertEqual(custom_url, qr_image_custom)
+
         delete_policy("pol_qr1")
         delete_policy("pol_qr2")
         delete_policy("pol_qr3")
+
+        # Test if the webui gets the information about the preset attribute for indexedsecret token
+        set_policy(name="pol_indexed1", scope=SCOPE.WEBUI,
+                   action="indexedsecret_{0!s}=preattr".format(PIIXACTION.PRESET_ATTRIBUTE))
+
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual("preattr",
+                         jresult.get("result").get("value").get("indexedsecret_preset_attribute"))
+
+        delete_policy("pol_indexed1")
+
+        # Test if the webui gets the information, that a normal user has force_attribute
+        set_policy(name="pol_indexed_force", scope=SCOPE.USER,
+                   action="indexedsecret_{0!s}=force".format(PIIXACTION.FORCE_ATTRIBUTE))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        # Check that the force_attribute indicator is set to "1"
+        self.assertEqual(1, jresult.get("result").get("value").get("indexedsecret_force_attribute"))
+        delete_policy("pol_indexed_force")
 
     def test_09_get_webui_settings(self):
         # Test that policies like tokenpagesize are also user dependent

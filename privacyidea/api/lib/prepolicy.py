@@ -104,6 +104,7 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 log = logging.getLogger(__name__)
 
@@ -465,7 +466,7 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    In addtion it adds the tokenissuer to the params like this:
+    In addition it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
     It also checks if the force_app_pin policy is set and adds the corresponding
@@ -1342,6 +1343,34 @@ def allowed_audit_realm(request=None, action=None):
     return True
 
 
+def indexedsecret_force_attribute(request, action):
+    """
+    This is a token specific wrapper for indexedsecret token for the endpoint
+    /token/init
+    The otpkey is overwritten with the value from
+    the user attribute specified in
+    policy scope=SCOPE.USER and SCOPE.ADMIN,
+    action=PIIXACTION.FORCE_ATTRIBUTE.
+    :param request:
+    :param action:
+    :return:
+    """
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "indexedsecret" and request.User:
+        # We only need to check the policies, if the token is actually enrolled
+        # to a user.
+        attributes = Match.admin_or_user(g, "indexedsecret_{0!s}".format(PIIXACTION.FORCE_ATTRIBUTE),
+                                         user_obj=request.User).action_values(unique=True)
+        if not attributes:
+            # If there is no policy set, we simply do nothing
+            return True
+
+        attribute_value = request.User.info.get(list(attributes)[0])
+        request.all_data["otpkey"] = attribute_value
+
+    return True
+
+  
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.

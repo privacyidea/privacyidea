@@ -209,7 +209,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_start"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
@@ -230,7 +230,7 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_end"
                                    is-open="endOpened"
                                    min-date="today"
@@ -400,14 +400,14 @@
 
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpButton"
-                        tooltip="{{ 'Check with OTP PIN.'|translate }}"
+                        uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test token</span>
                 </button>
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpOnlyButton"
-                        tooltip="{{ 'Check OTP only.'|translate }}"
+                        uib-tooltip="{{ 'Check OTP only.'|translate }}"
                         ng-click="testOtp('1')">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test OTP only</span>

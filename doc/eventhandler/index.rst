@@ -94,7 +94,7 @@ Conditions
 Added in version 2.14
 
 An event handler module may also contain conditions. Only if all conditions
-are fullfilled, the action is triggered. Conditions are defined in the class
+are fulfilled, the action is triggered. Conditions are defined in the class
 property *conditions* and checked in the method *check_condition*. The base class
 for event handlers currently defines those conditions. So all event handlers come with
 the same conditions.
@@ -181,7 +181,7 @@ expression matches the detail->message in the response.
 This condition checks if the last authentication is older than the specified
 time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
 (years). Specifying *180d* would mean, that the action is triggered if the
-last successful authentication witht he token was berformed more than 180
+last successful authentication with the token was performed more than 180
 days ago.
 
 This can be used to send notifications to users or administrators to inform
@@ -358,3 +358,4 @@ Available Handler Modules
    federationhandler
    requestmangler
    responsemangler
+   logginghandler

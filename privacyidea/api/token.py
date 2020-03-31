@@ -92,6 +92,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
                                            sms_identifiers, pushtoken_add_config,
+                                           check_admin_tokenlist,
+                                           indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request)
 from privacyidea.api.lib.postpolicy import (save_pin_change,
@@ -135,6 +137,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(u2ftoken_allowed, request)
 @prepolicy(u2ftoken_verify_cert, request)
 @prepolicy(pushtoken_add_config, request)
+@prepolicy(indexedsecret_force_attribute, request)
 @prepolicy(webauthntoken_allowed, request)
 @prepolicy(webauthntoken_request, request)
 @prepolicy(webauthntoken_enroll, request)

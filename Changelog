@@ -2,7 +2,10 @@ Version 3.3, *2020-XX-XX*
 
   Features:
     * New token type: WebAuthn/FIDO2 token (#1468)
-      * WebAuthn hardware tokens can now be used with privacyIDEA
+      WebAuthn hardware tokens can now be used with privacyIDEA
+    * New token type: Indexed Secret token allows user
+      to authenticate with a pre-known secret that can be
+      initialized from the user store. (#1986)
 
   Enhancements:
     * Added the remote serial to the tokeninfo of a remote token to better track

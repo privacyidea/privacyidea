@@ -52,7 +52,7 @@ class RADIUSServer(object):
 
     def __init__(self, db_radius_object):
         """
-        Create a new RADIUSServer instance fomr a DB RADIUS object
+        Create a new RADIUSServer instance from a DB RADIUS object
 
         :param db_radius_object: The database object
         :return: A RADIUS Server object

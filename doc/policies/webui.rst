@@ -220,7 +220,7 @@ The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realmnames are displayed in
 the dropdown box.
 
-.. note:: The realm names in the policy are not checked, if they realy exist!
+.. note:: The realm names in the policy are not checked, if they really exist!
 
 search_on_enter
 ~~~~~~~~~~~~~~~
@@ -343,5 +343,17 @@ where the user is taken to, e.g.
   the user to another App in the Google Play Store or Apple App Store.
 
 Other scenarios are possible.
+
+(Since privacyIDEA 3.3)
+
+indexedsecret_preset_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+The secret in the enrollment dialog of the tokentype *indexedsecret* is preset
+with the value of the given user attribute.
+
+For more details of this token type see :ref:`indexedsecret_token`.
 
 (Since privacyIDEA 3.3)

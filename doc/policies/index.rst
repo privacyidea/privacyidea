@@ -22,7 +22,6 @@ privacyIDEA knows the scopes:
    authorization
    enrollment
    webui
-   gettoken
    register
 
 You can define as many policies as you wish to.

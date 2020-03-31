@@ -93,6 +93,7 @@ from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
 import jwt
 import ast
+import base64
 
 SILENT = True
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
@@ -446,9 +447,13 @@ def encrypt_enckey(encfile):
 
 
 @manager.command
-def create_enckey(enckey=None):
+def create_enckey(enckey_b64=None):
     """
-    If the key of the given configuration does not exist, it will be created
+    If the key of the given configuration does not exist, it will be created.
+
+
+    :param enckey_b64: (Optional) base64 encoded plain text key
+    :return:
     """
     print()
     filename = app.config.get("PI_ENCFILE")
@@ -457,14 +462,15 @@ def create_enckey(enckey=None):
               filename)
         sys.exit(1)
     with open(filename, "wb") as f:
-        if enckey is None:
+        if enckey_b64 is None:
             f.write(DefaultSecurityModule.random(96))
         else:
             print("Warning: Passing enckey via cli input is considered harmful.")
-            if not len(enckey.encode()) is 96:
-                print("enckey must be 96 bytes length")
+            bin_enckey = base64.b64decode(enckey_b64)
+            if len(bin_enckey) != 96:
+                print("Error: enckey must be 96 bytes length")
                 sys.exit(1)
-            f.write(enckey.encode())
+            f.write(bin_enckey)
     print("Encryption key written to %s" % filename)
     os.chmod(filename, 0o400)
     print("The file permission of %s was set to 400!" % filename)

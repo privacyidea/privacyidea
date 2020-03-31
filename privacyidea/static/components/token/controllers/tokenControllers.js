@@ -46,7 +46,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
             $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
             $scope.params.pagesize = $scope.token_page_size;
-            $scope.params.sortBy = $scope.sortBy;
+            $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
             } else {
@@ -84,7 +84,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
          subscription_state = 2
          */
         if ($scope.welcomeStep < 4) {
-            // We did not walk throught the welcome dialog, yet.
+            // We did not walk through the welcome dialog, yet.
             if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
                 ($scope.subscription_state === 1) ||
                 ($scope.subscription_state === 2)) {
@@ -232,6 +232,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
+            "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
             "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
             "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
@@ -286,6 +287,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         } else {
             $scope.form.genkey = true;
         }
+
+        $scope.preset_indexedsecret();
+
         if ($scope.form.type === "radius") {
             // only load RADIUS servers when the user actually tries to enroll a RADIUS token,
             // because the user might not be allowed to list RADIUS servers
@@ -296,6 +300,29 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
+    };
+
+    // helper function for setting indexed secret attribute
+    $scope.preset_indexedsecret = function() {
+        if ($scope.form.type === "indexedsecret") {
+            // in case of indexedsecret we do never generate a key from the UI
+            $scope.form.genkey = false;
+            // Only fetch, if a preset_attribute is defined
+            if ($scope.tokensettings.indexedsecret.preset_attribute) {
+                // In case of a normal logged in user, an empty params is fine
+                var params = {};
+                if (AuthFactory.getRole() === 'admin') {
+                    params = {realm: $scope.newUser.realm,
+                        username: fixUser($scope.newUser.user)};
+                }
+                UserFactory.getUsers(params,
+                        function(data) {
+                            var userObject = data.result.value[0];
+                            // preset for indexedsecret token
+                            $scope.form.otpkey = userObject[$scope.tokensettings.indexedsecret.preset_attribute];
+                    });
+            }
+        }
     };
 
     // Set the default value of the "2stepinit" field if twostep enrollment should be forced
@@ -318,6 +345,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             if (newValue != '') {
                 $scope.form.phone = newValue;
             }
+        });
+    $scope.$watch(function(scope) {return fixUser(scope.newUser.user);},
+        function(newValue, oldValue) {
+            // The newUser was changed
+            $scope.preset_indexedsecret();
         });
 
     // Get the realms and fill the realm dropdown box

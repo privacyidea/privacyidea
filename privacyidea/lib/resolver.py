@@ -312,7 +312,7 @@ def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
     :param resolver_type: string specifying the resolver
-                          fully qualified or abreviated
+                          fully qualified or abbreviated
     :return: resolver object class
     """
     ret = None

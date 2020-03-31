@@ -96,8 +96,7 @@
                 <li>
                     <spinner name="spinner" show="false"></spinner>
                 </li>
-                <li ng-show="reloadListeners && loggedInUser.role &&
-                showReload">
+                <li ng-show="loggedInUser.role && showReload">
                     <a ng-click="reload()" style="cursor: pointer">
                     <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
                     <translate>Refresh</translate>

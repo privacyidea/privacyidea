@@ -152,7 +152,8 @@ Logger Audit
 The *Logger Audit* module can be used to write audit log information to
 the Python logging facility and thus write log messages to a plain file,
 a syslog daemon, an email address or any destination that is supported
-by the Python logging mechanism.
+by the Python logging mechanism. The log message passed to the python logging
+facility is a JSON-encoded string of the fields of the audit entry.
 
 You can find more information about this in :ref:`advanced_logging`.
 
@@ -163,6 +164,11 @@ settings in your ``pi.cfg`` file::
    PI_AUDIT_SERVERNAME = "your choice"
    PI_LOGCONFIG = "/etc/privacyidea/logging.cfg"
 
+You can optionally set a custom logging name for the logger audit with::
+
+   PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
+
+It defaults to the module name ``privacyidea.lib.auditmodules.loggeraudit``.
 In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
 the *Logger Audit* will not work correctly.
 

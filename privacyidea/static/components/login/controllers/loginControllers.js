@@ -35,7 +35,7 @@ angular.module("privacyideaApp")
                                       PolicyTemplateFactory, gettextCatalog,
                                       hotkeys, RegisterFactory,
                                       U2fFactory, webAuthnToken, instanceUrl,
-                                      PollingAuthFactory,
+                                      PollingAuthFactory, $transitions,
                                       resourceNamePatterns) {
 
     $scope.instanceUrl = instanceUrl;
@@ -102,19 +102,18 @@ angular.module("privacyideaApp")
     $scope.myCountdown = "";
     // We save the previous State in the $rootScope, so that we
     // can return there
-    $rootScope.$on('$stateChangeSuccess',
-        function (ev, to, toParams, from, fromParams) {
-            //debug: console.log("we changed the state from " + from + " to " + to);
-            //debug: console.log(from);
-            //debug: console.log(fromParams);
-            //debug: console.log(to);
+    $transitions.onBefore({},
+        function () {
+            // The stateParams or $state.params are always changed as a reference.
+            // So we need to do a deep copy, to preserve it between state transitions
+            var oldParams = {};
+            angular.copy($state.params, oldParams);
             $rootScope.previousState = {
-                state: from.name,
-                params: fromParams
+                state: $state.current.name,
+                params: oldParams
             };
-
-            $scope.checkReloadListeners();
         });
+
     $scope.$on('IdleStart', function () {
         //debug: console.log("start idle");
     });
@@ -222,7 +221,7 @@ angular.module("privacyideaApp")
                 $scope.webAuthnSignRequests = [];
                 $scope.transactionid = error.detail["transaction_id"];
 
-                // Challenge Response always containes mult_challenge!
+                // Challenge Response always contains multi_challenge!
                 var multi_challenge = error.detail.multi_challenge;
                 if (multi_challenge.length > 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
@@ -394,6 +393,11 @@ angular.module("privacyideaApp")
             $scope.show_seed = data.result.value.show_seed;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
+            // Token specific settings
+            $scope.tokensettings = {indexedsecret:
+                    {preset_attribute: data.result.value.indexedsecret_preset_attribute,
+                     force_attibute: data.result.value.indexedsecret_force_attribute}
+            };
             var timeout = data.result.value.logout_time;
             PolicyTemplateFactory.setUrl(data.result.value.policy_template_url);
             //debug: console.log(timeout);
@@ -501,24 +505,6 @@ angular.module("privacyideaApp")
     $scope.reload = function() {
         // emit a signal to the scope, that just listens
         $scope.$broadcast("piReload");
-    };
-
-    $scope.checkReloadListeners = function () {
-        /*
-         TODO: The a logic, that can hide the reload button.
-         This is not straighforward, since the current number of connected
-         listeners might be confusing:
-
-         connected numbers:
-         var currentListeners = $scope.$$listenerCount["piReload"];
-
-         When the state changes, the scope and thus the current listener is
-         destroyed. But the statechange-success is called, before the scope
-         is destroyed, so there can be two connected listeners, when
-         changing from a state to another state and both have a listener
-         defined.
-        */
-        $scope.reloadListeners = 1;
     };
 
 });
