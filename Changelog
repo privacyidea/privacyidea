@@ -1,19 +1,19 @@
 Version 3.3, *2020-XX-XX*
 
   Features:
-    * New token type: WebAuthn/FIDO2 token (#1468)
-      WebAuthn hardware tokens can now be used with privacyIDEA
+    * New token type: WebAuthn/FIDO2 token is initially supported by privacyIDEA (#1468)
     * New token type: Indexed Secret token allows user
       to authenticate with a pre-known secret that can be
       initialized from the user store. (#1986)
+    * New Event Handler Module: Logging module enables custom event-driven logging (#1580)
 
   Enhancements:
-    * Added the remote serial to the tokeninfo of a remote token to better track
-      authenticated devices (#2031)
     * Event Handler:
       * The OTP token QR code can now be added not only inline but also as an attachment
         to email notifications (#1226)
     * Policies:
+      * Added a policy to define the allowed characters for PINs (#2051)
+      * Add policies to limit the number of destinct tokentypes per user (#1375)
       * Improved distinction between the username of the administrator
         and the username of the user. Add an admin username to policies. (#1867)
         Thus allowing:
@@ -24,24 +24,31 @@ Version 3.3, *2020-XX-XX*
         * Enrollment settings for push tokens can distinguish better
          between admin users and user
         * Random PIN settings can be user dependent
-      * Added a policy to define the allowed characters for PINs (#2049)
     * WebUI
       * Added the option to filter tokens by tokenrealm (#545)
       * Prior to enrollment of soft tokens, such as HOTP, TOTP and PUSH the user is
         offered with a QR codes to direct him to the Authenticator App stores (#1919).
       * Adding version hashes to WebUI components to avoid working with outdated
         templates (#1871)
-      * Updated bootstrap and JQuery to new versions (#2061)
-      * Rework policy matching (#1691 #2038)
+      * Updated bootstrap and AngularJS (#830)
+      * Rework policy matching (#1691 #2024 #2038)
     * Documentation
-      * The documentation was restructured and updated (#1967 #1504 #2049).
+      * The documentation was restructured and updated (#1967 #1981 #1504 #2049 #2089 #2090).
     * Tools
       * Added a migration script to update the database schema from 2.23.5 to 3.2.2 (#2040)
+    * Misc
+      * Added the remote serial to the tokeninfo of a remote token to better track
+        authenticated devices (#2031)
+      * Use dictConfig instead of fileConfig to read configurations (#2059)
+      * Support logging configuration file in YAML format (#2080)
+      * Support custom audit logger names (#2106)
 
   Fixes:
     * Fix unauthorized statistics view (#1238)
-    * Fix API endpoints to avoid redirects (#1999)
     * Fix a bug which caused an exception during PSKC key file container import (#1915)
+    * Fix link on privacyIDEA logo in the WebUI when no user is logged in (#1944)
+    * Updated CA files in testdata which were about to expire (#1960)
+    * Fix API endpoints to avoid redirects (#1999)
     * Fix url_decode padding before it could cause any issues (#2000)
     * Initialize rtype in user_object correctly (#2007)
     * Fix an inconsistency of start_tls with postgres SQL (#2025)
@@ -50,6 +57,9 @@ Version 3.3, *2020-XX-XX*
       ContainerAudit module (#2029)
     * Fix a bug which prevented defining an SQL resolver without a password (#2030)
     * Fix missing "position" argument on event import with pi-manage (#2036)
+    * Fix timing issues in tests (#2041)
+    * Fix documentation (#2049)
+    * Fix sorting token table by column (#2111)
 
 Version 3.2.2, 2020-01-17
 
@@ -1243,3 +1253,4 @@ Version 1.1, 2014-06-25
  * Fixed the token config to be filled with sensible data, so
    that you do not need to configure ALL token types.
  * Added script to clean up old audit logs.
+
