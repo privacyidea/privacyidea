@@ -8,17 +8,12 @@ Version 3.3, *2020-XX-XX*
     * New Event Handler Module: Logging module enables custom event-driven logging (#1580)
 
   Enhancements:
-    * API
-      * Added the remote serial to the tokeninfo of a remote token to better track
-        authenticated devices (#2031)
-    * Tokens:
-      * todo: Support unicode in questionnaire token (#2045)
     * Event Handler:
       * The OTP token QR code can now be added not only inline but also as an attachment
         to email notifications (#1226)
     * Policies:
-      * Added a policy to define the allowed characters for PINs (#2049)
-      * Added some policies to limit the number of tokens per user and per type (#1375)
+      * Added a policy to define the allowed characters for PINs (#2051)
+      * Add policies to limit the number of destinct tokentypes per user (#1375)
       * Improved distinction between the username of the administrator
         and the username of the user. Add an admin username to policies. (#1867)
         Thus allowing:
@@ -35,13 +30,15 @@ Version 3.3, *2020-XX-XX*
         offered with a QR codes to direct him to the Authenticator App stores (#1919).
       * Adding version hashes to WebUI components to avoid working with outdated
         templates (#1871)
-      * Updated angular.js, bootstrap and JQuery (#830)
+      * Updated bootstrap and AngularJS (#830)
       * Rework policy matching (#1691 #2024 #2038)
     * Documentation
-      * The documentation was restructured and updated (#1967 #1981 #1504 #2049 #2089 2090).
+      * The documentation was restructured and updated (#1967 #1981 #1504 #2049 #2089 #2090).
     * Tools
       * Added a migration script to update the database schema from 2.23.5 to 3.2.2 (#2040)
     * Misc
+      * Added the remote serial to the tokeninfo of a remote token to better track
+        authenticated devices (#2031)
       * Use dictConfig instead of fileConfig to read configurations (#2059)
       * Support logging configuration file in YAML format (#2080)
       * Support custom audit logger names (#2106)
@@ -61,8 +58,8 @@ Version 3.3, *2020-XX-XX*
     * Fix a bug which prevented defining an SQL resolver without a password (#2030)
     * Fix missing "position" argument on event import with pi-manage (#2036)
     * Fix timing issues in tests (#2041)
+    * Fix documentation (#2049)
     * Fix sorting token table by column (#2111)
-    * Fix errors, which occured due to the updating of the java script components (#2061 #2064 #2114 #2117 #2122 #2125 #2127)
 
 Version 3.2.2, 2020-01-17
 
