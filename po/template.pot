@@ -3790,7 +3790,7 @@ msgid "View user in Audit log"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:1
-msgid "WebAUthn Token settings"
+msgid "WebAuthn Token settings"
 msgstr ""
 
 #: privacyidea/static/components/login/factories/webauthn.js:42
