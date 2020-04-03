@@ -32,3 +32,7 @@ privacyidea
 ===========
 This directory contains some config examples to be deployed from setup.py
 into the python package.
+
+docker
+===========
+Contains everything you need to build working privacyidea docker image, with example docker-compose based deploy using it.

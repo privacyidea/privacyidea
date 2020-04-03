@@ -1,0 +1,56 @@
+version: "3.4"
+
+services:
+
+  privacyidea:
+    # docker exec -it privacyidea bash
+    container_name: privacyidea
+    build: .
+    depends_on:
+      - mysql
+    volumes:
+      # test config
+      - ./test-config-pi.cfg:/etc/privacyidea/pi.cfg
+      # keys
+      - ../privacyidea:/etc/privacyidea/keys
+
+    ports:
+      # http://localhost:80/
+      - "80:80"
+
+  mysql:
+    container_name: privacyidea-mysql
+    image: mysql:8.0.16
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: test1
+      MYSQL_PASSWORD: test1
+      MYSQL_USER: test1
+      MYSQL_DATABASE: test1
+    security_opt:
+      - seccomp:unconfined
+    #
+    # # uncommented the volume if you want to have database persisted!
+    #
+    # volumes:
+    #   - ./data/mysql:/var/lib/mysqlgi
+    #
+    # # uncommend ports to access db locally
+    #
+    # ports:
+    #   - "3306:3306"
+
+  # phpmyadmin:
+  #   container_name: privacyidea-phpmyadmin
+  #   image: phpmyadmin/phpmyadmin
+  #   environment:
+  #     PMA_HOST: mysql
+  #     PMA_PASSWORD: test1
+  #     PMA_USER: test1
+  #     PMA_PORT: "3306"
+  #   depends_on:
+  #     - mysql
+  #   ports:
+  #     # http://localhost:8017/
+  #     - "8017:80"
+
