@@ -452,7 +452,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI des Authentisierungsservers"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:320
+#: privacyidea/static/components/login/controllers/loginControllers.js:319
 msgid "Authentication failed."
 msgstr "Authentisierung fehlgeschlagen."
 
@@ -578,12 +578,12 @@ msgstr "Zertifikate: x509 Zertifikate ausrollen."
 msgid "Certificates Templates file"
 msgstr "Datei mit Zertifikatstemplates"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:216
+#: privacyidea/static/components/login/controllers/loginControllers.js:215
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "Challenge-Response Anmeldung. Sie sind noch nicht fertig angemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:291
+#: privacyidea/static/components/login/controllers/loginControllers.js:290
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Challenge-Response Anmeldung. Ihre Antwort war ungültig!"
 
@@ -691,7 +691,7 @@ msgstr "Clients"
 msgid "Close"
 msgstr "Schließen"
 
-#: privacyidea/static/templates/menu.html:134
+#: privacyidea/static/templates/menu.html:133
 msgid "Community"
 msgstr "Community"
 
@@ -1704,20 +1704,20 @@ msgstr "Liste der privacyIDEA Server"
 msgid "List tokens"
 msgstr "Tokenliste anzeigen"
 
-#: privacyidea/static/components/directives/views/directive.attachmachine.html:11
+#: privacyidea/static/components/directives/views/directive.attachmachine.html:14
 msgid "Loading Machines..."
 msgstr "Lade Maschinen..."
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:14
-#: privacyidea/static/components/directives/views/directive.attachtoken.html:12
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr "Laden Seriennummern..."
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:23
+#: privacyidea/static/components/directives/views/directive.assignuser.html:25
 msgid "Loading users..."
 msgstr "Lade Benutzer..."
 
-#: privacyidea/static/templates/menu.html:142
+#: privacyidea/static/templates/menu.html:141
 msgid "Lock screen"
 msgstr "Applikation sperren"
 
@@ -1736,7 +1736,7 @@ msgstr "Anmelden"
 msgid "Log out"
 msgstr "Abmelden"
 
-#: privacyidea/static/templates/menu.html:112
+#: privacyidea/static/templates/menu.html:111
 msgid "Login"
 msgstr "Anmelden"
 
@@ -1751,7 +1751,7 @@ msgid "Login with credentials"
 msgstr "Als anderer Benutzer anmelden"
 
 #: privacyidea/static/components/token/views/token.enroll.html:163
-#: privacyidea/static/templates/menu.html:145
+#: privacyidea/static/templates/menu.html:144
 msgid "Logout"
 msgstr "Abmelden"
 
@@ -1896,9 +1896,22 @@ msgstr "Zu dem OTP-Wert {{ otp }} konnte keine Seriennummer gefunden werden."
 msgid "No anonymous referral chasing"
 msgstr "Referrals werden nicht (anonym) verfolgt."
 
+#: privacyidea/static/components/directives/views/directive.attachmachine.html:17
+msgid "No machine found"
+msgstr "Keine Maschine gefunen"
+
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:314
 msgid "No retrieval of schema information"
 msgstr "Schema-Informationen werden nicht abgerufen."
+
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.attachtoken.html:18
+msgid "No serial found"
+msgstr "Keine Seriennummer gefunden"
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:28
+msgid "No user found"
+msgstr "Keinen Benutzer gefunden"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:67
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
@@ -1999,7 +2012,7 @@ msgstr ""
 "wird?"
 
 #: privacyidea/static/templates/baseline.html:26
-#: privacyidea/static/templates/menu.html:130
+#: privacyidea/static/templates/menu.html:129
 msgid "Online Documentation"
 msgstr "Online Dokumentation"
 
@@ -2054,13 +2067,13 @@ msgstr "PAPER: OTP-Liste auf einem Stück Papier"
 msgid "PGP Key"
 msgstr "PGP-Schlüssel"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:22
-#: privacyidea/static/components/directives/views/directive.assignuser.html:31
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:43
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:547
+#: privacyidea/static/components/login/controllers/loginControllers.js:528
 msgid "PIN changed successfully."
 msgstr "PIN erfolgreich geändert."
 
@@ -2129,7 +2142,7 @@ msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Bitte beantworten Sie wenigstens {{ num_answers }} der folgenden Fragen."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:228
+#: privacyidea/static/components/login/controllers/loginControllers.js:227
 msgid "Please confirm with one of these tokens:"
 msgstr "Bitte bestätigen Sie mit einem dieser Token:"
 
@@ -2357,7 +2370,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Realm "
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:495
+#: privacyidea/static/components/login/controllers/loginControllers.js:494
 msgid "Realm defrealm created."
 msgstr "Der Realm defrealm wurde erzeugt."
 
@@ -2381,7 +2394,7 @@ msgstr "Empfänger für Test-Emails"
 msgid "Recorded Last Runs"
 msgstr "Letzte Ausführung"
 
-#: privacyidea/static/templates/menu.html:103
+#: privacyidea/static/templates/menu.html:102
 msgid "Refresh"
 msgstr "Aktualisieren"
 
@@ -2392,7 +2405,7 @@ msgstr "QR-Code neu erzeugen"
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:89
-#: privacyidea/static/templates/menu.html:108
+#: privacyidea/static/templates/menu.html:107
 msgid "Register"
 msgstr "Registrieren"
 
@@ -2434,8 +2447,8 @@ msgstr "Remote Benutzer"
 msgid "Repeat new PIN"
 msgstr "PIN wiederholen"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:30
-#: privacyidea/static/components/directives/views/directive.assignuser.html:39
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:35
+#: privacyidea/static/components/directives/views/directive.assignuser.html:44
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:51
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
@@ -2847,7 +2860,7 @@ msgid "Successfully authenticated."
 msgstr "Erfolgreich authentisiert."
 
 #: privacyidea/static/templates/baseline.html:14
-#: privacyidea/static/templates/menu.html:137
+#: privacyidea/static/templates/menu.html:136
 msgid "Support"
 msgstr "Support"
 
@@ -4113,8 +4126,8 @@ msgstr "Transaktions-ID"
 msgid "Type"
 msgstr "Typ"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:26
-#: privacyidea/static/components/directives/views/directive.assignuser.html:35
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:31
+#: privacyidea/static/components/directives/views/directive.assignuser.html:40
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:47
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
@@ -4450,11 +4463,11 @@ msgstr ""
 "Drücken des blinkenden Knopfes oder durch neu Einstecken des Tokens.  Dies "
 "hängt von dem konkreten Tokentyp an."
 
-#: privacyidea/static/templates/menu.html:156
+#: privacyidea/static/templates/menu.html:155
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:363
+#: privacyidea/static/components/login/controllers/loginControllers.js:362
 msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab: "
 

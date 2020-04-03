@@ -8,14 +8,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-03-17 19:19+0100\n"
+"POT-Creation-Date: 2020-04-03 22:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.8.0\n"
+"Generated-By: Babel 2.4.0\n"
 
 #: api/auth.py:203
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -33,25 +33,31 @@ msgstr ""
 msgid "Authentication failure. Missing Authorization header."
 msgstr ""
 
-#: api/lib/utils.py:313 api/lib/utils.py:323
+#: api/lib/utils.py:317 api/lib/utils.py:327
 msgid "Authentication failure. Your token has expired: {0!s}"
 msgstr ""
 
-#: api/lib/utils.py:320
+#: api/lib/utils.py:324
 msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgstr ""
 
-#: api/lib/utils.py:328
+#: api/lib/utils.py:331
+msgid ""
+"Authentication failure. The username {0!s} is not allowed to impersonate "
+"via JWT."
+msgstr ""
+
+#: api/lib/utils.py:335
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
 msgstr ""
 
-#: api/lib/utils.py:346
+#: api/lib/utils.py:353
 msgid "'{0!s}' is an invalid policy name."
 msgstr ""
 
-#: api/lib/utils.py:349
+#: api/lib/utils.py:356
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr ""
 
@@ -1010,6 +1016,18 @@ msgstr ""
 msgid ""
 "Forward the authorization header. This allows to also forward request "
 "like token- and system-requests."
+msgstr ""
+
+#: lib/eventhandler/logginghandler.py:87
+msgid "The name of the logging facility"
+msgstr ""
+
+#: lib/eventhandler/logginghandler.py:93
+msgid "The string to write to the log"
+msgstr ""
+
+#: lib/eventhandler/logginghandler.py:99
+msgid "The logging level for this logging notification"
 msgstr ""
 
 #: lib/eventhandler/requestmangler.py:100

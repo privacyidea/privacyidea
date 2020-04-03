@@ -1,4 +1,4 @@
-Version 3.3, *2020-XX-XX*
+Version 3.3, 2020-04-06
 
   Features:
     * New token type: WebAuthn/FIDO2 token is initially supported by privacyIDEA (#1468)
