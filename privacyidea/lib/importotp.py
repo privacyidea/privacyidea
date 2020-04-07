@@ -47,6 +47,7 @@ It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
 import hmac, hashlib
+
 import defusedxml.ElementTree as etree
 import re
 import binascii
@@ -65,6 +66,7 @@ from bs4 import BeautifulSoup
 import traceback
 from passlib.crypto.digest import pbkdf2_hmac
 import gnupg
+from os import path
 
 import logging
 log = logging.getLogger(__name__)
@@ -547,8 +549,13 @@ class GPGImport(object):
         self.config = config or {}
         self.gnupg_home = self.config.get("PI_GNUPG_HOME",
                                           "/etc/privacyidea/gpg")
-        self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
-        self.private_keys = self.gpg.list_keys(True)
+        if path.isdir(self.gnupg_home):
+            self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
+            self.private_keys = self.gpg.list_keys(True)
+        else:
+            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+
+
 
     def get_publickeys(self):
         """
@@ -559,7 +566,12 @@ class GPGImport(object):
         :return: a dictionary of public keys with fingerprint
         """
         public_keys = {}
-        keys = self.gpg.list_keys(secret=True)
+        if path.isdir(self.gnupg_home):
+            keys = self.gpg.list_keys(secret=True)
+        else:
+            keys = []
+            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+
         for key in keys:
             ascii_armored_public_key = self.gpg.export_keys(key.get("keyid"))
             public_keys[key.get("keyid")] = {"armor": ascii_armored_public_key,
