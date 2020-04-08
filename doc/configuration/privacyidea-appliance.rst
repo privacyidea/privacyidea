@@ -137,7 +137,7 @@ appliance-tool uses a tinc-tunnel to share the configuration and the database.
    the nodes and an SSH root login. Make sure the services are installed.
 
 .. note:: Keep in mind that the log files and backups are also synchronized between
-   the nodes. The setup of log rotation and backup is usually only neccessary on
+   the nodes. The setup of log rotation and backup is usually only necessary on
    the primary instance.
 
 .. warning:: Existing data on the slave node is overwritten and will be lost.
