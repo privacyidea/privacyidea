@@ -31,6 +31,7 @@ def get_file_list(file_path):
 
 
 install_requires = ["beautifulsoup4[lxml]>=4.3.2",
+                    "cbor2>=5.0.1",
                     "configobj>=5.0.6",
                     "croniter>=0.3.8",
                     "cryptography>=2.4.2",
@@ -65,7 +66,7 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
 def get_man_pages(dir):
     """
     Get man pages in a directory.
-    :param dir: 
+    :param dir:
     :return: list of file names
     """
     files = os.listdir(dir)
@@ -79,7 +80,7 @@ def get_man_pages(dir):
 def get_scripts(dir):
     """
     Get files that are executable
-    :param dir: 
+    :param dir:
     :return: list of file names
     """
     files = os.listdir(dir)
