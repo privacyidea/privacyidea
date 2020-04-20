@@ -1092,7 +1092,10 @@ myApp.controller("HTTPResolverController", function(
 ) {
   $scope.params = {
     type: "httpresolver",
-    endpoint: ""
+    endpoint: "",
+    method: "",
+    requestMapping: "",
+    responseMapping: "",
   };
 
   $scope.resolvername = $stateParams.resolvername;

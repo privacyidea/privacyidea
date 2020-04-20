@@ -28,15 +28,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import jsonify
 from .UserIdResolver import UserIdResolver
 import requests
 import logging
+import json
+from urllib.parse import urlencode
 
 ENCODING = "utf-8"
 
 log = logging.getLogger(__name__)
-
 
 class HTTPResolver(UserIdResolver):
 
@@ -93,7 +93,13 @@ class HTTPResolver(UserIdResolver):
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.HTTPResolver.HTTPResolver"
-        descriptor['config'] = {'endpoint': 'string'}
+        descriptor['config'] = {
+            'name': 'string',
+            'endpoint': 'string',
+            'method': 'string',
+            'requestMapping': 'string',
+            'responseMapping': 'string'
+        }
         return {typ: descriptor}
 
     @staticmethod
@@ -144,7 +150,7 @@ class HTTPResolver(UserIdResolver):
         :return:  dictionary, if no object is found, the dictionary is empty
         :rtype: dict
         """
-        return self._getUser(userid)
+        return HTTPResolver._getUser(self, self.config, userid)
 
     def getUserList(self, searchDict=None):
         """
@@ -180,7 +186,7 @@ class HTTPResolver(UserIdResolver):
         :param config: The configuration values of the resolver
         :type config: dict
         """
-        self.endpoint = config.get('endpoint')
+        self.config = config
         return self
 
     def checkPass(self, uid, password):
@@ -261,8 +267,8 @@ class HTTPResolver(UserIdResolver):
         desc = ""
         success = False
         try:
-            response = requests.get(param.get('endpoint') % param.get('testEmail')).json()
-            desc = {k.lower(): v for k, v in response.items()}
+            response = cls._getUser(param, param.get('testEmail'))
+            desc = response
             success = True
         except Exception as e:
             success = False
@@ -288,6 +294,29 @@ class HTTPResolver(UserIdResolver):
     #
     #   Private methods
     #
-    def _getUser(self, userid):
-        response = requests.get(self.endpoint % userid).json()
+    @classmethod
+    def _getUser(self, param, userid):
+        method = param.get('method').lower()
+        endpoint = param.get('endpoint')
+        requestMappingJSON = json.loads(param.get('requestMapping').replace("#userid", userid))
+        responseMapping = param.get('responseMapping')
+
+        if method not in ('post', 'get'):
+            raise Exception('Method have to be "GET" or "POST"')
+
+        if method == "post":
+            response = requests.post(endpoint, json = requestMappingJSON)
+        else:
+            response = requests.get(endpoint, urlencode(requestMappingJSON))
+        
+        if response.status_code >= 400:
+            raise Exception(response.status_code, response.text)
+
+        response = response.json()
+
+        if response.get('IsError') or not response.get('IsValidModel'):
+            raise Exception(response)
+
+        response['userid'] = response.get(responseMapping)
+
         return {k.lower(): v for k, v in response.items()}
