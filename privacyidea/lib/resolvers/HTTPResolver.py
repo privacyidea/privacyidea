@@ -150,7 +150,7 @@ class HTTPResolver(UserIdResolver):
         :return:  dictionary, if no object is found, the dictionary is empty
         :rtype: dict
         """
-        return HTTPResolver._getUser(self, self.config, userid)
+        return HTTPResolver._getUser(self.config, userid)
 
     def getUserList(self, searchDict=None):
         """
