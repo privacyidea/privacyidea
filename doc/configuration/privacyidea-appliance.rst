@@ -159,7 +159,7 @@ by age or the number of entries. The syntax follows the crontab syntax as explai
 in :ref:`backup_and_restore`.
 
 .. note:: Keep in mind that the audit log is synchronized between the nodes in a redundant
-   setup. Therefore an audit log rotation is only nessesary on one node.
+   setup. Therefore an audit log rotation is only necessary on one node.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
 .. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso
