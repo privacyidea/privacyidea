@@ -493,6 +493,14 @@ def create_pgp_keys(keysize=2048, force=False):
     input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
                                    name_real="privacyIDEA Server",
                                    name_comment="Import")
+    inputs = input_data.split("\n")
+    if inputs[-2] == "%commit":
+        del(inputs[-1])
+        del(inputs[-1])
+        inputs.append("%no-protection")
+        inputs.append("%commit")
+        inputs.append("")
+        input_data = "\n".join(inputs)
     gpg.gen_key(input_data)
 
 
