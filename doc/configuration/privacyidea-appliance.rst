@@ -125,22 +125,18 @@ You can select a backup and you are asked if you want to restore the data.
 Database: Setup Redundancy
 ..........................
 
-The appliance-tool is also capable of setting up a redundant setup, between
+The appliance-tool is also capable of setting up a redundant setup between
 two privacyIDEA nodes. For the setup, the privacyIDEA slave instance has to
 be setup and running with identical software than the master instance. The
-appliance-tool uses a tinc-tunnel to share the configuration and the database.
+appliance-tool can use a tinc-tunnel to share the configuration and the database.
 
 .. figure:: images/appliance/database.png
    :width: 400px
 
-.. note:: The redundancy requires to setup a tinc VPN connection between
-   the nodes and an SSH root login. Make sure the services are installed.
+.. note:: If you choose to use the tinc VPN connection between
+   the nodes and an SSH root login make sure the services are installed.
 
-.. note:: Keep in mind that the log files and backups are also synchronized between
-   the nodes. The setup of log rotation and backup is usually only necessary on
-   the primary instance.
-
-.. warning:: Existing data on the slave node is overwritten and will be lost.
+.. warning:: Existing data on the second node is overwritten and will be lost.
 
 .. figure:: images/appliance/redundancy-successful.png
    :width: 450px
@@ -150,7 +146,7 @@ appliance-tool uses a tinc-tunnel to share the configuration and the database.
 Updates
 .......
 
-In this menu, you can setup cronjobs for automatic updates which is seldomly
+In this menu, you can setup cronjobs for automatic updates which is seldom
 used in productive setups.
 
 .. _pi-appliance_audit:
@@ -162,6 +158,8 @@ In the `Audit Rotation` menu, you can setup cronjobs for the audit rotation cond
 by age or the number of entries. The syntax follows the crontab syntax as explained
 in :ref:`backup_and_restore`.
 
+.. note:: Keep in mind that the audit log is synchronized between the nodes in a redundant
+   setup. Therefore an audit log rotation is only nessesary on one node.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
 .. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso
