@@ -305,9 +305,9 @@ class HTTPResolver(UserIdResolver):
             raise Exception('Method have to be "GET" or "POST"')
 
         if method == "post":
-            response = requests.post(endpoint, json = requestMappingJSON)
+            response = requests.post(endpoint, json = requestMappingJSON, headers={'Content-Type': 'application/json; charset=UTF-8'})
         else:
-            response = requests.get(endpoint, urlencode(requestMappingJSON))
+            response = requests.get(endpoint, urlencode(requestMappingJSON), headers={'Content-Type': 'application/json; charset=UTF-8'})
         
         if response.status_code >= 400:
             raise Exception(response.status_code, response.text)
