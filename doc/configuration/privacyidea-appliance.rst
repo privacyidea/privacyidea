@@ -126,15 +126,18 @@ Database: Setup Redundancy
 ..........................
 
 The appliance-tool is also capable of setting up a redundant setup between
-two privacyIDEA nodes. For the setup, the privacyIDEA slave instance has to
-be setup and running with identical software than the master instance. The
+two privacyIDEA nodes. The replication starts from a primary node and copies
+the configuration and database to a second privacyIDEA instance, optionally
+via a tinc tunnel. The second node has to share the version number with the
+primary instance but may be otherwise unconfigured.
+The
 appliance-tool can use a tinc-tunnel to share the configuration and the database.
 
 .. figure:: images/appliance/database.png
    :width: 400px
 
 .. note:: If you choose to use the tinc VPN connection between
-   the nodes and an SSH root login make sure the services are installed.
+   the nodes and an SSH root login, make sure the services are installed.
 
 .. warning:: Existing data on the second node is overwritten and will be lost.
 
@@ -159,7 +162,8 @@ by age or the number of entries. The syntax follows the crontab syntax as explai
 in :ref:`backup_and_restore`.
 
 .. note:: Keep in mind that the audit log is synchronized between the nodes in a redundant
-   setup. Therefore an audit log rotation is only necessary on one node.
+   setup. If you chose to rotate both audit logs, make sure you do it at different times to
+   avoid synchronisation issues.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
 .. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso
