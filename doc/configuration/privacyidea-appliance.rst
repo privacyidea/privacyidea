@@ -127,8 +127,8 @@ Database: Setup Redundancy
 
 The appliance-tool is also capable of setting up a redundant setup between
 two privacyIDEA nodes. The replication starts from a primary node and copies
-the configuration and database to a second privacyIDEA instance, optionally
-via a tinc tunnel. The second node has to share the version number with the
+the configuration and database to a second privacyIDEA instance
+The second node has to share the version number with the
 primary instance but may be otherwise unconfigured.
 The
 appliance-tool can use a tinc-tunnel to share the configuration and the database.
