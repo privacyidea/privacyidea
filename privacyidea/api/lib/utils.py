@@ -268,7 +268,10 @@ def get_priority_from_param(param):
     priority = {}
     for k, v in param.items():
         if k.startswith("priority."):
-            priority[k[len("priority."):]] = int(v)
+            try:
+                priority[k[len("priority."):]] = int(v)
+            except TypeError:
+                priority[k[len("priority."):]] = None
     return priority
 
 
