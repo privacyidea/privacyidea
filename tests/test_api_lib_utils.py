@@ -6,7 +6,8 @@ from .base import MyApiTestCase
 
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
-                                       verify_auth_token, is_fqdn, attestation_certificate_allowed, get_priority_from_param)
+                                       verify_auth_token, is_fqdn, attestation_certificate_allowed,
+                                       get_priority_from_param)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
