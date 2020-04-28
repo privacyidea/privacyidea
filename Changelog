@@ -1,3 +1,9 @@
+Version 3.3.1, 2020-04-29
+
+  Fixes:
+    * Fix broken U2F support (#2157)
+    * Fix creation of PGP keys with pi-maange (#2165)
+
 Version 3.3, 2020-04-06
 
   Features:
