@@ -21,9 +21,12 @@
            class="form-control"
            placeholder="Users email address..."
            ng-model="form.email" name="email" />
+</div>
+
+<div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
     <label for="description" translate>Description</label>
     <input type="text" class="form-control"
-            placeholder="Some nice words..."
+            placeholder="{{ 'Some nice words...'|translate }}"
             ng-model="form.description" />
 </div>
 

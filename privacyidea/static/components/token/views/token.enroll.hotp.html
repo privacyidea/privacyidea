@@ -84,7 +84,8 @@
         The Google Authenticator only supports the SHA1 algorithm.
     </p>
 </div>
-<div class="form-group">
+
+<div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
     <label for="description" translate>Description</label>
     <input type="text" class="form-control"
             placeholder="{{ 'Some nice words...'|translate }}"
