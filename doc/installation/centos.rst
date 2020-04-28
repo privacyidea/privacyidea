@@ -66,19 +66,23 @@ Create the virtual environment::
 
     $ virtualenv /opt/privacyidea
 
-and activate it::
+activate it::
 
     $ . /opt/privacyidea/bin/activate
+
+and install/update some prerequisites::
+
+    (privacyidea)$ pip install -U pip setuptools
 
 If this should be a pinned installation (that is the environment we use to build and test),
 we need to install some pinned dependencies first. They should match the version of the targeted
 privacyIDEA::
 
-        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.0.2/requirements.txt
+        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.3/requirements.txt
 
 Then just install the targeted privacyIDEA version with::
 
-        (privacyidea)$ pip install privacyidea==3.0.2
+        (privacyidea)$ pip install privacyidea==3.3
 
 Setting up privacyIDEA
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -174,10 +178,19 @@ configuration first::
     $ mv welcome.conf welcome.conf.inactive
     $ curl -O https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf
 
+In order to avoid recreation of the configuration files during update You can
+create empty dummy files for ``ssl.conf`` and ``welcome.conf``.
+
 And we need a corresponding ``wsgi``-script file in ``/etc/privacyidea/``::
 
     $ cd /etc/privacyidea
     $ curl -O https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyideaapp.wsgi
+
+If `firewalld` is running (:code:`$ firewall-cmd --state`) You need to open the https
+port to allow connections::
+
+    $ firewall-cmd --permanent --add-service=https
+    $ firewall-cmd --reload
 
 After a restart of the apache webserver (:code:`$ systemctl restart httpd`)
 everything should be up and running.
