@@ -5,6 +5,7 @@ import json
 import os
 import datetime
 import codecs
+from mock import mock
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
@@ -1458,20 +1459,22 @@ class APITokenTestCase(MyApiTestCase):
         set_policy("firstuse", scope=SCOPE.ENROLL,
                    action=ACTION.CHANGE_PIN_FIRST_USE)
 
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"genkey": 1,
-                                                 "pin": "123456"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            detail = res.json.get("detail")
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"genkey": 1,
+                                                     "pin": "123456"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                detail = res.json.get("detail")
 
-            serial = detail.get("serial")
-            token = get_tokens(serial=serial)[0]
-            ti = token.get_tokeninfo("next_pin_change")
-            ndate = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
-            self.assertEqual(ti, ndate)
+                serial = detail.get("serial")
+                token = get_tokens(serial=serial)[0]
+                ti = token.get_tokeninfo("next_pin_change")
+                self.assertEqual(ti, current_time.strftime(DATE_FORMAT))
 
         # If the administrator sets a PIN of the user, the next_pin_change
         # must also be created!
@@ -1481,21 +1484,21 @@ class APITokenTestCase(MyApiTestCase):
         ti = token.get_tokeninfo("next_pin_change")
         self.assertEqual(ti, None)
         # Now we set the PIN
-        with self.app.test_request_context('/token/setpin/SP001',
-                                           method='POST',
-                                           data={"otppin": "1234"},
-                                           headers={'Authorization': self.at}):
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/setpin/SP001',
+                                               method='POST',
+                                               data={"otppin": "1234"},
+                                               headers={'Authorization': self.at}):
 
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            detail = res.json.get("detail")
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
 
-            serial = "SP001"
-            token = get_tokens(serial=serial)[0]
-            ti = token.get_tokeninfo("next_pin_change")
-            ndate = datetime.datetime.now(tzlocal()).strftime(DATE_FORMAT)
-            self.assertEqual(ti, ndate)
+                serial = "SP001"
+                token = get_tokens(serial=serial)[0]
+                ti = token.get_tokeninfo("next_pin_change")
+                self.assertEqual(ti, current_time.strftime(DATE_FORMAT))
 
         delete_policy("firstuse")
 

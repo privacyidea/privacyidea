@@ -77,7 +77,7 @@ This method is supposed to be overwritten by the corresponding token classes.
 """
 import logging
 import hashlib
-import datetime
+from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
                     ParameterError)
@@ -791,7 +791,7 @@ class TokenClass(object):
             self.token.failcount = (self.token.failcount + 1)
             if self.token.failcount == self.token.maxfail:
                 self.add_tokeninfo(FAILCOUNTER_EXCEEDED,
-                                   datetime.datetime.now(tzlocal()).strftime(
+                                   datetime.now(tzlocal()).strftime(
                                        DATE_FORMAT))
         try:
             self.token.save()
@@ -1006,7 +1006,7 @@ class TokenClass(object):
         key = "next_pin_change"
         if password:
             key = "next_password_change"
-        new_date = datetime.datetime.now(tzlocal()) + datetime.timedelta(days=days)
+        new_date = datetime.now(tzlocal()) + timedelta(days=days)
         self.add_tokeninfo(key, new_date.strftime(DATE_FORMAT))
 
     def is_pin_change(self, password=False):
@@ -1021,9 +1021,9 @@ class TokenClass(object):
         if password:
             key = "next_password_change"
         sdate = self.get_tokeninfo(key)
-        #date_change = datetime.datetime.strptime(sdate, DATE_FORMAT)
+        #date_change = datetime.strptime(sdate, DATE_FORMAT)
         date_change = parse_date_string(parse_legacy_time(sdate))
-        return datetime.datetime.now(tzlocal()) > date_change
+        return datetime.now(tzlocal()) > date_change
 
 
     @check_token_locked
@@ -1066,11 +1066,11 @@ class TokenClass(object):
                         "failcounter_clear_timeout: "
                         "{0!s}".format(exx))
         if timeout and self.token.failcount == self.get_max_failcount():
-            now = datetime.datetime.now(tzlocal())
+            now = datetime.now(tzlocal())
             lastfail = self.get_tokeninfo(FAILCOUNTER_EXCEEDED)
             if lastfail is not None:
                 failcounter_exceeded = parse_legacy_time(lastfail, return_date=True)
-                if now > failcounter_exceeded + datetime.timedelta(minutes=timeout):
+                if now > failcounter_exceeded + timedelta(minutes=timeout):
                     self.reset()
                     return True
         return False
@@ -1106,7 +1106,7 @@ class TokenClass(object):
 
     def check_validity_period(self):
         """
-        This checks if the datetime.datetime.now() is within the validity
+        This checks if the datetime.now() is within the validity
         period of the token.
 
         :return: success
@@ -1116,15 +1116,15 @@ class TokenClass(object):
         end = self.get_validity_period_end()
 
         if start:
-            #dt_start = datetime.datetime.strptime(start, DATE_FORMAT)
+            #dt_start = datetime.strptime(start, DATE_FORMAT)
             dt_start = parse_legacy_time(start, return_date=True)
-            if dt_start > datetime.datetime.now(tzlocal()):
+            if dt_start > datetime.now(tzlocal()):
                 return False
 
         if end:
-            #dt_end = datetime.datetime.strptime(end, DATE_FORMAT)
+            #dt_end = datetime.strptime(end, DATE_FORMAT)
             dt_end = parse_legacy_time(end, return_date=True)
-            if dt_end < datetime.datetime.now(tzlocal()):
+            if dt_end < datetime.now(tzlocal()):
                 return False
 
         return True
@@ -1612,7 +1612,7 @@ class TokenClass(object):
                 # We need to set the timezone manually
                 last_success_auth = last_success_auth.replace(tzinfo=tzutc())
             # The last auth is to far in the past
-            if last_success_auth + tdelta < datetime.datetime.now(tzlocal()):
+            if last_success_auth + tdelta < datetime.now(tzlocal()):
                 res = False
                 log.debug("The last successful authentication is too old: "
                           "{0!s}".format(last_success_auth))

@@ -52,7 +52,7 @@ import defusedxml.ElementTree as etree
 import re
 import binascii
 import base64
-import cgi
+import html
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -709,11 +709,11 @@ def export_pskc(tokenobj_list, psk=None):
                     </TimeDrift>
                 </Data>
         </Key>
-        </KeyPackage>""".format(serial=cgi.escape(serial), type=cgi.escape(type), otplen=otplen,
-                                issuer=cgi.escape(issuer), manufacturer=cgi.escape(manufacturer),
+        </KeyPackage>""".format(serial=html.escape(serial), type=html.escape(type), otplen=otplen,
+                                issuer=html.escape(issuer), manufacturer=html.escape(manufacturer),
                                 counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
                                 timedrift=timedrift, value_mac=mac_value,
-                                suite=cgi.escape(suite)), "html.parser")
+                                suite=html.escape(suite)), "html.parser")
 
             soup.macmethod.insert_after(kp2)
             number_of_exported_tokens += 1
