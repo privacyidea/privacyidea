@@ -5,7 +5,7 @@
 #             Read tables oc_accounts and oc_users from owncloud
 #
 from __future__ import print_function
-__doc__ = """You can use this script to read the tables oc_accounts and 
+__doc__ = """You can use this script to read the tables oc_accounts and
 oc_users from owncloud and fill a local user table in privacyIDEA.
 
 Run this script in a cron job. It will read the users from ownCloud and
@@ -99,7 +99,7 @@ def sync_owncloud(config_obj):
             print('Insert records {} to {} ...'.format(chunk, min(chunk + chunk_size,
                                                                   values_length) - 1))
             try:
-                conn.execute(table.insert(), values[chunk:chunk+chunk_size])
+                conn.execute(table.insert(), values[chunk:chunk + chunk_size])
             except Exception as err:
                 t = 'Failed to insert chunk: {0!s}'.format(err)
                 warnings.append(t)
@@ -158,15 +158,15 @@ def sync_owncloud(config_obj):
         insert_chunks(conn_pi, user_table, pi_users_insert, config_obj.INSERT_CHUNK_SIZE)
 
     if len(pi_users_update):
-        print("Updating entires.")
+        print("Updating entries.")
         for upd in pi_users_update:
-            stmt = user_table.update().where(user_table.c.id==upd.get("id")).values(upd)
+            stmt = user_table.update().where(user_table.c.id == upd.get("id")).values(upd)
             conn_pi.execute(stmt)
 
     if len(pi_users_delete):
         print("Deleting removed entries.")
         for udel in pi_users_delete:
-            stmt = user_table.delete().where(user_table.c.id==udel)
+            stmt = user_table.delete().where(user_table.c.id == udel)
             conn_pi.execute(stmt)
 
     if warnings:
@@ -178,16 +178,15 @@ def sync_owncloud(config_obj):
 def usage():
     print("""
 privacyidea-sync-owncloud.py --generate-example-config [--config <config file>]
-    
-    --generate-example-config, -g   Output an example config file. 
+
+    --generate-example-config, -g   Output an example config file.
                                     This is a JSON file, that needs to be passed
                                     to this command.
-                                    
+
     --config, -c <file>             The config file, that contains the complete
                                     configuration.
-                                    
-{0!s}                                    
-    """.format(__doc__))
+
+{0!s}""".format(__doc__))
 
 
 try:
