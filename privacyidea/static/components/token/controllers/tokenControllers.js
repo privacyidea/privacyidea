@@ -177,7 +177,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.qrCodeWidth = 250;
 
     if ($state.includes('token.wizard') && !$scope.show_seed) {
-        $scope.qrCodeWidth = 500;
+        $scope.qrCodeWidth = 300;
     }
 
     $scope.checkRight = AuthFactory.checkRight;
