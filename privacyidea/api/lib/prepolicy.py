@@ -969,7 +969,9 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action not in [ACTION.AUDIT]:
+    if action is ACTION.AUDIT:
+        realm = username = resolver = None
+    else:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
