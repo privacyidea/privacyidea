@@ -64,6 +64,7 @@ class CONDITION(object):
     COUNT_AUTH = "count_auth"
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
+    FAILCOUNTER = 'failcounter'
     TOKENINFO = "tokeninfo"
     DETAIL_ERROR_MESSAGE = "detail_error_message"
     DETAIL_MESSAGE = "detail_message"
@@ -236,6 +237,13 @@ class BaseEventHandler(object):
                           "the action, if the difference between the tokeninfo "
                           "field 'count_auth' and 'count_auth_success is "
                           "bigger than 100, less than 99 or exactly 100.")
+            },
+            CONDITION.FAILCOUNTER: {
+                "type": "str",
+                "desc": _("This can be '>9', '<9', or '=10', to trigger "
+                          "the action, if the failcounter of a token matches this value. "
+                          "Note that the failcounter stops increasing, if the max_failcount is "
+                          "reached.")
             },
             CONDITION.TOKENINFO: {
                 "type": "str",
@@ -512,6 +520,12 @@ class BaseEventHandler(object):
                 c_fail = count - c_success
                 cond = conditions.get(CONDITION.COUNT_AUTH_FAIL)
                 if not compare_condition(cond, c_fail):
+                    return False
+
+            if CONDITION.FAILCOUNTER in conditions:
+                failcount = token_obj.get_failcount()
+                cond = conditions.get(CONDITION.FAILCOUNTER)
+                if not compare_condition(cond, failcount):
                     return False
 
             if CONDITION.TOKENINFO in conditions:
