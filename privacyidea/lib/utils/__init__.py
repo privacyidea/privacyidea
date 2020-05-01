@@ -888,6 +888,34 @@ def compare_value_value(value1, comparator, value2):
     raise Exception("Unknown comparator: {0!s}".format(comparator))
 
 
+def compare_generic_condition(cond, key_method, warning):
+    """
+    Compares a condition like "tokeninfoattribute == value".
+    It uses the "key_method" to determine the value of "tokeninfoattribute".
+
+    If the value does not match, it returns False.
+
+    :param cond: A condition containing a comparator like "==", ">", "<"
+    :param key_method: A function call, that get the value from the key
+    :param warning: A warnnig message to be written to the log file.
+    :return: True of False
+    """
+    key = value = None
+    for comparator in ["==", ">", "<", None]:
+        if len(cond.split(comparator)) == 2:
+            key, value = [x.strip() for x in cond.split(comparator)]
+            break
+    if value:
+        if not compare_value_value(key_method(key), comparator, value):
+            return False
+    else:
+        # There is a condition, but we do not know it!
+        log.warning(warning.format(cond))
+        return False
+
+    return True
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.

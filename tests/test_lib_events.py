@@ -22,6 +22,7 @@ from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
+from privacyidea.lib.counter import increase as counter_increase
 from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
@@ -522,6 +523,55 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         remove_token(serial)
+
+    def test_08_countername_condition(self):
+        # increase a counter to 4
+        for i in range(0, 4):
+            counter_increase("myCounter")
+
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+                                                "myCounter<4"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+                                                "myCounter==4"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+                                                "myCounter>3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
 
 
 class CounterEventTestCase(MyTestCase):

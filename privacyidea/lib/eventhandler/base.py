@@ -38,7 +38,9 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
+from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
+                                   compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
                                    check_ip_in_policy)
 import datetime
@@ -64,6 +66,7 @@ class CONDITION(object):
     COUNT_AUTH = "count_auth"
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
+    COUNTERNAME = "countername"
     TOKENINFO = "tokeninfo"
     DETAIL_ERROR_MESSAGE = "detail_error_message"
     DETAIL_MESSAGE = "detail_message"
@@ -243,6 +246,12 @@ class BaseEventHandler(object):
                           "field. You need to enter something like "
                           "'<fieldname> == <fieldvalue>', '<fieldname> > "
                           "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
+            },
+            CONDITION.COUNTERNAME: {
+                "type": "str",
+                "desc": _("This condition can check an arbitrary countername value and "
+                          "compare it like 'myCounter == 1000', 'myCounter > 1000' or "
+                          "'myCounter < 1000'.")
             },
             CONDITION.DETAIL_ERROR_MESSAGE: {
                 "type": "str",
@@ -447,6 +456,15 @@ class BaseEventHandler(object):
             if not bool(m):
                 return False
 
+        if CONDITION.COUNTERNAME in conditions:
+            # Can be countername==1000
+            if not compare_generic_condition(conditions.get(CONDITION.COUNTERNAME),
+                                             counter_read,
+                                             "Misconfiguration in your countername "
+                                             "condition: {0!s}"
+                                             ):
+                return False
+
         # Token specific conditions
         if token_obj:
             if CONDITION.TOKENTYPE in conditions:
@@ -521,25 +539,10 @@ class BaseEventHandler(object):
                 s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
                     DATE_FORMAT)
                 cond = cond.format(now=s_now)
-                if len(cond.split("==")) == 2:
-                    key, value = [x.strip() for x in cond.split("==")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              "==", value):
-                        return False
-                elif len(cond.split(">")) == 2:
-                    key, value = [x.strip() for x in cond.split(">")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              ">", value):
-                        return False
-                elif len(cond.split("<")) == 2:
-                    key, value = [x.strip() for x in cond.split("<")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              "<", value):
-                        return False
-                else:
-                    # There is a condition, but we do not know it!
-                    log.warning("Misconfiguration in your tokeninfo "
-                                "condition: {0!s}".format(cond))
+                if not compare_generic_condition(cond,
+                                                 token_obj.get_tokeninfo,
+                                                 "Misconfiguration in your tokeninfo "
+                                                 "condition: {0!s}"):
                     return False
 
             if CONDITION.ROLLOUT_STATE in conditions:

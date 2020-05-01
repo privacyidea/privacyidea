@@ -10,6 +10,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
+                                   compare_generic_condition,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
@@ -850,3 +851,34 @@ class UtilsTestCase(MyTestCase):
                            "realm": "Wild West"},
                           {"user": "Dave Rudabaugh",
                            "realm": "Dodge City"})
+
+    def test_34_compare_generic_condition(self):
+
+        def mock_attribute(key):
+            attr = {"a": "10",
+                    "b": "100",
+                    "c": "1000"}
+            return attr.get(key)
+
+        self.assertTrue(compare_generic_condition("a<100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        self.assertTrue(compare_generic_condition("b==100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        # Unknown comparator
+        self.assertFalse(compare_generic_condition("b>=100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("b>100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c < 500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
