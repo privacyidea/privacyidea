@@ -79,6 +79,7 @@ input[type="checkbox"] {
 
 .qr_image-block {
     display:inline-block;
+    margin-left: 15px; /* to cancel the -15px from bootstraps row css */
 }
 
 .qr_image-block img {

@@ -135,9 +135,11 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
 });
 
 
-myApp.controller("tokenAssignController", function ($scope, TokenFactory,
-                                                    $stateParams, AuthFactory,
-                                                    UserFactory, $state) {
+myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
+                                           '$stateParams', 'AuthFactory',
+                                           'UserFactory', '$state',
+    function tokenAssignController($scope, TokenFactory, $stateParams,
+                                   AuthFactory, UserFactory, $state) {
     $scope.assignToken = function () {
         TokenFactory.assign({
             serial: fixSerial($scope.newToken.serial),
@@ -146,16 +148,21 @@ myApp.controller("tokenAssignController", function ($scope, TokenFactory,
             $state.go('token.list');
         });
     };
-});
+}]);
 
-myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
-                                                    $timeout,
-                                                    $stateParams, AuthFactory,
-                                                    UserFactory, $state,
-                                                    ConfigFactory, instanceUrl,
-                                                    $http, hotkeys,
-                                                    gettextCatalog,
-                                                    inform, U2fFactory, webAuthnToken) {
+myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
+                                           "$stateParams", "AuthFactory",
+                                           "UserFactory", "$state",
+                                           "ConfigFactory", "instanceUrl",
+                                           "$http", "hotkeys", "gettextCatalog",
+                                           "inform", "U2fFactory",
+                                           "webAuthnToken",
+                                           "versioningSuffixProvider",
+    function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams,
+                                   AuthFactory, UserFactory, $state,
+                                   ConfigFactory, instanceUrl, $http, hotkeys,
+                                   gettextCatalog, inform, U2fFactory,
+                                   webAuthnToken, versioningSuffixProvider) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -193,6 +200,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     // questions for questionnaire token
     $scope.questions = [];
     $scope.num_questions = 5;
+    $scope.fileVersionSuffix = versioningSuffixProvider.$get()
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -300,6 +308,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
+        $scope.fileVersionSuffix = versioningSuffixProvider.$get()
     };
 
     // helper function for setting indexed secret attribute
@@ -640,7 +649,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         startingDay: 1
     };
 
-});
+}]);
 
 
 myApp.controller("tokenImportController", function ($scope, Upload,
