@@ -823,6 +823,30 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     return ''.join(urandom.choice(characters) for _x in range(size))
 
 
+def generate_password_with_requirements(size=6, characters=string.ascii_lowercase +
+                        string.ascii_uppercase + string.digits, exclude='', requirements=[]):
+    """
+    Generate a random password of the specified length of the given characters
+    with optional requirements
+
+    :param size: The length of the password
+    :param characters: The characters the password may consist of
+    :param requirements_list: A list of strings from which the password must contain at least one character
+    :return: password
+    :rtype: basestring
+    """
+    # add one character from each string in the requirements list
+    passwd = [urandom.choice(str) for str in requirements]
+    # remove exclude characters from list of allowed characters
+    allowed_characters = list(set(characters)-set(exclude))
+    # fill the password until size with allowed characters
+    passwd.extend(urandom.choice(allowed_characters) for _x in range(size - len(requirements)))
+    # return shuffled password
+    random.shuffle(passwd)
+    return "".join(passwd)
+
+
+
 def generate_keypair(rsa_keysize=2048):
     """
     This creates an RSA key pair

@@ -80,7 +80,8 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_ty
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
-from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.crypto import (generate_password,
+                                    generate_password_with_requirements)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -153,6 +154,55 @@ class prepolicy(object):
         return policy_wrapper
 
 
+def generate_pin_from_policy(policy,size=6):
+    """
+    This function creates a string of allowed characters from the value of a pincontents policy
+    The policy to check a PIN can contain of "c", "n" and "s".
+    "cn" means, that the PIN should contain a character and a number.
+    "+cn" means, that the PIN should contain elements from the group of characters and numbers
+    "-ns" means, that the PIN must not contain numbers or special characters
+    "[12345]" means, that the PIN may only consist of the characters 1,2,3,4 and 5.
+
+    :param policy: The policy that describes the allowed contents of the PIN.
+    :param size: The desired length of the generated pin
+    :return: Tuple of the generated PIN and a description
+    """
+
+    chars = {"c": string.ascii_letters,         # characters
+             "n": string.digits,                # numbers
+             "s": "\.:,;_<>+*!/()=?$§%&#~^-"}   # special
+
+    # default: full character list
+    default_characters = "".join(chars.values())
+
+    not_allowed = []
+    required = []
+    if policy[0] in ["+", "-"] or policy[0] is not "[":
+        for char in policy[1:]:
+            if char not in chars.keys():
+                raise PolicyError("Unknown character specifier in PIN policy.")
+
+    if policy[0] == "+":
+        # grouping
+        required = []
+        for char in policy[1:]:
+            required.append(chars.get(char))
+
+    elif policy[0] == "-":
+        # exclusion
+        for char in policy[1:]:
+            not_allowed.append(chars.get(char))
+
+    elif policy[0] == "[" and policy[-1] == "]":
+        # only allowed characters
+        default_characters = policy[1:-1]
+
+    ret = generate_password_with_requirements(size=size,
+                                        characters=default_characters,
+                                        exclude="".join(not_allowed),requirements=required)
+    return ret
+
+
 def set_random_pin(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API setrandompin function
@@ -182,8 +232,23 @@ def set_random_pin(request=None, action=None):
         raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
                               "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = request.all_data.get("type", "hotp")
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0],list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = generate_pin_from_policy(list(pol_contents)[0],int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
     return True
 
@@ -203,8 +268,23 @@ def init_random_pin(request=None, action=None):
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
                           user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = request.all_data.get("type", "hotp")
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0],list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = generate_pin_from_policy(list(pol_contents)[0],int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
         handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
@@ -1370,7 +1450,7 @@ def indexedsecret_force_attribute(request, action):
 
     return True
 
-  
+
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
