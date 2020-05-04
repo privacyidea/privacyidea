@@ -826,7 +826,7 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     # add one character from each string in the requirements list
     passwd = [urandom.choice(str) for str in requirements]
     # remove exclude characters from list of allowed characters
-    allowed_characters = list(set(characters)-set(exclude))
+    allowed_characters = list(set(characters) - set(exclude))
     # fill the password until size with allowed characters
     passwd.extend(urandom.choice(allowed_characters) for _x in range(size - len(requirements)))
     # return shuffled password
