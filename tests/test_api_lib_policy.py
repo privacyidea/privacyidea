@@ -77,7 +77,7 @@ from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
                                        RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, check_pin_policy
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -650,7 +650,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol2")
         delete_policy("pol3")
 
-    def test_07_set_random_pin(self):
+    def test_07_init_random_pin(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -662,11 +662,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
 
-        # Set a policy that defines the tokenlabel
-        set_policy(name="pol1",
+        # Set policies which define the pin generation behavior
+        contents_policy = "+cns"
+        size_policy = 12
+        set_policy(name="pinsize",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, "12"))
+                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, size_policy))
+        set_policy(name="pincontent",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
@@ -676,13 +682,21 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {
                         "user": "cornelius",
-                        "realm": "home"}
-        init_random_pin(req)
+                        "realm": "realm1"}
 
-        # Check, if the tokenlabel was added
-        self.assertEqual(len(req.all_data.get("pin")), 12)
+        init_random_pin(req)
+        pin = req.all_data.get("pin")
+
+        # check if the pin honors the contents policy
+        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        self.assertTrue(pin_valid)
+
+        # Check, if the pin has the correct length
+        self.assertEqual(len(req.all_data.get("pin")), size_policy)
+
         # finally delete policy
-        delete_policy("pol1")
+        delete_policy("pinsize")
+        delete_policy("pincontent")
         delete_policy("pinhandling")
 
     def test_08_encrypt_pin(self):
