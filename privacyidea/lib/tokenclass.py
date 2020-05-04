@@ -1021,10 +1021,8 @@ class TokenClass(object):
         if password:
             key = "next_password_change"
         sdate = self.get_tokeninfo(key)
-        #date_change = datetime.strptime(sdate, DATE_FORMAT)
         date_change = parse_date_string(parse_legacy_time(sdate))
         return datetime.now(tzlocal()) > date_change
-
 
     @check_token_locked
     def inc_count_auth_success(self):
@@ -1116,13 +1114,11 @@ class TokenClass(object):
         end = self.get_validity_period_end()
 
         if start:
-            #dt_start = datetime.strptime(start, DATE_FORMAT)
             dt_start = parse_legacy_time(start, return_date=True)
             if dt_start > datetime.now(tzlocal()):
                 return False
 
         if end:
-            #dt_end = datetime.strptime(end, DATE_FORMAT)
             dt_end = parse_legacy_time(end, return_date=True)
             if dt_end < datetime.now(tzlocal()):
                 return False
