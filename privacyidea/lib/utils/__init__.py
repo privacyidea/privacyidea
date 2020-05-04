@@ -58,6 +58,9 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 
+SPECIAL_CHARS_REGXEP = r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"
+SPECIAL_CHARS_LIST = "\.:,;_<>+*!/()=?$§%&#~^-"
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -1123,7 +1126,7 @@ def check_pin_policy(pin, policy):
     """
     chars = {"c": r"[a-zA-Z]",
              "n": r"[0-9]",
-             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
+             "s": SPECIAL_CHARS_REGXEP}
     ret = True
     comment = []
 

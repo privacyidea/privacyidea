@@ -77,7 +77,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
-from privacyidea.lib.utils import (get_client_ip,
+from privacyidea.lib.utils import (get_client_ip, SPECIAL_CHARS_LIST,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
@@ -169,7 +169,7 @@ def generate_pin_from_policy(policy, size=6):
 
     chars = {"c": string.ascii_letters,         # characters
              "n": string.digits,                # numbers
-             "s": "\[\].:,;_<>+*!/()=?$§%&#~^-"}   # special
+             "s": SPECIAL_CHARS_LIST}   # special
 
     # default: full character list
     default_characters = "".join(chars.values())
