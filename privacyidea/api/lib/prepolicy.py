@@ -970,6 +970,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 
     # In certain cases we can not resolve the user by the serial!
     if action is ACTION.AUDIT:
+        # In case of audit requests, the parameters "realm" and "user" are used for
+        # filtering the audit log. So these values must not be taken from the request parameters,
+        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
+        # in the decorator "allowed_audit_realm".
         realm = username = resolver = None
     else:
         realm = params.get("realm")

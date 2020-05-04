@@ -266,3 +266,97 @@ class APIAuditTestCase(MyApiTestCase):
         # delete policy
         delete_policy("audit01")
         delete_policy("audit02")
+
+    def test_04_get_user_audit_log(self):
+        # Test that the user only sees audit log entries with his own data
+        self.setUp_user_realms()
+        # prepare some log entries for the normal user to try to fetch
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm1a).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm1a).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+
+        # set policy: normal users in realm1a are allowed to view audit log
+        set_policy("audit01", scope=SCOPE.USER, action=ACTION.AUDIT, realm=self.realm1a)
+
+        user_authorization = None
+        with self.app.test_request_context('/auth',
+                                           method='POST', data={'username': 'selfservice@{0!s}'.format(self.realm1a),
+                                                                'password': 'test'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = res.json
+            value = json_response.get("result").get("value")
+            self.assertTrue("auditlog" in value.get("rights"))
+            user_authorization = value.get("token")
+
+        # check, that the normal user only sees his own entries
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={"action": "**",
+                                                 "action_detail": "**",
+                                                 "administrator": "**",
+                                                 "client": "**",
+                                                 "date": "**",
+                                                 "info": "**",
+                                                 "page": "1",
+                                                 "page_size": "10",
+                                                 "policies": "**",
+                                                 "privacyidea_server": "**",
+                                                 "realm": "**",
+                                                 "resolver": "**",
+                                                 "serial": "**",
+                                                 "sortorder": "desc",
+                                                 "success": "**",
+                                                 "tokentype": "**",
+                                                 "user": "**"},
+                                           headers={'Authorization': user_authorization}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            # We now have 3 entries, as we added one by the search in line #43
+            count = json_response.get("result").get("value").get("count")
+            auditdata = json_response.get("result").get("value").get("auditdata")
+            self.assertGreaterEqual(count, 3)
+            # All entries are in realm1A!
+            for ad in auditdata:
+                self.assertEqual(ad.get("realm"), self.realm1a)
+
+        # try to explicitly query another realm
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={"action": "**",
+                                                 "action_detail": "**",
+                                                 "administrator": "**",
+                                                 "client": "**",
+                                                 "date": "**",
+                                                 "info": "**",
+                                                 "page": "1",
+                                                 "page_size": "10",
+                                                 "policies": "**",
+                                                 "privacyidea_server": "**",
+                                                 "realm": self.realm2b,
+                                                 "resolver": "**",
+                                                 "serial": "**",
+                                                 "sortorder": "desc",
+                                                 "success": "**",
+                                                 "tokentype": "**",
+                                                 "user": "**"},
+                                           headers={'Authorization': user_authorization}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            # The normal user can not fetch audit entries, that do not belong to him!
+            count = json_response.get("result").get("value").get("count")
+            self.assertGreaterEqual(count, 0)
+
+        # delete policy
+        delete_policy("audit01")
