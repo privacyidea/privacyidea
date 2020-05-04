@@ -80,7 +80,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_ty
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
-from privacyidea.lib.crypto import (generate_password)
+from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
