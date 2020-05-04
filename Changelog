@@ -1,4 +1,4 @@
-Version 3.3.2, 2020-05-XX
+Version 3.3.2, 2020-05-04
 
   Fixes:
     * Fix restricted audit log for helpdesk users (#2181)
