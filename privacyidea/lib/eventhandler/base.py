@@ -459,7 +459,7 @@ class BaseEventHandler(object):
         if CONDITION.COUNTERNAME in conditions:
             # Can be countername==1000
             if not compare_generic_condition(conditions.get(CONDITION.COUNTERNAME),
-                                             counter_read,
+                                             lambda x: counter_read(x) or 0,
                                              "Misconfiguration in your countername "
                                              "condition: {0!s}"
                                              ):
