@@ -969,7 +969,13 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action not in [ACTION.AUDIT]:
+    if action is ACTION.AUDIT:
+        # In case of audit requests, the parameters "realm" and "user" are used for
+        # filtering the audit log. So these values must not be taken from the request parameters,
+        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
+        # in the decorator "allowed_audit_realm".
+        realm = username = resolver = None
+    else:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
