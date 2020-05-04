@@ -80,8 +80,7 @@ from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_ty
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
-from privacyidea.lib.crypto import (generate_password,
-                                    generate_password_with_requirements)
+from privacyidea.lib.crypto import (generate_password)
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
@@ -197,9 +196,8 @@ def generate_pin_from_policy(policy,size=6):
         # only allowed characters
         default_characters = policy[1:-1]
 
-    ret = generate_password_with_requirements(size=size,
-                                        characters=default_characters,
-                                        exclude="".join(not_allowed),requirements=required)
+    ret = generate_password(size=size,characters=default_characters,
+                            exclude="".join(not_allowed),requirements=required)
     return ret
 
 
@@ -259,8 +257,8 @@ def init_random_pin(request=None, action=None):
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM to set a random OTP
-    PIN during Token enrollment
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM and ACTION.OTPPINCONTENTS
+    to set a random OTP PIN during Token enrollment
     """
     params = request.all_data
     user_object = get_user_from_param(params)
