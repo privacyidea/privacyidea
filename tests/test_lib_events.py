@@ -573,6 +573,27 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertTrue(r)
 
+        # If we have a nonexisting counter this should be treated as zero
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+                                                "myNonExistingCounter>3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+                                                "myNonExistingCounter<3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
 
 class CounterEventTestCase(MyTestCase):
 
