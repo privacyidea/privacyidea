@@ -76,13 +76,13 @@ and install/update some prerequisites::
 
 If this should be a pinned installation (that is the environment we use to build and test),
 we need to install some pinned dependencies first. They should match the version of the targeted
-privacyIDEA::
+privacyIDEA. You can get the latest version tag from github::
 
-        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.3/requirements.txt
+        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${version}/requirements.txt
 
 Then just install the targeted privacyIDEA version with::
 
-        (privacyidea)$ pip install privacyidea==3.3
+        (privacyidea)$ pip install privacyidea==${version}
 
 Setting up privacyIDEA
 ^^^^^^^^^^^^^^^^^^^^^^
