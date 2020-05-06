@@ -869,7 +869,7 @@ class UtilsTestCase(MyTestCase):
                                                   "Error {0!s}"))
 
         # Unknown comparator
-        self.assertFalse(compare_generic_condition("b>=100",
+        self.assertFalse(compare_generic_condition("b!~100",
                                                    mock_attribute,
                                                    "Error {0!s}"))
 
