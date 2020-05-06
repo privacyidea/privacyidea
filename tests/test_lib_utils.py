@@ -882,3 +882,7 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(compare_generic_condition("c < 500",
                                                    mock_attribute,
                                                    "Error {0!s}"))
+
+        # Wrong entry
+        self.assertRaises(Exception, compare_generic_condition,
+                          "c 500", mock_attribute, "Error {0!s}")
