@@ -272,6 +272,36 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertFalse(r)
+
+        # check for failcounter
+        tok.set_failcount(8)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "<9"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: ">9"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "=8"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
         remove_token(serial)
 
     def test_04_tokeninfo_condition(self):
