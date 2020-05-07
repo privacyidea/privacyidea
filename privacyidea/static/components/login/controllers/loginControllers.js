@@ -322,9 +322,9 @@ angular.module("privacyideaApp")
                 }
             }
         }).finally(function () {
-            // We delete the login object, so that the password is not
+            // We delete the password from the login object, so that it is not
             // contained in the scope
-            $scope.login = {username: "", password: ""};
+            $scope.login.password = "";
             }
         );
     };
