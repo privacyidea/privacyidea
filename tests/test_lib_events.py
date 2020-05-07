@@ -524,7 +524,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         remove_token(serial)
 
-    def test_08_countername_condition(self):
+    def test_08_counter_condition(self):
         # increase a counter to 4
         for i in range(0, 4):
             counter_increase("myCounter")
@@ -545,7 +545,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+             "handler_def": {"conditions": {CONDITION.COUNTER:
                                                 "myCounter<4"}},
              "request": req,
              "response": resp
@@ -555,7 +555,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+             "handler_def": {"conditions": {CONDITION.COUNTER:
                                                 "myCounter==4"}},
              "request": req,
              "response": resp
@@ -565,7 +565,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+             "handler_def": {"conditions": {CONDITION.COUNTER:
                                                 "myCounter>3"}},
              "request": req,
              "response": resp
@@ -576,7 +576,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         # If we have a nonexisting counter this should be treated as zero
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+             "handler_def": {"conditions": {CONDITION.COUNTER:
                                                 "myNonExistingCounter>3"}},
              "request": req,
              "response": resp
@@ -586,7 +586,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTERNAME:
+             "handler_def": {"conditions": {CONDITION.COUNTER:
                                                 "myNonExistingCounter<3"}},
              "request": req,
              "response": resp

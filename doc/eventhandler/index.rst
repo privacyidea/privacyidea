@@ -331,9 +331,9 @@ This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left (token_number == 0) of to notify the administrator if
 the user has to many tokens assigned.
 
-**countername**
+**counter**
 
-The countername condition can compare any arbitrary event counter against a fixed
+The counter condition can compare the value of any arbitrary event counter against a fixed
 value. Valid compares are:
 
     myCounter == 1000

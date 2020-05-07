@@ -66,7 +66,7 @@ class CONDITION(object):
     COUNT_AUTH = "count_auth"
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
-    COUNTERNAME = "countername"
+    COUNTER = "counter"
     TOKENINFO = "tokeninfo"
     DETAIL_ERROR_MESSAGE = "detail_error_message"
     DETAIL_MESSAGE = "detail_message"
@@ -247,9 +247,9 @@ class BaseEventHandler(object):
                           "'<fieldname> == <fieldvalue>', '<fieldname> > "
                           "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
             },
-            CONDITION.COUNTERNAME: {
+            CONDITION.COUNTER: {
                 "type": "str",
-                "desc": _("This condition can check an arbitrary countername value and "
+                "desc": _("This condition can check the value of an arbitrary event counter and "
                           "compare it like 'myCounter == 1000', 'myCounter > 1000' or "
                           "'myCounter < 1000'.")
             },
@@ -456,11 +456,11 @@ class BaseEventHandler(object):
             if not bool(m):
                 return False
 
-        if CONDITION.COUNTERNAME in conditions:
-            # Can be countername==1000
-            if not compare_generic_condition(conditions.get(CONDITION.COUNTERNAME),
+        if CONDITION.COUNTER in conditions:
+            # Can be counter==1000
+            if not compare_generic_condition(conditions.get(CONDITION.COUNTER),
                                              lambda x: counter_read(x) or 0,
-                                             "Misconfiguration in your countername "
+                                             "Misconfiguration in your counter "
                                              "condition: {0!s}"
                                              ):
                 return False
