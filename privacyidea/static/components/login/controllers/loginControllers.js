@@ -198,8 +198,12 @@ angular.module("privacyideaApp")
         }, {
             withCredentials: true
         }).then(function (response) {
+            // successful authentication
             $scope.do_login_stuff(response.data);
+            // login data is not needed anymore, remove from scope
+            $scope.login = {username: "", password: ""};
         }, function (response) {
+            // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
             let error = response.data;
@@ -290,7 +294,6 @@ angular.module("privacyideaApp")
                     inform.add(gettextCatalog.getString("Challenge Response " +
                             "Authentication. Your response was not valid!"),
                         {type: "warning", ttl: 5000});
-                    $scope.login.password = "";
                     // in case of U2F we try for a 2nd signature
                     // In case of u2f we do:
                     if ($scope.u2f_first_error) {
@@ -321,12 +324,7 @@ angular.module("privacyideaApp")
                             {type: "danger", ttl: 10000});
                 }
             }
-        }).finally(function () {
-            // We delete the password from the login object, so that it is not
-            // contained in the scope
-            $scope.login.password = "";
-            }
-        );
+        });
     };
     $scope.check_authentication = function() {
         // This function is used to poll, if a challenge response
