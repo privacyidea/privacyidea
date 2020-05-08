@@ -684,7 +684,7 @@ class PolicyClass(object):
 
         # filter policies by the policy conditions
         reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers)
-        log.debug("Policies after matching conditions".format(
+        log.debug("Policies after matching conditions: {0!s}".format(
             reduced_policies))
 
         if audit_data is not None:
