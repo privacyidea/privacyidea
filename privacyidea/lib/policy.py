@@ -186,6 +186,7 @@ from privacyidea.lib import _
 import datetime
 import re
 import ast
+import traceback
 from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
@@ -664,9 +665,13 @@ class PolicyClass(object):
             if (user and user != user_object.login) \
                     or (resolver and resolver != user_object.resolver) \
                     or (realm and realm != user_object.realm):
-                log.warning("Cannot pass user_object as well as user, resolver, realm. "
-                            "{0!s} - {1!s}@{2!s} in {3!s}".format(user_object, user, realm, resolver))
-                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+                tb_str = ''.join(traceback.format_stack())
+                log.warning("Cannot pass user_object as well as user, resolver, realm "
+                            "in policy {0!s}. "
+                            "{1!s} - {2!s}@{3!s} in resolver {4!s}".format(name, user_object, user, realm, resolver))
+                log.warning("Possible programming error: {0!s}".format(tb_str))
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm "
+                                     "in policy {0!s}".format(name))
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
