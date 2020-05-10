@@ -621,6 +621,7 @@ class PolicyClass(object):
 
         return reduced_policies
 
+    @log_with(log)
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
@@ -663,6 +664,8 @@ class PolicyClass(object):
             if (user and user != user_object.login) \
                     or (resolver and resolver != user_object.resolver) \
                     or (realm and realm != user_object.realm):
+                log.warning("Cannot pass user_object as well as user, resolver, realm. "
+                            "{0!s} - {1!s}@{2!s} in {3!s}".format(user_object, user, realm, resolver))
                 raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
             user = user_object.login
             realm = user_object.realm
@@ -679,13 +682,11 @@ class PolicyClass(object):
                             (policy.get("time") and
                              check_time_in_range(policy.get("time"), time))
                             or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format(
-            reduced_policies))
+        log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         # filter policies by the policy conditions
         reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers)
-        log.debug("Policies after matching conditions: {0!s}".format(
-            reduced_policies))
+        log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
