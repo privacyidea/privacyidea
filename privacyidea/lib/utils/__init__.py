@@ -1133,7 +1133,7 @@ def check_pin_policy(pin, policy):
     if not policy:
         return False, "No policy given."
 
-    # this is neccesary since a policy "cns" equals "+cns"
+    # this is necessary since a policy "cns" equals "+cns"
     if policy[0] in "cns":
         policy = "+" + policy
 

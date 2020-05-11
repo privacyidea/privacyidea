@@ -176,7 +176,7 @@ def _generate_pin_from_policy(policy, size=6):
 
     not_allowed = []
     required = []
-    # this is neccesary since a policy "cns" equals "+cns"
+    # this is necessary since a policy "cns" equals "+cns"
     if policy[0] in "cns":
         policy = "+" + policy
 
