@@ -662,16 +662,17 @@ class PolicyClass(object):
         """
         if user_object is not None:
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
-            if (user and user != user_object.login) \
-                    or (resolver and resolver != user_object.resolver) \
+            if (user and user.lower() != user_object.login.lower()) \
+                    or (resolver and resolver.lower() != user_object.resolver.lower()) \
                     or (realm and realm != user_object.realm):
                 tb_str = ''.join(traceback.format_stack())
                 log.warning("Cannot pass user_object as well as user, resolver, realm "
                             "in policy {0!s}. "
-                            "{1!s} - {2!s}@{3!s} in resolver {4!s}".format(name, user_object, user, realm, resolver))
+                            "{1!s} - {2!s}@{3!s} in resolver {4!s}".format((name, scope, action),
+                                                                           user_object, user, realm, resolver))
                 log.warning("Possible programming error: {0!s}".format(tb_str))
                 raise ParameterError("Cannot pass user_object as well as user, resolver, realm "
-                                     "in policy {0!s}".format(name))
+                                     "in policy {0!s}".format((name, scope, action)))
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
