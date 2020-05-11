@@ -6,8 +6,8 @@
 
     <form name="formResolverAddPassword" role="form" validate>
 
-        <div class="form-group">
-            <label for="resolvername" class="col-sm-3 control-label" translate>Resolver name</label>
+        <div class="form-group row">
+            <label for="resolvername" class="col-sm-3 control-label text-right" translate>Resolver name</label>
 
             <div class="col-sm-9">
                 <input name="resolvername" id="resolvername" class="form-control" ng-model="resolvername" required
@@ -15,16 +15,16 @@
                     title="{{ inputNamePatterns.withoutTest.title | translate }}" autofocus />
             </div>
         </div>
-        <div class="form-group">
-            <label for="resolverurl" class="col-sm-3 control-label" translate>Endpoint</label>
+        <div class="form-group row">
+            <label for="resolverurl" class="col-sm-3 control-label text-right" translate>Endpoint</label>
 
             <div class="col-sm-9">
                 <input name="resolverfile" id="resolverfile" class="form-control" ng-model="params.endpoint" required
                     placeholder="http://example.com/path/to/users/:userid" />
             </div>
         </div>
-        <div class="form-group">
-            <label for="resolvermethod" class="col-sm-3 control-label" translate>Method</label>
+        <div class="form-group row">
+            <label for="resolvermethod" class="col-sm-3 control-label text-right" translate>Method</label>
 
             <div class="col-sm-9">
                 <select name="resolvermethod" id="resolvermethod" ng-model="params.method" class="form-control"
@@ -34,20 +34,40 @@
                 </select>
             </div>
         </div>
-        <div class="form-group">
-            <label for="requestmapping" class="col-sm-3 control-label" translate>Request Mapping</label>
+        <div class="form-group row">
+            <label for="requestmapping" class="col-sm-3 control-label text-right" translate>Request Mapping (JSON format)</label>
 
             <div class="col-sm-9">
                 <textarea name="requestmapping" id="requestmapping" ng-model="params.requestMapping"
                     class="form-control" required></textarea>
             </div>
         </div>
-        <div class="form-group">
-            <label for="responsemapping" class="col-sm-3 control-label" translate>Response property as the user identifier (userid)</label>
-
+        <div class="form-group row">
+            <label for="headers" class="col-sm-3 control-label text-right" translate>Headers (JSON format)</label>
             <div class="col-sm-9">
-                <input placeholder="path.to.userid.value" name="responsemapping" id="responsemapping"
+                <textarea name="headers" id="headers" ng-model="params.headers"
+                    class="form-control" required>{{ params.headers }}</textarea>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="responsemapping" class="col-sm-3 control-label text-right" translate>Response Mapping (JSON format)</label>
+            <div class="col-sm-9">
+                <input placeholder="{'username': '{your.response.user.name.key'}" name="responsemapping" id="responsemapping"
                     ng-model="params.responseMapping" class="form-control" required />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="hasSpecialErrorHandler" class="col-sm-3 control-label text-right" translate>Special Error
+                Handling</label>
+            <div class="col-sm-3">
+                <input name="hasSpecialErrorHandler" id="hasSpecialErrorHandler" type="checkbox"
+                    ng-model="params.hasSpecialErrorHandler" ng-true-value="'True' || true" ng-false-value="'False' || false" />
+            </div>
+        </div>
+        <div class="form-group row" ng-if="params.hasSpecialErrorHandler">
+            <label for="errorResponseMapping" class="col-sm-3 control-label text-right" translate>Response contains (JSON format):</label>
+            <div class="col-sm-9">
+                <textarea name="errorResponseMapping" id="errorResponseMapping" ng-model="params.errorResponseMapping" class="form-control"></textarea>
             </div>
         </div>
         <div class="text-center" ng-show="showResult">
@@ -58,7 +78,7 @@
         </div>
         <div class="container-fluid">
             <div class="text-right">
-                <div class="form-group form-inline">
+                <div class="form-group row form-inline">
                     <input name="testEmail" id="testEmail" class="form-control" ng-model="params.testEmail"
                         placeholder="foo@bar.com" />
                     <button ng-click="testResolver()" ng-disabled="formResolverAddHttp.$invalid" class="btn btn-success"

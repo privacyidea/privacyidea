@@ -1096,6 +1096,8 @@ myApp.controller("HTTPResolverController", function(
     method: "",
     requestMapping: "",
     responseMapping: "",
+    hasSpecialErrorHandler: false,
+    headers: "{\"Content-Type\": \"application/json; charset=UTF-8\"}"
   };
 
   $scope.resolvername = $stateParams.resolvername;

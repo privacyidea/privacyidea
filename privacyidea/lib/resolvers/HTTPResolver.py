@@ -4,8 +4,8 @@
 #  http://www.privacyidea.org
 #
 #  product:  LinOTP2
-#  module:   useridresolver
-#  tool:     UserIdResolver
+#  module:   httpresolver
+#  tool:     HTTPResolver
 #  edition:  Comunity Edition
 #
 #  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
@@ -33,6 +33,7 @@ import requests
 import logging
 import json
 from urllib.parse import urlencode
+from pydash import get
 
 ENCODING = "utf-8"
 
@@ -40,28 +41,14 @@ log = logging.getLogger(__name__)
 
 class HTTPResolver(UserIdResolver):
 
-    fields = {}
-    name = "httpresolver"
-    id = "httpresolver"
-
-    updateable = True
-
-    @staticmethod
-    def setup(config=None, cache_dir=None):
-        """
-        this setup hook is triggered, when the server
-        starts to serve the first request
-
-        :param config: the privacyidea config
-        :type  config: the privacyidea config dict
-        """
-        log.info("Setting up the HTTPResolver")
-
-    def close(self):
-        """
-        Hook to close down the resolver after one request
-        """
-        return
+    fields = {
+        "endpoint": 1, 
+        "method": 1,
+        "requestMapping": 1,
+        "responseMapping": 1,
+        "hasSpecialErrorHandler": 0,
+        "errorResponseMapping": 0
+    }
 
     @staticmethod
     def getResolverClassType():
@@ -94,11 +81,13 @@ class HTTPResolver(UserIdResolver):
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.HTTPResolver.HTTPResolver"
         descriptor['config'] = {
-            'name': 'string',
             'endpoint': 'string',
             'method': 'string',
+            'headers': 'string',
             'requestMapping': 'string',
-            'responseMapping': 'string'
+            'responseMapping': 'string',
+            'hasSpecialErrorHandler': 'bool',
+            'errorResponseMapping': 'string',
         }
         return {typ: descriptor}
 
@@ -121,7 +110,7 @@ class HTTPResolver(UserIdResolver):
         be an ID (like in /etc/passwd) or a string (like
         the DN in LDAP)
 
-        It needs to return an emptry string, if the user does
+        It needs to return an empty string, if the user does
         not exist.
 
         :param loginName: The login name of the user
@@ -129,7 +118,7 @@ class HTTPResolver(UserIdResolver):
         :return: The ID of the user
         :rtype: str
         """
-        return loginName
+        return loginName if loginName else ''
 
     def getUsername(self, userid):
         """
@@ -150,27 +139,14 @@ class HTTPResolver(UserIdResolver):
         :return:  dictionary, if no object is found, the dictionary is empty
         :rtype: dict
         """
-        response = HTTPResolver._getUser(self.config, userid)
-        if isinstance(response.get('phone'), str):
-            response['mobile'] = response.get('phone')
-        return response
-
+        return HTTPResolver._getUser(self.config, userid)
+        
     def getUserList(self, searchDict=None):
         """
-        This function finds the user objects,
-        that have the term 'value' in the user object field 'key'
-
-        :param searchDict:  dict with key values of user attributes -
-                    the key may be something like 'loginname' or 'email'
-                    the value is a regular expression.
-        :type searchDict: dict
-
-        :return: list of dictionaries (each dictionary contains a
-                 user object) or an empty string if no object is found.
-        :rtype: list of dicts
+        Since it is an HTTP resolver, 
+        users are not stored in the database
         """
-        searchDict = searchDict or {}
-        return [{}]
+        return []
 
     def getResolverId(self):
         """
@@ -209,47 +185,20 @@ class HTTPResolver(UserIdResolver):
 
     def add_user(self, attributes=None):
         """
-        Add a new user in the useridresolver.
-        This is only possible, if the UserIdResolver supports this and if
-        we have write access to the user store.
-
-        :param username: The login name of the user
-        :type username: basestring
-        :param attributes: Attributes according to the attribute mapping
-        :return: The new UID of the user. The UserIdResolver needs to
-        determine the way how to create the UID.
+        Adding new users is not support for this kind of resolver
         """
-        attributes = attributes or {}
         return None
 
     def delete_user(self, uid):
         """
-        Delete a user from the useridresolver.
-        The user is referenced by the user id.
-        :param uid: The uid of the user object, that should be deleted.
-        :type uid: basestring
-        :return: Returns True in case of success
-        :rtype: bool
+        Delete a user is not supported for this kind of resolver
         """
         return None
 
     def update_user(self, uid, attributes=None):
         """
-        Update an existing user.
-        This function is also used to update the password. Since the
-        attribute mapping know, which field contains the password,
-        this function can also take care for password changing.
-
-        Attributes that are not contained in the dict attributes are not
-        modified.
-
-        :param uid: The uid of the user object in the resolver.
-        :type uid: basestring
-        :param attributes: Attributes to be updated.
-        :type attributes: dict
-        :return: True in case of success
+        Update an existing user is not supported for this kind of resolver
         """
-        attributes = attributes or {}
         return None
 
     @classmethod
@@ -278,22 +227,6 @@ class HTTPResolver(UserIdResolver):
             desc = "failed: {0!s}".format(e)
         return success, desc
 
-    @property
-    def editable(self):
-        """
-        Return true, if the Instance! of this resolver is configured editable.
-        :return:
-        """
-        return False
-
-    @property
-    def has_multiple_loginnames(self):
-        """
-        Return if this resolver has multiple loginname attributes
-        :return: bool
-        """
-        return False
-
     #
     #   Private methods
     #
@@ -301,25 +234,36 @@ class HTTPResolver(UserIdResolver):
     def _getUser(self, param, userid):
         method = param.get('method').lower()
         endpoint = param.get('endpoint')
-        requestMappingJSON = json.loads(param.get('requestMapping').replace("#userid", userid))
-        responseMapping = param.get('responseMapping')
+        requestMappingJSON = json.loads(param.get('requestMapping').replace("{userid}", userid))
+        responseMapping = json.loads(param.get('responseMapping'))
+        headers = json.loads(param.get('headers', '{}'))
+        hasSpecialErrorHandler = bool(param.get('hasSpecialErrorHandler'))
+        errorResponseMapping = json.loads(param.get('errorResponseMapping', '{}'))
 
         if method not in ('post', 'get'):
             raise Exception('Method have to be "GET" or "POST"')
 
         if method == "post":
-            response = requests.post(endpoint, json = requestMappingJSON, headers={'Content-Type': 'application/json; charset=UTF-8'})
+            httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers)
         else:
-            response = requests.get(endpoint, urlencode(requestMappingJSON), headers={'Content-Type': 'application/json; charset=UTF-8'})
-        
-        if response.status_code >= 400:
-            raise Exception(response.status_code, response.text)
+            httpResponse = requests.get(endpoint, urlencode(requestMappingJSON), headers=headers)
 
-        response = response.json()
+        if httpResponse.status_code >= 400:
+            raise Exception(httpResponse.status_code, httpResponse.text)
 
-        if response.get('IsError') or not response.get('IsValidModel'):
-            raise Exception(response)
+        jsonHTTPResponse = httpResponse.json()
 
-        response['userid'] = response.get(responseMapping)
+        if hasSpecialErrorHandler:
+            # verify if error response mapping is a subset of the json http response
+            if errorResponseMapping.items() <= jsonHTTPResponse.items():
+                raise Exception(jsonHTTPResponse)
 
-        return {k.lower(): v for k, v in response.items()}
+        # Create mapped response with response mapping resolver input
+        response = {}
+        for pi_user_key, value in responseMapping.items():
+            if value.startswith('{') and value.endswith('}'):
+                response[pi_user_key] = get(jsonHTTPResponse, value[1:-1])
+            else:
+                response[pi_user_key] = value
+
+        return response
