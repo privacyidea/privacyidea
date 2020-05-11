@@ -48,7 +48,7 @@ import traceback
 import threading
 import pkg_resources
 import time
-import cgi
+import html
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
@@ -1354,7 +1354,7 @@ def create_tag_dict(logged_in_user=None,
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
-            escaped_tags[key] = cgi.escape(value) if value is not None else None
+            escaped_tags[key] = html.escape(value) if value is not None else None
         tags = escaped_tags
 
     return tags
