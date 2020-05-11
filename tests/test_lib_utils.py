@@ -864,14 +864,13 @@ class UtilsTestCase(MyTestCase):
                                                   mock_attribute,
                                                   "Error {0!s}"))
 
-        self.assertTrue(compare_generic_condition("b==100",
+        self.assertTrue(compare_generic_condition("a <100",
                                                   mock_attribute,
                                                   "Error {0!s}"))
 
-        # Unknown comparator
-        self.assertFalse(compare_generic_condition("b!~100",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
+        self.assertTrue(compare_generic_condition("b==100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
 
         # Wrong condition
         self.assertFalse(compare_generic_condition("b>100",
@@ -883,6 +882,15 @@ class UtilsTestCase(MyTestCase):
                                                    mock_attribute,
                                                    "Error {0!s}"))
 
-        # Wrong entry
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c <500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong entry, that is not processed
         self.assertRaises(Exception, compare_generic_condition,
                           "c 500", mock_attribute, "Error {0!s}")
+
+        # Wrong entry, that cannot be processed
+        self.assertRaises(Exception, compare_generic_condition,
+                          "b!~100", mock_attribute, "Error {0!s}")
