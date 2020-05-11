@@ -27,8 +27,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_user,
                                            check_anonymous_user,
                                            check_max_token_realm, set_realm,
-                                           init_tokenlabel, init_random_pin,
-                                           init_token_defaults,
+                                           init_tokenlabel, init_random_pin, set_random_pin,
+                                           init_token_defaults, _generate_pin_from_policy,
                                            encrypt_pin, check_otp_pin,
                                            enroll_pin,
                                            check_external, api_key_required,
@@ -650,7 +650,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol2")
         delete_policy("pol3")
 
-    def test_07_init_random_pin(self):
+    def test_07a_init_random_pin(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -698,6 +698,72 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pinsize")
         delete_policy("pincontent")
         delete_policy("pinhandling")
+
+    def test_07b_set_random_pin(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+
+        # Set policies which define the pin generation behavior
+        contents_policy = "+cns"
+        size_policy = 12
+        set_policy(name="pinsize",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINSETRANDOM, size_policy))
+        set_policy(name="pincontent",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {
+                        "user": "cornelius",
+                        "realm": "realm1"}
+
+        set_random_pin(req)
+        pin = req.all_data.get("pin")
+
+        # check if the pin honors the contents policy
+        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        self.assertTrue(pin_valid)
+
+        # Check, if the pin has the correct length
+        self.assertEqual(len(req.all_data.get("pin")), size_policy)
+
+        # finally delete policy
+        delete_policy("pinsize")
+        delete_policy("pincontent")
+
+    def test_07c_generate_pin_from_policy(self):
+        content_policies_valid = ['+cn','-s','cns','+ns','[1234567890]','[[]€³@/(]']
+        content_policies_invalid = ['+c-ns','cn-s', '+ns-[1234567890]','-[1234567890]']
+        pin_size = 3
+        for content_policy in content_policies_valid:
+            pin = _generate_pin_from_policy(content_policy, size=pin_size)
+
+            # check if the pin honors the contents policy
+            pin_valid, comment = check_pin_policy(pin, content_policy)
+            self.assertTrue(pin_valid)
+            # Check, if the pin has the correct length
+            self.assertEqual(len(pin), pin_size)
+
+        for content_policy in content_policies_invalid:
+            # an invalid policy string should throw a PolicyError exception
+            try:
+                pin = _generate_pin_from_policy(content_policy, size=pin_size)
+                pin_valid = True
+            except PolicyError:
+                pin_valid = False
+            self.assertFalse(pin_valid)
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",

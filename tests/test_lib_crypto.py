@@ -14,7 +14,8 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt, Sign, generate_keypair)
+                                    encrypt, decrypt, Sign, generate_keypair,
+                                    generate_password)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -23,7 +24,7 @@ from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from flask import current_app
 from six import text_type
 from PyKCS11 import PyKCS11Error
-
+import string
 
 class SecurityModuleTestCase(MyTestCase):
     """
@@ -326,6 +327,32 @@ class RandomTestCase(MyTestCase):
         r = verify_with_pepper(h, "super Password")
         self.assertEqual(r, False)
 
+    def test_07_generate_password(self):
+        # test given default characters
+        pass_numeric = generate_password(size=12,characters=string.digits)
+        self.assertTrue(pass_numeric.isnumeric())
+        self.assertEqual(len(pass_numeric),12)
+
+        # test exclude case, chose length 24 to exclude "True by chance"
+        pass_lowercase = generate_password(size=24, characters=string.ascii_uppercase + string.ascii_lowercase,
+                                           exclude=string.ascii_uppercase)
+        self.assertTrue(pass_lowercase.islower())
+
+        # test requirements, we loop to get some statistics
+        default_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        for i in range(10):
+            password_req = generate_password(size=3, characters=default_chars, requirements=["AB","12"])
+            # a character from each requirement must be found
+            self.assertTrue(
+                any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
+
+        # test if requirement takes precedence if exclusion and requirements contain common characters exclusion.
+        # loop for statistics
+        for i in range(10):
+            password_prec = generate_password(size=3, characters=default_chars, requirements=["AB", "ab"],
+                                                 exclude=string.ascii_uppercase)
+            self.assertTrue(
+                any(char in "AB" for char in password_prec) and any(char in "ab" for char in password_prec))
 
 class AESHardwareSecurityModuleTestCase(MyTestCase):
     """

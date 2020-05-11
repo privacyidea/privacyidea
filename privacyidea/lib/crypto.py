@@ -820,13 +820,17 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     :param characters: The characters the password may consist of
     :param requirements: A list of strings from which the password must contain at least one character
     :param exclude: A string of characters to exclude
+    If exclude and requirements have common characters, those are not excluded.
     :return: password
     :rtype: basestring
     """
-    # add one character from each string in the requirements list
+    # add one random character from each string in the requirements list
     passwd = [urandom.choice(str) for str in requirements]
-    # remove exclude characters from list of allowed characters
-    allowed_characters = list(set(characters) - set(exclude))
+    # use set types to exclude characters from list of allowed characters
+    allowed_characters_set = set(characters) - set(exclude)
+    # requirements supersede exclusion: add required character groups
+    requirements_set = set(requirements)
+    allowed_characters = list(allowed_characters_set.union(requirements_set))
     # fill the password until size with allowed characters
     passwd.extend(urandom.choice(allowed_characters) for _x in range(size - len(requirements)))
     # return shuffled password

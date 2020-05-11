@@ -153,7 +153,7 @@ class prepolicy(object):
         return policy_wrapper
 
 
-def generate_pin_from_policy(policy, size=6):
+def _generate_pin_from_policy(policy, size=6):
     """
     This function creates a string of allowed characters from the value of a pincontents policy
     The policy to check a PIN can contain of "c", "n" and "s".
@@ -176,6 +176,10 @@ def generate_pin_from_policy(policy, size=6):
 
     not_allowed = []
     required = []
+    # this is neccesary since a policy "cns" equals "+cns"
+    if policy[0] in "cns":
+        policy = "+" + policy
+
     if policy[0] in ["+", "-"] or policy[0] is not "[":
         for char in policy[1:]:
             if char not in chars.keys():
@@ -231,7 +235,7 @@ def set_random_pin(request=None, action=None):
                               "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
         # check pin contents policy per token type, otherwise fall back
-        tokentype = request.all_data.get("type", "hotp")
+        tokentype = get_token_type(request.all_data.get("serial"))
         pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
                                            user_obj=request.User).action_values(unique=True)
         if not pol_contents:
@@ -242,7 +246,7 @@ def set_random_pin(request=None, action=None):
             log.info("Creating random OTP PIN with length {0!s} "
                       "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
             # generate a pin which matches the contents requirement
-            r = generate_pin_from_policy(list(pol_contents)[0], int(list(pin_pols)[0]))
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
             request.all_data["pin"] = r
         else:
             log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
@@ -278,7 +282,7 @@ def init_random_pin(request=None, action=None):
             log.info("Creating random OTP PIN with length {0!s} "
                       "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
             # generate a pin which matches the contents requirement
-            r = generate_pin_from_policy(list(pol_contents)[0], int(list(pin_pols)[0]))
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
             request.all_data["pin"] = r
         else:
             log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
