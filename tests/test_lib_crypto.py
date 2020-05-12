@@ -337,6 +337,7 @@ class RandomTestCase(MyTestCase):
         pass_lowercase = generate_password(size=24, characters=string.ascii_uppercase + string.ascii_lowercase,
                                            exclude=string.ascii_uppercase)
         self.assertTrue(pass_lowercase.islower())
+        self.assertEqual(len(pass_lowercase), 24)
 
         # test requirements, we loop to get some statistics
         default_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -345,7 +346,7 @@ class RandomTestCase(MyTestCase):
             # a character from each requirement must be found
             self.assertTrue(
                 any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
-
+            self.assertEqual(len(password_req),3)
         # test if requirement takes precedence if exclusion and requirements contain common characters exclusion.
         # loop for statistics
         for i in range(10):
