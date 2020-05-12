@@ -1138,7 +1138,7 @@ def check_pin_policy(pin, policy):
     if policy[0] in "cns":
         policy = "+" + policy
 
-    if policy[0] in ["+", "-"] or policy[0] is not "[":
+    if policy[0] in ["+", "-"]:
         for char in policy[1:]:
             if char not in chars.keys():
                 raise PolicyError("Unknown character specifier in PIN policy.")
