@@ -1145,12 +1145,10 @@ def check_pin_policy(pin, policy):
 
     if policy[0] == "+":
         # grouping
-        necessary = []
         for char in policy[1:]:
-            necessary.append(chars.get(char))
             if not re.search(chars[char], pin):
                 ret = False
-            comment.append("Missing character in PIN: {0!s}".format(necessary))
+                comment.append("Missing character in PIN: {0!s}".format(chars[char]))
 
     elif policy[0] == "-":
         # exclusion
