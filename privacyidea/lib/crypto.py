@@ -830,7 +830,7 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     allowed_characters_set = set(characters) - set(exclude)
     # requirements supersede exclusion: add required character groups
     requirements_set = set([ c for c in ''.join(requirements)])
-    # union allowed characters with requirements to contruct the allowed characters list
+    # union allowed characters with requirements to construct the allowed characters list
     allowed_characters = list(allowed_characters_set.union(requirements_set))
     # fill the password until size with allowed characters
     passwd.extend(urandom.choice(allowed_characters) for _x in range(size - len(requirements)))
