@@ -329,9 +329,9 @@ class RandomTestCase(MyTestCase):
 
     def test_07_generate_password(self):
         # test given default characters
-        pass_numeric = generate_password(size=12,characters=string.digits)
+        pass_numeric = generate_password(size=12, characters=string.digits)
         self.assertTrue(pass_numeric.isnumeric())
-        self.assertEqual(len(pass_numeric),12)
+        self.assertEqual(len(pass_numeric), 12)
 
         # test exclude case, chose length 24 to exclude "True by chance"
         pass_lowercase = generate_password(size=24, characters=string.ascii_uppercase + string.ascii_lowercase,
@@ -342,7 +342,7 @@ class RandomTestCase(MyTestCase):
         # test requirements, we loop to get some statistics
         default_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
         for i in range(10):
-            password_req = generate_password(size=3, characters=default_chars, requirements=["AB","12"])
+            password_req = generate_password(size=3, characters=default_chars, requirements=["AB", "12"])
             # a character from each requirement must be found
             self.assertTrue(
                 any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
