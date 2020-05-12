@@ -58,9 +58,8 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 
-SPECIAL_CHARS_REGXEP = r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"
-SPECIAL_CHARS_LIST = "\.:,;_<>+*!/()=?$§%&#~^-"
-
+SPECIAL_CHARS_LIST = string.punctuation
+SPECIAL_CHARS_REGXEP = r"[" + SPECIAL_CHARS_LIST + "]"
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -1132,6 +1131,8 @@ def check_pin_policy(pin, policy):
 
     if not policy:
         return False, "No policy given."
+    if not pin:
+        return False, "No pin given."
 
     # this is necessary since a policy "cns" equals "+cns"
     if policy[0] in "cns":
@@ -1147,9 +1148,8 @@ def check_pin_policy(pin, policy):
         necessary = []
         for char in policy[1:]:
             necessary.append(chars.get(char))
-        necessary = "|".join(necessary)
-        if not re.search(necessary, pin):
-            ret = False
+            if not re.search(chars[char], pin):
+                ret = False
             comment.append("Missing character in PIN: {0!s}".format(necessary))
 
     elif policy[0] == "-":
