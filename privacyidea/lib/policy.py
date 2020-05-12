@@ -186,6 +186,7 @@ from privacyidea.lib import _
 import datetime
 import re
 import ast
+import traceback
 from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
@@ -621,6 +622,7 @@ class PolicyClass(object):
 
         return reduced_policies
 
+    @log_with(log)
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
@@ -660,10 +662,17 @@ class PolicyClass(object):
         """
         if user_object is not None:
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
-            if (user and user != user_object.login) \
-                    or (resolver and resolver != user_object.resolver) \
+            if (user and user.lower() != user_object.login.lower()) \
+                    or (resolver and resolver.lower() != user_object.resolver.lower()) \
                     or (realm and realm != user_object.realm):
-                raise ParameterError("Cannot pass user_object as well as user, resolver, realm")
+                tb_str = ''.join(traceback.format_stack())
+                log.warning("Cannot pass user_object as well as user, resolver, realm "
+                            "in policy {0!s}. "
+                            "{1!s} - {2!s}@{3!s} in resolver {4!s}".format((name, scope, action),
+                                                                           user_object, user, realm, resolver))
+                log.warning("Possible programming error: {0!s}".format(tb_str))
+                raise ParameterError("Cannot pass user_object as well as user, resolver, realm "
+                                     "in policy {0!s}".format((name, scope, action)))
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
@@ -679,13 +688,11 @@ class PolicyClass(object):
                             (policy.get("time") and
                              check_time_in_range(policy.get("time"), time))
                             or not policy.get("time")]
-        log.debug("Policies after matching time: {0!s}".format(
-            reduced_policies))
+        log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         # filter policies by the policy conditions
         reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers)
-        log.debug("Policies after matching conditions: {0!s}".format(
-            reduced_policies))
+        log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
