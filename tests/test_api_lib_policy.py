@@ -749,7 +749,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         pin_size = 3
         for content_policy in content_policies_valid:
             pin = _generate_pin_from_policy(content_policy, size=pin_size)
-            print(pin,content_policy)
             # check if the pin honors the contents policy
             pin_valid, comment = check_pin_policy(pin, content_policy)
             self.assertTrue(pin_valid)
