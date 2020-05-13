@@ -537,7 +537,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -610,8 +610,8 @@ def check_proxy(path_to_client, proxy_settings):
     try:
         proxy_dict = parse_proxy(proxy_settings)
     except AddrFormatError:
-        log.error("Error parsing the OverrideAuthorizationClient setting: {"
-                  "0!s}! The IP addresses need to be comma separated. Fix "
+        log.error("Error parsing the OverrideAuthorizationClient setting: "
+                  "{0!s}! The IP addresses need to be comma separated. Fix "
                   "this. The client IP will not be mapped!".format(proxy_settings))
         log.debug("{0!s}".format(traceback.format_exc()))
         return path_to_client[0]
@@ -841,7 +841,10 @@ def compare_value_value(value1, comparator, value2):
     
     If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
-    
+
+    In case of dates make sure they can be parsed by 'parse_date()', otherwise
+    they will be compared as strings.
+
     :param value1: First value 
     :param value2: Second value
     :param comparator: The comparator
@@ -1153,7 +1156,7 @@ def check_pin_policy(pin, policy):
     if not policy:
         return False, "No policy given."
 
-    if policy[0] in ["+", "-"] or policy[0] is not "[":
+    if policy[0] in ["+", "-"] or policy[0] != "[":
         for char in policy[1:]:
             if char not in chars.keys():
                 raise PolicyError("Unknown character specifier in PIN policy.")
