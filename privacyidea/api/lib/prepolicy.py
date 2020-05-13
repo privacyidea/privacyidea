@@ -176,9 +176,6 @@ def _generate_pin_from_policy(policy, size=6):
 
     not_allowed = []
     required = []
-    # this is necessary since a policy "cns" equals "+cns"
-    if policy[0] in "cns":
-        policy = "+" + policy
 
     if policy[0] in ["+", "-"] or policy[0] is not "[":
         for char in policy[1:]:
@@ -187,9 +184,9 @@ def _generate_pin_from_policy(policy, size=6):
 
     if policy[0] == "+":
         # grouping
-        required = []
         for char in policy[1:]:
             required.append(chars.get(char))
+        required = ["".join(required)]
 
     elif policy[0] == "-":
         # exclusion
@@ -199,6 +196,11 @@ def _generate_pin_from_policy(policy, size=6):
     elif policy[0] == "[" and policy[-1] == "]":
         # only allowed characters
         default_characters = policy[1:-1]
+
+    else:
+        for c in chars:
+            if c in policy:
+                required.append(chars.get(c))
 
     ret = generate_password(size=size, characters=default_characters,
                             exclude="".join(not_allowed), requirements=required)

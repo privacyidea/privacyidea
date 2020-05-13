@@ -48,7 +48,7 @@ import traceback
 import threading
 import pkg_resources
 import time
-import cgi
+import html
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
@@ -58,8 +58,6 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 
-SPECIAL_CHARS_LIST = string.punctuation
-SPECIAL_CHARS_REGXEP = r"[" + SPECIAL_CHARS_LIST + "]"
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -1125,30 +1123,27 @@ def check_pin_policy(pin, policy):
     """
     chars = {"c": r"[a-zA-Z]",
              "n": r"[0-9]",
-             "s": SPECIAL_CHARS_REGXEP}
+             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
     ret = True
     comment = []
 
     if not policy:
         return False, "No policy given."
-    if not pin:
-        return False, "No pin given."
 
-    # this is necessary since a policy "cns" equals "+cns"
-    if policy[0] in "cns":
-        policy = "+" + policy
-
-    if policy[0] in ["+", "-"]:
+    if policy[0] in ["+", "-"] or policy[0] is not "[":
         for char in policy[1:]:
             if char not in chars.keys():
                 raise PolicyError("Unknown character specifier in PIN policy.")
 
     if policy[0] == "+":
         # grouping
+        necessary = []
         for char in policy[1:]:
-            if not re.search(chars[char], pin):
-                ret = False
-                comment.append("Missing character in PIN: {0!s}".format(chars[char]))
+            necessary.append(chars.get(char))
+        necessary = "|".join(necessary)
+        if not re.search(necessary, pin):
+            ret = False
+            comment.append("Missing character in PIN: {0!s}".format(necessary))
 
     elif policy[0] == "-":
         # exclusion
@@ -1336,7 +1331,7 @@ def create_tag_dict(logged_in_user=None,
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
-            escaped_tags[key] = cgi.escape(value) if value is not None else None
+            escaped_tags[key] = html.escape(value) if value is not None else None
         tags = escaped_tags
 
     return tags
