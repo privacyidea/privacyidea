@@ -8,7 +8,7 @@
     </p>
 </div>
 <div class="form-group">
-    <div class="row">
+    <div ng-class="$state.includes('token.wizard') ? 'centered row' : 'row'">
         <div class="col qr_image-block" ng-if="qr_image_android">
             <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_android }}">
             <p class="help-block" translate>Get the Authenticator App for Android.</p>
