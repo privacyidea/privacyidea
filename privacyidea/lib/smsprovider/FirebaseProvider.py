@@ -95,6 +95,8 @@ class FIREBASE_CONFIG:
     API_KEY = "apikey"
     APP_ID_IOS = "appidios"
     API_KEY_IOS = "apikeyios"
+    HTTP_PROXY = "httpproxy"
+    HTTPS_PROXY = "httpsproxy"
 
 
 class FirebaseProvider(ISMSProvider):
@@ -155,8 +157,13 @@ class FirebaseProvider(ISMSProvider):
                        }
             }
 
+        proxies = {}
+        if self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTP_PROXY):
+            proxies["http"] = self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTP_PROXY)
+        if self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTPS_PROXY):
+            proxies["https"] = self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTPS_PROXY)
         url = FIREBASE_URL_SEND.format(self.smsgateway.option_dict.get(FIREBASE_CONFIG.PROJECT_ID))
-        resp = requests.post(url, data=json.dumps(fcm_message), headers=headers)
+        resp = requests.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
 
         if resp.status_code == 200:
             log.debug("Message sent successfully to Firebase service.")
@@ -250,6 +257,14 @@ class FirebaseProvider(ISMSProvider):
                           "required": True,
                           "description": _("The filename of the JSON config file, that allows privacyIDEA to talk"
                                            " to the Firebase REST API.")
+                      },
+                      FIREBASE_CONFIG.HTTP_PROXY: {
+                          "required": False,
+                          "description": _("Proxy setting for HTTP connections.")
+                      },
+                      FIREBASE_CONFIG.HTTPS_PROXY: {
+                          "required": False,
+                          "description": _("Proxy setting for HTTPS connections.")
                       }
                   }
                   }
