@@ -262,4 +262,3 @@ class FirebaseProvider(ISMSProvider):
                   }
                   }
         return params
-
