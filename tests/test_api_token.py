@@ -833,10 +833,13 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(token.get("realms") == ["realm1"], token)
 
     def test_11_load_tokens(self):
+        # Set dummy policy to verify faulty behaviour with #2209
+        set_policy("dumm01", scope=SCOPE.USER, action=ACTION.DISABLE)
         # Load OATH CSV
         with self.app.test_request_context('/token/load/import.oath',
                                             method="POST",
                                             data={"type": "oathcsv",
+                                                  "tokenrealms": self.realm1,
                                                   "file": (IMPORTFILE,
                                                            "import.oath")},
                                             headers={'Authorization': self.at}):
@@ -848,6 +851,7 @@ class APITokenTestCase(MyApiTestCase):
         # check for a successful audit entry
         entry = self.find_most_recent_audit_entry(action='*/token/load/*')
         self.assertEqual(entry['success'], 1, entry)
+        delete_policy("dumm01")
 
         # Load GPG encrypted OATH CSV
         with self.app.test_request_context('/token/load/import.oath.asc',
