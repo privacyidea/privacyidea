@@ -350,6 +350,8 @@ value. Valid compares are:
 
 "myCounter" being any event counter set with the :ref:`counterhandler`.
 
+.. note:: A non-existing counter value will compare as 0 (zero).
+
 Managing Events
 ---------------
 
