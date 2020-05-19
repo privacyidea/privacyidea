@@ -1,3 +1,21 @@
+Version 3.3.3, 2020-05-19
+
+  Fixes:
+    * Fix failing Challenge Response in WebUI (#2192)
+    * Add better logging for contradciting policy calls
+    * Case insensitive user check failsafe in policy matching (#2198)
+
+Version 3.3.2, 2020-05-04
+
+  Fixes:
+    * Fix restricted audit log for helpdesk users (#2181)
+
+Version 3.3.1, 2020-04-29
+
+  Fixes:
+    * Fix broken U2F support (#2157)
+    * Fix creation of PGP keys with pi-maange (#2165)
+
 Version 3.3, 2020-04-06
 
   Features:
