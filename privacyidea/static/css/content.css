@@ -71,30 +71,3 @@ input[type="checkbox"] {
 .mt-5px {
     margin-top: 5px;
 }
-
-/* Justified text (e.g. for longer help-blocks) */
-.justified {
-    text-align: justify;
-}
-
-.qr_image-block {
-    display:inline-block;
-    margin-left: 15px; /* to cancel the -15px from bootstraps row css */
-}
-
-.qr_image-block img {
-    display:block;
-    margin:auto;
-}
-
-.qr_image-block p {
-    display:block;
-    text-align:center;
-    margin-left:5px;
-    margin-right:5px;
-}
-
-.centered {
-    display: table;
-    margin: auto;
-}

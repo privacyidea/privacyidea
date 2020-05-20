@@ -1,0 +1,8 @@
+<div class="form-group row">
+    <div class="col-md-3"
+         ng-repeat="qr_img in qr_images"
+         ng-class="$state.includes('token.wizard') && $first ? 'col-md-offset-' + qr_col_offset() : ''">
+        <p><img class="img-responsive" ng-src="{{ qr_img.src }}" alt="{{ qr_img.alt }}"></p>
+        <p class="help-block text-center">{{ qr_img.help }}</p>
+    </div>
+</div>

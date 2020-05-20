@@ -1,30 +1,16 @@
-<div class="form-group">
-    <p class="help-block"
-       ng-hide="$state.includes('token.wizard')"
-       translate>The HOTP token is an event based token. You can paste a secret key or
-        have the server generate the secret and scan the QR code with a smartphone
-        app like the Google Authenticator turning your
-        smartphone into an authentication device.
-    </p>
-</div>
-<div class="form-group">
-    <div ng-class="$state.includes('token.wizard') ? 'centered row' : 'row'">
-        <div class="col qr_image-block" ng-if="qr_image_android">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_android }}">
-            <p class="help-block" translate>Get the Authenticator App for Android.</p>
-        </div>
-        <div class="col qr_image-block" ng-if="qr_image_ios">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_ios }}">
-            <p class="help-block" translate>Get the Authenticator App for iOS.</p>
-        </div>
-        <div class="col qr_image-block" ng-if="qr_image_custom">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_custom }}">
-            <p class="help-block" translate>Get the Authenticator App.</p>
-        </div>
-    </div>
-</div>
+<p class="help-block"
+   ng-hide="$state.includes('token.wizard')"
+   translate>The HOTP token is an event based token. You can paste a secret key or
+    have the server generate the secret and scan the QR code with a smartphone
+    app like the Google Authenticator turning your
+    smartphone into an authentication device.
+</p>
+
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>
 
 <h4 ng-hide="$state.includes('token.wizard')" translate>Token data</h4>
+
 <div class="form-group" ng-hide="$state.includes('token.wizard')">
     <div ng-hide="checkRight('hotp_force_server_generate')">
         <input type="checkbox" ng-model="form.genkey"

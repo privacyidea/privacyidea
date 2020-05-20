@@ -186,7 +186,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     if ($state.includes('token.wizard') && !$scope.show_seed) {
         $scope.qrCodeWidth = 300;
     }
-
+    $scope.qr_col_offset = function() {
+        return parseInt((12 - (3 * $scope.qr_images.length)) / 2) }
     $scope.checkRight = AuthFactory.checkRight;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
@@ -200,7 +201,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     // questions for questionnaire token
     $scope.questions = [];
     $scope.num_questions = 5;
-    $scope.fileVersionSuffix = versioningSuffixProvider.$get()
+    $scope.fileVersionSuffix = versioningSuffixProvider.$get();
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -308,7 +309,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
-        $scope.fileVersionSuffix = versioningSuffixProvider.$get()
     };
 
     // helper function for setting indexed secret attribute

@@ -376,9 +376,25 @@ angular.module("privacyideaApp")
             if ($scope.dialogNoToken) {
                 $('#dialogNoToken').modal("show");
             }
-            $scope.qr_image_android = data.result.value.qr_image_android || "";
-            $scope.qr_image_ios = data.result.value.qr_image_ios || "";
-            $scope.qr_image_custom = data.result.value.qr_image_custom || "";
+            $scope.qr_images = [];
+            if ( data.result.value.qr_image_android ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_android,
+                    'alt': 'QR-Code with link to android app in play store',
+                    'help': gettextCatalog.getString('Get the Authenticator App for Android.')})
+            }
+            if ( data.result.value.qr_image_ios ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_ios,
+                    'alt': 'QR-Code with link to iOS app in app store',
+                    'help': gettextCatalog.getString('Get the Authenticator App for iOS.')})
+            }
+            if ( data.result.value.qr_image_custom ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_custom,
+                    'alt': 'QR-Code with link to a custom app',
+                    'help': gettextCatalog.getString('Get the Authenticator App.')})
+            }
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;

@@ -1,29 +1,12 @@
-<div class="form-group">
-    <p class="help-block"
-       translate>
-        With the PUSH token privacyIDEA sends a notification to your registered smartphone asking
-        if you want to approve the authentication step.
-        You can accept or deny the authentication on your smartphone.
-    </p>
-    <p class="help-block" translate>
-        For the enrollment process and for the authentication process your smartphone needs an internet connection
-        to privacyIDEA.
-    </p>
-</div>
+<p class="help-block" translate>
+    With the PUSH token privacyIDEA sends a notification to your registered smartphone asking
+    if you want to approve the authentication step.
+    You can accept or deny the authentication on your smartphone.
+</p>
+<p class="help-block" translate>
+    For the enrollment process and for the authentication process your smartphone needs an internet connection
+    to privacyIDEA.
+</p>
 
-<div class="form-group">
-    <div ng-class="$state.includes('token.wizard') ? 'centered row' : 'row'">
-        <div class="col qr_image-block" ng-if="qr_image_android">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_android }}">
-            <p class="help-block" translate>Get the Authenticator App for Android.</p>
-        </div>
-        <div class="col qr_image-block" ng-if="qr_image_ios">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_ios }}">
-            <p class="help-block" translate>Get the Authenticator App for iOS.</p>
-        </div>
-        <div class="col qr_image-block" ng-if="qr_image_custom">
-            <img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_custom }}">
-            <p class="help-block" translate>Get the Authenticator App.</p>
-        </div>
-    </div>
-</div>
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>
