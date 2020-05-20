@@ -31,6 +31,7 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
     $scope.form = {};
     $scope.gateway_id = $stateParams.gateway_id;
     $scope.opts = {};
+    $scope.headers = {};
 
     // Get all gateway definitions
     $scope.getSMSGateways = function (gwid) {
@@ -42,7 +43,7 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
                 $scope.form = $scope.smsgateways[0];
                 $scope.form.module = $scope.form.providermodule;
                 var option_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
-                // fill all parameters
+                // fill all parameters (options)
                 angular.forEach(Object.keys($scope.form.options),
                     function (optionname) {
                         if (option_array.indexOf(optionname)>-1) {
@@ -50,6 +51,17 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
                         } else {
                             // file the optionals!
                             $scope.opts[optionname] = $scope.form.options[optionname];
+                        }
+                    });
+                var header_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
+                // fill all parameters (headers)
+                angular.forEach(Object.keys($scope.form.headers),
+                    function (headername) {
+                        if (header_array.indexOf(headername)>-1) {
+                            $scope.form["header." + headername] = $scope.form.headers[headername];
+                        } else {
+                            // file the headers!
+                            $scope.headers[headername] = $scope.form.headers[headername];
                         }
                     });
             }
@@ -80,8 +92,15 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
                 $scope.form["option." + option] = $scope.opts[option];
             }
         }
+        // transform the event headers to form parameters
+        for (var header in $scope.headers) {
+            if ($scope.headers.hasOwnProperty(header)) {
+                $scope.form["header." + header] = $scope.headers[header];
+            }
+        }
 
         delete $scope.form.options;
+        delete $scope.form.headers;
         ConfigFactory.setSMSGateway($scope.form, function() {
             $state.go("config.smsgateway.list");
             $('html,body').scrollTop(0);
@@ -102,6 +121,16 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
         $scope.opts[$scope.newoption] = $scope.newvalue;
         $scope.newoption = "";
         $scope.newvalue = "";
+    };
+
+     $scope.deleteHeader = function(headername) {
+        delete $scope.headers[headername];
+    };
+
+    $scope.addHeader = function() {
+        $scope.headers[$scope.newheader] = $scope.newheadervalue;
+        $scope.newheader = "";
+        $scope.newheadervalue = "";
     };
 
     // listen to the reload broadcast

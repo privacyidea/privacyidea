@@ -231,6 +231,7 @@ class HttpSMSProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": True,
+                  "headers_allowed": True,
                   "parameters": {
                       "URL": {
                           "required": True,

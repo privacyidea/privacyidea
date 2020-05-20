@@ -2068,11 +2068,15 @@ class SMSGateway(MethodsMixin, db.Model):
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
                               backref='smsgw')
+    headers = db.relationship('SMSGatewayHeader',
+                              lazy='dynamic',
+                              backref='smsgw')
 
     def __init__(self, identifier, providermodule, description=None,
-                 options=None):
+                 options=None, headers=None):
 
         options = options or {}
+        headers = headers or {}
         sql = SMSGateway.query.filter_by(identifier=identifier).first()
         if sql:
             self.id = sql.id
@@ -2080,7 +2084,7 @@ class SMSGateway(MethodsMixin, db.Model):
         self.providermodule = providermodule
         self.description = description
         self.save()
-        # delete non existing options in case of update
+        # delete non existing options and headers in case of update
         if sql:
             for option in sql.option_dict.keys():
                 # iterate through all existing options
@@ -2088,9 +2092,18 @@ class SMSGateway(MethodsMixin, db.Model):
                     # if the option is not contained anymore
                     SMSGatewayOption.query.filter_by(gateway_id=self.id,
                                                      Key=option).delete()
+            for header in sql.header_dict.keys():
+                # iterate through all existing headers
+                if header not in headers:
+                    # if the header is not contained anymore
+                    SMSGatewayHeader.query.filter_by(gateway_id=self.id,
+                                                     Key=header).delete()
         # add the options to the SMS Gateway
         for k, v in options.items():
             SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
+        # add the headers to the SMS Gateway
+        for k, v in headers.items():
+            SMSGatewayHeader(gateway_id=self.id, Key=k, Value=v).save()
 
     def save(self):
         if self.id is None:
@@ -2117,6 +2130,10 @@ class SMSGateway(MethodsMixin, db.Model):
         db.session.query(SMSGatewayOption)\
                   .filter(SMSGatewayOption.gateway_id == ret)\
                   .delete()
+        # delete all SMSGatewayHeaders
+        db.session.query(SMSGatewayHeader)\
+                  .filter(SMSGatewayHeader.gateway_id == ret)\
+                  .delete()
         # delete the SMSGateway itself
         db.session.delete(self)
         db.session.commit()
@@ -2134,6 +2151,18 @@ class SMSGateway(MethodsMixin, db.Model):
             res[option.Key] = option.Value
         return res
 
+    @property
+    def header_dict(self):
+        """
+        Return all connected headers as a dictionary
+
+        :return: dict
+        """
+        res = {}
+        for header in self.headers:
+            res[header.Key] = header.Value
+        return res
+
     def as_dict(self):
         """
         Return the object as a dictionary
@@ -2145,7 +2174,8 @@ class SMSGateway(MethodsMixin, db.Model):
              "name": self.identifier,
              "providermodule": self.providermodule,
              "description": self.description,
-             "options": self.option_dict}
+             "options": self.option_dict,
+             "headers": self.header_dict}
 
         return d
 
@@ -2180,6 +2210,53 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     def save(self):
         # See, if there is this option for this this gateway
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
+                                               Key=self.Key).first()
+        if go is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            ret = self.id
+        else:
+            # update
+            SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
+                                              Key=self.Key
+                                              ).update({'Value': self.Value,
+                                                        'Type': self.Type})
+            ret = go.id
+        db.session.commit()
+        return ret
+
+
+class SMSGatewayHeader(MethodsMixin, db.Model):
+    """
+    This table stores the options and parameters for an SMS Gateway definition.
+    """
+    __tablename__ = 'smsgatewayheader'
+    id = db.Column(db.Integer, Sequence("smsgwheader_seq"), primary_key=True)
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.UnicodeText(), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'')
+    gateway_id = db.Column(db.Integer(),
+                           db.ForeignKey('smsgateway.id'), index=True)
+    __table_args__ = (db.UniqueConstraint('gateway_id',
+                                          'Key',
+                                          name='sgix_1'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
+    def __init__(self, gateway_id, Key, Value, Type=None):
+
+        """
+        Create a new gateway_option for the gateway_id
+        """
+        self.gateway_id = gateway_id
+        self.Key = Key
+        self.Value = convert_column_to_unicode(Value)
+        self.Type = Type
+        self.save()
+
+    def save(self):
+        # See, if there is this option for this this gateway
+        go = SMSGatewayHeader.query.filter_by(gateway_id=self.gateway_id,
                                                Key=self.Key).first()
         if go is None:
             # create a new one
