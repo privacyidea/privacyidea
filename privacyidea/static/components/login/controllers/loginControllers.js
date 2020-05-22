@@ -395,6 +395,9 @@ angular.module("privacyideaApp")
                     'alt': 'QR-Code with link to a custom app',
                     'help': gettextCatalog.getString('Get the Authenticator App.')})
             }
+            if ($scope.qr_images.length > 0) {
+                $scope.qr_col_md = "col-md-" + parseInt(12 / $scope.qr_images.length);
+            }
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;

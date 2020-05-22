@@ -186,8 +186,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     if ($state.includes('token.wizard') && !$scope.show_seed) {
         $scope.qrCodeWidth = 300;
     }
-    $scope.qr_col_offset = function() {
-        return parseInt((12 - (3 * $scope.qr_images.length)) / 2) }
     $scope.checkRight = AuthFactory.checkRight;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};

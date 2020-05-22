@@ -71,3 +71,8 @@ input[type="checkbox"] {
 .mt-5px {
     margin-top: 5px;
 }
+
+.centered {
+    display: table;
+    margin: auto;
+}
