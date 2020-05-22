@@ -7,7 +7,7 @@
 
 <div class="form-group">
     <label for="sshkey" translate>SSH public Key</label>
-    <textarea type="text"
+    <textarea type="text" id="sshkey"
            autofocus
            rows="5"
            class="form-control"
@@ -15,12 +15,3 @@
            ng-model="form.sshkey" name="sshkey"
            ng-change="sshkeyChanged()"></textarea>
 </div>
-
-<div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
-    <label for="description" translate>Description</label>
-    <input type="text" class="form-control"
-            placeholder="{{ 'Some nice words...'|translate }}"
-            ng-model="form.description" />
-</div>
-
-
