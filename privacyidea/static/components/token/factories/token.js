@@ -205,7 +205,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     params.genkey = 1;
                     params.otpkey = null;
                 }
-                params.pin = userObject.pin;
+                params.pin = userObject.pin || "";
                 if (username) {
                     params.user = username;
                     params.realm = userObject.realm;
