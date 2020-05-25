@@ -356,12 +356,14 @@ class IdResolver (UserIdResolver):
     
     def _get_userid_filter(self, userId):
         column = getattr(self.TABLE, self.map.get("userid"))
-        if isinstance(column.type, Integer):
+        if isinstance(column.type, String):
+            return column == str(userId)
+        elif isinstance(column.type, Integer):
             # since our user ID is usually a string we need to cast
             return column == int(userId)
-        else:
-            # otherwise we cast the column to string (in case of postgres UUIDs)
-            return cast(column, String).like(userId)
+
+        # otherwise we cast the column to string (in case of postgres UUIDs)
+        return cast(column, String).like(userId)
 
     def getUsername(self, userId):
         """
