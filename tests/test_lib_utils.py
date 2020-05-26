@@ -23,6 +23,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams)
+from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -524,6 +525,11 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(r)
 
         r, c = check_pin_policy(r"[[[", "s")
+        self.assertTrue(r)
+
+        # check the validation of a generated password with square brackets
+        password = generate_password(size=3, requirements=['[', '[', '['])
+        r, c = check_pin_policy(password, "s")
         self.assertTrue(r)
 
         r, c = check_pin_policy("abc", "nc")
