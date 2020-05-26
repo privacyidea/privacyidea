@@ -77,8 +77,9 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
-from privacyidea.lib.utils import (get_client_ip, SPECIAL_CHARS_LIST,
-                                   parse_timedelta, is_true, check_pin_policy, get_module_class,
+from privacyidea.lib.utils import (get_client_ip,
+                                   parse_timedelta, is_true, generate_charlists_from_pin_policy,
+                                   check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
@@ -110,7 +111,6 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
-
 
 class prepolicy(object):
     """
@@ -152,7 +152,6 @@ class prepolicy(object):
 
         return policy_wrapper
 
-
 def _generate_pin_from_policy(policy, size=6):
     """
     This function creates a string of allowed characters from the value of a pincontents policy
@@ -167,44 +166,11 @@ def _generate_pin_from_policy(policy, size=6):
     :return: Tuple of the generated PIN and a description
     """
 
-    chars = {"c": string.ascii_letters,         # characters
-             "n": string.digits,                # numbers
-             "s": SPECIAL_CHARS_LIST}   # special
+    charlists_dict = generate_charlists_from_pin_policy(policy)
 
-    # default: full character list
-    default_characters = "".join(chars.values())
-
-    not_allowed = []
-    required = []
-
-    if policy[0] in ["+", "-"] or policy[0] is not "[":
-        for char in policy[1:]:
-            if char not in chars.keys():
-                raise PolicyError("Unknown character specifier in PIN policy.")
-
-    if policy[0] == "+":
-        # grouping
-        for char in policy[1:]:
-            required.append(chars.get(char))
-        required = ["".join(required)]
-
-    elif policy[0] == "-":
-        # exclusion
-        for char in policy[1:]:
-            not_allowed.append(chars.get(char))
-
-    elif policy[0] == "[" and policy[-1] == "]":
-        # only allowed characters
-        default_characters = policy[1:-1]
-
-    else:
-        for c in chars:
-            if c in policy:
-                required.append(chars.get(c))
-
-    ret = generate_password(size=size, characters=default_characters,
-                            exclude="".join(not_allowed), requirements=required)
-    return ret
+    pin = generate_password(size=size, characters=charlists_dict['base'],
+                      requirements=charlists_dict['requirements'])
+    return pin
 
 
 def set_random_pin(request=None, action=None):

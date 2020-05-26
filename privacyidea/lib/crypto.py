@@ -811,29 +811,25 @@ def generate_otpkey(key_size=20):
 
 
 def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits, exclude='', requirements=[]):
+                        string.ascii_uppercase + string.digits, requirements=[]):
     """
     Generate a random password of the specified length of the given characters
     with optional requirements
 
-    :param size: The length of the password
+    :param size: The length of the password. If smaller than the number of requirements,
+    the requirements define the password length.
     :param characters: The characters the password may consist of
-    :param requirements: A list of strings from which the password must contain at least one character
-    :param exclude: A string of characters to exclude
-    If exclude and requirements have common characters, those are not excluded.
+    :param requirements: A list of strings from which the password must contain at least one character.
+    Note that the requirements are not automatically added to the base character set.
     :return: password
     :rtype: basestring
     """
+    if len(requirements) > size:
+        log.info('The number of requirements is larger then the password length.')
     # add one random character from each string in the requirements list
     passwd = [urandom.choice(str) for str in requirements]
-    # use set types to exclude characters from list of allowed characters
-    allowed_characters_set = set(characters) - set(exclude)
-    # requirements supersede exclusion: add required character groups
-    requirements_set = set([ c for c in ''.join(requirements)])
-    # union allowed characters with requirements to construct the allowed characters list
-    allowed_characters = "".join(list(allowed_characters_set.union(requirements_set)))
     # fill the password until size with allowed characters
-    passwd.extend(urandom.choice(allowed_characters) for _x in range(size - len(requirements)))
+    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
     # return shuffled password
     random.shuffle(passwd)
     return "".join(passwd)

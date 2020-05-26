@@ -77,7 +77,7 @@ from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
                                        RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import create_img, check_pin_policy
+from privacyidea.lib.utils import create_img, generate_charlists_from_pin_policy, CHARLIST_CONTENTPOLICY, check_pin_policy
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -757,12 +757,47 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         for content_policy in content_policies_invalid:
             # an invalid policy string should throw a PolicyError exception
-            try:
-                pin = _generate_pin_from_policy(content_policy, size=pin_size)
-                pin_valid = True
-            except PolicyError:
-                pin_valid = False
-            self.assertFalse(pin_valid)
+            self.assertRaises(PolicyError, _generate_pin_from_policy, content_policy, size=pin_size)
+
+    def test_07d_generate_charlists_from_pin_policy(self):
+        content_policies_valid = ['+c', '-s', 'cns', '+ns', '[1234567890]', '[[]€³@/(]']
+        content_policies_invalid = ['+c-ns', 'cn-s', '+ns-[1234567890]', '-[1234567890]']
+        default_chars = "".join(CHARLIST_CONTENTPOLICY.values())
+
+        policies = ["+cn", "+c", "+cs"]
+        for policy in policies:
+            required = ["".join([CHARLIST_CONTENTPOLICY[str] for str in policy[1:]])]
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": default_chars,
+                              "requirements": required})
+
+        policies = ["-cn", "-c", "-sc"]
+        for policy in policies:
+            base_chars = "".join([CHARLIST_CONTENTPOLICY[str] for str in 'cns' if not str in policy[1:]])
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": base_chars,
+                              "requirements": []})
+
+        policies = ["cn", "c", "sc"]
+        for policy in policies:
+            required = [CHARLIST_CONTENTPOLICY[str] for str in policy[:]]
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": default_chars,
+                              "requirements": required})
+
+        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\]"]
+        for policy in policies:
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": policy[1:-1],
+                              "requirements": []})
+
+        policies = ["+c-n", ".c", ""]
+        for policy in policies:
+            self.assertRaises(PolicyError, generate_charlists_from_pin_policy, policy)
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",

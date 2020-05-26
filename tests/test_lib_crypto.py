@@ -333,12 +333,6 @@ class RandomTestCase(MyTestCase):
         self.assertTrue(pass_numeric.isnumeric())
         self.assertEqual(len(pass_numeric), 12)
 
-        # test exclude case, chose length 24 to exclude "True by chance"
-        pass_lowercase = generate_password(size=24, characters=string.ascii_uppercase + string.ascii_lowercase,
-                                           exclude=string.ascii_uppercase)
-        self.assertTrue(pass_lowercase.islower())
-        self.assertEqual(len(pass_lowercase), 24)
-
         # test requirements, we loop to get some statistics
         default_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
         for i in range(10):
@@ -347,13 +341,26 @@ class RandomTestCase(MyTestCase):
             self.assertTrue(
                 any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
             self.assertEqual(len(password_req),3)
-        # test if requirement takes precedence if exclusion and requirements contain common characters exclusion.
-        # loop for statistics
-        for i in range(10):
-            password_prec = generate_password(size=3, characters=default_chars, requirements=["AB", "ab"],
-                                                 exclude=string.ascii_uppercase)
-            self.assertTrue(
-                any(char in "AB" for char in password_prec) and any(char in "ab" for char in password_prec))
+
+        # use letters for base and numbers for requirements
+        # this cannot be achieved with a pin policy
+        password = generate_password(size=10, characters=string.ascii_letters,
+                                     requirements=[string.digits, string.digits, string.digits])
+        self.assertEqual(10, len(password))
+        self.assertEqual(3, sum(c.isdigit() for c in password))
+        self.assertEqual(7, sum(c.isalpha() for c in password))
+
+        # requirements define the minimum length of a password
+        password = generate_password(size=0, characters='ABC',
+                                     requirements=['1', '2', '3'])
+        self.assertEqual(3, len(password))
+
+        # empty characters variable raises an IndexError
+        self.assertRaises(IndexError, generate_password, characters='')
+
+        # negative size without requirements results in an empty password
+        password = generate_password(size=-1)
+        self.assertEqual(password, '')
 
 class AESHardwareSecurityModuleTestCase(MyTestCase):
     """
