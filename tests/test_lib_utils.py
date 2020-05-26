@@ -10,6 +10,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
+                                   compare_generic_condition,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
@@ -290,6 +291,8 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("")
         self.assertTrue(datetime.now(tzlocal()) >= d)
 
+        self.assertIsNone(parse_date("-2g"))
+
         d = parse_date("2016/12/23")
         self.assertEqual(d, datetime(2016, 12, 23))
 
@@ -322,9 +325,14 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("03.04.2016")
         # April 3rd
         self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+        self.assertEqual(parse_date('03/04/2016'), datetime(2016, 4, 3, 0, 0))
+        self.assertEqual(parse_date('01/01/20'), datetime(2020, 1, 1, 0, 0))
+        self.assertEqual(parse_date('01/15/20'), datetime(2020, 1, 15, 0, 0))
+        self.assertEqual(parse_date('15/01/20'), datetime(2020, 1, 15, 0, 0))
 
         # Non matching date returns None
         self.assertEqual(parse_date("7 Januar 17"), None)
+        self.assertIsNone(parse_date('15/15'))
 
     def test_08_compare_condition(self):
         self.assertTrue(compare_condition("100", 100))
@@ -347,6 +355,21 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(compare_condition("", 100))
         # An invalid condition, which misses a compare-value, will result in false
         self.assertFalse(compare_condition(">", 100))
+
+        # Test new comparators
+        self.assertTrue(compare_condition('>=100', 100))
+        self.assertTrue(compare_condition('=> 100', 200))
+        self.assertFalse(compare_condition('>= 100', 99))
+
+        self.assertTrue(compare_condition('<=100', 100))
+        self.assertTrue(compare_condition('=< 100', 99))
+        self.assertFalse(compare_condition('<= 100', 101))
+
+        self.assertTrue(compare_condition('!=100', 99))
+        self.assertFalse(compare_condition('!= 100', 100))
+
+        self.assertTrue(compare_condition('==100', 100))
+        self.assertFalse(compare_condition('== 100', 99))
 
     def test_09_get_data_from_params(self):
         config_description = {
@@ -406,6 +429,21 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(1000, "==", "1000"))
         self.assertTrue(compare_value_value("99", "<", "1000"))
 
+        self.assertTrue(compare_value_value(100, '>', '10'))
+        self.assertTrue(compare_value_value(100, '>=', '10'))
+        self.assertTrue(compare_value_value("100", '=>', 10))
+        self.assertTrue(compare_value_value(100, '>=', '100'))
+        self.assertFalse(compare_value_value(100, '>=', '101'))
+
+        self.assertTrue(compare_value_value('ABC', '=', 'ABC'))
+        self.assertTrue(compare_value_value('ABC', '!=', 'ABD'))
+
+        self.assertTrue(compare_value_value(10, '<', '100'))
+        self.assertTrue(compare_value_value(10, '<=', '100'))
+        self.assertTrue(compare_value_value("10", '=<', 100))
+        self.assertTrue(compare_value_value(10, '<=', '10'))
+        self.assertFalse(compare_value_value(10, '<=', '9'))
+
         # compare dates
         self.assertTrue(compare_value_value(
                         datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
@@ -417,6 +455,21 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(
             (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
             ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+
+        self.assertTrue(compare_value_value('+3h', '>', ''))
+        self.assertFalse(compare_value_value('2017/04/20 11:30+0200', '>',
+                                             datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+
+        self.assertTrue(compare_value_value('2020-01-15T00:00', '==',
+                                            datetime(2020, 1, 15).strftime(DATE_FORMAT)))
+        # unexpected result: The date string can not be parsed since dateutil.parser
+        # does not understand locale dates. So the strings themselves are compared
+        # since parse_date() returns 'None'
+        self.assertTrue(compare_value_value('16. März 2020', '<',
+                                            datetime(2020, 3, 15).strftime(DATE_FORMAT)))
+
+        # check for unknown comparator
+        self.assertRaises(Exception, compare_value_value, 5, '~=', 5)
 
     def test_13_parse_time_offset_from_now(self):
         td = parse_timedelta("+5s")
@@ -851,3 +904,51 @@ class UtilsTestCase(MyTestCase):
                            "realm": "Wild West"},
                           {"user": "Dave Rudabaugh",
                            "realm": "Dodge City"})
+
+    def test_34_compare_generic_condition(self):
+
+        def mock_attribute(key):
+            attr = {"a": "10",
+                    "b": "100",
+                    "c": "1000"}
+            return attr.get(key)
+
+        self.assertTrue(compare_generic_condition("a<100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        self.assertTrue(compare_generic_condition("a <100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        self.assertTrue(compare_generic_condition("b==100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("a== 100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("b>100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c < 500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c <500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong entry, that is not processed
+        self.assertRaises(Exception, compare_generic_condition,
+                          "c 500", mock_attribute, "Error {0!s}")
+
+        # Wrong entry, that cannot be processed
+        self.assertRaises(Exception, compare_generic_condition,
+                          "b!~100", mock_attribute, "Error {0!s}")

@@ -1014,7 +1014,13 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action not in [ACTION.AUDIT]:
+    if action is ACTION.AUDIT:
+        # In case of audit requests, the parameters "realm" and "user" are used for
+        # filtering the audit log. So these values must not be taken from the request parameters,
+        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
+        # in the decorator "allowed_audit_realm".
+        realm = username = resolver = None
+    else:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
@@ -1056,12 +1062,14 @@ def check_token_upload(request=None, action=None):
     upload_allowed = True
     if tokenrealms:
         for trealm in tokenrealms.split(","):
-            if not Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
-                                           adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
+            if not Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                 adminuser=g.logged_in_user.get("username"),
+                                 adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
                 upload_allowed = False
     else:
-        upload_allowed = Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
-                                        adminrealm=g.logged_in_user.get("realm")).allowed()
+        upload_allowed = Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                       adminuser=g.logged_in_user.get("username"),
+                                       adminrealm=g.logged_in_user.get("realm")).allowed()
     if not upload_allowed:
         raise PolicyError("Admin actions are defined, but you are not allowed to upload token files.")
     return True

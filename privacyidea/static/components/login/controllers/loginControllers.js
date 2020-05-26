@@ -198,8 +198,12 @@ angular.module("privacyideaApp")
         }, {
             withCredentials: true
         }).then(function (response) {
+            // successful authentication
             $scope.do_login_stuff(response.data);
+            // login data is not needed anymore, remove from scope
+            $scope.login = {username: "", password: ""};
         }, function (response) {
+            // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
             let error = response.data;
@@ -290,7 +294,6 @@ angular.module("privacyideaApp")
                     inform.add(gettextCatalog.getString("Challenge Response " +
                             "Authentication. Your response was not valid!"),
                         {type: "warning", ttl: 5000});
-                    $scope.login.password = "";
                     // in case of U2F we try for a 2nd signature
                     // In case of u2f we do:
                     if ($scope.u2f_first_error) {
@@ -321,12 +324,7 @@ angular.module("privacyideaApp")
                             {type: "danger", ttl: 10000});
                 }
             }
-        }).finally(function () {
-            // We delete the login object, so that the password is not
-            // contained in the scope
-            $scope.login = {username: "", password: ""};
-            }
-        );
+        });
     };
     $scope.check_authentication = function() {
         // This function is used to poll, if a challenge response
@@ -376,13 +374,28 @@ angular.module("privacyideaApp")
             if ($scope.dialogNoToken) {
                 $('#dialogNoToken').modal("show");
             }
-            $scope.qr_image_android = data.result.value.qr_image_android || "";
-            $scope.qr_image_ios = data.result.value.qr_image_ios || "";
-            $scope.qr_image_custom = data.result.value.qr_image_custom || "";
-            // This is a helper variable to get the number of qr images to display
-            $scope.qr_image_count = Number($scope.qr_image_android.length > 0)
-                + Number($scope.qr_image_ios.length > 0)
-                + Number($scope.qr_image_custom.length > 0);
+            $scope.qr_images = [];
+            if ( data.result.value.qr_image_android ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_android,
+                    'alt': 'QR-Code with link to android app in play store',
+                    'help': gettextCatalog.getString('Get the Authenticator App for Android.')})
+            }
+            if ( data.result.value.qr_image_ios ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_ios,
+                    'alt': 'QR-Code with link to iOS app in app store',
+                    'help': gettextCatalog.getString('Get the Authenticator App for iOS.')})
+            }
+            if ( data.result.value.qr_image_custom ) {
+                $scope.qr_images.push({
+                    'src': data.result.value.qr_image_custom,
+                    'alt': 'QR-Code with link to a custom app',
+                    'help': gettextCatalog.getString('Get the Authenticator App.')})
+            }
+            if ($scope.qr_images.length > 0) {
+                $scope.qr_col_md = "col-md-" + parseInt(12 / $scope.qr_images.length);
+            }
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;

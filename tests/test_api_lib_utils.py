@@ -6,7 +6,8 @@ from .base import MyApiTestCase
 
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
-                                       verify_auth_token, is_fqdn, attestation_certificate_allowed)
+                                       verify_auth_token, is_fqdn, attestation_certificate_allowed,
+                                       get_priority_from_param)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
@@ -193,3 +194,10 @@ class UtilsTestCase(MyApiTestCase):
                 }
             )
         )
+
+    def test_07_get_priority_from_param(self):
+        # check if only keys with given integer values are returned
+        param = {'priority.resolver1': 1, 'priority.resolver2': None,
+                 'resolvers': 'resolver1,resolver2,resolver3'}
+        priority = get_priority_from_param(param)
+        self.assertEqual(priority, {'resolver1': 1})

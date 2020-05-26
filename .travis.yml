@@ -5,6 +5,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 # check if we need to run travis
 before_install: ./.travis_check.sh; ret=$?; if [ $ret -eq 123 ]; then travis_terminate 0; elif [
@@ -25,7 +26,7 @@ env:
     - TESTS=tests/
 
 # command to run tests
-script: "python -b -m pytest -v --cov=privacyidea $TESTS"
+script: "python -b -m pytest -v --cov=privacyidea --cov-append $TESTS"
 
 after_success: 
     - codecov

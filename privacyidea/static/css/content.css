@@ -23,6 +23,13 @@
    background-color: #FA787E;
 }
 
+.inform-fixed {
+    /* set the space from the top */
+    top: 45px;
+    /* move inform in front of navbar (with z-index 1030) */
+    z-index: 1032;
+}
+
 /*
 .ng-invalid.radio label,
 .ng-invalid.checkbox label,
@@ -70,4 +77,9 @@ input[type="checkbox"] {
 
 .mt-5px {
     margin-top: 5px;
+}
+
+.centered {
+    display: table;
+    margin: auto;
 }

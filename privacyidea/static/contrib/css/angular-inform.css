@@ -8,10 +8,10 @@
 
 .inform-fixed {
   position: fixed;
-  top: 40px;
+  top: 20px;
   left: 20px;
   right: 20px;
-  z-index: 11002;
+  z-index: 1002;
 }
 
 .inform-fixed .inform-message {
