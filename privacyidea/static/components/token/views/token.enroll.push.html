@@ -1,9 +1,3 @@
-<p>
-<div class="row">
-    <div class="col"
-         ng-class="qr_image_count === 0 ? 'col-md-12' :
-                   (qr_image_count === 1 ? 'col-md-9' :
-                    (qr_image_count === 2 ? 'col-md-6': 'col-md-3'))">
 <p class="help-block" translate>
     With the PUSH token privacyIDEA sends a notification to your registered smartphone asking
     if you want to approve the authentication step.
@@ -13,18 +7,6 @@
     For the enrollment process and for the authentication process your smartphone needs an internet connection
     to privacyIDEA.
 </p>
-    </div>
-    <div class="col col-md-3" ng-if="qr_image_android">
-        <p><img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_android }}"></p>
-        <p class="help-block" translate>Get the Authenticator App for Android.</p>
-    </div>
-    <div class="col col-md-3" ng-if="qr_image_ios">
-        <p><img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_ios }}"></p>
-        <p class="help-block" translate>Get the Authenticator App for iOS.</p>
-    </div>
-    <div class="col col-md-3" ng-if="qr_image_custom">
-        <p><img width="{{ qrCodeWidth }}" ng-src="{{ qr_image_custom }}"></p>
-        <p class="help-block" translate>Get the Authenticator App.</p>
-    </div>
-</div>
-</p>
+
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>

@@ -541,7 +541,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -614,8 +614,8 @@ def check_proxy(path_to_client, proxy_settings):
     try:
         proxy_dict = parse_proxy(proxy_settings)
     except AddrFormatError:
-        log.error("Error parsing the OverrideAuthorizationClient setting: {"
-                  "0!s}! The IP addresses need to be comma separated. Fix "
+        log.error("Error parsing the OverrideAuthorizationClient setting: "
+                  "{0!s}! The IP addresses need to be comma separated. Fix "
                   "this. The client IP will not be mapped!".format(proxy_settings))
         log.debug("{0!s}".format(traceback.format_exc()))
         return path_to_client[0]
@@ -826,23 +826,13 @@ def compare_condition(condition, value):
         return False
 
     try:
-        # compare equal
-        if condition[0] in "=" + string.digits:
-            if condition[0] == "=":
-                compare_value = int(condition[1:])
-            else:
-                compare_value = int(condition)
-            return value == compare_value
+        if condition[0:2] in ["==", "!=", ">=", "=>", "<=", "=<"]:
+            return compare_value_value(value, condition[0:2], int(condition[2:]))
+        elif condition[0] in ["=", "<", ">"]:
+            return compare_value_value(value, condition[0], int(condition[1:]))
+        else:
+            return value == int(condition)
 
-        # compare bigger
-        if condition[0] == ">":
-            compare_value = int(condition[1:])
-            return value > compare_value
-
-        # compare less
-        if condition[0] == "<":
-            compare_value = int(condition[1:])
-            return value < compare_value
     except ValueError:
         log.warning(u"Invalid condition {0!s}. Needs to contain an integer.".format(condition))
         return False
@@ -851,11 +841,14 @@ def compare_condition(condition, value):
 def compare_value_value(value1, comparator, value2):
     """
     This function compares value1 and value2 with the comparator.
-    The comparator may be "==", ">" or "<".
+    The comparator may be "==", "=", "!=", ">", "<", ">=", "=>", "<=" or "=<".
     
-    If the values can be converted to integers, they are compared as integers 
+    If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
-    
+
+    In case of dates make sure they can be parsed by 'parse_date()', otherwise
+    they will be compared as strings.
+
     :param value1: First value 
     :param value2: Second value
     :param comparator: The comparator
@@ -882,14 +875,47 @@ def compare_value_value(value1, comparator, value2):
         except Exception:
             log.debug("error during date conversion.")
 
-    if comparator == "==":
+    if comparator in ["==", "="]:
         return value1 == value2
     elif comparator == ">":
         return value1 > value2
     elif comparator == "<":
         return value1 < value2
+    elif comparator in ['>=', '=>']:
+        return value1 >= value2
+    elif comparator in ['<=', '=<']:
+        return value1 <= value2
+    elif comparator == '!=':
+        return value1 != value2
+    else:
+        raise Exception("Unknown comparator: {0!s}".format(comparator))
 
-    raise Exception("Unknown comparator: {0!s}".format(comparator))
+
+def compare_generic_condition(cond, key_method, warning):
+    """
+    Compares a condition like "tokeninfoattribute == value".
+    It uses the "key_method" to determine the value of "tokeninfoattribute".
+
+    If the value does not match, it returns False.
+
+    :param cond: A condition containing a comparator like "==", ">", "<"
+    :param key_method: A function call, that get the value from the key
+    :param warning: A warning message to be written to the log file.
+    :return: True of False
+    """
+    key = value = None
+    for comparator in ["==", ">", "<"]:
+        if len(cond.split(comparator)) == 2:
+            key, value = [x.strip() for x in cond.split(comparator)]
+            break
+    if value:
+        res = compare_value_value(key_method(key), comparator, value)
+        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+        return res
+    else:
+        # There is a condition, but we do not know it!
+        log.warning(warning.format(cond))
+        raise Exception("Condition not parsable.")
 
 
 def int_to_hex(serial):

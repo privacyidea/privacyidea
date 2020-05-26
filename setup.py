@@ -6,7 +6,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.3"
+VERSION = "3.3.3"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -43,11 +43,12 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
                     "Flask-Script>=2.0.5",
                     "Flask-SQLAlchemy>=2.0",
                     "Flask-Versioned>=0.9.4",
+                    "future>=0.18.2;python_version<'3.0'",
                     "huey[redis]>=1.11.0",
                     "ldap3>=2.6",
                     "netaddr>=0.7.12",
                     "oauth2client>=2.0.1",
-                    "passlib[bcrypt]>=1.6.2",
+                    "passlib[bcrypt]>=1.7.0",
                     "Pillow>=6.2.1",
                     "PyJWT>=1.3.0",
                     "PyMySQL>=0.6.6",
@@ -101,7 +102,7 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.9.*',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
@@ -144,7 +145,8 @@ setup(
                  'Programming Language :: Python :: 3',
                  'Programming Language :: Python :: 3.5',
                  'Programming Language :: Python :: 3.6',
-                 'Programming Language :: Python :: 3.7'
+                 'Programming Language :: Python :: 3.7',
+                 'Programming Language :: Python :: 3.8'
                  ],
     zip_safe=False,
     long_description=get_file_contents('README.rst')
