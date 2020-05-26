@@ -1120,14 +1120,14 @@ def generate_charlists_from_pin_policy(policy):
 
     :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy)
     :return: Dictionary with keys "base" for the base set of allowed characters and "requirements"
-     which denotes a list of characters from each of which at least one must be contained inthe pin.
+     which denotes a list of characters from each of which at least one must be contained in the pin.
     """
 
     valid_policy_regexp = re.compile(r'^[+-]*[cns]+$|^\[.*\]+$')
 
     # default: full character list
     base_characters = "".join(CHARLIST_CONTENTPOLICY.values())
-    # list of strings where a character of each string ist required for the pin
+    # list of strings where a character of each string is required for the pin
     requirements = []
 
     if not re.match(valid_policy_regexp, policy):
