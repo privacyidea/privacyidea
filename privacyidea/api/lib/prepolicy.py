@@ -154,16 +154,11 @@ class prepolicy(object):
 
 def _generate_pin_from_policy(policy, size=6):
     """
-    This function creates a string of allowed characters from the value of a pincontents policy
-    The policy to check a PIN can contain of "c", "n" and "s".
-    "cn" means, that the PIN should contain a character and a number.
-    "+cn" means, that the PIN should contain elements from the group of characters and numbers
-    "-ns" means, that the PIN must not contain numbers or special characters
-    "[12345]" means, that the PIN may only consist of the characters 1,2,3,4 and 5.
+    This helper function creates a string of allowed characters from the value of a pincontents policy.
 
-    :param policy: The policy that describes the allowed contents of the PIN.
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy).
     :param size: The desired length of the generated pin
-    :return: Tuple of the generated PIN and a description
+    :return: The generated PIN
     """
 
     charlists_dict = generate_charlists_from_pin_policy(policy)
