@@ -424,7 +424,7 @@ class Token(MethodsMixin, db.Model):
                     mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin
-                if (mypHash == self.pin_hash):
+                if (mypHash == (self.pin_hash or u"")):
                     res = True
     
         return res
@@ -449,7 +449,7 @@ class Token(MethodsMixin, db.Model):
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
-            pin = self.pin_hash
+            pin = self.pin_hash or u""
         if pin.startswith("@@"):
             ret = True
         return ret
