@@ -1141,7 +1141,7 @@ def truncate_comma_list(data, max_len):
 
 def generate_charlists_from_pin_policy(policy):
     """
-    This function uses the pin content policy string to create the character lists
+    This function uses the pin content policy string (e.g. "+cns", "[asdf]") to create the character lists
     for password generation.
 
     :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy)
@@ -1149,14 +1149,15 @@ def generate_charlists_from_pin_policy(policy):
      which denotes a list of characters from each of which at least one must be contained in the pin.
     """
 
-    valid_policy_regexp = re.compile(r'^[+-]*[cns]+$|^\[.*\]+$')
+    # regexp to check for pin content policy string validity
+    VALID_POLICY_REGEXP = re.compile(r'^[+-]*[cns]+$|^\[.*\]+$')
 
     # default: full character list
     base_characters = "".join(CHARLIST_CONTENTPOLICY.values())
     # list of strings where a character of each string is required for the pin
     requirements = []
 
-    if not re.match(valid_policy_regexp, policy):
+    if not re.match(VALID_POLICY_REGEXP, policy):
         raise PolicyError("Unknown character specifier in PIN policy.")
 
     if policy[0] == "+":
@@ -1202,8 +1203,6 @@ def check_pin_policy(pin, policy):
 
     if not policy:
         return False, "No policy given."
-    if not pin:
-        return False, "No pin given."
 
     charlists_dict = generate_charlists_from_pin_policy(policy)
 
