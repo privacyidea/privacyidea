@@ -24,6 +24,14 @@
          + form.type + '.html' + fileVersionSuffix">
         </ng-include>
 
+        <!-- The description input field for all token types -->
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
+            <label for="description" translate>Description</label>
+            <input type="text" class="form-control" id="description"
+                   placeholder="{{ 'Some nice words...'|translate }}"
+                   ng-model="form.description" />
+        </div>
+
         <!-- User Assignment -->
         <div ng-if="loggedInUser.role == 'admin'">
             <h4 translate>Assign token to user</h4>
