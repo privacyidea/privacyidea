@@ -744,7 +744,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pincontent")
 
     def test_07c_generate_pin_from_policy(self):
-        content_policies_valid = ['+cn', '-s', 'cns', '+ns', '[1234567890]', '[[]€³@/(]']
+        content_policies_valid = ['+cn', '-s', 'cns', '+ns', '[1234567890]', '[[]€@/(]']
         content_policies_invalid = ['+c-ns', 'cn-s', '+ns-[1234567890]', '-[1234567890]']
         pin_size = 3
         for content_policy in content_policies_valid:
@@ -760,8 +760,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             self.assertRaises(PolicyError, _generate_pin_from_policy, content_policy, size=pin_size)
 
     def test_07d_generate_charlists_from_pin_policy(self):
-        content_policies_valid = ['+c', '-s', 'cns', '+ns', '[1234567890]', '[[]€³@/(]']
-        content_policies_invalid = ['+c-ns', 'cn-s', '+ns-[1234567890]', '-[1234567890]']
         default_chars = "".join(CHARLIST_CONTENTPOLICY.values())
 
         policies = ["+cn", "+c", "+cs"]
