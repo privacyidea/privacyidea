@@ -149,7 +149,7 @@ If you have followed the steps above to set up your
 `environment for testing <#testing-env>`__, running the test suite should be as
 easy as running `pytest <http://pytest.org/>`_ with the following options::
 
-    python -m pytest -v --cov=privacyidea --cov-report=html test/
+    python -m pytest -v --cov=privacyidea --cov-report=html tests/
 
 Contributing
 ============
