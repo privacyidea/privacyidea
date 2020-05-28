@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the api.lib.policy.py
 
