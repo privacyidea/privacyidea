@@ -773,7 +773,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["-cn", "-c", "-sc"]
         for policy in policies:
-            base_chars = "".join([CHARLIST_CONTENTPOLICY[str] for str in 'cns' if not str in policy[1:]])
+            base_charlist = []
+            for key in CHARLIST_CONTENTPOLICY.keys():
+                if key not in policy[1:]:
+                    base_charlist.append(CHARLIST_CONTENTPOLICY[key])
+            base_chars = "".join(base_charlist)
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": base_chars,

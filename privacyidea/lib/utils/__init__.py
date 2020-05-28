@@ -1168,10 +1168,11 @@ def generate_charlists_from_pin_policy(policy):
 
     elif policy[0] == "-":
         # exclusion
-        base_characters = ''
+        base_charlist = []
         for key in CHARLIST_CONTENTPOLICY.keys():
             if key not in policy[1:]:
-                base_characters = base_characters + CHARLIST_CONTENTPOLICY[key]
+                base_charlist.append(CHARLIST_CONTENTPOLICY[key])
+        base_characters = "".join(base_charlist)
 
     elif policy[0] == "[" and policy[-1] == "]":
         # only allowed characters
