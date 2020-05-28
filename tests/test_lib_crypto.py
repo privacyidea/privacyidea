@@ -330,7 +330,7 @@ class RandomTestCase(MyTestCase):
     def test_07_generate_password(self):
         # test given default characters
         pass_numeric = generate_password(size=12, characters=string.digits)
-        self.assertTrue(pass_numeric.isnumeric())
+        self.assertTrue(pass_numeric.isdigit())
         self.assertEqual(len(pass_numeric), 12)
 
         # test requirements, we loop to get some statistics
