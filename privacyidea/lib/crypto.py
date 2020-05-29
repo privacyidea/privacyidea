@@ -811,16 +811,28 @@ def generate_otpkey(key_size=20):
 
 
 def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
+                        string.ascii_uppercase + string.digits, requirements=[]):
     """
     Generate a random password of the specified length of the given characters
+    with optional requirements
 
-    :param size: The length of the password
+    :param size: The length of the password. If smaller than the number of requirements,
+    the requirements define the password length.
     :param characters: The characters the password may consist of
+    :param requirements: A list of strings from which the password must contain at least one character.
+    Note that the requirements are not automatically added to the base character set.
     :return: password
     :rtype: basestring
     """
-    return ''.join(urandom.choice(characters) for _x in range(size))
+    if len(requirements) > size:
+        log.info('The number of requirements is larger then the password length.')
+    # add one random character from each string in the requirements list
+    passwd = [urandom.choice(str) for str in requirements]
+    # fill the password until size with allowed characters
+    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
+    # return shuffled password
+    random.shuffle(passwd)
+    return "".join(passwd)
 
 
 def generate_keypair(rsa_keysize=2048):

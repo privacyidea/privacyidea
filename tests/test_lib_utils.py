@@ -14,7 +14,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
-                                   truncate_comma_list, check_pin_policy,
+                                   truncate_comma_list, check_pin_policy, CHARLIST_CONTENTPOLICY,
                                    get_module_class, decode_base32check,
                                    get_client_ip, sanity_name_check, to_utf8,
                                    to_byte_string, hexlify_and_unicode,
@@ -24,6 +24,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams)
+from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -570,27 +571,32 @@ class UtilsTestCase(MyTestCase):
         r, c = check_pin_policy("1234", "n")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("[[[", "n")
+        r, c = check_pin_policy(r"[[[", "n")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "c")
+        r, c = check_pin_policy(r"[[[", "c")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "s")
+        r, c = check_pin_policy(r"[[[", "s")
+        self.assertTrue(r)
+
+        # check the validation of a generated password with square brackets
+        password = generate_password(size=3, requirements=['[', '[', '['])
+        r, c = check_pin_policy(password, "s")
         self.assertTrue(r)
 
         r, c = check_pin_policy("abc", "nc")
         self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: [0-9]", c)
+        self.assertEqual("Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['n']), c)
 
         r, c = check_pin_policy("123", "nc")
         self.assertFalse(r)
-        self.assertEqual(r"Missing character in PIN: [a-zA-Z]", c)
+        self.assertEqual(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c']), c)
 
         r, c = check_pin_policy("123", "ncs")
         self.assertFalse(r)
-        self.assertTrue(r"Missing character in PIN: [a-zA-Z]" in c, c)
-        self.assertTrue(r"Missing character in PIN: [\[\].:,;_<>+*!/()=?$§%&#~^-]" in c, c)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c'] in c), c)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['s'] in c), c)
 
         r, c = check_pin_policy("1234", "")
         self.assertFalse(r)
@@ -612,7 +618,8 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("@@@@", "+cn")
         self.assertFalse(r)
-        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+        self.assertEqual(c, "Missing character in PIN: {}{}".format(CHARLIST_CONTENTPOLICY['c'],
+                                                                    CHARLIST_CONTENTPOLICY['n']))
 
         # check for exclusion
         # No special character
