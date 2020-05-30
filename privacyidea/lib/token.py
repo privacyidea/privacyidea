@@ -67,7 +67,7 @@ import os
 import logging
 from six import string_types
 
-from sqlalchemy import (and_, func)
+from sqlalchemy import (and_, or_, func)
 
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -151,7 +151,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # extract the realm from the user object:
         realm = user.realm
 
-    if tokentype is not None and tokentype.strip("*"):
+    if tokentype is not None and not isinstance(tokentype, dict) and tokentype.strip("*"):
         # filter for type
         if "*" in tokentype:
             # match with "like"
@@ -161,6 +161,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             # exact match
             sql_query = sql_query.filter(func.lower(Token.tokentype) ==
                                          tokentype.lower())
+    elif isinstance(tokentype, dict):
+       tmpTokentypes = list(tokentype.keys())
+       # ToDo: Combine func.lower with in_
+       sql_query = sql_query.filter(Token.tokentype.in_(tmpTokentypes))
 
     if description is not None and description.strip("*"):
         # filter for Description
@@ -1985,6 +1989,12 @@ def check_user_pass(user, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
+
+    if "type" in options:
+       tokenobject_list = get_tokens(user=user,tokentype=options["type"])
+    else:
+       tokenobject_list = get_tokens(user=user,tokentype=None)
+
     tokenobject_list = get_tokens(user=user)
     reply_dict = {}
     if not tokenobject_list:

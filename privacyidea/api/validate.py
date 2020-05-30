@@ -102,7 +102,8 @@ from privacyidea.lib.event import event
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.machine import list_token_machines
 from privacyidea.lib.applications.offline import MachineApplication
@@ -325,6 +326,15 @@ def check():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
 
+
+    allowed_tokentypes = Match.user(g, scope=SCOPE.AUTHZ,
+            action=ACTION.TOKENTYPE,
+            user_object=user).action_values(unique=False)
+
+    if allowed_tokentypes:
+      options["type"] = allowed_tokentypes
+
+
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
@@ -537,7 +547,12 @@ def trigger_challenge():
                "clientip": g.client_ip,
                "user": user}
 
-    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False)
+    allowed_tokentypes = Match.user(g, scope=SCOPE.AUTHZ,
+            action=ACTION.TOKENTYPE,
+            user_object=user).action_values(unique=False)
+
+    token_objs = get_tokens(tokentype=allowed_tokentypes,serial=serial, user=user, active=True, revoked=False, locked=False)
+
     # Only use the tokens, that are allowed to do challenge response
     chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
     create_challenges_from_tokens(chal_resp_tokens, details, options)
