@@ -2660,6 +2660,48 @@ class ValidateAPITestCase(MyApiTestCase):
                              result)
             self.assertEqual(res.status_code, 400, res)
 
+    def test_35_application_tokentype(self):
+        # The user has two tokens
+        r = init_token({"type": "hotp",
+                        "genkey": 1,
+                        "pin": "trigpin",
+                        "serial": "tok1"},
+                       user=User("cornelius", self.realm1))
+        r = init_token({"type": "totp",
+                        "genkey": 1,
+                        "pin": "trigpin",
+                        "serial": "tok2"},
+                       user=User("cornelius", self.realm1))
+        # Hotp and totp are allowed for trigger challenge
+        set_policy(name="pol_chalresp", scope=SCOPE.AUTH,
+                   action="{0!s}=hot totp".format(ACTION.CHALLENGERESPONSE))
+
+        # trigger a challenge for both tokens
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius", "type": "hotp"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+
+        # check, that both challenges were triggered, although
+        # the application tried to trigger only hotp
+
+        # Allow application to choose token type
+
+        # Trigger challenge for HOTP
+
+        # check that only HOTP was triggered
+
+        # Delete tokens and policies
+        remove_token("tok1")
+        remove_token("tok2")
+        delete_policy("pol_chalresp")
+
+
 
 class RegistrationValidity(MyApiTestCase):
 
