@@ -215,6 +215,7 @@ class ACTION(object):
     __doc__ = """This is the list of usual actions."""
     ASSIGN = "assign"
     APPIMAGEURL = "appimageurl"
+    APPLICATION_TOKENTYPE = "application_tokentype"
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
@@ -1980,6 +1981,13 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTHZ: {
+            ACTION.APPLICATION_TOKENTYPE: {
+                'type': 'bool',
+                'desc': _("Allow the application to choose which token types should be used "
+                          "for authentication. Application may set the parameter 'type' in "
+                          "the request. Works with validate/check, validate/samlcheck and "
+                          "validate/triggerchallenge.")
+            },
             ACTION.AUTHMAXSUCCESS: {
                 'type': 'str',
                 'desc': _("You can specify how many successful authentication "

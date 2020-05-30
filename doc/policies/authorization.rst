@@ -44,6 +44,24 @@ this request
    while allowing access to less sensitive areas
    with other token types.
 
+.. _application_tokentype_policy:
+
+application_tokentype
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is set, an application may add a parameter ``type`` as
+tokentype in the authentication request like ``validate/check``, ``validate/samlcheck``
+or ``validate/triggerchallenge``.
+
+Then the application can determine via this parameter, which tokens of a user
+should be checked.
+
+E.g. when using this in *triggerchallenge*, an application could assure, that only SMS tokens
+are used for authentication.
+
+
 serial
 ~~~~~~
 
