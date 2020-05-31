@@ -83,6 +83,13 @@ angular.module("TokenModule", ["privacyideaAuth"])
         var canceller = $q.defer();
 
         return {
+            getTokensNoCancel: function (callback, params) {
+                // This allows parallel token requests.
+                $http.get(tokenUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+            },
             getTokens: function (callback, params) {
                 // We only need ONE getTokens call at once.
                 // If another getTokens call is running, we cancel it.

@@ -425,7 +425,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None, allowed_realms=None):
+                page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -457,13 +457,15 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type page: int
     :param allowed_realms: A list of realms, that the admin is allowed to see
     :type allowed_realms: list
+    :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
+        is a key/value dictionary
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                 assigned=assigned, user=user,
                                 serial_wildcard=serial, active=active,
-                                resolver=resolver,
+                                resolver=resolver, tokeninfo=tokeninfo,
                                 rollout_state=rollout_state,
                                 description=description, userid=userid,
                                 allowed_realms=allowed_realms)

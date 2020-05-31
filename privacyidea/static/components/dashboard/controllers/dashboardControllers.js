@@ -26,7 +26,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
                                               $rootScope, gettextCatalog,
                                               hotkeys) {
 
-    $scope.tokens = {};
+    $scope.tokens = {"total": 0, "hardware": 0};
     $scope.policies = {"active": [], "num_active": 0,
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
@@ -35,11 +35,39 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     $scope.authentications = {"success": 0, "fail": 0};
 
     $scope.get_total_token_number = function () {
-        TokenFactory.getTokens(function (data) {
+        // We call getTokens with pagesize=0, so that we do
+        // not need any user resolving.
+        TokenFactory.getTokensNoCancel(function (data) {
                 if (data) {
                     $scope.tokens.total = data.result.value.count;
                 }
-            }, {});
+            }, {"pagesize": 0});
+    };
+
+    $scope.get_token_hardware = function () {
+        TokenFactory.getTokensNoCancel(function (data) {
+                if (data) {
+                    $scope.tokens.hardware = data.result.value.count;
+                }
+            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware"});
+        TokenFactory.getTokensNoCancel(function (data) {
+            if (data) {
+                $scope.tokens.unassigned_hardware = data.result.value.count;
+            }
+        }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware", "assigned": "False"});
+    };
+
+    $scope.get_token_software = function () {
+        TokenFactory.getTokensNoCancel(function (data) {
+                if (data) {
+                    $scope.tokens.software = data.result.value.count;
+                }
+            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software"});
+        TokenFactory.getTokensNoCancel(function (data) {
+            if (data) {
+                $scope.tokens.unassigned_software = data.result.value.count;
+            }
+        }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software", "assigned": "False"});
     };
 
     $scope.get_policies = function () {
@@ -122,6 +150,8 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
      };
 
     $scope.get_total_token_number();
+    $scope.get_token_hardware();
+    $scope.get_token_software();
     $scope.get_policies();
     $scope.get_events();
     $scope.getSubscriptions();
@@ -131,6 +161,8 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
         $scope.get_total_token_number();
+        $scope.get_token_hardware();
+        $scope.get_token_software();
         $scope.get_policies();
         $scope.get_events();
         $scope.getSubscriptions();
