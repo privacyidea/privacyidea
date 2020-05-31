@@ -98,12 +98,35 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         });
      };
 
+     $scope.getAdministration = function () {
+         $scope.administration = [];
+         angular.forEach(["system", "resolver", "realm", "policy", "event"],
+             function(adminaction) {
+                AuditFactory.get({"timelimit": "1d", "action": "POST /"+adminaction+"*"},
+                    function (data) {
+                    angular.forEach(data.result.value.auditdata, function(auditentry) {
+                        $scope.administration.push(auditentry);
+                    });
+                    // reverse sort it by date
+                    $scope.administration.sort($scope.compare_auditentries);
+                    // only return the last 5 entries
+                    $scope.administration = $scope.administration.slice(0, 5);
+                });
+             });
+     };
+
+     $scope.compare_auditentries = function (a, b) {
+        if (a.date < b.date ) return 1;
+        if (b.date < a.date ) return -1;
+        return 0;
+     };
 
     $scope.get_total_token_number();
     $scope.get_policies();
     $scope.get_events();
     $scope.getSubscriptions();
     $scope.getAuthentication();
+    $scope.getAdministration();
 
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
@@ -112,5 +135,6 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         $scope.get_events();
         $scope.getSubscriptions();
         $scope.getAuthentication();
+        $scope.getAdministration();
     });
 });

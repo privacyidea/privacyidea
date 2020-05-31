@@ -58,7 +58,25 @@
             <div class="panel panel-default">
                  <div class="panel-heading" translate>Administration</div>
                  <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th translate>Date</th>
+                                <th translate>Administrator</th>
+                                <th translate>Action</th>
+                                <th translate>Detail</th>
+                            </tr>
+                        </thead>
+                            <tr ng-repeat="auditentry in administration">
+                                <td>{{ auditentry.date | date: "y-MM-d HH:mm" }}</td>
+                                <td>{{ auditentry.administrator }}</td>
+                                <td>{{ auditentry.action }}</td>
+                                <td>{{ auditentry.action_detail }}</td>
+                            </tr>
+                        <tbody>
 
+                        </tbody>
+                    </table>
                  </div>
            </div>
        </div>
