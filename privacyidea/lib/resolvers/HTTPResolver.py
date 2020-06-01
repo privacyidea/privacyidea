@@ -37,6 +37,8 @@ from pydash import get
 
 ENCODING = "utf-8"
 
+__name__ = "HTTP_RESOLVER"
+
 log = logging.getLogger(__name__)
 
 class HTTPResolver(UserIdResolver):
@@ -45,10 +47,15 @@ class HTTPResolver(UserIdResolver):
         "endpoint": 1, 
         "method": 1,
         "requestMapping": 1,
+        "headers": 1,
         "responseMapping": 1,
         "hasSpecialErrorHandler": 0,
         "errorResponseMapping": 0
     }
+
+    def __init__(self):
+        super().__init__()
+        self.config = {}
 
     @staticmethod
     def getResolverClassType():
@@ -101,32 +108,17 @@ class HTTPResolver(UserIdResolver):
         :return: resolver description dict
         :rtype:  dict
         """
-        return UserIdResolver.getResolverClassDescriptor()
+        return HTTPResolver.getResolverClassDescriptor()
 
     def getUserId(self, loginName):
         """
-        The loginname is resolved to a user_id.
-        Depending on the resolver type the user_id can
-        be an ID (like in /etc/passwd) or a string (like
-        the DN in LDAP)
-
-        It needs to return an empty string, if the user does
-        not exist.
-
-        :param loginName: The login name of the user
-        :type loginName: sting
-        :return: The ID of the user
-        :rtype: str
+        This method only echo's the loginName parameter
         """
-        return loginName if loginName else ''
+        return loginName
 
     def getUsername(self, userid):
         """
-        Returns the username/loginname for a given userid
-        :param userid: The userid in this resolver
-        :type userid: string
-        :return: username
-        :rtype: string
+        This method only echo's the userid parameter
         """
         return userid
 
@@ -153,7 +145,7 @@ class HTTPResolver(UserIdResolver):
         get resolver specific information
         :return: the resolver identifier string - empty string if not exist
         """
-        return self.id
+        return self.config['endpoint'] if 'endpoint' in self.config else ''
 
     def loadConfig(self, config):
         """
@@ -167,39 +159,6 @@ class HTTPResolver(UserIdResolver):
         """
         self.config = config
         return self
-
-    def checkPass(self, uid, password):
-        """
-        This function checks the password for a given uid.
-        returns true in case of success
-        false if password does not match
-
-        :param uid: The uid in the resolver
-        :type uid: string or int
-        :param password: the password to check. Usually in cleartext
-        :type password: string
-        :return: True or False
-        :rtype: bool
-        """
-        return False
-
-    def add_user(self, attributes=None):
-        """
-        Adding new users is not support for this kind of resolver
-        """
-        return None
-
-    def delete_user(self, uid):
-        """
-        Delete a user is not supported for this kind of resolver
-        """
-        return None
-
-    def update_user(self, uid, attributes=None):
-        """
-        Update an existing user is not supported for this kind of resolver
-        """
-        return None
 
     @classmethod
     def testconnection(cls, param):
@@ -231,7 +190,7 @@ class HTTPResolver(UserIdResolver):
     #   Private methods
     #
     @classmethod
-    def _getUser(self, param, userid):
+    def _getUser(cls, param, userid):
         method = param.get('method').lower()
         endpoint = param.get('endpoint')
         requestMappingJSON = json.loads(param.get('requestMapping').replace("{userid}", userid))
