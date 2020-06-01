@@ -8,20 +8,29 @@
          '/views/includes/token.enroll.pre.top.html'"></div>
 
     <form name="formEnrollToken" role="form" validate>
-
-        <select class="form-control"
-                ng-hide="$state.includes('token.wizard')"
-                id="tokentype"
-                ng-change="changeTokenType()"
-                ng-model="form.type"
-                ng-options="type as desc for (type, desc) in formInit.tokenTypes"
-                >
-        </select>
+        <div class="form-group">
+            <select class="form-control"
+                    ng-hide="$state.includes('token.wizard')"
+                    id="tokentype"
+                    ng-change="changeTokenType()"
+                    ng-model="form.type"
+                    ng-options="type as desc for (type, desc) in formInit.tokenTypes"
+            >
+            </select>
+        </div>
         <!-- This is the token data section. It differs for every token type-->
         <ng-include src="instanceUrl +
         '/static/components/token/views/token.enroll.'
-         + form.type + '.html'">
+         + form.type + '.html' + fileVersionSuffix">
         </ng-include>
+
+        <!-- The description input field for all token types -->
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
+            <label for="description" translate>Description</label>
+            <input type="text" class="form-control" id="description"
+                   placeholder="{{ 'Some nice words...'|translate }}"
+                   ng-model="form.description" />
+        </div>
 
         <!-- User Assignment -->
         <div ng-if="loggedInUser.role == 'admin'">
@@ -148,7 +157,7 @@
 
     <!-- This is the token data section. It differs for every token type-->
     <ng-include src="instanceUrl +
-    '/static/components/token/views/token.enrolled.' + form.type + '.html'">
+    '/static/components/token/views/token.enrolled.' + form.type + '.html' + fileVersionSuffix">
     </ng-include>
 
     <div ng-if="$state.includes('token.wizard')"

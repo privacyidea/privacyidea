@@ -14,7 +14,8 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt, Sign, generate_keypair)
+                                    encrypt, decrypt, Sign, generate_keypair,
+                                    generate_password)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -23,7 +24,7 @@ from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from flask import current_app
 from six import text_type
 from PyKCS11 import PyKCS11Error
-
+import string
 
 class SecurityModuleTestCase(MyTestCase):
     """
@@ -326,6 +327,40 @@ class RandomTestCase(MyTestCase):
         r = verify_with_pepper(h, "super Password")
         self.assertEqual(r, False)
 
+    def test_07_generate_password(self):
+        # test given default characters
+        pass_numeric = generate_password(size=12, characters=string.digits)
+        self.assertTrue(pass_numeric.isdigit())
+        self.assertEqual(len(pass_numeric), 12)
+
+        # test requirements, we loop to get some statistics
+        default_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        for i in range(10):
+            password_req = generate_password(size=3, characters=default_chars, requirements=["AB", "12"])
+            # a character from each requirement must be found
+            self.assertTrue(
+                any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
+            self.assertEqual(len(password_req),3)
+
+        # use letters for base and numbers for requirements
+        # this cannot be achieved with a pin policy
+        password = generate_password(size=10, characters=string.ascii_letters,
+                                     requirements=[string.digits, string.digits, string.digits])
+        self.assertEqual(10, len(password))
+        self.assertEqual(3, sum(c.isdigit() for c in password))
+        self.assertEqual(7, sum(c.isalpha() for c in password))
+
+        # requirements define the minimum length of a password
+        password = generate_password(size=0, characters='ABC',
+                                     requirements=['1', '2', '3'])
+        self.assertEqual(3, len(password))
+
+        # empty characters variable raises an IndexError
+        self.assertRaises(IndexError, generate_password, characters='')
+
+        # negative size without requirements results in an empty password
+        password = generate_password(size=-1)
+        self.assertEqual(password, '')
 
 class AESHardwareSecurityModuleTestCase(MyTestCase):
     """

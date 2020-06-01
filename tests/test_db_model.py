@@ -79,7 +79,7 @@ class TokenModelTestCase(MyTestCase):
         up = t.get_user_pin()
         self.assertTrue(up.getPin() == userpin.encode('utf8'))
 
-        self.assertTrue(t.check_hashed_pin("1234"))
+        self.assertTrue(t.check_pin("1234"))
 
         t.set_user_pin(b'HalloDuDa')
         self.assertTrue(t.get_user_pin().getPin() == b'HalloDuDa')
@@ -88,10 +88,24 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t.get_user_pin().getPin().decode('utf8') == u'HelloWörld')
 
         t.set_hashed_pin(b'1234')
-        self.assertTrue(t.check_hashed_pin(b'1234'))
+        self.assertTrue(t.check_pin(b'1234'))
 
         t.set_hashed_pin(u'HelloWörld')
-        self.assertTrue(t.check_hashed_pin(u'HelloWörld'))
+        self.assertTrue(t.check_pin(u'HelloWörld'))
+
+        t.pin_hash = None
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin(None))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.pin_hash = ''
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.set_hashed_pin('')
+        self.assertTrue(len(t.pin_hash) > 0)
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
 
         # Delete the token
         t1.delete()

@@ -62,7 +62,7 @@ import struct
 import unittest
 from copy import copy
 
-from sqlalchemy.testing.pickleable import User
+from privacyidea.lib.user import User
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, RegistrationRejectedException,

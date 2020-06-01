@@ -10,10 +10,11 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_date, compare_condition,
                                    get_data_from_params, parse_legacy_time,
                                    int_to_hex, compare_value_value,
+                                   compare_generic_condition,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
-                                   truncate_comma_list, check_pin_policy,
+                                   truncate_comma_list, check_pin_policy, CHARLIST_CONTENTPOLICY,
                                    get_module_class, decode_base32check,
                                    get_client_ip, sanity_name_check, to_utf8,
                                    to_byte_string, hexlify_and_unicode,
@@ -23,6 +24,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams)
+from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -290,6 +292,8 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("")
         self.assertTrue(datetime.now(tzlocal()) >= d)
 
+        self.assertIsNone(parse_date("-2g"))
+
         d = parse_date("2016/12/23")
         self.assertEqual(d, datetime(2016, 12, 23))
 
@@ -322,9 +326,14 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("03.04.2016")
         # April 3rd
         self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
+        self.assertEqual(parse_date('03/04/2016'), datetime(2016, 4, 3, 0, 0))
+        self.assertEqual(parse_date('01/01/20'), datetime(2020, 1, 1, 0, 0))
+        self.assertEqual(parse_date('01/15/20'), datetime(2020, 1, 15, 0, 0))
+        self.assertEqual(parse_date('15/01/20'), datetime(2020, 1, 15, 0, 0))
 
         # Non matching date returns None
         self.assertEqual(parse_date("7 Januar 17"), None)
+        self.assertIsNone(parse_date('15/15'))
 
     def test_08_compare_condition(self):
         self.assertTrue(compare_condition("100", 100))
@@ -347,6 +356,21 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(compare_condition("", 100))
         # An invalid condition, which misses a compare-value, will result in false
         self.assertFalse(compare_condition(">", 100))
+
+        # Test new comparators
+        self.assertTrue(compare_condition('>=100', 100))
+        self.assertTrue(compare_condition('=> 100', 200))
+        self.assertFalse(compare_condition('>= 100', 99))
+
+        self.assertTrue(compare_condition('<=100', 100))
+        self.assertTrue(compare_condition('=< 100', 99))
+        self.assertFalse(compare_condition('<= 100', 101))
+
+        self.assertTrue(compare_condition('!=100', 99))
+        self.assertFalse(compare_condition('!= 100', 100))
+
+        self.assertTrue(compare_condition('==100', 100))
+        self.assertFalse(compare_condition('== 100', 99))
 
     def test_09_get_data_from_params(self):
         config_description = {
@@ -406,6 +430,21 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(1000, "==", "1000"))
         self.assertTrue(compare_value_value("99", "<", "1000"))
 
+        self.assertTrue(compare_value_value(100, '>', '10'))
+        self.assertTrue(compare_value_value(100, '>=', '10'))
+        self.assertTrue(compare_value_value("100", '=>', 10))
+        self.assertTrue(compare_value_value(100, '>=', '100'))
+        self.assertFalse(compare_value_value(100, '>=', '101'))
+
+        self.assertTrue(compare_value_value('ABC', '=', 'ABC'))
+        self.assertTrue(compare_value_value('ABC', '!=', 'ABD'))
+
+        self.assertTrue(compare_value_value(10, '<', '100'))
+        self.assertTrue(compare_value_value(10, '<=', '100'))
+        self.assertTrue(compare_value_value("10", '=<', 100))
+        self.assertTrue(compare_value_value(10, '<=', '10'))
+        self.assertFalse(compare_value_value(10, '<=', '9'))
+
         # compare dates
         self.assertTrue(compare_value_value(
                         datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
@@ -417,6 +456,21 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(
             (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
             ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+
+        self.assertTrue(compare_value_value('+3h', '>', ''))
+        self.assertFalse(compare_value_value('2017/04/20 11:30+0200', '>',
+                                             datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+
+        self.assertTrue(compare_value_value('2020-01-15T00:00', '==',
+                                            datetime(2020, 1, 15).strftime(DATE_FORMAT)))
+        # unexpected result: The date string can not be parsed since dateutil.parser
+        # does not understand locale dates. So the strings themselves are compared
+        # since parse_date() returns 'None'
+        self.assertTrue(compare_value_value('16. März 2020', '<',
+                                            datetime(2020, 3, 15).strftime(DATE_FORMAT)))
+
+        # check for unknown comparator
+        self.assertRaises(Exception, compare_value_value, 5, '~=', 5)
 
     def test_13_parse_time_offset_from_now(self):
         td = parse_timedelta("+5s")
@@ -517,27 +571,32 @@ class UtilsTestCase(MyTestCase):
         r, c = check_pin_policy("1234", "n")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("[[[", "n")
+        r, c = check_pin_policy(r"[[[", "n")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "c")
+        r, c = check_pin_policy(r"[[[", "c")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "s")
+        r, c = check_pin_policy(r"[[[", "s")
+        self.assertTrue(r)
+
+        # check the validation of a generated password with square brackets
+        password = generate_password(size=3, requirements=['[', '[', '['])
+        r, c = check_pin_policy(password, "s")
         self.assertTrue(r)
 
         r, c = check_pin_policy("abc", "nc")
         self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: [0-9]", c)
+        self.assertEqual("Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['n']), c)
 
         r, c = check_pin_policy("123", "nc")
         self.assertFalse(r)
-        self.assertEqual(r"Missing character in PIN: [a-zA-Z]", c)
+        self.assertEqual(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c']), c)
 
         r, c = check_pin_policy("123", "ncs")
         self.assertFalse(r)
-        self.assertTrue(r"Missing character in PIN: [a-zA-Z]" in c, c)
-        self.assertTrue(r"Missing character in PIN: [\[\].:,;_<>+*!/()=?$§%&#~^-]" in c, c)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c'] in c), c)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['s'] in c), c)
 
         r, c = check_pin_policy("1234", "")
         self.assertFalse(r)
@@ -559,7 +618,8 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_policy("@@@@", "+cn")
         self.assertFalse(r)
-        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+        self.assertEqual(c, "Missing character in PIN: {}{}".format(CHARLIST_CONTENTPOLICY['c'],
+                                                                    CHARLIST_CONTENTPOLICY['n']))
 
         # check for exclusion
         # No special character
@@ -850,3 +910,51 @@ class UtilsTestCase(MyTestCase):
                            "realm": "Wild West"},
                           {"user": "Dave Rudabaugh",
                            "realm": "Dodge City"})
+
+    def test_34_compare_generic_condition(self):
+
+        def mock_attribute(key):
+            attr = {"a": "10",
+                    "b": "100",
+                    "c": "1000"}
+            return attr.get(key)
+
+        self.assertTrue(compare_generic_condition("a<100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        self.assertTrue(compare_generic_condition("a <100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        self.assertTrue(compare_generic_condition("b==100",
+                                                  mock_attribute,
+                                                  "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("a== 100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("b>100",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c < 500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong condition
+        self.assertFalse(compare_generic_condition("c <500",
+                                                   mock_attribute,
+                                                   "Error {0!s}"))
+
+        # Wrong entry, that is not processed
+        self.assertRaises(Exception, compare_generic_condition,
+                          "c 500", mock_attribute, "Error {0!s}")
+
+        # Wrong entry, that cannot be processed
+        self.assertRaises(Exception, compare_generic_condition,
+                          "b!~100", mock_attribute, "Error {0!s}")

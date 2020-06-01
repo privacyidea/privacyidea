@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This test file tests the api.lib.policy.py
 
@@ -27,8 +28,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_max_token_user,
                                            check_anonymous_user,
                                            check_max_token_realm, set_realm,
-                                           init_tokenlabel, init_random_pin,
-                                           init_token_defaults,
+                                           init_tokenlabel, init_random_pin, set_random_pin,
+                                           init_token_defaults, _generate_pin_from_policy,
                                            encrypt_pin, check_otp_pin,
                                            enroll_pin,
                                            check_external, api_key_required,
@@ -77,7 +78,7 @@ from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
                                        RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, generate_charlists_from_pin_policy, CHARLIST_CONTENTPOLICY, check_pin_policy
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -650,7 +651,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("pol2")
         delete_policy("pol3")
 
-    def test_07_set_random_pin(self):
+    def test_07a_init_random_pin(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -662,11 +663,17 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User("cornelius", self.realm1)
 
-        # Set a policy that defines the tokenlabel
-        set_policy(name="pol1",
+        # Set policies which define the pin generation behavior
+        contents_policy = "+cns"
+        size_policy = 12
+        set_policy(name="pinsize",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, "12"))
+                   action="{0!s}={1!s}".format(ACTION.OTPPINRANDOM, size_policy))
+        set_policy(name="pincontent",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
                    action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
@@ -676,14 +683,124 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # request, that matches the policy
         req.all_data = {
                         "user": "cornelius",
-                        "realm": "home"}
-        init_random_pin(req)
+                        "realm": "realm1"}
 
-        # Check, if the tokenlabel was added
-        self.assertEqual(len(req.all_data.get("pin")), 12)
+        init_random_pin(req)
+        pin = req.all_data.get("pin")
+
+        # check if the pin honors the contents policy
+        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        self.assertTrue(pin_valid)
+
+        # Check, if the pin has the correct length
+        self.assertEqual(len(req.all_data.get("pin")), size_policy)
+
         # finally delete policy
-        delete_policy("pol1")
+        delete_policy("pinsize")
+        delete_policy("pincontent")
         delete_policy("pinhandling")
+
+    def test_07b_set_random_pin(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+
+        # Set policies which define the pin generation behavior
+        contents_policy = "+cns"
+        size_policy = 12
+        set_policy(name="pinsize",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINSETRANDOM, size_policy))
+        set_policy(name="pincontent",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}={1!s}".format(ACTION.OTPPINCONTENTS, contents_policy))
+        g.policy_object = PolicyClass()
+
+        # request, that matches the policy
+        req.all_data = {
+                        "user": "cornelius",
+                        "realm": "realm1"}
+
+        set_random_pin(req)
+        pin = req.all_data.get("pin")
+
+        # check if the pin honors the contents policy
+        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        self.assertTrue(pin_valid)
+
+        # Check, if the pin has the correct length
+        self.assertEqual(len(req.all_data.get("pin")), size_policy)
+
+        # finally delete policy
+        delete_policy("pinsize")
+        delete_policy("pincontent")
+
+    def test_07c_generate_pin_from_policy(self):
+        content_policies_valid = ['+cn', '-s', 'cns', '+ns', '[1234567890]', '[[]€@/(]']
+        content_policies_invalid = ['+c-ns', 'cn-s', '+ns-[1234567890]', '-[1234567890]']
+        pin_size = 3
+        for content_policy in content_policies_valid:
+            pin = _generate_pin_from_policy(content_policy, size=pin_size)
+            # check if the pin honors the contents policy
+            pin_valid, comment = check_pin_policy(pin, content_policy)
+            self.assertTrue(pin_valid)
+            # Check, if the pin has the correct length
+            self.assertEqual(len(pin), pin_size)
+
+        for content_policy in content_policies_invalid:
+            # an invalid policy string should throw a PolicyError exception
+            self.assertRaises(PolicyError, _generate_pin_from_policy, content_policy, size=pin_size)
+
+    def test_07d_generate_charlists_from_pin_policy(self):
+        default_chars = "".join(CHARLIST_CONTENTPOLICY.values())
+
+        policies = ["+cn", "+c", "+cs"]
+        for policy in policies:
+            required = ["".join([CHARLIST_CONTENTPOLICY[str] for str in policy[1:]])]
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": default_chars,
+                              "requirements": required})
+
+        policies = ["-cn", "-c", "-sc"]
+        for policy in policies:
+            base_charlist = []
+            for key in CHARLIST_CONTENTPOLICY.keys():
+                if key not in policy[1:]:
+                    base_charlist.append(CHARLIST_CONTENTPOLICY[key])
+            base_chars = "".join(base_charlist)
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": base_chars,
+                              "requirements": []})
+
+        policies = ["cn", "c", "sc"]
+        for policy in policies:
+            required = [CHARLIST_CONTENTPOLICY[str] for str in policy[:]]
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": default_chars,
+                              "requirements": required})
+
+        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\]"]
+        for policy in policies:
+            charlists_dict = generate_charlists_from_pin_policy(policy)
+            self.assertEqual(charlists_dict,
+                             {"base": policy[1:-1],
+                              "requirements": []})
+
+        policies = ["+c-n", ".c", ""]
+        for policy in policies:
+            self.assertRaises(PolicyError, generate_charlists_from_pin_policy, policy)
 
     def test_08_encrypt_pin(self):
         g.logged_in_user = {"username": "admin1",

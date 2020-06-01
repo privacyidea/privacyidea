@@ -48,7 +48,7 @@ import traceback
 import threading
 import pkg_resources
 import time
-import cgi
+import html
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
@@ -58,6 +58,10 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 
+# character lists for the identifiers in the pin content policy
+CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
+                          "n": string.digits,        # numbers
+                          "s": string.punctuation}   # special
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -537,7 +541,7 @@ def parse_date(date_string):
         # If it stars with a year 2017/... we do NOT dayfirst.
         # See https://github.com/dateutil/dateutil/issues/457
         d = parse_date_string(date_string,
-                              dayfirst=re.match(r"^\d\d[/\.]", date_string))
+                              dayfirst=re.match(r"^\d\d[/.]", date_string))
     except ValueError:
         log.debug("Dateformat {0!s} could not be parsed".format(date_string))
 
@@ -610,8 +614,8 @@ def check_proxy(path_to_client, proxy_settings):
     try:
         proxy_dict = parse_proxy(proxy_settings)
     except AddrFormatError:
-        log.error("Error parsing the OverrideAuthorizationClient setting: {"
-                  "0!s}! The IP addresses need to be comma separated. Fix "
+        log.error("Error parsing the OverrideAuthorizationClient setting: "
+                  "{0!s}! The IP addresses need to be comma separated. Fix "
                   "this. The client IP will not be mapped!".format(proxy_settings))
         log.debug("{0!s}".format(traceback.format_exc()))
         return path_to_client[0]
@@ -822,23 +826,13 @@ def compare_condition(condition, value):
         return False
 
     try:
-        # compare equal
-        if condition[0] in "=" + string.digits:
-            if condition[0] == "=":
-                compare_value = int(condition[1:])
-            else:
-                compare_value = int(condition)
-            return value == compare_value
+        if condition[0:2] in ["==", "!=", ">=", "=>", "<=", "=<"]:
+            return compare_value_value(value, condition[0:2], int(condition[2:]))
+        elif condition[0] in ["=", "<", ">"]:
+            return compare_value_value(value, condition[0], int(condition[1:]))
+        else:
+            return value == int(condition)
 
-        # compare bigger
-        if condition[0] == ">":
-            compare_value = int(condition[1:])
-            return value > compare_value
-
-        # compare less
-        if condition[0] == "<":
-            compare_value = int(condition[1:])
-            return value < compare_value
     except ValueError:
         log.warning(u"Invalid condition {0!s}. Needs to contain an integer.".format(condition))
         return False
@@ -847,11 +841,14 @@ def compare_condition(condition, value):
 def compare_value_value(value1, comparator, value2):
     """
     This function compares value1 and value2 with the comparator.
-    The comparator may be "==", ">" or "<".
+    The comparator may be "==", "=", "!=", ">", "<", ">=", "=>", "<=" or "=<".
     
-    If the values can be converted to integers, they are compared as integers 
+    If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
-    
+
+    In case of dates make sure they can be parsed by 'parse_date()', otherwise
+    they will be compared as strings.
+
     :param value1: First value 
     :param value2: Second value
     :param comparator: The comparator
@@ -878,14 +875,47 @@ def compare_value_value(value1, comparator, value2):
         except Exception:
             log.debug("error during date conversion.")
 
-    if comparator == "==":
+    if comparator in ["==", "="]:
         return value1 == value2
     elif comparator == ">":
         return value1 > value2
     elif comparator == "<":
         return value1 < value2
+    elif comparator in ['>=', '=>']:
+        return value1 >= value2
+    elif comparator in ['<=', '=<']:
+        return value1 <= value2
+    elif comparator == '!=':
+        return value1 != value2
+    else:
+        raise Exception("Unknown comparator: {0!s}".format(comparator))
 
-    raise Exception("Unknown comparator: {0!s}".format(comparator))
+
+def compare_generic_condition(cond, key_method, warning):
+    """
+    Compares a condition like "tokeninfoattribute == value".
+    It uses the "key_method" to determine the value of "tokeninfoattribute".
+
+    If the value does not match, it returns False.
+
+    :param cond: A condition containing a comparator like "==", ">", "<"
+    :param key_method: A function call, that get the value from the key
+    :param warning: A warning message to be written to the log file.
+    :return: True of False
+    """
+    key = value = None
+    for comparator in ["==", ">", "<"]:
+        if len(cond.split(comparator)) == 2:
+            key, value = [x.strip() for x in cond.split(comparator)]
+            break
+    if value:
+        res = compare_value_value(key_method(key), comparator, value)
+        log.debug("Comparing {0!s} {1!s} {2!s} with result {3!s}.".format(key, comparator, value, res))
+        return res
+    else:
+        # There is a condition, but we do not know it!
+        log.warning(warning.format(cond))
+        raise Exception("Condition not parsable.")
 
 
 def int_to_hex(serial):
@@ -1109,6 +1139,53 @@ def truncate_comma_list(data, max_len):
     return ",".join(data)
 
 
+def generate_charlists_from_pin_policy(policy):
+    """
+    This function uses the pin content policy string (e.g. "+cns", "[asdf]") to create the character lists
+    for password generation.
+
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy)
+    :return: Dictionary with keys "base" for the base set of allowed characters and "requirements"
+     which denotes a list of characters from each of which at least one must be contained in the pin.
+    """
+
+    # regexp to check for pin content policy string validity
+    VALID_POLICY_REGEXP = re.compile(r'^[+-]*[cns]+$|^\[.*\]+$')
+
+    # default: full character list
+    base_characters = "".join(CHARLIST_CONTENTPOLICY.values())
+    # list of strings where a character of each string is required for the pin
+    requirements = []
+
+    if not re.match(VALID_POLICY_REGEXP, policy):
+        raise PolicyError("Unknown character specifier in PIN policy.")
+
+    if policy[0] == "+":
+        # grouping
+        for char in policy[1:]:
+            requirements.append(CHARLIST_CONTENTPOLICY.get(char))
+        requirements = ["".join(requirements)]
+
+    elif policy[0] == "-":
+        # exclusion
+        base_charlist = []
+        for key in CHARLIST_CONTENTPOLICY.keys():
+            if key not in policy[1:]:
+                base_charlist.append(CHARLIST_CONTENTPOLICY[key])
+        base_characters = "".join(base_charlist)
+
+    elif policy[0] == "[" and policy[-1] == "]":
+        # only allowed characters
+        base_characters = policy[1:-1]
+
+    else:
+        for c in policy:
+            if c in CHARLIST_CONTENTPOLICY:
+                requirements.append(CHARLIST_CONTENTPOLICY.get(c))
+
+    return {"base": base_characters, "requirements": requirements}
+
+
 def check_pin_policy(pin, policy):
     """
     The policy to check a PIN can contain of "c", "n" and "s".
@@ -1121,52 +1198,27 @@ def check_pin_policy(pin, policy):
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = {"c": r"[a-zA-Z]",
-             "n": r"[0-9]",
-             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
+
     ret = True
     comment = []
 
     if not policy:
         return False, "No policy given."
 
-    if policy[0] in ["+", "-"] or policy[0] is not "[":
-        for char in policy[1:]:
-            if char not in chars.keys():
-                raise PolicyError("Unknown character specifier in PIN policy.")
+    charlists_dict = generate_charlists_from_pin_policy(policy)
 
-    if policy[0] == "+":
-        # grouping
-        necessary = []
-        for char in policy[1:]:
-            necessary.append(chars.get(char))
-        necessary = "|".join(necessary)
-        if not re.search(necessary, pin):
+    # check for not allowed characters
+    for char in pin:
+        if not char in charlists_dict["base"]:
             ret = False
-            comment.append("Missing character in PIN: {0!s}".format(necessary))
+    if not ret:
+        comment.append("Not allowed character in PIN!")
 
-    elif policy[0] == "-":
-        # exclusion
-        not_allowed = []
-        for char in policy[1:]:
-            not_allowed.append(chars.get(char))
-        not_allowed = "|".join(not_allowed)
-        if re.search(not_allowed, pin):
+    # check requirements
+    for str in charlists_dict["requirements"]:
+        if not re.search(re.compile('[' + str + ']'), pin):
             ret = False
-            comment.append("Not allowed character in PIN!")
-
-    elif policy[0] == "[" and policy[-1] == "]":
-        # only allowed characters
-        allowed_chars = policy[1:-1]
-        for ch in pin:
-            if ch not in allowed_chars:
-                ret = False
-                comment.append("Not allowed character in PIN!")
-    else:
-        for c in chars:
-            if c in policy and not re.search(chars[c], pin):
-                ret = False
-                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+            comment.append("Missing character in PIN: {0!s}".format(str))
 
     return ret, ",".join(comment)
 
@@ -1331,7 +1383,7 @@ def create_tag_dict(logged_in_user=None,
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
-            escaped_tags[key] = cgi.escape(value) if value is not None else None
+            escaped_tags[key] = html.escape(value) if value is not None else None
         tags = escaped_tags
 
     return tags

@@ -16,7 +16,7 @@
 </div>
 <div ng-hide="form.dynamic_phone" class="form-group">
     <label for="phone" translate>Phone number</label>
-    <input type="text"
+    <input type="text" id="phone"
            autofocus
            class="form-control"
            ng-model="form.phone" name="phone" />
@@ -29,16 +29,9 @@
     </div>
 </div>
 
-<div class="form-group">
-    <label for="description" translate>Description</label>
-    <input type="text" class="form-control"
-            placeholder="{{ 'Some nice words...'|translate }}"
-            ng-model="form.description" />
-</div>
-
 <div class="form-group" ng-show="getRightsValue('sms_gateways').split(' ')">
     <label for="identifier" translate>A token specific SMS gateway</label>
-    <select class="form-control"
+    <select class="form-control" id="identifier"
             ng-model="form['sms.identifier']"
             name="identifier"
             ng-options="identifier for identifier in getRightsValue('sms_gateways').split(' ')">

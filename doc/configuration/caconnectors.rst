@@ -62,7 +62,7 @@ Manual Setup
        chmod 0600 /etc/privacyidea/CA/ca.key
        touch /etc/privacyidea/CA/index.txt
        echo 01 > /etc/privacyidea/CA/serial
-       chown -R privacyidea /etc/privacyIDEA/CA
+       chown -R privacyidea /etc/privacyidea/CA
 
 3. Now set up a local CA connector within privacyIDEA with the directory
    */etc/privacyidea/CA* and the files accordingly.

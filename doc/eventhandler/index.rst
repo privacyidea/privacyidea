@@ -138,6 +138,14 @@ less than 99 or exactly 100.
 This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field
 'count_auth_success' is bigger than 100, less than 99 or exactly 100.
 
+**failcounter**
+
+This is the ``failcount`` of the token. It is increased on failed authentication
+attempts. If it reaches ``max_failcount`` increasing will stop and the token is locked.
+See :ref:`failcounter`.
+
+The condition can be set to '>9', '=10', or '<5' and it will trigger the action accordingly.
+
 **detail_error_message**
 
 This condition checks a regular expression against the ``detail`` section in
@@ -331,7 +339,18 @@ This can be used to e.g. automatically enroll a token for the user if the
 user has no tokens left (token_number == 0) of to notify the administrator if
 the user has to many tokens assigned.
 
+**counter**
 
+The counter condition can compare the value of any arbitrary event counter against a fixed
+value. Valid compares are:
+
+    myCounter == 1000
+    myCounter > 1000
+    myCounter < 1000
+
+"myCounter" being any event counter set with the :ref:`counterhandler`.
+
+.. note:: A non-existing counter value will compare as 0 (zero).
 
 Managing Events
 ---------------

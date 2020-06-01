@@ -78,7 +78,8 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
 from privacyidea.lib.utils import (get_client_ip,
-                                   parse_timedelta, is_true, check_pin_policy, get_module_class,
+                                   parse_timedelta, is_true, generate_charlists_from_pin_policy,
+                                   check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
@@ -110,7 +111,6 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
-
 
 class prepolicy(object):
     """
@@ -152,6 +152,21 @@ class prepolicy(object):
 
         return policy_wrapper
 
+def _generate_pin_from_policy(policy, size=6):
+    """
+    This helper function creates a string of allowed characters from the value of a pincontents policy.
+
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy).
+    :param size: The desired length of the generated pin
+    :return: The generated PIN
+    """
+
+    charlists_dict = generate_charlists_from_pin_policy(policy)
+
+    pin = generate_password(size=size, characters=charlists_dict['base'],
+                      requirements=charlists_dict['requirements'])
+    return pin
+
 
 def set_random_pin(request=None, action=None):
     """
@@ -182,8 +197,23 @@ def set_random_pin(request=None, action=None):
         raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
                               "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = get_token_type(request.all_data.get("serial"))
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
     return True
 
@@ -194,8 +224,8 @@ def init_random_pin(request=None, action=None):
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM to set a random OTP
-    PIN during Token enrollment
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM and ACTION.OTPPINCONTENTS
+    to set a random OTP PIN during Token enrollment
     """
     params = request.all_data
     user_object = get_user_from_param(params)
@@ -203,8 +233,23 @@ def init_random_pin(request=None, action=None):
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
                           user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = request.all_data.get("type", "hotp")
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
         handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
@@ -969,7 +1014,13 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action not in [ACTION.AUDIT]:
+    if action is ACTION.AUDIT:
+        # In case of audit requests, the parameters "realm" and "user" are used for
+        # filtering the audit log. So these values must not be taken from the request parameters,
+        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
+        # in the decorator "allowed_audit_realm".
+        realm = username = resolver = None
+    else:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
@@ -1011,12 +1062,14 @@ def check_token_upload(request=None, action=None):
     upload_allowed = True
     if tokenrealms:
         for trealm in tokenrealms.split(","):
-            if not Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
-                                           adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
+            if not Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                 adminuser=g.logged_in_user.get("username"),
+                                 adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
                 upload_allowed = False
     else:
-        upload_allowed = Match.generic(g, action=ACTION.IMPORT, adminuser=g.logged_in_user.get("username"),
-                                        adminrealm=g.logged_in_user.get("realm")).allowed()
+        upload_allowed = Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                       adminuser=g.logged_in_user.get("username"),
+                                       adminrealm=g.logged_in_user.get("realm")).allowed()
     if not upload_allowed:
         raise PolicyError("Admin actions are defined, but you are not allowed to upload token files.")
     return True
@@ -1370,7 +1423,7 @@ def indexedsecret_force_attribute(request, action):
 
     return True
 
-  
+
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
