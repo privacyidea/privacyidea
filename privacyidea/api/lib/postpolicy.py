@@ -499,6 +499,9 @@ def get_webui_settings(request, response):
         token_wizard_2nd = (role == ROLE.USER and
                             Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
                                           user=loginname, realm=realm).policies())
+        admin_dashboard = (role == ROLE.ADMIN and
+                           Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.ADMIN_DASHBOARD,
+                                         user=loginname, realm=realm).any())
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
@@ -577,6 +580,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
+        content["result"]["value"]["admin_dashboard"] = admin_dashboard
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action

@@ -44,6 +44,7 @@ angular.module("privacyideaApp")
     $scope.checkMainMenu = AuthFactory.checkMainMenu;
     $scope.checkEnroll = AuthFactory.checkEnroll;
     $scope.inputNamePatterns = resourceNamePatterns;
+    $scope.startRoute = "/token";
     var obj = angular.element(document.querySelector("#REMOTE_USER"));
     $scope.remoteUser = obj.val();
     if (!$scope.remoteUser) {
@@ -388,6 +389,10 @@ angular.module("privacyideaApp")
             $scope.user_details_in_tokenlist = data.result.value.user_details;
             $scope.default_tokentype = data.result.value.default_tokentype;
             $scope.timeout_action = data.result.value.timeout_action;
+            $scope.admin_dashboard = data.result.value.admin_dashboard;
+            if ($scope.admin_dashboard) {
+                $scope.startRoute = "/dashboard";
+            }
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
             $scope.show_seed = data.result.value.show_seed;
@@ -412,8 +417,8 @@ angular.module("privacyideaApp")
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal('hide');
             } else {
-                // if we are unlocking we do NOT go to the tokens
-                $location.path("/token");
+                // if we login anew, we either go to the token or to the dashboard
+                $location.path($scope.startRoute);
             }
 
             //inform.add(gettextCatalog.getString("privacyIDEA UI supports " +

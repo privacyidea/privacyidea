@@ -32,7 +32,7 @@
             <ul class="nav navbar-nav" ng-hide="token_wizard">
 
                 <li ng-class="{active: $state.includes('dashboard')}"
-                    ng-show="loggedInUser.role == 'admin'">
+                    ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
                     <span class="glyphicon glyphicon-dashboard"
                           aria-hidden="true"></span>

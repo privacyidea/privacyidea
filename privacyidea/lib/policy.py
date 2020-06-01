@@ -212,6 +212,7 @@ class SCOPE(object):
 
 class ACTION(object):
     __doc__ = """This is the list of usual actions."""
+    ADMIN_DASHBOARD = "admin_dashboard"
     ASSIGN = "assign"
     APPIMAGEURL = "appimageurl"
     AUDIT = "auditlog"
@@ -2039,6 +2040,11 @@ def get_static_policy_definitions(scope=None):
         },
 
         SCOPE.WEBUI: {
+            ACTION.ADMIN_DASHBOARD: {
+                'type': 'bool',
+                'desc': _('If set, administrators will see a dashboard as start screen '
+                          'when logging in to privacyIDEA WebUI.')
+            },
             ACTION.LOGINMODE: {
                 'type': 'str',
                 'desc': _(
