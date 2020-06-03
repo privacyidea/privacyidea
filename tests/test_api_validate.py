@@ -2683,9 +2683,7 @@ class ValidateAPITestCase(MyApiTestCase):
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            #result = res.json.get("result")
             detail = res.json.get("detail")
-            #transaction_id = detail.get("transaction_id")
 
         # check, that both challenges were triggered, although
         # the application tried to trigger only hotp
