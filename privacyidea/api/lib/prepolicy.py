@@ -391,9 +391,11 @@ def check_application_tokentype(request=None, action=None):
                                         user_object=request.User,
                                         active=True).any()
 
-    # if applications are not allowed to request a certain token type, we remove it
-    if not application_allowed:
-        request.all_data["type"] = None
+    # if the application is not allowed, we remove the tokentype
+    if not application_allowed and "type" in request.all_data:
+        log.info("Removing parameter 'type' from request, "
+                 "since application is not allowed to authenticate by token type.")
+        del request.all_data["type"]
 
     return True
 
