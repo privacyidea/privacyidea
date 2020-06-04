@@ -747,18 +747,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_07c_generate_pin_from_policy(self):
         content_policies_valid = ['+cn', '-s', 'cns', '+ns', '[1234567890]', '[[]€@/(]']
         content_policies_invalid = ['+c-ns', 'cn-s', '+ns-[1234567890]', '-[1234567890]']
-        pin_size = 3
-        for content_policy in content_policies_valid:
-            pin = _generate_pin_from_policy(content_policy, size=pin_size)
-            # check if the pin honors the contents policy
-            pin_valid, comment = check_pin_policy(pin, content_policy)
-            self.assertTrue(pin_valid)
-            # Check, if the pin has the correct length
-            self.assertEqual(len(pin), pin_size)
+        pin_size = 10
+        for i in range(100):
+            for content_policy in content_policies_valid:
+                pin = _generate_pin_from_policy(content_policy, size=pin_size)
+                # check if the pin honors the contents policy
+                pin_valid, comment = check_pin_policy(pin, content_policy)
+                self.assertTrue(pin_valid)
+                # Check, if the pin has the correct length
+                self.assertEqual(len(pin), pin_size)
 
-        for content_policy in content_policies_invalid:
-            # an invalid policy string should throw a PolicyError exception
-            self.assertRaises(PolicyError, _generate_pin_from_policy, content_policy, size=pin_size)
+            for content_policy in content_policies_invalid:
+                # an invalid policy string should throw a PolicyError exception
+                self.assertRaises(PolicyError, _generate_pin_from_policy, content_policy, size=pin_size)
 
     def test_07d_generate_charlists_from_pin_policy(self):
         default_chars = "".join(CHARLIST_CONTENTPOLICY.values())

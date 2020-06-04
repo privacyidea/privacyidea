@@ -1216,7 +1216,7 @@ def check_pin_policy(pin, policy):
 
     # check requirements
     for str in charlists_dict["requirements"]:
-        if not re.search(re.compile('[' + str + ']'), pin):
+        if not re.search(re.compile('[' + re.escape(str) + ']'), pin):
             ret = False
             comment.append("Missing character in PIN: {0!s}".format(str))
 
