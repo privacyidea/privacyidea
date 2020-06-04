@@ -571,18 +571,13 @@ class UtilsTestCase(MyTestCase):
         r, c = check_pin_policy("1234", "n")
         self.assertTrue(r)
 
-        r, c = check_pin_policy(r"[[[", "n")
+        r, c = check_pin_policy(r"+#", "n")
         self.assertFalse(r)
 
-        r, c = check_pin_policy(r"[[[", "c")
+        r, c = check_pin_policy(r"+#", "c")
         self.assertFalse(r)
 
-        r, c = check_pin_policy(r"[[[", "s")
-        self.assertTrue(r)
-
-        # check the validation of a generated password with square brackets
-        password = generate_password(size=3, requirements=['[', '[', '['])
-        r, c = check_pin_policy(password, "s")
+        r, c = check_pin_policy(r"+#", "s")
         self.assertTrue(r)
 
         r, c = check_pin_policy("abc", "nc")

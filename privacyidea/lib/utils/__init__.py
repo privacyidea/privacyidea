@@ -61,7 +61,7 @@ ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
                           "n": string.digits,        # numbers
-                          "s": string.punctuation}   # special
+                          "s": r'!"#$%&()*+,./:;<=>?@_{|}~^-'}   # special
 
 def check_time_in_range(time_range, check_time=None):
     """
