@@ -3652,6 +3652,45 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_pagesize")
 
+    def test_10_get_webui_settings(self):
+        # Test admin_dashboard
+        self.setUp_user_realms()
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "admin",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(jresult.get("result").get("value").get(
+            "admin_dashboard"), False)
+
+        # Set a policy. Admin can see the dashboard
+        set_policy(name="pol_dashboard",
+                   scope=SCOPE.WEBUI,
+                   action=ACTION.ADMIN_DASHBOARD)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertTrue(jresult.get("result").get("value").get(ACTION.ADMIN_DASHBOARD))
+
+        delete_policy("pol_dashboard")
+
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",
                             "realm": "",

@@ -261,6 +261,39 @@ class APITokenTestCase(MyApiTestCase):
             tokenlist = result.get("value").get("tokens")
             self.assertTrue(len(tokenlist) == 1, len(tokenlist))
 
+        # get tokens with a specific tokeninfo
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "assigned": False,
+                                           "infokey": "tokenkind",
+                                           "infovalue": "hardware"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertEqual(len(tokenlist), 0)
+
+        init_token({"serial": "hw001", "genkey": 1}, tokenkind="hardware")
+        # get tokens with a specific tokeninfo
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "assigned": False,
+                                               "infokey": "tokenkind",
+                                               "infovalue": "hardware"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertEqual(len(tokenlist), 1)
+
+        remove_token("hw001")
+
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
                                            method='GET',

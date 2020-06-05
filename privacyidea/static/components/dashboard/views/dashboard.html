@@ -1,0 +1,176 @@
+<div class="well" ng-controller="dashboardController">
+
+    <div class="row">  <!-- upper row -->
+       <div class="col-lg-4">
+           <div class="panel panel-default">
+               <div class="panel-heading" translate>Tokens</div>
+                <div class="panel-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td translate>Total</td>
+                                <td>
+                                    <a ui-sref="token.list()">{{ tokens.total }}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td translate>Hardware</td>
+                                <td>{{ tokens.hardware }}</td>
+                            </tr>
+                            <tr>
+                                <td translate>Software</td>
+                                <td>{{ tokens.software }}</td>
+                            </tr>
+                            <tr>
+                                <td translate>Unassigned Hardware</td>
+                                <td>{{ tokens.unassigned_hardware }}</td>
+                            </tr>
+                            <tr>
+                                <td translate>Unassigned Software</td>
+                                <td>{{ tokens.unassigned_software }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+           </div>
+       </div>
+       <div class="col-lg-4">
+             <div class="panel panel-default">
+                 <div class="panel-heading" translate>Authentications</div>
+                 <div class="panel-body">
+                     <div translate>Authentications in the last 24 hours</div>
+                     <table class="table">
+                         <tbody>
+                            <tr>
+                                <td translate>success</td>
+                                <td>{{ authentications.success }}</td>
+                            </tr>
+                            <tr>
+                                <td translate>failed</td>
+                                <td>{{ authentications.fail }}</td>
+                            </tr>
+                         </tbody>
+                     </table>
+                 </div>
+           </div>
+       </div>
+       <div class="col-lg-4">
+            <div class="panel panel-default">
+                 <div class="panel-heading" translate>Administration</div>
+                 <div class="panel-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th translate>Date</th>
+                                <th translate>Administrator</th>
+                                <th translate>Action</th>
+                                <th translate>Detail</th>
+                            </tr>
+                        </thead>
+                            <tr ng-repeat="auditentry in administration">
+                                <td>{{ auditentry.date | date: "y-MM-d HH:mm" }}</td>
+                                <td>{{ auditentry.administrator }}</td>
+                                <td>{{ auditentry.action }}</td>
+                                <td>{{ auditentry.action_detail }}</td>
+                            </tr>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                 </div>
+           </div>
+       </div>
+   </div>
+   <div class="row">
+       <div class="col-lg-4">
+           <div class="panel panel-default">
+                 <div class="panel-heading" translate>Policies</div>
+                 <div class="panel-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td translate>Active Policies</td>
+                                <td>{{ policies.num_active }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="pol in policies.active">
+                                        | <a ui-sref="config.policies.details({policyname:pol})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td translate>Inactive Policies</td>
+                                <td>{{ policies.num_inactive }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="pol in policies.inactive">
+                                        | <a ui-sref="config.policies.details({policyname:pol})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
+                                    </span>
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+           </div>
+       </div>
+       <div class="col-lg-4">
+             <div class="panel panel-default">
+                 <div class="panel-heading" translate>Events</div>
+                 <div class="panel-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td translate>Active Events</td>
+                                <td>{{ events.num_active }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="event in events.active">
+                                        | <a ui-sref="config.events.details({eventid:event.id})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ event.name }}</a>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td translate>Inactive Events</td>
+                                <td>{{ events.num_inactive }}</td>
+                            </tr>
+                            <tr>
+                                <td span="2">
+                                    <span ng-repeat="event in events.inactive">
+                                        | <a ui-sref="config.events.details({eventid:event.id})"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ event.name }}</a>
+                                    </span>
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+           </div>
+       </div>
+       <div class="col-lg-4">
+             <div class="panel panel-default">
+                 <div class="panel-heading" translate>Subscriptions</div>
+                 <div class="panel-body">
+                     <table class="table">
+                         <tbody>
+                            <tr ng-repeat="(key, subscription) in subscriptions">
+                                <td><a ui-sref="component.subscriptions()">{{ subscription.application }}</a>
+                                    ({{ subscription.level }})</td>
+                                <td>{{ subscription.active_users }}/    {{ subscription.num_users }}</td>
+                                <td>{{ subscription.date_till }}</td>
+                            </tr>
+                         </tbody>
+                     </table>
+                 </div>
+           </div>
+       </div>
+   </div>
+</div>
+
