@@ -83,7 +83,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
                                            check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
-                                           webauthntoken_request)
+                                           webauthntoken_request, check_application_tokentype)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -200,6 +200,7 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
@@ -232,6 +233,9 @@ def check():
     :param user: The loginname/username of the user, who tries to authenticate.
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
+    :param type: The tokentype of the tokens, that are taken into account during
+        authentication. Requires authz policy application_tokentype.
+        Is ignored when a distinct serial is given.
     :param pass: The password, that consists of the OTP PIN and the OTP value.
     :param otponly: If set to 1, only the OTP value is verified. This is used
         in the management UI. Only used with the parameter serial.
@@ -318,6 +322,7 @@ def check():
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
     otp_only = getParam(request.all_data, "otponly")
+    token_type = getParam(request.all_data, "type")
     options = {"g": g,
                "clientip": g.client_ip}
     # Add all params to the options
@@ -340,6 +345,7 @@ def check():
             result, details = check_otp(serial, password)
 
     else:
+        options["token_type"] = token_type
         result, details = check_user_pass(user, password, options=options)
 
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
@@ -357,6 +363,7 @@ def check():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
@@ -375,6 +382,9 @@ def samlcheck():
     :param user: The loginname/username of the user, who tries to authenticate.
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
+    :param type: The tokentype of the tokens, that are taken into account during
+        authentication. Requires authz policy application_tokentype.
+        Is ignored when a distinct serial is given.
     :param pass: The password, that consists of the OTP PIN and the OTP value.
 
     :return: a json result with a boolean "result": true
@@ -417,8 +427,10 @@ def samlcheck():
     """
     user = request.User
     password = getParam(request.all_data, "pass", required)
+    token_type = getParam(request.all_data, "type")
     options = {"g": g,
-               "clientip": g.client_ip}
+               "clientip": g.client_ip,
+               "token_type": token_type}
     # Add all params to the options
     for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
@@ -458,6 +470,7 @@ def samlcheck():
 @admin_required
 @postpolicy(mangle_challenge_response, request=request)
 @check_user_or_serial_in_request(request)
+@prepolicy(check_application_tokentype, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_auth, request=request)
@@ -476,6 +489,9 @@ def trigger_challenge():
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
     :param serial: The serial number of the token.
+    :param type: The tokentype of the tokens, that are taken into account during
+        authentication. Requires authz policy application_tokentype.
+        Is ignored when a distinct serial is given.
 
     :return: a json result with a "result" of the number of matching
         challenge response tokens
@@ -531,13 +547,14 @@ def trigger_challenge():
     """
     user = request.User
     serial = getParam(request.all_data, "serial")
+    token_type = getParam(request.all_data, "type")
     details = {"messages": [],
                "transaction_ids": []}
     options = {"g": g,
                "clientip": g.client_ip,
                "user": user}
 
-    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False)
+    token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
     # Only use the tokens, that are allowed to do challenge response
     chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
     create_challenges_from_tokens(chal_resp_tokens, details, options)

@@ -1985,7 +1985,8 @@ def check_user_pass(user, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    tokenobject_list = get_tokens(user=user)
+    token_type = options.pop("token_type", None)
+    tokenobject_list = get_tokens(user=user, tokentype=token_type)
     reply_dict = {}
     if not tokenobject_list:
         # The user has no tokens assigned
