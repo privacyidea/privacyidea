@@ -111,6 +111,35 @@ class APIPolicyTestCase(MyApiTestCase):
 
         delete_policy("pol1")
 
+        with self.app.test_request_context('/policy/polpinode',
+                                           method='POST',
+                                           data={"action": ACTION.NODETAILFAIL,
+                                                 "scope": SCOPE.AUTHZ,
+                                                 "pinode": "Node1",
+                                                 "priority": 1,
+                                                 "realm": "realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            self.assertTrue("setPolicy polpinode" in result.get("value"),
+                            result.get("value"))
+
+        # get the policies and see if the pinode was set
+        with self.app.test_request_context('/policy/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'], res.json)
+            value = res.json['result']['value']
+            self.assertEqual(len(value), 1)
+            pol1 = value[0]
+            self.assertEqual(pol1.get("pinode"), ["Node1"])
+
+        delete_policy("polpinode")
+
     def test_02_set_policy_conditions(self):
         # set a policy with conditions
         with self.app.test_request_context('/policy/cond1',

@@ -185,6 +185,7 @@ def set_policy_api(name=None):
     scope = getParam(param, "scope", required)
     realm = getParam(param, "realm", required)
     resolver = getParam(param, "resolver", optional)
+    pinode = getParam(param, "pinode", optional)
     user = getParam(param, "user", optional)
     time = getParam(param, "time", optional)
     client = getParam(param, "client", optional)
@@ -200,7 +201,7 @@ def set_policy_api(name=None):
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
-                     adminuser=admin_user,
+                     adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))

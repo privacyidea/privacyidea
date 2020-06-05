@@ -2486,5 +2486,5 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=realm, active=active,
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
-                   adminuser=adminuser, time=time, pinode=pinode,
+                   adminuser=adminuser, time=time,
                    sort_by_priority=sort_by_priority)
