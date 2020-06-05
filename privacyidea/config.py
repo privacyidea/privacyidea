@@ -72,7 +72,7 @@ class TestingConfig(Config):
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"
     PI_NODE = "Node1"
-    PI_NODES = ["Node2"]
+    PI_NODES = ["Node1", "Node2"]
     PI_ENGINE_REGISTRY_CLASS = "null"
     PI_TRUSTED_JWT = [{"public_key": pubtest_key,
                        "algorithm": "HS256",
@@ -115,6 +115,8 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
     PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
+    PI_NODE = "Node1"
+    PI_NODES = ["Node1", "Node2"]
 
 
 class HerokuConfig(Config):
