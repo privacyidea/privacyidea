@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-06-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add privacyIDEA nodes
 #  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add a high-level API for policy matching
 #  2019-07-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -169,7 +171,7 @@ import six
 import logging
 from ..models import (Policy, db, save_config_timestamp)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
-                                    get_config_object)
+                                    get_config_object, get_privacyidea_node)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
@@ -478,7 +480,7 @@ class PolicyClass(object):
 
     @log_with(log)
     def list_policies(self, name=None, scope=None, realm=None, active=None,
-                      resolver=None, user=None, client=None, action=None,
+                      resolver=None, user=None, client=None, action=None, pinode=None,
                       adminrealm=None, adminuser=None, sort_by_priority=True):
         """
         Return the policies, filtered by the given values.
@@ -500,6 +502,7 @@ class PolicyClass(object):
         :param realm: The realm in the policy
         :param active: One of None, True, False: All policies, only active or only inactive policies
         :param resolver: Only policies with this resolver
+        :param pinode: Only policies with this privacyIDEA node
         :param user: Only policies with this user
         :type user: basestring
         :param client:
@@ -586,6 +589,17 @@ class PolicyClass(object):
             log.debug("Policies after matching resolver: {0!s}".format(
                 reduced_policies))
 
+        # Match the privacyIDEA node
+        if pinode is not None:
+            new_policies = []
+            for policy in reduced_policies:
+                # The policy either matches if it has no pinode defined or if the pinode is contained in the list
+                if not policy.get("pinode") or pinode in policy.get("pinode"):
+                    new_policies.append(policy)
+
+            reduced_policies = new_policies
+            log.debug("Policies after matching pinode: {0!s}".format(reduced_policies))
+
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
         # be excluded by a leading "-" or "!" sign.
@@ -624,7 +638,7 @@ class PolicyClass(object):
 
     @log_with(log)
     def match_policies(self, name=None, scope=None, realm=None, active=None,
-                       resolver=None, user=None, user_object=None,
+                       resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
                        sort_by_priority=True, audit_data=None, request_headers=None):
         """
@@ -649,6 +663,7 @@ class PolicyClass(object):
         :param action: see ``list_policies``
         :param adminrealm: see ``list_policies``
         :param adminuser: see ``list_policies``
+        :param pinode: see ``list_policies``
         :param sort_by_priority:
         :param user_object: the currently active user, or None
         :type user_object: User or None
@@ -679,7 +694,7 @@ class PolicyClass(object):
 
         reduced_policies = self.list_policies(name=name, scope=scope, realm=realm, active=active,
                                               resolver=resolver, user=user, client=client, action=action,
-                                              adminrealm=adminrealm, adminuser=adminuser,
+                                              adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
                                               sort_by_priority=sort_by_priority)
 
         # filter policy for time. If no time is set or is a time is set and
@@ -1088,7 +1103,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None):
+               conditions=None, pinode=None):
     """
     Function to set a policy.
     If the policy with this name already exists, it updates the policy.
@@ -1114,6 +1129,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         checked with this policy
     :type check_all_resolvers: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
+    :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
     :return: The database ID od the the policy
     :rtype: int
     """
@@ -1147,6 +1163,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    if type(pinode) == list:
+        pinode = ", ".join(pinode)
     # validate conditions parameter
     if conditions is not None:
         for condition in conditions:
@@ -1182,6 +1200,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.time = time
         if priority is not None:
             p1.priority = priority
+        if pinode is not None:
+            p1.pinode = pinode
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
         if conditions is not None:
@@ -1196,7 +1216,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      resolver=resolver, adminrealm=adminrealm,
                      adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
-                     conditions=conditions).save()
+                     conditions=conditions, pinode=pinode).save()
     return ret
 
 
@@ -1280,6 +1300,7 @@ def import_policies(file_contents):
                          user=ast.literal_eval(policy.get("user", "[]")),
                          resolver=ast.literal_eval(policy.get("resolver", "[]")),
                          client=ast.literal_eval(policy.get("client", "[]")),
+                         pinode=ast.literal_eval(policy.get("pinode", "[]")),
                          time=policy.get("time", ""),
                          priority=policy.get("priority", "1")
                          )
@@ -2259,6 +2280,7 @@ class Match(object):
     def __init__(self, g, **kwargs):
         self._g = g
         self._match_kwargs = kwargs
+        self.pinode = get_privacyidea_node()
 
     def policies(self, write_to_audit_log=True):
         """
@@ -2276,7 +2298,7 @@ class Match(object):
         else:
             request_headers = None
         return self._g.policy_object.match_policies(audit_data=audit_data, request_headers=request_headers,
-                                                    **self._match_kwargs)
+                                                    pinode=self.pinode, **self._match_kwargs)
 
     def any(self, write_to_audit_log=True):
         """
@@ -2464,5 +2486,5 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=realm, active=active,
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
-                   adminuser=adminuser, time=time,
+                   adminuser=adminuser, time=time, pinode=pinode,
                    sort_by_priority=sort_by_priority)
