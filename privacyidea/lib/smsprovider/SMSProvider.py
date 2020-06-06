@@ -122,6 +122,7 @@ class ISMSProvider(object):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       "PARAMETER1": {
                           "required": True,
@@ -160,7 +161,7 @@ def get_sms_provider_class(packageName, className):
 
 
 def set_smsgateway(identifier, providermodule, description=None,
-                   options=None):
+                   options=None, headers=None):
 
     """
     Set an SMS Gateway configuration
@@ -173,12 +174,14 @@ def set_smsgateway(identifier, providermodule, description=None,
     :type providermodule: basestring
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
+    :param headers: Headers for this module
+    :type options: dict, headers: dict
     :type options: dict
     :return: The id of the event.
     """
     smsgateway = SMSGateway(identifier, providermodule,
                             description=description,
-                            options=options)
+                            options=options, headers=headers)
     create_sms_instance(identifier).check_configuration()
     return smsgateway.id
 

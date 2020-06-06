@@ -79,6 +79,7 @@ class HttpSMSProvider(ISMSProvider):
         """
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
+        headers = {}
         if self.smsgateway:
             phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             url = self.smsgateway.option_dict.get("URL")
@@ -96,6 +97,7 @@ class HttpSMSProvider(ISMSProvider):
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)
+            headers = self.smsgateway.header_dict
         else:
             phone = self._mangle_phone(phone, self.config)
             url = self.config.get('URL')
@@ -145,10 +147,11 @@ class HttpSMSProvider(ISMSProvider):
             params = {}
             data = parameter
 
-        log.debug("issuing request with parameters %s and method %s and "
-                  "authentication %s to url %s." % (parameter, method,
+        log.debug("issuing request with parameters %s, headers %s and method %s and "
+                  "authentication %s to url %s." % (params, headers, method,
                                                     basic_auth, url))
-        r = requestor(url, params=params,
+        # Todo: drop basic auth if Authorization-Header is given?
+        r = requestor(url, params=params, headers=headers,
                       data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
@@ -231,6 +234,7 @@ class HttpSMSProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": True,
+                  "headers_allowed": True,
                   "parameters": {
                       "URL": {
                           "required": True,

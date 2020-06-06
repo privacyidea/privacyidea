@@ -212,6 +212,7 @@ class FirebaseProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       FIREBASE_CONFIG.REGISTRATION_URL: {
                           "required": True,

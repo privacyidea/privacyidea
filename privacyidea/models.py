@@ -2064,11 +2064,15 @@ class SMSGateway(MethodsMixin, db.Model):
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
                               backref='smsgw')
+    headers = db.relationship('SMSGatewayOption',
+                              lazy='dynamic',
+                              backref='smsgwheaders')
 
     def __init__(self, identifier, providermodule, description=None,
-                 options=None):
+                 options=None, headers=None):
 
         options = options or {}
+        headers = headers or {}
         sql = SMSGateway.query.filter_by(identifier=identifier).first()
         if sql:
             self.id = sql.id
@@ -2077,16 +2081,20 @@ class SMSGateway(MethodsMixin, db.Model):
         self.description = description
         self.save()
         # delete non existing options in case of update
+        opts = {"option": options, "header": headers}
         if sql:
-            for option in sql.option_dict.keys():
-                # iterate through all existing options
-                if option not in options:
-                    # if the option is not contained anymore
-                    SMSGatewayOption.query.filter_by(gateway_id=self.id,
-                                                     Key=option).delete()
-        # add the options to the SMS Gateway
-        for k, v in options.items():
-            SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
+            sql_opts = {"option": sql.option_dict, "header": sql.header_dict}
+            for typ, vals in opts.items():
+                for key in sql_opts[typ].keys():
+                    # iterate through all existing options/headers
+                    if key not in vals:
+                        # if the option is not contained anymore
+                        SMSGatewayOption.query.filter_by(gateway_id=self.id,
+                                                         Key=key, Type=typ).delete()
+        # add the options and headers to the SMS Gateway
+        for typ, vals in opts.items():
+            for k, v in vals.items():
+                SMSGatewayOption(gateway_id=self.id, Key=k, Value=v, Type=typ).save()
 
     def save(self):
         if self.id is None:
@@ -2127,7 +2135,21 @@ class SMSGateway(MethodsMixin, db.Model):
         """
         res = {}
         for option in self.options:
-            res[option.Key] = option.Value
+            if option.Type == "option" or option.Type == None:
+                res[option.Key] = option.Value
+        return res
+
+    @property
+    def header_dict(self):
+        """
+        Return all connected options as a dictionary
+
+        :return: dict
+        """
+        res = {}
+        for header in self.headers:
+            if header.Type == "header":
+                res[header.Key] = header.Value
         return res
 
     def as_dict(self):
@@ -2141,14 +2163,15 @@ class SMSGateway(MethodsMixin, db.Model):
              "name": self.identifier,
              "providermodule": self.providermodule,
              "description": self.description,
-             "options": self.option_dict}
+             "options": self.option_dict,
+             "headers": self.header_dict}
 
         return d
 
 
 class SMSGatewayOption(MethodsMixin, db.Model):
     """
-    This table stores the options and parameters for an SMS Gateway definition.
+    This table stores the options, parameters and headers for an SMS Gateway definition.
     """
     __tablename__ = 'smsgatewayoption'
     id = db.Column(db.Integer, Sequence("smsgwoption_seq"), primary_key=True)
@@ -2174,7 +2197,8 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         self.save()
 
     def save(self):
-        # See, if there is this option for this this gateway
+        # See, if there is this option or header for this this gateway
+        # The first match takes precedence
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
                                                Key=self.Key).first()
         if go is None:

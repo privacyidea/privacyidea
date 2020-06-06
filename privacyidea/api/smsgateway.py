@@ -96,12 +96,15 @@ def set_gateway():
     providermodule = getParam(param, "module", optional=False)
     description = getParam(param, "description", optional=True)
     options = {}
+    headers = {}
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
+        elif k.startswith("header."):
+            headers[k[7:]] = v
 
     res = set_smsgateway(identifier, providermodule, description,
-                         options=options)
+                         options=options, headers=headers)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

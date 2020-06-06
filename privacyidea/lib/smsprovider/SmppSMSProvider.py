@@ -122,6 +122,7 @@ class SmppSMSProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                     "parameters": {
                         "SMSC_HOST": {
                             "required": True,
