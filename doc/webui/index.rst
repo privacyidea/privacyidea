@@ -42,7 +42,7 @@ user. The administrator can see all the details of the token.
 The administrator can click on one token, to show more details of this token
 and to perform actions on this token. Read on in :ref:`token_details`.
 
-.. _usersview::
+.. _usersview:
 
 Users
 -----
@@ -89,7 +89,7 @@ In most cases there is no need to manage machines and this view is empty.
 .. figure:: images/machinesview.png
    :width: 500
 
-    *The Machines view.*
+   *The Machines view.*
 
 
 
@@ -103,7 +103,7 @@ behavior of the system, manages the :ref:`eventhandler` and lets the user set up
 .. figure:: ../configuration/images/system-config.png
    :width: 500
 
-    *The Config section is the heart of the privacyIDEA server.*
+   *The Config section is the heart of the privacyIDEA server.*
 
 Audit
 -------
@@ -113,12 +113,12 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
 .. figure:: ../audit/auditlog.png
    :width: 500
 
-    *Events can be displayed in the Audit log.*
+   *Events can be displayed in the Audit log.*
 
 .. _components:
 
 Components
--------
+----------
 
 .. index:: Components
 

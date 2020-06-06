@@ -20,7 +20,7 @@ CSS
 ....
 
 You can customize the look and feel of the printed paper token.
-You may change the style sheep ``papertoken.css`` which is only loaded for
+You may change the style sheet ``papertoken.css`` which is only loaded for
 printing.
 
 Header and Footer

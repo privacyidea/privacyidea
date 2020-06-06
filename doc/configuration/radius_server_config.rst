@@ -5,4 +5,4 @@ RADIUS server configuration
 
 .. index:: RADIUS Server
 
-You can centrally define RADIUS servers that can be used to
+You can centrally define RADIUS servers that can be used for :ref:`radius_token`

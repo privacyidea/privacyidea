@@ -14,7 +14,7 @@ system ways of *apt-get*, *aptitude* and *yum* to upgrade privacyIDEA to the
 current version.
 
 If you want to upgrade an old Ubuntu installation from privacyIDEA 2.23 to
-privacyIDEA 3.0, please read :ref:`upgrade_packaged_legacy`.
+privacyIDEA 3.0, please read the :ref:`Note on legacy upgrades <upgrade_packaged_legacy>`.
 
 Different upgrade processes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,7 +24,7 @@ The following section describes the process for pip installations.
 Instructions for packaged versions on RHEL and Ubuntu are found in :ref:`upgrade_packaged`.
 
 Upgrading a pip installation
-...............
+............................
 
 If you install privacyIDEA into a python virtualenv like */opt/privacyidea*,
 you can follow this basic upgrade process.

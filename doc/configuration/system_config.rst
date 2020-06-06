@@ -114,9 +114,9 @@ case the response contains the SAML attributes of the user, even if the user
 failed to authenticate.
 
 
-.. _autosync:
-
 .. index:: autoresync, autosync
+
+.. _autosync:
 
 Automatic resync during authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
