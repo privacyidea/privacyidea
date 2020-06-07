@@ -26,6 +26,7 @@ user stores:
  * LDAP resolver,
  * SQL resolver,
  * SCIM resolver.
+ * HTTP resolver.
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
@@ -353,6 +354,43 @@ The available attributes for the ``Attribute mapping`` are:
  * phone,
  * mobile,
  * email.
+
+HTTP resolver
+.............
+
+.. index:: HTTP resolver
+
+HTTP resolver is useful when you need to retrieve user information from an 
+external HTTP API.
+
+HTTP contains a few fields to be completed, as shown in the following image:
+
+.. figure:: images/http_resolver_1.png
+   :width: 500
+
+
+The important things here are ``Request Mapping`` and ``Response Mapping``, both of them using JSON format.
+
+``Request Mapping`` is used for mapping the current user request to your API request payload.  
+``Response Mapping`` is used for mapping your HTTP API response with the privacyidea user. Now, 
+only JSON responses are supported.
+
+The available attributes for the ``Response mapping`` are:
+
+ * username *(mandatory)*,
+ * givenname,
+ * surname,
+ * phone,
+ * mobile,
+ * email.
+
+Often, APIs are not RESTful (i.e. always returns 200 OK even if it fails). For this you can use ``Special error handling`` input:
+
+.. figure:: images/http_resolver_2.png
+   :width: 500
+
+
+.. note:: If HTTP response status is >= 400 the resolver will thrown an exception.
 
 .. _usercache:
 
