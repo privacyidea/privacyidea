@@ -19,6 +19,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_smsgateway,
                                                      delete_smsgateway,
                                                      delete_smsgateway_option,
+                                                     delete_smsgateway_header,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
@@ -108,6 +109,11 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
         self.assertEqual(gw[0].option_dict.get("new key"), "value")
+
+        # delete a single header
+        r = delete_smsgateway_header(id, "new header")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].option_dict.get("new header"), None)
 
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)

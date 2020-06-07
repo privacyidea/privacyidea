@@ -39,6 +39,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
                                                      delete_smsgateway_option,
+                                                     delete_smsgateway_header,
                                                      delete_smsgateway,
                                                      get_sms_provider_class)
 
@@ -90,6 +91,8 @@ def set_gateway():
     :jsonparam description: An optional description of the definition
     :jsonparam option.*: Additional options for the provider module (module
         specific)
+    :jsonparam header.*: Additional headers for the provider module (module
+        specific)
     """
     param = request.all_data
     identifier = getParam(param, "name", optional=False)
@@ -128,20 +131,27 @@ def delete_gateway(identifier=None):
 
 
 @smsgateway_blueprint.route('/option/<gwid>/<option>', methods=['DELETE'])
+@smsgateway_blueprint.route('/header/<gwid>/<header>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
-def delete_gateway_option(gwid=None, option=None):
+def delete_gateway_option(gwid=None, option=None, header=None):
     """
     this function deletes an option of a gateway definition
 
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    if option.startswith("option."):
-        option = option[7:]
-
-    res = delete_smsgateway_option(gwid, option)
-    g.audit_object.log({"success": res,
-                        "info": u"{0!s}/{1!s}".format(gwid, option)})
+    if option:
+        if option.startswith("option."):
+            option = option[7:]
+        res = delete_smsgateway_option(gwid, option)
+        g.audit_object.log({"success": res,
+                            "info": u"{0!s}/{1!s}".format(gwid, option)})
+    if header:
+        if header.startswith("header."):
+            header = header[7:]
+        res = delete_smsgateway_header(gwid, header)
+        g.audit_object.log({"success": res,
+                            "info": u"{0!s}/{1!s}".format(gwid, header)})
 
     return send_result(res)
