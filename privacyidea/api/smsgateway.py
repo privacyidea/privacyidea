@@ -38,8 +38,7 @@ from ..lib.policy import ACTION
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
-                                                     delete_smsgateway_option,
-                                                     delete_smsgateway_header,
+                                                     delete_smsgateway_key_generic,
                                                      delete_smsgateway,
                                                      get_sms_provider_class)
 
@@ -130,28 +129,23 @@ def delete_gateway(identifier=None):
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/option/<gwid>/<option>', methods=['DELETE'])
-@smsgateway_blueprint.route('/header/<gwid>/<header>', methods=['DELETE'])
+@smsgateway_blueprint.route('/<type>/<gwid>/<key>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
-def delete_gateway_option(gwid=None, option=None, header=None):
+def delete_gateway_option(gwid=None, key=None, type=None):
     """
     this function deletes an option of a gateway definition
 
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    if option:
-        if option.startswith("option."):
-            option = option[7:]
-        res = delete_smsgateway_option(gwid, option)
-        g.audit_object.log({"success": res,
-                            "info": u"{0!s}/{1!s}".format(gwid, option)})
-    if header:
-        if header.startswith("header."):
-            header = header[7:]
-        res = delete_smsgateway_header(gwid, header)
-        g.audit_object.log({"success": res,
-                            "info": u"{0!s}/{1!s}".format(gwid, header)})
+    if key.startswith("option."):
+        key = key[7:]
+    elif key.startswith("header."):
+        key = key[7:]
+
+    res = delete_smsgateway_key_generic(gwid, key, Type=type)
+    g.audit_object.log({"success": res,
+                        "info": u"{0!s}/{1!s}".format(gwid, key)})
 
     return send_result(res)

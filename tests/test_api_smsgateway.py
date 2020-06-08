@@ -180,6 +180,15 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 404, res)
             result = res.json.get("result")
 
+        # try to delete header "header1" with a wrong type
+        with self.app.test_request_context('/smsgateway/nonexistent_type/1/header1',
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 404, res)
+            result = res.json.get("result")
+
         # delete header "header1"
         with self.app.test_request_context('/smsgateway/header/1/header1',
                                            method='DELETE',

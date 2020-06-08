@@ -175,8 +175,8 @@ def set_smsgateway(identifier, providermodule, description=None,
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
     :param headers: Headers for this module
-    :type options: dict, headers: dict
     :type options: dict
+    :type headers: dict
     :return: The id of the event.
     """
     smsgateway = SMSGateway(identifier, providermodule,
@@ -204,7 +204,30 @@ def delete_smsgateway_option(id, option_key):
     :param option_key: The identifier/key of the option
     :return: True
     """
-    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
+    return delete_smsgateway_key_generic(id, option_key, Type="option")
+
+
+def delete_smsgateway_header(id, header_key):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param header_key: The identifier/key of the header
+    :return: True
+    """
+    return delete_smsgateway_key_generic(id, header_key, Type="header")
+
+
+def delete_smsgateway_key_generic(id, key, Type="option"):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param key: The identifier/key
+    :param type: The type of the key
+    :return: True
+    """
+    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=key, Type=Type).delete()
 
 
 def get_smsgateway(identifier=None, id=None, gwtype=None):

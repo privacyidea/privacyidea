@@ -20,6 +20,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      delete_smsgateway,
                                                      delete_smsgateway_option,
                                                      delete_smsgateway_header,
+                                                     delete_smsgateway_key_generic,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
@@ -92,7 +93,8 @@ class SMSTestCase(MyTestCase):
                                 "URL": "example.com",
                                 "new key": "value"},
                        headers={"Authorization": "ValueChanged",
-                                "new header": "new value"})
+                                "new header": "new value",
+                                "new header 2": "new value 2"})
         gw = get_smsgateway(id=id)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
@@ -101,6 +103,7 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(gw[0].header_dict.get("Authorization"), "ValueChanged")
         self.assertEqual(gw[0].header_dict.get("BANANA"), None)
         self.assertEqual(gw[0].header_dict.get("new header"), "new value")
+        self.assertEqual(gw[0].header_dict.get("new header 2"), "new value 2")
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
@@ -114,6 +117,11 @@ class SMSTestCase(MyTestCase):
         r = delete_smsgateway_header(id, "new header")
         gw = get_smsgateway(id=id)
         self.assertEqual(gw[0].option_dict.get("new header"), None)
+
+        # delete a single header
+        r = delete_smsgateway_key_generic(id, "new header 2", Type="header")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].option_dict.get("new header 2"), None)
 
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)
