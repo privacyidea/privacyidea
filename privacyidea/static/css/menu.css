@@ -1,7 +1,3 @@
-body {
-  padding-top: 70px;
-}
-
 .navbar-brand {
     padding: 5px 15px;
 }
@@ -37,8 +33,8 @@ body {
 }
 
 /* Condense the menu on small tablets and when the browser covers only half of the screen */
-@media (max-width: 1199px) {
-    .navbar-fixed-top ul.navbar-nav > li > a > translate {
+@media (min-width: 768px) and (max-width: 1199px) {
+    .navbar-collapse ul.navbar-nav > li > a > translate {
         display: none;
     }
 }

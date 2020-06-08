@@ -9,7 +9,7 @@
     log file. You can change the debug level in
     pi.cfg. Afterwards be sure to remove the logfile!
 </div>
-<div class="navbar navbar-default navbar-fixed-top">
+<div class="navbar navbar-default">
     <div class="container">
         <a class="navbar-brand" ui-sref="token.list" ng-show="loggedInUser.role">
             <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
@@ -31,7 +31,7 @@
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav" ng-hide="token_wizard">
 
-                <li ng-class="{active: $state.includes('dashboard')}"
+                <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
                     <span class="glyphicon glyphicon-dashboard"
@@ -39,62 +39,55 @@
                         <translate>Dashboard</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('token')}"
-                    ng-show="loggedInUser.role &&
-                            checkMainMenu('tokens')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role && checkMainMenu('tokens')">
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         <translate>Tokens</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('users')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('users')">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         <translate>Users</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'user' &&
-                            checkMainMenu('users')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'user' && checkMainMenu('users')">
                     <a ui-sref="user.password">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         <translate>User</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('machine')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('machines')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('machines')">
                     <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
                         <translate>Machines</translate>
                     </a></li>
-                <li ng-class="{active: $state.includes('config')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('config')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
                         <translate>Config</translate>
                     </a>
                 </li>
-                <li ng-class="{active: $state.includes('audit')}"
-                    ng-show="loggedInUser.role &&
-                            checkMainMenu('audit')">
-                    <a ui-sref="audit.log">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role && checkMainMenu('audit')">
+                    <a ui-sref="audit.log" data-toggle="collapse">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
                         <translate>Audit</translate>
                     </a>
                 </li>
-                <li ng-class="{active: $state.includes('component')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('components')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('components')">
                     <a ui-sref="component.clienttype">
                         <span class="glyphicon glyphicon-calendar"
                               aria-hidden="true"></span>
