@@ -293,4 +293,4 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
-        self.assertEqual(data['result']['value'], ['Node2', 'Node1'])
+        self.assertEqual(set(data['result']['value']), set(['Node2', 'Node1']))

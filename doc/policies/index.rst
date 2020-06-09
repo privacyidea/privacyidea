@@ -119,6 +119,19 @@ Each policy can contain the following attributes:
   You can enter several IP addresses or subnets divided by comma. Exclude item
   by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
+**privacyIDEA Node**
+
+  (added in privacyIDEA 3.4)
+
+  If you have a redundant setup requests can hit different dedicated nodes of
+  your privacyIDEA cluster. If you want a policy to only be valid for certain
+  privacyIDEA Nodes, you can set a list of allowed nodes.
+
+  This can be useful if you e.g. only want certain administrative actions on
+  dedicated nodes.
+
+  The nodes are configured in pi.cfg. See :ref:`cfgfile`.
+
 **time**
 
   (added in privacyIDEA 2.12)

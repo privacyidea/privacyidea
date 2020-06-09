@@ -1369,6 +1369,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     adminrealm = db.Column(db.Unicode(256), default=u"")
     adminuser = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(256), default=u"")
+    pinode = db.Column(db.Unicode(256), default=u"")
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
@@ -1387,7 +1388,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
-                 resolver="", user="", client="", time="", priority=1,
+                 resolver="", user="", client="", time="", pinode="", priority=1,
                  check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
@@ -1399,6 +1400,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.adminrealm = adminrealm
         self.adminuser = adminuser
         self.resolver = resolver
+        self.pinode = pinode
         self.user = user
         self.client = client
         self.time = time
@@ -1458,6 +1460,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "adminrealm": self._split_string(self.adminrealm),
              "adminuser": self._split_string(self.adminuser),
              "resolver": self._split_string(self.resolver),
+             "pinode": self._split_string(self.pinode),
              "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),

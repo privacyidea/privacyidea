@@ -1285,6 +1285,67 @@ class PolicyTestCase(MyTestCase):
             P.match_policies(user_object=user4)
         delete_policy("error")
 
+    def test_31_match_pinode(self):
+        # import_admin is only allowed to import on node1
+        set_policy("import_node1", scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                   adminuser="import_admin, delete_admin", pinode="pinode1")
+        # delete_admin is allowed to do everything everywhere
+        set_policy("delete_node2", scope=SCOPE.ADMIN, action=ACTION.DELETE,
+                   adminuser="delete_admin", pinode="pinode2, pinode1")
+        # enable_admin is allowed to enable on all nodes
+        set_policy("enable", scope=SCOPE.ADMIN, action=ACTION.ENABLE,
+                   adminuser="enable_admin", pinode="")
+
+        P = PolicyClass()
+        # Check what the user "import_admin" is allowed to do
+        # Allowed to import on pinode 1
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode1")
+        self.assertEqual({"import_node1"}, set(p['name'] for p in pols),)
+        # Not allowed to import on pinode 2
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.IMPORT, pinode="pinode2")
+        self.assertEqual(set(), set(p['name'] for p in pols))
+        # not allowed to delete on any node
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=ACTION.DELETE)
+        self.assertEqual(set(), set(p['name'] for p in pols))
+
+        # Check what the user "delete_admin" is allowerd to do
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=ACTION.IMPORT, pinode="pinode1")
+        self.assertEqual({"import_node1"}, set(p['name'] for p in pols))
+        # Not allowed to import on pinode 2
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=ACTION.IMPORT, pinode="pinode2")
+        self.assertEqual(set(), set(p['name'] for p in pols))
+        # Allowed to delete on node 1 and node 2
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=ACTION.DELETE, pinode="pinode1")
+        self.assertEqual(set({"delete_node2"}), set(p['name'] for p in pols))
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=ACTION.DELETE, pinode="pinode2")
+        self.assertEqual(set({"delete_node2"}), set(p['name'] for p in pols))
+
+        # Check what the user "enable_admin" is allowed to do
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=ACTION.ENABLE, pinode="pinode1")
+        self.assertEqual({"enable"}, set(p['name'] for p in pols))
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=ACTION.ENABLE, pinode="pinode2")
+        self.assertEqual({"enable"}, set(p['name'] for p in pols))
+
+        # Now check the Match-Object, which uses the pinode from the config: In testing environment it is "Node1".
+        g = FakeFlaskG()
+        g.client_ip = "127.0.0.1"
+        g.audit_object = mock.Mock()
+        g.policy_object = PolicyClass()
+        g.logged_in_user = {"username": "delete_admin", "role": ROLE.ADMIN, "realm": ""}
+        pols = Match.admin(g, "delete", None).policies()
+        # There is is no policy for Node1 for the "delete_admin
+        self.assertEqual(set(), set(p['name'] for p in pols))
+
+        g.logged_in_user = {"username": "enable_admin", "role": ROLE.ADMIN, "realm": ""}
+        pols = Match.admin(g, "enable", None).policies()
+        # The "enable_admin" is allowed to enable on all nodes, so also on "Node1"
+        self.assertEqual({"enable"}, set(p['name'] for p in pols))
+
+        delete_policy("import_node1")
+        delete_policy("delete_node2")
+        delete_policy("enable")
+
+
 class PolicyMatchTestCase(MyTestCase):
     @classmethod
     def setUpClass(cls):

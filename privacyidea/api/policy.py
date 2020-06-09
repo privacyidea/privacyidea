@@ -50,6 +50,7 @@ from ..lib.policy import (set_policy, ACTION,
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode, is_true
+from privacyidea.lib.config import get_privacyidea_nodes
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
@@ -185,6 +186,7 @@ def set_policy_api(name=None):
     scope = getParam(param, "scope", required)
     realm = getParam(param, "realm", required)
     resolver = getParam(param, "resolver", optional)
+    pinode = getParam(param, "pinode", optional)
     user = getParam(param, "user", optional)
     time = getParam(param, "time", optional)
     client = getParam(param, "client", optional)
@@ -200,7 +202,7 @@ def set_policy_api(name=None):
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
-                     adminuser=admin_user,
+                     adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))
@@ -528,6 +530,8 @@ def get_policy_defs(scope=None):
      * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
          * ``"description"``, a human-readable description of the comparator
 
+    if the scope is "pinodes", it returns a list of the configured privacyIDEA nodes.
+
     :query scope: if given, the function will only return policy
                   definitions for the given scope.
 
@@ -544,6 +548,8 @@ def get_policy_defs(scope=None):
             "sections": section_descriptions,
             "comparators": comparator_descriptions,
         }
+    elif scope == 'pinodes':
+        result = get_privacyidea_nodes()
     else:
         static_pol = get_static_policy_definitions()
         dynamic_pol = get_dynamic_policy_definitions()
