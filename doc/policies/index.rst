@@ -127,7 +127,7 @@ Each policy can contain the following attributes:
   your privacyIDEA cluster. If you want a policy to only be valid for certain
   privacyIDEA Nodes, you can set a list of allowed nodes.
 
-  This can be usefull if you e.g. only want certain administrative actions on
+  This can be useful if you e.g. only want certain administrative actions on
   dedicated nodes.
 
   The nodes are configured in pi.cfg. See :ref:`cfgfile`.

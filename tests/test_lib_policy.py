@@ -1292,7 +1292,7 @@ class PolicyTestCase(MyTestCase):
         # delete_admin is allowed to do everything everywhere
         set_policy("delete_node2", scope=SCOPE.ADMIN, action=ACTION.DELETE,
                    adminuser="delete_admin", pinode="pinode2, pinode1")
-        # enable_admin is allowed to enalbe on all nodes
+        # enable_admin is allowed to enable on all nodes
         set_policy("enable", scope=SCOPE.ADMIN, action=ACTION.ENABLE,
                    adminuser="enable_admin", pinode="")
 
