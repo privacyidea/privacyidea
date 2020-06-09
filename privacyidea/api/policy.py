@@ -530,6 +530,8 @@ def get_policy_defs(scope=None):
      * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
          * ``"description"``, a human-readable description of the comparator
 
+    if the scope is "pinodes", it returns a list of the configured privacyIDEA nodes.
+
     :query scope: if given, the function will only return policy
                   definitions for the given scope.
 

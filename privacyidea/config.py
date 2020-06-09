@@ -115,8 +115,6 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
     PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
-    PI_NODE = "Node1"
-    PI_NODES = ["Node1", "Node2"]
 
 
 class HerokuConfig(Config):

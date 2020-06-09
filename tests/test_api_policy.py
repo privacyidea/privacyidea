@@ -359,6 +359,35 @@ class APIPolicyTestCase(MyApiTestCase):
             status = result.get("status")
             self.assertTrue(status)
 
+    def test_04_policy_defs(self):
+        with self.app.test_request_context('/policy/defs/conditions',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            status = result.get("status")
+            self.assertTrue(status)
+            value = result.get("value")
+            self.assertIn("comparators", value)
+            self.assertIn("sections", value)
+
+        with self.app.test_request_context('/policy/defs/pinodes',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            status = result.get("status")
+            self.assertTrue(status)
+            value = result.get("value")
+            self.assertIn("Node1", value)
+            self.assertIn("Node2", value)
+
 class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_01_check_httpheader_condition(self):
