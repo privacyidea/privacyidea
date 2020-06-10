@@ -66,7 +66,13 @@ angular.module("privacyideaApp")
     obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
     $scope.hasJobQueue = obj.val() == "True";
     obj = angular.element(document.querySelector('#LOGIN_TEXT'));
-    $scope.piLoginText= obj.val();
+    $scope.piLoginText = obj.val();
+    obj = angular.element(document.querySelector('#PI_TRANSLATION_WARNING'));
+    $scope.piTranslationWarning = obj.val() !== "False";
+    $scope.piTranslationPrefix = obj.val();
+    gettextCatalog.debug = $scope.piTranslationWarning;
+    gettextCatalog.debugPrefix = $scope.piTranslationPrefix;
+
     // Check if registration is allowed
     $scope.registrationAllowed = false;
     RegisterFactory.status(function (data) {

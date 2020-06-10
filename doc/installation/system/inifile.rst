@@ -81,6 +81,9 @@ own UI and you do not want to present the UI to the user or the outside world.
 .. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
 
+The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
+set in front of every string in the UI, that is not translated to the language your browser
+is using.
 
 .. _engine-registry:
 
