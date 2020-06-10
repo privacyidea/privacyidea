@@ -75,8 +75,8 @@ or::
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
 
 .. note:: The link http://lancelot.netknights.it/community/.../stable is not
-   ment to be called in the browser - you will get a 404. This is OK.
-   This is not a link that is ment to be called directly. Rather it is used
+   meant to be called in the browser - you will get a 404. This is OK.
+   This is not a link that is meant to be called directly. Rather it is used
    as a base for apt to fetch packages.
    If you still fail to fetch packages, you might most probably need to check
    your firewall and proxy settings.
