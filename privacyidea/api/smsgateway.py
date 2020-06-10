@@ -129,20 +129,18 @@ def delete_gateway(identifier=None):
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/<type>/<gwid>/<key>', methods=['DELETE'])
+@smsgateway_blueprint.route('/option/<gwid>/<key>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
-def delete_gateway_option(gwid=None, key=None, type=None):
+def delete_gateway_option(gwid=None, key=None):
     """
     this function deletes an option of a gateway definition
 
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    if key.startswith("option."):
-        key = key[7:]
-    elif key.startswith("header."):
-        key = key[7:]
+    type = key.split('.')[0]
+    key = ".".join(key.split('.')[1:])
 
     res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,

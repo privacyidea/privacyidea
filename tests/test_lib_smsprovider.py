@@ -91,19 +91,19 @@ class SMSTestCase(MyTestCase):
         set_smsgateway(identifier, provider_module,
                        options={"HTTP_METHOD": "POST",
                                 "URL": "example.com",
-                                "new key": "value"},
+                                "IDENTICAL_KEY": "new option"},
                        headers={"Authorization": "ValueChanged",
-                                "new header": "new value",
-                                "new header 2": "new value 2"})
+                                "IDENTICAL_KEY": "new header",
+                                "URL": "URL_in_headers"})
         gw = get_smsgateway(id=id)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
         self.assertEqual(gw[0].header_dict.get("Authorization"), "ValueChanged")
         self.assertEqual(gw[0].header_dict.get("BANANA"), None)
-        self.assertEqual(gw[0].header_dict.get("new header"), "new value")
-        self.assertEqual(gw[0].header_dict.get("new header 2"), "new value 2")
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), "new header")
+        self.assertEqual(gw[0].header_dict.get("URL"), "URL_in_headers")
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
@@ -111,17 +111,17 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(len(gw[0].option_dict), 2)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
 
         # delete a single header
-        r = delete_smsgateway_header(id, "new header")
+        r = delete_smsgateway_header(id, "IDENTICAL_KEY")
         gw = get_smsgateway(id=id)
-        self.assertEqual(gw[0].option_dict.get("new header"), None)
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), None)
 
-        # delete a single header
-        r = delete_smsgateway_key_generic(id, "new header 2", Type="header")
+        # delete a single header via generic function
+        r = delete_smsgateway_key_generic(id, "URL", Type="header")
         gw = get_smsgateway(id=id)
-        self.assertEqual(gw[0].option_dict.get("new header 2"), None)
+        self.assertEqual(gw[0].header_dict.get("URL"), None)
 
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)

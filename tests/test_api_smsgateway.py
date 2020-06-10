@@ -162,7 +162,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("headers").get("header2"), "headervalue2")
 
         # delete option "URL"
-        with self.app.test_request_context('/smsgateway/option/1/URL',
+        with self.app.test_request_context('/smsgateway/option/1/option.URL',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -172,16 +172,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             detail = res.json.get("detail")
 
         # try to delete header "header1" at the wrong endpoint
-        with self.app.test_request_context('/smsgateway/option/1/header1',
-                                           method='DELETE',
-                                           headers={
-                                               'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 404, res)
-            result = res.json.get("result")
-
-        # try to delete header "header1" with a wrong type
-        with self.app.test_request_context('/smsgateway/nonexistent_type/1/header1',
+        with self.app.test_request_context('/smsgateway/option/1/option.header1',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -190,7 +181,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             result = res.json.get("result")
 
         # delete header "header1"
-        with self.app.test_request_context('/smsgateway/header/1/header1',
+        with self.app.test_request_context('/smsgateway/option/1/header.header1',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):

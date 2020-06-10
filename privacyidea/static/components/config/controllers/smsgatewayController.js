@@ -43,7 +43,7 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
                 $scope.form = $scope.smsgateways[0];
                 $scope.form.module = $scope.form.providermodule;
                 var option_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
-                // fill all parameters (options)
+                // fill all parameters (default options and additional options)
                 angular.forEach(Object.keys($scope.form.options),
                     function (optionname) {
                         if (option_array.indexOf(optionname)>-1) {
@@ -53,17 +53,8 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
                             $scope.opts[optionname] = $scope.form.options[optionname];
                         }
                     });
-                var header_array = Object.keys($scope.smsproviders[$scope.form.module].parameters);
                 // fill all parameters (headers)
-                angular.forEach(Object.keys($scope.form.headers),
-                    function (headername) {
-                        if (header_array.indexOf(headername)>-1) {
-                            $scope.form["header." + headername] = $scope.form.headers[headername];
-                        } else {
-                            // file the headers!
-                            $scope.headers[headername] = $scope.form.headers[headername];
-                        }
-                    });
+                $scope.headers = $scope.form.headers
             }
         });
     };

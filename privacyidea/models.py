@@ -2064,9 +2064,6 @@ class SMSGateway(MethodsMixin, db.Model):
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
                               backref='smsgw')
-    headers = db.relationship('SMSGatewayOption',
-                              lazy='dynamic',
-                              backref='smsgwheaders')
 
     def __init__(self, identifier, providermodule, description=None,
                  options=None, headers=None):
@@ -2142,14 +2139,14 @@ class SMSGateway(MethodsMixin, db.Model):
     @property
     def header_dict(self):
         """
-        Return all connected options as a dictionary
+        Return all connected headers as a dictionary
 
         :return: dict
         """
         res = {}
-        for header in self.headers:
-            if header.Type == "header":
-                res[header.Key] = header.Value
+        for option in self.options:
+            if option.Type == "header":
+                res[option.Key] = option.Value
         return res
 
     def as_dict(self):
@@ -2181,7 +2178,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
     __table_args__ = (db.UniqueConstraint('gateway_id',
-                                          'Key',
+                                          'Key', 'Type',
                                           name='sgix_1'),
                       {'mysql_row_format': 'DYNAMIC'})
 
@@ -2200,7 +2197,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         # See, if there is this option or header for this this gateway
         # The first match takes precedence
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                               Key=self.Key).first()
+                                               Key=self.Key, Type=self.Type).first()
         if go is None:
             # create a new one
             db.session.add(self)
@@ -2209,7 +2206,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         else:
             # update
             SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                              Key=self.Key
+                                              Key=self.Key, Type=self.Type
                                               ).update({'Value': self.Value,
                                                         'Type': self.Type})
             ret = go.id

@@ -147,9 +147,9 @@ class HttpSMSProvider(ISMSProvider):
             params = {}
             data = parameter
 
-        log.debug("issuing request with parameters %s, headers %s and method %s and "
-                  "authentication %s to url %s." % (params, headers, method,
-                                                    basic_auth, url))
+        log.debug(u"issuing request with parameters {0!s} headers {1!s} and method {2!s} and"
+                  "authentication {3!s} to url {4!s}.".format(params, headers, method,
+                                                              basic_auth, url))
         # Todo: drop basic auth if Authorization-Header is given?
         r = requestor(url, params=params, headers=headers,
                       data=data,
