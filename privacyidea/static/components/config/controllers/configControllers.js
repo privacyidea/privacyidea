@@ -134,7 +134,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                     realm: data.realm || [],
                     action: data.action || [],
                     resolver: data.resolver || [],
-                    adminrealm: data.adminrealm || []});
+                    adminrealm: data.adminrealm || [],
+                    pinode: []});
         });
     };
 
