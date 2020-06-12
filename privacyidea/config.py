@@ -53,6 +53,7 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     PI_LOGLEVEL = logging.DEBUG
+    PI_TRANSLATION_WARNING = "[Missing]"
 
 
 class TestingConfig(Config):
