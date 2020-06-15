@@ -2174,7 +2174,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.UnicodeText(), default=u'')
-    Type = db.Column(db.Unicode(100), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'option')
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
     __table_args__ = (db.UniqueConstraint('gateway_id',
