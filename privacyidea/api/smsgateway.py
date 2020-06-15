@@ -139,8 +139,9 @@ def delete_gateway_option(gwid=None, key=None):
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    type = key.split('.')[0]
-    key = ".".join(key.split('.')[1:])
+    type = "option"
+    if "." in key:
+        type, key = key.split(".", 1)
 
     res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,
