@@ -37,7 +37,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
-
+from requests import HTTPError
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -2459,7 +2459,7 @@ class ResolverTestCase(MyTestCase):
 class HTTPResolverTestCase(MyTestCase):
 
     ENDPOINT = 'http://localhost:8080/get-data'
-    METHOD = 'GET'
+    METHOD = responses.GET
     REQUEST_MAPPING = """
         {"id": "{userid}"}
     """
@@ -2583,13 +2583,6 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_06_get_user(self):
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
         param = {
             'endpoint': self.ENDPOINT,
             'method': self.METHOD,
@@ -2599,7 +2592,30 @@ class HTTPResolverTestCase(MyTestCase):
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
         }
-        response = HTTPResolver._getUser(param, 'PepePerez')
+
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        response = HTTPResolver._getUser(param.copy(), 'PepePerez')
+        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('email'), 'pepe@perez.com')
+        self.assertEqual(response.get('mobile'), '+1123568974')
+        self.assertEqual(response.get('a_static_key'), 'a static value')
+
+        responses.add(
+            responses.POST,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        paramWithPOST = param.copy()
+        paramWithPOST['method'] = responses.POST
+        response = HTTPResolver._getUser(paramWithPOST, 'PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
@@ -2612,9 +2628,48 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_NOK
         )
+        paramInvalidMethod = param.copy()
+        paramInvalidMethod['method'] = 'delete'
+        self.assertRaises(Exception, HTTPResolver._getUser, param=paramInvalidMethod, userid='PepePerez')
 
-        response = HTTPResolver._getUser(param, 'PepePerez')
-        self.assertFalse(response.get('success'))
+    @responses.activate
+    def test_06_get_user_especial_error_handling(self):
+        param = {
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+        }
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+        self.assertRaises(Exception, HTTPResolver._getUser, param=param, userid='PepePerez')        
+
+    @responses.activate
+    def test_06_get_user_internal_error(self):
+        param = {
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+        }
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=500,
+            adding_headers=json.loads(self.HEADERS),
+        )
+        self.assertRaises(HTTPError, HTTPResolver._getUser, param=param, userid='PepePerez')
 
     @responses.activate
     def test_07_testconnection(self):
@@ -2638,6 +2693,17 @@ class HTTPResolverTestCase(MyTestCase):
         success, response = HTTPResolver.testconnection(param)
         self.assertTrue(success)
 
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+        invalidParam = param.copy()
+        invalidParam['testEmail'] = None
+        success, response = HTTPResolver.testconnection(invalidParam)
+        self.assertFalse(success)
 
     @responses.activate
     def test_08_get_user_info(self):
@@ -2658,7 +2724,6 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_OK
         )
-        
         response = instance.getUserInfo('PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')

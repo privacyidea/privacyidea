@@ -208,8 +208,8 @@ class HTTPResolver(UserIdResolver):
         else:
             httpResponse = requests.get(endpoint, urlencode(requestMappingJSON), headers=headers)
 
-        if httpResponse.status_code >= 400:
-            raise Exception(httpResponse.status_code, httpResponse.text)
+        # Raises HTTPError, if one occurred.
+        httpResponse.raise_for_status()
 
         jsonHTTPResponse = httpResponse.json()
 
