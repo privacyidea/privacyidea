@@ -2650,7 +2650,7 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_NOK
         )
-        self.assertRaises(Exception, HTTPResolver._getUser, param=param, userid='PepePerez')        
+        self.assertRaises(Exception, HTTPResolver._getUser, param=param, userid='PepePerez')
 
     @responses.activate
     def test_06_get_user_internal_error(self):
