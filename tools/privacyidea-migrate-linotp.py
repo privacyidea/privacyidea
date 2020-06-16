@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+#  2020-06-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add failsafe for tokeninfo
 #  2019-10-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow encryption and config file
 #  2018-02-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -72,6 +74,7 @@ EXAMPLE_CONFIG_FILE = """{
     "MIGRATE": {
         "tokens": true,
         "tokeninfo": true,
+        "tokeninfo_unicode_keys": ["phone"],
         "assignments": false
     },
     "ASSIGNMENTS": {
@@ -435,6 +438,8 @@ def migrate(config_obj):
             if config_obj.MIGRATE.get("tokeninfo") and ti:
                 # Add tokeninfo for this token
                 for (k, v) in ti.items():
+                    if k in config_obj.MIGRATE.get("tokeninfo_unicode_keys", []):
+                        v = v.encode('ascii', 'ignore').decode('utf8')
                     tokeninfo_values.append(dict(
                         serial=r["LinOtpTokenSerialnumber"],
                         Key=k, Value=v,
