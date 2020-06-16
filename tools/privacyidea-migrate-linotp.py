@@ -439,7 +439,7 @@ def migrate(config_obj):
                 # Add tokeninfo for this token
                 for (k, v) in ti.items():
                     if k in config_obj.MIGRATE.get("tokeninfo_unicode_keys", []):
-                        v = unicode(v, erros="ignore")
+                        v = unicode(v, errors="ignore")
                     tokeninfo_values.append(dict(
                         serial=r["LinOtpTokenSerialnumber"],
                         Key=k, Value=v,
