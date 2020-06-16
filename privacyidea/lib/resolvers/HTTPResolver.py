@@ -41,10 +41,11 @@ __name__ = "HTTP_RESOLVER"
 
 log = logging.getLogger(__name__)
 
+
 class HTTPResolver(UserIdResolver):
 
     fields = {
-        "endpoint": 1, 
+        "endpoint": 1,
         "method": 1,
         "requestMapping": 1,
         "headers": 1,
@@ -132,10 +133,10 @@ class HTTPResolver(UserIdResolver):
         :rtype: dict
         """
         return HTTPResolver._getUser(self.config, userid)
-        
+
     def getUserList(self, searchDict=None):
         """
-        Since it is an HTTP resolver, 
+        Since it is an HTTP resolver,
         users are not stored in the database
         """
         return []

@@ -2455,6 +2455,7 @@ class ResolverTestCase(MyTestCase):
         delete_realm("myrealm")
         delete_resolver(self.resolvername1)
 
+
 class HTTPResolverTestCase(MyTestCase):
 
     ENDPOINT = 'http://localhost:8080/get-data'
@@ -2467,8 +2468,8 @@ class HTTPResolverTestCase(MyTestCase):
     """
     RESPONSE_MAPPING = """
         {
-            "userid": "{data.the_username}", 
-            "email": "{data.the_email}", 
+            "userid": "{data.the_username}",
+            "email": "{data.the_email}",
             "mobile": "{data.the_phones.mobile}",
             "a_static_key": "a static value"
         }
@@ -2583,7 +2584,7 @@ class HTTPResolverTestCase(MyTestCase):
     @responses.activate
     def test_06_get_user(self):
         responses.add(
-            self.METHOD, 
+            self.METHOD,
             self.ENDPOINT,
             status=200,
             adding_headers=json.loads(self.HEADERS),
