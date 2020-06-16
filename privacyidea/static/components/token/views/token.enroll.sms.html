@@ -18,7 +18,10 @@
     <label for="phone" translate>Phone number</label>
     <input type="text" id="phone"
            autofocus
+           ng-required="! form.dynamic_phone"
            class="form-control"
+           placeholder="+1234567890"
+           pattern="(\+[1-9])?\d{1,14}"
            ng-model="form.phone" name="phone" />
     <div>
         <button class="btn btn-default btn-xs" ng-repeat="phone in phone_list"
