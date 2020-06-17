@@ -1,4 +1,4 @@
-"""empty message
+"""Add constraint for smsoptions and set default type to "option"
 
 Revision ID: e360c56bcf8c
 Revises: a7e91b18a460
