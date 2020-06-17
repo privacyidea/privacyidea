@@ -18,6 +18,7 @@ from sqlalchemy import orm
 
 Base = declarative_base()
 
+
 class SMSGateway(Base):
     __tablename__ = 'smsgateway'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
@@ -28,6 +29,7 @@ class SMSGateway(Base):
     options = orm.relationship('SMSGatewayOption',
                               lazy='dynamic',
                               backref='smsgw')
+
 
 class SMSGatewayOption(Base):
     __tablename__ = 'smsgatewayoption'
@@ -42,15 +44,18 @@ class SMSGatewayOption(Base):
                                           name='sgix_1'),
                       {'mysql_row_format': 'DYNAMIC'})
 
+
 # Check if the SQL dialect uses sequences
 # (from https://stackoverflow.com/a/17196812/7036742)
 def dialect_supports_sequences():
     migration_context = context.get_context()
     return migration_context.dialect.supports_sequences
 
+
 def create_seq(seq):
     if dialect_supports_sequences():
         op.execute(CreateSequence(seq))
+
 
 def upgrade():
     try:
@@ -59,7 +64,7 @@ def upgrade():
             batch_op.create_unique_constraint('sgix_1', ['gateway_id', 'Key', 'Type'])
     except Exception as exx:
         print("Cannot change constraint 'sgix_1' in table smsgatewayoption.")
-        print (exx)
+        print(exx)
 
     try:
         bind = op.get_bind()
@@ -72,7 +77,7 @@ def upgrade():
     except Exception as exx:
         session.rollback()
         print("Failed to add option type for all existing entries in table smsgatewayoption!")
-        print (exx)
+        print(exx)
 
     session.commit()
 
