@@ -18,6 +18,7 @@
     <label for="email" translate>Email Address</label>
     <input type="email" id="email"
            autofocus
+           ng-required="! form.dynamic_email"
            class="form-control"
            placeholder="Users email address..."
            ng-model="form.email" name="email" />
