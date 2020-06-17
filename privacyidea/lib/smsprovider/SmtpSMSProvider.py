@@ -106,6 +106,7 @@ class SmtpSMSProvider(ISMSProvider):
         """
         from privacyidea.lib.smtpserver import get_smtpservers
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       "MAILTO": {
                           "required": True,

@@ -107,6 +107,7 @@ class SipgateSMSProvider(ISMSProvider):
         """
         from privacyidea.lib.smtpserver import get_smtpservers
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       "USERNAME": {
                           "required": True,

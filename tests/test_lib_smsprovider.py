@@ -19,6 +19,8 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_smsgateway,
                                                      delete_smsgateway,
                                                      delete_smsgateway_option,
+                                                     delete_smsgateway_header,
+                                                     delete_smsgateway_key_generic,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
@@ -72,7 +74,9 @@ class SMSTestCase(MyTestCase):
         provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
+                                     "URL": "example.com"},
+                            headers={"Authorization": "QWERTZ",
+                                     "BANANA": "will be eaten"})
         self.assertTrue(id > 0)
 
         gw = get_smsgateway(id=id)
@@ -87,12 +91,19 @@ class SMSTestCase(MyTestCase):
         set_smsgateway(identifier, provider_module,
                        options={"HTTP_METHOD": "POST",
                                 "URL": "example.com",
-                                "new key": "value"})
+                                "IDENTICAL_KEY": "new option"},
+                       headers={"Authorization": "ValueChanged",
+                                "IDENTICAL_KEY": "new header",
+                                "URL": "URL_in_headers"})
         gw = get_smsgateway(id=id)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
+        self.assertEqual(gw[0].header_dict.get("Authorization"), "ValueChanged")
+        self.assertEqual(gw[0].header_dict.get("BANANA"), None)
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), "new header")
+        self.assertEqual(gw[0].header_dict.get("URL"), "URL_in_headers")
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
@@ -100,7 +111,17 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(len(gw[0].option_dict), 2)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
+
+        # delete a single header
+        r = delete_smsgateway_header(id, "IDENTICAL_KEY")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), None)
+
+        # delete a single header via generic function
+        r = delete_smsgateway_key_generic(id, "URL", Type="header")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].header_dict.get("URL"), None)
 
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)
@@ -117,7 +138,8 @@ class SMSTestCase(MyTestCase):
                           ".HttpSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
+                                     "URL": "example.com"},
+                            headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
 
         sms = create_sms_instance(identifier)
@@ -125,6 +147,8 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(sms.smsgateway.option_dict.get("URL"), "example.com")
         self.assertEqual(sms.smsgateway.option_dict.get("HTTP_METHOD"),
                          "POST")
+        self.assertEqual(sms.smsgateway.header_dict.get("Authorization"), "QWERTZ")
+        self.assertEqual(sms.smsgateway.option_dict.get("Authorization"), None)
 
 
 class SmtpSMSTestCase(MyTestCase):
@@ -474,7 +498,8 @@ class HttpSMSTestCase(MyTestCase):
                                      "URL": "http://example.com",
                                      "RETURN_SUCCESS": "ID",
                                      "text": "{otp}",
-                                     "phone": "{phone}"})
+                                     "phone": "{phone}"},
+                            headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
 
         sms = create_sms_instance(identifier)
