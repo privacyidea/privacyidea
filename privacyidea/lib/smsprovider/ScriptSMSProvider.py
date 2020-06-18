@@ -16,7 +16,7 @@
 #               GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__doc__="""This is the SMSClass to send SMS via a script.
+__doc__ = """This is the SMSClass to send SMS via a script.
 """
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
@@ -64,7 +64,7 @@ class ScriptSMSProvider(ISMSProvider):
             raise SMSError(-1, "Missing smsgateway definition!")
 
         script = self.smsgateway.option_dict.get("script")
-        background = self.smsgateway.option_dict.get("backgroud")
+        background = self.smsgateway.option_dict.get("background")
 
         script_name = self.script_directory + "/" + script
         proc_args = [script_name]
