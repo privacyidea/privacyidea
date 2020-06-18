@@ -671,8 +671,10 @@ class PolicyClass(object):
                             "{1!s} - {2!s}@{3!s} in resolver {4!s}".format((name, scope, action),
                                                                            user_object, user, realm, resolver))
                 log.warning("Possible programming error: {0!s}".format(tb_str))
-                raise ParameterError("Cannot pass user_object as well as user, resolver, realm "
-                                     "in policy {0!s}".format((name, scope, action)))
+                raise ParameterError("Cannot pass user_object ({1!s}) as well as user ({2!s}),"
+                                     " resolver ({3!s}), realm ({4!s})"
+                                     "in policy {0!s}".format((name, scope, action), user_object,
+                                                              user, resolver, realm))
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
