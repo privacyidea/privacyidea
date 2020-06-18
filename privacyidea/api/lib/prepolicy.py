@@ -76,7 +76,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    check_pin_policy, get_module_class,
@@ -693,6 +693,8 @@ def check_max_token_user(request=None, action=None):
     ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
     user_object = get_user_from_param(params)
+    if not user_object.login and params.get("serial", None):
+        user_object = get_token_owner(params["serial"])
     if user_object.login:
         serial = getParam(params, "serial")
         tokentype = getParam(params, "type")

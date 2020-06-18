@@ -370,9 +370,27 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "type": "totp"}
         self.assertTrue(check_max_token_user(req))
 
+        # Now, we disable the token NEW001, so the user again has NO active token
+        enable_token("NEW001", enable=False)
+        # we enroll a new HOTP token, this would now succeed
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 2)
+        # now we enable the first hotp token again, which fails due to the policy
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW001"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
         # clean up
         delete_policy("pol1")
         remove_token("NEW001")
+        remove_token("NEW002")
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
