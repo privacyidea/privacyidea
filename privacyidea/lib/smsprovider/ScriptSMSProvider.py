@@ -34,7 +34,7 @@ SCRIPT_WAIT = "wait"
 
 class ScriptSMSProvider(ISMSProvider):
 
-    def __init__(self, db_smsprovider_object=None, smsgateway=None):
+    def __init__(self, db_smsprovider_object=None, smsgateway=None, directory=None):
         """
         Create a new SMS Provider object fom a DB SMS provider object
 
@@ -46,8 +46,8 @@ class ScriptSMSProvider(ISMSProvider):
         """
         self.config = db_smsprovider_object or {}
         self.smsgateway = smsgateway
-        self.script_directory = get_app_config_value("PI_SCRIPT_SMSPROVIDER_DIRECTORY",
-                                                     "/etc/privacyidea/scripts")
+        self.script_directory = directory or get_app_config_value("PI_SCRIPT_SMSPROVIDER_DIRECTORY",
+                                                                  "/etc/privacyidea/scripts")
 
     def submit_message(self, phone, message):
         """
@@ -83,12 +83,12 @@ class ScriptSMSProvider(ISMSProvider):
                 script_name, e))
             log.warning(traceback.format_exc())
             if background == SCRIPT_WAIT:
-                raise SMSError("Failed to start script for sending SMS.")
+                raise SMSError(-1, "Failed to start script for sending SMS.")
 
         if rcode:
             log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
                                                                                                error=rcode))
-            raise SMSError("Error during execution of the script.")
+            raise SMSError(-1, "Error during execution of the script.")
         else:
             log.info("SMS delivered to {0!s}.".format(phone))
 
