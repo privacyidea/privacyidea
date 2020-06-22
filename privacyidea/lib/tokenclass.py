@@ -77,6 +77,7 @@ This method is supposed to be overwritten by the corresponding token classes.
 """
 import logging
 import hashlib
+import traceback
 from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
@@ -963,9 +964,16 @@ class TokenClass(object):
                          throw an exception
         :type end_date: string
         """
-        #  upper layer will catch. we just try to verify the date format
-        d = parse_date_string(end_date)
-        self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
+        if not end_date:
+            self.del_tokeninfo("validity_period_end")
+        else:
+            #  upper layer will catch. we just try to verify the date format
+            try:
+                d = parse_date_string(end_date)
+            except ValueError as _e:
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                raise TokenAdminError('Could not parse validity period end date!')
+            self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
 
     def get_validity_period_start(self):
         """
@@ -988,8 +996,16 @@ class TokenClass(object):
                            throw an exception
         :type start_date: string
         """
-        d = parse_date_string(start_date)
-        self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
+        if not start_date:
+            self.del_tokeninfo("validity_period_start")
+        else:
+            try:
+                d = parse_date_string(start_date)
+            except ValueError as _e:
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                raise TokenAdminError('Could not parse validity period start date!')
+
+            self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
 
     def set_next_pin_change(self, diff=None, password=False):
         """
