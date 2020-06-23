@@ -316,21 +316,20 @@ def migrate(config_obj):
     conn_linotp = linotp_engine.connect()
     conn_pi = privacyidea_engine.connect()
 
-    def insert_chunks(conn, table, values, chunk_size=100000):
+    def insert_chunks(conn, table, values, chunk_size=100000, record_name="records"):
         """
         Split **values** into chunks of size **chunk_size** and insert them sequentially.
         """
         values_length = len(values)
         for chunk in range(0, values_length, chunk_size):
-            print('Insert records {} to {} ...'.format(chunk, min(chunk + chunk_size,
-                                                                  values_length) - 1))
+            print('Insert {} {} to {} ...'.format(record_name, chunk,
+                                                  min(chunk + chunk_size, values_length) - 1))
             try:
                 conn.execute(table.insert(), values[chunk:chunk+chunk_size])
             except Exception as err:
                 t = 'Failed to insert chunk: {0!s}'.format(err)
                 warnings.append(t)
                 print(t)
-
 
     # Values to be imported
     token_values = []
@@ -458,7 +457,7 @@ def migrate(config_obj):
         # Insert into database without the user_id
         insert_chunks(conn_pi, token_table,
                       [dict_without_keys(d, ["user_id", "resolver"]) for d in token_values],
-                      config_obj.INSERT_CHUNK_SIZE)
+                      config_obj.INSERT_CHUNK_SIZE, record_name="token records")
 
         # fetch the new token_id's in privacyIDEA and write them to the
         # token serial id map.
@@ -479,7 +478,7 @@ def migrate(config_obj):
 
             print("Adding {} token infos...".format(len(tokeninfo_values)))
             insert_chunks(conn_pi, tokeninfo_table, tokeninfo_values,
-                          config_obj.INSERT_CHUNK_SIZE)
+                          config_obj.INSERT_CHUNK_SIZE, "tokeninfo records")
 
     if config_obj.MIGRATE.get("assignments"):
         # If the token is assigned, we also need to create an entry for tokenrealm
@@ -512,11 +511,11 @@ def migrate(config_obj):
 
         print("Adding {} tokenrealms...".format(len(tokenrealm_values)))
         insert_chunks(conn_pi, tokenrealm_table, tokenrealm_values,
-                      config_obj.INSERT_CHUNK_SIZE)
+                      config_obj.INSERT_CHUNK_SIZE, record_name="tokenrealm records")
 
         print("Adding {} tokenowners...".format(len(tokenowner_values)))
         insert_chunks(conn_pi, tokenowner_table, tokenowner_values,
-                      config_obj.INSERT_CHUNK_SIZE)
+                      config_obj.INSERT_CHUNK_SIZE, record_name="tokenowner records")
 
     if warnings:
         print("We need to inform you about the following WARNINGS:")
