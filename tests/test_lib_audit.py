@@ -406,15 +406,21 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                             "PI_AUDIT_NO_SIGN": True,
                             "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
         a.log({"action": "something_test_35"})
+        a.add_to_log({'action_detail': 'some detail'})
+        a.add_policy('some policy')
         a.finalize_log()
         r = a.search({"action": "*something_test_35*"})
         # The search should go to the sql audit
         self.assertEqual(r.total, 1)
         self.assertEqual(r.auditdata[0].get("action"), u"something_test_35")
+        self.assertEqual(r.auditdata[0].get("action_detail"), u"some detail")
+        self.assertEqual(r.auditdata[0].get("policies"), u"some policy")
         # now check the log file
         with open("audit.log") as file:
             c = file.readlines()
             self.assertIn("something_test_35", c[-1])
+            self.assertIn("some detail", c[-1])
+            self.assertIn("some policy", c[-1])
         os.unlink('audit.log')
 
     def test_20_container_audit_wrong_module(self):
