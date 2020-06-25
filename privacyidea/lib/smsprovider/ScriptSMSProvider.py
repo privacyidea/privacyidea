@@ -42,6 +42,8 @@ class ScriptSMSProvider(ISMSProvider):
         :param smsgateway: The SMS gateway object from the database table
             SMS gateway. The options can be accessed via
             self.smsgateway.option_dict
+        :param directory: The directory where the SMS sending scripts are located.
+        :type directory: str
         :return: An SMS provider object
         """
         self.config = db_smsprovider_object or {}
@@ -51,7 +53,7 @@ class ScriptSMSProvider(ISMSProvider):
 
     def submit_message(self, phone, message):
         """
-        send a message to a phone via an smpp protocol to smsc
+        send a message to a phone using an external script
 
         :param phone: the phone number
         :param message: the message to submit to the phone
