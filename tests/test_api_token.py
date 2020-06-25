@@ -841,6 +841,19 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(tokeninfo.get("validity_period_end"),
                              "2014-05-22T23:00+0200")
 
+        # check for broken validity dates
+        with self.app.test_request_context('/token/set/SET001',
+                                           method="POST",
+                                           data={"validity_period_start": "unknown"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            result = res.json.get("result")
+            self.assertEqual(result['error']['code'], 301, result)
+            self.assertEqual(result['error']['message'],
+                             "ERR301: Could not parse validity period start date!",
+                             result)
+
     def test_10_set_token_realms(self):
         self._create_temp_token("REALM001")
 

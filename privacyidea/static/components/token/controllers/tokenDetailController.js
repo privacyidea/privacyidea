@@ -64,6 +64,7 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.machinesPerPage = 15;
     $scope.params = {page: 1};
     $scope.form = {options: {}};
+    $scope.editTokenInfo = 0;
     $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {
@@ -170,6 +171,12 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.cancelEditRealm();
     };
 
+    $scope.startEditTokenInfo = function() {
+        $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
+        $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
+        $scope.editTokenInfo = 1;
+    };
+
     $scope.saveTokenInfo = function () {
         var start = date_object_to_string($scope.validity_period_start);
         var end = date_object_to_string($scope.validity_period_end);
@@ -179,6 +186,7 @@ myApp.controller("tokenDetailController", function ($scope,
              validity_period_end: end,
              validity_period_start: start},
             $scope.get);
+        $scope.editTokenInfo = 0;
     };
 
     $scope.assignUser = function () {

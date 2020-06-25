@@ -188,6 +188,7 @@
                         <input ng-model="max_auth_count"
                                class="form-control"
                                name="max_auth_count"
+                               id="max_auth_count"
                                type="number"
                                placeholder="Max allowed auths">
                     </div>
@@ -196,6 +197,7 @@
                                 translate>Maximum Success Auth Count
                         </label>
                         <input ng-model="max_success_auth_count"
+                               id="max_success_auth_count"
                                class="form-control"
                                type="number"
                                placeholder="Max allowed successful auths"
@@ -208,13 +210,13 @@
                         </label>
                         <p class="input-group">
                             <input type="text" class="form-control"
-                                   name="validity_start"
+                                   name="validity_start" id="validity_start"
                                    uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
                                    show-button-bar="false"
-                                   ng-required="true" close-text="Close"/>
+                                   close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="startOpened = openDate($event)">
@@ -223,6 +225,11 @@
                           </span>
                         </p>
                     </div>
+                    <div class="alert alert-warning"
+                         ng-show="validity_period_start > validity_period_end"
+                         translate>
+                        End Date before Start Date!
+                    </div>
                     <div class="form-group">
                         <label for="validity_end"
                                 translate>Validity End
@@ -230,12 +237,13 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_end"
+                                   id="validity_end"
                                    uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_end"
                                    is-open="endOpened"
                                    min-date="today"
                                    show-button-bar="false"
-                                   ng-required="true" close-text="Close"/>
+                                   close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="endOpened = openDate($event)">
@@ -253,13 +261,13 @@
                             id="tiEditButton"
                             ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
                             ng-disable="!checkRight('set')"
-                            ng-click="editTokenInfo=1"
+                            ng-click="startEditTokenInfo()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="tiSaveButton"
                             ng-show="editTokenInfo"
-                            ng-click="editTokenInfo=0; saveTokenInfo()"
+                            ng-click="saveTokenInfo()"
                             translate>Save Token Info
                     </button>
                     <button class="btn btn-danger"
