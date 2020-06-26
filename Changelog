@@ -7,8 +7,8 @@ Version 3.4dev1, 2020-06-26
 
   Enhancements:
    * Allow deletion of validity period via UI (#2263)
-   * Remove missing translation marker and allow to set a
-     customer marker (#2223)
+   * Remove marker for missing translations and allow to set a
+     custom marker (#2223)
    * Add support for Python 3.8 (#2190)
    * Allow hiding description field for users during
      token enrollment (#2173)
