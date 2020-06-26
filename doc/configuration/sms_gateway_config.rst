@@ -302,3 +302,23 @@ will send the OTP via SMS to the given phone number.
 
 The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
 You may change the *SUBJECT* and the *BODY* accordingly.
+
+Script provider
+~~~~~~~~~~~~~~~
+
+The *Script provider* calls a script which can take care of sending the SMS.
+The script takes the phone number as the only parameter. The message is expected at stdin.
+
+Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
+location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in ``pi.cfg``.
+
+In the configuration of the Script provider you can set two attributes.
+
+**SCRIPT**
+
+This is the file name of the script without the directory part.
+
+**BACKGROUND**
+
+Here you can choose, whether the sript should be started and run in the background or if the
+HTTP requests waits for the script to finish.

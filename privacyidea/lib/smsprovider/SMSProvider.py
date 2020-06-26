@@ -45,7 +45,8 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
     "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
-    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider"]
+    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
+    "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"]
 
 
 class SMSError(Exception):

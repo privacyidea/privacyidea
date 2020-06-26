@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 __doc__="""
 This test file tests the modules:
@@ -5,6 +6,7 @@ This test file tests the modules:
  lib.smsprovider.sipgateprovider
  lib.smsprovider.smtpsmsprovider
  lib.smsprovider.smppsmsprovider
+ lib.smsprovider.scriptsmsprovider
 """
 
 from .base import MyTestCase
@@ -13,6 +15,7 @@ from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
+from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -24,6 +27,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
+import os
 from . import smtpmock
 from . import smppmock
 
@@ -291,6 +295,66 @@ class SipgateSMSTestCase(MyTestCase):
         sms = create_sms_instance(identifier)
         r = sms.submit_message("123456", "Hello")
         self.assertTrue(r)
+
+
+class ScriptSMSTestCase(MyTestCase):
+
+    directory = "{0!s}/tests/testdata/scripts/".format(os.getcwd())
+
+    def test_01_fail_no_script(self):
+        # The script does not exist
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "sms-script-does-not-exist.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+        delete_smsgateway(identifier)
+        
+        # We bail out, fi no smsgateway definition is given!
+        sms = ScriptSMSProvider(directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+
+
+    def test_02_success(self):
+        # the script runs successfully
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "success.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        r = sms.submit_message("123456", "Hello")
+        self.assertTrue(r)
+        delete_smsgateway(identifier)
+
+    def test_02_fail(self):
+        # The script returns a failing rcode
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "fail.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+        delete_smsgateway(identifier)
+
+    def test_03_parameters(self):
+        # check parameters
+        params = ScriptSMSProvider.parameters()
+        self.assertFalse(params.get("options_allowed"))
+        self.assertIn("script", params.get("parameters"))
+        self.assertIn("background", params.get("parameters"))
 
 
 class HttpSMSTestCase(MyTestCase):
