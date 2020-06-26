@@ -1,3 +1,42 @@
+Version 3.4dev1, 2020-06-26
+
+  Features:
+   * Add ScriptSMSProvider, that can send SMS through external
+     Gateways using arbitrary scripts (#2236)
+   * Add a basic dashboard as start screen in the WebUI (#2177)
+
+  Enhancements:
+   * Allow deletion of validity period via UI (#2263)
+   * Remove marker for missing translations and allow to set a
+     custom marker (#2223)
+   * Add support for Python 3.8 (#2190)
+   * Allow hiding description field for users during
+     token enrollment (#2173)
+   * Improve error message during token import (#2073)
+   * Allow application to choose tokentypes in
+     /validate/check and /validate/triggerchallenge (#2047)
+   * HTTPSMSProvider can now have header parameters in the
+     provider definition (#1963)
+   * Events
+     * Add failcounter as condition in event handlers (#2147)
+   * Policies
+     * Allow to define characters for set_random_pin policy (#2121)
+     * Add privacyIDEA nodes to policy condition (#2108)
+
+  Fixes:
+   * Add missing audit data to container audit (#2264)
+   * Add tokeninfo failsafe for LinOTP migration script (#2253)
+   * Fix certain problems with the type of the userid
+     in SQL-Resolvers with Oracle DB (#2219)
+   * Fix default empty string problems with Oracle DB (#2218)
+   * Fix a policy issue that would require admin policies to
+     import tokens (#2209)
+   * Fix inconsistent enrollment templates. Have description
+     field for all tokentypes (#2208)
+   * Fix floating problems with multiple QR images in enrollment UI (#2175)
+   * Allow to edit realms without resolver priority (#2171)
+
+
 Version 3.3.3, 2020-05-19
 
   Fixes:
