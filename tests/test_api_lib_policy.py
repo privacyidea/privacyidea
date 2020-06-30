@@ -387,6 +387,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
+        unassign_token("NEW001")
+        req.all_data = {"serial": "NEW001"}
+        self.assertTrue(check_max_token_user(req))
+
         # clean up
         delete_policy("pol1")
         remove_token("NEW001")

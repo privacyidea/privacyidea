@@ -692,11 +692,11 @@ def check_max_token_user(request=None, action=None):
     ERROR_ACTIVE = "The number of active tokens for this user is limited!"
     ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
+    serial = getParam(params, "serial")
     user_object = get_user_from_param(params)
-    if not user_object.login and params.get("serial", None):
-        user_object = get_token_owner(params["serial"])
+    if not user_object.login and serial:
+        user_object = get_token_owner(serial)
     if user_object.login:
-        serial = getParam(params, "serial")
         tokentype = getParam(params, "type")
         if not tokentype:
             if serial:
