@@ -125,8 +125,10 @@ class SSHkeyTokenClass(TokenClass):
         getParam(param, "sshkey", required)
             
         key_elem = param.get("sshkey").split(" ", 2)
-        if len(key_elem) != 3 or key_elem[0] != "ssh-rsa":
-            raise Exception("The key must consist of 'ssh-rsa BASE64 comment'")
+        if len(key_elem) != 3:
+            raise Exception("The key must consist of 'ssh-keytype BASE64 comment'")
+        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"]:
+            raise Exception("The keytype you specified is not supported.")
 
         key_type = key_elem[0]
         key = key_elem[1]
