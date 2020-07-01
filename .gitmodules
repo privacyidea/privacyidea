@@ -1,0 +1,4 @@
+[submodule "privacyidea/static/contrib/js/webauthn-client"]
+	path = privacyidea/static/contrib/js/webauthn-client
+	url = https://github.com/privacyidea/webauthn-client
+	branch = v0.1.0
