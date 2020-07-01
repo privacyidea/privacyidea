@@ -203,7 +203,7 @@ class RemoteTokenClass(TokenClass):
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
 
-            if not TokenClass.check_pin(self, pin):
+            if not TokenClass.check_pin(self, pin, user=user, options=options):
                 return False, otp_counter, {'message': "Wrong PIN"}
 
         otp_count = self.check_otp(otpval, options=options)
@@ -312,8 +312,7 @@ class RemoteTokenClass(TokenClass):
         request_is_valid = False
 
         if self.check_pin_local:
-            pin_match = self.check_pin(passw, user=user,
-                                         options=options)
+            pin_match = self.check_pin(passw, user=user, options=options)
             if pin_match is True:
                 request_is_valid = True
 
