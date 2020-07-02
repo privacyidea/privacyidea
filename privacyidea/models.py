@@ -1217,7 +1217,7 @@ class Challenge(MethodsMixin, db.Model):
     session = db.Column(db.Unicode(512), default=u'', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default=u'', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
@@ -1230,11 +1230,11 @@ class Challenge(MethodsMixin, db.Model):
         self.challenge = challenge
         self.serial = serial
         self.data = data
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.utcnow()
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = datetime.now() + timedelta(seconds=validitytime)
+        self.expiration = datetime.utcnow() + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):
@@ -1247,8 +1247,8 @@ class Challenge(MethodsMixin, db.Model):
         :rtype: bool
         """
         ret = False
-        c_now = datetime.now()
-        if c_now < self.expiration:
+        c_now = datetime.utcnow()
+        if self.timestamp <= c_now < self.expiration:
             ret = True
         return ret
 
@@ -1337,7 +1337,7 @@ def cleanup_challenges():
 
     :return: None
     """
-    c_now = datetime.now()
+    c_now = datetime.utcnow()
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
 
