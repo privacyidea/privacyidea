@@ -30,7 +30,7 @@ with open(args.file, 'r') as f:
             current_token["serial"] = serial
 
         if re.match("sccTokenData", line):
-            m = re.search("sccKey=\((.*?)\).*", line)
+            m = re.search("sccKey=\((.*?)\).*?sccSeq=\((.*?)\).*", line)
             if m:
                 seed = m.group(1)
                 algo, data = seed.split(":")
@@ -46,6 +46,13 @@ with open(args.file, 'r') as f:
                     des = DES.new(des_key)
                     d = des.decrypt(binascii.unhexlify(data))
                     current_token["seed"] = d.strip("\x00")
+
+                counter = m.group(1)
+                algo, data = counter.split(":")
+                if algo.lower() == "des":
+                    des = DES.new(des_key)
+                    d = des.decrypt(binascii.unhexlify(data))
+                    current_token["counter"] = d.strip("\x00")
             else:
                 print("Could not find key for token! {0}".format(line))
 
@@ -55,4 +62,4 @@ with open(args.file, 'r') as f:
 
 
 for token in all_tokens:
-    print("{0!s}, {1!s}".format(token.get("serial"), token.get("seed")))
+    print("{0!s}, {1!s}, {2!s}".format(token.get("serial"), token.get("seed"), token.get("counter", 0)))
