@@ -3953,3 +3953,6 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # The response is unchanged, authentication successful
         new_resp = is_authorized(req, resp)
         self.assertEqual(resp, new_resp)
+
+        delete_policy("auth01")
+        delete_policy("auth02")
