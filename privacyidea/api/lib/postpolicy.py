@@ -758,6 +758,6 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
-            raise ValidateError("User is not authorized to authenticate under this conditions.")
+            raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response
