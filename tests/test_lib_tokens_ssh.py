@@ -14,6 +14,8 @@ class SSHTokenTestCase(MyTestCase):
 
     otppin = "topsecret"
     serial1 = "ser1"
+    serial2 = "ser2"
+    serial3 = "ser3"
     sshkey = u"ssh-rsa " \
              u"AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFijMsQyCv" \
              u"hBu4K40hdZOacXK4O6OgnacnSKN56MP6pzz2+4svzvDzwvkFsvf34pbsgD" \
@@ -28,6 +30,12 @@ class SSHTokenTestCase(MyTestCase):
              u"afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
              u"ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
              u"NetKnights GmbH Descröption"
+    unsupported_keytype = "ssh-something AAAAA comment"
+    sshkey_ecdsa = u"ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzd" \
+                   u"HAyNTYAAABBBHGCdIk0pO1HFr/mF4oLb43ZRyQJ4K7ICLrAhAiQERVa0tUvyY5TE" \
+                   u"zurWTqxSMx203rY77t6xnHLZBMPPpv8rk0= cornelius@puck"
+    sshkey_ed25519 = u"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC38dIb3tM6nPrT" \
+                     u"3j1UfsQxOCBbf3JogwsKeVPM893Pi cornelius@puck"
     wrong_sshkey = """---- BEGIN SSH2 PUBLIC KEY ----
 AAAAB3NzaC1kc3MAAACBAKrFC6uDvuxl9vnYL/Fu/Vq+12KJF4
 RyMSQe4mn8oHJma2VzepBRBpLt7Q==
@@ -44,6 +52,9 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         # An invalid key, raises an exception
         self.assertRaises(Exception, token.update, {"sshkey": self.wrong_sshkey})
 
+        # An unsupported keytype
+        self.assertRaises(Exception, token.update, {"sshkey": self.unsupported_keytype})
+
         # Set valid key
         token.update({"sshkey": self.sshkey})
         self.assertTrue(token.token.serial == self.serial1, token)
@@ -53,6 +64,18 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "SSHK", class_prefix)
         self.assertTrue(token.get_class_type() == "sshkey", token)
+
+        # ecdsa
+        db_token = Token(self.serial2, tokentype="sshkey")
+        db_token.save()
+        token = SSHkeyTokenClass(db_token)
+        token.update({"sshkey": self.sshkey_ecdsa})
+
+        # ed25519
+        db_token = Token(self.serial3, tokentype="sshkey")
+        db_token.save()
+        token = SSHkeyTokenClass(db_token)
+        token.update({"sshkey": self.sshkey_ed25519})
 
     def test_03_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
@@ -70,4 +93,16 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertTrue(sshkey == self.sshkey, sshkey)
+        self.assertIsInstance(sshkey, six.text_type)
+
+        db_token = Token.query.filter(Token.serial == self.serial2).first()
+        token = SSHkeyTokenClass(db_token)
+        sshkey = token.get_sshkey()
+        self.assertTrue(sshkey == self.sshkey_ecdsa, sshkey)
+        self.assertIsInstance(sshkey, six.text_type)
+
+        db_token = Token.query.filter(Token.serial == self.serial3).first()
+        token = SSHkeyTokenClass(db_token)
+        sshkey = token.get_sshkey()
+        self.assertTrue(sshkey == self.sshkey_ed25519, sshkey)
         self.assertIsInstance(sshkey, six.text_type)
