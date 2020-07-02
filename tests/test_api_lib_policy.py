@@ -22,7 +22,7 @@ from .base import (MyApiTestCase, PWFILE)
 
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
-                                    AUTOASSIGNVALUE)
+                                    AUTOASSIGNVALUE, AUTHORIZED)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -54,7 +54,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             get_webui_settings,
                                             save_pin_change,
                                             add_user_detail_to_response,
-                                            mangle_challenge_response)
+                                            mangle_challenge_response, is_authorized)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -67,7 +67,7 @@ from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
-from privacyidea.lib.error import PolicyError, RegistrationError
+from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
@@ -3907,3 +3907,49 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_header")
         delete_policy("pol_footer")
+
+    def test_19_is_authorized(self):
+        # Test authz authorized policy
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       "pass": "test123123"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        self.setUp_user_realms()
+        req.User = User("autoassignuser", self.realm1)
+        # The response contains the token type HOTP, successful authentication
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "HOTP123456",
+                          "type": "hotp"}}
+        resp = jsonify(res)
+        g.policy_object = PolicyClass()
+
+        # The response is unchanged
+        new_resp = is_authorized(req, resp)
+        self.assertEqual(resp, new_resp)
+
+        # Define a generic policy, that denies the request
+        set_policy("auth01", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.DENY),
+                   priority=2)
+        g.policy_object = PolicyClass()
+
+        # The request will fail.
+        self.assertRaises(ValidateError, is_authorized, req, resp)
+
+        # Now we set a 2nd policy with a higher priority
+        set_policy("auth02", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.ALLOW),
+                   priority=1, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # The response is unchanged, authentication successful
+        new_resp = is_authorized(req, resp)
+        self.assertEqual(resp, new_resp)
