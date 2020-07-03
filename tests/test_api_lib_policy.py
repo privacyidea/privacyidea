@@ -385,7 +385,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
-        # not we unassign the token and try to enable it which suceeds, since
+        # not we unassign the token and try to enable it which succeeds, since
         # there is no tokenowner anymore
         unassign_token("NEW001")
         req.all_data = {"serial": "NEW001"}

@@ -70,7 +70,7 @@ import string
 
 from OpenSSL import crypto
 
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.policy import Match
@@ -693,11 +693,12 @@ def check_max_token_user(request=None, action=None):
     ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
     serial = getParam(params, "serial")
+    tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
-    if user_object.is_empty() and serial:
+    if user_object.is_empty() and (serial or tokentype is "certificate"):
         try:
             user_object = get_token_owner(serial) or User()
-        except:
+        except ResourceNotFoundError:
             user_object = User()
     if user_object.login:
         tokentype = getParam(params, "type")
