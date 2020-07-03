@@ -91,6 +91,8 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import cleanup as authcache_cleanup
 from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
+from privacyidea.lib.importotp import parseOATHcsv
+from privacyidea.lib.token import import_token
 import jwt
 import ast
 import base64
@@ -112,6 +114,7 @@ ca_manager = Manager(usage="Manage Certificate Authorities")
 audit_manager = Manager(usage="Manage Audit log")
 authcache_manager = Manager(usage="Manage AuthCache")
 hsm_manager = Manager(usage="Manage HSM")
+token_manager = Manager(usage="Manage tokens")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -124,6 +127,7 @@ manager.add_command('ca', ca_manager)
 manager.add_command('audit', audit_manager)
 manager.add_command('authcache', authcache_manager)
 manager.add_command('hsm', hsm_manager)
+manager.add_command('token', token_manager)
 
 
 @hsm_manager.command
@@ -1261,6 +1265,26 @@ def createtoken(role, days, realm, username):
     print("Role:       {0!s}".format(role))
     print("Validity:   {0!s} days".format(days))
     print("Auth-Token: {0!s}".format(token))
+
+
+def import_tokens(file, tokenrealm=None):
+    """
+    Import Tokens from a CSV file
+    """
+    contents = ""
+    with open(file, "r") as f:
+        contents = f.read()
+    tokens = parseOATHcsv(contents)
+    tokenrealms = [tokenrealm] if tokenrealm else []
+    i = 0
+    for serial in tokens:
+        i += 1
+        print(u"{0!s}/{1!s} Importing token {2!s}".format(i, len(tokens), serial))
+
+        import_token(serial, tokens[serial], tokenrealms=tokenrealm)
+
+
+token_manager.add_command('import', Command(import_tokens))
 
 
 if __name__ == '__main__':
