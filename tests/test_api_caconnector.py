@@ -22,7 +22,9 @@ class CAConnectorTestCase(MyApiTestCase):
     def test_02_create_ca_connector(self):
         # create a CA connector
         with self.app.test_request_context('/caconnector/con1',
-                                           data={'type': 'local'},
+                                           data={'type': 'local',
+                                                 'cacert': '/etc/key.pem',
+                                                 'cakey': '/etc/cert.pem'},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -51,7 +53,8 @@ class CAConnectorTestCase(MyApiTestCase):
         ca_list = get_caconnector_list()
         self.assertEqual(len(ca_list), 1)
         self.assertEqual(ca_list[0].get("data"), {u'cacert': u'/etc/cert.pem',
-                                                  u'cakey': u'/etc/key.pem'})
+                                                  u'cakey': u'/etc/key.pem',
+                                                  u'name': u'con1'})
 
     def test_04_read_ca_connector(self):
         with self.app.test_request_context('/caconnector/',
