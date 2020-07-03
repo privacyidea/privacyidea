@@ -699,7 +699,7 @@ def check_max_token_user(request=None, action=None):
         try:
             user_object = get_token_owner(serial) or User()
         except ResourceNotFoundError:
-            user_object = User()
+            pass
     if user_object.login:
         tokentype = getParam(params, "type")
         if not tokentype:
