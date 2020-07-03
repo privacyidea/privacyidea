@@ -694,8 +694,11 @@ def check_max_token_user(request=None, action=None):
     params = request.all_data
     serial = getParam(params, "serial")
     user_object = get_user_from_param(params)
-    if not user_object.login and serial:
-        user_object = get_token_owner(serial)
+    if user_object.is_empty() and serial:
+        try:
+            user_object = get_token_owner(serial) or User()
+        except:
+            user_object = User()
     if user_object.login:
         tokentype = getParam(params, "type")
         if not tokentype:

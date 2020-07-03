@@ -133,6 +133,9 @@ def before_request():
     # from the Form data or from JSON in the request body.
     ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
+    # get additional request information such as parameters in the
+    # call path from the view_args
+    request.all_data.update(request.view_args)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.

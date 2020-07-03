@@ -381,12 +381,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 2)
         # now we enable the first hotp token again, which fails due to the policy
-        req.all_data = {"user": "cornelius",
-                        "realm": self.realm1,
-                        "serial": "NEW001"}
+        req.all_data = {"serial": "NEW001"}
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
+        # not we unassign the token and try to enable it which suceeds, since
+        # there is no tokenowner anymore
         unassign_token("NEW001")
         req.all_data = {"serial": "NEW001"}
         self.assertTrue(check_max_token_user(req))
