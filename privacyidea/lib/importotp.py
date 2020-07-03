@@ -113,8 +113,16 @@ def parseOATHcsv(csv):
     This function parses CSV data for oath token.
     The file format is
 
-        serial, key, [hotp,totp], [6,8], [30|60],
+    for HOTP
+        serial, key, hotp, [6|8], [counter]
+
+    for TOTP
+        serial, key, totp, [6|8], [30|60]
+
+    for OCRA
         serial, key, ocra, [ocra-suite]
+
+    for TAN
         serial, key, tan, tan1 tan2 tan3 tan4
 
     It imports sha1 hotp or totp token.

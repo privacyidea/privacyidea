@@ -736,3 +736,19 @@ class HotpTokenClass(TokenClass):
                         rounds,
                         keysize)
         return hexlify_and_unicode(secret)
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # get Counter
+        if len(l) >= 5:
+            params["counter"] = int(l[4].strip())
+        return params
