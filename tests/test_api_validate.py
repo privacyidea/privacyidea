@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import six
 from six.moves.urllib.parse import urlencode
 import json
 from .base import MyApiTestCase
@@ -97,6 +98,29 @@ OTPs = ["755224",
         "162583",
         "399871",
         "520489"]
+
+if six.PY3:
+    timezone = datetime.timezone
+else:
+    from datetime import tzinfo
+
+    class FixedTz(tzinfo):
+        # Fixed offset from UTC
+        def __init__(self, offset):
+            assert isinstance(offset, datetime.timedelta)
+            self.__offset = offset
+
+        def utcoffset(self, dt):
+            return self.__offset
+
+        def tzname(self, dt):
+            return 'test'
+
+        def dst(self, dt):
+            return datetime.timedelta(0)
+
+    timezone = FixedTz
+
 
 class AuthorizationPolicyTestCase(MyApiTestCase):
     """
@@ -1292,7 +1316,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # create the challenge by authenticating with the OTP PIN
         with Replace('privacyidea.models.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 3,
-                                   tzinfo=datetime.timezone(datetime.timedelta(hours=+2)))):
+                                   tzinfo=timezone(datetime.timedelta(hours=+5)))):
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"user": "cornelius",
@@ -1310,7 +1334,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # The transaction should not be removed by the janitor
         with Replace('privacyidea.models.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 4,
-                                   tzinfo=datetime.timezone(datetime.timedelta(hours=+3)))):
+                                   tzinfo=timezone(datetime.timedelta(hours=+6)))):
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"user": "cornelius",
@@ -1324,7 +1348,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # send the OTP value while being an hour too late (timezone -1)
         with Replace('privacyidea.models.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 4,
-                                   tzinfo=datetime.timezone(datetime.timedelta(hours=+1)))):
+                                   tzinfo=timezone(datetime.timedelta(hours=+1)))):
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"user": "cornelius",
