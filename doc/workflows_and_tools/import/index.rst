@@ -52,9 +52,13 @@ This is a very simple CSV file to import HOTP, TOTP or OATH tokens.
 You can also convert your seed easily to this file format, to import
 the tokens. 
 
-The file format looks like this::
+The file format for TOTP tokens looks like this::
 
-   <serial>, <seed>, <type>, <otp length>, <time step>
+   <serial>, <seed>, TOTP, <otp length>, <time step>
+
+For HOTP tokens like::
+
+   <serial>, <seed>, [HOTP, <otp length>, <counter>]
 
 For OCRA tokens it looks like this::
 
