@@ -174,7 +174,7 @@ class MachineApplication(MachineApplicationBase):
                         ret["username"] = uInfo.get("username")
 
         else:
-            log.info("Token %r, type %r is not supported by"
+            log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))
 
         return ret
