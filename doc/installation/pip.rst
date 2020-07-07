@@ -9,41 +9,34 @@ You can install privacyidea on usually any Linux distribution in a python
 virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
-privacyIDEA can run with Python 2.7 and 3.5, 3.6 or 3.7. Other versions either do not work
-or are not tested.
+privacyIDEA currently runs with Python 2.7 and 3.5, 3.6, 3.7 and 3.8. Other
+versions either do not work or are not tested.
 
-You first need to install some development packages. E.g. on Debian-based
-distributions like Ubuntu the packages are called
+You first need to install some necessary packages for your distribution,
+a database, webserver, wsgi- and ssl-module for the webserver and the
+python-virtualenv.
 
-* libjpeg-dev
-* libz-dev
-* python-dev
-* libffi-dev
-* libssl-dev
-* libxslt1-dev
-
-Eventually you may have to install database-related packages such as
-
-* libpq-dev
-
-Now you can install privacyIDEA like this::
+Now you can setup the virtual environment for privacyIDEA like this::
 
   virtualenv /opt/privacyidea
 
   cd /opt/privacyidea
   source bin/activate
 
-Now you are within the python virtual environment.
-Within the environment you can now run::
- 
+Now you are within the python virtual environment and you can run::
+
   pip install privacyidea
 
-To achieve a deterministic installation, you can now pin the installed
-versions to our tested versions like this::
+in order to install the latest privacyIDEA version from
+`PyPI <https://pypi.org/project/privacyIDEA`_.
 
-  pip install -r lib/privacyidea/requirements.txt
+To achieve a deterministic installation, you can install and pin the installed
+versions like this::
 
-  
+  export PI_VERSION=3.3.1
+  pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
+  pip install https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/
+
 .. _configuration:
 
 Please see the section :ref:`cfgfile` for a quick setup of your configuration.
