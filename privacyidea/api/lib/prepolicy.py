@@ -695,10 +695,11 @@ def check_max_token_user(request=None, action=None):
     serial = getParam(params, "serial")
     tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
-    if user_object.is_empty() and (serial or tokentype is "certificate"):
+    if user_object.is_empty() and serial:
         try:
             user_object = get_token_owner(serial) or User()
         except ResourceNotFoundError:
+            # in case of token init the token does not yet exist in the db
             pass
     if user_object.login:
         tokentype = getParam(params, "type")
