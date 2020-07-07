@@ -44,10 +44,12 @@ The ``configure`` command starts a local development server that can
 be used to setup tokens. This server must not be exposed to the network!
 The ``check`` command can then be used to authenticate users."""
 
+from builtins import bytes, chr
 import json
 import os
 import string
 import subprocess
+import codecs
 from functools import wraps
 from six.moves import input
 
@@ -74,7 +76,7 @@ PI_LOGLEVEL = logging.INFO
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(INSTANCE_DIRECTORY, 'privacyidea.sqlite')
 
 SECRET_KEY = b'{secret_key}'
-PI_PEPPER = b'{pi_pepper}'
+PI_PEPPER = '{pi_pepper}'
 
 """
 
@@ -157,12 +159,13 @@ def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
     :param chunk_size: number of bytes to read from urandom per iteration
     :param charset: list of valid characters
     :return: a bytestring of the specified length
+    :rtype bytes
     """
     pepper = b''
     while len(pepper) < length:
         random_bytes = DefaultSecurityModule.random(chunk_size)
-        printable_bytes = ''.join(b for b in random_bytes if b in charset)
-        pepper += printable_bytes
+        printable_bytes = ''.join(chr(b) for b in bytes(random_bytes) if chr(b) in charset)
+        pepper += printable_bytes.encode('utf8')
     return pepper[:length]
 
 
@@ -214,8 +217,8 @@ def create():
     pi_cfg = os.path.join(instance_dir, 'pi.cfg')
     with open(pi_cfg, 'w') as f:
         f.write(PI_CFG_TEMPLATE.format(
-            secret_key=secret_key.encode('string-escape'),
-            pi_pepper=pi_pepper.encode('string-escape')
+            secret_key=codecs.escape_encode(secret_key)[0].decode('utf8'),
+            pi_pepper=pi_pepper.decode('utf8')
         ))
 
     # create an enckey

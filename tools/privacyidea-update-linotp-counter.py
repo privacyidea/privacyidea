@@ -15,21 +15,15 @@ You can update counters like
 
 privacyidea-export-linotp-counter.py -c MIGRATION/linotp.ini  | ./tools/privacyidea-update-counter.py -c /etc/privacyidea/pi.cfg -i -
 """
-
-from privacyidea.models import Token
-import argparse
-import sys
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
 import argparse
 import sys
 from sqlalchemy import create_engine
-from sqlalchemy import Table, MetaData, Column
+from sqlalchemy import MetaData, Column
 from sqlalchemy import Integer, Unicode, Boolean
-from sqlalchemy.sql import update
 from sqlalchemy.ext.declarative import declarative_base
+
 Base = declarative_base()
 metadata = MetaData()
 
@@ -62,7 +56,6 @@ class LinToken(Base):
     LinOtpSyncWindow = Column(Integer, default=1000)
 
 
-
 def get_linotp_uri(config_file):
     with open(config_file) as f:
         content = f.readlines()
@@ -88,54 +81,59 @@ def read_counter_file(import_file):
     return update_list
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                    required=True)
-parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
-                                 'counter per line split by a comma. You can specify "-" to read from stdin.',
-                    type=argparse.FileType())
-parser.add_argument("-i", "--increase-only", help="Only update the token counter, if the new counter value"
-                                                  "is bigger than the existing in the database.",
-                    action='store_const', const=True)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+                        required=True)
+    parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
+                                     'counter per line split by a comma. You can specify "-" to read from stdin.',
+                        type=argparse.FileType())
+    parser.add_argument("-i", "--increase-only", help="Only update the token counter, if the new counter value"
+                                                      "is bigger than the existing in the database.",
+                        action='store_const', const=True)
+    args = parser.parse_args()
 
-# Parse data
+    # Parse data
 
-SQL_URI = get_linotp_uri(args.config)
-counters = read_counter_file(args.file)
+    SQL_URI = get_linotp_uri(args.config)
+    counters = read_counter_file(args.file)
 
-# Start DB stuff
+    # Start DB stuff
 
-linotp_engine = create_engine(SQL_URI)
-linotp_session = sessionmaker(bind=linotp_engine)()
+    linotp_engine = create_engine(SQL_URI)
+    linotp_session = sessionmaker(bind=linotp_engine)()
 
-print("Starting updating {0!s} counters:".format(len(counters)))
-updated = 0
-not_found = 0
-processed = 0
-unknown_tokens = []
-for count in counters:
-    processed += 1
-    if args.increase_only:
-        r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).first()
-        if r and r.LinOtpCount >= count[1]:
-            # The counter in the database is bigger
-            continue
-    sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
-    r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).update({"LinOtpCount": count[1]})
-    if r > 0:
-        # r==0, if the token was not found!
-        updated += 1
-    else:
-        not_found += 1
-        unknown_tokens.append(count[0])
-    # Depending on the time of running, we might do the session.commit after each update to avoid
-    # blocking the Token table.
+    print("Starting updating {0!s} counters:".format(len(counters)))
+    updated = 0
+    not_found = 0
+    processed = 0
+    unknown_tokens = []
+    for count in counters:
+        processed += 1
+        if args.increase_only:
+            r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).first()
+            if r and r.LinOtpCount >= count[1]:
+                # The counter in the database is bigger
+                continue
+        sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
+        r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).update({"LinOtpCount": count[1]})
+        if r > 0:
+            # r==0, if the token was not found!
+            updated += 1
+        else:
+            not_found += 1
+            unknown_tokens.append(count[0])
+        # Depending on the time of running, we might do the session.commit after each update to avoid
+        # blocking the Token table.
 
-linotp_session.commit()
+    linotp_session.commit()
 
-print
-print("{0!s:6} tokens processed.".format(processed))
-print("{0!s:6} counters updated.".format(updated))
-print("{0!s:6} tokens not found.".format(not_found))
-print("List of unknown tokens: {0!s}".format(unknown_tokens))
+    print()
+    print("{0!s:6} tokens processed.".format(processed))
+    print("{0!s:6} counters updated.".format(updated))
+    print("{0!s:6} tokens not found.".format(not_found))
+    print("List of unknown tokens: {0!s}".format(unknown_tokens))
+
+
+if __name__ == '__main__':
+    main()

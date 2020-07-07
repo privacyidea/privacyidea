@@ -12,15 +12,17 @@ import sys
 import random
 import string
 
-seed_hex = sys.stdin.read().strip()
-seed = base64.b32encode(binascii.unhexlify(seed_hex))
 
-emergency = []
+def main():
+    seed_hex = sys.stdin.read().strip()
+    seed = base64.b32encode(binascii.unhexlify(seed_hex))
 
-for _ in range(5):
-    emergency.append(''.join(random.choice(string.digits) for _ in range(8)))
+    emergency = []
 
-print("""{seed}
+    for _ in range(5):
+        emergency.append(''.join(random.choice(string.digits) for _ in range(8)))
+
+    print("""{seed}
 " RATE_LIMIT 3 30
 " WINDOW_SIZE 17
 " DISALLOW_REUSE
@@ -32,3 +34,7 @@ print("""{seed}
 {emergency[3]}
 {emergency[4]}
 """.format(seed=seed, emergency=emergency))
+
+
+if __name__ == '__main__':
+    main()
