@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import six
 from six.moves.urllib.parse import urlencode
 import json
 from .base import MyApiTestCase
@@ -6,7 +7,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Challenge, AuthCache, db)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -21,8 +22,10 @@ from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.radiusserver import add_radius
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 
+from testfixtures import Replace, test_datetime
 import datetime
 import time
 import responses
@@ -96,6 +99,29 @@ OTPs = ["755224",
         "162583",
         "399871",
         "520489"]
+
+if six.PY3:
+    timezone = datetime.timezone
+else:
+    from datetime import tzinfo
+
+    class FixedTz(tzinfo):
+        # Fixed offset from UTC
+        def __init__(self, offset):
+            assert isinstance(offset, datetime.timedelta)
+            self.__offset = offset
+
+        def utcoffset(self, dt):
+            return self.__offset
+
+        def tzname(self, dt):
+            return 'test'
+
+        def dst(self, dt):
+            return datetime.timedelta(0)
+
+    timezone = FixedTz
+
 
 class AuthorizationPolicyTestCase(MyApiTestCase):
     """
@@ -1268,6 +1294,78 @@ class ValidateAPITestCase(MyApiTestCase):
         # delete the tokens
         for serial in chalresp_serials:
             remove_token(serial=serial)
+
+    def test_11c_challenge_response_timezone(self):
+        # Since we write the challenge timestamps in UTC there is no easy way
+        # to test servers in different timezones with mocking.
+        # We would need to verify some timestamp the server emits in local time.
+        self.setUp_user_realms()
+        serial = "CHALRESP1"
+        pin = "chalresp1"
+        # create a token and assign to the user
+        init_token({'serial': serial,
+                    'type': 'hotp',
+                    'otpkey': self.otpkey,
+                    'pin': pin},
+                   user=User("cornelius", self.realm1))
+
+        # set a chalresp policy for HOTP
+        pol = Policy('pol_chal_resp_tz', action='challenge_response=hotp',
+                     scope='authentication', realm='', active=True)
+        pol.save()
+
+        # create the challenge by authenticating with the OTP PIN
+        with Replace('privacyidea.models.datetime',
+                     test_datetime(2020, 6, 13, 1, 2, 3,
+                                   tzinfo=timezone(datetime.timedelta(hours=+5)))):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "pass": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                detail = res.json.get("detail")
+                self.assertFalse(result.get("value"))
+                self.assertEqual(detail.get("message"), _("please enter otp: "))
+                transaction_id = detail.get("transaction_id")
+
+        # send the OTP value while being an hour too early (timezone +1)
+        # This should not happen unless there is a server misconfiguration
+        # The transaction should not be removed by the janitor
+        with Replace('privacyidea.models.datetime',
+                     test_datetime(2020, 6, 13, 1, 2, 4,
+                                   tzinfo=timezone(datetime.timedelta(hours=+6)))):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "transaction_id": transaction_id,
+                                                     "pass": "755224"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"))
+
+        # send the OTP value while being an hour too late (timezone -1)
+        with Replace('privacyidea.models.datetime',
+                     test_datetime(2020, 6, 13, 1, 2, 4,
+                                   tzinfo=timezone(datetime.timedelta(hours=+1)))):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "transaction_id": transaction_id,
+                                                     "pass": "755224"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"))
+
+        # check that the challenge is removed
+        self.assertFalse(get_challenges(transaction_id=transaction_id))
+
+        # delete the token
+        remove_token(serial=serial)
+        pol.delete()
 
     def test_12_challenge_response_sms(self):
         # set a chalresp policy for SMS
