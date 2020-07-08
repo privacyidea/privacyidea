@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
-
 from .base import MyApiTestCase
 import mock
 import six
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    SYSCONF)
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
+                                    delete_policy)
 from privacyidea.lib.auth import create_db_admin
 
 
@@ -421,4 +421,112 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual('admin', result['value']['role'], result)
 
         # reset 'splitAtSign' to default value
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+
+    def test_04_remote_user_auth(self):
+        self.setUp_user_realms()
+        # first check that without a remote_user policy the login fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('message'),
+                             'Authentication failure. Wrong credentials', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+
+        # now check that with a disabled remote_user policy the login fails
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.DISABLE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('message'),
+                             'Authentication failure. Wrong credentials', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # And now check that with an enabled remote_user policy the login succeeds
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # check that a remote user with "@" works as well
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@realm1"},
+                                           environ_base={"REMOTE_USER": "cornelius@realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # bind the remote user policy to an unknown realm
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@realm1"},
+                                           environ_base={"REMOTE_USER": "cornelius@realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+        self.assertEqual(aentry['policies'], '', aentry)
+
+        # check split@sign is working correctly
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user@test"},
+                                           environ_base={"REMOTE_USER": "user@test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        delete_policy(name='remote')
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
