@@ -22,6 +22,7 @@ from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.radiusserver import add_radius
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 
 from testfixtures import Replace, test_datetime
@@ -1358,6 +1359,9 @@ class ValidateAPITestCase(MyApiTestCase):
                 self.assertTrue(res.status_code == 200, res)
                 result = res.json.get("result")
                 self.assertFalse(result.get("value"))
+
+        # check that the challenge is removed
+        self.assertFalse(get_challenges(transaction_id=transaction_id))
 
         # delete the token
         remove_token(serial=serial)
