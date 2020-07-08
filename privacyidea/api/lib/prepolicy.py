@@ -66,41 +66,43 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
 import logging
-import string
 
 from OpenSSL import crypto
 
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
+from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
-from privacyidea.lib.utils import (get_client_ip,
-                                   parse_timedelta, is_true, generate_charlists_from_pin_policy,
+from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    check_pin_policy, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
+from privacyidea.lib.config import (get_token_class)
 import functools
 import jwt
 import re
 import importlib
 
 # Token specific imports!
-from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHENTICATOR_ATTACHMENT_TYPES,
-                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS, ATTESTATION_FORMS)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
+                                             AUTHENTICATOR_ATTACHMENT_TYPES,
+                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
+                                             ATTESTATION_FORMS)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM, WebAuthnTokenClass,
-                                                  DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL,
                                                   is_webauthn_assertion_response)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
@@ -111,6 +113,7 @@ log = logging.getLogger(__name__)
 
 optional = True
 required = False
+
 
 class prepolicy(object):
     """
@@ -1236,7 +1239,10 @@ def is_remote_user_allowed(req):
                                      action=ACTION.REMOTE_USER,
                                      user=loginname,
                                      realm=realm).action_values(unique=False)
-        res = bool(ruser_active)
+        # there should be only one action value here
+        if ruser_active:
+            if list(ruser_active)[0] == REMOTE_USER.ACTIVE:
+                res = True
 
     return res
 

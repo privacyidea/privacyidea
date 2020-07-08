@@ -7,10 +7,11 @@ The api.lib.policy.py depends on lib.policy and on flask!
 from __future__ import print_function
 import json
 
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE, ATTESTATION_LEVEL,
-                                             ATTESTATION_FORM, USER_VERIFICATION_LEVEL)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS, WebAuthnTokenClass,
-                                                  DEFAULT_CHALLENGE_TEXT_AUTH,
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
+                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
+                                             USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
@@ -18,7 +19,8 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWE
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.utils import hexlify_and_unicode
-from .base import (MyApiTestCase, PWFILE)
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from .base import (MyApiTestCase)
 
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
@@ -39,10 +41,10 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait, webauthntoken_auth,
-                                           webauthntoken_authz, webauthntoken_enroll, webauthntoken_request,
+                                           check_admin_tokenlist, pushtoken_disable_wait,
+                                           webauthntoken_auth, webauthntoken_authz,
+                                           webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
@@ -76,9 +78,11 @@ import passlib
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
-                                       RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import create_img, generate_charlists_from_pin_policy, CHARLIST_CONTENTPOLICY, check_pin_policy
+from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
+                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
+                                       REGISTRATION_RESPONSE_TMPL)
+from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
+                                   CHARLIST_CONTENTPOLICY, check_pin_policy)
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -1219,16 +1223,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("mangle2")
 
     def test_13_remote_user(self):
-        g.logged_in_user = {"username": "admin1",
-                            "realm": "",
-                            "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
                                  headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
         env["REMOTE_USER"] = "admin"
         req = Request(env)
 
@@ -1236,7 +1236,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
-        g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
         self.assertTrue(r)
@@ -1247,7 +1246,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.WEBUI,
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
                    user="super")
-        g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
         self.assertFalse(r)
@@ -1255,10 +1253,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # The remote_user "super" is allowed to login:
         env["REMOTE_USER"] = "super"
         req = Request(env)
-        g.policy_object = PolicyClass()
         r = is_remote_user_allowed(req)
         self.assertTrue(r)
 
+        # check that Splt@Sign works correctly
+        create_realm(self.realm1)
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+        env["REMOTE_USER"] = "super@realm1"
+        req = Request(env)
+        self.assertTrue(is_remote_user_allowed(req))
+
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
+        self.assertFalse(is_remote_user_allowed(req))
+
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
         delete_policy("ruser")
 
     def test_14_required_email(self):
@@ -1888,7 +1896,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             delete_policy(pol)
 
     def test_26_indexedsecret_force_set(self):
-
+        self.setUp_user_realms()
         # We send a fake push_wait, that is not in the policies
         builder = EnvironBuilder(method='POST',
                                  data={'user': "cornelius",
