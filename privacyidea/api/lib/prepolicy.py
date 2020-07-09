@@ -70,13 +70,13 @@ import string
 
 from OpenSSL import crypto
 
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
 from privacyidea.lib.policy import Match
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (get_client_ip,
                                    parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    check_pin_policy, get_module_class,
@@ -692,9 +692,16 @@ def check_max_token_user(request=None, action=None):
     ERROR_ACTIVE = "The number of active tokens for this user is limited!"
     ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
+    serial = getParam(params, "serial")
+    tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
+    if user_object.is_empty() and serial:
+        try:
+            user_object = get_token_owner(serial) or User()
+        except ResourceNotFoundError:
+            # in case of token init the token does not yet exist in the db
+            pass
     if user_object.login:
-        serial = getParam(params, "serial")
         tokentype = getParam(params, "type")
         if not tokentype:
             if serial:
