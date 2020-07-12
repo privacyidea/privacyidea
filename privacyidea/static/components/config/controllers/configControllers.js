@@ -1100,6 +1100,13 @@ myApp.controller("HTTPResolverController", function(
     headers: "{\"Content-Type\": \"application/json; charset=UTF-8\"}"
   };
 
+  $scope.$watch(
+    'params.hasSpecialErrorHandler;', 
+    function (incomingValue) { 
+        const value = (incomingValue + '').toLowerCase()
+        $scope.params.hasSpecialErrorHandler = value === 'true'
+    });
+
   $scope.resolvername = $stateParams.resolvername;
   if ($scope.resolvername) {
     /* If we have a resolvername, we do an Edit
