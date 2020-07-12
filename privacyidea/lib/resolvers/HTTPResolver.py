@@ -164,15 +164,15 @@ class HTTPResolver(UserIdResolver):
     def testconnection(cls, param):
         """
         This function lets you test if the parameters can be used to create a
-        working resolver.
-        The implementation should try to connect to the user store and verify
-        if users can be retrieved.
-        In case of success it should return a text like
-        "Resolver config seems OK. 123 Users found."
+        working resolver. Also, you can use it anytime you see if the API is
+        running as expected.
+        The implementation should try to make a request to the HTTP API and verify
+        if user can be retrieved.
+        In case of success it should return the raw http response.
 
         :param param: The parameters that should be saved as the resolver
         :type param: dict
-        :return: returns True in case of success and a descriptive text
+        :return: returns True in case of success and a raw response
         :rtype: tuple
         """
         desc = ""
