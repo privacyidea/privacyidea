@@ -4,7 +4,7 @@
 
     <h2 class="form-signin-heading" ng-hide="resolvername" translate>Create a new HTTP Resolver</h2>
 
-    <form name="formResolverAddPassword" role="form" validate>
+    <form name="formResolverAddHttp" role="form" validate>
 
         <div class="form-group row">
             <label for="resolvername" class="col-sm-3 control-label text-right" translate>Resolver name</label>
@@ -89,7 +89,7 @@
             </div>
             <div class="text-right">
                 <button ng-click="setResolver()" ng-show="checkRight('resolverwrite')"
-                    ng-disabled="formResolverAddPassword.$invalid" class="btn btn-primary" translate>Save resolver
+                    ng-disabled="formResolverAddHttp.$invalid" class="btn btn-primary" translate>Save resolver
                 </button>
             </div>
         </div>
