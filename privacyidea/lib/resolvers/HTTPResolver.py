@@ -50,7 +50,7 @@ class HTTPResolver(UserIdResolver):
         "headers": 1,
         "responseMapping": 1,
         "hasSpecialErrorHandler": 0,
-        "errorResponseMapping": 0
+        "errorResponse": 0
     }
 
     def __init__(self):
@@ -94,7 +94,7 @@ class HTTPResolver(UserIdResolver):
             'requestMapping': 'string',
             'responseMapping': 'string',
             'hasSpecialErrorHandler': 'bool',
-            'errorResponseMapping': 'string',
+            'errorResponse': 'string',
         }
         return {typ: descriptor}
 
@@ -174,7 +174,7 @@ class HTTPResolver(UserIdResolver):
             raise Exception('Validation Error: "response mapping" input is required')
 
         # Validate special error handler
-        if config.get('hasSpecialErrorHandler') and not config.get('errorResponseMapping'):
+        if config.get('hasSpecialErrorHandler') and not config.get('errorResponse'):
             raise Exception('Validation Error: "error response" input must be set if you enable special error handler')
 
         self.config = config
@@ -219,7 +219,7 @@ class HTTPResolver(UserIdResolver):
         responseMapping = json.loads(param.get('responseMapping'))
         headers = json.loads(param.get('headers', '{}'))
         hasSpecialErrorHandler = bool(param.get('hasSpecialErrorHandler'))
-        errorResponse = json.loads(param.get('errorResponseMapping'))
+        errorResponse = json.loads(param.get('errorResponse'))
 
         if method == "post":
             httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers)

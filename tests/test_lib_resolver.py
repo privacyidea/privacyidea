@@ -2509,7 +2509,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         }
        
         # Test with valid data
@@ -2551,7 +2551,7 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with special error handling as true and error response empty 
         instance = HTTPResolver()
         invalidErrorResponseDict = params.copy()
-        invalidErrorResponseDict.update({ 'hasSpecialErrorHandling': True, 'errorResponseMapping': '' })
+        invalidErrorResponseDict.update({ 'hasSpecialErrorHandling': True, 'errorResponse': '' })
         self.assertRaisesRegex(Exception, 'Validation Error: "error response" input must be set if you enable special error handler', instance.loadConfig, invalidErrorResponseDict)
 
     def test_02_get_user_list(self):
@@ -2563,7 +2563,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         users = instance.getUserList()
         self.assertEqual(len(users), 0)
@@ -2577,7 +2577,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         username = instance.getUsername('pepe_perez')
         self.assertEqual(username, 'pepe_perez')
@@ -2591,7 +2591,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         userid = instance.getUserId('pepe_perez')
         self.assertEqual(userid, 'pepe_perez')
@@ -2607,7 +2607,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         rid = instance.getResolverId()
         self.assertEqual(rid, self.ENDPOINT)
@@ -2638,7 +2638,7 @@ class HTTPResolverTestCase(MyTestCase):
             'headers': self.HEADERS,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         response = instance._getUser('PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
@@ -2655,7 +2655,7 @@ class HTTPResolverTestCase(MyTestCase):
             'headers': self.HEADERS,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         response = instance._getUser('PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
@@ -2680,7 +2680,7 @@ class HTTPResolverTestCase(MyTestCase):
             'headers': self.HEADERS,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         self.assertRaises(Exception, instance._getUser, userid='PepePerez')
 
@@ -2700,7 +2700,7 @@ class HTTPResolverTestCase(MyTestCase):
             'headers': self.HEADERS,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         self.assertRaises(HTTPError, instance._getUser, userid='PepePerez')
 
@@ -2727,7 +2727,7 @@ class HTTPResolverTestCase(MyTestCase):
             'headers': self.HEADERS,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING,
             'testUser': 'PepePerez'
         }
         success, response = HTTPResolver.testconnection(param)
@@ -2750,7 +2750,7 @@ class HTTPResolverTestCase(MyTestCase):
             'requestMapping': self.REQUEST_MAPPING,
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         responses.add(
             self.METHOD,
