@@ -2502,8 +2502,7 @@ class HTTPResolverTestCase(MyTestCase):
     """
 
     def test_01_load_config(self):
-        instance = HTTPResolver()
-        instance.loadConfig({
+        params = {
             'endpoint': self.ENDPOINT,
             'method': self.METHOD,
             'headers': self.HEADERS,
@@ -2511,17 +2510,49 @@ class HTTPResolverTestCase(MyTestCase):
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
-        })
-
+        }
+       
+        # Test with valid data
+        instance = HTTPResolver()
+        instance.loadConfig(params)
         rid = instance.getResolverId()
         self.assertEqual(rid, self.ENDPOINT)
-
         r_type = instance.getResolverClassDescriptor()
         self.assertTrue("httpresolver" in r_type)
         r_type = instance.getResolverDescriptor()
         self.assertTrue("httpresolver" in r_type)
         r_type = instance.getResolverType()
         self.assertEqual("httpresolver", r_type)
+
+        # Test with invalid method
+        instance = HTTPResolver()
+        invalidMethodDict = params.copy()
+        invalidMethodDict.update({ 'method': None })
+        self.assertRaisesRegex(Exception, 'Validation Error: "method" must be "get" or "post"', instance.loadConfig, invalidMethodDict)
+
+        # Test with missing endpoint
+        instance = HTTPResolver()
+        invalidEndpointDict = params.copy()
+        invalidEndpointDict.update({ 'endpoint': None })
+        self.assertRaisesRegex(Exception, 'Validation Error: "endpoint" must be set', instance.loadConfig, invalidEndpointDict)
+
+        # Test with missing responseMapping
+        instance = HTTPResolver()
+        invalidResponseMappingDict = params.copy()
+        invalidResponseMappingDict.update({ 'responseMapping': None })
+        self.assertRaisesRegex(Exception, 'Validation Error: "response mapping" input is required', instance.loadConfig, invalidResponseMappingDict)
+
+        # Test with missing responseMapping
+        instance = HTTPResolver()
+        invalidRequestMappingDict = params.copy()
+        invalidRequestMappingDict.update({ 'requestMapping': None })
+        self.assertRaisesRegex(Exception, 'Validation Error: "request mapping" input is required', instance.loadConfig, invalidRequestMappingDict)
+
+        # Test with special error handling as true and error response empty 
+        instance = HTTPResolver()
+        invalidErrorResponseDict = params.copy()
+        invalidErrorResponseDict.update({ 'hasSpecialErrorHandling': True, 'errorResponseMapping': '' })
+        self.assertRaisesRegex(Exception, 'Validation Error: "error response" input must be set if you enable special error handler', instance.loadConfig, invalidErrorResponseDict)
 
     def test_02_get_user_list(self):
         instance = HTTPResolver()
@@ -2583,16 +2614,6 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_06_get_user(self):
-        param = {
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
-        }
-
         responses.add(
             self.METHOD,
             self.ENDPOINT,
@@ -2600,12 +2621,6 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_OK
         )
-        response = HTTPResolver._getUser(param.copy(), 'PepePerez')
-        self.assertEqual(response.get('userid'), 'PepePerez')
-        self.assertEqual(response.get('email'), 'pepe@perez.com')
-        self.assertEqual(response.get('mobile'), '+1123568974')
-        self.assertEqual(response.get('a_static_key'), 'a static value')
-
         responses.add(
             responses.POST,
             self.ENDPOINT,
@@ -2613,36 +2628,43 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_OK
         )
-        paramWithPOST = param.copy()
-        paramWithPOST['method'] = responses.POST
-        response = HTTPResolver._getUser(paramWithPOST, 'PepePerez')
+
+        # Test with valid data (method get)
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+        })
+        response = instance._getUser('PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
-        paramInvalidMethod = param.copy()
-        paramInvalidMethod['method'] = 'delete'
-        self.assertRaises(Exception, HTTPResolver._getUser, param=paramInvalidMethod, userid='PepePerez')
+        # Test with valid data (method post)
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': 'POST',
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+        })
+        response = instance._getUser('PepePerez')
+        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('email'), 'pepe@perez.com')
+        self.assertEqual(response.get('mobile'), '+1123568974')
+        self.assertEqual(response.get('a_static_key'), 'a static value')
 
     @responses.activate
     def test_06_get_user_especial_error_handling(self):
-        param = {
-            'endpoint': self.ENDPOINT,
-            'method': self.METHOD,
-            'requestMapping': self.REQUEST_MAPPING,
-            'headers': self.HEADERS,
-            'responseMapping': self.RESPONSE_MAPPING,
-            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
-            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
-        }
         responses.add(
             self.METHOD,
             self.ENDPOINT,
@@ -2650,11 +2672,8 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_NOK
         )
-        self.assertRaises(Exception, HTTPResolver._getUser, param=param, userid='PepePerez')
-
-    @responses.activate
-    def test_06_get_user_internal_error(self):
-        param = {
+        instance = HTTPResolver()
+        instance.loadConfig({
             'endpoint': self.ENDPOINT,
             'method': self.METHOD,
             'requestMapping': self.REQUEST_MAPPING,
@@ -2662,14 +2681,28 @@ class HTTPResolverTestCase(MyTestCase):
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
-        }
+        })
+        self.assertRaises(Exception, instance._getUser, userid='PepePerez')
+
+    @responses.activate
+    def test_06_get_user_internal_error(self):
         responses.add(
             self.METHOD,
             self.ENDPOINT,
             status=500,
             adding_headers=json.loads(self.HEADERS),
         )
-        self.assertRaises(HTTPError, HTTPResolver._getUser, param=param, userid='PepePerez')
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponseMapping': self.ERROR_RESPONSE_MAPPING
+        })
+        self.assertRaises(HTTPError, instance._getUser, userid='PepePerez')
 
     @responses.activate
     def test_07_testconnection(self):
@@ -2680,6 +2713,13 @@ class HTTPResolverTestCase(MyTestCase):
             adding_headers=json.loads(self.HEADERS),
             body=self.BODY_RESPONSE_OK
         )
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
         param = {
             'endpoint': self.ENDPOINT,
             'method': self.METHOD,
@@ -2688,21 +2728,16 @@ class HTTPResolverTestCase(MyTestCase):
             'responseMapping': self.RESPONSE_MAPPING,
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponseMapping': self.ERROR_RESPONSE_MAPPING,
-            'testEmail': 'PepePerez'
+            'testUser': 'PepePerez'
         }
         success, response = HTTPResolver.testconnection(param)
         self.assertTrue(success)
+        self.assertEqual(response.get('userid'), 'PepePerez')
 
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
+        # Test with invalid params
         invalidParam = param.copy()
-        invalidParam['testEmail'] = None
-        success, response = HTTPResolver.testconnection(invalidParam)
+        invalidParam['testUser'] = None
+        success, _ = HTTPResolver.testconnection(invalidParam)
         self.assertFalse(success)
 
     @responses.activate

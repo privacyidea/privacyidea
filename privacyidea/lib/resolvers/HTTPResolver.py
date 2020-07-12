@@ -131,7 +131,7 @@ class HTTPResolver(UserIdResolver):
         :return:  dictionary, if no object is found, the dictionary is empty
         :rtype: dict
         """
-        return HTTPResolver._getUser(self.config, userid)
+        return self._getUser(userid)
 
     def getUserList(self, searchDict=None):
         """
@@ -157,6 +157,26 @@ class HTTPResolver(UserIdResolver):
         :param config: The configuration values of the resolver
         :type config: dict
         """
+
+        # Validate method
+        method = config.get('method')
+        if not method or method.lower() not in ('get', 'post'):
+            raise Exception('Validation Error: "method" must be "get" or "post"')
+
+        # Validate endpoint
+        if not config.get('endpoint'):
+            raise Exception('Validation Error: "endpoint" must be set')
+
+        if not config.get('requestMapping'):
+            raise Exception('Validation Error: "request mapping" input is required')
+
+        if not config.get('responseMapping'):
+            raise Exception('Validation Error: "response mapping" input is required')
+
+        # Validate special error handler
+        if config.get('hasSpecialErrorHandler') and not config.get('errorResponseMapping'):
+            raise Exception('Validation Error: "error response" input must be set if you enable special error handler')
+
         self.config = config
         return self
 
@@ -178,7 +198,9 @@ class HTTPResolver(UserIdResolver):
         desc = ""
         success = False
         try:
-            response = cls._getUser(param, param.get('testUser'))
+            resolver = HTTPResolver()
+            resolver.loadConfig(param)
+            response = resolver._getUser(param.get('testUser'))
             desc = response
             success = True
         except Exception as e:
@@ -189,18 +211,15 @@ class HTTPResolver(UserIdResolver):
     #
     #   Private methods
     #
-    @classmethod
-    def _getUser(cls, param, userid):
+    def _getUser(self, userid):
+        param = self.config
         method = param.get('method').lower()
         endpoint = param.get('endpoint')
         requestMappingJSON = json.loads(param.get('requestMapping').replace("{userid}", userid))
         responseMapping = json.loads(param.get('responseMapping'))
         headers = json.loads(param.get('headers', '{}'))
         hasSpecialErrorHandler = bool(param.get('hasSpecialErrorHandler'))
-        errorResponseMapping = json.loads(param.get('errorResponseMapping', '{}'))
-
-        if method not in ('post', 'get'):
-            raise Exception('Method have to be "GET" or "POST"')
+        errorResponse = json.loads(param.get('errorResponseMapping'))
 
         if method == "post":
             httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers)
@@ -214,7 +233,7 @@ class HTTPResolver(UserIdResolver):
 
         if hasSpecialErrorHandler:
             # verify if error response mapping is a subset of the json http response
-            if errorResponseMapping.items() <= jsonHTTPResponse.items():
+            if errorResponse.items() <= jsonHTTPResponse.items():
                 raise Exception(jsonHTTPResponse)
 
         # Create mapped response with response mapping resolver input
