@@ -57,11 +57,11 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.resolvers.addhttpresolver', {
                     url: "/httpresolver",
-                    templateUrl: configpath + "config.resolvers.httpresolver.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.resolvers.edithttpresolver', {
                     url: "/httpresolver/:resolvername",
-                    templateUrl: configpath + "config.resolvers.httpresolver.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.resolvers.http.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('config.resolvers.addldapresolver', {
                     url: "/ldap",
