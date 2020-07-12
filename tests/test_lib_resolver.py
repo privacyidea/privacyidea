@@ -2511,7 +2511,7 @@ class HTTPResolverTestCase(MyTestCase):
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponse': self.ERROR_RESPONSE_MAPPING
         }
-       
+
         # Test with valid data
         instance = HTTPResolver()
         instance.loadConfig(params)
@@ -2527,32 +2527,55 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with invalid method
         instance = HTTPResolver()
         invalidMethodDict = params.copy()
-        invalidMethodDict.update({ 'method': None })
-        self.assertRaisesRegex(Exception, 'Validation Error: "method" must be "get" or "post"', instance.loadConfig, invalidMethodDict)
+        invalidMethodDict.update({'method': None})
+        self.assertRaisesRegex(Exception,
+            'Validation Error: "method" must be "get" or "post"',
+            instance.loadConfig,
+            invalidMethodDict
+        )
 
         # Test with missing endpoint
         instance = HTTPResolver()
         invalidEndpointDict = params.copy()
-        invalidEndpointDict.update({ 'endpoint': None })
-        self.assertRaisesRegex(Exception, 'Validation Error: "endpoint" must be set', instance.loadConfig, invalidEndpointDict)
+        invalidEndpointDict.update({'endpoint': None})
+        self.assertRaisesRegex(
+            Exception,
+            'Validation Error: "endpoint" must be set',
+            instance.loadConfig,
+            invalidEndpointDict
+        )
 
         # Test with missing responseMapping
         instance = HTTPResolver()
         invalidResponseMappingDict = params.copy()
-        invalidResponseMappingDict.update({ 'responseMapping': None })
-        self.assertRaisesRegex(Exception, 'Validation Error: "response mapping" input is required', instance.loadConfig, invalidResponseMappingDict)
+        invalidResponseMappingDict.update({'responseMapping': None})
+        self.assertRaisesRegex(Exception,
+            'Validation Error: "response mapping" input is required',
+            instance.loadConfig,
+            invalidResponseMappingDict
+        )
 
         # Test with missing responseMapping
         instance = HTTPResolver()
         invalidRequestMappingDict = params.copy()
-        invalidRequestMappingDict.update({ 'requestMapping': None })
-        self.assertRaisesRegex(Exception, 'Validation Error: "request mapping" input is required', instance.loadConfig, invalidRequestMappingDict)
+        invalidRequestMappingDict.update({'requestMapping': None})
+        self.assertRaisesRegex(
+            Exception,
+            'Validation Error: "request mapping" input is required',
+            instance.loadConfig,
+            invalidRequestMappingDict
+        )
 
-        # Test with special error handling as true and error response empty 
+        # Test with special error handling as true and error response empty
         instance = HTTPResolver()
         invalidErrorResponseDict = params.copy()
-        invalidErrorResponseDict.update({ 'hasSpecialErrorHandling': True, 'errorResponse': '' })
-        self.assertRaisesRegex(Exception, 'Validation Error: "error response" input must be set if you enable special error handler', instance.loadConfig, invalidErrorResponseDict)
+        invalidErrorResponseDict.update({'hasSpecialErrorHandling': True, 'errorResponse': ''})
+        self.assertRaisesRegex(
+            Exception,
+            'Validation Error: "error response" input must be set if you enable special error handler',
+            instance.loadConfig,
+            invalidErrorResponseDict
+        )
 
     def test_02_get_user_list(self):
         instance = HTTPResolver()
@@ -2775,4 +2798,8 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
         # Test with invalid response
-        self.assertRaisesRegexp(Exception, 'Received an error while searching for user: PepePerez', instance.getUserInfo, 'PepePerez')
+        self.assertRaisesRegexp(
+            Exception,
+            'Received an error while searching for user: PepePerez',
+            instance.getUserInfo, 'PepePerez'
+        )
