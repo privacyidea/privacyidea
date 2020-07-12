@@ -408,11 +408,21 @@ The available attributes for the ``Response mapping`` are:
 
 Often, APIs are not RESTful (i.e. always returns 200 OK even if it fails). For this you can use ``Special error handling`` input:
 
+Example:
+
+You got a error from your HTTP endpoint with the following response:
+
+   { "success": true, "message": "Oops, error!" }
+
+You can able to configure something like this:
+
 .. figure:: images/http_resolver_2.png
    :width: 500
 
+So, now the HTTP Resolver checks if the response contains your input and then throws and error if it's match.
+In this case, An rrror will be thrown due ``{ "success": true }`` is part of the response.
 
-.. note:: If HTTP response status is >= 400 the resolver will thrown an exception.
+.. note:: By the way, if HTTP response status is >= 400 the resolver will thrown an exception.
 
 .. _usercache:
 
