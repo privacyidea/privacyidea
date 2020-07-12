@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-#  May, 08 2014 Cornelius Kölbel
+#  Mar, 12 2020 Bruno Cascio
 #  http://www.privacyidea.org
 #
-#  product:  LinOTP2
+#  product:  PrivacyIDEA
 #  module:   httpresolver
 #  tool:     HTTPResolver
 #  edition:  Comunity Edition
 #
-#  Copyright (C) 2010 - 2014 LSE Leading Security Experts GmbH
 #  License:  AGPLv3
 #  contact:  http://www.linotp.org
 #            http://www.lsexperts.de
