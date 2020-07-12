@@ -2468,7 +2468,7 @@ class HTTPResolverTestCase(MyTestCase):
     """
     RESPONSE_MAPPING = """
         {
-            "userid": "{data.the_username}",
+            "username": "{data.the_username}",
             "email": "{data.the_email}",
             "mobile": "{data.the_phones.mobile}",
             "a_static_key": "a static value"
@@ -2641,7 +2641,7 @@ class HTTPResolverTestCase(MyTestCase):
             'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         response = instance._getUser('PepePerez')
-        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
@@ -2658,7 +2658,7 @@ class HTTPResolverTestCase(MyTestCase):
             'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         response = instance._getUser('PepePerez')
-        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
@@ -2732,7 +2732,7 @@ class HTTPResolverTestCase(MyTestCase):
         }
         success, response = HTTPResolver.testconnection(param)
         self.assertTrue(success)
-        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
 
         # Test with invalid params
         invalidParam = param.copy()
@@ -2769,7 +2769,7 @@ class HTTPResolverTestCase(MyTestCase):
             'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
         response = instance.getUserInfo('PepePerez')
-        self.assertEqual(response.get('userid'), 'PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
