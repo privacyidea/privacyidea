@@ -178,7 +178,7 @@ class HTTPResolver(UserIdResolver):
         desc = ""
         success = False
         try:
-            response = cls._getUser(param, param.get('testEmail'))
+            response = cls._getUser(param, param.get('testUser'))
             desc = response
             success = True
         except Exception as e:
