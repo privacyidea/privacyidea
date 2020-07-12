@@ -371,7 +371,29 @@ HTTP contains a few fields to be completed, as shown in the following image:
 
 The important things here are ``Request Mapping`` and ``Response Mapping``, both of them using JSON format.
 
-``Request Mapping`` is used for mapping the current user request to your API request payload.  
+``Request Mapping`` is used to inject the privacyidea's `userid` parameter into the correct place when you call to your HTTP API.
+
+Example 1:
+
+You have a HTTP endpoint with the following definition:
+
+   GET /users?id=<user_id>
+
+So you need to configure the request mapping like this:
+   
+   { "id": "{userid}" }
+
+Example 2:
+
+You have a HTTP endpoint with the following definition:
+
+   POST /get-user
+   customerId=<user_id>&accessKey="secr3t!"
+
+So you need to configure the request mapping like this:
+
+   { "customerId": "{userid}", "accessKey": "secr3t!" }
+
 ``Response Mapping`` is used for mapping your HTTP API response with the privacyidea user. Now, 
 only JSON responses are supported.
 
