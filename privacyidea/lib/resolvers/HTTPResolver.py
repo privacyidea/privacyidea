@@ -234,7 +234,8 @@ class HTTPResolver(UserIdResolver):
         if hasSpecialErrorHandler:
             # verify if error response mapping is a subset of the json http response
             if errorResponse.items() <= jsonHTTPResponse.items():
-                raise Exception(jsonHTTPResponse)
+                log.error(jsonHTTPResponse)
+                raise Exception('Received an error while searching for user: %s' % userid)
 
         # Create mapped response with response mapping resolver input
         response = {}

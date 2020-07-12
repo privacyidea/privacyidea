@@ -2742,6 +2742,22 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_08_get_user_info(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+
+        # Test with valid response
         instance = HTTPResolver()
         instance.loadConfig({
             'endpoint': self.ENDPOINT,
@@ -2752,26 +2768,11 @@ class HTTPResolverTestCase(MyTestCase):
             'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
             'errorResponse': self.ERROR_RESPONSE_MAPPING
         })
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_OK
-        )
         response = instance.getUserInfo('PepePerez')
         self.assertEqual(response.get('userid'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
-        responses.add(
-            self.METHOD,
-            self.ENDPOINT,
-            status=200,
-            adding_headers=json.loads(self.HEADERS),
-            body=self.BODY_RESPONSE_NOK
-        )
-
-        response = instance.getUserInfo('PepePerez')
-        self.assertFalse(response.get('success'))
+        # Test with invalid response
+        self.assertRaisesRegexp(Exception, 'Received an error while searching for user: PepePerez', instance.getUserInfo, 'PepePerez')
