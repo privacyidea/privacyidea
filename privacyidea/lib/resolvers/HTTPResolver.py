@@ -31,7 +31,7 @@ from .UserIdResolver import UserIdResolver
 import requests
 import logging
 import json
-from urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode
 from pydash import get
 
 ENCODING = "utf-8"
