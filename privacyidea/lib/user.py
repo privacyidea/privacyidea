@@ -56,7 +56,7 @@ from .log import log_with
 from .resolver import (get_resolver_object,
                        get_resolver_type)
 
-from .realm import (get_realms,
+from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
                     get_realm)
 from .config import get_from_config, SYSCONF
@@ -524,7 +524,10 @@ def split_user(username):
 
     If for a user@domain the "domain" does not exist as realm, the name is
     not split, since it might be the user@domain in the default realm
-    
+
+    If the Split@Sign configuration is disabled, the username won't be split
+    and the username and an empty realm will be returned.
+
     We can also split realm\\user to (user, realm)
     
     :param username: the username to split
@@ -532,19 +535,20 @@ def split_user(username):
     :return: username and realm
     :rtype: tuple
     """
-    from privacyidea.lib.realm import realm_is_defined
     user = username.strip()
     realm = ""
 
-    l = user.split('@')
-    if len(l) >= 2:
-        if realm_is_defined(l[-1]):
-            # split the last only if the last part is really a realm
-            (user, realm) = user.rsplit('@', 1)
-    else:
-        l = user.split('\\')
+    split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
+    if split_at_sign:
+        l = user.split('@')
         if len(l) >= 2:
-            (realm, user) = user.rsplit('\\', 1)
+            if realm_is_defined(l[-1]):
+                # split the last only if the last part is really a realm
+                (user, realm) = user.rsplit('@', 1)
+        else:
+            l = user.split('\\')
+            if len(l) >= 2:
+                (realm, user) = user.rsplit('\\', 1)
 
     return user, realm
 
@@ -569,9 +573,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username is None:
         username = ""
     else:
-        splitAtSign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
-        if splitAtSign:
-            (username, realm) = split_user(username)
+        username, realm = split_user(username)
 
     if "realm" in param:
         realm = param["realm"]
