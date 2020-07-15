@@ -36,6 +36,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
+from privacyidea.app import db
 import logging
 import subprocess
 import os
@@ -189,6 +190,7 @@ class ScriptEventHandler(BaseEventHandler):
         rcode = 0
         try:
             log.info("Starting script {script!r}.".format(script=script_name))
+            db.session.commit()
             p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)
             if handler_options.get("background") == SCRIPT_WAIT:
                 rcode = p.wait()
