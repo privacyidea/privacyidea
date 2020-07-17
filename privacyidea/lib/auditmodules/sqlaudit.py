@@ -39,6 +39,7 @@ token database.
 """
 
 import logging
+from collections import OrderedDict
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase, Paginate)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
@@ -370,9 +371,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            audit_list = list(audit_dict.values())
-            string_list = [u"'{0!s}'".format(x) for x in audit_list]
-            yield ",".join(string_list)+"\n"
+            yield ",".join(["'{0!s}'".format(x) for x in audit_dict.values()]) + "\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
         # create filter condition
@@ -497,24 +496,24 @@ class Audit(AuditBase):
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True
-        audit_dict = {'number': audit_entry.id,
-                      'date': audit_entry.date.isoformat(),
-                      'sig_check': "OK" if sig else "FAIL",
-                      'missing_line': "OK" if is_not_missing else "FAIL",
-                      'action': audit_entry.action,
-                      'success': audit_entry.success,
-                      'serial': audit_entry.serial,
-                      'token_type': audit_entry.token_type,
-                      'user': audit_entry.user,
-                      'realm': audit_entry.realm,
-                      'resolver': audit_entry.resolver,
-                      'administrator': audit_entry.administrator,
-                      'action_detail': audit_entry.action_detail,
-                      'info': audit_entry.info,
-                      'privacyidea_server': audit_entry.privacyidea_server,
-                      'policies': audit_entry.policies,
-                      'client': audit_entry.client,
-                      'log_level': audit_entry.loglevel,
-                      'clearance_level': audit_entry.clearance_level
-                      }
+        audit_dict = OrderedDict()
+        audit_dict['number'] = audit_entry.id
+        audit_dict['date'] = audit_entry.date.isoformat()
+        audit_dict['sig_check'] = "OK" if sig else "FAIL"
+        audit_dict['missing_line'] = "OK" if is_not_missing else "FAIL"
+        audit_dict['action'] = audit_entry.action
+        audit_dict['success'] = audit_entry.success
+        audit_dict['serial'] = audit_entry.serial
+        audit_dict['token_type'] = audit_entry.token_type
+        audit_dict['user'] = audit_entry.user
+        audit_dict['realm'] = audit_entry.realm
+        audit_dict['resolver'] = audit_entry.resolver
+        audit_dict['administrator'] = audit_entry.administrator
+        audit_dict['action_detail'] = audit_entry.action_detail
+        audit_dict['info'] = audit_entry.info
+        audit_dict['privacyidea_server'] = audit_entry.privacyidea_server
+        audit_dict['policies'] = audit_entry.policies
+        audit_dict['client'] = audit_entry.client
+        audit_dict['log_level'] = audit_entry.loglevel
+        audit_dict['clearance_level'] = audit_entry.clearance_level
         return audit_dict

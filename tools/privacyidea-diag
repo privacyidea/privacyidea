@@ -47,6 +47,10 @@ log() {
 	echo $1 >> $tempfile
 }
 
+call_pi_manage() {
+  PRIVACYIDEA_CONFIGFILE=$PICFG pi-manage "$@"
+}
+
 get_os() {
 	log
 	log "SECTION: Linux Distribution"
@@ -99,16 +103,16 @@ pi_config() {
 	log "=================================="
 	log "Resolvers"
 	log "---------"
-	pi-manage resolver list -v >> $tempfile
+	call_pi_manage resolver list -v >> $tempfile
 	log "Realms"
 	log "------"
-	pi-manage realm list >> $tempfile
+	call_pi_manage realm list >> $tempfile
 	log "Events"
 	log "------"
-	pi-manage event e_export >> $tempfile
+	call_pi_manage event e_export >> $tempfile
 	log "Policies"
 	log "--------"
-	pi-manage policy p_export >> $tempfile
+	call_pi_manage policy p_export >> $tempfile
 }
 
 
@@ -116,15 +120,15 @@ pi_logfile() {
 	log
 	log "SECTION: privacyIDEA Logfile"
 	log "============================"
-	R=$( grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | tr -d "\'\"" )
-	cat $R >> $tempfile
+	R=$( grep "^PI_LOGFILE" $PICFG | cut -d "=" -f2 | tr -d "\'\"" )
+	[ -f "${R}" ] && cat ${R} >> $tempfile || echo "Could not read logfile ${R}" >> $tempfile
 }
 
 pi_auditlog() {
     log
     log "SECTION: privacyIDEA Auditlog"
     log "============================="
-    pi-manage audit dump -f - -t 2d >> $tempfile
+    call_pi_manage audit dump -f - -t 2d >> $tempfile
 }
 
 get_os
