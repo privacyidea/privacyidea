@@ -371,7 +371,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            yield ",".join(["'{0!s}'".format(x) for x in audit_dict.values()]) + "\n"
+            yield u",".join([u"'{0!s}'".format(x) for x in audit_dict.values()]) + u"\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
         # create filter condition
