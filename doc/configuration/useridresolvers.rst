@@ -412,7 +412,7 @@ Example:
 
 You got a error from your HTTP endpoint with the following response:
 
-   { "success": true, "message": "Oops, error!" }
+   { "success": false, "message": "Oops, error!" }
 
 You can able to configure something like this:
 
