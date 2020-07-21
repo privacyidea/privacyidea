@@ -30,7 +30,7 @@ with open(args.file, 'r') as f:
             current_token["serial"] = serial
 
         if re.match("sccTokenData", line):
-            m = re.search("sccKey=\((.*?)\).*?sccSeq=\((.*?)\).*", line)
+            m = re.search(r"sccKey=\((.*?)\).*?sccSeq=\((.*?)\).*", line)
             if m:
                 seed = m.group(1)
                 algo, data = seed.split(":")
