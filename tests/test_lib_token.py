@@ -1022,6 +1022,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(vp, "2015-05-28T20:22+0200")
 
     def test_45_check_realm_pass(self):
+        self.setUp_user_realms()
         # create a bunch of tokens in the realm
 
         # disabled token
@@ -1077,6 +1078,43 @@ class TokenTestCase(MyTestCase):
         # The remaining tokens are checked, but the pin does not match,
         # so we get "wrong otp pin"
         self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        # try an unknown realm
+        r = check_realm_pass(self.realm2, "assigned" + self.valid_otp_values[2])
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm")
+
+        # check for optional parameter exclude/include type
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             options={'exclude_types': 'hotp'})
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm, options: "
+                                              "{'exclude_types': 'hotp'}")
+
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             options={'include_types': 'totp'})
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm, options: "
+                                              "{'include_types': 'totp'}")
+
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             options={'exclude_types': 'totp'})
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        # check that include_types precedes exclude_types
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[3],
+                             options={'include_types': 'hotp',
+                                      'exclude_types': 'hotp'})
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        remove_token(serial='not_assigned')
+        remove_token(serial='inactive')
+        remove_token(serial='assigned')
 
     def test_46_init_with_validity_period(self):
         token = init_token({"type": "hotp",
