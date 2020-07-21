@@ -158,13 +158,19 @@ class HTTPResolver(UserIdResolver):
         :param config: The configuration values of the resolver
         :type config: dict
         """
-        
+
         # Validations
         getParam(config, 'method', optional=False, allow_empty=False, allowed_values=('get', 'post', 'GET', 'POST'))
         getParam(config, 'endpoint', optional=False, allow_empty=False)
         getParam(config, 'requestMapping', optional=False, allow_empty=False)
         getParam(config, 'responseMapping', optional=False, allow_empty=False)
-        hasSpecialErrorHandler = getParam(config, 'hasSpecialErrorHandler', optional=False, default=False, allow_empty=False)
+        hasSpecialErrorHandler = getParam(
+            config,
+            'hasSpecialErrorHandler',
+            optional=False,
+            default=False,
+            allow_empty=False
+        )
 
         # Validate special error handler
         if hasSpecialErrorHandler and not config.get('errorResponse'):
