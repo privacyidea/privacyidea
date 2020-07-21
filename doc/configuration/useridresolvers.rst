@@ -406,6 +406,13 @@ The available attributes for the ``Response mapping`` are:
  * mobile,
  * email.
 
+Nested attributes are also supported for this kind of response. 
+We use [pydash deep path](https://pydash.readthedocs.io/en/latest/deeppath.html) for parsing it.
+
+Therefore, your response mapping would be:
+
+   { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone} }
+
 Often, APIs are not RESTful (i.e. always returns 200 OK even if it fails). For this you can use ``Special error handling`` input:
 
 Example:
