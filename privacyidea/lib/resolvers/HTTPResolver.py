@@ -33,6 +33,7 @@ import logging
 import json
 from six.moves.urllib.parse import urlencode
 from pydash import get
+from privacyidea.api.lib.utils import getParam
 
 ENCODING = "utf-8"
 
@@ -157,25 +158,17 @@ class HTTPResolver(UserIdResolver):
         :param config: The configuration values of the resolver
         :type config: dict
         """
-
-        # Validate method
-        method = config.get('method')
-        if not method or method.lower() not in ('get', 'post'):
-            raise Exception('Validation Error: "method" must be "get" or "post"')
-
-        # Validate endpoint
-        if not config.get('endpoint'):
-            raise Exception('Validation Error: "endpoint" must be set')
-
-        if not config.get('requestMapping'):
-            raise Exception('Validation Error: "request mapping" input is required')
-
-        if not config.get('responseMapping'):
-            raise Exception('Validation Error: "response mapping" input is required')
+        
+        # Validations
+        getParam(config, 'method', optional=False, allow_empty=False, allowed_values=('get', 'post', 'GET', 'POST'))
+        getParam(config, 'endpoint', optional=False, allow_empty=False)
+        getParam(config, 'requestMapping', optional=False, allow_empty=False)
+        getParam(config, 'responseMapping', optional=False, allow_empty=False)
+        hasSpecialErrorHandler = getParam(config, 'hasSpecialErrorHandler', optional=False, default=False, allow_empty=False)
 
         # Validate special error handler
-        if config.get('hasSpecialErrorHandler') and not config.get('errorResponse'):
-            raise Exception('Validation Error: "error response" input must be set if you enable special error handler')
+        if hasSpecialErrorHandler and not config.get('errorResponse'):
+            getParam(config, 'errorResponse', optional=False, allow_empty=False)
 
         self.config = config
         return self

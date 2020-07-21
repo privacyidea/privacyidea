@@ -38,6 +38,7 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
 from requests import HTTPError
+from privacyidea.lib.error import ParameterError
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -2527,9 +2528,9 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with invalid method
         instance = HTTPResolver()
         invalidMethodDict = params.copy()
-        invalidMethodDict.update({'method': None})
-        self.assertRaisesRegex(Exception,
-            'Validation Error: "method" must be "get" or "post"',
+        invalidMethodDict.update({'method': ''})
+        self.assertRaisesRegex(ParameterError,
+            "Parameter 'method' must not be empty",
             instance.loadConfig,
             invalidMethodDict
         )
@@ -2537,10 +2538,10 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with missing endpoint
         instance = HTTPResolver()
         invalidEndpointDict = params.copy()
-        invalidEndpointDict.update({'endpoint': None})
+        invalidEndpointDict.update({'endpoint': ''})
         self.assertRaisesRegex(
-            Exception,
-            'Validation Error: "endpoint" must be set',
+            ParameterError,
+            "Parameter 'endpoint' must not be empty",
             instance.loadConfig,
             invalidEndpointDict
         )
@@ -2548,9 +2549,10 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with missing responseMapping
         instance = HTTPResolver()
         invalidResponseMappingDict = params.copy()
-        invalidResponseMappingDict.update({'responseMapping': None})
-        self.assertRaisesRegex(Exception,
-            'Validation Error: "response mapping" input is required',
+        invalidResponseMappingDict.update({'responseMapping': ''})
+        self.assertRaisesRegex(
+            ParameterError,
+            "Parameter 'responseMapping' must not be empty",
             instance.loadConfig,
             invalidResponseMappingDict
         )
@@ -2558,10 +2560,10 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with missing responseMapping
         instance = HTTPResolver()
         invalidRequestMappingDict = params.copy()
-        invalidRequestMappingDict.update({'requestMapping': None})
+        invalidRequestMappingDict.update({'requestMapping': ''})
         self.assertRaisesRegex(
-            Exception,
-            'Validation Error: "request mapping" input is required',
+            ParameterError,
+            "Parameter 'requestMapping' must not be empty",
             instance.loadConfig,
             invalidRequestMappingDict
         )
@@ -2571,8 +2573,8 @@ class HTTPResolverTestCase(MyTestCase):
         invalidErrorResponseDict = params.copy()
         invalidErrorResponseDict.update({'hasSpecialErrorHandling': True, 'errorResponse': ''})
         self.assertRaisesRegex(
-            Exception,
-            'Validation Error: "error response" input must be set if you enable special error handler',
+            ParameterError,
+            "Parameter 'errorResponse' must not be empty",
             instance.loadConfig,
             invalidErrorResponseDict
         )
