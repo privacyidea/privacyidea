@@ -124,6 +124,9 @@ class EmailTokenClass(HotpTokenClass):
     def _email_address(self, value):
         self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, value)
 
+    def set_email(self, value):
+        self._email_address = value
+
     @staticmethod
     def get_class_type():
         """

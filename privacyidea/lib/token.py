@@ -1687,6 +1687,30 @@ def set_description(serial, description, user=None):
 
 @log_with(log)
 @check_user_or_serial
+def set_email(serial, email, user=None):
+    """
+    Set the email address of a token
+
+    :param serial: The serial number of the token (exact)
+    :type serial: basestring
+    :param email: The email address for the token
+    :type description: str
+    :param user: The owner of the tokens, which should be modified
+    :type user: User object
+    :return: number of modified tokens
+    :rtype: int
+    """
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+
+    for tokenobject in tokenobject_list:
+        tokenobject.set_email(email)
+        tokenobject.save()
+
+    return len(tokenobject_list)
+
+
+@log_with(log)
+@check_user_or_serial
 def set_failcounter(serial, counter, user=None):
     """
     Set the fail counter of a  token.

@@ -63,7 +63,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          revoke_token,
                          reset_token, resync_token, set_pin_so, set_pin_user,
                          set_pin, set_description, set_count_window,
-                         set_sync_window, set_count_auth,
+                         set_email, set_sync_window, set_count_auth,
                          set_hashlib, set_max_failcount, set_realms,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
@@ -794,6 +794,7 @@ def set_api(serial=None):
     count_auth_success_max = getParam(request.all_data, "count_auth_success_max")
     validity_period_start = getParam(request.all_data, "validity_period_start")
     validity_period_end = getParam(request.all_data, "validity_period_end")
+    email = getParam(request.all_data, "email")
 
     res = 0
 
@@ -845,6 +846,11 @@ def set_api(serial=None):
                                        "validity_period_start={0!r}, ".format(
                                        validity_period_start)})
         res += set_validity_period_start(serial, user, validity_period_start)
+
+    if email is not None:
+        g.audit_object.add_to_log({'action_detail': "email=%r, "
+                                                    "" % email})
+        res += set_email(serial, email, user=user)
 
     g.audit_object.log({"success": True})
     return send_result(res)
