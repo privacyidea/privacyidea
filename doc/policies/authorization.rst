@@ -39,6 +39,10 @@ users by defining higher policy priorities.
 .. note:: Since *authorized* is checked as a *postpolicy* the OTP value used during an authentication attempt
     will be invalidated even if the *authorized* policy denies the access.
 
+.. note:: The actual "success" of the authentication can be changed to "failed" by this postpolicy.
+    I.e. pre-event handlers
+    (:ref:`eventhandler_pre_and_post`) would still see the request as successful before it would be changed by
+    this policy and match the event handler condition ``result value == True``.
 
 .. _tokentype_policy:
 
