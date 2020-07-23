@@ -535,15 +535,17 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(censor_connect_string("mysql://pi@localhost/pi"),
                          "mysql://pi@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
-                         "mysql://pi:xxxx@localhost/pi")
+                         "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi@localhost/pi"),
                          "psql+odbc://pi@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
-                         "psql+odbc://pi:xxxx@localhost/pi")
+                         "psql+odbc://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
-                         "mysql://pi:xxxx@localhost/pi")
+                         "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
-                         u"mysql://knöbel:xxxx@localhost/pi")
+                         u"mysql://knöbel:***@localhost/pi")
+        self.assertEqual(censor_connect_string(u"oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
+                         u"oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)

@@ -1077,20 +1077,12 @@ def censor_connect_string(connect_string):
     """
     Take a SQLAlchemy connect string and return a sanitized version
     that can be written to the log without disclosing the password.
-    The password is replaced with "xxxx".
+    The password is replaced with "***".
     In case any error occurs, return "<error when censoring connect string>"
     """
     try:
-        parsed = urlparse(connect_string)
-        if parsed.password is not None:
-            # We need to censor the ``netloc`` attribute: user:pass@host
-            _, host = parsed.netloc.rsplit("@", 1)
-            new_netloc = u'{}:{}@{}'.format(parsed.username, 'xxxx', host)
-            # Convert the URL to six components. netloc is component #1.
-            splitted = list(parsed)
-            splitted[1] = new_netloc
-            return urlunparse(splitted)
-        return connect_string
+        parsed = sqlalchemy.engine.url.make_url(connect_string)
+        return repr(parsed)
     except Exception:
         return "<error when censoring connect string>"
 
