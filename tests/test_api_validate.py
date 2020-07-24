@@ -15,7 +15,7 @@ from privacyidea.lib.config import (set_privacyidea_config,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token)
-from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, ACTION, set_policy, delete_policy, AUTHORIZED
 from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
@@ -307,6 +307,40 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
         delete_policy("pol_setrealm_01")
         remove_token("SPASS_04")
+
+    def test_05_is_authorized(self):
+        set_policy(name="auth01", scope=SCOPE.AUTHZ, priority=2,
+                   action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.DENY))
+        set_policy(name="auth02", scope=SCOPE.AUTHZ, user="frank", priority=1,
+                   action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.ALLOW))
+
+        # The user frank actually has a spass token and is authorized to authenticate by policy auth02
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "frank",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        delete_policy("auth02")
+
+        # If his personal policy is removed, he can not authenticate anymore
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "frank",
+                                                 "pass": "spass"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertIn("error", result)
+            self.assertEqual(result.get("error").get("message"),
+                             "ERR401: User is not authorized to authenticate under these conditions.")
+
+        delete_policy("auth01")
 
 
 class DisplayTANTestCase(MyApiTestCase):
