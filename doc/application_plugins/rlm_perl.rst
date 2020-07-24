@@ -18,6 +18,7 @@ the following packages to be installed:
 * libdata-dump-perl
 * libtry-tiny-perl
 * libjson-perl
+* liblwp-protocol-https-perl
 
 The module itself may be downloaded at [#rlmPerl]_ and placed at, e.g.,
 ``/usr/share/privacyidea/freeradius/privacyidea_radius.pm``.
