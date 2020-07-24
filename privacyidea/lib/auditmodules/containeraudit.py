@@ -90,12 +90,6 @@ class Audit(AuditBase):
         return self.read_module.search(search_dict, page_size=page_size, page=page,
                                        sortorder=sortorder, timelimit=timelimit)
 
-    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
-                     sortname="number", timelimit=None):
-        return self.read_module.search_query(search_dict, page_size=page_size,
-                                             page=page, sortorder=sortorder,
-                                             sortname=sortname, timelimit=timelimit)
-
     def get_count(self, search_dict, timedelta=None, success=None):
         """
         Call the count method for the one readable module
@@ -103,6 +97,9 @@ class Audit(AuditBase):
         return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
 
     def csv_generator(self, param=None, user=None, timelimit=None):
+        """
+        Call the csv_generator method for the one readable module
+        """
         return self.read_module.csv_generator(param=param, user=user,
                                               timelimit=timelimit)
 
