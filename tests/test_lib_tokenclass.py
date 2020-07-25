@@ -895,3 +895,10 @@ class TokenBaseTestCase(MyTestCase):
         # sha512
         r = TokenClass.get_import_csv(["ser1", geturandom(64, True), "totp", "8"])
         self.assertEqual(r["hashlib"], "sha512")
+
+    def test_42_has_further_challenge(self):
+        db_token = Token("furhterchallenge", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        self.assertFalse(token_obj.has_further_challenge())
+        token_obj.delete_token()

@@ -1348,10 +1348,14 @@ class TokenClass(object):
         In these two cases during request processing the following functions are
         called.
 
-        is_challenge_request or is_challenge_response
-                 |                       |
-                 V                       V
-        create_challenge        check_challenge
+        is_challenge_request or is_challenge_response  <-------+
+                 |                       |                     |
+                 V                       V                     |
+        create_challenge        check_challenge_response     create_challenge
+                 |                       |                     ^
+                 |                       |                     |
+                 |              has_further_challenge [yes] ---+
+                 |                      [no]
                  |                       |
                  V                       V
         challenge_janitor       challenge_janitor
@@ -1460,6 +1464,17 @@ class TokenClass(object):
 
         self.challenge_janitor()
         return otp_counter
+
+    def has_further_challenge(self, options=None):
+        """
+        Returns true, if a token requires more than one challenge during challenge response
+        authentication. This could be a 4eyes token or indexed secret token, that queries more
+        than on input.
+
+        :param options: Additional options from the request
+        :return: True, if this very token requires further challenges
+        """
+        return False
 
     @staticmethod
     def challenge_janitor():

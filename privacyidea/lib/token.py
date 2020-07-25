@@ -2224,6 +2224,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # The RESPONSE for a previous request of a challenge response token was
         # found.
         matching_challenge = False
+        further_challenge = False
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
@@ -2250,12 +2251,19 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     Challenge.query.filter(Challenge.transaction_id == u'' +
                                            transaction_id).delete()
 
-                    # Reset the fail counter of the challenge response token
-                    tokenobject.reset()
+                    if tokenobject.has_further_challenge(options):
+                        # The token creates further challenges, so create the new challenge
+                        # and new transaction_id
+                        create_challenges_from_tokens([tokenobject], reply_dict, options)
+                        further_challenge = True
+                        res = False
+                    else:
+                        # Reset the fail counter of the challenge response token
+                        tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
 
-        if not res:
+        if not res and not further_challenge:
             # We did not find any successful response, so we need to increase the
             # failcounters
             for token_obj in challenge_response_token_list:
