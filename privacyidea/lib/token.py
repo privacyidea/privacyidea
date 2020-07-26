@@ -2244,13 +2244,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                         tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
                     tokenobject.challenge_janitor()
-                    # clean up all other challenges from other tokens. I.e.
-                    # all challenges with this very transaction_id!
-                    transaction_id = options.get("transaction_id") or \
-                                     options.get("state")
-                    Challenge.query.filter(Challenge.transaction_id == u'' +
-                                           transaction_id).delete()
-
                     if tokenobject.has_further_challenge(options):
                         # The token creates further challenges, so create the new challenge
                         # and new transaction_id
@@ -2258,8 +2251,16 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                         further_challenge = True
                         res = False
                     else:
-                        # Reset the fail counter of the challenge response token
+                        # This was the last successful challenge, so
+                        # reset the fail counter of the challenge response token
                         tokenobject.reset()
+
+                    # clean up all challenges from this and other tokens. I.e.
+                    # all challenges with this very transaction_id!
+                    transaction_id = options.get("transaction_id") or \
+                                     options.get("state")
+                    Challenge.query.filter(Challenge.transaction_id == u'' +
+                                           transaction_id).delete()
                     # We have one successful authentication, so we bail out
                     break
 

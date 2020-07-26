@@ -1465,6 +1465,8 @@ class TokenClass(object):
         self.challenge_janitor()
         return otp_counter
 
+    # TODO: Add policy decorator like (challenge_response_allowed),
+    #  that does a PIN reset, if there is no further challenge
     def has_further_challenge(self, options=None):
         """
         Returns true, if a token requires more than one challenge during challenge response
