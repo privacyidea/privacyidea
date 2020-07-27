@@ -9,6 +9,7 @@ lib/event.py (the decorator)
 
 import responses
 import os
+from unittest import mock
 
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -769,6 +770,57 @@ class ScriptEventTestCase(MyTestCase):
         d = "{0!s}/tests/testdata/scripts/".format(d)
         t_handler = ScriptEventHandler(script_directory=d)
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
+
+    def test_03_sync_to_db(self):
+        g = FakeFlaskG()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "user": "1",
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }
+                   }
+
+        script_name = "ls.sh"
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
+        # first check that the db session is not synced by default
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_not_called()
+        self.assertTrue(res)
+        # now set the parameter to sync the db session before running the script
+        options['handler_def']['options']['sync_to_database'] = "1"
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_called()
+        self.assertTrue(res)
+        # and now with the parameter explicitly disabled
+        options['handler_def']['options']['sync_to_database'] = "0"
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_not_called()
+        self.assertTrue(res)
 
 
 class FederationEventTestCase(MyTestCase):
