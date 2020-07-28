@@ -9,7 +9,7 @@ lib/event.py (the decorator)
 
 import responses
 import os
-from unittest import mock
+import mock
 
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -813,7 +813,7 @@ class ScriptEventTestCase(MyTestCase):
         options['handler_def']['options']['sync_to_database'] = "1"
         with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
             res = t_handler.do(script_name, options=options)
-            mdb.session.commit.assert_called()
+            mdb.session.commit.assert_called_with()
         self.assertTrue(res)
         # and now with the parameter explicitly disabled
         options['handler_def']['options']['sync_to_database'] = "0"
