@@ -103,6 +103,13 @@ class ScriptEventHandler(BaseEventHandler):
                     "visibleValue": SCRIPT_WAIT,
                     "description": _("On script error raise exception in HTTP request.")
                 },
+                "sync_to_database": {
+                    "type": "bool",
+                    "description": _("Finish current transaction before running "
+                                     "the script. This is useful if changes to "
+                                     "the database should be made available to "
+                                     "the script or the running request.")
+                },
                 "serial": {
                     "type": "bool",
                     "description": _("Add '--serial <serial number>' as script "
@@ -190,7 +197,10 @@ class ScriptEventHandler(BaseEventHandler):
         rcode = 0
         try:
             log.info("Starting script {script!r}.".format(script=script_name))
-            db.session.commit()
+            if is_true(handler_options.get('sync_to_database', False)):
+                log.debug('Committing current transaction for script '
+                          '{0!s}'.format(script_name))
+                db.session.commit()
             p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)
             if handler_options.get("background") == SCRIPT_WAIT:
                 rcode = p.wait()
