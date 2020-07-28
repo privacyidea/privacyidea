@@ -24,6 +24,8 @@ type, description or token info.
 It can unassign, delete or disable those tokens and it can set additional
 tokeninfo or descriptions.
 
+Starting with version 3.4 it can also set the tokenrealms of the found tokens.
+
 If you are unsure to directly delete orphaned tokens, because there might be
 a glimpse in the connection to your user store, you could as well in a first
 step *mark* the orphaned tokens. A day later you could run the script again
