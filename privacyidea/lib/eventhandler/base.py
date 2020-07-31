@@ -253,7 +253,7 @@ class BaseEventHandler(object):
                 "desc": _("This condition can check any arbitrary tokeninfo "
                           "field. You need to enter something like "
                           "'<fieldname> == <fieldvalue>', '<fieldname> > "
-                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
+                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'.")
             },
             CONDITION.COUNTER: {
                 "type": "str",
