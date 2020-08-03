@@ -2100,7 +2100,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _(
                     'If set to "privacyIDEA" the users and admins need to '
                     'authenticate against privacyIDEA when they log in '
-                    'to the Web UI. Defaults to "userstore"'),
+                    'to the Web UI. Defaults to "userstore".'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
             },
