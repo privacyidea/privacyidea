@@ -337,6 +337,7 @@ class ACTION(object):
     SMSGATEWAYREAD = "smsgateway_read"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
+    CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -1965,6 +1966,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("If there are several different challenges, this text follows the list"
                           " of the challenge texts.")
             },
+            ACTION.CHANGE_PIN_VIA_VALIDATE: {
+                'type': 'bool',
+                'desc': _("If the PIN of a token is to be changed, this will allow the user to change the "
+                          "PIN during a validate/check request via challenge / response."),
+            },
             ACTION.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -2440,6 +2446,29 @@ class Match(object):
                    resolver=None, user=None, user_object=user_object,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
                    sort_by_priority=True)
+
+    @classmethod
+    def token(cls, g, scope, action, token_obj):
+        """
+        Match active policies with a scope, an action and a token object.
+        The client IP is matched implicitly.
+        From the token object we try to determine the user as the owner.
+        If the token has no owner, we try to determine the tokenrealm.
+        We fallback to realm=None
+        :param g: context object
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
+        :param action: the policy action
+        :param token_obj: The token where the user object or the realm should match.
+        :rtype: ``Match``
+        """
+        if token_obj.user:
+            return cls.user(g, scope, action, token_obj.user)
+        else:
+            realm = None
+            realms = token_obj.get_realms()
+            if len(realms) > 0:
+                realm = realms[0]
+            return cls.realm(g, scope, action, realm)
 
     @classmethod
     def admin(cls, g, action, user_obj=None):

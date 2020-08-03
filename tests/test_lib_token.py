@@ -13,13 +13,13 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-from .base import MyTestCase, FakeAudit
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, PolicyClass, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
 import datetime
 from dateutil import parser
@@ -1771,3 +1771,128 @@ class TokenFailCounterTestCase(MyTestCase):
         delete_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY)
         remove_token("test07")
 
+
+class PINChangeTestCase(MyTestCase):
+    """
+    Test the check_token_list from lib.token on an interface level
+    """
+
+    def test_00_create_realms(self):
+        self.setUp_user_realms()
+        # Set a policy to change the pin every 10d
+        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(ACTION.CHANGE_PIN_EVERY))
+        # set policy for chalresp
+        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        # Change PIN via validate
+        set_policy("viaValidate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+
+    def test_01_successfully_change_pin(self):
+        """
+        Authentication per challenge response with an HOTP token and then
+        do a successful PIN reset
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+
+        # Trigger the first auth challenge by sending the PIN
+        r, reply_dict = check_token_list([tok, tok2], "test", user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual('please enter otp: ', reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the correct OTP value
+        r, reply_dict = check_token_list([tok, tok2], self.valid_otp_values[1], user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN
+        newpin = "test2"
+        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter the new PIN again", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the new PIN a 2nd time
+        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertTrue(r)
+        self.assertEqual("PIN successfully set.", reply_dict.get("message"))
+
+        self.assertFalse(tok.is_pin_change())
+
+        # Run an authentication with the new PIN
+        r, reply_dict = check_token_list([tok, tok2], "{0!s}{1!s}".format(newpin, self.valid_otp_values[2]),
+                                         user_obj, options={"g": g})
+        self.assertTrue(r)
+        self.assertFalse(reply_dict.get("pin_change"))
+        self.assertTrue("next_pin_change" in reply_dict)
+
+    def test_02_failed_change_pin(self):
+        """
+        Authentication with an HOTP token and then fail to
+        change pin, since we present two different PINs.
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+
+        # successfully authenticate, but thus trigger a PIN change
+        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+                                         user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN
+        newpin = "test2"
+        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter the new PIN again", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the new PIN a 2nd time
+        r, reply_dict = check_token_list([tok, tok2], "falsePIN", user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("PINs do not match", reply_dict.get("message"))
+
+        # The PIN still needs to be changed!
+        self.assertTrue(tok.is_pin_change())
