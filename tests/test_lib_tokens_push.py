@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
-PWFILE = "tests/testdata/passwords"
-FIREBASE_FILE = "tests/testdata/firebase-test.json"
-CLIENT_FILE = "tests/testdata/google-services.json"
+from flask import Request
+from werkzeug.test import EnvironBuilder
+from datetime import datetime, timezone, timedelta
 
-from .base import MyTestCase
-from privacyidea.lib.error import ParameterError
+from .base import MyTestCase, FakeFlaskG
+from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.tokens.pushtoken import PushTokenClass, PUSH_ACTION, DEFAULT_CHALLENGE_TEXT, strip_key
+from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
+                                              DEFAULT_CHALLENGE_TEXT, strip_key,
+                                              tr_urlsafe_enc)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
-from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
-from privacyidea.models import Token
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION, LOGINMODE)
+from privacyidea.models import Token, Challenge
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, ACTION,
+                                    LOGINMODE, PolicyClass)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, SMSError
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.error import ConfigAdminError
-from base64 import b32decode
+from base64 import b32decode, b32encode
 import json
 import responses
 import mock
@@ -31,6 +34,20 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from threading import Timer
 import time
+
+PWFILE = "tests/testdata/passwords"
+FIREBASE_FILE = "tests/testdata/firebase-test.json"
+CLIENT_FILE = "tests/testdata/google-services.json"
+
+FB_CONFIG_VALS = {
+    FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+    FIREBASE_CONFIG.TTL: 10,
+    FIREBASE_CONFIG.API_KEY: "1",
+    FIREBASE_CONFIG.APP_ID: "2",
+    FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+    FIREBASE_CONFIG.PROJECT_ID: "test-123456",
+    FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+
 
 class myAccessTokenInfo(object):
     def __init__(self, access_token):
@@ -62,7 +79,7 @@ class PushTokenTestCase(MyTestCase):
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).translate(tr_urlsafe_enc)
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -783,3 +800,168 @@ class PushTokenTestCase(MyTestCase):
 
         delete_policy("push1")
         delete_policy("webui")
+
+    def test_10_api_endpoint(self):
+        # first check for unused request methods
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='PUT',
+                                 headers={})
+
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                'Method PUT not allowed in \'api_endpoint\' '
+                                'for push token.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for parameter error in POST request
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01'}
+        self.assertRaisesRegexp(ParameterError, 'Missing parameters!',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for missing parameter in GET request
+        builder = EnvironBuilder(method='GET',
+                                 headers={})
+
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01', 'timestamp': '2019-10-05T22:13:23+0100'}
+        self.assertRaisesRegexp(ParameterError, 'Missing parameter: \'signature\'',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for invalid timestamp (very old)
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': '2019-10-05T22:13:23+0100',
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Timestamp 2019-10-05T22:13:23\+0100 not in valid range.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for invalid timestamp (recent but too early)
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': (datetime.now(timezone.utc)
+                                      - timedelta(minutes=2)).isoformat(),
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Timestamp .* not in valid range.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for invalid timestamp (recent but too late)
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': (datetime.now(timezone.utc)
+                                      + timedelta(minutes=2)).isoformat(),
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Timestamp .* not in valid range.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for broken timestamp
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': '2019-broken-timestamp',
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Could not parse timestamp .*\. ISO-Format required.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # TODO: what happens if we provide a timezone-unaware timestamp?
+        # create a push token
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        serial = tok.get_serial()
+        # now we need to perform the second rollout step
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
+                        "serial": serial,
+                        "pubkey": self.smartphone_public_key_pem_urlsafe,
+                        "fbtoken": "firebaseT"}
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertEqual(res[0], 'json', res)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['detail']['rollout_state'], 'enrolled', res)
+
+        remove_token(serial)
+
+    def test_15_poll_endpoint(self):
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        # set up the Firebase Gateway
+        r = set_smsgateway(self.firebase_config_name,
+                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB",
+                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                            FIREBASE_CONFIG.TTL: 10,
+                            FIREBASE_CONFIG.API_KEY: "1",
+                            FIREBASE_CONFIG.APP_ID: "2",
+                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
+                            FIREBASE_CONFIG.PROJECT_ID: "test-123456",
+                            FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE})
+        self.assertGreater(r, 0)
+
+        # create a new push token
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        serial = tok.get_serial()
+        tok.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name)
+        # now we need to perform the second rollout step
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
+                        "serial": serial,
+                        "pubkey": self.smartphone_public_key_pem_urlsafe,
+                        "fbtoken": "firebaseT"}
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+        pubkey_server = res[1]['detail']['public_key']
+
+        # we need to create a challenge which we can check for with polling
+        challenge = b32encode_and_unicode(geturandom())
+        db_challenge = Challenge(serial, challenge=challenge)
+        db_challenge.save()
+        tid = db_challenge.get_transaction_id()
+        self.assertGreater(len(get_challenges(transaction_id=tid)), 0)
+
+        # now we create a poll request
+        # first create a signature
+        ts = datetime.now(timezone.utc).isoformat()
+        sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+
+        builder = EnvironBuilder(method='GET',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': serial,
+                        'timestamp': ts,
+                        'signature': b32encode(sig)}
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+        chall = res[1]['detail']['challenges'][0]
+        self.assertEqual(chall['nonce'], challenge, chall)
+        self.assertIn('signature', chall, chall)
+        # check that the signature matches
+        sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
+        augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
+            pubkey_server)
+        parsed_stripped_server_pubkey = serialization.load_pem_public_key(
+            to_bytes(augmented_pubkey),
+            default_backend())
+        parsed_stripped_server_pubkey.verify(b32decode(chall['signature']),
+                                             sign_string.encode('utf8'),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256())
