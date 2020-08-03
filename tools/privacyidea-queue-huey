@@ -50,7 +50,7 @@ from huey.consumer_options import ConsumerConfig, option
 from huey.consumer_options import OptionParserHandler
 
 from privacyidea.app import create_app
-from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG as PI_LOGGING_CONFIG
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.queues.huey_queue import HueyQueue
 
@@ -95,7 +95,7 @@ def pop_app_context(task, ret, exc):
 
 
 def make_logging_config(logfile, loglevel):
-    config = copy.deepcopy(DEFAULT_LOGGING_CONFIG)
+    config = copy.deepcopy(PI_LOGGING_CONFIG)
     config["handlers"]["file"]["filename"] = logfile
     config["handlers"]["file"]["level"] = loglevel
     config["loggers"]["privacyidea"]["level"] = loglevel

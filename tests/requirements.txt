@@ -19,6 +19,7 @@ pyparsing==2.4.7
 pytest==4.6.9; python_version < '3.0'
 pytest==5.4.1; python_version > '3.0'
 pytest-cov==2.8.1
+pytest-subtests==0.3.1; python_version > '3.0'
 responses==0.10.12
 scandir==1.10.0; python_version < '3.0'
 testfixtures==6.14.0

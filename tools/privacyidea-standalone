@@ -48,6 +48,7 @@ The ``check`` command can then be used to authenticate users."""
 import six
 import json
 import os
+import shutil
 import string
 import subprocess
 from functools import wraps
