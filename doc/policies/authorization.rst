@@ -20,6 +20,30 @@ using :ref:`code_policy` and
 The following actions are available in the scope 
 *authorization*:
 
+.. _authorized_policy:
+
+authorized
+~~~~~~~~~~
+
+This is the basic authorization, that either grants the user access or denies access via the ``/validate``
+endpoints (see :ref:`rest_validate`).
+The default behaviour is to grant access, if and after the user has authenticated successfully.
+
+Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
+the correct credentials.
+
+In combination with different IP addresses and policy priorities the adminitator can generically *deny_access* with the
+lowest policy priority and *grant_access* for specific requests e.g. originating from specific IP addresses to certain
+users by defining higher policy priorities.
+
+.. note:: Since *authorized* is checked as a *postpolicy* the OTP value used during an authentication attempt
+    will be invalidated even if the *authorized* policy denies the access.
+
+.. note:: The actual "success" of the authentication can be changed to "failed" by this postpolicy.
+    I.e. pre-event handlers
+    (:ref:`eventhandler_pre_and_post`) would still see the request as successful before it would be changed by
+    this policy and match the event handler condition ``result value == True``.
+
 .. _tokentype_policy:
 
 tokentype

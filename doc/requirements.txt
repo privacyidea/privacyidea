@@ -7,7 +7,7 @@ pyenchant==3.0.1
 Pygments==2.6.1
 pyparsing==2.4.7
 snowballstemmer==2.0.0
-Sphinx==3.0.1
+Sphinx==3.0.4
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2
 sphinxcontrib-htmlhelp==1.0.3

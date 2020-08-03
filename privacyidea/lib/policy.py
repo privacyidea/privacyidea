@@ -357,6 +357,12 @@ class ACTION(object):
     SHOW_ANDROID_AUTHENTICATOR = "show_android_privacyidea_authenticator"
     SHOW_IOS_AUTHENTICATOR = "show_ios_privacyidea_authenticator"
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
+    AUTHORIZED = "authorized"
+
+
+class AUTHORIZED(object):
+    ALLOW = "grant_access"
+    DENY = "deny_access"
 
 
 class GROUP(object):
@@ -2005,6 +2011,12 @@ def get_static_policy_definitions(scope=None):
             }
         },
         SCOPE.AUTHZ: {
+            ACTION.AUTHORIZED: {
+                'type': 'str',
+                'desc': _("Allow the user to authenticate (default). If set to '{0!s}', "
+                          "the authentication of the user will be denied.").format(AUTHORIZED.DENY),
+                'value': [AUTHORIZED.ALLOW, AUTHORIZED.DENY]
+            },
             ACTION.APPLICATION_TOKENTYPE: {
                 'type': 'bool',
                 'desc': _("Allow the application to choose which token types should be used "
@@ -2088,7 +2100,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _(
                     'If set to "privacyIDEA" the users and admins need to '
                     'authenticate against privacyIDEA when they log in '
-                    'to the Web UI. Defaults to "userstore"'),
+                    'to the Web UI. Defaults to "userstore".'),
                 'value': [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA,
                           LOGINMODE.DISABLE],
             },

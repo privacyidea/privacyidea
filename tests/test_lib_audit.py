@@ -6,6 +6,7 @@ This tests the files
 """
 import datetime
 import os
+import types
 
 from mock import mock
 
@@ -176,8 +177,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.finalize_log()
 
         audit_log = self.Audit.csv_generator()
-        self.assertTrue(type(audit_log).__name__ == "generator",
-                        type(audit_log).__name__)
+        self.assertIsInstance(audit_log, types.GeneratorType)
 
         count = 0
         for audit_entry in audit_log:
@@ -422,6 +422,13 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
             self.assertIn("some detail", c[-1])
             self.assertIn("some policy", c[-1])
         os.unlink('audit.log')
+
+        # check the CSV output
+        csv = a.csv_generator()
+        self.assertIsInstance(csv, types.GeneratorType)
+        csv_list = [c for c in csv]
+        self.assertGreater(len(csv_list), 0, csv_list)
+        self.assertTrue(any(['something_test_35' in l for l in csv_list]))
 
     def test_20_container_audit_wrong_module(self):
         # Test what happens with a non-existing module

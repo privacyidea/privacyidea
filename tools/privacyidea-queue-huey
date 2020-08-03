@@ -51,7 +51,7 @@ from huey.consumer_options import OptionParserHandler
 
 from privacyidea.app import create_app
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG as PI_LOGGING_CONFIG
-from privacyidea.lib.queue import get_job_queue, has_job_queue
+from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.queues.huey_queue import HueyQueue
 
 DEFAULT_LOGFILE = "privacyidea-queue.log"
