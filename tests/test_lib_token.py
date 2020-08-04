@@ -1087,28 +1087,27 @@ class TokenTestCase(MyTestCase):
 
         # check for optional parameter exclude/include type
         r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
-                             options={'exclude_types': 'hotp'})
+                             exclude_types='hotp')
         self.assertFalse(r[0])
         self.assertEqual(r[1].get("message"), "There is no active and assigned "
-                                              "token in this realm, options: "
-                                              "{'exclude_types': 'hotp'}")
+                                              "token in this realm, included types: None, "
+                                              "excluded types: hotp")
 
         r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
-                             options={'include_types': 'totp'})
+                             include_types='totp')
         self.assertFalse(r[0])
         self.assertEqual(r[1].get("message"), "There is no active and assigned "
-                                              "token in this realm, options: "
-                                              "{'include_types': 'totp'}")
+                                              "token in this realm, included types: totp, "
+                                              "excluded types: None")
 
         r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
-                             options={'exclude_types': 'totp'})
+                             exclude_types='totp')
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "matching 1 tokens")
 
         # check that include_types precedes exclude_types
         r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[3],
-                             options={'include_types': 'hotp',
-                                      'exclude_types': 'hotp'})
+                             include_types='hotp', exclude_types='hotp')
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "matching 1 tokens")
 

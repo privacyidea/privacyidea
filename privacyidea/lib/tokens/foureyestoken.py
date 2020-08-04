@@ -261,7 +261,7 @@ class FourEyesTokenClass(TokenClass):
             found_serials[realm] = []
             for otp in passwords:
                 res, reply = check_realm_pass(realm, otp,
-                                              options={'exclude_types': [self.get_tokentype()]})
+                                              exclude_types=[self.get_tokentype()])
                 if res:
                     serial = reply.get("serial")
                     found_serials[realm].append(serial)

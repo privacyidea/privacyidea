@@ -1886,7 +1886,8 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None):
+def check_realm_pass(realm, passw, options=None,
+                     include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
@@ -1903,9 +1904,12 @@ def check_realm_pass(realm, passw, options=None):
     :param passw: The password containing PIN+OTP
     :param options: Additional options that are passed to the tokens
     :type options: dict
+    :param include_types: List of token types to use for the check
+    :type include_types: list or str
+    :param exclude_types: List to token types *not* to use for the check
+    :type exclude_types: list or str
     :return: tuple of bool and dict
     """
-    res = False
     reply_dict = {}
     # since an attacker does not know, which token is tested, we restrict to
     # only active tokens. He would not guess that the given OTP value is that
@@ -1916,20 +1920,18 @@ def check_realm_pass(realm, passw, options=None):
         return False, reply_dict
     else:
         # reduce tokens by type
-        if options:
-            if options.get('include_types'):
-                incl = options['include_types'] if isinstance(options['include_types'],
-                                                              list) else [options['include_types']]
-                tokenobject_list = [tok for tok in tokenobject_list if tok.type in incl]
-            elif options.get('exclude_types'):
-                excl = options['exclude_types'] if isinstance(options['exclude_types'],
-                                                              list) else [options['exclude_types']]
-                tokenobject_list = [tok for tok in tokenobject_list if tok.type not in excl]
+        if include_types:
+            incl = include_types if isinstance(include_types, list) else [include_types]
+            tokenobject_list = [tok for tok in tokenobject_list if tok.type in incl]
+        elif exclude_types:
+            excl = exclude_types if isinstance(exclude_types, list) else [exclude_types]
+            tokenobject_list = [tok for tok in tokenobject_list if tok.type not in excl]
 
-            if not tokenobject_list:
-                reply_dict["message"] = 'There is no active and assigned token in ' \
-                                        'this realm, options: {0!s}'.format(options)
-                return False, reply_dict
+        if not tokenobject_list:
+            reply_dict["message"] = 'There is no active and assigned token in ' \
+                                    'this realm, included types: {0!s}, excluded '\
+                                    'types: {1!s}'.format(include_types, exclude_types)
+            return False, reply_dict
 
         return check_token_list(tokenobject_list, passw, options=options,
                                 allow_reset_all_tokens=False)
