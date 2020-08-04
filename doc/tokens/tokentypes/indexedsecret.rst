@@ -19,5 +19,5 @@ enrollment to the value of a user attribute. The attribute specified in these po
 attribute from the attribute mapping of the corresponding user resolver.
 
 Starting with version 3.4 the Indexed Secret Token can work in multi challenge authentication.
-This way each position is asked seperately in consecutive challenges. To achive this, the token needs
+This way each position is asked separately in consecutive challenges. To achieve this, the token needs
 the tokeninfo value ``multichallenge=1``.
