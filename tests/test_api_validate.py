@@ -3818,7 +3818,7 @@ class AChallengeResponse(MyApiTestCase):
 
         # First response
         with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": "cornelius", "pass": index_secret[position-1],
+                                           data={"user": "cornelius", "pass": index_secret[position - 1],
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -3830,7 +3830,7 @@ class AChallengeResponse(MyApiTestCase):
 
         # Second response
         with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": "cornelius", "pass": index_secret[position-1],
+                                           data={"user": "cornelius", "pass": index_secret[position - 1],
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)

@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 
 SEED_LENGTH = 16
 
+
 class CHALLENGE_TYPE(object):
     PIN_RESET = "generic_pin_reset"
 
@@ -96,11 +97,11 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             # check if challenge matches a token and if it is valid
             token_obj = next(t for t in args[0] if t.token.serial == challenge.serial)
             if token_obj:
-                # Then either verify the PIN or set the PIN the first time.
-                newpin = challenge.data
-                if newpin:
-                    hashedpin = newpin[SEED_LENGTH+1:]
-                    seed = newpin[0:SEED_LENGTH]
+                # Then either verify the PIN or set the PIN the first time. The
+                # PIN from the 1st was is stored in challenge.data
+                if challenge.data:
+                    hashedpin = challenge.data[SEED_LENGTH + 1:]
+                    seed = challenge.data[0:SEED_LENGTH]
                     # Verify the password
                     if hash(args[1], seed) == hashedpin:
                         # Success, set new PIN and return success
@@ -116,8 +117,8 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                             # Set a new next pin change
                             token_obj.set_next_pin_change(diff=list(pinpol)[0])
                         else:
-                            # Obviously we removed the policy of changing pins, so we will not require
-                            # to change the PIN again
+                            # Obviously the admin removed the policy for changing pins,
+                            # so we will not require to change the PIN again
                             token_obj.del_tokeninfo("next_pin_change")
                         return True, {"message": "PIN successfully set.",
                                       "serial": token_obj.token.serial}
@@ -147,4 +148,3 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             return False, reply_dict
 
     return success, reply_dict
-
