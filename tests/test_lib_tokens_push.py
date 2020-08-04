@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 from flask import Request
 from werkzeug.test import EnvironBuilder
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
+from pytz import utc
 
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
-                                              DEFAULT_CHALLENGE_TEXT, strip_key,
-                                              tr_urlsafe_enc)
+                                              DEFAULT_CHALLENGE_TEXT, strip_key)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
@@ -79,7 +79,7 @@ class PushTokenTestCase(MyTestCase):
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).translate(tr_urlsafe_enc)
+    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -844,7 +844,7 @@ class PushTokenTestCase(MyTestCase):
         # check for invalid timestamp (recent but too early)
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
-                        'timestamp': (datetime.now(timezone.utc)
+                        'timestamp': (datetime.now(utc)
                                       - timedelta(minutes=2)).isoformat(),
                         'signature': 'unknown'}
         self.assertRaisesRegexp(privacyIDEAError,
@@ -854,7 +854,7 @@ class PushTokenTestCase(MyTestCase):
         # check for invalid timestamp (recent but too late)
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
-                        'timestamp': (datetime.now(timezone.utc)
+                        'timestamp': (datetime.now(utc)
                                       + timedelta(minutes=2)).isoformat(),
                         'signature': 'unknown'}
         self.assertRaisesRegexp(privacyIDEAError,
@@ -936,7 +936,7 @@ class PushTokenTestCase(MyTestCase):
 
         # now we create a poll request
         # first create a signature
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = datetime.now(utc).isoformat()
         sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),

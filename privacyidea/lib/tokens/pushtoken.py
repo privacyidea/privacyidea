@@ -30,6 +30,7 @@ This code is tested in tests/test_lib_tokens_push
 from base64 import b32decode
 from six.moves.urllib.parse import quote
 import datetime
+from pytz import utc
 from dateutil.parser import isoparse
 import traceback
 
@@ -72,10 +73,6 @@ PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
-
-tr_urlsafe_enc = {43: '-', 47: '_'}
-tr_urlsafe_dec = {45: '+', 95: '/'}
-
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -499,7 +496,7 @@ class PushTokenClass(TokenClass):
                 token_obj = get_one_token(serial=serial, tokentype="push")
                 pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
                 # The public key of the smartphone was probably sent as urlsafe:
-                pubkey_pem = pubkey_pem.translate(tr_urlsafe_dec)
+                pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
                 # The public key was sent without any header
                 pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
                              "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
@@ -540,7 +537,7 @@ class PushTokenClass(TokenClass):
                 raise privacyIDEAError('Could not parse timestamp {0!s}. '
                                        'ISO-Format required.'.format(timestamp))
             td = datetime.timedelta(minutes=1)
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = datetime.datetime.now(utc)
             if not (now - td <= ts <= now + td):
                 raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
             # now check the signature
@@ -548,7 +545,7 @@ class PushTokenClass(TokenClass):
             try:
                 tok = get_one_token(serial=serial, tokentype='push')
                 pubkey_pem = tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-                pubkey_pem = pubkey_pem.translate(tr_urlsafe_dec)
+                pubkey_pem = pubkey_pem.replace('-', '+').replace('_', '/')
                 pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
                              "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
                 pubkey_obj = serialization.load_pem_public_key(to_bytes(pubkey_pem),
