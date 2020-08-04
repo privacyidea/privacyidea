@@ -29,7 +29,7 @@ This code is tested in tests/test_lib_tokens_push
 
 from base64 import b32decode
 from six.moves.urllib.parse import quote
-import datetime
+from datetime import datetime, timedelta
 from pytz import utc
 from dateutil.parser import isoparse
 import traceback
@@ -536,8 +536,9 @@ class PushTokenClass(TokenClass):
                 log.debug('{0!s}'.format(traceback.format_exc()))
                 raise privacyIDEAError('Could not parse timestamp {0!s}. '
                                        'ISO-Format required.'.format(timestamp))
-            td = datetime.timedelta(minutes=1)
-            now = datetime.datetime.now(utc)
+            # TODO: make time delta configurable
+            td = timedelta(minutes=1)
+            now = datetime.now(utc)
             if not (now - td <= ts <= now + td):
                 raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
             # now check the signature
@@ -555,6 +556,7 @@ class PushTokenClass(TokenClass):
                                   sign_data.encode("utf8"),
                                   padding.PKCS1v15(),
                                   hashes.SHA256())
+                # The signature was valid now check for an open challenge
                 # we need the private server key to sign the smartphone data
                 pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
                 # we also need the FirebaseGateway for this token
@@ -564,8 +566,7 @@ class PushTokenClass(TokenClass):
                                                 'assigned.'.format(serial))
                 fb_gateway = create_sms_instance(fb_identifier)
                 options = {'g': g}
-                details = {'challenges': []}
-                # The signature was valid now check for an open challenge
+                challenges = []
                 challengeobject_list = get_challenges(serial=serial)
                 for chal in challengeobject_list:
                     # check if the challenge is active
@@ -574,8 +575,9 @@ class PushTokenClass(TokenClass):
                         # the challenge
                         sp_data = _build_smartphone_data(serial, chal.challenge,
                                                          fb_gateway, pem_privkey, options)
-                        details['challenges'].append(sp_data)
-                result = True
+                        challenges.append(sp_data)
+                # return the challenges as a list in the result value
+                result = challenges
             except (ResourceNotFoundError, ParameterError, InvalidSignature) as _e:
                 # to avoid disclosing information we always fail with an invalid
                 # signature error even if the token with the serial could not be found
