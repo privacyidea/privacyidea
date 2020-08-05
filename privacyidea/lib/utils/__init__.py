@@ -1144,7 +1144,7 @@ def generate_charlists_from_pin_policy(policy):
     This function uses the pin content policy string (e.g. "+cns", "[asdf]") to create the character lists
     for password generation.
 
-    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy)
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_contents)
     :return: Dictionary with keys "base" for the base set of allowed characters and "requirements"
      which denotes a list of characters from each of which at least one must be contained in the pin.
     """
@@ -1186,7 +1186,7 @@ def generate_charlists_from_pin_policy(policy):
     return {"base": base_characters, "requirements": requirements}
 
 
-def check_pin_policy(pin, policy):
+def check_pin_contents(pin, policy):
     """
     The policy to check a PIN can contain of "c", "n" and "s".
     "cn" means, that the PIN should contain a character and a number.

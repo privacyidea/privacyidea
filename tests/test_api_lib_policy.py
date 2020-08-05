@@ -82,7 +82,7 @@ from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RE
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
                                        REGISTRATION_RESPONSE_TMPL)
 from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_policy)
+                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -715,7 +715,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         pin = req.all_data.get("pin")
 
         # check if the pin honors the contents policy
-        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        pin_valid, comment = check_pin_contents(pin, contents_policy)
         self.assertTrue(pin_valid)
 
         # Check, if the pin has the correct length
@@ -760,7 +760,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         pin = req.all_data.get("pin")
 
         # check if the pin honors the contents policy
-        pin_valid, comment = check_pin_policy(pin, contents_policy)
+        pin_valid, comment = check_pin_contents(pin, contents_policy)
         self.assertTrue(pin_valid)
 
         # Check, if the pin has the correct length
@@ -778,7 +778,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             for content_policy in content_policies_valid:
                 pin = _generate_pin_from_policy(content_policy, size=pin_size)
                 # check if the pin honors the contents policy
-                pin_valid, comment = check_pin_policy(pin, content_policy)
+                pin_valid, comment = check_pin_contents(pin, content_policy)
                 self.assertTrue(pin_valid)
                 # Check, if the pin has the correct length
                 self.assertEqual(len(pin), pin_size)

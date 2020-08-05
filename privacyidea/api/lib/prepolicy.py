@@ -72,12 +72,12 @@ from OpenSSL import crypto
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
-from privacyidea.lib.policy import Match
+from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
-                                   check_pin_policy, get_module_class,
+                                   check_pin_contents, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
@@ -155,11 +155,12 @@ class prepolicy(object):
 
         return policy_wrapper
 
+
 def _generate_pin_from_policy(policy, size=6):
     """
     This helper function creates a string of allowed characters from the value of a pincontents policy.
 
-    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_policy).
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_contents).
     :param size: The desired length of the generated pin
     :return: The generated PIN
     """
@@ -334,41 +335,7 @@ def check_otp_pin(request=None, action=None):
             tokentype = tokensobject_list[0].token.tokentype
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
-    # get the policies for minimum length, maximum length and PIN contents
-    # first try to get a token specific policy - otherwise fall back to
-    # default policy
-    pol_minlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
-                                     user_obj=request.User).action_values(unique=True)
-    if not pol_minlen:
-        pol_minlen = Match.admin_or_user(g, action=ACTION.OTPPINMINLEN,
-                                         user_obj=request.User).action_values(unique=True)
-    pol_maxlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
-                                     user_obj=request.User).action_values(unique=True)
-    if not pol_maxlen:
-        pol_maxlen = Match.admin_or_user(g, action=ACTION.OTPPINMAXLEN,
-                                         user_obj=request.User).action_values(unique=True)
-    pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
-                                       user_obj=request.User).action_values(unique=True)
-    if not pol_contents:
-        pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
-                                           user_obj=request.User).action_values(unique=True)
-
-    if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
-        # check the minimum length requirement
-        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                          list(pol_minlen)[0]))
-
-    if len(pol_maxlen) == 1 and len(pin) > int(list(pol_maxlen)[0]):
-        # check the maximum length requirement
-        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                          list(pol_maxlen)[0]))
-
-    if len(pol_contents) == 1:
-        # check the contents requirement
-        r, comment = check_pin_policy(pin, list(pol_contents)[0])
-        if r is False:
-            raise PolicyError(comment)
-
+    check_pin(g, pin, tokentype, request.User)
     return True
 
 

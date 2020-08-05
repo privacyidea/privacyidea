@@ -178,7 +178,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
-from privacyidea.lib.utils import (check_time_in_range, reload_db,
+from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams)
 from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
@@ -2545,3 +2545,49 @@ class Match(object):
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time,
                    sort_by_priority=sort_by_priority)
+
+
+def check_pin(g, pin, tokentype, user_obj):
+    """
+    get the policies for minimum length, maximum length and PIN contents
+    first try to get a token specific policy - otherwise fall back to
+    default policy.
+
+    Raises an exception, if the PIN does not comply to the policies.
+
+    :param g:
+    :param pin:
+    :param tokentype:
+    :param user_obj:
+    """
+    pol_minlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
+                                     user_obj=user_obj).action_values(unique=True)
+    if not pol_minlen:
+        pol_minlen = Match.admin_or_user(g, action=ACTION.OTPPINMINLEN,
+                                         user_obj=user_obj).action_values(unique=True)
+    pol_maxlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
+                                     user_obj=user_obj).action_values(unique=True)
+    if not pol_maxlen:
+        pol_maxlen = Match.admin_or_user(g, action=ACTION.OTPPINMAXLEN,
+                                         user_obj=user_obj).action_values(unique=True)
+    pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                       user_obj=user_obj).action_values(unique=True)
+    if not pol_contents:
+        pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                           user_obj=user_obj).action_values(unique=True)
+
+    if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
+        # check the minimum length requirement
+        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
+            list(pol_minlen)[0]))
+
+    if len(pol_maxlen) == 1 and len(pin) > int(list(pol_maxlen)[0]):
+        # check the maximum length requirement
+        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
+            list(pol_maxlen)[0]))
+
+    if len(pol_contents) == 1:
+        # check the contents requirement
+        r, comment = check_pin_contents(pin, list(pol_contents)[0])
+        if r is False:
+            raise PolicyError(comment)

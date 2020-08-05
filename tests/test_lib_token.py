@@ -21,10 +21,12 @@ from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, PolicyClass, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
+from privacyidea.lib.error import PolicyError
 import datetime
 from dateutil import parser
 import hashlib
 import binascii
+import warnings
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
                                    get_token_type, check_serial,
@@ -1896,3 +1898,47 @@ class PINChangeTestCase(MyTestCase):
 
         # The PIN still needs to be changed!
         self.assertTrue(tok.is_pin_change())
+
+    def test_03_failed_change_pin(self):
+        """
+        Authentication with an HOTP token and then fail to
+        change pin, since we do not comply to the PIN policies :-)
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+        # Require minimum length of 5
+        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(ACTION.OTPPINMINLEN))
+
+        # successfully authenticate, but thus trigger a PIN change
+        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+                                         user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN, which has only length 4 :-/
+        newpin = "test"
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                PolicyError, "The minimum OTP PIN length is 5", check_token_list,
+                [tok, tok2], newpin, user_obj,
+                options={"transaction_id": transaction_id,
+                         "g": g})
+
+        delete_policy("minpin")

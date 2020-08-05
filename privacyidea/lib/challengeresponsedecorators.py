@@ -29,11 +29,13 @@ Currently the decorator is only tested in tests/test_lib_token.py
 import logging
 
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import ACTION, SCOPE
+from privacyidea.lib.policy import ACTION, SCOPE, check_pin, SCOPE
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import hash, get_rand_digit_str
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib import _
+
 
 log = logging.getLogger(__name__)
 
@@ -80,9 +82,9 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked
     :param passw: The password presented in the authentication. We need this for the PIN reset.
+    :param user: The user_obj
 
     kwds are:
-    :param user: The user_obj
     :param options: options dictionary containing g
     """
 
@@ -104,12 +106,11 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     seed = challenge.data[0:SEED_LENGTH]
                     # Verify the password
                     if hash(args[1], seed) == hashedpin:
-                        # Success, set new PIN and return success
-                        # TODO Verify PIN policy
-                        challenge.set_otp_status(True)
-                        token_obj.set_pin(args[1])
-                        token_obj.challenge_janitor()
                         g = options.get("g")
+                        challenge.set_otp_status(True)
+                        token_obj.challenge_janitor()
+                        # Success, set new PIN and return success
+                        token_obj.set_pin(args[1])
                         pinpol = Match.token(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_EVERY,
                                              token_obj=token_obj).action_values(unique=True)
                         # Set a new next_pin_change
@@ -127,10 +128,14 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                                        "message": "PINs do not match"}
                 else:
                     # The PIN is presented the first time.
+                    # Verify if the PIN adheres to the PIN policies. This is always in the normal user context
+                    g = options.get("g")
+                    g.logged_in_user = {"role": SCOPE.USER}
+                    check_pin(g, args[1], token_obj.token.tokentype, args[2])
                     # We need to ask for a 2nd time
                     challenge.set_otp_status(True)
                     seed = get_rand_digit_str(SEED_LENGTH)
-                    reply_dict = _create_pin_reset_challenge(token_obj, "Please enter the new PIN again",
+                    reply_dict = _create_pin_reset_challenge(token_obj, _("Please enter the new PIN again"),
                                                              "{0!s}:{1!s}".format(seed, hash(args[1], seed)))
                     return False, reply_dict
 
@@ -144,7 +149,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
         # The tokenlist can contain more than one token. So we get the matching token object
         token_obj = next(t for t in args[0] if t.token.serial == serial)
         if g and Match.token(g, scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE, token_obj=token_obj).any():
-            reply_dict = _create_pin_reset_challenge(token_obj, "Please enter a new PIN")
+            reply_dict = _create_pin_reset_challenge(token_obj, _("Please enter a new PIN"))
             return False, reply_dict
 
     return success, reply_dict
