@@ -356,7 +356,6 @@ def check():
     mapping.
     """
     user = request.User
-    result = success = False
     serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
     otp_only = getParam(request.all_data, "otponly")
