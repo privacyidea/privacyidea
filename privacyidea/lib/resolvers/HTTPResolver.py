@@ -55,7 +55,7 @@ class HTTPResolver(UserIdResolver):
     }
 
     def __init__(self):
-        super().__init__()
+        super(HTTPResolver, self).__init__()
         self.config = {}
 
     @staticmethod
