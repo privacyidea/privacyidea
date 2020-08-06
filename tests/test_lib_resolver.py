@@ -2529,7 +2529,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         invalidMethodDict = params.copy()
         invalidMethodDict.update({'method': ''})
-        self.assertRaisesRegex(ParameterError,
+        self.assertRaisesRegexp(ParameterError,
             "Parameter 'method' must not be empty",
             instance.loadConfig,
             invalidMethodDict
@@ -2539,7 +2539,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         invalidEndpointDict = params.copy()
         invalidEndpointDict.update({'endpoint': ''})
-        self.assertRaisesRegex(
+        self.assertRaisesRegexp(
             ParameterError,
             "Parameter 'endpoint' must not be empty",
             instance.loadConfig,
@@ -2550,7 +2550,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         invalidResponseMappingDict = params.copy()
         invalidResponseMappingDict.update({'responseMapping': ''})
-        self.assertRaisesRegex(
+        self.assertRaisesRegexp(
             ParameterError,
             "Parameter 'responseMapping' must not be empty",
             instance.loadConfig,
@@ -2561,7 +2561,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         invalidRequestMappingDict = params.copy()
         invalidRequestMappingDict.update({'requestMapping': ''})
-        self.assertRaisesRegex(
+        self.assertRaisesRegexp(
             ParameterError,
             "Parameter 'requestMapping' must not be empty",
             instance.loadConfig,
@@ -2572,7 +2572,7 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         invalidErrorResponseDict = params.copy()
         invalidErrorResponseDict.update({'hasSpecialErrorHandling': True, 'errorResponse': ''})
-        self.assertRaisesRegex(
+        self.assertRaisesRegexp(
             ParameterError,
             "Parameter 'errorResponse' must not be empty",
             instance.loadConfig,
