@@ -360,10 +360,11 @@ HTTP resolver
 
 .. index:: HTTP resolver
 
-HTTP resolver is useful when you need to retrieve user information from an 
-external HTTP API.
+As a summary, This resolver aims to solve user resolution from a custom HTTP API implementation. For example, you could
+have a custom API at `http://domain.com/my/path` and you want to retrieve information from there. Below, we describe how this
+resolver should be configured.
 
-HTTP contains a few fields to be completed, as shown in the following image:
+The HTTP Resolver contains a few fields to be completed, as shown in the following image:
 
 .. figure:: images/http_resolver_1.png
    :width: 500
