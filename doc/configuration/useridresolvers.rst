@@ -427,7 +427,7 @@ You can able to configure something like this:
    :width: 500
 
 So, now the HTTP Resolver checks if the response contains your input and then throws and error if it's match.
-In this case, An error will be thrown due ``{ "success": true }`` is part of the response.
+In this case, An error will be thrown due ``{ "success": false }`` is part of the response.
 
 .. note:: By the way, if HTTP response status is >= 400 the resolver will thrown an exception.
 
