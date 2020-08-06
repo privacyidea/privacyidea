@@ -352,7 +352,7 @@ def check_policy_name(name):
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
             raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
 
-    if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
+    if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "
                                "the characters a-zA-Z0-9_. -"))
 

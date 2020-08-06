@@ -1475,37 +1475,37 @@ class TokenTestCase(MyTestCase):
             return [token.token.id for l2 in l for token in l2]
 
         # serial72 token has invalid type. Check behavior and remove it.
-        self.assertEquals(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
+        self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
         Token.query.filter_by(serial="serial72").delete()
 
         all_matching_tokens = get_tokens(serial_wildcard="S*")
         lists1 = list(get_tokens_paginated_generator(serial_wildcard="S*"))
-        self.assertEquals(len(lists1), 1)
-        self.assertEquals(len(lists1[0]), 6)
+        self.assertEqual(len(lists1), 1)
+        self.assertEqual(len(lists1[0]), 6)
         lists2 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=2))
-        self.assertEquals(len(lists2), 3)
-        self.assertEquals(len(lists2[0]), 2)
-        self.assertEquals(len(lists2[1]), 2)
-        self.assertEquals(len(lists2[2]), 2)
+        self.assertEqual(len(lists2), 3)
+        self.assertEqual(len(lists2[0]), 2)
+        self.assertEqual(len(lists2[1]), 2)
+        self.assertEqual(len(lists2[2]), 2)
         lists3 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=3))
-        self.assertEquals(len(lists3), 2)
-        self.assertEquals(len(lists3[0]), 3)
-        self.assertEquals(len(lists3[1]), 3)
+        self.assertEqual(len(lists3), 2)
+        self.assertEqual(len(lists3[0]), 3)
+        self.assertEqual(len(lists3[1]), 3)
         lists4 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=4))
-        self.assertEquals(len(lists4), 2)
-        self.assertEquals(len(lists4[0]), 4)
-        self.assertEquals(len(lists4[1]), 2)
+        self.assertEqual(len(lists4), 2)
+        self.assertEqual(len(lists4[0]), 4)
+        self.assertEqual(len(lists4[1]), 2)
         lists5 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=6))
-        self.assertEquals(len(lists5), 1)
-        self.assertEquals(len(lists5[0]), 6)
-        self.assertEquals(set([t.token.id for t in all_matching_tokens]), set(flatten_tokens(lists1)))
-        self.assertEquals(flatten_tokens(lists1), flatten_tokens(lists2))
-        self.assertEquals(flatten_tokens(lists2), flatten_tokens(lists3))
-        self.assertEquals(flatten_tokens(lists3), flatten_tokens(lists4))
-        self.assertEquals(flatten_tokens(lists4), flatten_tokens(lists5))
+        self.assertEqual(len(lists5), 1)
+        self.assertEqual(len(lists5[0]), 6)
+        self.assertEqual(set([t.token.id for t in all_matching_tokens]), set(flatten_tokens(lists1)))
+        self.assertEqual(flatten_tokens(lists1), flatten_tokens(lists2))
+        self.assertEqual(flatten_tokens(lists2), flatten_tokens(lists3))
+        self.assertEqual(flatten_tokens(lists3), flatten_tokens(lists4))
+        self.assertEqual(flatten_tokens(lists4), flatten_tokens(lists5))
 
         lists6 = list(get_tokens_paginated_generator(serial_wildcard="*DOESNOTEXIST*"))
-        self.assertEquals(lists6, [])
+        self.assertEqual(lists6, [])
 
     def test_56_get_tokens_paginated_generator_removal(self):
         all_serials = set(t.token.serial for t in get_tokens(serial_wildcard="S*"))
@@ -1515,7 +1515,7 @@ class TokenTestCase(MyTestCase):
         remove_token(list1[0].token.serial)
         list2 = next(gen)
         # Check that we did not miss any tokens
-        self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
+        self.assertEqual(set(t.token.serial for t in list1 + list2), all_serials)
 
     def test_0057_check_invalid_serial(self):
         # This is an invalid serial, which will trigger an exception

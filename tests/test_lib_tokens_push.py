@@ -577,7 +577,7 @@ class PushTokenTestCase(MyTestCase):
                                            data={"serial": tokenobj.token.serial,
                                                  "nonce": challenge}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 400)
+            self.assertEqual(res.status_code, 400)
 
         # This is what the smartphone answers.
         # create the signature:

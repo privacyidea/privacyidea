@@ -28,8 +28,7 @@ log = logging.getLogger(__name__)
 class HueyQueue(BaseQueue):
     def __init__(self, options):
         BaseQueue.__init__(self, options)
-        # TODO: We should rethink ``store_errors=False`` -- how do we notice errors?
-        self._huey = RedisHuey(result_store=False, store_none=False, store_errors=False, **options)
+        self._huey = RedisHuey(results=False, store_none=False, **options)
         self._jobs = {}
 
     @property

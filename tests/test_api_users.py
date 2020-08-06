@@ -45,7 +45,7 @@ class APIUsersTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
-            self.assertEquals(res.json['result']['value'], 1, res.json)
+            self.assertEqual(res.json['result']['value'], 1, res.json)
         
         # create realm
         realm = u"realm1"

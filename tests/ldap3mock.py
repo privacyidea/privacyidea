@@ -47,16 +47,10 @@ from ldap3.utils.conv import escape_bytes
 import ldap3
 import re
 import pyparsing
-import six
 
-try:
-    from six import cStringIO as BufferIO
-except ImportError:
-    from six import StringIO as BufferIO
+from .smtpmock import get_wrapped
 
-import inspect
 from collections import namedtuple, Sequence, Sized
-from functools import update_wrapper
 from privacyidea.lib.utils import to_bytes, to_unicode
 
 DIRECTORY = "tests/testdata/tmp_directory"
@@ -74,30 +68,6 @@ def _convert_objectGUID(item):
     item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
     item = escape_bytes(item)
     return item
-
-
-def get_wrapped(func, wrapper_template, evaldict):
-    # Preserve the argspec for the wrapped function so that testing
-    # tools such as pytest can continue to use their fixture injection.
-    args, a, kw, defaults = inspect.getargspec(func)
-    values = args[-len(defaults):] if defaults else None
-
-    signature = inspect.formatargspec(args, a, kw, defaults)
-    is_bound_method = hasattr(func, '__self__')
-    if is_bound_method:
-        args = args[1:]     # Omit 'self'
-    callargs = inspect.formatargspec(args, a, kw, values,
-                                     formatvalue=lambda v: '=' + v)
-
-    ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
-
-    wrapper = evaldict['wrapper']
-
-    update_wrapper(wrapper, func)
-    if is_bound_method:
-        wrapper = wrapper.__get__(func.__self__, type(func.__self__))
-    return wrapper
 
 
 class CallList(Sequence, Sized):

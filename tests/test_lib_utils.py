@@ -754,40 +754,40 @@ class UtilsTestCase(MyTestCase):
     def test_25_encodings(self):
         u = u'Hello Wörld'
         b = b'Hello World'
-        self.assertEquals(to_utf8(None), None)
-        self.assertEquals(to_utf8(u), u.encode('utf8'))
-        self.assertEquals(to_utf8(b), b)
+        self.assertEqual(to_utf8(None), None)
+        self.assertEqual(to_utf8(u), u.encode('utf8'))
+        self.assertEqual(to_utf8(b), b)
 
-        self.assertEquals(to_unicode(u), u)
-        self.assertEquals(to_unicode(b), b.decode('utf8'))
-        self.assertEquals(to_unicode(None), None)
-        self.assertEquals(to_unicode(10), 10)
+        self.assertEqual(to_unicode(u), u)
+        self.assertEqual(to_unicode(b), b.decode('utf8'))
+        self.assertEqual(to_unicode(None), None)
+        self.assertEqual(to_unicode(10), 10)
 
-        self.assertEquals(to_bytes(u), u.encode('utf8'))
-        self.assertEquals(to_bytes(b), b)
-        self.assertEquals(to_bytes(10), 10)
+        self.assertEqual(to_bytes(u), u.encode('utf8'))
+        self.assertEqual(to_bytes(b), b)
+        self.assertEqual(to_bytes(10), 10)
 
-        self.assertEquals(to_byte_string(u), u.encode('utf8'))
-        self.assertEquals(to_byte_string(b), b)
-        self.assertEquals(to_byte_string(10), b'10')
+        self.assertEqual(to_byte_string(u), u.encode('utf8'))
+        self.assertEqual(to_byte_string(b), b)
+        self.assertEqual(to_byte_string(10), b'10')
 
     def test_26_conversions(self):
-        self.assertEquals(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
-        self.assertEquals(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
-        self.assertEquals(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
+        self.assertEqual(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
 
-        self.assertEquals(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
-        self.assertEquals(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
-        self.assertEquals(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
+        self.assertEqual(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
 
-        self.assertEquals(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEquals(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEquals(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
 
-        self.assertEquals(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
+        self.assertEqual(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
                           u'-vv8_f7_')
 
     def test_27_images(self):
@@ -801,28 +801,28 @@ class UtilsTestCase(MyTestCase):
                   u'kJ6u7UYKZ7fE1Z3mq5phmJ1DMLYrcPL9/J6VII7oEkKclaH1dR6CsB6wPkvWU' \
                   u'JH8LuvZI1Qw5CMgg8hmRzyOEq7nPWZCa+3uY9rWpZsi+r12O+pVjwojKTOP/a' \
                   u'51yyimn9kL9ACOsApMnN2KuAAAAAElFTkSuQmCC'
-        self.assertEquals(b64encode_and_unicode(create_png('Hallo')), png_b64)
-        self.assertEquals(create_img('Hello', raw=True),
+        self.assertEqual(b64encode_and_unicode(create_png('Hallo')), png_b64)
+        self.assertEqual(create_img('Hello', raw=True),
                           u'data:image/png;base64,SGVsbG8=')
-        self.assertEquals(create_img('Hallo'),
+        self.assertEqual(create_img('Hallo'),
                           u'data:image/png;base64,{0!s}'.format(png_b64))
 
     def test_28_yubikey_utils(self):
-        self.assertEquals(modhex_encode(b'\x47'), 'fi')
-        self.assertEquals(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
-        self.assertEquals(modhex_encode(binascii.unhexlify('0123456789abcdef')),
+        self.assertEqual(modhex_encode(b'\x47'), 'fi')
+        self.assertEqual(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
+        self.assertEqual(modhex_encode(binascii.unhexlify('0123456789abcdef')),
                           'cbdefghijklnrtuv')
-        self.assertEquals(modhex_encode('Hallo'), 'fjhbhrhrhv')
+        self.assertEqual(modhex_encode('Hallo'), 'fjhbhrhrhv')
         # and the other way around
-        self.assertEquals(modhex_decode('fi'), b'\x47')
-        self.assertEquals(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
-        self.assertEquals(modhex_decode('cbdefghijklnrtuv'),
+        self.assertEqual(modhex_decode('fi'), b'\x47')
+        self.assertEqual(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
+        self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
                           binascii.unhexlify('0123456789abcdef'))
-        self.assertEquals(modhex_decode('fjhbhrhrhv'), b'Hallo')
+        self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
 
         # now test the crc function
-        self.assertEquals(checksum(b'\x01\x02\x03\x04'), 0xc66e)
-        self.assertEquals(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
+        self.assertEqual(checksum(b'\x01\x02\x03\x04'), 0xc66e)
+        self.assertEqual(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
 
     def test_29_check_ip(self):
         found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "1.1.1.1"])

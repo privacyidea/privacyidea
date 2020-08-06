@@ -97,9 +97,8 @@ def check_password(environ, username, password):
 
 
 def _generate_digest(password):
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
-                                                rounds=ROUNDS,
-                                                salt_size=SALT_SIZE)
+    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS,
+                                              salt_size=SALT_SIZE).hash(password)
     return pw_dig
 
 
