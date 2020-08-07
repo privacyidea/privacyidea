@@ -56,7 +56,7 @@ ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
-ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
+ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
@@ -392,7 +392,7 @@ def decode_base32check(encoded_data, always_upper=True):
     return hexlify_and_unicode(payload)
 
 
-def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
+def sanity_name_check(name, name_exp=r"^[A-Za-z0-9_\-\.]+$"):
     """
     This function can be used to check the sanity of a name like a resolver,
     ca connector or realm.
@@ -445,8 +445,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
                 if k in config_description:
                     types[k] = config_description.get(k)
                 else:
-                    log.warn("the passed key %r is not a "
-                             "parameter for the %s %r" % (k, module, type))
+                    log.warning("the passed key '{0!s}' is not a parameter for "
+                                "the {1!s} type '{2!s}'".format(k, module, type))
 
     # Check that there is no type or desc without the data itself.
     # i.e. if there is a type.BindPW=password, then there must be a
@@ -953,7 +953,7 @@ def parse_legacy_time(ts, return_date=False):
     if not d.tzinfo:
         # we need to reparse the string
         d = parse_date_string(ts,
-                              dayfirst=re.match("^\d\d[/\.]",ts)).replace(
+                              dayfirst=re.match(r"^\d\d[/\.]", ts)).replace(
                                   tzinfo=tzlocal())
     if return_date:
         return d

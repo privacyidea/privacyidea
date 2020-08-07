@@ -189,31 +189,36 @@ privacyidea-sync-owncloud.py --generate-example-config [--config <config file>]
 {0!s}""".format(__doc__))
 
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "gc:", ["generate-example-config", "config="])
-except getopt.GetoptError as e:
-    print(str(e))
-    sys.exit(1)
-
-config_file = None
-generate_config = False
-
-for o, a in opts:
-    if o in ("-g", "--generate-example-config"):
-        generate_config = True
-        print(EXAMPLE_CONFIG_FILE)
-    elif o in ("-c", "--config"):
-        config_file = a
-    else:
-        print(u"Unknown parameter: {0!s}".format(o))
-        sys.exit(3)
-
-if config_file:
-    config_obj = Config(config_file)
-    sync_owncloud(config_obj)
-    sys.exit(0)
-
-else:
-    if not generate_config:
-        usage()
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "gc:", ["generate-example-config", "config="])
+    except getopt.GetoptError as e:
+        print(str(e))
         sys.exit(1)
+
+    config_file = None
+    generate_config = False
+
+    for o, a in opts:
+        if o in ("-g", "--generate-example-config"):
+            generate_config = True
+            print(EXAMPLE_CONFIG_FILE)
+        elif o in ("-c", "--config"):
+            config_file = a
+        else:
+            print(u"Unknown parameter: {0!s}".format(o))
+            sys.exit(3)
+
+    if config_file:
+        config_obj = Config(config_file)
+        sync_owncloud(config_obj)
+        sys.exit(0)
+
+    else:
+        if not generate_config:
+            usage()
+            sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

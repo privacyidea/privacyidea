@@ -27,10 +27,11 @@ setversion:
 
 translate:
 	grunt nggettext_extract
-	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
-#	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
+	for language in de nl ; do \
+		(cd po; msgmerge $$language.po template.pot > tmp.po; mv tmp.po $$language.po) ; \
+	done
+	# Especially edit German language
 	poedit po/de.po
-#	poedit po/it.po
 	grunt nggettext_compile
 
 translate-server:

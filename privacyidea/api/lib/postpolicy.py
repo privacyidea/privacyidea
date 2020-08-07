@@ -44,9 +44,9 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
@@ -737,3 +737,27 @@ def mangle_challenge_response(request, response):
 
     return response
 
+
+def is_authorized(request, response):
+    """
+    This policy decorator is used in the AUTHZ scope to
+    decorate the /validate/check and /validate/triggerchallenge endpoint.
+    I will cause authentication to fail, if the policy
+    authorized=deny_access is set.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    if not response.is_json:
+        # This can happen with the validate/radiuscheck endpoint
+        return response
+
+    authorized_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHORIZED,
+                                user_object=request.User).action_values(unique=True, allow_white_space_in_action=True)
+
+    if authorized_pol:
+        if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            raise ValidateError("User is not authorized to authenticate under these conditions.")
+
+    return response

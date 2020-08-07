@@ -30,7 +30,7 @@ class FrameworkTestCase(MyTestCase):
             self.assertNotIn("test_flag", g)
             g.test_flag = False
 
-        self.assertEquals(g.test_flag, True)
+        self.assertEqual(g.test_flag, True)
         g.pop("test_flag")
 
         # We get a different store if we push a context for another app

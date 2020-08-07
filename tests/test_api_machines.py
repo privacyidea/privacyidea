@@ -7,8 +7,8 @@ import passlib
 from privacyidea.lib.user import User
 from .base import MyApiTestCase
 import json
-from privacyidea.lib.token import init_token, get_tokens
-from privacyidea.lib.machine import attach_token
+from privacyidea.lib.token import init_token, get_tokens, remove_token
+from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -27,6 +27,9 @@ SSHKEY = "ssh-rsa " \
          "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
          "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
          "NetKnights GmbH"
+SSHKEY_ecdsa = u"ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzd" \
+               u"HAyNTYAAABBBHGCdIk0pO1HFr/mF4oLb43ZRyQJ4K7ICLrAhAiQERVa0tUvyY5TE" \
+               u"zurWTqxSMx203rY77t6xnHLZBMPPpv8rk0= cornelius@puck"
 OTPKEY = "3132333435363738393031323334353637383930"
 
 
@@ -113,9 +116,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
+            self.assertEqual(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
-            self.assertEquals(result['value']['deleted'], 0, result)
+            self.assertEqual(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -134,8 +137,8 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
-            self.assertEquals(result["value"]["added"], 0, result)
+            self.assertEqual(result["status"], True, result)
+            self.assertEqual(result["value"]["added"], 0, result)
             self.assertGreaterEqual(result['value']['deleted'], 1, result)
 
         # check if the options were set.
@@ -157,9 +160,9 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEquals(result["status"], True, result)
+            self.assertEqual(result["status"], True, result)
             self.assertGreaterEqual(result["value"]["added"], 1, result)
-            self.assertEquals(result['value']['deleted'], 0, result)
+            self.assertEqual(result['value']['deleted'], 0, result)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
@@ -191,8 +194,6 @@ class APIMachinesTestCase(MyApiTestCase):
             self.assertEqual(len(result["value"]), 1)
             self.assertTrue(result["value"][0]["application"] == "luks")
 
-
-
     def test_99_detach_token(self):
         serial = "S1"
         # create token
@@ -213,7 +214,7 @@ class APIMachinesTestCase(MyApiTestCase):
         token_obj = get_tokens(serial=serial)[0]
         self.assertEqual(len(token_obj.token.machine_list), 0)
 
-    def test_10_auth_items_ssh(self):
+    def test_10_auth_items_ssh_rsa(self):
         # create an SSH token
         token_obj = init_token({"serial": self.serial2, "type": "sshkey",
                                 "sshkey": SSHKEY})
@@ -290,6 +291,48 @@ class APIMachinesTestCase(MyApiTestCase):
             result = res.json.get("result")
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+        detach_token(self.serial2, application="ssh", hostname="gandalf")
+        remove_token(self.serial2)
+
+    def test_10_auth_items_ssh_ecdsa(self):
+        # create an SSH token
+        token_obj = init_token({"serial": self.serial2, "type": "sshkey",
+                                "sshkey": SSHKEY_ecdsa})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        # Attach the token to the machine "gandalf" with the application SSH
+        r = attach_token(hostname="gandalf", serial=self.serial2,
+                         application="ssh", options={"user": "testuser"})
+
+        self.assertEqual(r.machine_id, "192.168.0.1")
+
+        # fetch the auth_items for application SSH on machine gandalf
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ecdsa-sha2-nistp256"), sshkey)
+
+        # fetch the auth_items for user testuser
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&user=testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ecdsa-sha2-nistp256"), sshkey)
+
+        detach_token(self.serial2, application="ssh", hostname="gandalf")
+        remove_token(self.serial2)
 
     def test_11_auth_items_luks(self):
         # create TOTP/Yubikey token

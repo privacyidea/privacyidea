@@ -474,6 +474,8 @@ OATHCSV = '''
         # this is a comment
         # a serial without an OTP key will not create a token
         serialX
+        # A HOTP token with a counter
+        tok6, 1212, hotp, 6, 345
         '''
 OATHCSV_USER = """# version:2
 user1, resolver1, realm1, tok1, 1212, hotp
@@ -519,16 +521,21 @@ OvZnz1B26AngXLfkXPL7IHof
 """
 
 
-
 class ImportOTPTestCase(MyTestCase):
 
     def test_00_import_oath(self):
         tokens = parseOATHcsv(OATHCSV)
-        self.assertTrue(len(tokens) == 5, len(tokens))
+        self.assertTrue(len(tokens) == 6, len(tokens))
         self.assertTrue("tok1" in tokens, tokens)
         self.assertTrue("tok2" in tokens, tokens)
         self.assertTrue("tok3" in tokens, tokens)
         self.assertTrue("tok4" in tokens, tokens)
+        self.assertTrue("tok5" in tokens, tokens)
+        self.assertTrue("tok6" in tokens, tokens)
+        self.assertEqual(tokens["tok6"]["counter"], 345)
+        # The TOTP token does contain the timeStep but no counter
+        self.assertEqual(tokens["tok4"]["timeStep"], 60)
+        self.assertNotIn("counter", tokens["tok4"])
 
     def test_00_import_oath_user(self):
         tokens = parseOATHcsv(OATHCSV_USER)

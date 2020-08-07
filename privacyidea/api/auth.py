@@ -207,12 +207,9 @@ def get_auth_token():
         raise AuthError(_("Authentication failure. Missing Username"),
                         id=ERROR.AUTHENTICATE_MISSING_USERNAME)
 
-    loginname = username
-    split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
-    if split_at_sign:
-        (loginname, realm) = split_user(username)
+    loginname, realm = split_user(username)
 
-    # overwrite the splitted realm if we have a realm parameter
+    # overwrite the split realm if we have a realm parameter
     if realm_param:
         realm = realm_param
 

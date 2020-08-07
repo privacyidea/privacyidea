@@ -7,10 +7,11 @@ The api.lib.policy.py depends on lib.policy and on flask!
 from __future__ import print_function
 import json
 
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE, ATTESTATION_LEVEL,
-                                             ATTESTATION_FORM, USER_VERIFICATION_LEVEL)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS, WebAuthnTokenClass,
-                                                  DEFAULT_CHALLENGE_TEXT_AUTH,
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
+                                             ATTESTATION_LEVEL, ATTESTATION_FORM,
+                                             USER_VERIFICATION_LEVEL)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
@@ -18,11 +19,12 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWE
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.utils import hexlify_and_unicode
-from .base import (MyApiTestCase, PWFILE)
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from .base import (MyApiTestCase)
 
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
-                                    AUTOASSIGNVALUE)
+                                    AUTOASSIGNVALUE, AUTHORIZED)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -39,10 +41,10 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_wait,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait, webauthntoken_auth,
-                                           webauthntoken_authz, webauthntoken_enroll, webauthntoken_request,
+                                           check_admin_tokenlist, pushtoken_disable_wait,
+                                           webauthntoken_auth, webauthntoken_authz,
+                                           webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
@@ -54,7 +56,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             get_webui_settings,
                                             save_pin_change,
                                             add_user_detail_to_response,
-                                            mangle_challenge_response)
+                                            mangle_challenge_response, is_authorized)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -67,18 +69,20 @@ from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
-from privacyidea.lib.error import PolicyError, RegistrationError
+from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.auth import ROLE
 import jwt
-import passlib
+from passlib.hash import pbkdf2_sha512
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL, ASSERTION_CHALLENGE,
-                                       RP_ID, RP_NAME, ORIGIN, REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import create_img, generate_charlists_from_pin_policy, CHARLIST_CONTENTPOLICY, check_pin_policy
+from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
+                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
+                                       REGISTRATION_RESPONSE_TMPL)
+from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
+                                   CHARLIST_CONTENTPOLICY, check_pin_policy)
 
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -370,9 +374,31 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "type": "totp"}
         self.assertTrue(check_max_token_user(req))
 
+        # Now, we disable the token NEW001, so the user again has NO active token
+        enable_token("NEW001", enable=False)
+        # we enroll a new HOTP token, this would now succeed
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
+        tokenobject_list = get_tokens(user=User(login="cornelius",
+                                                realm=self.realm1))
+        self.assertTrue(len(tokenobject_list) == 2)
+        # now we enable the first hotp token again, which fails due to the policy
+        req.all_data = {"serial": "NEW001"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+
+        # not we unassign the token and try to enable it which succeeds, since
+        # there is no tokenowner anymore
+        unassign_token("NEW001")
+        req.all_data = {"serial": "NEW001"}
+        self.assertTrue(check_max_token_user(req))
+
         # clean up
         delete_policy("pol1")
         remove_token("NEW001")
+        remove_token("NEW002")
 
     def test_04_check_max_token_user(self):
         g.logged_in_user = {"username": "admin1",
@@ -792,7 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                              {"base": default_chars,
                               "requirements": required})
 
-        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\]"]
+        policies = ["[cn]", "[1234567890]", "[[]]", "[ÄÖüß§$@³¬&()|<>€%/\\]"]
         for policy in policies:
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
@@ -1219,16 +1245,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("mangle2")
 
     def test_13_remote_user(self):
-        g.logged_in_user = {"username": "admin1",
-                            "realm": "",
-                            "role": "admin"}
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "OATH123456"},
                                  headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
         env["REMOTE_USER"] = "admin"
         req = Request(env)
 
@@ -1236,7 +1258,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
-        g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
         self.assertTrue(r)
@@ -1247,7 +1268,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.WEBUI,
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE),
                    user="super")
-        g.policy_object = PolicyClass()
 
         r = is_remote_user_allowed(req)
         self.assertFalse(r)
@@ -1255,10 +1275,20 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # The remote_user "super" is allowed to login:
         env["REMOTE_USER"] = "super"
         req = Request(env)
-        g.policy_object = PolicyClass()
         r = is_remote_user_allowed(req)
         self.assertTrue(r)
 
+        # check that Splt@Sign works correctly
+        create_realm(self.realm1)
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+        env["REMOTE_USER"] = "super@realm1"
+        req = Request(env)
+        self.assertTrue(is_remote_user_allowed(req))
+
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
+        self.assertFalse(is_remote_user_allowed(req))
+
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
         delete_policy("ruser")
 
     def test_14_required_email(self):
@@ -1277,7 +1307,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action="{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
+                   action=r"{0!s}=/.*@mydomain\..*".format(ACTION.REQUIREDEMAIL))
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -1888,7 +1918,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             delete_policy(pol)
 
     def test_26_indexedsecret_force_set(self):
-
+        self.setUp_user_realms()
         # We send a fake push_wait, that is not in the policies
         builder = EnvironBuilder(method='POST',
                                  data={'user': "cornelius",
@@ -3389,10 +3419,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline287082",
-                                                          response.get('1')))
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("offline516516",
-                                                          response.get('99')))
+        self.assertTrue(pbkdf2_sha512.verify("offline287082", response.get('1')))
+        self.assertTrue(pbkdf2_sha512.verify("offline516516", response.get('99')))
         res = tokenobject.check_otp("516516") # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
@@ -3907,3 +3935,52 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_header")
         delete_policy("pol_footer")
+
+    def test_19_is_authorized(self):
+        # Test authz authorized policy
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       "pass": "test123123"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        self.setUp_user_realms()
+        req.User = User("autoassignuser", self.realm1)
+        # The response contains the token type HOTP, successful authentication
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "HOTP123456",
+                          "type": "hotp"}}
+        resp = jsonify(res)
+        g.policy_object = PolicyClass()
+
+        # The response is unchanged
+        new_resp = is_authorized(req, resp)
+        self.assertEqual(resp, new_resp)
+
+        # Define a generic policy, that denies the request
+        set_policy("auth01", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.DENY),
+                   priority=2)
+        g.policy_object = PolicyClass()
+
+        # The request will fail.
+        self.assertRaises(ValidateError, is_authorized, req, resp)
+
+        # Now we set a 2nd policy with a higher priority
+        set_policy("auth02", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(ACTION.AUTHORIZED, AUTHORIZED.ALLOW),
+                   priority=1, client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+
+        # The response is unchanged, authentication successful
+        new_resp = is_authorized(req, resp)
+        self.assertEqual(resp, new_resp)
+
+        delete_policy("auth01")
+        delete_policy("auth02")

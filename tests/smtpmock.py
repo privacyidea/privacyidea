@@ -29,13 +29,11 @@ from __future__ import (
 
 import six
 
-
 try:
-    from six import cStringIO as BufferIO
+    from inspect import formatargspec, getfullargspec as getargspec
 except ImportError:
-    from six import StringIO as BufferIO
+    from inspect import formatargspec, getargspec
 
-import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
 from smtplib import SMTPException
@@ -53,15 +51,14 @@ def wrapper%(signature)s:
 def get_wrapped(func, wrapper_template, evaldict):
     # Preserve the argspec for the wrapped function so that testing
     # tools such as pytest can continue to use their fixture injection.
-    args, a, kw, defaults = inspect.getargspec(func)
-    values = args[-len(defaults):] if defaults else None
+    args = getargspec(func)
+    values = args.args[-len(args.defaults):] if args.defaults else None
 
-    signature = inspect.formatargspec(args, a, kw, defaults)
+    signature = formatargspec(*args)
     is_bound_method = hasattr(func, '__self__')
     if is_bound_method:
-        args = args[1:]     # Omit 'self'
-    callargs = inspect.formatargspec(args, a, kw, values,
-                                     formatvalue=lambda v: '=' + v)
+        args.args = args.args[1:]     # Omit 'self'
+    callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
 
     ctx = {'signature': signature, 'funcargs': callargs}
     six.exec_(wrapper_template % ctx, evaldict)

@@ -96,6 +96,13 @@ class Audit(AuditBase):
         """
         return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
 
+    def csv_generator(self, param=None, user=None, timelimit=None):
+        """
+        Call the csv_generator method for the one readable module
+        """
+        return self.read_module.csv_generator(param=param, user=user,
+                                              timelimit=timelimit)
+
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         Call the total method for the one readable module

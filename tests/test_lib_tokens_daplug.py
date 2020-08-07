@@ -326,10 +326,10 @@ class DaplugTokenTestCase(MyTestCase):
                       "pin": "test",
                       "otplen": 6})
         # OTP does not exist
-        self.assertEquals(token.check_otp_exist(_digi2daplug("222333")), -1)
+        self.assertEqual(token.check_otp_exist(_digi2daplug("222333")), -1)
         # OTP does exist
         res = token.check_otp_exist(_digi2daplug("969429"))
-        self.assertEquals(res, 3, res)
+        self.assertEqual(res, 3, res)
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

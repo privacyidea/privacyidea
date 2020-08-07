@@ -110,6 +110,21 @@ additional dependencies::
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
 
+Getting and updating submodules
+===============================
+
+The client-side library for the registering and signing of WebAuthn-Credentials
+resides in a submodule.
+
+To fetch all submodules for this repository, run::
+
+   git submodule update --init --recursive
+
+When pulling changes from upstream later, you can automatically update any outdated
+submodules, by running::
+
+   git pull --recurse-submodules
+
 Running it
 ==========
 

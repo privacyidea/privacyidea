@@ -33,6 +33,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
+from __future__ import print_function
 
 __doc__ = """
 This script can be used to create a self-contained local privacyIDEA
@@ -44,8 +45,10 @@ The ``configure`` command starts a local development server that can
 be used to setup tokens. This server must not be exposed to the network!
 The ``check`` command can then be used to authenticate users."""
 
+import six
 import json
 import os
+import shutil
 import string
 import subprocess
 from functools import wraps
@@ -74,7 +77,7 @@ PI_LOGLEVEL = logging.INFO
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(INSTANCE_DIRECTORY, 'privacyidea.sqlite')
 
 SECRET_KEY = b'{secret_key}'
-PI_PEPPER = b'{pi_pepper}'
+PI_PEPPER = '{pi_pepper}'
 
 """
 
@@ -156,13 +159,14 @@ def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
     :param length: pepper length to generate
     :param chunk_size: number of bytes to read from urandom per iteration
     :param charset: list of valid characters
-    :return: a bytestring of the specified length
+    :return: a string of the specified length
+    :rtype: str
     """
-    pepper = b''
+    pepper = ''
     while len(pepper) < length:
         random_bytes = DefaultSecurityModule.random(chunk_size)
-        printable_bytes = ''.join(b for b in random_bytes if b in charset)
-        pepper += printable_bytes
+        printables = ''.join(chr(b) for b in six.iterbytes(random_bytes) if chr(b) in charset)
+        pepper += printables
     return pepper[:length]
 
 
@@ -203,59 +207,66 @@ def create():
     """ Create a new privacyIDEA instance """
     instance_dir = os.path.abspath(manager.app.instance_directory)
     if os.path.exists(manager.app.instance_directory):
-        raise RuntimeError("Instance at {!r} exists already!".format(manager.app.instance_directory))
-    os.makedirs(instance_dir)
+        print(u"Instance at {!s} exists already! Aborting.".format(manager.app.instance_directory))
+    else:
+        try:
+            os.makedirs(instance_dir)
 
-    # create SECRET_KEY and PI_PEPPER
-    secret_key = DefaultSecurityModule.random(24)
-    pi_pepper = create_pepper()
+            # create SECRET_KEY and PI_PEPPER
+            secret_key = DefaultSecurityModule.random(24)
+            pi_pepper = create_pepper()
 
-    # create a pi.cfg
-    pi_cfg = os.path.join(instance_dir, 'pi.cfg')
-    with open(pi_cfg, 'w') as f:
-        f.write(PI_CFG_TEMPLATE.format(
-            secret_key=secret_key.encode('string-escape'),
-            pi_pepper=pi_pepper.encode('string-escape')
-        ))
+            secret_key_hex = ''.join('\\x{:02x}'.format(b) for b in six.iterbytes(secret_key))
+            # create a pi.cfg
+            pi_cfg = os.path.join(instance_dir, 'pi.cfg')
+            with open(pi_cfg, 'w') as f:
+                f.write(PI_CFG_TEMPLATE.format(
+                    secret_key=secret_key_hex,
+                    pi_pepper=pi_pepper
+                ))
 
-    # create an enckey
-    invoke_pi_manage(['create_enckey'], pi_cfg)
-    invoke_pi_manage(['create_audit_keys'], pi_cfg)
-    invoke_pi_manage(['createdb'], pi_cfg)
+            # create an enckey
+            invoke_pi_manage(['create_enckey'], pi_cfg)
+            invoke_pi_manage(['create_audit_keys'], pi_cfg)
+            invoke_pi_manage(['createdb'], pi_cfg)
 
-    print()
-    print('Please enter a password for the new admin `super`.')
-    invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
+            print()
+            print('Please enter a password for the new admin `super`.')
+            invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
 
-    # create users
-    if yesno('Would you like to create a default resolver and realm (Y/n)? ', True):
-        print("""
-There are two possibilities to create a resolver:
- 1) We can create a table in the privacyIDEA SQLite database to store the users.
-    You can add users via the privacyIDEA Web UI.
- 2) We can create a resolver that contains the users from /etc/passwd
-""")
-        print()
-        create_sql_resolver = choice('Please choose (default=1): ', {
-            '1': True,
-            '2': False,
-            '': True
-        })
-        if create_sql_resolver:
-            invoke_pi_manage(['resolver', 'create_internal', 'defresolver'], pi_cfg)
-        else:
-            with NamedTemporaryFile(delete=False) as f:
-                f.write('{"fileName": "/etc/passwd"}')
-            invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver', f.name],
-                             pi_cfg)
-            os.unlink(f.name)
-        invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
+            # create users
+            if yesno('Would you like to create a default resolver and realm (Y/n)? ', True):
+                print("""
+    There are two possibilities to create a resolver:
+     1) We can create a table in the privacyIDEA SQLite database to store the users.
+        You can add users via the privacyIDEA Web UI.
+     2) We can create a resolver that contains the users from /etc/passwd
+    """)
+                print()
+                create_sql_resolver = choice('Please choose (default=1): ', {
+                    '1': True,
+                    '2': False,
+                    '': True
+                })
+                if create_sql_resolver:
+                    invoke_pi_manage(['resolver', 'create_internal', 'defresolver'], pi_cfg)
+                else:
+                    with NamedTemporaryFile(delete=False) as f:
+                        f.write('{"fileName": "/etc/passwd"}')
+                    invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver',
+                                      f.name], pi_cfg)
+                    os.unlink(f.name)
+                invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
 
-    print()
-    print('Configuration is complete. You can now configure privacyIDEA in '
-          'the web browser by running')
-    print("  privacyidea-standalone -i '{}' "
-          "configure".format(instance_dir.encode('unicode-escape')))
+            print()
+            print('Configuration is complete. You can now configure privacyIDEA in '
+                  'the web browser by running')
+            print("  privacyidea-standalone -i '{}' "
+                  "configure".format(instance_dir))
+        except Exception as e:
+            print('Could not finish creation process! Removing instance.')
+            shutil.rmtree(instance_dir)
+            raise e
 
 
 @manager.option('-r', '--response', dest='show_response', action='store_true',

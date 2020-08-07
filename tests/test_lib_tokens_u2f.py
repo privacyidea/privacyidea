@@ -265,8 +265,8 @@ class U2FTokenTestCase(MyTestCase):
 
         # decode valid signature
         sig_bin = der_decode(sig_der_bin)
-        self.assertEquals(sig_bin[:32], r)
-        self.assertEquals(sig_bin[32:], s)
+        self.assertEqual(sig_bin[:32], r)
+        self.assertEqual(sig_bin[32:], s)
 
         # decode broken signature
         broken_sig_hex = '304502207f3e632dc9fd607aa9e04c9130f1ddff0d44cf3f2dc3' \

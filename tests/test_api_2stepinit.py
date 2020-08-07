@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import hashlib
-import json
 import binascii
 import base64
 import time
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
@@ -132,7 +131,8 @@ class TwoStepInitTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -247,7 +247,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -342,7 +343,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 5)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 17898, 64)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 17898, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -504,7 +506,8 @@ class TwoStepInitTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -626,7 +629,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 64)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,

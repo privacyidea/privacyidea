@@ -66,7 +66,7 @@ from privacyidea.lib import _
 import traceback
 import logging
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 
 optional = True
 required = False
@@ -731,8 +731,25 @@ class HotpTokenClass(TokenClass):
         # Based on the two components, we generate a symmetric key using PBKDF2
         # We pass the hex-encoded server component as the password and the
         # client component as the salt.
-        secret = pbkdf2(server_component.lower(),
-                        decoded_client_component,
-                        rounds,
-                        keysize)
+        secret = pbkdf2_hmac(digest='sha1',
+                             secret=server_component.lower(),
+                             salt=decoded_client_component,
+                             rounds=rounds,
+                             keylen=keysize)
         return hexlify_and_unicode(secret)
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # get Counter
+        if len(l) >= 5:
+            params["counter"] = int(l[4].strip())
+        return params
