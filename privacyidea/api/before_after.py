@@ -294,6 +294,7 @@ def auth_error(error):
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
 @monitoring_blueprint.app_errorhandler(PolicyError)
+@ttype_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
@@ -315,6 +316,7 @@ def policy_error(error):
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
 @subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
+@ttype_blueprint.app_errorhandler(ResourceNotFoundError)
 def resource_not_found_error(error):
     """
     This function is called when an ResourceNotFoundError occurs.
@@ -341,6 +343,7 @@ def resource_not_found_error(error):
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
 @monitoring_blueprint.app_errorhandler(privacyIDEAError)
+@ttype_blueprint.app_errorhandler(privacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.
@@ -368,6 +371,7 @@ def privacyidea_error(error):
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
 @monitoring_blueprint.app_errorhandler(500)
+@ttype_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

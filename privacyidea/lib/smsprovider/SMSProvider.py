@@ -26,7 +26,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__="""This is the base class for SMS Modules, that can send SMS via
+__doc__ = """This is the base class for SMS Modules, that can send SMS via
 different means.
 The function get_sms_provider_class loads an SMS Provider Module dynamically
 and returns an instance.
@@ -34,6 +34,7 @@ and returns an instance.
 The code is tested in tests/test_lib_smsprovider
 """
 
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 import logging
@@ -268,10 +269,13 @@ def create_sms_instance(identifier):
     :param identifier: The name of the SMS gateway configuration
     :return: SMS Provider object
     """
-    gateway_definition = get_smsgateway(identifier)[0]
-    package_name, class_name = gateway_definition.providermodule.rsplit(".", 1)
+    gateway_definition = get_smsgateway(identifier)
+    if not gateway_definition:
+        raise ConfigAdminError('Could not find gateway definition with '
+                               'identifier "{0!s}"'.format(identifier))
+    package_name, class_name = gateway_definition[0].providermodule.rsplit(".", 1)
     sms_klass = get_sms_provider_class(package_name, class_name)
-    sms_object = sms_klass(smsgateway=gateway_definition)
+    sms_object = sms_klass(smsgateway=gateway_definition[0])
     return sms_object
 
 

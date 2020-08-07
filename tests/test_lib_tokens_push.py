@@ -9,7 +9,8 @@ from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
-                                              DEFAULT_CHALLENGE_TEXT, strip_key)
+                                              DEFAULT_CHALLENGE_TEXT, strip_key,
+                                              PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
@@ -67,6 +68,17 @@ class PushTokenTestCase(MyTestCase):
 
     serial1 = "PUSH00001"
 
+    server_private_key = rsa.generate_private_key(public_exponent=65537,
+                                                  key_size=4096,
+                                                  backend=default_backend())
+    server_private_key_pem = to_unicode(server_private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()))
+    server_public_key_pem = to_unicode(server_private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo))
+
     # We now allow white spaces in the firebase config name
     firebase_config_name = "my firebase config"
 
@@ -74,12 +86,25 @@ class PushTokenTestCase(MyTestCase):
                                                       key_size=4096,
                                                       backend=default_backend())
     smartphone_public_key = smartphone_private_key.public_key()
-    smartphone_public_key_pem = to_unicode(
-            smartphone_public_key.public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo))
+    smartphone_public_key_pem = to_unicode(smartphone_public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
     smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+
+    def _create_push_token(self):
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        tok.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name)
+        tok.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
+        tok.add_tokeninfo('firebase_token', 'firebaseT')
+        tok.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
+        tok.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, 'password')
+        tok.del_tokeninfo("enrollment_credential")
+        tok.rollout_state = "enrolled"
+        tok.active = True
+        return tok
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -203,14 +228,9 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
-        r = set_smsgateway(self.firebase_config_name, u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                            FIREBASE_CONFIG.TTL: 10,
-                            FIREBASE_CONFIG.API_KEY: "1",
-                            FIREBASE_CONFIG.APP_ID: "2",
-                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                            FIREBASE_CONFIG.PROJECT_ID: "test-123456",
-                            FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE})
+        r = set_smsgateway(self.firebase_config_name,
+                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
@@ -870,7 +890,24 @@ class PushTokenTestCase(MyTestCase):
                                 r'Could not parse timestamp .*\. ISO-Format required.',
                                 PushTokenClass.api_endpoint, req, g)
 
-        # TODO: what happens if we provide a timezone-unaware timestamp?
+        # check for timestamp of wrong type
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': datetime.utcnow(),
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Could not parse timestamp .*\. ISO-Format required.',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # check for timezone unaware timestamp (we assume UTC then)
+        req = Request(builder.get_environ())
+        req.all_data = {'serial': 'SPASS01',
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'signature': 'unknown'}
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Could not verify signature!',
+                                PushTokenClass.api_endpoint, req, g)
+
         # create a push token
         tparams = {'type': 'push', 'genkey': 1}
         tparams.update(FB_CONFIG_VALS)
@@ -898,47 +935,17 @@ class PushTokenTestCase(MyTestCase):
         # set up the Firebase Gateway
         r = set_smsgateway(self.firebase_config_name,
                            u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
-                           "myFB",
-                           {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                            FIREBASE_CONFIG.TTL: 10,
-                            FIREBASE_CONFIG.API_KEY: "1",
-                            FIREBASE_CONFIG.APP_ID: "2",
-                            FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                            FIREBASE_CONFIG.PROJECT_ID: "test-123456",
-                            FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE})
+                           "myFB", FB_CONFIG_VALS)
         self.assertGreater(r, 0)
 
         # create a new push token
-        tparams = {'type': 'push', 'genkey': 1}
-        tparams.update(FB_CONFIG_VALS)
-        tok = init_token(param=tparams)
+        tok = self._create_push_token()
         serial = tok.get_serial()
-        tok.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name)
-        # now we need to perform the second rollout step
-        builder = EnvironBuilder(method='POST',
-                                 headers={})
-        req = Request(builder.get_environ())
-        req.all_data = {"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
-                        "serial": serial,
-                        "pubkey": self.smartphone_public_key_pem_urlsafe,
-                        "fbtoken": "firebaseT"}
-        res = PushTokenClass.api_endpoint(req, g)
-        self.assertTrue(res[1]['result']['value'], res)
-        self.assertTrue(res[1]['result']['status'], res)
-        pubkey_server = res[1]['detail']['public_key']
 
-        # we need to create a challenge which we can check for with polling
-        # use a given time for the challenge
+        # this is the default timestamp for polling in this test
         timestamp = datetime(2020, 6, 19, 13, 27, tzinfo=utc)
-        with mock.patch('privacyidea.models.datetime') as mock_datetime:
-            mock_datetime.utcnow.return_value = timestamp.replace(tzinfo=None)
-            challenge = b32encode_and_unicode(geturandom())
-            db_challenge = Challenge(serial, challenge=challenge)
-            db_challenge.save()
-        tid = db_challenge.get_transaction_id()
-        self.assertGreater(len(get_challenges(transaction_id=tid)), 0)
 
-        # now we create a poll request
+        # create a poll request
         # first create a signature
         ts = timestamp.isoformat()
         sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
@@ -959,15 +966,35 @@ class PushTokenTestCase(MyTestCase):
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(req, g)
         self.assertTrue(res[1]['result']['status'], res)
+        # No challenge created yet
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result'])
+
+        # we need to create a challenge which we can check for with polling
+        # use a given time for the challenge (15 seconds before the poll)
+        challenge_timestamp = timestamp - timedelta(seconds=15)
+        with mock.patch('privacyidea.models.datetime') as mock_datetime:
+            mock_datetime.utcnow.return_value = challenge_timestamp.replace(tzinfo=None)
+            challenge = b32encode_and_unicode(geturandom())
+            db_challenge = Challenge(serial, challenge=challenge)
+            db_challenge.save()
+        tid = db_challenge.get_transaction_id()
+        self.assertGreater(len(get_challenges(transaction_id=tid)), 0)
+
+        # now check that we receive the challenge when polling
+        # since we mock the time we can use the same request data
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
         chall = res[1]['result']['value'][0]
         self.assertEqual(chall['nonce'], challenge, chall)
         self.assertIn('signature', chall, chall)
         # check that the signature matches
         sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
-        augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
-            pubkey_server)
         parsed_stripped_server_pubkey = serialization.load_pem_public_key(
-            to_bytes(augmented_pubkey),
+            to_bytes(self.server_public_key_pem),
             default_backend())
         parsed_stripped_server_pubkey.verify(b32decode(chall['signature']),
                                              sign_string.encode('utf8'),
@@ -976,13 +1003,13 @@ class PushTokenTestCase(MyTestCase):
 
         # check for a non-existing serial
         unknown_serial = 'unknown_serial_01'
-        ts = datetime.now(utc).isoformat()
-        # we shouldn't run into a signature check
+        # we shouldn't run into a signature check so we don't create one
+        # also the timestamp can be 'now' so we don't have to patch around
         builder = EnvironBuilder(method='GET',
                                  headers={})
         req = Request(builder.get_environ())
         req.all_data = {'serial': unknown_serial,
-                        'timestamp': ts,
+                        'timestamp': datetime.utcnow().isoformat(),
                         'signature': b32encode(b'no signature check')}
         # poll for challenges
         self.assertRaisesRegexp(privacyIDEAError,
@@ -996,9 +1023,13 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig_fail)}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Could not verify signature!',
+                                    PushTokenClass.api_endpoint, req, g)
 
         # check for a wrongly created signature (inverted timestamp, serial)
         sign_string2 = u"{timestamp}|{serial}".format(serial=serial, timestamp=ts)
@@ -1009,17 +1040,21 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig_fail2)}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Could not verify signature!',
+                                    PushTokenClass.api_endpoint, req, g)
 
         # the serial exists but does not belong to a push token
         tok2 = init_token(param={'type': 'hotp', 'genkey': 1})
         serial2 = tok2.get_serial()
         # we shouldn't run into the signature check here
         req.all_data = {'serial': serial2,
-                        'timestamp': ts,
-                        'signature': b32encode(sig)}
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'signature': b32encode(b"signature not needed")}
         # poll for challenges
         self.assertRaisesRegexp(privacyIDEAError,
                                 r'Could not verify signature!',
@@ -1031,9 +1066,13 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig)}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Could not verify signature!',
+                                    PushTokenClass.api_endpoint, req, g)
 
         # unknown firebase configuration
         tok.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, 'my unknown firebase config')
@@ -1041,9 +1080,13 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': ts,
                         'signature': b32encode(sig)}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Could not verify signature!',
+                                    PushTokenClass.api_endpoint, req, g)
 
         # cleanup
         tok.delete_token()

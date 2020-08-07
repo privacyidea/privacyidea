@@ -28,6 +28,7 @@ This code is tested in tests/test_lib_tokens_push
 """
 
 from base64 import b32decode
+from binascii import Error as BinasciiError
 from six.moves.urllib.parse import quote
 from datetime import datetime, timedelta
 from pytz import utc
@@ -37,7 +38,8 @@ import traceback
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.utils import prepare_result, to_bytes
-from privacyidea.lib.error import ResourceNotFoundError, ValidateError, privacyIDEAError
+from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
+                                   privacyIDEAError, ConfigAdminError)
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
@@ -532,13 +534,18 @@ class PushTokenClass(TokenClass):
             # first check if the timestamp is in the required span
             try:
                 ts = isoparse(timestamp)
-            except ValueError as _e:
+            except (ValueError, TypeError) as _e:
                 log.debug('{0!s}'.format(traceback.format_exc()))
                 raise privacyIDEAError('Could not parse timestamp {0!s}. '
                                        'ISO-Format required.'.format(timestamp))
             # TODO: make time delta configurable
             td = timedelta(minutes=1)
-            now = datetime.now(utc)
+            # We don't know if the passed timestamp is timezone aware. If no
+            # timezone is passed, we assume UTC
+            if ts.tzinfo:
+                now = datetime.now(utc)
+            else:
+                now = datetime.utcnow()
             if not (now - td <= ts <= now + td):
                 raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
             # now check the signature
@@ -578,10 +585,13 @@ class PushTokenClass(TokenClass):
                         challenges.append(sp_data)
                 # return the challenges as a list in the result value
                 result = challenges
-            except (ResourceNotFoundError, ParameterError, InvalidSignature) as _e:
+            except (ResourceNotFoundError, ParameterError,
+                    InvalidSignature, ConfigAdminError, BinasciiError) as e:
                 # to avoid disclosing information we always fail with an invalid
                 # signature error even if the token with the serial could not be found
                 log.debug('{0!s}'.format(traceback.format_exc()))
+                log.info('The following error occurred during the signature '
+                         'check: "{0!r}"'.format(e))
                 raise privacyIDEAError('Could not verify signature!')
 
         else:
