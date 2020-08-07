@@ -689,7 +689,6 @@ def get_token_list():
     """
     module_list = set()
 
-    # TODO: migrate the implementations and uncomment
     module_list.add("privacyidea.lib.tokens.daplugtoken")
     module_list.add("privacyidea.lib.tokens.hotptoken")
     module_list.add("privacyidea.lib.tokens.motptoken")
@@ -716,24 +715,13 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.pushtoken")
     module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
     module_list.add("privacyidea.lib.tokens.webauthntoken")
-    #module_list.add(".tokens.tagespassworttoken")
-    #module_list.add(".tokens.vascotoken")
 
-    # Dynamic Resolver modules
-    # TODO: Migration
-    # config_modules = config.get("privacyideaResolverModules", '')
-    config_modules = None
-    log.debug("{0!s}".format(config_modules))
-    if config_modules:
-        # in the config *.ini files we have some line continuation slashes,
-        # which will result in ugly module names, but as they are followed by
-        # \n they could be separated as single entries by the following two
-        # lines
-        lines = config_modules.splitlines()
-        coco = ",".join(lines)
-        for module in coco.split(','):
-            if module.strip() != '\\':
-                module_list.add(module.strip())
+    # Dynamic token modules
+    dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")
+    if dynamic_token_modules:
+        # In the pi.cfg you can specify a list of 3rd party token modules like
+        #    PI_TOKEN_MODULES = [ "myproj.tokens.tok1", "myproj.tokens.tok2" ]
+        module_list.extend(dynamic_token_modules)
 
     return module_list
 
