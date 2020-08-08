@@ -202,3 +202,16 @@ A JWT can be created like this::
    If you are using an administrative user, the realm for this administrative
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
+.. _picfg_3rd_party_tokens:
+
+3rd party token types
+---------------------
+
+You can add 3rd party token types to privacyIDEA. Read more about this
+at :ref:`customize_3rd_party_tokens`.
+
+You then can add a list of your 3rd party token class modules in ``pi.cfg``
+using the parameter ``PI_TOKEN_MODULES``:
+
+    PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
+

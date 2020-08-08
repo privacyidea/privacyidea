@@ -184,3 +184,29 @@ Some tokens allow a special customization.
 The paper token allows you to add CSS for styling the printed output and
 add additional headers and footers. Read more about it at the
 paper token :ref:`paper_token_customize`.
+
+.. _customize_3rd_party_tokens:
+
+New token classes
+~~~~~~~~~~~~~~~~~
+
+You can write your own Python token class, that should look similar to
+the Python modules located in the directory *privacyidea/lib/tokens/*.
+You should only add on token class per Python module.
+
+You can install your new Python module, wherever you want to like ``myproject.cooltoken``.
+
+If these tokens need additional enrollment data in the UI, you can specify
+two templates, that are displayed during enrollment and after the token
+is enrolled. These HTML templates need to be located at
+``privacyidea/static/components/token/views/token.enroll.<tokentype>.html``
+and
+``privacyidea/static/components/token/views/token.enrolled.<tokentype>.html``.
+
+.. Note:: In this example the python module ``myproject.cooltoken`` should
+   contain a class ``CoolTokenClass``. The tokentype of this token, should
+   be named "cool". And thus the HTML templates included by privacyIDEA
+   are ``token.enroll.cool.html`` and ``token.enrolled.cool.html``.
+
+The list of the token modules you want to add, must be specified in ``pi.cfg``.
+See :ref:`picfg_3rd_party_tokens`.

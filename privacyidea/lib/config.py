@@ -719,9 +719,9 @@ def get_token_list():
     # Dynamic token modules
     dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")
     if dynamic_token_modules:
-        # In the pi.cfg you can specify a list of 3rd party token modules like
+        # In the pi.cfg you can specify a list or set of 3rd party token modules like
         #    PI_TOKEN_MODULES = [ "myproj.tokens.tok1", "myproj.tokens.tok2" ]
-        module_list.extend(dynamic_token_modules)
+        module_list.update(dynamic_token_modules)
 
     return module_list
 
