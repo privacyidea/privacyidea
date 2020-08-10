@@ -190,9 +190,19 @@ paper token :ref:`paper_token_customize`.
 New token classes
 ~~~~~~~~~~~~~~~~~
 
-You can write your own Python token class, that should look similar to
-the Python modules located in the directory *privacyidea/lib/tokens/*.
-You should only add on token class per Python module.
+You can add new token types to privacyIDEA by writing your own Python token class.
+A token class in privacyIDEA is
+inherited from ``privacyidea.lib.tokenclass.TokenClass``. You can either inherit from
+this base class directly or from another token class. E.g. the *TOTP* token class is inherited from
+*HOTP*. Take a look in the directory *privacyidea/lib/tokens/* to get an idea of token classes.
+
+A token class can have many different methods which you can find in the base class ``TokenClass``.
+Depending on the token type you are going to implement, you will need to implement several of these.
+Probably the most important methods are ``check_otp``, which validates the 2nd factor and the
+method ``update``, which is called during the initialization process of the token and
+gathers and writes all token specific attributes.
+
+You should only add one token class per Python module.
 
 You can install your new Python module, wherever you want to like ``myproject.cooltoken``.
 

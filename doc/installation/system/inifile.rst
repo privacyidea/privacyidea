@@ -210,8 +210,9 @@ A JWT can be created like this::
 You can add 3rd party token types to privacyIDEA. Read more about this
 at :ref:`customize_3rd_party_tokens`.
 
-You then can add a list of your 3rd party token class modules in ``pi.cfg``
-using the parameter ``PI_TOKEN_MODULES``:
+To make the new token type available in privacyIDEA,
+you need to specify a list of your 3rd party token class modules
+in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``:
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 
