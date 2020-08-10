@@ -1082,7 +1082,7 @@ def censor_connect_string(connect_string):
     """
     try:
         parsed = sqlalchemy.engine.url.make_url(connect_string)
-        return repr(parsed)
+        return parsed.__repr__()
     except Exception:
         return "<error when censoring connect string>"
 
