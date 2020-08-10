@@ -1,4 +1,4 @@
-Version 3.4dev2, 2020-07-24
+Version 3.4dev3, 2020-08-08
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
@@ -13,6 +13,7 @@ Version 3.4dev2, 2020-07-24
    * Allow hiding description field for users during
      token enrollment (#2173)
    * Improve error message during token import (#2073)
+   * Add Dutch translation (#2314)
    * Allow application to choose tokentypes in
      /validate/check and /validate/triggerchallenge (#2047)
    * HTTPSMSProvider can now have header parameters in the
@@ -20,7 +21,7 @@ Version 3.4dev2, 2020-07-24
    * Events
      * Add failcounter as condition in event handlers (#2147)
      * The script handler allows to sync the database before
-       running the script (#2293)
+       running the script (#2293 #2302)
    * Policies
      * Allow to define characters for set_random_pin policy (#2121)
      * Add privacyIDEA nodes to policy condition (#2108)
@@ -28,6 +29,9 @@ Version 3.4dev2, 2020-07-24
        allow or deny access (#2275)
    * Allow ECDSA and other SSH key types (#2274)
    * pi-manage can import tokens including HOTP token counter (#2285)
+   * Allow the token janitor to set tokenrealms (#2299)
+   * Use our general webauthn client component in the
+     privacyIDEA WebUI (#2273)
 
   Fixes:
    * Add missing audit data to container audit (#2264)
@@ -47,6 +51,8 @@ Version 3.4dev2, 2020-07-24
    * Fix exceeding max tokens when enabling a disabled token (#2215)
    * split@Sign setting is also applied to REMOTE_USER (#1954)
    * Fix privacyidea-diag and privacyidea-standalone to run with Python 3 (#1874)
+   * Fix possible recursion error in 4eyes token (#1892)	
+   * Improve tests by fixing deprecation warnings (#2298)
 
 
 Version 3.3.3, 2020-05-19
