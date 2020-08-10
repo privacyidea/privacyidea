@@ -190,6 +190,7 @@ def offlinerefill():
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
+@validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(construct_radius_response, request=request)
@@ -318,80 +319,9 @@ def check():
 
     .. note:: All challenge response tokens have the same transaction_id in
        this case.
-    """
-    user = request.User
-    serial = getParam(request.all_data, "serial")
-    password = getParam(request.all_data, "pass", required)
-    otp_only = getParam(request.all_data, "otponly")
-    token_type = getParam(request.all_data, "type")
-    options = {"g": g,
-               "clientip": g.client_ip}
-    # Add all params to the options
-    for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
-
-    g.audit_object.log({"user": user.login,
-                        "resolver": user.resolver,
-                        "realm": user.realm})
-
-    if serial:
-        if user:
-            # check if the given token belongs to the user
-            if not get_tokens(user=user, serial=serial, count=True):
-                raise ParameterError('Given serial does not belong to given user!')
-        if not otp_only:
-            result, details = check_serial_pass(serial, password, options=options)
-        else:
-            result, details = check_otp(serial, password)
-
-    else:
-        options["token_type"] = token_type
-        result, details = check_user_pass(user, password, options=options)
-
-    g.audit_object.log({"info": log_used_user(user, details.get("message")),
-                        "success": result,
-                        "serial": serial or details.get("serial"),
-                        "token_type": details.get("type")})
-    return send_result(result, details=details)
 
 
-@validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
-@postpolicy(is_authorized, request=request)
-@postpolicy(no_detail_on_fail, request=request)
-@postpolicy(no_detail_on_success, request=request)
-@postpolicy(add_user_detail_to_response, request=request)
-@postpolicy(check_tokeninfo, request=request)
-@postpolicy(check_tokentype, request=request)
-@postpolicy(check_serial, request=request)
-@postpolicy(autoassign, request=request)
-@prepolicy(check_application_tokentype, request=request)
-@prepolicy(pushtoken_wait, request=request)
-@prepolicy(set_realm, request=request)
-@prepolicy(mangle, request=request)
-@prepolicy(save_client_application_type, request=request)
-@prepolicy(webauthntoken_request, request=request)
-@prepolicy(webauthntoken_authz, request=request)
-@prepolicy(webauthntoken_auth, request=request)
-@check_user_or_serial_in_request(request)
-@CheckSubscription(request)
-@prepolicy(api_key_required, request=request)
-@event("validate_check", request, g)
-def samlcheck():
-    """
-    Authenticate the user and return the SAML user information.
-
-    :param user: The loginname/username of the user, who tries to authenticate.
-    :param realm: The realm of the user, who tries to authenticate. If the
-        realm is omitted, the user is looked up in the default realm.
-    :param type: The tokentype of the tokens, that are taken into account during
-        authentication. Requires authz policy application_tokentype.
-        Is ignored when a distinct serial is given.
-    :param pass: The password, that consists of the OTP PIN and the OTP value.
-
-    :return: a json result with a boolean "result": true
-
-    **Example response** for a successful authentication:
+    **Example response** for a successful authentication with /samlcheck:
 
        .. sourcecode:: http
 
@@ -428,44 +358,60 @@ def samlcheck():
     mapping.
     """
     user = request.User
+    serial = getParam(request.all_data, "serial")
     password = getParam(request.all_data, "pass", required)
+    otp_only = getParam(request.all_data, "otponly")
     token_type = getParam(request.all_data, "type")
     options = {"g": g,
-               "clientip": g.client_ip,
-               "token_type": token_type}
+               "clientip": g.client_ip}
     # Add all params to the options
     for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
 
-    auth, details = check_user_pass(user, password, options=options)
-    ui = user.info
-    result_obj = {"auth": auth,
-                  "attributes": {}}
-    if return_saml_attributes():
-        if auth or return_saml_attributes_on_fail():
-            # privacyIDEA's own attribute map
-            result_obj["attributes"] = {"username": ui.get("username"),
-                                        "realm": user.realm,
-                                        "resolver": user.resolver,
-                                        "email": ui.get("email"),
-                                        "surname": ui.get("surname"),
-                                        "givenname": ui.get("givenname"),
-                                        "mobile": ui.get("mobile"),
-                                        "phone": ui.get("phone")
-                                        }
-            # additional attributes
-            for k, v in ui.items():
-                result_obj["attributes"][k] = v
-
-    g.audit_object.log({"info": log_used_user(user, details.get("message")),
-                        "success": auth,
-                        "serial": details.get("serial"),
-                        "token_type": details.get("type"),
-                        "user": user.login,
+    g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
                         "realm": user.realm})
-    return send_result(result_obj, details=details)
+
+    if serial:
+        if user:
+            # check if the given token belongs to the user
+            if not get_tokens(user=user, serial=serial, count=True):
+                raise ParameterError('Given serial does not belong to given user!')
+        if not otp_only:
+            success, details = check_serial_pass(serial, password, options=options)
+        else:
+            success, details = check_otp(serial, password)
+        result = success
+
+    else:
+        options["token_type"] = token_type
+        success, details = check_user_pass(user, password, options=options)
+        result = success
+        if request.path.endswith("samlcheck"):
+            ui = user.info
+            result = {"auth": success,
+                      "attributes": {}}
+            if return_saml_attributes():
+                if success or return_saml_attributes_on_fail():
+                    # privacyIDEA's own attribute map
+                    result["attributes"] = {"username": ui.get("username"),
+                                                "realm": user.realm,
+                                                "resolver": user.resolver,
+                                                "email": ui.get("email"),
+                                                "surname": ui.get("surname"),
+                                                "givenname": ui.get("givenname"),
+                                                "mobile": ui.get("mobile"),
+                                                "phone": ui.get("phone")}
+                    # additional attributes
+                    for k, v in ui.items():
+                        result["attributes"][k] = v
+
+    g.audit_object.log({"info": log_used_user(user, details.get("message")),
+                        "success": success,
+                        "serial": serial or details.get("serial"),
+                        "token_type": details.get("type")})
+    return send_result(result, details=details)
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
