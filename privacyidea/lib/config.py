@@ -43,6 +43,7 @@ from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
+from privacyidea.lib.utils import to_list
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -721,7 +722,7 @@ def get_token_list():
     if dynamic_token_modules:
         # In the pi.cfg you can specify a list or set of 3rd party token modules like
         #    PI_TOKEN_MODULES = [ "myproj.tokens.tok1", "myproj.tokens.tok2" ]
-        module_list.update(dynamic_token_modules)
+        module_list.update(to_list(dynamic_token_modules))
 
     return module_list
 
