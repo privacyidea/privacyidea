@@ -1426,3 +1426,18 @@ def determine_logged_in_userparams(logged_in_user, params):
         raise PolicyError(u"Unknown role: {}".format(role))
 
     return role, username, realm, admin_user, admin_realm
+
+
+def to_list(input):
+    """
+    Returns a list if either a list, a set or a single string is given.
+    If a single string is given, then it returns a list with this one element.
+
+    :param input: Can be a list a set or a string
+    :return: list of elements
+    """
+    if isinstance(input, list):
+        return input
+    if isinstance(input, set):
+        return list(input)
+    return [input]

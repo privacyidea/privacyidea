@@ -152,6 +152,20 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(TotpTokenClass in r, r)
         self.assertTrue(HotpTokenClass in r, r)
 
+        # Test custom token types
+        with self.app_context:
+            self.app.config['PI_TOKEN_MODULES'] = 'tests.testdata.fancytoken'
+            r = get_token_list()
+            self.assertIn("tests.testdata.fancytoken", r, r)
+            mlist = get_token_module_list()
+            mod = importlib.import_module('tests.testdata.fancytoken')
+            self.assertTrue(mod in mlist, mlist)
+            (classes, types) = get_token_class_dict()
+            self.assertIn('tests.testdata.fancytoken.FancyTokenClass', classes, classes)
+            self.assertIn('tests.testdata.fancytoken.FancyTokenClass', types, types)
+            self.assertEqual(types['tests.testdata.fancytoken.FancyTokenClass'], 'fancy', types)
+            self.app.config.pop('PI_TOKEN_MODULES')
+
     def test_03_token_prefix(self):
         prefix = get_token_prefix("totp")
         self.assertTrue(prefix == "TOTP", prefix)

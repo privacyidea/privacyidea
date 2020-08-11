@@ -23,7 +23,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid, determine_logged_in_userparams)
+                                   check_serial_valid, determine_logged_in_userparams,
+                                   to_list)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -960,3 +961,15 @@ class UtilsTestCase(MyTestCase):
         # Wrong entry, that cannot be processed
         self.assertRaises(Exception, compare_generic_condition,
                           "b!~100", mock_attribute, "Error {0!s}")
+
+    def test_34_to_list(self):
+        # Simple string
+        self.assertEqual(["Hallo"], to_list("Hallo"))
+        # check for a list
+        r = to_list(["Hallo", "Du", "da"])
+        self.assertIsInstance(r, list)
+        self.assertEqual(3, len(r))
+        # Check for a set
+        r = to_list({"Hallo", "Du", "da"})
+        self.assertIsInstance(r, list)
+        self.assertEqual(3, len(r))
