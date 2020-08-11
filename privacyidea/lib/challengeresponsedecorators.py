@@ -20,7 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-These are the decorator functions generic challenge respsonce mechanisms:
+These are the decorator functions for generic challenge response mechanisms:
 
 * PIN change
 
@@ -100,7 +100,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             token_obj = next(t for t in args[0] if t.token.serial == challenge.serial)
             if token_obj:
                 # Then either verify the PIN or set the PIN the first time. The
-                # PIN from the 1st was is stored in challenge.data
+                # PIN from the 1st response is stored in challenge.data
                 if challenge.data:
                     hashedpin = challenge.data[SEED_LENGTH + 1:]
                     seed = challenge.data[0:SEED_LENGTH]
