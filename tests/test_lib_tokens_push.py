@@ -1000,6 +1000,17 @@ class PushTokenTestCase(MyTestCase):
                                              sign_string.encode('utf8'),
                                              padding.PKCS1v15(),
                                              hashes.SHA256())
+        self.assertFalse(db_challenge.get_otp_status()[1], str(db_challenge))
+
+        # Now mark the challenge as answered so we receive an empty list
+        db_challenge.set_otp_status(True)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
         # check for a non-existing serial
         unknown_serial = 'unknown_serial_01'

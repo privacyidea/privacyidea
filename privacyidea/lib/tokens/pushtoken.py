@@ -592,8 +592,9 @@ class PushTokenClass(TokenClass):
                 challenges = []
                 challengeobject_list = get_challenges(serial=serial)
                 for chal in challengeobject_list:
-                    # check if the challenge is active
-                    if chal.is_valid():
+                    # check if the challenge is active and not already answered
+                    _cnt, answered = chal.get_otp_status()
+                    if not answered and chal.is_valid():
                         # then return the necessary smartphone data to answer
                         # the challenge
                         sp_data = _build_smartphone_data(serial, chal.challenge,
