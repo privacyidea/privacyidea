@@ -197,32 +197,30 @@ def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
 
 class PushTokenClass(TokenClass):
     """
-    The PUSH token uses the firebase service to send challenges to the
-    users smartphone. The user confirms on the smartphone, signes the
+    The :ref:`push_token` uses the firebase service to send challenges to the
+    users smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
     The enrollment occurs in two enrollment steps:
 
-    # Step 1
+    Step 1:
+      The device is enrolled using a QR code, which encodes the following URI::
 
-    The device is enrolled using a QR code, that looks like this:
+          otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
 
-    otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
+    Step 2:
+      In the QR code is a URL, where the smartphone sends the remaining data for the enrollment::
 
-    # Step 2
-
-    In the QR code is a URL, where the smartphone sends the remaining data for the enrollment.
-
-    POST https://yourprivacyideaserver/ttype/push
-     enrollment_credential=<some credential>
-     serial=<token serial>
-     fbtoken=<firebase token>
-     pubkey=<public key>
+          POST https://yourprivacyideaserver/ttype/push
+              enrollment_credential=<some credential>
+              serial=<token serial>
+              fbtoken=<firebase token>
+              pubkey=<public key>
 
     For more information see:
-    https://github.com/privacyidea/privacyidea/issues/1342
-    https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
 
+    - https://github.com/privacyidea/privacyidea/issues/1342
+    - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
     """
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
 
@@ -253,9 +251,8 @@ class PushTokenClass(TokenClass):
         :type key: str
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype : s.o.
+        :rtype: dict
         """
         gws = get_smsgateway(gwtype=GWTYPE)
         res = {'type': 'push',
@@ -334,13 +331,17 @@ class PushTokenClass(TokenClass):
         and the second authentication step.
 
         1. step:
-            parameter type contained.
-            parameter genkey contained.
+            ``param`` contains:
+
+            - ``type``
+            - ``genkey``
 
         2. step:
-            parameter serial contained
-            parameter fbtoken contained
-            parameter pubkey contained
+            ``param`` contains:
+
+            - ``serial``
+            - ``fbtoken``
+            - ``pubkey``
 
         :param param: dict of initialization parameters
         :type param: dict
@@ -445,29 +446,44 @@ class PushTokenClass(TokenClass):
     def api_endpoint(cls, request, g):
         """
         This provides a function which is called by the API endpoint
-        /ttype/push which is defined in api/ttype.py
+        ``/ttype/push`` which is defined in :doc:`../../api/ttype`
 
-        The method returns
-            return "json", {}
+        The method returns a tuple ``("json", {})``
 
-        This endpoint is used for the 2nd enrollment step of the smartphone.
-        Parameters sent:
-            * serial
-            * fbtoken
-            * pubkey
+        This endpoint provides several functionalities:
 
-        This endpoint is also used, if the smartphone sends the signed response
-        to the challenge during authentication
-        Parameters sent:
-            * serial
-            * nonce (which is the challenge)
-            * signature (which is the signed nonce)
+        - It is used for the 2nd enrollment step of the smartphone.
+          It accepts the following parameters::
 
-        # TODO: poll challenges
+              POST https://yourprivacyideaserver/ttype/push
+
+                  serial=<token serial>
+                  fbtoken=<firebase token>
+                  pubkey=<public key>
+
+        - It is also used when the smartphone sends the signed response
+          to the challenge during authentication. The following parameters ar accepted::
+
+              POST https://yourprivacyideaserver/ttype/push
+
+                  serial=<token serial>
+                  nonce=<the actual challenge>
+                  signature=<the signed nonce>
+
+        - And it also acts as an endpoint for polling challenges::
+
+              GET https://yourprivacyideaserver/ttype/push
+
+                  serial=<tokenserial>
+                  timestamp=<timestamp>
+                  signature=SIGNATURE(<tokenserial>|<timestamp>)
+
+          More on polling can be found here: https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll
 
         :param request: The Flask request
         :param g: The Flask global object g
-        :return: dictionary
+        :return: The json string representing the result dictionary
+        :rtype: tuple("json", str)
         """
         details = {}
         result = False
@@ -695,11 +711,12 @@ class PushTokenClass(TokenClass):
         :type options: dict
 
         :return: returns tuple of
-                 1. true or false for the pin match,
-                 2. the otpcounter (int) and the
-                 3. reply (dict) that will be added as
-                    additional information in the JSON response
-                    of ``/validate/check``.
+
+          1. true or false for the pin match,
+          2. the otpcounter (int) and the
+          3. reply (dict) that will be added as additional information in the
+             JSON response of ``/validate/check``.
+
         :rtype: tuple
         """
         otp_counter = -1

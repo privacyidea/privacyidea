@@ -640,7 +640,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     to ``request.all_data``, that is:
 
      * ``{type}_2step_serversize`` is written to ``2step_serversize``
-     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize``
      * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
 
     If no policy matches, the value passed by the user is kept.
@@ -1042,7 +1042,7 @@ def check_base_action(request=None, action=None, anonymous=False):
     :param request:
     :param action:
     :param anonymous: If set to True, the user data is taken from the request
-        parameters.
+    parameters.
     :return: True otherwise raises an Exception
     """
     ERROR = {"user": "User actions are defined, but the action %s is not "
@@ -1605,7 +1605,7 @@ def webauthntoken_authz(request, action):
     :param action:
     :type action:
     :return:
-    :rtype
+    :rtype:
     """
 
     # If a WebAuthn token is being authorized.
