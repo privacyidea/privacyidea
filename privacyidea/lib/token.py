@@ -96,6 +96,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               config_lost_token,
                                               reset_all_user_tokens)
+from privacyidea.lib.challengeresponsedecorators import generic_challenge_response_reset_pin
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from dateutil.tz import tzlocal
@@ -2079,6 +2080,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
 
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
+@libpolicy(generic_challenge_response_reset_pin)
 def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
     this takes a list of token objects and tries to find the matching token
@@ -2243,6 +2245,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # The RESPONSE for a previous request of a challenge response token was
         # found.
         matching_challenge = False
+        further_challenge = False
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
@@ -2261,20 +2264,37 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
+                    # If exist, add next pin and next password change
+                    next_pin = tokenobject.get_tokeninfo("next_pin_change")
+                    if next_pin:
+                        reply_dict["next_pin_change"] = next_pin
+                        reply_dict["pin_change"] = tokenobject.is_pin_change()
+                    next_passw = tokenobject.get_tokeninfo("next_password_change")
+                    if next_passw:
+                        reply_dict["next_password_change"] = next_passw
+                        reply_dict["password_change"] = tokenobject.is_pin_change(password=True)
                     tokenobject.challenge_janitor()
-                    # clean up all other challenges from other tokens. I.e.
+                    if tokenobject.has_further_challenge(options):
+                        # The token creates further challenges, so create the new challenge
+                        # and new transaction_id
+                        create_challenges_from_tokens([tokenobject], reply_dict, options)
+                        further_challenge = True
+                        res = False
+                    else:
+                        # This was the last successful challenge, so
+                        # reset the fail counter of the challenge response token
+                        tokenobject.reset()
+
+                    # clean up all challenges from this and other tokens. I.e.
                     # all challenges with this very transaction_id!
                     transaction_id = options.get("transaction_id") or \
                                      options.get("state")
                     Challenge.query.filter(Challenge.transaction_id == u'' +
                                            transaction_id).delete()
-
-                    # Reset the fail counter of the challenge response token
-                    tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
 
-        if not res:
+        if not res and not further_challenge:
             # We did not find any successful response, so we need to increase the
             # failcounters
             for token_obj in challenge_response_token_list:

@@ -293,6 +293,24 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
+.. _policy_change_pin_via_validate:
+
+change_pin_via_validate
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This works with the enrollment policies :ref:`policy_change_pin_first_use` and
+:ref:`policy_change_pin_every`. When a PIN change is due, then a successful authentication
+will start a challenge response mechanism in which the user is supposed to enter a new
+PIN two times.
+
+Only if the user successfully changes the PIN the authentication process is finished
+successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+
+.. note:: The application must support several consecutive challenge response requests.
+
+
 .. _policy_u2f_facets:
 
 u2f_facets

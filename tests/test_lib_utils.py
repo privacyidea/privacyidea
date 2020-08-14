@@ -14,7 +14,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
-                                   truncate_comma_list, check_pin_policy, CHARLIST_CONTENTPOLICY,
+                                   truncate_comma_list, check_pin_contents, CHARLIST_CONTENTPOLICY,
                                    get_module_class, decode_base32check,
                                    get_client_ip, sanity_name_check, to_utf8,
                                    to_byte_string, hexlify_and_unicode,
@@ -569,93 +569,93 @@ class UtilsTestCase(MyTestCase):
 
     def test_20_pin_policy(self):
         # Unspecified character specifier
-        self.assertRaises(PolicyError, check_pin_policy, "1234", "+o")
+        self.assertRaises(PolicyError, check_pin_contents, "1234", "+o")
 
-        r, c = check_pin_policy("1234", "n")
+        r, c = check_pin_contents("1234", "n")
         self.assertTrue(r)
 
-        r, c = check_pin_policy(r"[[[", "n")
+        r, c = check_pin_contents(r"[[[", "n")
         self.assertFalse(r)
 
-        r, c = check_pin_policy(r"[[[", "c")
+        r, c = check_pin_contents(r"[[[", "c")
         self.assertFalse(r)
 
-        r, c = check_pin_policy(r"[[[", "s")
+        r, c = check_pin_contents(r"[[[", "s")
         self.assertTrue(r)
 
         # check the validation of a generated password with square brackets
         password = generate_password(size=3, requirements=['[', '[', '['])
-        r, c = check_pin_policy(password, "s")
+        r, c = check_pin_contents(password, "s")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("abc", "nc")
+        r, c = check_pin_contents("abc", "nc")
         self.assertFalse(r)
         self.assertEqual("Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['n']), c)
 
-        r, c = check_pin_policy("123", "nc")
+        r, c = check_pin_contents("123", "nc")
         self.assertFalse(r)
         self.assertEqual(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c']), c)
 
-        r, c = check_pin_policy("123", "ncs")
+        r, c = check_pin_contents("123", "ncs")
         self.assertFalse(r)
         self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c'] in c), c)
         self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['s'] in c), c)
 
-        r, c = check_pin_policy("1234", "")
+        r, c = check_pin_contents("1234", "")
         self.assertFalse(r)
         self.assertEqual(c, "No policy given.")
 
         # check for either number or character
-        r, c = check_pin_policy("1234", "+cn")
+        r, c = check_pin_contents("1234", "+cn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("1234xxxx", "+cn")
+        r, c = check_pin_contents("1234xxxx", "+cn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("xxxx", "+cn")
+        r, c = check_pin_contents("xxxx", "+cn")
         self.assertTrue(r)
-        self.assertTrue(check_pin_policy("test1234", "+cn")[0])
-        self.assertTrue(check_pin_policy("test12$$", "+cn")[0])
-        self.assertTrue(check_pin_policy("test12", "+cn")[0])
-        self.assertTrue(check_pin_policy("1234", "+cn")[0])
+        self.assertTrue(check_pin_contents("test1234", "+cn")[0])
+        self.assertTrue(check_pin_contents("test12$$", "+cn")[0])
+        self.assertTrue(check_pin_contents("test12", "+cn")[0])
+        self.assertTrue(check_pin_contents("1234", "+cn")[0])
 
-        r, c = check_pin_policy("@@@@", "+cn")
+        r, c = check_pin_contents("@@@@", "+cn")
         self.assertFalse(r)
         self.assertEqual(c, "Missing character in PIN: {}{}".format(CHARLIST_CONTENTPOLICY['c'],
                                                                     CHARLIST_CONTENTPOLICY['n']))
 
         # check for exclusion
         # No special character
-        r, c = check_pin_policy("1234", "-s")
+        r, c = check_pin_contents("1234", "-s")
         self.assertTrue(r)
-        r, c = check_pin_policy("1234aaaa", "-s")
+        r, c = check_pin_contents("1234aaaa", "-s")
         self.assertTrue(r)
-        r, c = check_pin_policy("1234aaaa//", "-s")
+        r, c = check_pin_contents("1234aaaa//", "-s")
         self.assertFalse(r)
 
         # A pin that falsely contains a number
-        r, c = check_pin_policy("1234aaa", "-sn")
+        r, c = check_pin_contents("1234aaa", "-sn")
         self.assertFalse(r)
         self.assertEqual(c, "Not allowed character in PIN!")
-        r, c = check_pin_policy("///aaa", "-sn")
+        r, c = check_pin_contents("///aaa", "-sn")
         self.assertFalse(r)
         # A pin without a number and without a special
-        r, c = check_pin_policy("xxxx", "-sn")
+        r, c = check_pin_contents("xxxx", "-sn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("1234@@@@", "-c")
+        r, c = check_pin_contents("1234@@@@", "-c")
         self.assertTrue(r)
 
         # A pin with only digits allowed
-        r, c = check_pin_policy("1234", "-cs")
+        r, c = check_pin_contents("1234", "-cs")
         self.assertTrue(r)
-        r, c = check_pin_policy("a1234", "-cs")
+        r, c = check_pin_contents("a1234", "-cs")
         self.assertFalse(r)
 
         # A pin with only a specified list of chars
-        r, c = check_pin_policy("1234111", "[1234]")
+        r, c = check_pin_contents("1234111", "[1234]")
         self.assertTrue(r)
-        r, c = check_pin_policy("12345", "[1234]")
+        r, c = check_pin_contents("12345", "[1234]")
         self.assertFalse(r)
 
     def test_21_get_module_class(self):

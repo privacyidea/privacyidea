@@ -2847,7 +2847,6 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("pol_application_tokentype")
 
 
-
 class RegistrationValidity(MyApiTestCase):
 
     def setUp(self):
@@ -3799,6 +3798,47 @@ class AChallengeResponse(MyApiTestCase):
                              u'and can not be used for authentication.',
                              result.get("error").get("message"))
         remove_token("PIIX01")
+
+    def test_14_indexed_secret_multichallenge(self):
+        index_secret = "abcdefghijklmn"
+        serial = "indx001"
+        tok = init_token({"type": "indexedsecret", "otpkey": index_secret, "pin": "index", "serial": serial},
+                         user=User("cornelius", self.realm1))
+        tok.add_tokeninfo("multichallenge", 1)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "index"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            position = detail.get("attributes").get("random_positions")[0]
+
+        # First response
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            position = detail.get("attributes").get("random_positions")[0]
+
+        # Second response
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            # Successful authentication!
+            self.assertTrue(result.get("value"))
+
+        remove_token(serial)
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
