@@ -2464,11 +2464,16 @@ class Match(object):
         if token_obj.user:
             return cls.user(g, scope, action, token_obj.user)
         else:
-            realm = None
             realms = token_obj.get_realms()
-            if len(realms) > 0:
-                realm = realms[0]
-            return cls.realm(g, scope, action, realm)
+            if len(realms) == 0:
+                return cls.action_only(g, scope, action)
+            elif len(realms) == 1:
+                # We have one distinct token realm
+                log.debug("Matching policies with tokenrealm {0!s}.".format(realms[0]))
+                return cls.realm(g, scope, action, realms[0])
+            else:
+                log.warning("The token has more than one tokenrealm. Probably not able to match correctly.")
+                return cls.action_only(g, scope, action)
 
     @classmethod
     def admin(cls, g, action, user_obj=None):
