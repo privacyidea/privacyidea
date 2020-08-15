@@ -397,7 +397,7 @@ However, cache entries are removed at some defined events:
 
 .. rubric:: Footnotes
 
-.. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
-.. [#osiam] http://www.osiam.org
-.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
-.. [#ldapschema] http://ldap3.readthedocs.io/schema.html
+.. [#adreferrals] https://techcommunity.microsoft.com/t5/azure-active-directory-identity/referral-chasing/ba-p/243177
+.. [#osiam] http://osiam.github.io
+.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/server.rst#server-pool
+.. [#ldapschema] https://ldap3.readthedocs.io/en/latest/schema.html
