@@ -2525,60 +2525,6 @@ class HTTPResolverTestCase(MyTestCase):
         r_type = instance.getResolverType()
         self.assertEqual("httpresolver", r_type)
 
-        # Test with invalid method
-        instance = HTTPResolver()
-        invalidMethodDict = params.copy()
-        invalidMethodDict.update({'method': ''})
-        self.assertRaisesRegexp(ParameterError,
-            "Parameter 'method' must not be empty",
-            instance.loadConfig,
-            invalidMethodDict
-        )
-
-        # Test with missing endpoint
-        instance = HTTPResolver()
-        invalidEndpointDict = params.copy()
-        invalidEndpointDict.update({'endpoint': ''})
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Parameter 'endpoint' must not be empty",
-            instance.loadConfig,
-            invalidEndpointDict
-        )
-
-        # Test with missing responseMapping
-        instance = HTTPResolver()
-        invalidResponseMappingDict = params.copy()
-        invalidResponseMappingDict.update({'responseMapping': ''})
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Parameter 'responseMapping' must not be empty",
-            instance.loadConfig,
-            invalidResponseMappingDict
-        )
-
-        # Test with missing responseMapping
-        instance = HTTPResolver()
-        invalidRequestMappingDict = params.copy()
-        invalidRequestMappingDict.update({'requestMapping': ''})
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Parameter 'requestMapping' must not be empty",
-            instance.loadConfig,
-            invalidRequestMappingDict
-        )
-
-        # Test with special error handling as true and error response empty
-        instance = HTTPResolver()
-        invalidErrorResponseDict = params.copy()
-        invalidErrorResponseDict.update({'hasSpecialErrorHandling': True, 'errorResponse': ''})
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Parameter 'errorResponse' must not be empty",
-            instance.loadConfig,
-            invalidErrorResponseDict
-        )
-
     def test_02_get_user_list(self):
         instance = HTTPResolver()
         instance.loadConfig({

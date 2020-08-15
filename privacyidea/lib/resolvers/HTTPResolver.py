@@ -158,24 +158,6 @@ class HTTPResolver(UserIdResolver):
         :param config: The configuration values of the resolver
         :type config: dict
         """
-
-        # Validations
-        getParam(config, 'method', optional=False, allow_empty=False, allowed_values=('get', 'post', 'GET', 'POST'))
-        getParam(config, 'endpoint', optional=False, allow_empty=False)
-        getParam(config, 'requestMapping', optional=False, allow_empty=False)
-        getParam(config, 'responseMapping', optional=False, allow_empty=False)
-        hasSpecialErrorHandler = getParam(
-            config,
-            'hasSpecialErrorHandler',
-            optional=False,
-            default=False,
-            allow_empty=False
-        )
-
-        # Validate special error handler
-        if hasSpecialErrorHandler and not config.get('errorResponse'):
-            getParam(config, 'errorResponse', optional=False, allow_empty=False)
-
         self.config = config
         return self
 
@@ -218,7 +200,7 @@ class HTTPResolver(UserIdResolver):
         responseMapping = json.loads(param.get('responseMapping'))
         headers = json.loads(param.get('headers', '{}'))
         hasSpecialErrorHandler = bool(param.get('hasSpecialErrorHandler'))
-        errorResponse = json.loads(param.get('errorResponse'))
+        errorResponse = json.loads(param.get('errorResponse', '{}'))
 
         if method == "post":
             httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers)
