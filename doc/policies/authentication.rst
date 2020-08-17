@@ -419,6 +419,38 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 
+.. _policy_auth_push_allow_poll:
+
+push_allow_polling
+~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: string
+
+This policy configures if push token are allowed to poll the server for open
+challenges (e.g. when the the third-party push service is unavailable or
+unreliable).
+
+The following options are available:
+
+``allow``
+
+    *Allow* push tokens to poll for challenges.
+
+``deny``
+
+    *Deny* push tokens to poll for challenges. This basically returns a ``403``
+    error when requesting the poll endpoint.
+
+``token``
+
+    *Allow* / *Deny* polling based on the individual token. The tokeninfo key
+    ``polling_allowed`` is checked. If the value evaluates to ``False`` polling
+    is denied for this token.
+
+The default is to ``allow`` polling
+
 .. _policy_challenge_text:
 
 challenge_text, challenge_text_header, challenge_test_footer

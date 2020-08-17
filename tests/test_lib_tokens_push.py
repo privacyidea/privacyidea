@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 from pytz import utc
 
 from .base import MyTestCase, FakeFlaskG
-from privacyidea.lib.error import ParameterError, privacyIDEAError
+from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
 from privacyidea.lib.user import (User)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
-                                              PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER)
+                                              PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
+                                              PushAllowPolling, POLLING_ALLOWED)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
@@ -824,6 +825,7 @@ class PushTokenTestCase(MyTestCase):
     def test_10_api_endpoint(self):
         # first check for unused request methods
         g = FakeFlaskG()
+        g.policy_object = PolicyClass()
         builder = EnvironBuilder(method='PUT',
                                  headers={})
 
@@ -1012,20 +1014,58 @@ class PushTokenTestCase(MyTestCase):
         self.assertTrue(res[1]['result']['status'], res)
         self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
+        # disallow polling through a policy
+        set_policy('push_poll', SCOPE.AUTH,
+                   action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                               PushAllowPolling.deny.name))
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(PolicyError,
+                                    r'Polling not allowed!',
+                                    PushTokenClass.api_endpoint, req, g)
+
+        # disallow polling based on a per token configuration
+        set_policy('push_poll', SCOPE.AUTH,
+                   action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                               PushAllowPolling.token.name))
+        # If no tokeninfo is set, allow polling
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
+
+        # now set the tokeninfo POLLING_ALLOWED to 'False'
+        tok.add_tokeninfo(POLLING_ALLOWED, 'False')
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(PolicyError,
+                                    r'Polling not allowed!',
+                                    PushTokenClass.api_endpoint, req, g)
+
+        # Allow polling for this token until the end of the test
+        tok.add_tokeninfo(POLLING_ALLOWED, 'True')
+
         # check for a non-existing serial
         unknown_serial = 'unknown_serial_01'
         # we shouldn't run into a signature check so we don't create one
-        # also the timestamp can be 'now' so we don't have to patch around
-        builder = EnvironBuilder(method='GET',
-                                 headers={})
-        req = Request(builder.get_environ())
         req.all_data = {'serial': unknown_serial,
-                        'timestamp': datetime.utcnow().isoformat(),
+                        'timestamp': ts,
                         'signature': b32encode(b'no signature check')}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Could not verify signature!',
+                                    PushTokenClass.api_endpoint, req, g)
 
         # serial exists but signature is wrong
         sig_fail = bytearray(sig)
@@ -1102,4 +1142,5 @@ class PushTokenTestCase(MyTestCase):
         # cleanup
         tok.delete_token()
         tok2.delete_token()
+        delete_policy('push_poll')
         delete_smsgateway(self.firebase_config_name)

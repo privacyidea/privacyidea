@@ -34,12 +34,13 @@ from datetime import datetime, timedelta
 from pytz import utc
 from dateutil.parser import isoparse
 import traceback
+from enum import Enum
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.token import get_one_token
-from privacyidea.lib.utils import prepare_result, to_bytes
+from privacyidea.lib.utils import prepare_result, to_bytes, is_true
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
-                                   privacyIDEAError, ConfigAdminError)
+                                   privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
@@ -72,9 +73,11 @@ DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
+POLLING_ALLOWED = "polling_allowed"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
+
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -82,6 +85,10 @@ class PUSH_ACTION(object):
     MOBILE_TITLE = "push_title_on_mobile"
     SSL_VERIFY = "push_ssl_verify"
     WAIT = "push_wait"
+    ALLOW_POLLING = "push_allow_polling"
+
+
+PushAllowPolling = Enum('PushAllowPolling', 'allow deny token')
 
 
 def strip_key(key):
@@ -306,10 +313,18 @@ class PushTokenClass(TokenClass):
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
-                           'desc': _('Wait for number of seconds for the user to confirm the challenge in the first request.'),
+                           'desc': _('Wait for number of seconds for the user '
+                                     'to confirm the challenge in the first request.'),
                            'group': "PUSH"
+                       },
+                       PUSH_ACTION.ALLOW_POLLING: {
+                           'type': 'str',
+                           'desc': _('Configure whether to allow push tokens to poll for '
+                                     'challenges'),
+                           'group': 'PUSH',
+                           'value': [x.name for x in PushAllowPolling],
+                           'default': PushAllowPolling.allow.name
                        }
-
                    }
                },
         }
@@ -487,9 +502,9 @@ class PushTokenClass(TokenClass):
         """
         details = {}
         result = False
-        serial = getParam(request.all_data, "serial", optional=False)
 
         if request.method == 'POST':
+            serial = getParam(request.all_data, "serial", optional=False)
             if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
                 log.debug("Do the 2nd step of the enrollment.")
                 try:
@@ -545,6 +560,14 @@ class PushTokenClass(TokenClass):
             else:
                 raise ParameterError("Missing parameters!")
         elif request.method == 'GET':
+            # This is only used for polling
+            # By default we allow polling if the policy is not set.
+            allow_polling = get_action_values_from_options(
+                SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
+                options={'g': g}) or PushAllowPolling.allow.name
+            if allow_polling == PushAllowPolling.deny.name:
+                raise PolicyError('Polling not allowed!')
+            serial = getParam(request.all_data, "serial", optional=False)
             timestamp = getParam(request.all_data, 'timestamp', optional=False)
             signature = getParam(request.all_data, 'signature', optional=False)
             # first check if the timestamp is in the required span
@@ -568,6 +591,11 @@ class PushTokenClass(TokenClass):
             # first get the token
             try:
                 tok = get_one_token(serial=serial, tokentype='push')
+                # If the POLLING_ALLOWED tokeninfo is not set, we allow polling per default
+                if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                    log.debug('Polling not allowed for pushtoken {0!s} due to '
+                              'tokeninfo.'.format(serial))
+                    raise PolicyError('Polling not allowed!')
                 pubkey_pem = tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
                 pubkey_pem = pubkey_pem.replace('-', '+').replace('_', '/')
                 pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
