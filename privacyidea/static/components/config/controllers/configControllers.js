@@ -553,7 +553,7 @@ myApp.controller("configController", function ($scope, $location,
     };
 
     // TODO: This information needs to be fetched from the server
-    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver'];
+    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver'];
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
     // TODO: This information needs to be fetched from the server
@@ -1106,4 +1106,60 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
             }
         });
     };
+});
+
+myApp.controller("HTTPResolverController", function(
+  $scope,
+  ConfigFactory,
+  $state,
+  $stateParams,
+  inform
+) {
+  $scope.params = {
+    type: "httpresolver",
+    endpoint: "",
+    method: "",
+    requestMapping: "",
+    responseMapping: "",
+    hasSpecialErrorHandler: false,
+    headers: "{\"Content-Type\": \"application/json; charset=UTF-8\"}"
+  };
+
+  $scope.$watch(
+    'params.hasSpecialErrorHandler;', 
+    function (incomingValue) { 
+        const value = (incomingValue + '').toLowerCase()
+        $scope.params.hasSpecialErrorHandler = value === 'true'
+    });
+
+  $scope.resolvername = $stateParams.resolvername;
+  if ($scope.resolvername) {
+    /* If we have a resolvername, we do an Edit
+         and we need to fill all the $scope.params */
+    ConfigFactory.getResolver($scope.resolvername, function(data) {
+      var resolver = data.result.value[$scope.resolvername];
+      $scope.params = resolver.data;
+      $scope.params.type = "httpresolver";
+    });
+  }
+
+  $scope.setResolver = function() {
+    ConfigFactory.setResolver($scope.resolvername, $scope.params, function(
+      data
+    ) {
+      $scope.set_result = data.result.value;
+      $scope.getResolvers();
+      $state.go("config.resolvers.list");
+    });
+  };
+
+  $scope.testResolver = function() {
+    ConfigFactory.testResolver($scope.params, function(data) {
+      if (data.result.value === true) {
+        inform.add(data.detail.description, { type: "success", ttl: 10000 });
+      } else {
+        inform.add(data.detail.description, { type: "danger", ttl: 10000 });
+      }
+    });
+  };
 });

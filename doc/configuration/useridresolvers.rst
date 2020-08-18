@@ -26,6 +26,7 @@ user stores:
  * LDAP resolver,
  * SQL resolver,
  * SCIM resolver.
+ * HTTP resolver.
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
@@ -353,6 +354,83 @@ The available attributes for the ``Attribute mapping`` are:
  * phone,
  * mobile,
  * email.
+
+HTTP resolver
+.............
+
+.. index:: HTTP resolver
+
+As a summary, This resolver aims to solve user resolution from a custom HTTP API implementation. For example, you could
+have a custom API at `http://domain.com/my/path` and you want to retrieve information from there. Below, we describe how this
+resolver should be configured.
+
+The HTTP Resolver contains a few fields to be completed, as shown in the following image:
+
+.. figure:: images/http_resolver_1.png
+   :width: 500
+
+
+The important things here are ``Request Mapping`` and ``Response Mapping``, both of them using JSON format.
+
+``Request Mapping`` is used to inject the privacyidea's `userid` parameter into the correct place when you call to your HTTP API.
+
+Example 1:
+
+You have a HTTP endpoint with the following definition:
+
+   GET /users?id=<user_id>
+
+So you need to configure the request mapping like this:
+   
+   { "id": "{userid}" }
+
+Example 2:
+
+You have a HTTP endpoint with the following definition:
+
+   POST /get-user
+   customerId=<user_id>&accessKey="secr3t!"
+
+So you need to configure the request mapping like this:
+
+   { "customerId": "{userid}", "accessKey": "secr3t!" }
+
+``Response Mapping`` is used for mapping your HTTP API response with the privacyidea user. Now, 
+only JSON responses are supported.
+
+The available attributes for the ``Response mapping`` are:
+
+ * username *(mandatory)*,
+ * givenname,
+ * surname,
+ * phone,
+ * mobile,
+ * email.
+
+Nested attributes are also supported for this kind of response. 
+We use [pydash deep path](https://pydash.readthedocs.io/en/latest/deeppath.html) for parsing it.
+
+Therefore, your response mapping would be:
+
+   { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone} }
+
+Often, APIs are not RESTful (i.e. always returns 200 OK even if it fails). For this you can use ``Special error handling`` input:
+
+Example:
+
+You got an error from your HTTP endpoint with the following response:
+
+   { "success": false, "message": "Oops, error!" }
+
+You can able to configure something like this:
+
+.. figure:: images/http_resolver_2.png
+   :width: 500
+
+So, now the HTTP Resolver checks if the response contains your input and then throws and error if it's match.
+In this case, An error will be thrown due ``{ "success": false }`` is part of the response.
+
+.. note:: By the way, if HTTP response status is >= 400 the resolver will thrown an exception.
 
 .. _usercache:
 
