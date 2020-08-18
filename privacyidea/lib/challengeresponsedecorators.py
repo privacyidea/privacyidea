@@ -92,7 +92,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
     # for the given transaction_id and if the token serial matches a given token
     options = kwds.get("options") or {}
     user_obj = kwds.get("user")
-    transaction_id = options.get("transaction_id")
+    transaction_id = options.get("transaction_id") or options.get("state")
     if transaction_id:
         challenges = get_challenges(transaction_id=transaction_id, challenge=CHALLENGE_TYPE.PIN_RESET)
         if len(challenges) == 1:
