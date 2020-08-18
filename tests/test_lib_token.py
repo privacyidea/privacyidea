@@ -1849,13 +1849,13 @@ class PINChangeTestCase(MyTestCase):
         self.assertTrue(tok.is_pin_change())
 
         # Trigger the first auth challenge by sending the PIN
-        r, reply_dict = check_token_list([tok, tok2], "test", user_obj, options={"g": g})
+        r, reply_dict = check_token_list([tok, tok2], "test", user=user_obj, options={"g": g})
         self.assertFalse(r)
         self.assertEqual('please enter otp: ', reply_dict.get("message"))
         transaction_id = reply_dict.get("transaction_id")
 
         # Now send the correct OTP value
-        r, reply_dict = check_token_list([tok, tok2], self.valid_otp_values[1], user_obj,
+        r, reply_dict = check_token_list([tok, tok2], self.valid_otp_values[1], user=user_obj,
                                          options={"transaction_id": transaction_id,
                                                   "g": g})
         self.assertFalse(r)
@@ -1864,7 +1864,7 @@ class PINChangeTestCase(MyTestCase):
 
         # Now send a new PIN
         newpin = "test2"
-        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
                                          options={"transaction_id": transaction_id,
                                                   "g": g})
         self.assertFalse(r)
@@ -1872,7 +1872,7 @@ class PINChangeTestCase(MyTestCase):
         transaction_id = reply_dict.get("transaction_id")
 
         # Now send the new PIN a 2nd time
-        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
                                          options={"transaction_id": transaction_id,
                                                   "g": g})
         self.assertTrue(r)
@@ -1882,7 +1882,7 @@ class PINChangeTestCase(MyTestCase):
 
         # Run an authentication with the new PIN
         r, reply_dict = check_token_list([tok, tok2], "{0!s}{1!s}".format(newpin, self.valid_otp_values[2]),
-                                         user_obj, options={"g": g})
+                                         user=user_obj, options={"g": g})
         self.assertTrue(r)
         self.assertFalse(reply_dict.get("pin_change"))
         self.assertTrue("next_pin_change" in reply_dict)
@@ -1912,14 +1912,14 @@ class PINChangeTestCase(MyTestCase):
 
         # successfully authenticate, but thus trigger a PIN change
         r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
-                                         user_obj, options={"g": g})
+                                         user=user_obj, options={"g": g})
         self.assertFalse(r)
         self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
         transaction_id = reply_dict.get("transaction_id")
 
         # Now send a new PIN
         newpin = "test2"
-        r, reply_dict = check_token_list([tok, tok2], newpin, user_obj,
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
                                          options={"transaction_id": transaction_id,
                                                   "g": g})
         self.assertFalse(r)
@@ -1927,7 +1927,7 @@ class PINChangeTestCase(MyTestCase):
         transaction_id = reply_dict.get("transaction_id")
 
         # Now send the new PIN a 2nd time
-        r, reply_dict = check_token_list([tok, tok2], "falsePIN", user_obj,
+        r, reply_dict = check_token_list([tok, tok2], "falsePIN", user=user_obj,
                                          options={"transaction_id": transaction_id,
                                                   "g": g})
         self.assertFalse(r)
@@ -1963,7 +1963,7 @@ class PINChangeTestCase(MyTestCase):
 
         # successfully authenticate, but thus trigger a PIN change
         r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
-                                         user_obj, options={"g": g})
+                                         user=user_obj, options={"g": g})
         self.assertFalse(r)
         self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
         transaction_id = reply_dict.get("transaction_id")
@@ -1974,7 +1974,7 @@ class PINChangeTestCase(MyTestCase):
             warnings.simplefilter('ignore', category=DeprecationWarning)
             self.assertRaisesRegexp(
                 PolicyError, "The minimum OTP PIN length is 5", check_token_list,
-                [tok, tok2], newpin, user_obj,
+                [tok, tok2], newpin, user=user_obj,
                 options={"transaction_id": transaction_id,
                          "g": g})
 
