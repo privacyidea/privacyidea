@@ -1017,7 +1017,7 @@ class PushTokenTestCase(MyTestCase):
         # disallow polling through a policy
         set_policy('push_poll', SCOPE.AUTH,
                    action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
-                                               PushAllowPolling.deny.name))
+                                               PushAllowPolling.DENY))
         with mock.patch('privacyidea.models.datetime') as mock_dt1,\
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
@@ -1029,7 +1029,7 @@ class PushTokenTestCase(MyTestCase):
         # disallow polling based on a per token configuration
         set_policy('push_poll', SCOPE.AUTH,
                    action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
-                                               PushAllowPolling.token.name))
+                                               PushAllowPolling.TOKEN))
         # If no tokeninfo is set, allow polling
         with mock.patch('privacyidea.models.datetime') as mock_dt1,\
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
@@ -1049,8 +1049,39 @@ class PushTokenTestCase(MyTestCase):
                                     r'Polling not allowed!',
                                     PushTokenClass.api_endpoint, req, g)
 
-        # Allow polling for this token until the end of the test
+        # Explicitly allow polling for this token
         tok.add_tokeninfo(POLLING_ALLOWED, 'True')
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
+
+        # If ppolling for this token is denied but the overall configuration
+        # allows polling, the tokeninfo is ignored
+        tok.add_tokeninfo(POLLING_ALLOWED, 'False')
+        set_policy('push_poll', SCOPE.AUTH,
+                   action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                               PushAllowPolling.ALLOW))
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
+
+        # this should also work if there is no ALLOW_POLLING policy
+        delete_policy('push_poll')
+        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+            res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]['result']['status'], res)
+        self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
         # check for a non-existing serial
         unknown_serial = 'unknown_serial_01'
@@ -1142,5 +1173,4 @@ class PushTokenTestCase(MyTestCase):
         # cleanup
         tok.delete_token()
         tok2.delete_token()
-        delete_policy('push_poll')
         delete_smsgateway(self.firebase_config_name)

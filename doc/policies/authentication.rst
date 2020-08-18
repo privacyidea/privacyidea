@@ -428,7 +428,7 @@ push_allow_polling
 
 type: string
 
-This policy configures if push token are allowed to poll the server for open
+This policy configures if push tokens are allowed to poll the server for open
 challenges (e.g. when the the third-party push service is unavailable or
 unreliable).
 

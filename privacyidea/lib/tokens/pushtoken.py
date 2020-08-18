@@ -34,7 +34,6 @@ from datetime import datetime, timedelta
 from pytz import utc
 from dateutil.parser import isoparse
 import traceback
-from enum import Enum
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.token import get_one_token
@@ -78,6 +77,9 @@ GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
 
+# Timedelta in minutes
+POLL_TIME_WINDOW = 1
+
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -88,7 +90,10 @@ class PUSH_ACTION(object):
     ALLOW_POLLING = "push_allow_polling"
 
 
-PushAllowPolling = Enum('PushAllowPolling', 'allow deny token')
+class PushAllowPolling(object):
+    ALLOW = 'allow'
+    DENY = 'deny'
+    TOKEN = 'token'
 
 
 def strip_key(key):
@@ -202,27 +207,47 @@ def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
     return smartphone_data
 
 
+def _build_verify_object(pubkey_pem):
+    """
+    Load the given stripped and urlsafe public key and return the verify object
+
+    :param pubkey_pem:
+    :return:
+    """
+    # The public key of the smartphone was probably sent as urlsafe:
+    pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
+    # The public key was sent without any header
+    pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
+                 "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
+
+    return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
+
+
 class PushTokenClass(TokenClass):
     """
     The :ref:`push_token` uses the firebase service to send challenges to the
-    users smartphone. The user confirms on the smartphone, signs the
+    user's smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
     The enrollment occurs in two enrollment steps:
 
-    Step 1:
+    **Step 1**:
       The device is enrolled using a QR code, which encodes the following URI::
 
           otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
 
-    Step 2:
-      In the QR code is a URL, where the smartphone sends the remaining data for the enrollment::
+    **Step 2**:
+      In the QR code is a URL, where the smartphone sends the remaining data for the enrollment:
 
-          POST https://yourprivacyideaserver/ttype/push
-              enrollment_credential=<some credential>
-              serial=<token serial>
-              fbtoken=<firebase token>
-              pubkey=<public key>
+        .. sourcecode:: http
+
+            POST /ttype/push HTTP/1.1
+            Host: https://yourprivacyideaserver/
+
+            enrollment_credential=<hex nonce>
+            serial=<token serial>
+            fbtoken=<firebase token>
+            pubkey=<public key>
 
     For more information see:
 
@@ -322,8 +347,10 @@ class PushTokenClass(TokenClass):
                            'desc': _('Configure whether to allow push tokens to poll for '
                                      'challenges'),
                            'group': 'PUSH',
-                           'value': [x.name for x in PushAllowPolling],
-                           'default': PushAllowPolling.allow.name
+                           'value': [PushAllowPolling.ALLOW,
+                                     PushAllowPolling.DENY,
+                                     PushAllowPolling.TOKEN],
+                           'default': PushAllowPolling.ALLOW
                        }
                    }
                },
@@ -468,30 +495,39 @@ class PushTokenClass(TokenClass):
         This endpoint provides several functionalities:
 
         - It is used for the 2nd enrollment step of the smartphone.
-          It accepts the following parameters::
+          It accepts the following parameters:
 
-              POST https://yourprivacyideaserver/ttype/push
+            .. sourcecode:: http
 
-                  serial=<token serial>
-                  fbtoken=<firebase token>
-                  pubkey=<public key>
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<token serial>
+              fbtoken=<firebase token>
+              pubkey=<public key>
 
         - It is also used when the smartphone sends the signed response
-          to the challenge during authentication. The following parameters ar accepted::
+          to the challenge during authentication. The following parameters ar accepted:
 
-              POST https://yourprivacyideaserver/ttype/push
+            .. sourcecode:: http
 
-                  serial=<token serial>
-                  nonce=<the actual challenge>
-                  signature=<the signed nonce>
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
 
-        - And it also acts as an endpoint for polling challenges::
+              serial=<token serial>
+              nonce=<the actual challenge>
+              signature=<the signed nonce>
 
-              GET https://yourprivacyideaserver/ttype/push
+        - And it also acts as an endpoint for polling challenges:
 
-                  serial=<tokenserial>
-                  timestamp=<timestamp>
-                  signature=SIGNATURE(<tokenserial>|<timestamp>)
+            .. sourcecode:: http
+
+              GET /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<tokenserial>
+              timestamp=<timestamp>
+              signature=SIGNATURE(<tokenserial>|<timestamp>)
 
           More on polling can be found here: https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll
 
@@ -527,12 +563,7 @@ class PushTokenClass(TokenClass):
 
                 # get the token_obj for the given serial:
                 token_obj = get_one_token(serial=serial, tokentype="push")
-                pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-                # The public key of the smartphone was probably sent as urlsafe:
-                pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
-                # The public key was sent without any header
-                pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
-                             "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
+                pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
                 # Do the 2nd step of the authentication
                 # Find valid challenges
                 challengeobject_list = get_challenges(serial=serial, challenge=challenge)
@@ -541,8 +572,6 @@ class PushTokenClass(TokenClass):
                     # There are valid challenges, so we check this signature
                     for chal in challengeobject_list:
                         # verify the signature of the nonce
-                        pubkey_obj = serialization.load_pem_public_key(to_bytes(pubkey_pem),
-                                                                       default_backend())
                         sign_data = u"{0!s}|{1!s}".format(challenge, serial)
                         try:
                             pubkey_obj.verify(b32decode(signature),
@@ -564,8 +593,8 @@ class PushTokenClass(TokenClass):
             # By default we allow polling if the policy is not set.
             allow_polling = get_action_values_from_options(
                 SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
-                options={'g': g}) or PushAllowPolling.allow.name
-            if allow_polling == PushAllowPolling.deny.name:
+                options={'g': g}) or PushAllowPolling.ALLOW
+            if allow_polling == PushAllowPolling.DENY:
                 raise PolicyError('Polling not allowed!')
             serial = getParam(request.all_data, "serial", optional=False)
             timestamp = getParam(request.all_data, 'timestamp', optional=False)
@@ -578,7 +607,7 @@ class PushTokenClass(TokenClass):
                 raise privacyIDEAError('Could not parse timestamp {0!s}. '
                                        'ISO-Format required.'.format(timestamp))
             # TODO: make time delta configurable
-            td = timedelta(minutes=1)
+            td = timedelta(minutes=POLL_TIME_WINDOW)
             # We don't know if the passed timestamp is timezone aware. If no
             # timezone is passed, we assume UTC
             if ts.tzinfo:
@@ -590,18 +619,15 @@ class PushTokenClass(TokenClass):
             # now check the signature
             # first get the token
             try:
-                tok = get_one_token(serial=serial, tokentype='push')
+                tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
                 # If the POLLING_ALLOWED tokeninfo is not set, we allow polling per default
-                if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
-                    log.debug('Polling not allowed for pushtoken {0!s} due to '
-                              'tokeninfo.'.format(serial))
-                    raise PolicyError('Polling not allowed!')
-                pubkey_pem = tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-                pubkey_pem = pubkey_pem.replace('-', '+').replace('_', '/')
-                pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
-                             "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
-                pubkey_obj = serialization.load_pem_public_key(to_bytes(pubkey_pem),
-                                                               default_backend())
+                if allow_polling == PushAllowPolling.TOKEN:
+                    if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                        log.debug('Polling not allowed for pushtoken {0!s} due to '
+                                  'tokeninfo.'.format(serial))
+                        raise PolicyError('Polling not allowed!')
+
+                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
                 sign_data = u"{serial}|{timestamp}".format(**request.all_data)
                 pubkey_obj.verify(b32decode(signature),
                                   sign_data.encode("utf8"),
