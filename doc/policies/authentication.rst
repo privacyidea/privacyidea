@@ -446,8 +446,9 @@ The following options are available:
 ``token``
 
     *Allow* / *Deny* polling based on the individual token. The tokeninfo key
-    ``polling_allowed`` is checked. If the value evaluates to ``False`` polling
-    is denied for this token.
+    ``polling_allowed`` is checked. If the value evaluates to ``False``, polling
+    is denied for this token. If it evaluates to ``True`` or is not set, polling
+    is allowed for this token.
 
 The default is to ``allow`` polling
 

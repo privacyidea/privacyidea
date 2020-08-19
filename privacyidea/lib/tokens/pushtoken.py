@@ -620,7 +620,11 @@ class PushTokenClass(TokenClass):
             # first get the token
             try:
                 tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
-                # If the POLLING_ALLOWED tokeninfo is not set, we allow polling per default
+                # If the push_allow_polling policy is set to "token" we also
+                # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
+                # to 'False', polling is not allowed for this token. If the
+                # tokeninfo value evaluates to 'True' or is not set at all,
+                # polling is allowed for this token.
                 if allow_polling == PushAllowPolling.TOKEN:
                     if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
                         log.debug('Polling not allowed for pushtoken {0!s} due to '
