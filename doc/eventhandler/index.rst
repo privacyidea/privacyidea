@@ -36,7 +36,7 @@ all further API calls.
 
    *An action is bound to the event* token_init.
 
-.. _evenhandler_pre_and_post:
+.. _eventhandler_pre_and_post:
 
 Pre and Post Handling
 ---------------------

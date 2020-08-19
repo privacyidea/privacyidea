@@ -6,7 +6,10 @@ Push Token
 .. index:: Push Token, Firebase service
 
 The push token uses the *privacyIDEA Authenticator* app. You can get it
-from Google Play Store or Apple App Store.
+from `Google Play Store`_ or `Apple App Store`_.
+
+.. _Google Play Store: https://play.google.com/store/apps/details?id=it.netknights.piauthenticator
+.. _Apple App Store: https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301
 
 The token type *push* sends a cryptographic challenge via the
 Google Firebase service to the smartphone of the user. This push
@@ -134,6 +137,9 @@ of the privacyIDEA server.
 The privacyIDEA server verifies the response and marks this authentication
 request as successfully answered.
 
+In some cases the push notification does not reach the smartphone. Since
+version 3.4 the smartphone can also poll for active challenges.
+
 Login to application
 ....................
 
@@ -145,12 +151,15 @@ answered and automatically login the user.
 More information
 ~~~~~~~~~~~~~~~~
 
-For a more detailed insight see the code documentation :ref:`code_push_token`.
+For a more detailed insight see the code documentation for the :ref:`code_push_token`.
 
 For an in depth view of the protocol see
 `the github issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
 `the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
 https://www.privacyidea.org/tag/push-token/>`_.
+
+Information on the polling mechanism can be found in the `corresponding wiki page <https://github
+.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll>`_.
 
 For recent information and a setup guide, visit the
 `community blog <https://www.privacyidea.org/tag/push-token/>`_

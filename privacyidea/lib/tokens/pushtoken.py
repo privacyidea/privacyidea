@@ -28,12 +28,18 @@ This code is tested in tests/test_lib_tokens_push
 """
 
 from base64 import b32decode
+from binascii import Error as BinasciiError
 from six.moves.urllib.parse import quote
+from datetime import datetime, timedelta
+from pytz import utc
+from dateutil.parser import isoparse
+import traceback
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.token import get_one_token
-from privacyidea.lib.utils import prepare_result, to_bytes
-from privacyidea.lib.error import ResourceNotFoundError, ValidateError
+from privacyidea.lib.utils import prepare_result, to_bytes, is_true
+from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
+                                   privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
@@ -66,9 +72,14 @@ DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
+POLLING_ALLOWED = "polling_allowed"
 GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
-
+ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
+
+# Timedelta in minutes
+POLL_TIME_WINDOW = 1
+
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
@@ -76,6 +87,13 @@ class PUSH_ACTION(object):
     MOBILE_TITLE = "push_title_on_mobile"
     SSL_VERIFY = "push_ssl_verify"
     WAIT = "push_wait"
+    ALLOW_POLLING = "push_allow_polling"
+
+
+class PushAllowPolling(object):
+    ALLOW = 'allow'
+    DENY = 'deny'
+    TOKEN = 'token'
 
 
 def strip_key(key):
@@ -144,34 +162,97 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        extra=_construct_extra_parameters(extra_data)))
 
 
+def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
+    """
+    Create the dictionary to be send to the smartphone as challenge
+
+    :param challenge: base32 encoded random data string
+    :type challenge: str
+    :param fb_gateway: the gateway object containing the firebase configuration
+    :type fb_gateway: privacyidea.lib.smsprovider.SMSProvider.ISMSProvider
+    :param options: the options dictionary
+    :type options: dict
+    :return: the created smartphone_data dictionary
+    :rtype: dict
+    """
+    sslverify = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.SSL_VERIFY,
+                                               options) or "1"
+    sslverify = getParam({"sslverify": sslverify}, "sslverify",
+                         allowed_values=["0", "1"], default="1")
+    # We send the challenge to the Firebase service
+    url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
+    message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
+                                                       PUSH_ACTION.MOBILE_TEXT,
+                                                       options) or DEFAULT_MOBILE_TEXT
+    title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
+                                           options) or "privacyIDEA"
+    smartphone_data = {"nonce": challenge,
+                       "question": message_on_mobile,
+                       "serial": serial,
+                       "title": title,
+                       "sslverify": sslverify,
+                       "url": url}
+    # Create the signature.
+    # value to string
+    sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
+
+    privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey),
+                                                     None, default_backend())
+
+    # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
+    signature = privkey_obj.sign(sign_string.encode("utf8"),
+                                 padding.PKCS1v15(),
+                                 hashes.SHA256())
+    smartphone_data["signature"] = b32encode_and_unicode(signature)
+    return smartphone_data
+
+
+def _build_verify_object(pubkey_pem):
+    """
+    Load the given stripped and urlsafe public key and return the verify object
+
+    :param pubkey_pem:
+    :return:
+    """
+    # The public key of the smartphone was probably sent as urlsafe:
+    pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
+    # The public key was sent without any header
+    pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC " \
+                 "KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
+
+    return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
+
+
 class PushTokenClass(TokenClass):
     """
-    The PUSH token uses the firebase service to send challenges to the
-    users smartphone. The user confirms on the smartphone, signes the
+    The :ref:`push_token` uses the firebase service to send challenges to the
+    user's smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
     The enrollment occurs in two enrollment steps:
 
-    # Step 1
+    **Step 1**:
+      The device is enrolled using a QR code, which encodes the following URI::
 
-    The device is enrolled using a QR code, that looks like this:
+          otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
 
-    otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
+    **Step 2**:
+      In the QR code is a URL, where the smartphone sends the remaining data for the enrollment:
 
-    # Step 2
+        .. sourcecode:: http
 
-    In the QR code is a URL, where the smartphone sends the remaining data for the enrollment.
+            POST /ttype/push HTTP/1.1
+            Host: https://yourprivacyideaserver/
 
-    POST https://yourprivacyideaserver/ttype/push
-     enrollment_credential=<some credential>
-     serial=<token serial>
-     fbtoken=<firebase token>
-     pubkey=<public key>
+            enrollment_credential=<hex nonce>
+            serial=<token serial>
+            fbtoken=<firebase token>
+            pubkey=<public key>
 
     For more information see:
-    https://github.com/privacyidea/privacyidea/issues/1342
-    https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
 
+    - https://github.com/privacyidea/privacyidea/issues/1342
+    - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
     """
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
 
@@ -202,9 +283,8 @@ class PushTokenClass(TokenClass):
         :type key: str
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype : s.o.
+        :rtype: dict
         """
         gws = get_smsgateway(gwtype=GWTYPE)
         res = {'type': 'push',
@@ -258,10 +338,20 @@ class PushTokenClass(TokenClass):
                        },
                        PUSH_ACTION.WAIT: {
                            'type': 'int',
-                           'desc': _('Wait for number of seconds for the user to confirm the challenge in the first request.'),
+                           'desc': _('Wait for number of seconds for the user '
+                                     'to confirm the challenge in the first request.'),
                            'group': "PUSH"
+                       },
+                       PUSH_ACTION.ALLOW_POLLING: {
+                           'type': 'str',
+                           'desc': _('Configure whether to allow push tokens to poll for '
+                                     'challenges'),
+                           'group': 'PUSH',
+                           'value': [PushAllowPolling.ALLOW,
+                                     PushAllowPolling.DENY,
+                                     PushAllowPolling.TOKEN],
+                           'default': PushAllowPolling.ALLOW
                        }
-
                    }
                },
         }
@@ -283,13 +373,17 @@ class PushTokenClass(TokenClass):
         and the second authentication step.
 
         1. step:
-            parameter type contained.
-            parameter genkey contained.
+            ``param`` contains:
+
+            - ``type``
+            - ``genkey``
 
         2. step:
-            parameter serial contained
-            parameter fbtoken contained
-            parameter pubkey contained
+            ``param`` contains:
+
+            - ``serial``
+            - ``fbtoken``
+            - ``pubkey``
 
         :param param: dict of initialization parameters
         :type param: dict
@@ -394,84 +488,190 @@ class PushTokenClass(TokenClass):
     def api_endpoint(cls, request, g):
         """
         This provides a function which is called by the API endpoint
-        /ttype/push which is defined in api/ttype.py
+        ``/ttype/push`` which is defined in :doc:`../../api/ttype`
 
-        The method returns
-            return "json", {}
+        The method returns a tuple ``("json", {})``
 
-        This endpoint is used for the 2nd enrollment step of the smartphone.
-        Parameters sent:
-            * serial
-            * fbtoken
-            * pubkey
+        This endpoint provides several functionalities:
 
-        This endpoint is also used, if the smartphone sends the signed response
-        to the challenge during authentication
-        Parameters sent:
-            * serial
-            * nonce (which is the challenge)
-            * signature (which is the signed nonce)
+        - It is used for the 2nd enrollment step of the smartphone.
+          It accepts the following parameters:
 
+            .. sourcecode:: http
+
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<token serial>
+              fbtoken=<firebase token>
+              pubkey=<public key>
+
+        - It is also used when the smartphone sends the signed response
+          to the challenge during authentication. The following parameters ar accepted:
+
+            .. sourcecode:: http
+
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<token serial>
+              nonce=<the actual challenge>
+              signature=<the signed nonce>
+
+        - And it also acts as an endpoint for polling challenges:
+
+            .. sourcecode:: http
+
+              GET /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<tokenserial>
+              timestamp=<timestamp>
+              signature=SIGNATURE(<tokenserial>|<timestamp>)
+
+          More on polling can be found here: https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll
 
         :param request: The Flask request
         :param g: The Flask global object g
-        :return: dictionary
+        :return: The json string representing the result dictionary
+        :rtype: tuple("json", str)
         """
         details = {}
         result = False
-        serial = getParam(request.all_data, "serial", optional=False)
 
-        if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
-            log.debug("Do the 2nd step of the enrollment.")
+        if request.method == 'POST':
+            serial = getParam(request.all_data, "serial", optional=False)
+            if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
+                log.debug("Do the 2nd step of the enrollment.")
+                try:
+                    token_obj = get_one_token(serial=serial,
+                                              tokentype="push",
+                                              rollout_state="clientwait")
+                    token_obj.update(request.all_data)
+                except ResourceNotFoundError:
+                    raise ResourceNotFoundError("No token with this serial number "
+                                                "in the rollout state 'clientwait'.")
+                init_detail_dict = request.all_data
+
+                details = token_obj.get_init_detail(init_detail_dict)
+                result = True
+            elif serial and "nonce" in request.all_data and "signature" in request.all_data:
+                log.debug("Handling the authentication response from the smartphone.")
+                challenge = getParam(request.all_data, "nonce")
+                serial = getParam(request.all_data, "serial")
+                signature = getParam(request.all_data, "signature")
+
+                # get the token_obj for the given serial:
+                token_obj = get_one_token(serial=serial, tokentype="push")
+                pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+                # Do the 2nd step of the authentication
+                # Find valid challenges
+                challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+
+                if challengeobject_list:
+                    # There are valid challenges, so we check this signature
+                    for chal in challengeobject_list:
+                        # verify the signature of the nonce
+                        sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                        try:
+                            pubkey_obj.verify(b32decode(signature),
+                                              sign_data.encode("utf8"),
+                                              padding.PKCS1v15(),
+                                              hashes.SHA256())
+                            # The signature was valid
+                            log.debug("Found matching challenge {0!s}.".format(chal))
+                            chal.set_otp_status(True)
+                            chal.save()
+                            result = True
+                        except InvalidSignature as _e:
+                            pass
+
+            else:
+                raise ParameterError("Missing parameters!")
+        elif request.method == 'GET':
+            # This is only used for polling
+            # By default we allow polling if the policy is not set.
+            allow_polling = get_action_values_from_options(
+                SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
+                options={'g': g}) or PushAllowPolling.ALLOW
+            if allow_polling == PushAllowPolling.DENY:
+                raise PolicyError('Polling not allowed!')
+            serial = getParam(request.all_data, "serial", optional=False)
+            timestamp = getParam(request.all_data, 'timestamp', optional=False)
+            signature = getParam(request.all_data, 'signature', optional=False)
+            # first check if the timestamp is in the required span
             try:
-                token_obj = get_one_token(serial=serial,
-                                          tokentype="push",
-                                          rollout_state="clientwait")
-                token_obj.update(request.all_data)
-            except ResourceNotFoundError:
-                raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
-            init_detail_dict = request.all_data
+                ts = isoparse(timestamp)
+            except (ValueError, TypeError) as _e:
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                raise privacyIDEAError('Could not parse timestamp {0!s}. '
+                                       'ISO-Format required.'.format(timestamp))
+            # TODO: make time delta configurable
+            td = timedelta(minutes=POLL_TIME_WINDOW)
+            # We don't know if the passed timestamp is timezone aware. If no
+            # timezone is passed, we assume UTC
+            if ts.tzinfo:
+                now = datetime.now(utc)
+            else:
+                now = datetime.utcnow()
+            if not (now - td <= ts <= now + td):
+                raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
+            # now check the signature
+            # first get the token
+            try:
+                tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
+                # If the push_allow_polling policy is set to "token" we also
+                # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
+                # to 'False', polling is not allowed for this token. If the
+                # tokeninfo value evaluates to 'True' or is not set at all,
+                # polling is allowed for this token.
+                if allow_polling == PushAllowPolling.TOKEN:
+                    if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                        log.debug('Polling not allowed for pushtoken {0!s} due to '
+                                  'tokeninfo.'.format(serial))
+                        raise PolicyError('Polling not allowed!')
 
-            details = token_obj.get_init_detail(init_detail_dict)
-            result = True
-        elif serial and "nonce" in request.all_data and "signature" in request.all_data:
-            log.debug("Handling the authentication response from the smartphone.")
-            challenge = getParam(request.all_data, "nonce")
-            serial = getParam(request.all_data, "serial")
-            signature = getParam(request.all_data, "signature")
-
-            # get the token_obj for the given serial:
-            token_obj = get_one_token(serial=serial, tokentype="push")
-            pubkey_pem = token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE)
-            # The public key of the smartphone was probably sent as urlsafe:
-            pubkey_pem = pubkey_pem.replace("-", "+").replace("_", "/")
-            # The public key was sent without any header
-            pubkey_pem = "-----BEGIN PUBLIC KEY-----\n{0!s}\n-----END PUBLIC KEY-----".format(pubkey_pem.strip().replace(" ", "+"))
-            # Do the 2nd step of the authentication
-            # Find valid challenges
-            challengeobject_list = get_challenges(serial=serial, challenge=challenge)
-
-            if challengeobject_list:
-                # There are valid challenges, so we check this signature
+                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+                sign_data = u"{serial}|{timestamp}".format(**request.all_data)
+                pubkey_obj.verify(b32decode(signature),
+                                  sign_data.encode("utf8"),
+                                  padding.PKCS1v15(),
+                                  hashes.SHA256())
+                # The signature was valid now check for an open challenge
+                # we need the private server key to sign the smartphone data
+                pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
+                # we also need the FirebaseGateway for this token
+                fb_identifier = tok.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+                if not fb_identifier:
+                    raise ResourceNotFoundError('The pushtoken {0!s} has no Firebase configuration '
+                                                'assigned.'.format(serial))
+                fb_gateway = create_sms_instance(fb_identifier)
+                options = {'g': g}
+                challenges = []
+                challengeobject_list = get_challenges(serial=serial)
                 for chal in challengeobject_list:
-                    # verify the signature of the nonce
-                    pubkey_obj = serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
-                    sign_data = u"{0!s}|{1!s}".format(challenge, serial)
-                    try:
-                        pubkey_obj.verify(b32decode(signature),
-                                          sign_data.encode("utf8"),
-                                          padding.PKCS1v15(),
-                                          hashes.SHA256())
-                        # The signature was valid
-                        log.debug("Found matching challenge {0!s}.".format(chal))
-                        chal.set_otp_status(True)
-                        chal.save()
-                        result = True
-                    except InvalidSignature as e:
-                        pass
+                    # check if the challenge is active and not already answered
+                    _cnt, answered = chal.get_otp_status()
+                    if not answered and chal.is_valid():
+                        # then return the necessary smartphone data to answer
+                        # the challenge
+                        sp_data = _build_smartphone_data(serial, chal.challenge,
+                                                         fb_gateway, pem_privkey, options)
+                        challenges.append(sp_data)
+                # return the challenges as a list in the result value
+                result = challenges
+            except (ResourceNotFoundError, ParameterError,
+                    InvalidSignature, ConfigAdminError, BinasciiError) as e:
+                # to avoid disclosing information we always fail with an invalid
+                # signature error even if the token with the serial could not be found
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.info('The following error occurred during the signature '
+                         'check: "{0!r}"'.format(e))
+                raise privacyIDEAError('Could not verify signature!')
 
         else:
-            raise ParameterError("Missing parameters!")
+            raise privacyIDEAError('Method {0!s} not allowed in \'api_endpoint\' '
+                                   'for push token.'.format(request.method))
 
         return "json", prepare_result(result, details=details)
 
@@ -513,50 +713,21 @@ class PushTokenClass(TokenClass):
         ``message`` which is displayed in the JSON response;
         additional ``attributes``, which are displayed in the JSON response.
         """
-        res = False
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
-        sslverify = get_action_values_from_options(SCOPE.AUTH,
-                                                   PUSH_ACTION.SSL_VERIFY,
-                                                   options) or "1"
-        sslverify = getParam({"sslverify": sslverify}, "sslverify", allowed_values=["0", "1"], default="1")
-
         attributes = None
         data = None
-        challenge = b32encode_and_unicode(geturandom())
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
-            # We send the challenge to the Firebase service
+            challenge = b32encode_and_unicode(geturandom())
             fb_gateway = create_sms_instance(fb_identifier)
-            url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
-            message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
-                                                   PUSH_ACTION.MOBILE_TEXT,
-                                                   options) or DEFAULT_MOBILE_TEXT
-            title = get_action_values_from_options(SCOPE.AUTH,
-                                                   PUSH_ACTION.MOBILE_TITLE,
-                                                   options) or "privacyIDEA"
-            smartphone_data = {"nonce": challenge,
-                               "question": message_on_mobile,
-                               "serial": self.token.serial,
-                               "title": title,
-                               "sslverify": sslverify,
-                               "url": url}
-            # Create the signature.
-            # value to string
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
-
             pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-            privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey), None, default_backend())
-
-            # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
-            signature = privkey_obj.sign(sign_string.encode("utf8"),
-                                         padding.PKCS1v15(),
-                                         hashes.SHA256())
-            smartphone_data["signature"] = b32encode_and_unicode(signature)
-
+            smartphone_data = _build_smartphone_data(self.token.serial,
+                                                     challenge, fb_gateway,
+                                                     pem_privkey, options)
             res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
             if not res:
                 raise ValidateError("Failed to submit message to firebase service.")
@@ -599,11 +770,12 @@ class PushTokenClass(TokenClass):
         :type options: dict
 
         :return: returns tuple of
-                 1. true or false for the pin match,
-                 2. the otpcounter (int) and the
-                 3. reply (dict) that will be added as
-                    additional information in the JSON response
-                    of ``/validate/check``.
+
+          1. true or false for the pin match,
+          2. the otpcounter (int) and the
+          3. reply (dict) that will be added as additional information in the
+             JSON response of ``/validate/check``.
+
         :rtype: tuple
         """
         otp_counter = -1
