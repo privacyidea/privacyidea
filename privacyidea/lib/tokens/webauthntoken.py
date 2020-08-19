@@ -1138,14 +1138,14 @@ class WebAuthnTokenClass(TokenClass):
 
             uv_req = getParam(options, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
 
-            try:
-                http_origin = getParam(options, "HTTP_ORIGIN", required, allow_empty=False)
-            except ParameterError:
-                raise ValueError("The ORIGIN HTTP header must be included, when authenticating with a WebAuthn token")
-
             challenge = binascii.unhexlify(getParam(options, "challenge", required))
 
             try:
+                try:
+                    http_origin = getParam(options, "HTTP_ORIGIN", required, allow_empty=False)
+                except ParameterError:
+                    raise AuthenticationRejectedException('HTTP Origin header missing.')
+
                 # This does the heavy lifting.
                 #
                 # All data is parsed and verified. If any errors occur, an exception

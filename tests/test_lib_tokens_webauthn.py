@@ -271,6 +271,20 @@ class WebAuthnTokenTestCase(MyTestCase):
                                           })
         self.assertTrue(sign_count > 0)
 
+    def test_06_missing_origin(self):
+        self.challenge_options['nonce'] = webauthn_b64_decode(ASSERTION_CHALLENGE)
+        self._create_challenge()
+        sign_count = self.token.check_otp(otpval=None,
+                                          options={
+                                              "credentialid": CRED_ID,
+                                              "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+                                              "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+                                              "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+                                              "user": self.user,
+                                              "challenge": hexlify_and_unicode(self.challenge_options['nonce']),
+                                              "HTTP_ORIGIN": '',
+                                          })
+        self.assertTrue(sign_count == -1)
 
 class WebAuthnTestCase(unittest.TestCase):
     @staticmethod
