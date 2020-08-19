@@ -133,9 +133,8 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     g = options.get("g")
                     g.logged_in_user = {"role": SCOPE.USER}
                     if user_obj:
-                        if __name__ == '__main__':
-                            g.logged_in_user["username"] = user_obj.login
-                            g.logged_in_user["realm"] = user_obj.realm
+                        g.logged_in_user["username"] = user_obj.login
+                        g.logged_in_user["realm"] = user_obj.realm
                     check_pin(g, args[1], token_obj.token.tokentype, user_obj)
                     # We need to ask for a 2nd time
                     challenge.set_otp_status(True)
