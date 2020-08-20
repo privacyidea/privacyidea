@@ -1,12 +1,16 @@
-Version 3.4dev4, 2020-08-16
+Version 3.4dev5, 2020-08-20
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
      Gateways using arbitrary scripts (#2236)
+   * Add HTTP Resolver that can read users from web services
+     via JSON reponses (#2083)
    * Add a basic dashboard as start screen in the WebUI (#2177)
    * Allow using dynamic 3rd party token classes (#2321)
    * Allow multiple consecutive challenge responses for authentication
      or tasks like changing the token PIN (#2361)
+   * PUSH token can communicate with privacyIDEA via polling
+     as fallback to Google Push Service or Apple Notification Service (#2262)
 
   Enhancements:
    * Allow deletion of validity period via UI (#2263)
