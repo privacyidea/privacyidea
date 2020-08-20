@@ -273,7 +273,6 @@ class TRANSPORT(object):
     BLE = 'ble'
     NFC = 'nfc'
     INTERNAL = 'internal'
-    LIGHTNING = 'lightning'
 
 
 TRANSPORTS = (
@@ -281,7 +280,6 @@ TRANSPORTS = (
     TRANSPORT.BLE,
     TRANSPORT.NFC,
     TRANSPORT.INTERNAL,
-    TRANSPORT.LIGHTNING
 )
 
 
