@@ -533,7 +533,7 @@ limited to USB only using this policy. The allowed transports are given as a
 space-separated list.
 
 The default is to allow all transports (equivalent to a value of `usb ble nfc
-internal lightning`).
+internal`).
 
 .. _policy_webauthn_authn_timeout:
 

@@ -561,7 +561,7 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.ALLOWED_TRANSPORTS: {
                         'type': 'str',
                         'desc': _("A list of transports to prefer to communicate with WebAuthn tokens. "
-                                  "Default: usb ble nfc internal lightning (All standard transports)")
+                                  "Default: usb ble nfc internal (All standard transports)")
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
