@@ -410,7 +410,7 @@ IMAGES = IMAGES
 DEFAULT_DESCRIPTION = _(u'Generic WebAuthn Token')
 
 # Policy defaults
-DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal lightning"
+DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
 DEFAULT_TIMEOUT = 60
 DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
