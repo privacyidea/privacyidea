@@ -2876,6 +2876,158 @@ class RegistrationValidity(MyApiTestCase):
             self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
 
 
+class MultiChallege(MyApiTestCase):
+
+    serial = "hotp1"
+
+    def setUp(self):
+        super(MultiChallege, self).setUp()
+        self.setUp_user_realms()
+
+    def test_00_pin_change_via_validate_chalresp(self):
+        # Test PIN change after challenge response authentication
+        # Create policy change pin on first use
+        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"user": "cornelius", "pin": "test",
+                                                 "serial": self.serial, "otpkey": self.otpkey},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        # 1st authentication creates a PIN change challenge via challenge response
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            details = res.json['detail']
+            transaction_id = details.get("transaction_id")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            details = res.json['detail']
+            self.assertFalse(result.get("value"))
+            transaction_id = details.get("transaction_id")
+            self.assertEqual("Please enter a new PIN", details.get("message"))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            details = res.json['detail']
+            transaction_id = details.get("transaction_id")
+            self.assertEqual("Please enter the new PIN again", details.get("message"))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+            details = res.json['detail']
+            self.assertEqual("PIN successfully set.", details.get("message"))
+            self.assertTrue(result.get("value"))
+
+        # Now try to authenticate with the "newpin"
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin{0!s}".format(self.valid_otp_values[2])}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        remove_token(self.serial)
+        delete_policy("first_use")
+        delete_policy("via_validate")
+        delete_policy("hotp_chalresp")
+
+    def test_01_pin_change_via_validate_single_shot(self):
+        # Test PIN change after authentication with a single shot authentication
+        # Create policy change pin on first use
+        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"user": "cornelius", "pin": "test",
+                                                 "serial": self.serial, "otpkey": self.otpkey},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        # 1st authentication creates a PIN change challenge via challenge response
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "test{0!s}".format(self.valid_otp_values[1])}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            details = res.json['detail']
+            transaction_id = details.get("transaction_id")
+            self.assertEqual("Please enter a new PIN", details.get("message"))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            details = res.json['detail']
+            transaction_id = details.get("transaction_id")
+            self.assertEqual("Please enter the new PIN again", details.get("message"))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+            details = res.json['detail']
+            self.assertEqual("PIN successfully set.", details.get("message"))
+            self.assertTrue(result.get("value"))
+
+        # Now try to authenticate with the "newpin"
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin{0!s}".format(self.valid_otp_values[2])}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        remove_token(self.serial)
+        delete_policy("first_use")
+        delete_policy("via_validate")
+        delete_policy("hotp_chalresp")
+
+
 class AChallengeResponse(MyApiTestCase):
 
     serial = "hotp1"

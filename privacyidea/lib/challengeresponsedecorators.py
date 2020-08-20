@@ -82,16 +82,17 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked
     :param passw: The password presented in the authentication. We need this for the PIN reset.
-    :param user: The user_obj
 
     kwds are:
     :param options: options dictionary containing g
+    :param user: The user_obj
     """
 
     # Before we call the wrapped function, we need to check, if we have a generic challenge
     # for the given transaction_id and if the token serial matches a given token
     options = kwds.get("options") or {}
-    transaction_id = options.get("transaction_id")
+    user_obj = kwds.get("user")
+    transaction_id = options.get("transaction_id") or options.get("state")
     if transaction_id:
         challenges = get_challenges(transaction_id=transaction_id, challenge=CHALLENGE_TYPE.PIN_RESET)
         if len(challenges) == 1:
@@ -131,7 +132,13 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     # Verify if the PIN adheres to the PIN policies. This is always in the normal user context
                     g = options.get("g")
                     g.logged_in_user = {"role": SCOPE.USER}
-                    check_pin(g, args[1], token_obj.token.tokentype, args[2])
+                    if user_obj:
+                        # check_pin below originally works for logged in users, since only logged in users
+                        # are allowed to change the pin. So we need to construct a logged_in_user object, otherwise
+                        # check_pin would fail.
+                        g.logged_in_user["username"] = user_obj.login
+                        g.logged_in_user["realm"] = user_obj.realm
+                    check_pin(g, args[1], token_obj.token.tokentype, user_obj)
                     # We need to ask for a 2nd time
                     challenge.set_otp_status(True)
                     seed = get_rand_digit_str(SEED_LENGTH)
