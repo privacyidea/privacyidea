@@ -133,6 +133,9 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     g = options.get("g")
                     g.logged_in_user = {"role": SCOPE.USER}
                     if user_obj:
+                        # check_pin below originally works for logged in users, since only logged in users
+                        # are allowed to change the pin. So we need to construct a logged_in_user object, otherwise
+                        # check_pin would fail.
                         g.logged_in_user["username"] = user_obj.login
                         g.logged_in_user["realm"] = user_obj.realm
                     check_pin(g, args[1], token_obj.token.tokentype, user_obj)
