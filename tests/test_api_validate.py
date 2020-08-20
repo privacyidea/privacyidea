@@ -2996,6 +2996,7 @@ class MultiChallege(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json['result']
+            self.assertFalse(result.get("value"))
             details = res.json['detail']
             transaction_id = details.get("transaction_id")
             self.assertEqual("Please enter the new PIN again", details.get("message"))
