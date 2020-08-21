@@ -267,6 +267,7 @@ def get_auth_token():
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
         admin_auth = True
+        log.info("Local admin '{0!s}' successfully logged in.".format(username))
         # This admin is not in the default realm!
         realm = ""
         g.audit_object.log({"success": True,
@@ -289,6 +290,11 @@ def get_auth_token():
                                                     superuser_realms=
                                                     superuser_realms)
         details = details or {}
+        if db_admin_exist(loginname) and realm == get_default_realm():
+            # If there is a local admin with the same login name as the user
+            # in the default realm, we inform about this in the log file.
+            log.warning("A user '{0!s}' exists as local admin and as user in "
+                        "your default realm!".format(loginname))
         if role == ROLE.ADMIN:
             g.audit_object.log({"user": "",
                                 "administrator": user_obj.login,

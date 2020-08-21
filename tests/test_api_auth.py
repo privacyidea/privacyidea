@@ -7,6 +7,11 @@ from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
                                     delete_policy)
 from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm
+
+
+PWFILE = "tests/testdata/passwd-duplicate-name"
 
 
 class AuthApiTestCase(MyApiTestCase):
@@ -530,3 +535,53 @@ class AuthApiTestCase(MyApiTestCase):
 
         delete_policy(name='remote')
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+
+
+class DuplicateUserApiTestCase(MyApiTestCase):
+
+    def test_01_admin_and_user_same_name(self):
+        # Test the logging, if admin and user have the same name (testamdin/testpw)
+        # Now create a default realm, that contains the used "testadmin"
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm1,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        set_default_realm(self.realm1)
+
+        # If the admin logs in, everything is fine
+        with mock.patch("logging.Logger.info") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'admin'
+                self.assertEqual('admin', result['value']['role'], result)
+            mock_log.assert_called_once_with("Local admin 'testadmin' successfully logged in.")
+
+        # If a user logs in, with the same name as the admin, this event is logged in warning
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'user'
+                self.assertEqual('user', result['value']['role'], result)
+            # check if we have this log entry
+            mock_log.assert_called_with("A user 'testadmin' exists as local admin and as user "
+                                        "in your default realm!")
