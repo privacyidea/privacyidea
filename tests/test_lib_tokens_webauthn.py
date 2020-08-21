@@ -143,6 +143,24 @@ CRED_ID = 'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_
 PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c'\
           '22582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a'
 
+NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL = {
+    'clientData': b'eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZkszN3hLZGhXSmhVNmQyVEFH'
+                  b'VllESEttZHNwb3JsanNSb1daMDlaaVRYTSIsIm9yaWdpbiI6Imh0dHBzOi8vd2ViYXV0aG4uaW8i'
+                  b'LCJjcm9zc09yaWdpbiI6ZmFsc2V9',
+    'attObj': b'o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVjEdKbqkhPJnC90siSSsyDPQCYqlMGpUKA5fykl'
+              b'C2CEHvBBAAAAtQAAAAAAAAAAAAAAAAAAAAAAQF8gbz2rT3N24r4ojF9kZKuVY_luj5OkbTYuq-79'
+              b'HUoKy2Gj8cVotKsYQG6zAUGvh2DNRWCplAwAJI93pAqCExOlAQIDJiABIVgg0hC-jd-1sLwL4eqN'
+              b'6u3sGX5D4f7OTrlXkel-HZIZSR8iWCD4DkCLED1CSAhHSZlVak4sdkU8_RFClaObyTJag7hEFg'
+}
+NONE_ATTESTATION_REGISTRATION_CHALLENGE = 'fK37xKdhWJhU6d2TAGVYDHKmdsporljsRoWZ09ZiTXM'
+NONE_ATTESTATION_USER_NAME = 'john.doe'
+NONE_ATTESTATION_USER_DISPLAY_NAME = '<john.doe.resolver1@foorealm>'
+NONE_ATTESTATION_USER_ID = b'WAN000136AE'
+NONE_ATTESTATION_ATTESTATION_FORM = 'none'
+NONE_ATTESTATION_CRED_ID = 'XyBvPatPc3biviiMX2Rkq5Vj-W6Pk6RtNi6r7v0dSgrLYaPxxWi0qxhAbrMBQa-HYM1FYKmUDAAkj3ekCoITEw'
+NONE_ATTESTATION_PUB_KEY = 'a5010203262001215820d210be8ddfb5b0bc0be1ea8deaedec197e43e1fece4eb95791e97e1d9219491f22582'\
+                           '0f80e408b103d424808474999556a4e2c76453cfd114295a39bc9325a83b84416'
+
 
 class WebAuthnTokenTestCase(MyTestCase):
     USER_LOGIN = "testuser"
@@ -285,6 +303,42 @@ class WebAuthnTokenTestCase(MyTestCase):
                                               "HTTP_ORIGIN": '',
                                           })
         self.assertTrue(sign_count == -1)
+
+    def test_07_none_attestation(self):
+        self.init_params['nonce'] = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
+        self.init_params[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = 'none'
+        self.user = User(login=NONE_ATTESTATION_USER_NAME)
+        self.token.get_init_detail(self.init_params, self.user)
+        self.token.update({
+            'type': 'webauthn',
+            'serial': self.token.token.serial,
+            'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
+            'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
+            WEBAUTHNACTION.RELYING_PARTY_ID: RP_ID,
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            'HTTP_ORIGIN': ORIGIN
+        })
+        web_authn_registration_response = self.token.get_init_detail().get('webAuthnRegisterResponse')
+
+        self.assertEqual(NONE_ATTESTATION_CRED_ID, self.token.decrypt_otpkey())
+        self.assertEqual(NONE_ATTESTATION_PUB_KEY, self.token.get_tokeninfo(WEBAUTHNINFO.PUB_KEY))
+
+    def test_08_missing_attestation(self):
+        self.init_params['nonce'] = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
+        self.user = User(login=NONE_ATTESTATION_USER_NAME)
+        self.token.get_init_detail(self.init_params, self.user)
+
+        with self.assertRaises(RegistrationRejectedException):
+            self.token.update({
+                'type': 'webauthn',
+                'serial': self.token.token.serial,
+                'regdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'],
+                'clientdata': NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
+                WEBAUTHNACTION.RELYING_PARTY_ID: RP_ID,
+                WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.UNTRUSTED,
+                'HTTP_ORIGIN': ORIGIN
+            })
+
 
 class WebAuthnTestCase(unittest.TestCase):
     @staticmethod

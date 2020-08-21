@@ -882,9 +882,9 @@ class WebAuthnTokenClass(TokenClass):
 
                 if not description:
                     cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                    description = cn[0].value if len(cn) else DEFAULT_DESCRIPTION
+                    description = cn[0].value if len(cn) else None
 
-            self.set_description(description)
+            self.set_description(description or DEFAULT_DESCRIPTION)
 
             # Delete all challenges. We are still in enrollment, so there
             # *should* be only one, but it can't hurt to be thorough here.
