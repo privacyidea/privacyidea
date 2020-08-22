@@ -106,13 +106,13 @@ def before_request():
 
     username = getParam(request.all_data, "username")
     if username:
-        # We only fill request.user, if we really have a username.
+        # We only fill request.User, if we really have a username.
         # On endpoints like /auth/rights, this is not available
         loginname, realm = split_user(username)
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = getParam(request.all_data, "realm", default=realm) or realm or get_default_realm()
-        # Prefill the requst.user. This is used by some pre-event handlers
-        request.user = User(loginname, realm)
+        # Prefill the request.User. This is used by some pre-event handlers
+        request.User = User(loginname, realm)
 
 
 @jwtauth.route('', methods=['POST'])
