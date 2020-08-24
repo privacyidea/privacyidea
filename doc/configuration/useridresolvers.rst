@@ -367,7 +367,7 @@ of web service API. privacyIDEA issues a request to the target service and expec
 The configuration of the HTTP resolver sets the details of the request in the ``Request Mapping`` as well as the
 mapping of the obtained information as a ``Response Mapping``.
 
-.. figure:: images/http_resolver_1.png
+.. figure:: images/http_resolver.png
    :width: 500
 
 The ``Request Mapping`` is used to build the request issued to the remote API from privacyIDEA's user information.
@@ -396,9 +396,6 @@ for parsing, e.g.::
 
 For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
 the request as unsuccessful if the response contains certain content.
-
-.. figure:: images/http_resolver_2.png
-   :width: 500
 
 The above configuration will throw an error for a response::
 
