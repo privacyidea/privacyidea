@@ -1151,6 +1151,7 @@ def p_import(filename, cleanup=False):
                        action=policy.get("action"),
                        active=policy.get("active", True),
                        adminrealm=policy.get("adminrealm"),
+                       adminuser=policy.get("adminuser"),
                        check_all_resolvers=policy.get(
                            "check_all_resolvers", False),
                        client=policy.get("client"),
@@ -1214,6 +1215,7 @@ def create(name, scope, action, filename=None):
                            client=params.get("client"),
                            active=params.get("active", True),
                            adminrealm=params.get("adminrealm"),
+                           adminuser=params.get("adminuser"),
                            check_all_resolvers=params.get(
                                "check_all_resolvers", False))
             return r
