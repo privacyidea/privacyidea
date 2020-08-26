@@ -10,6 +10,7 @@
             Please scan the QR code with the privacyIDEA Authenticator App
         </p>
         <img width="{{ qrCodeWidth }}"
+             ng-class="$state.includes('token.wizard') == true ? 'centered' : 'not-centered'"
              ng-src="{{ enrolledToken.pushurl.img }}"/>
     </div>
 
