@@ -39,35 +39,37 @@
 
             <div class="col-sm-9">
                 <input type="text" name="requestmapping" id="requestmapping" ng-model="params.requestMapping"
-                    class="form-control" required />
+                    placeholder='{"customerid": "{userid}", "accessKey": "secr3t!"}' class="form-control" required />
             </div>
         </div>
         <div class="form-group row">
             <label for="headers" class="col-sm-3 control-label text-right" translate>Headers (JSON format)</label>
             <div class="col-sm-9">
                 <input type="text" name="headers" id="headers" ng-model="params.headers"
-                    class="form-control" required />
+                    placeholder='{"Content-Type": "application/json; charset=UTF-8"}' class="form-control" required />
             </div>
         </div>
         <div class="form-group row">
-            <label for="responsemapping" class="col-sm-3 control-label text-right" translate>Response Mapping (JSON format)</label>
+            <label for="responsemapping" class="col-sm-3 control-label text-right" translate>Response Mapping
+                (JSON format)</label>
             <div class="col-sm-9">
-                <input placeholder="{'username': '{your.response.user.name.key'}" name="responsemapping" id="responsemapping"
-                    ng-model="params.responseMapping" class="form-control" required />
+                <input type="text" name="responsemapping" id="responsemapping" ng-model="params.responseMapping"
+                       placeholder='{"username": "{Username}", "email": "{Email}"}' class="form-control" required />
             </div>
         </div>
         <div class="form-group row">
             <label for="hasSpecialErrorHandler" class="col-sm-3 control-label text-right" translate>Special Error
                 Handling</label>
             <div class="col-sm-3">
-                <input name="hasSpecialErrorHandler" id="hasSpecialErrorHandler" type="checkbox"
+                <input type="checkbox" name="hasSpecialErrorHandler" id="hasSpecialErrorHandler"
                     ng-model="params.hasSpecialErrorHandler" />
             </div>
         </div>
         <div class="form-group row" ng-if="params.hasSpecialErrorHandler">
             <label for="errorResponse" class="col-sm-3 control-label text-right" translate>Response contains (JSON format):</label>
             <div class="col-sm-9">
-                <input type="text" name="errorResponse" id="errorResponse" ng-model="params.errorResponse" class="form-control" required/>
+                <input type="text" name="errorResponse" id="errorResponse" ng-model="params.errorResponse"
+                       placeholder='{"success": false, "message": "An error occurred!"}' class="form-control" required/>
             </div>
         </div>
         <div class="text-center" ng-show="showResult">

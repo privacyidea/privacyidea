@@ -355,50 +355,34 @@ The available attributes for the ``Attribute mapping`` are:
  * mobile,
  * email.
 
+.. _httpresolver:
+
 HTTP resolver
 .............
 
-.. index:: HTTP resolver
+.. index:: HTTP resolver, resolver, api, http
 
-As a summary, This resolver aims to solve user resolution from a custom HTTP API implementation. For example, you could
-have a custom API at `http://domain.com/my/path` and you want to retrieve information from there. Below, we describe how this
-resolver should be configured.
+Starting with version 3.4 the HTTP resolver is available to retrieve user information from any kind
+of web service API. privacyIDEA issues a request to the target service and expects a JSON object in return.
+The configuration of the HTTP resolver sets the details of the request in the ``Request Mapping`` as well as the
+mapping of the obtained information as a ``Response Mapping``.
 
-The HTTP Resolver contains a few fields to be completed, as shown in the following image:
-
-.. figure:: images/http_resolver_1.png
+.. figure:: images/http_resolver.png
    :width: 500
 
-
-The important things here are ``Request Mapping`` and ``Response Mapping``, both of them using JSON format.
-
-``Request Mapping`` is used to inject the privacyidea's `userid` parameter into the correct place when you call to your HTTP API.
-
-Example 1:
-
-You have a HTTP endpoint with the following definition:
-
-   GET /users?id=<user_id>
-
-So you need to configure the request mapping like this:
-   
-   { "id": "{userid}" }
-
-Example 2:
-
-You have a HTTP endpoint with the following definition:
+The ``Request Mapping`` is used to build the request issued to the remote API from privacyIDEA's user information.
+For example an endpoint definition::
 
    POST /get-user
    customerId=<user_id>&accessKey="secr3t!"
 
-So you need to configure the request mapping like this:
+will require a request mapping
+
+.. code-block:: json
 
    { "customerId": "{userid}", "accessKey": "secr3t!" }
 
-``Response Mapping`` is used for mapping your HTTP API response with the privacyidea user. Now, 
-only JSON responses are supported.
-
-The available attributes for the ``Response mapping`` are:
+The ``Response Mapping`` follows the same rules as the attribute mapping of the SQL resolver. The known attributes are
 
  * username *(mandatory)*,
  * givenname,
@@ -407,30 +391,25 @@ The available attributes for the ``Response mapping`` are:
  * mobile,
  * email.
 
-Nested attributes are also supported for this kind of response. 
-We use [pydash deep path](https://pydash.readthedocs.io/en/latest/deeppath.html) for parsing it.
+Nested attributes are also supported using `pydash deep path <https://pydash.readthedocs.io/en/latest/deeppath.html>`_
+for parsing, e.g.
 
-Therefore, your response mapping would be:
+.. code-block:: json
 
    { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone} }
 
-Often, APIs are not RESTful (i.e. always returns 200 OK even if it fails). For this you can use ``Special error handling`` input:
+For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
+the request as unsuccessful if the response contains certain content.
 
-Example:
+The above configuration image will throw an error for a response
 
-You got an error from your HTTP endpoint with the following response:
+.. code-block:: json
 
-   { "success": false, "message": "Oops, error!" }
+   { "success": false, "message": "There was an error!" }
 
-You can able to configure something like this:
+because privacyIDEA will match ``{ "success": false }``.
 
-.. figure:: images/http_resolver_2.png
-   :width: 500
-
-So, now the HTTP Resolver checks if the response contains your input and then throws and error if it's match.
-In this case, An error will be thrown due ``{ "success": false }`` is part of the response.
-
-.. note:: By the way, if HTTP response status is >= 400 the resolver will thrown an exception.
+.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
 
 .. _usercache:
 
