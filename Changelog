@@ -1,4 +1,4 @@
-Version 3.4dev5, 2020-08-20
+Version 3.4dev6, 2020-08-26
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
@@ -29,6 +29,8 @@ Version 3.4dev5, 2020-08-20
      * Add failcounter as condition in event handlers (#2147)
      * The script handler allows to sync the database before
        running the script (#2293 #2302)
+     * Allow using user_obj in pre event handlers for 
+       /auth event. (#2303)
    * Policies
      * Allow to define characters for set_random_pin policy (#2121)
      * Add privacyIDEA nodes to policy condition (#2108)
@@ -62,6 +64,7 @@ Version 3.4dev5, 2020-08-20
    * Improve tests by fixing deprecation warnings (#2298)
    * Clean up the code for /validate/samlcheck
    * Fix censoring of Oracle connect strings (#2304)
+   * Treat unsupported WebAuthn attestation as None attestation (#2342)
 
 
 Version 3.3.3, 2020-05-19
