@@ -26,7 +26,7 @@ msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:94
 msgid "(none)"
-msgstr ""
+msgstr "(none)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
@@ -782,6 +782,10 @@ msgstr "Richtlinie erzeugen"
 msgid "Create a new Event Handler"
 msgstr "Erstelle eine neue Ereignisdefinition"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.html:5
+msgid "Create a new HTTP Resolver"
+msgstr "Erzeuge einen neuen HTTP Resolver"
+
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
 msgid "Create a new LDAP Resolver"
 msgstr "Erzeuge einen neuen LDAP-Resolver"
@@ -1075,6 +1079,10 @@ msgstr "Bearbeite CA-Konnector {{ connectorname }}"
 msgid "Edit Event Handler {{ eventid }}"
 msgstr "Bearbeite Ereignisdefinition  {{ eventid }}"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.html:3
+msgid "Edit HTTP Resolver {{ resolvername }}"
+msgstr "Bearbeite HTTP Resolver {{ resolvername }}"
+
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:3
 msgid ""
 "Edit LDAP Machine Resolver\n"
@@ -1186,6 +1194,10 @@ msgstr "Token aktivieren"
 #: privacyidea/static/components/token/views/token.details.html:228
 msgid "End Date before Start Date!"
 msgstr "Enddatum vor dem Startdatum!"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:19
+msgid "Endpoint (URL)"
+msgstr "Endpunkt (URL)"
 
 #: privacyidea/static/components/user/views/user.details.html:122
 msgid "Enroll New Token"
@@ -1451,6 +1463,10 @@ msgstr "Hash-Algorithmus"
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:117
 msgid "Headers"
 msgstr "Header"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:46
+msgid "Headers (JSON format)"
+msgstr "Header (JSON Format)"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:8
 msgid ""
@@ -1857,6 +1873,10 @@ msgstr "Maximale Authentisierungen"
 #: privacyidea/static/components/token/views/token.details.html:196
 msgid "Maximum Success Auth Count"
 msgstr "Maximale erfolgreiche Authentisierungen"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:27
+msgid "Method"
+msgstr "Methode"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:92
 msgid "Microsoft Internet Explorer is not supported."
@@ -2503,6 +2523,10 @@ msgstr "PIN wiederholen"
 msgid "Repeat password"
 msgstr "Passwort wiederholen"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.html:38
+msgid "Request Mapping (JSON format)"
+msgstr "Anfrage Mapping (JSON Format)"
+
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:66
 msgid "Request to remote privacyIDEA server successful."
 msgstr ""
@@ -2541,6 +2565,7 @@ msgstr "Resolver"
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:15
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:16
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:5
+#: privacyidea/static/components/config/views/config.resolvers.http.html:10
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:14
 #: privacyidea/static/components/config/views/config.resolvers.list.html:5
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:14
@@ -2557,6 +2582,16 @@ msgstr "URI des Resource Servers"
 #: privacyidea/static/components/login/views/enter-response.html:20
 msgid "Response"
 msgstr "Antwort"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:53
+msgid ""
+"Response Mapping\n"
+"                (JSON format)"
+msgstr "Antwort Mapping (JSON Format)"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:69
+msgid "Response contains (JSON format):"
+msgstr "Antwort beinhaltet (JSON Format):"
 
 #: privacyidea/static/components/token/views/token.details.html:346
 msgid "Resync Token"
@@ -2685,6 +2720,7 @@ msgstr "Realms speichern"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
+#: privacyidea/static/components/config/views/config.resolvers.http.html:93
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:332
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
@@ -2886,6 +2922,12 @@ msgstr "Software"
 msgid "Some nice words..."
 msgstr "Ein paar nette Worte..."
 
+#: privacyidea/static/components/config/views/config.resolvers.http.html:61
+msgid ""
+"Special Error\n"
+"                Handling"
+msgstr "Spezielle Fehlerbehandlung"
+
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
 msgstr "Die Subskription läuft in Kürze ab"
@@ -2981,6 +3023,10 @@ msgstr "Aufgabenmodul"
 #: privacyidea/static/components/config/controllers/smtpServerController.js:65
 msgid "Test Email sent successfully."
 msgstr "Test Email wurde erfolgreich versendet."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:86
+msgid "Test HTTP Resolver"
+msgstr "HTTP Resolver testen"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:327
