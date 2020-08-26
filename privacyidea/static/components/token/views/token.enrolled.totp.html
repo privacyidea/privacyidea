@@ -1,12 +1,9 @@
 <div class="row">
-    <div ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'"
-         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
+    <div class="col-sm-6" ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'">
         <img width="{{ qrCodeWidth }}"
-             ng-class="$state.includes('token.wizard') == true ? 'centered' : 'not-centered'"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div ng-hide="form['2stepinit']"
-         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
+    <div class="col-sm-6" ng-hide="form['2stepinit']">
         <uib-accordion close-others="oneAtATime" ng-show="show_seed">
             <div uib-accordion-group
                  class="panel-default"
@@ -32,7 +29,7 @@
         </button>
         </div>
     </div>
-    <div class="col-sm-6" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
+    <div class="col-sm-4 pull-right" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
         <p translate>
             Your token {{ enrolledToken.serial }} is not completely enrolled, yet.
         </p>
