@@ -371,12 +371,14 @@ mapping of the obtained information as a ``Response Mapping``.
    :width: 500
 
 The ``Request Mapping`` is used to build the request issued to the remote API from privacyIDEA's user information.
-For example an entpoint definition::
+For example an endpoint definition::
 
    POST /get-user
    customerId=<user_id>&accessKey="secr3t!"
 
-will require a request mapping::
+will require a request mapping
+
+.. code-block:: json
 
    { "customerId": "{userid}", "accessKey": "secr3t!" }
 
@@ -390,20 +392,24 @@ The ``Response Mapping`` follows the same rules as the attribute mapping of the 
  * email.
 
 Nested attributes are also supported using `pydash deep path <https://pydash.readthedocs.io/en/latest/deeppath.html>`_
-for parsing, e.g.::
+for parsing, e.g.
+
+.. code-block:: json
 
    { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone} }
 
 For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
 the request as unsuccessful if the response contains certain content.
 
-The above configuration will throw an error for a response::
+The above configuration image will throw an error for a response
+
+.. code-block:: json
 
    { "success": false, "message": "There was an error!" }
 
 because privacyIDEA will match ``{ "success": false }``.
 
-.. note:: If the HTTP response status is >= 400, the resolver will thrown an exception.
+.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
 
 .. _usercache:
 
