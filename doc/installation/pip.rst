@@ -64,13 +64,16 @@ databases [#sqlaDialects]_.
 
 The database server should be installed on the host or be otherwise reachable.
 
-In order to use the database, a user with the appropriate privileges is needed::
+In order for privacyIDEA to use the database, a database user with the
+appropriate privileges is needed.
+The following SQL commands will create the database as well as a user in `MySQL`::
 
     CREATE DATABASE pi;
     CREATE USER "pi"@"localhost" IDENTIFIED BY "<dbsecret>";
     GRANT ALL PRIVILEGES ON pi.* TO "pi"@"localhost";
 
-The database name, user and password are then added to :ref:`cfgfile`.
+You must then add the database name, user and password to your `pi.cfg`. See
+:ref:`cfgfile` for more information on the configuration.
 
 Setting up privacyIDEA
 ^^^^^^^^^^^^^^^^^^^^^^
