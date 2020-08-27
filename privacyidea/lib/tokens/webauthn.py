@@ -1659,7 +1659,7 @@ class WebAuthnAssertionResponse(object):
             #             case, or not, or fails the authentication ceremony
             #             or not, is Relying Party-specific.
             sign_count = struct.unpack('!I', a_data[33:37])[0]
-            if sign_count != 0 or self.webauthn_user.sign_count != 0 and sign_count <= self.webauthn_user.sign_count:
+            if (sign_count != 0 or self.webauthn_user.sign_count != 0) and sign_count <= self.webauthn_user.sign_count:
                 raise AuthenticationRejectedException('Duplicate authentication detected.')
 
             # Step 18.
