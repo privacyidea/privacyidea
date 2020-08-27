@@ -403,4 +403,3 @@ class WebAuthnTestCase(unittest.TestCase):
 
     def test_06_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
-
