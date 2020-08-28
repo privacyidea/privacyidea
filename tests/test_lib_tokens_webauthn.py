@@ -108,6 +108,7 @@ ASSERTION_RESPONSE_TMPL = {
     'signature': b'MEUCIEp28FzVKneM3U3xVl4ABOXMHq02BBnQ9cOgFDvzfn8VAiEAkytcMIpWDP5PJEIUhDB1uQSz7aZO'
                  b'hdZGYqgRmMOGzd4='
 }
+ASSERTION_RESPONSE_SIGN_COUNT = 637
 CRED_KEY = {
     'alg': -7,
     'type': 'public-key'
@@ -446,5 +447,12 @@ class WebAuthnTestCase(unittest.TestCase):
         # FIXME This *should* fail because UP=0, but will fail anyway later on because the signature is invalid.
         # TODO Build a mock Authenticator implementation, to be able to sign arbitrary authenticator data statements.
         # TODO Sign an authenticator data statement with UP=0 and test against that so that the signature is valid.
+        with self.assertRaises(AuthenticationRejectedException):
+            webauthn_assertion_response.verify()
+
+    def test_06_duplicate_authentication_fail_assertion(self):
+        webauthn_assertion_response = self.getAssertionResponse()
+        webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
+
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
