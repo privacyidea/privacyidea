@@ -1,5 +1,7 @@
 .. _webui:
 
+.. index:: ! webui, ! WebUI
+
 WebUI
 =====
 
@@ -7,6 +9,21 @@ privacyIDEA comes with a web-based user interface which is used to manage and co
 the privacyIDEA server. It is also used a self-service portal for the average user, who
 manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
+
+Dashboard
+------
+
+.. index:: dashboard
+
+Starting with version 3.4, privacyIDEA includes a basic dashboard, which can be enabled
+by the WebUI policy :ref:`webui_admin_dashboard`. The dashboard will be displayed as a starting page
+for administrators and contains information about token numbers, authentication requests,
+recent administrative changes, policies, event handlers and subscriptions. It uses the usual
+endpoints to fetch the information, so only information to which an administrator has read
+access is displayed in the dashboard.
+
+.. figure:: images/dashboard.png
+   :width: 500
 
 Tokens
 ------
