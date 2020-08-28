@@ -1186,7 +1186,7 @@ def create(name, scope, action, filename=None):
             else:
                 print("name not defined in file, will use the cli value "
                       "{0!s}.".format(name))
-                params["scope"] = name
+                params["name"] = name
 
             if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
