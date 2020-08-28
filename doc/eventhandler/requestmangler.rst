@@ -44,21 +44,21 @@ If you can to set a parameter based on the value of another parameter, you can u
 
 **Example 1**
 
-To set the realm based on the user parameter::
+To set the realm based on the username parameter::
 
    parameter: realm
-   match_parameter: user
+   match_parameter: username
    match_pattern: .*@(.*)
    value: {0}
 
 A request like::
 
-   user=surname.givenname@example.com
+   username=surname.givenname@example.com
    realm=
 
 with an empty realm will be modified to::
 
-   user=surname.givenname@example.com
+   username=surname.givenname@example.com
    realm=example.com
 
 since, the pattern ``.*@(.*)`` will match the email address and extract the domain after the "@"
@@ -68,18 +68,18 @@ sign. The python tag "{0}" will be replaced with the matching domainname.
 
 To simply change the domain name in the very same parameter::
 
-   parameter: user
-   match_parameter: user
+   parameter: username
+   match_parameter: username
    match_pattern: (.*)@example.com
    value: {0}@newcompany.com
 
 A request like::
 
-   user=surname.givenname@example.com
+   username=surname.givenname@example.com
 
 will be modified to::
 
-   user=surname.givenname@newcompany.com
+   username=surname.givenname@newcompany.com
 
 .. note:: The *match_pattern* in the above example will not match "surname.givenname@example.company",
    since it always matches the complete value as mentioned above.
