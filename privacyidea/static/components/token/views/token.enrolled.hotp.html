@@ -2,7 +2,7 @@
     <div ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'"
          ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
         <img width="{{ qrCodeWidth }}"
-             ng-class="$state.includes('token.wizard') == true ? 'centered' : 'not-centered'"
+             ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'centered' : 'not-centered'"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
     <div ng-hide="form['2stepinit']"
