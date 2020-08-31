@@ -200,6 +200,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.questions = [];
     $scope.num_questions = 5;
     $scope.fileVersionSuffix = versioningSuffixProvider.$get();
+    $scope.ykuidlen = [12, 16];
+    $scope.ykotplen = [32, 44, 48];
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -293,6 +295,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;
+        }
+        if ($scope.form.type === "yubikey") {
+            delete $scope.form.otplen;
+        } else {
+            $scope.form.otplen = 6;
         }
 
         $scope.preset_indexedsecret();
@@ -522,12 +529,19 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     };
 
     $scope.yubikeyGetLen = function () {
-        if ($scope.tempData.yubikeyTest.length >= 32) {
-            $scope.form.otplen = $scope.tempData.yubikeyTest.length;
-            if ($scope.tempData.yubikeyTest.length > 32) {
+        let yktestdatalen = $scope.tempData.yubikeyTest.trim().length;
+        if ($scope.ykotplen.includes(yktestdatalen)) {
+            $scope.form.otplen = yktestdatalen;
+            let yktestuidlen = yktestdatalen - 32;
+            if ($scope.ykuidlen.includes(yktestuidlen)) {
                 $scope.tempData.yubikeyUid = true;
-                $scope.tempData.yubikeyUidLen = $scope.tempData.yubikeyTest.length - 32;
+                $scope.tempData.yubikeyUidLen = yktestuidlen;
+            } else {
+                delete $scope.tempData.yubikeyUidLen;
             }
+        } else {
+            delete $scope.form.otplen;
+            delete $scope.tempData.yubikeyUidLen;
         }
     };
 
