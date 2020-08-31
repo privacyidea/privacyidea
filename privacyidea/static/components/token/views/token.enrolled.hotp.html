@@ -6,7 +6,7 @@
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
     <div ng-hide="form['2stepinit']"
-         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">>
+         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
         <uib-accordion close-others="oneAtATime" ng-show="show_seed">
             <div uib-accordion-group
                  class="panel-default"
