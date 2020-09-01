@@ -420,6 +420,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 $scope.form.type = tkey;
                 // Set the 2step enrollment value
                 $scope.setTwostepEnrollmentDefault();
+                // Initialize token specific settings
+                $scope.changeTokenType();
                 break;
             }
         }
