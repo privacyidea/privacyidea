@@ -51,6 +51,8 @@ def url_decode(url):
     :return: the decoded string
     :rtype: bytes
     """
+    # remove all non base64 characters (newline, CR) from the string before
+    # calculating the padding length
     pad_len = -len(re.sub('[^A-Za-z0-9-_+/]+', '', to_unicode(url))) % 4
 
     padding = pad_len * "="
