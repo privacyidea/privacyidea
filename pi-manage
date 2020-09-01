@@ -1151,6 +1151,7 @@ def p_import(filename, cleanup=False):
                        action=policy.get("action"),
                        active=policy.get("active", True),
                        adminrealm=policy.get("adminrealm"),
+                       adminuser=policy.get("adminuser"),
                        check_all_resolvers=policy.get(
                            "check_all_resolvers", False),
                        client=policy.get("client"),
@@ -1186,7 +1187,7 @@ def create(name, scope, action, filename=None):
             else:
                 print("name not defined in file, will use the cli value "
                       "{0!s}.".format(name))
-                params["scope"] = name
+                params["name"] = name
 
             if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
@@ -1214,6 +1215,7 @@ def create(name, scope, action, filename=None):
                            client=params.get("client"),
                            active=params.get("active", True),
                            adminrealm=params.get("adminrealm"),
+                           adminuser=params.get("adminuser"),
                            check_all_resolvers=params.get(
                                "check_all_resolvers", False))
             return r

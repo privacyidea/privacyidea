@@ -89,7 +89,9 @@
 
         </div>
 
-        <div ui-view class="col-lg-9 slide panel">
+        <div ui-view class="col-sm-9 slide panel" ng-hide="token_wizard">
+        </div>
+        <div ui-view class="col-sm-12 slide panel" ng-show="token_wizard">
         </div>
 
     </div>

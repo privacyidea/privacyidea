@@ -410,7 +410,7 @@ IMAGES = IMAGES
 DEFAULT_DESCRIPTION = _(u'Generic WebAuthn Token')
 
 # Policy defaults
-DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal lightning"
+DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
 DEFAULT_TIMEOUT = 60
 DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
@@ -561,7 +561,7 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.ALLOWED_TRANSPORTS: {
                         'type': 'str',
                         'desc': _("A list of transports to prefer to communicate with WebAuthn tokens. "
-                                  "Default: usb ble nfc internal lightning (All standard transports)")
+                                  "Default: usb ble nfc internal (All standard transports)")
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
@@ -882,9 +882,9 @@ class WebAuthnTokenClass(TokenClass):
 
                 if not description:
                     cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                    description = cn[0].value if len(cn) else DEFAULT_DESCRIPTION
+                    description = cn[0].value if len(cn) else None
 
-            self.set_description(description)
+            self.set_description(description or DEFAULT_DESCRIPTION)
 
             # Delete all challenges. We are still in enrollment, so there
             # *should* be only one, but it can't hurt to be thorough here.

@@ -1,12 +1,16 @@
-Version 3.4dev4, 2020-08-16
+Version 3.4dev6, 2020-08-26
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
      Gateways using arbitrary scripts (#2236)
+   * Add HTTP Resolver that can read users from web services
+     via JSON responses (#2083)
    * Add a basic dashboard as start screen in the WebUI (#2177)
    * Allow using dynamic 3rd party token classes (#2321)
    * Allow multiple consecutive challenge responses for authentication
      or tasks like changing the token PIN (#2361)
+   * PUSH token can communicate with privacyIDEA via polling
+     as fallback to Google Push Service or Apple Notification Service (#2262)
 
   Enhancements:
    * Allow deletion of validity period via UI (#2263)
@@ -25,6 +29,8 @@ Version 3.4dev4, 2020-08-16
      * Add failcounter as condition in event handlers (#2147)
      * The script handler allows to sync the database before
        running the script (#2293 #2302)
+     * Allow using user_obj in pre event handlers for 
+       /auth event. (#2303)
    * Policies
      * Allow to define characters for set_random_pin policy (#2121)
      * Add privacyIDEA nodes to policy condition (#2108)
@@ -58,6 +64,7 @@ Version 3.4dev4, 2020-08-16
    * Improve tests by fixing deprecation warnings (#2298)
    * Clean up the code for /validate/samlcheck
    * Fix censoring of Oracle connect strings (#2304)
+   * Treat unsupported WebAuthn attestation as None attestation (#2342)
 
 
 Version 3.3.3, 2020-05-19
