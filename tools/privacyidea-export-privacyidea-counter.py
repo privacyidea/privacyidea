@@ -10,20 +10,10 @@ It exports
    serial, counter
 
 """
-
-
-import argparse
-import sys
-from sqlalchemy import create_engine
-from sqlalchemy import Table, MetaData, Column
-from sqlalchemy import Integer, Unicode, Boolean
 from sqlalchemy.sql import select
 from privacyidea.models import Token
 import argparse
-import sys
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-metadata = MetaData()
 
 
 def get_privacyidea_uri(config_file):
@@ -38,22 +28,28 @@ def get_privacyidea_uri(config_file):
     return sql_uri
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                    required=True)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-c", "--config", help="privacyIDEA config file. We only "
+                                               "need the SQLALCHEMY_DATABASE_URI.",
+                        required=True)
+    args = parser.parse_args()
 
-# Parse data
+    # Parse data
 
-SQL_URI = get_privacyidea_uri(args.config)
+    SQL_URI = get_privacyidea_uri(args.config)
 
-# Start DB stuff
+    # Start DB stuff
 
-pi_engine = create_engine(SQL_URI)
-conn_pi = pi_engine.connect()
+    pi_engine = create_engine(SQL_URI)
+    conn_pi = pi_engine.connect()
 
-s = select([Token.serial, Token.count])
-result = pi_engine.execute(s)
+    s = select([Token.serial, Token.count])
+    result = pi_engine.execute(s)
 
-for r in result:
-    print(u"{0!s}, {1!s}".format(r.serial, r.count))
+    for r in result:
+        print(u"{0!s}, {1!s}".format(r.serial, r.count))
+
+
+if __name__ == '__main__':
+    main()

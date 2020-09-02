@@ -384,6 +384,11 @@ def list_api():
     ufields = getParam(param, "user_fields", optional)
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
+    tokeninfokey = getParam(param, "infokey", optional)
+    tokeninfovalue = getParam(param, "infovalue", optional)
+    tokeninfo = None
+    if tokeninfokey and tokeninfovalue:
+        tokeninfo = {tokeninfokey: tokeninfovalue}
     if assigned:
         assigned = assigned.lower() == "true"
     
@@ -403,7 +408,8 @@ def list_api():
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid, allowed_realms=allowed_realms)
+                                 userid=userid, allowed_realms=allowed_realms,
+                                 tokeninfo=tokeninfo)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

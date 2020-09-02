@@ -357,3 +357,19 @@ with the value of the given user attribute.
 For more details of this token type see :ref:`indexedsecret_token`.
 
 (Since privacyIDEA 3.3)
+
+.. index:: admin dashboard, dashboard
+
+.. _webui_admin_dashboard:
+
+admin_dashboard
+~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is activated, the static dashboard can be accessed by administrators.
+It is displayed as a starting page in the WebUI and contains information about
+token numbers, authentication requests, recent administrative changes, policies,
+event handlers and subscriptions.
+
+(Since privacyIDEA 3.4)

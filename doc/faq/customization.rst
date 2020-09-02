@@ -184,3 +184,39 @@ Some tokens allow a special customization.
 The paper token allows you to add CSS for styling the printed output and
 add additional headers and footers. Read more about it at the
 paper token :ref:`paper_token_customize`.
+
+.. _customize_3rd_party_tokens:
+
+New token classes
+~~~~~~~~~~~~~~~~~
+
+You can add new token types to privacyIDEA by writing your own Python token class.
+A token class in privacyIDEA is
+inherited from ``privacyidea.lib.tokenclass.TokenClass``. You can either inherit from
+this base class directly or from another token class. E.g. the *TOTP* token class is inherited from
+*HOTP*. Take a look in the directory *privacyidea/lib/tokens/* to get an idea of token classes.
+
+A token class can have many different methods which you can find in the base class ``TokenClass``.
+Depending on the token type you are going to implement, you will need to implement several of these.
+Probably the most important methods are ``check_otp``, which validates the 2nd factor and the
+method ``update``, which is called during the initialization process of the token and
+gathers and writes all token specific attributes.
+
+You should only add one token class per Python module.
+
+You can install your new Python module, wherever you want to like ``myproject.cooltoken``.
+
+If these tokens need additional enrollment data in the UI, you can specify
+two templates, that are displayed during enrollment and after the token
+is enrolled. These HTML templates need to be located at
+``privacyidea/static/components/token/views/token.enroll.<tokentype>.html``
+and
+``privacyidea/static/components/token/views/token.enrolled.<tokentype>.html``.
+
+.. Note:: In this example the python module ``myproject.cooltoken`` should
+   contain a class ``CoolTokenClass``. The tokentype of this token, should
+   be named "cool". And thus the HTML templates included by privacyIDEA
+   are ``token.enroll.cool.html`` and ``token.enrolled.cool.html``.
+
+The list of the token modules you want to add, must be specified in ``pi.cfg``.
+See :ref:`picfg_3rd_party_tokens`.

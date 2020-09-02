@@ -130,7 +130,7 @@ class RADIUSServerTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertIn("do not have the necessary role", result["error"]["message"])
 

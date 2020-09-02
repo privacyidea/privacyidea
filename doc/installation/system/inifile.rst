@@ -81,6 +81,9 @@ own UI and you do not want to present the UI to the user or the outside world.
 .. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
 
+The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
+set in front of every string in the UI, that is not translated to the language your browser
+is using.
 
 .. _engine-registry:
 
@@ -198,4 +201,18 @@ A JWT can be created like this::
    But there probably must be certain policies defined for this user.
    If you are using an administrative user, the realm for this administrative
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
+
+.. _picfg_3rd_party_tokens:
+
+3rd party token types
+---------------------
+
+You can add 3rd party token types to privacyIDEA. Read more about this
+at :ref:`customize_3rd_party_tokens`.
+
+To make the new token type available in privacyIDEA,
+you need to specify a list of your 3rd party token class modules
+in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``:
+
+    PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 

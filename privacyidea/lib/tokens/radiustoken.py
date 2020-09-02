@@ -191,7 +191,7 @@ class RadiusTokenClass(RemoteTokenClass):
         # should we check the pin locally?
         if self.check_pin_local:
             # With a local PIN the challenge response is always a privacyIDEA challenge response!
-            res = self.check_pin(passw)
+            res = self.check_pin(passw, user=user, options=options)
             return res
 
         else:
@@ -226,7 +226,7 @@ class RadiusTokenClass(RemoteTokenClass):
         if options is None:
             options = {}
         message = options.get('radius_message') or "Enter your RADIUS tokencode:"
-        state = binascii.hexlify(options.get('radius_state') or b'')
+        state = hexlify_and_unicode(options.get('radius_state') or b'')
         attributes = {'state': transactionid}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
@@ -406,7 +406,7 @@ class RadiusTokenClass(RemoteTokenClass):
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
 
-            if not self.check_pin(pin):
+            if not self.check_pin(pin, user=user, options=options):
                 return False, -1, {'message': "Wrong PIN"}
 
         # attempt to retrieve saved state/result

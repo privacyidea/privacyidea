@@ -261,6 +261,39 @@ class APITokenTestCase(MyApiTestCase):
             tokenlist = result.get("value").get("tokens")
             self.assertTrue(len(tokenlist) == 1, len(tokenlist))
 
+        # get tokens with a specific tokeninfo
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "assigned": False,
+                                           "infokey": "tokenkind",
+                                           "infovalue": "hardware"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertEqual(len(tokenlist), 0)
+
+        init_token({"serial": "hw001", "genkey": 1}, tokenkind="hardware")
+        # get tokens with a specific tokeninfo
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "assigned": False,
+                                               "infokey": "tokenkind",
+                                               "infovalue": "hardware"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertEqual(len(tokenlist), 1)
+
+        remove_token("hw001")
+
     def test_02_list_tokens_csv(self):
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -611,9 +644,9 @@ class APITokenTestCase(MyApiTestCase):
                                                  'success': '0'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 200, res)
-            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
-            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 0, res.json)
+            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEqual(res.json['result']['value']['auditdata'][0]['success'], 0, res.json)
 
         # Successful resync with consecutive values
         with self.app.test_request_context('/token/resync',
@@ -635,9 +668,9 @@ class APITokenTestCase(MyApiTestCase):
                                                  'success': '1'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 200, res)
-            self.assertEquals(len(res.json['result']['value']['auditdata']), 1, res.json)
-            self.assertEquals(res.json['result']['value']['auditdata'][0]['success'], 1, res.json)
+            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual(len(res.json['result']['value']['auditdata']), 1, res.json)
+            self.assertEqual(res.json['result']['value']['auditdata'][0]['success'], 1, res.json)
 
         # Get the OTP token and inspect the counter
         with self.app.test_request_context('/token/',
@@ -807,6 +840,19 @@ class APITokenTestCase(MyApiTestCase):
                              "2014-05-22T22:00+0200")
             self.assertEqual(tokeninfo.get("validity_period_end"),
                              "2014-05-22T23:00+0200")
+
+        # check for broken validity dates
+        with self.app.test_request_context('/token/set/SET001',
+                                           method="POST",
+                                           data={"validity_period_start": "unknown"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            result = res.json.get("result")
+            self.assertEqual(result['error']['code'], 301, result)
+            self.assertEqual(result['error']['message'],
+                             "ERR301: Could not parse validity period start date!",
+                             result)
 
     def test_10_set_token_realms(self):
         self._create_temp_token("REALM001")
@@ -1539,7 +1585,11 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(value.get("count") == 1, result)
 
             tokeninfo = token.get("info")
-            self.assertDictContainsSubset({'key1': 'value 1', 'key2': 'value 2'}, tokeninfo)
+            test_dict = {'key1': 'value 1', 'key2': 'value 2'}
+            try:
+                self.assertTrue(test_dict.viewitems() <= tokeninfo.viewitems())
+            except AttributeError:
+                self.assertTrue(test_dict.items() <= tokeninfo.items())
 
         # Overwrite an existing tokeninfo value
         with self.app.test_request_context('/token/info/INF001/key1',
@@ -1564,7 +1614,11 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(value.get("count") == 1, result)
 
             tokeninfo = token.get("info")
-            self.assertDictContainsSubset({'key1': 'value 1 new', 'key2': 'value 2'}, tokeninfo)
+            test_dict = {'key1': 'value 1 new', 'key2': 'value 2'}
+            try:
+                self.assertTrue(test_dict.viewitems() <= tokeninfo.viewitems())
+            except AttributeError:
+                self.assertTrue(test_dict.items() <= tokeninfo.items())
 
         # Delete an existing tokeninfo value
         with self.app.test_request_context('/token/info/INF001/key1',
@@ -1607,7 +1661,10 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(value.get("count") == 1, result)
 
             tokeninfo = token.get("info")
-            self.assertDictContainsSubset({'key2': 'value 2'}, tokeninfo)
+            try:
+                self.assertTrue({'key2': 'value 2'}.viewitems() <= tokeninfo.viewitems())
+            except AttributeError:
+                self.assertTrue({'key2': 'value 2'}.items() <= tokeninfo.items())
             self.assertNotIn('key1', tokeninfo)
 
     def test_25_user_init_defaults(self):

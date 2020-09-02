@@ -56,8 +56,12 @@ ENCODING = "utf-8"
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
-ALLOWED_SERIAL = "^[0-9a-zA-Z\-_]+$"
+ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
+# character lists for the identifiers in the pin content policy
+CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
+                          "n": string.digits,        # numbers
+                          "s": string.punctuation}   # special
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -388,7 +392,7 @@ def decode_base32check(encoded_data, always_upper=True):
     return hexlify_and_unicode(payload)
 
 
-def sanity_name_check(name, name_exp="^[A-Za-z0-9_\-\.]+$"):
+def sanity_name_check(name, name_exp=r"^[A-Za-z0-9_\-\.]+$"):
     """
     This function can be used to check the sanity of a name like a resolver,
     ca connector or realm.
@@ -441,8 +445,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
                 if k in config_description:
                     types[k] = config_description.get(k)
                 else:
-                    log.warn("the passed key %r is not a "
-                             "parameter for the %s %r" % (k, module, type))
+                    log.warning("the passed key '{0!s}' is not a parameter for "
+                                "the {1!s} type '{2!s}'".format(k, module, type))
 
     # Check that there is no type or desc without the data itself.
     # i.e. if there is a type.BindPW=password, then there must be a
@@ -949,7 +953,7 @@ def parse_legacy_time(ts, return_date=False):
     if not d.tzinfo:
         # we need to reparse the string
         d = parse_date_string(ts,
-                              dayfirst=re.match("^\d\d[/\.]",ts)).replace(
+                              dayfirst=re.match(r"^\d\d[/\.]", ts)).replace(
                                   tzinfo=tzlocal())
     if return_date:
         return d
@@ -1073,20 +1077,12 @@ def censor_connect_string(connect_string):
     """
     Take a SQLAlchemy connect string and return a sanitized version
     that can be written to the log without disclosing the password.
-    The password is replaced with "xxxx".
+    The password is replaced with "***".
     In case any error occurs, return "<error when censoring connect string>"
     """
     try:
-        parsed = urlparse(connect_string)
-        if parsed.password is not None:
-            # We need to censor the ``netloc`` attribute: user:pass@host
-            _, host = parsed.netloc.rsplit("@", 1)
-            new_netloc = u'{}:{}@{}'.format(parsed.username, 'xxxx', host)
-            # Convert the URL to six components. netloc is component #1.
-            splitted = list(parsed)
-            splitted[1] = new_netloc
-            return urlunparse(splitted)
-        return connect_string
+        parsed = sqlalchemy.engine.url.make_url(connect_string)
+        return parsed.__repr__()
     except Exception:
         return "<error when censoring connect string>"
 
@@ -1135,7 +1131,54 @@ def truncate_comma_list(data, max_len):
     return ",".join(data)
 
 
-def check_pin_policy(pin, policy):
+def generate_charlists_from_pin_policy(policy):
+    """
+    This function uses the pin content policy string (e.g. "+cns", "[asdf]") to create the character lists
+    for password generation.
+
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_contents)
+    :return: Dictionary with keys "base" for the base set of allowed characters and "requirements"
+     which denotes a list of characters from each of which at least one must be contained in the pin.
+    """
+
+    # regexp to check for pin content policy string validity
+    VALID_POLICY_REGEXP = re.compile(r'^[+-]*[cns]+$|^\[.*\]+$')
+
+    # default: full character list
+    base_characters = "".join(CHARLIST_CONTENTPOLICY.values())
+    # list of strings where a character of each string is required for the pin
+    requirements = []
+
+    if not re.match(VALID_POLICY_REGEXP, policy):
+        raise PolicyError("Unknown character specifier in PIN policy.")
+
+    if policy[0] == "+":
+        # grouping
+        for char in policy[1:]:
+            requirements.append(CHARLIST_CONTENTPOLICY.get(char))
+        requirements = ["".join(requirements)]
+
+    elif policy[0] == "-":
+        # exclusion
+        base_charlist = []
+        for key in CHARLIST_CONTENTPOLICY.keys():
+            if key not in policy[1:]:
+                base_charlist.append(CHARLIST_CONTENTPOLICY[key])
+        base_characters = "".join(base_charlist)
+
+    elif policy[0] == "[" and policy[-1] == "]":
+        # only allowed characters
+        base_characters = policy[1:-1]
+
+    else:
+        for c in policy:
+            if c in CHARLIST_CONTENTPOLICY:
+                requirements.append(CHARLIST_CONTENTPOLICY.get(c))
+
+    return {"base": base_characters, "requirements": requirements}
+
+
+def check_pin_contents(pin, policy):
     """
     The policy to check a PIN can contain of "c", "n" and "s".
     "cn" means, that the PIN should contain a character and a number.
@@ -1147,52 +1190,27 @@ def check_pin_policy(pin, policy):
     :param policy: The policy that describes the allowed contents of the PIN.
     :return: Tuple of True or False and a description
     """
-    chars = {"c": r"[a-zA-Z]",
-             "n": r"[0-9]",
-             "s": r"[\[\].:,;_<>+*!/()=?$§%&#~^-]"}
+
     ret = True
     comment = []
 
     if not policy:
         return False, "No policy given."
 
-    if policy[0] in ["+", "-"] or policy[0] != "[":
-        for char in policy[1:]:
-            if char not in chars.keys():
-                raise PolicyError("Unknown character specifier in PIN policy.")
+    charlists_dict = generate_charlists_from_pin_policy(policy)
 
-    if policy[0] == "+":
-        # grouping
-        necessary = []
-        for char in policy[1:]:
-            necessary.append(chars.get(char))
-        necessary = "|".join(necessary)
-        if not re.search(necessary, pin):
+    # check for not allowed characters
+    for char in pin:
+        if not char in charlists_dict["base"]:
             ret = False
-            comment.append("Missing character in PIN: {0!s}".format(necessary))
+    if not ret:
+        comment.append("Not allowed character in PIN!")
 
-    elif policy[0] == "-":
-        # exclusion
-        not_allowed = []
-        for char in policy[1:]:
-            not_allowed.append(chars.get(char))
-        not_allowed = "|".join(not_allowed)
-        if re.search(not_allowed, pin):
+    # check requirements
+    for str in charlists_dict["requirements"]:
+        if not re.search(re.compile('[' + re.escape(str) + ']'), pin):
             ret = False
-            comment.append("Not allowed character in PIN!")
-
-    elif policy[0] == "[" and policy[-1] == "]":
-        # only allowed characters
-        allowed_chars = policy[1:-1]
-        for ch in pin:
-            if ch not in allowed_chars:
-                ret = False
-                comment.append("Not allowed character in PIN!")
-    else:
-        for c in chars:
-            if c in policy and not re.search(chars[c], pin):
-                ret = False
-                comment.append("Missing character in PIN: {0!s}".format(chars[c]))
+            comment.append("Missing character in PIN: {0!s}".format(str))
 
     return ret, ",".join(comment)
 
@@ -1408,3 +1426,18 @@ def determine_logged_in_userparams(logged_in_user, params):
         raise PolicyError(u"Unknown role: {}".format(role))
 
     return role, username, realm, admin_user, admin_realm
+
+
+def to_list(input):
+    """
+    Returns a list if either a list, a set or a single string is given.
+    If a single string is given, then it returns a list with this one element.
+
+    :param input: Can be a list a set or a string
+    :return: list of elements
+    """
+    if isinstance(input, list):
+        return input
+    if isinstance(input, set):
+        return list(input)
+    return [input]

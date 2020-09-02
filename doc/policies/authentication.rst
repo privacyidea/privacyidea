@@ -293,6 +293,24 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
+.. _policy_change_pin_via_validate:
+
+change_pin_via_validate
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This works with the enrollment policies :ref:`policy_change_pin_first_use` and
+:ref:`policy_change_pin_every`. When a PIN change is due, then a successful authentication
+will start a challenge response mechanism in which the user is supposed to enter a new
+PIN two times.
+
+Only if the user successfully changes the PIN the authentication process is finished
+successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+
+.. note:: The application must support several consecutive challenge response requests.
+
+
 .. _policy_u2f_facets:
 
 u2f_facets
@@ -419,6 +437,39 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 
+.. _policy_auth_push_allow_poll:
+
+push_allow_polling
+~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: string
+
+This policy configures if push tokens are allowed to poll the server for open
+challenges (e.g. when the the third-party push service is unavailable or
+unreliable).
+
+The following options are available:
+
+``allow``
+
+    *Allow* push tokens to poll for challenges.
+
+``deny``
+
+    *Deny* push tokens to poll for challenges. This basically returns a ``403``
+    error when requesting the poll endpoint.
+
+``token``
+
+    *Allow* / *Deny* polling based on the individual token. The tokeninfo key
+    ``polling_allowed`` is checked. If the value evaluates to ``False``, polling
+    is denied for this token. If it evaluates to ``True`` or is not set, polling
+    is allowed for this token.
+
+The default is to ``allow`` polling
+
 .. _policy_challenge_text:
 
 challenge_text, challenge_text_header, challenge_test_footer
@@ -482,7 +533,7 @@ limited to USB only using this policy. The allowed transports are given as a
 space-separated list.
 
 The default is to allow all transports (equivalent to a value of `usb ble nfc
-internal lightning`).
+internal`).
 
 .. _policy_webauthn_authn_timeout:
 

@@ -77,6 +77,7 @@ This method is supposed to be overwritten by the corresponding token classes.
 """
 import logging
 import hashlib
+import traceback
 from datetime import datetime, timedelta
 
 from .error import (TokenAdminError,
@@ -963,9 +964,16 @@ class TokenClass(object):
                          throw an exception
         :type end_date: string
         """
-        #  upper layer will catch. we just try to verify the date format
-        d = parse_date_string(end_date)
-        self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
+        if not end_date:
+            self.del_tokeninfo("validity_period_end")
+        else:
+            #  upper layer will catch. we just try to verify the date format
+            try:
+                d = parse_date_string(end_date)
+            except ValueError as _e:
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                raise TokenAdminError('Could not parse validity period end date!')
+            self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
 
     def get_validity_period_start(self):
         """
@@ -988,8 +996,16 @@ class TokenClass(object):
                            throw an exception
         :type start_date: string
         """
-        d = parse_date_string(start_date)
-        self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
+        if not start_date:
+            self.del_tokeninfo("validity_period_start")
+        else:
+            try:
+                d = parse_date_string(start_date)
+            except ValueError as _e:
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                raise TokenAdminError('Could not parse validity period start date!')
+
+            self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
 
     def set_next_pin_change(self, diff=None, password=False):
         """
@@ -1332,10 +1348,14 @@ class TokenClass(object):
         In these two cases during request processing the following functions are
         called.
 
-        is_challenge_request or is_challenge_response
-                 |                       |
-                 V                       V
-        create_challenge        check_challenge
+        is_challenge_request or is_challenge_response  <-------+
+                 |                       |                     |
+                 V                       V                     |
+        create_challenge        check_challenge_response     create_challenge
+                 |                       |                     ^
+                 |                       |                     |
+                 |              has_further_challenge [yes] ---+
+                 |                      [no]
                  |                       |
                  V                       V
         challenge_janitor       challenge_janitor
@@ -1444,6 +1464,19 @@ class TokenClass(object):
 
         self.challenge_janitor()
         return otp_counter
+
+    # TODO: Add policy decorator like (challenge_response_allowed),
+    #  that does a PIN reset, if there is no further challenge
+    def has_further_challenge(self, options=None):
+        """
+        Returns true, if a token requires more than one challenge during challenge response
+        authentication. This could be a 4eyes token or indexed secret token, that queries more
+        than on input.
+
+        :param options: Additional options from the request
+        :return: True, if this very token requires further challenges
+        """
+        return False
 
     @staticmethod
     def challenge_janitor():

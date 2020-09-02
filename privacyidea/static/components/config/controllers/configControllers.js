@@ -71,10 +71,12 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     $scope.realms = [];
     $scope.adminRealms = [];
     $scope.resolvers = [];
+    $scope.pinodes = [];
     $scope.realmsLoaded = false;
     $scope.resolversLoaded = false;
     $scope.adminRealmsLoaded = false;
     $scope.policyDefsLoaded = false;
+    $scope.pinodesLoaded = false;
     $scope.policyConditionDefsLoaded = false;
     $scope.scopes = [];
     $scope.viewPolicyTemplates = false;
@@ -86,6 +88,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.adminRealmsLoaded &&
             $scope.realmsLoaded &&
             $scope.policyDefsLoaded &&
+            $scope.pinodesLoaded &&
             $scope.policyConditionDefsLoaded) {
             $scope.presetEditValues();
         }
@@ -131,7 +134,8 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
                     realm: data.realm || [],
                     action: data.action || [],
                     resolver: data.resolver || [],
-                    adminrealm: data.adminrealm || []});
+                    adminrealm: data.adminrealm || [],
+                    pinode: []});
         });
     };
 
@@ -149,6 +153,14 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
     ConfigFactory.getPolicyConditionDefs(function (data) {
         $scope.policyConditionDefs = data.result.value;
         $scope.policyConditionDefsLoaded = true;
+        check_all_loaded();
+    });
+    ConfigFactory.getPINodes(function (data) {
+        $scope.pinodes = [];
+        angular.forEach(data.result.value, function(value, key){
+            $scope.pinodes.push({name: value, ticked: false});
+        });
+        $scope.pinodesLoaded = true;
         check_all_loaded();
     });
 
@@ -266,6 +278,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
         var realms = [];
         var resolvers = [];
         var adminRealms = [];
+        var pinodes = [];
         var actions = [];
         $scope.params.scope = scope;
         $scope.params.action = actions;
@@ -311,6 +324,11 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             realms.push(value.name);
             $scope.params.realm = realms;
         });
+        // get PINodes
+        angular.forEach($scope.selectedPINodes, function(value, key){
+            pinodes.push(value.name);
+            $scope.params.pinode = pinodes;
+        });
         // get resolvers
         angular.forEach($scope.selectedResolvers, function(value, key) {
             //debug: console.log(value);
@@ -344,6 +362,7 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
+            $scope.params.pinodes = policy.pinode;
             // we need to deep-copy the policy conditions to ensure that we're working on our own copy
             $scope.params.conditions = angular.copy(policy.conditions);
             // tick the realms and the resolvers
@@ -360,6 +379,11 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             angular.forEach($scope.adminRealms, function(value, key){
                 if (policy.adminrealm.indexOf(value.name) > -1) {
                     $scope.adminRealms[key].ticked = true;
+                }
+            });
+            angular.forEach($scope.pinodes, function(value, key){
+                if (policy.pinode.indexOf(value.name) > -1 ) {
+                    $scope.pinodes[key].ticked = true;
                 }
             });
             angular.forEach($scope.scopes, function (value, key){
@@ -529,7 +553,7 @@ myApp.controller("configController", function ($scope, $location,
     };
 
     // TODO: This information needs to be fetched from the server
-    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver'];
+    $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver', 'httpresolver'];
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
     // TODO: This information needs to be fetched from the server
@@ -661,6 +685,7 @@ myApp.controller("configController", function ($scope, $location,
     $scope.getRealms();
     $scope.getResolvers();
     $scope.selectedResolvers = {};
+    $scope.selectedPINodes = {};
     $scope.getSmtpIdentifiers();
     $scope.getRADIUSIdentifiers();
 
@@ -1081,4 +1106,61 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
             }
         });
     };
+});
+
+myApp.controller("HTTPResolverController", function(
+  $scope,
+  ConfigFactory,
+  $state,
+  $stateParams,
+  inform
+) {
+  $scope.params = {
+    type: "httpresolver",
+    endpoint: "",
+    method: "",
+    requestMapping: "",
+    responseMapping: "",
+    hasSpecialErrorHandler: false,
+    headers: "",
+    errorResponse: ""
+  };
+
+  $scope.$watch(
+    'params.hasSpecialErrorHandler;', 
+    function (incomingValue) { 
+        const value = (incomingValue + '').toLowerCase()
+        $scope.params.hasSpecialErrorHandler = value === 'true'
+    });
+
+  $scope.resolvername = $stateParams.resolvername;
+  if ($scope.resolvername) {
+    /* If we have a resolvername, we do an Edit
+         and we need to fill all the $scope.params */
+    ConfigFactory.getResolver($scope.resolvername, function(data) {
+      var resolver = data.result.value[$scope.resolvername];
+      $scope.params = resolver.data;
+      $scope.params.type = "httpresolver";
+    });
+  }
+
+  $scope.setResolver = function() {
+    ConfigFactory.setResolver($scope.resolvername, $scope.params, function(
+      data
+    ) {
+      $scope.set_result = data.result.value;
+      $scope.getResolvers();
+      $state.go("config.resolvers.list");
+    });
+  };
+
+  $scope.testResolver = function() {
+    ConfigFactory.testResolver($scope.params, function(data) {
+      if (data.result.value === true) {
+        inform.add(data.detail.description, { type: "success", ttl: 10000 });
+      } else {
+        inform.add(data.detail.description, { type: "danger", ttl: 10000 });
+      }
+    });
+  };
 });

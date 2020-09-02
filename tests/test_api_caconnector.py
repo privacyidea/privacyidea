@@ -22,7 +22,9 @@ class CAConnectorTestCase(MyApiTestCase):
     def test_02_create_ca_connector(self):
         # create a CA connector
         with self.app.test_request_context('/caconnector/con1',
-                                           data={'type': 'local'},
+                                           data={'type': 'local',
+                                                 'cacert': '/etc/key.pem',
+                                                 'cakey': '/etc/cert.pem'},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -51,7 +53,8 @@ class CAConnectorTestCase(MyApiTestCase):
         ca_list = get_caconnector_list()
         self.assertEqual(len(ca_list), 1)
         self.assertEqual(ca_list[0].get("data"), {u'cacert': u'/etc/cert.pem',
-                                                  u'cakey': u'/etc/key.pem'})
+                                                  u'cakey': u'/etc/key.pem',
+                                                  u'name': u'con1'})
 
     def test_04_read_ca_connector(self):
         with self.app.test_request_context('/caconnector/',
@@ -117,7 +120,7 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertIn("do not have the necessary role", result["error"]["message"])
 
@@ -146,10 +149,10 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 
@@ -160,10 +163,10 @@ class CAConnectorTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at_user}):
             res = self.app.full_dispatch_request()
-            self.assertEquals(res.status_code, 401)
+            self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEquals(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 

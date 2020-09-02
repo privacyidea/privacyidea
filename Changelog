@@ -1,3 +1,72 @@
+Version 3.4dev6, 2020-08-26
+
+  Features:
+   * Add ScriptSMSProvider, that can send SMS through external
+     Gateways using arbitrary scripts (#2236)
+   * Add HTTP Resolver that can read users from web services
+     via JSON responses (#2083)
+   * Add a basic dashboard as start screen in the WebUI (#2177)
+   * Allow using dynamic 3rd party token classes (#2321)
+   * Allow multiple consecutive challenge responses for authentication
+     or tasks like changing the token PIN (#2361)
+   * PUSH token can communicate with privacyIDEA via polling
+     as fallback to Google Push Service or Apple Notification Service (#2262)
+
+  Enhancements:
+   * Allow deletion of validity period via UI (#2263)
+   * Remove marker for missing translations and allow to set a
+     custom marker (#2223)
+   * Add support for Python 3.8 (#2190)
+   * Allow hiding description field for users during
+     token enrollment (#2173)
+   * Improve error message during token import (#2073)
+   * Add Dutch translation (#2314)
+   * Allow application to choose tokentypes in
+     /validate/check and /validate/triggerchallenge (#2047)
+   * HTTPSMSProvider can now have header parameters in the
+     provider definition (#1963)
+   * Events
+     * Add failcounter as condition in event handlers (#2147)
+     * The script handler allows to sync the database before
+       running the script (#2293 #2302)
+     * Allow using user_obj in pre event handlers for 
+       /auth event. (#2303)
+   * Policies
+     * Allow to define characters for set_random_pin policy (#2121)
+     * Add privacyIDEA nodes to policy condition (#2108)
+     * Add new authz policy action is_authorized to basically
+       allow or deny access (#2275)
+   * Allow ECDSA and other SSH key types (#2274)
+   * pi-manage can import tokens including HOTP token counter (#2285)
+   * Allow the token janitor to set tokenrealms (#2299)
+   * Use our general webauthn client component in the
+     privacyIDEA WebUI (#2273)
+
+  Fixes:
+   * Add missing audit data to container audit (#2264)
+   * Add tokeninfo failsafe for LinOTP migration script (#2253)
+   * Fix certain problems with the type of the userid
+     in SQL-Resolvers with Oracle DB (#2219)
+   * Fix default empty string problems with Oracle DB (#2218)
+   * Fix a policy issue that would require admin policies to
+     import tokens (#2209)
+   * Fix inconsistent enrollment templates. Have description
+     field for all tokentypes (#2208)
+   * Fix floating problems with multiple QR images in enrollment UI (#2175)
+   * Allow to edit realms without resolver priority (#2171)
+   * Fix empty (None) values in SQL Resolver connect string (#2271)
+   * Fix missing options parameter in RADIUS and REMOTE token (#2276)
+   * Use UTC for challenge timestamp (#1586)
+   * Fix exceeding max tokens when enabling a disabled token (#2215)
+   * split@Sign setting is also applied to REMOTE_USER (#1954)
+   * Fix privacyidea-diag and privacyidea-standalone to run with Python 3 (#1874)
+   * Fix possible recursion error in 4eyes token (#1892)	
+   * Improve tests by fixing deprecation warnings (#2298)
+   * Clean up the code for /validate/samlcheck
+   * Fix censoring of Oracle connect strings (#2304)
+   * Treat unsupported WebAuthn attestation as None attestation (#2342)
+
+
 Version 3.3.3, 2020-05-19
 
   Fixes:

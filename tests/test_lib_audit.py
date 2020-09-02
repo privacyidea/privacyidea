@@ -6,6 +6,7 @@ This tests the files
 """
 import datetime
 import os
+import types
 
 from mock import mock
 
@@ -176,8 +177,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.finalize_log()
 
         audit_log = self.Audit.csv_generator()
-        self.assertTrue(type(audit_log).__name__ == "generator",
-                        type(audit_log).__name__)
+        self.assertIsInstance(audit_log, types.GeneratorType)
 
         count = 0
         for audit_entry in audit_log:
@@ -406,16 +406,29 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                             "PI_AUDIT_NO_SIGN": True,
                             "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
         a.log({"action": "something_test_35"})
+        a.add_to_log({'action_detail': 'some detail'})
+        a.add_policy('some policy')
         a.finalize_log()
         r = a.search({"action": "*something_test_35*"})
         # The search should go to the sql audit
         self.assertEqual(r.total, 1)
         self.assertEqual(r.auditdata[0].get("action"), u"something_test_35")
+        self.assertEqual(r.auditdata[0].get("action_detail"), u"some detail")
+        self.assertEqual(r.auditdata[0].get("policies"), u"some policy")
         # now check the log file
         with open("audit.log") as file:
             c = file.readlines()
             self.assertIn("something_test_35", c[-1])
+            self.assertIn("some detail", c[-1])
+            self.assertIn("some policy", c[-1])
         os.unlink('audit.log')
+
+        # check the CSV output
+        csv = a.csv_generator()
+        self.assertIsInstance(csv, types.GeneratorType)
+        csv_list = [c for c in csv]
+        self.assertGreater(len(csv_list), 0, csv_list)
+        self.assertTrue(any(['something_test_35' in l for l in csv_list]))
 
     def test_20_container_audit_wrong_module(self):
         # Test what happens with a non-existing module

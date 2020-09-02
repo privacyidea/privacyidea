@@ -25,6 +25,7 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.auditStates',
         'privacyideaApp.configStates',
         'privacyideaApp.tokenStates',
+        'privacyideaApp.dashboardStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.registerStates',
@@ -100,7 +101,6 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
             gettextCatalog.setCurrentLanguage(browserLanguage);
-            gettextCatalog.debug = true;
 
             // we set this, so we can use it in templates
             $rootScope.browserLanguage = browserLanguage;

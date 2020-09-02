@@ -130,7 +130,7 @@ class MachineTokenTestCase(MyTestCase):
         # fetch the auth_items for application SSH on machine gandalf
         ai = get_auth_items("gandalf", ip="192.168.0.1", application="ssh")
         sshkey_auth_items = ai.get("ssh")
-        self.assertEquals(len(sshkey_auth_items), 1)
+        self.assertEqual(len(sshkey_auth_items), 1)
         self.assertTrue(sshkey_auth_items[0].get("sshkey").startswith(
             "ssh-rsa"))
 
@@ -138,7 +138,7 @@ class MachineTokenTestCase(MyTestCase):
         ai = get_auth_items("gandalf", ip="192.168.0.1", application="ssh",
                             filter_param={"user": "testuser"})
         sshkey_auth_items = ai.get("ssh")
-        self.assertEquals(len(sshkey_auth_items), 1)
+        self.assertEqual(len(sshkey_auth_items), 1)
         self.assertTrue(sshkey_auth_items[0].get("sshkey").startswith(
             "ssh-rsa"))
 

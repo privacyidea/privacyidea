@@ -13,6 +13,8 @@ In this chapter we describe a way to install privacyIDEA on CentOS 7 based on th
 installation via :ref:`pip_install`. It follows the
 approach used in the enterprise packages (See `RPM Repository`_).
 
+.. _centos_setup_services:
+
 Setting up the required services
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -86,6 +88,8 @@ privacyIDEA. You can get the latest version tag from the `GitHub release page <h
 Then just install the targeted privacyIDEA version with::
 
         (privacyidea)$ pip install privacyidea==${PI_VERSION}
+
+.. _centos_setup_pi:
 
 Setting up privacyIDEA
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -179,7 +183,7 @@ configuration first::
     $ cd /etc/httpd/conf.d
     $ mv ssl.conf ssl.conf.inactive
     $ mv welcome.conf welcome.conf.inactive
-    $ curl -O https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf
+    $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf.disabled
 
 In order to avoid recreation of the configuration files during update You can
 create empty dummy files for ``ssl.conf`` and ``welcome.conf``.

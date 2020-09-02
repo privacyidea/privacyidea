@@ -127,11 +127,14 @@ SUPPORTED_ATTESTATION_TYPES = (
 
 class ATTESTATION_FORMAT(object):
     """
-    Attestation formats supported by this implementation.
+    Attestation format identifiers as registered in the IANA WebAuthn attestation statement format identifiers registry.
     """
 
-    FIDO_U2F = 'fido-u2f'
     PACKED = 'packed'
+    TPM = 'tpm'
+    ANDROID_KEY = 'android-key'
+    ANDROID_SAFETYNET = 'android-safetynet'
+    FIDO_U2F = 'fido-u2f'
     NONE = 'none'
 
 
@@ -139,6 +142,17 @@ class ATTESTATION_FORMAT(object):
 SUPPORTED_ATTESTATION_FORMATS = (
     ATTESTATION_FORMAT.FIDO_U2F,
     ATTESTATION_FORMAT.PACKED,
+    ATTESTATION_FORMAT.NONE
+)
+
+
+# Still waiting for Apple Anonymous Attestation.
+REGISTERED_ATTESTATION_FORMATS = (
+    ATTESTATION_FORMAT.PACKED,
+    ATTESTATION_FORMAT.TPM,
+    ATTESTATION_FORMAT.ANDROID_KEY,
+    ATTESTATION_FORMAT.ANDROID_SAFETYNET,
+    ATTESTATION_FORMAT.FIDO_U2F,
     ATTESTATION_FORMAT.NONE
 )
 
@@ -273,7 +287,6 @@ class TRANSPORT(object):
     BLE = 'ble'
     NFC = 'nfc'
     INTERNAL = 'internal'
-    LIGHTNING = 'lightning'
 
 
 TRANSPORTS = (
@@ -281,7 +294,6 @@ TRANSPORTS = (
     TRANSPORT.BLE,
     TRANSPORT.NFC,
     TRANSPORT.INTERNAL,
-    TRANSPORT.LIGHTNING
 )
 
 
@@ -1136,28 +1148,28 @@ class WebAuthnRegistrationResponse(object):
                 #   * If successful, return attestation type ECDAA and
                 #     attestation trust path ecdaaKeyId.
                 raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
-            else:
-                # Attestation is either none, or unsupported.
-                if not none_attestation_permitted:
-                    if fmt == ATTESTATION_FORMAT.NONE:
-                        raise RegistrationRejectedException('Authenticator attestation is required.')
-                    else:
-                        raise RegistrationRejectedException('Unsupported authenticator attestation format.')
+        else:
+            # Attestation is either none, or unsupported.
+            if not none_attestation_permitted:
+                if fmt == ATTESTATION_FORMAT.NONE:
+                    raise RegistrationRejectedException('Authenticator attestation is required.')
+                else:
+                    raise RegistrationRejectedException('Unsupported authenticator attestation format.')
 
-                # Treat as none attestation.
-                #
-                # Step 1.
-                #
-                # Return attestation type None with an empty trust path.
-                attestation_type = ATTESTATION_TYPE.NONE
-                trust_path = []
-                return (
-                    attestation_type,
-                    trust_path,
-                    credential_pub_key,
-                    cred_id,
-                    aaguid
-                )
+            # Treat as none attestation.
+            #
+            # Step 1.
+            #
+            # Return attestation type None with an empty trust path.
+            attestation_type = ATTESTATION_TYPE.NONE
+            trust_path = []
+            return (
+                attestation_type,
+                trust_path,
+                credential_pub_key,
+                cred_id,
+                aaguid
+            )
 
     def verify(self, existing_credential_ids=None):
         """
@@ -1286,8 +1298,7 @@ class WebAuthnRegistrationResponse(object):
             # supported WebAuthn Attestation Statement Format Identifier
             # values. The up-to-date list of registered WebAuthn
             # Attestation Statement Format Identifier values is maintained
-            # in the in the IANA registry of the same name
-            # [WebAuthn-Registries].
+            # in the in the IANA registry of the same name.
             if not _verify_attestation_statement_format(fmt):
                 raise RegistrationRejectedException('Unable to verify attestation statement format.')
 
@@ -1912,7 +1923,7 @@ def _verify_rp_id_hash(auth_data_rp_id_hash, rp_id):
 
 def _verify_attestation_statement_format(fmt):
     """
-    Verify that the attestation statement format is supported.
+    Verify that the attestation statement format identifier matches a registered attestation statement format.
 
     :param fmt: The attestation statement format.
     :type fmt: basestring
@@ -1920,7 +1931,7 @@ def _verify_attestation_statement_format(fmt):
     :rtype: bool
     """
 
-    return isinstance(fmt, six.string_types) and fmt in SUPPORTED_ATTESTATION_FORMATS
+    return isinstance(fmt, six.string_types) and fmt in REGISTERED_ATTESTATION_FORMATS
 
 
 def _get_auth_data_rp_id_hash(auth_data):

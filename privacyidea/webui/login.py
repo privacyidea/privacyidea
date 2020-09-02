@@ -86,9 +86,11 @@ def single_page_application():
     #    PI_CUSTOMIZATION/views/includes/token.enroll.post.bottom.html
     # Get the hidden external links
     external_links = current_app.config.get("PI_EXTERNAL_LINKS", True)
+    # Read the UI translation warning
+    translation_warning = current_app.config.get("PI_TRANSLATION_WARNING", False)
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
-    browser_lang = request.accept_languages.best_match(["en", "de", "de-DE"], default="en").split("-")[0]
+    browser_lang = request.accept_languages.best_match(["en", "de", "de-DE", "nl"], default="en").split("-")[0]
     # The page title can be configured in pi.cfg
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
@@ -152,6 +154,7 @@ def single_page_application():
         'browser_lang': browser_lang,
         'remote_user': remote_user,
         'theme': theme,
+        'translation_warning': translation_warning,
         'password_reset': password_reset,
         'hsm_ready': hsm_ready,
         'has_job_queue': str(has_job_queue()),

@@ -13,18 +13,20 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-from .base import MyTestCase, FakeAudit
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, PolicyClass, delete_policy
 from privacyidea.lib.utils import b32encode_and_unicode
+from privacyidea.lib.error import PolicyError
 import datetime
 from dateutil import parser
 import hashlib
 import binascii
+import warnings
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens,
                                    get_token_type, check_serial,
@@ -1022,6 +1024,7 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(vp, "2015-05-28T20:22+0200")
 
     def test_45_check_realm_pass(self):
+        self.setUp_user_realms()
         # create a bunch of tokens in the realm
 
         # disabled token
@@ -1077,6 +1080,42 @@ class TokenTestCase(MyTestCase):
         # The remaining tokens are checked, but the pin does not match,
         # so we get "wrong otp pin"
         self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        # try an unknown realm
+        r = check_realm_pass(self.realm2, "assigned" + self.valid_otp_values[2])
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm")
+
+        # check for optional parameter exclude/include type
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             exclude_types='hotp')
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm, included types: None, "
+                                              "excluded types: hotp")
+
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             include_types='totp')
+        self.assertFalse(r[0])
+        self.assertEqual(r[1].get("message"), "There is no active and assigned "
+                                              "token in this realm, included types: totp, "
+                                              "excluded types: None")
+
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[2],
+                             exclude_types='totp')
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        # check that include_types precedes exclude_types
+        r = check_realm_pass(self.realm1, 'assigned' + self.valid_otp_values[3],
+                             include_types='hotp', exclude_types='hotp')
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
+
+        remove_token(serial='not_assigned')
+        remove_token(serial='inactive')
+        remove_token(serial='assigned')
 
     def test_46_init_with_validity_period(self):
         token = init_token({"type": "hotp",
@@ -1438,37 +1477,37 @@ class TokenTestCase(MyTestCase):
             return [token.token.id for l2 in l for token in l2]
 
         # serial72 token has invalid type. Check behavior and remove it.
-        self.assertEquals(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
+        self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
         Token.query.filter_by(serial="serial72").delete()
 
         all_matching_tokens = get_tokens(serial_wildcard="S*")
         lists1 = list(get_tokens_paginated_generator(serial_wildcard="S*"))
-        self.assertEquals(len(lists1), 1)
-        self.assertEquals(len(lists1[0]), 6)
+        self.assertEqual(len(lists1), 1)
+        self.assertEqual(len(lists1[0]), 6)
         lists2 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=2))
-        self.assertEquals(len(lists2), 3)
-        self.assertEquals(len(lists2[0]), 2)
-        self.assertEquals(len(lists2[1]), 2)
-        self.assertEquals(len(lists2[2]), 2)
+        self.assertEqual(len(lists2), 3)
+        self.assertEqual(len(lists2[0]), 2)
+        self.assertEqual(len(lists2[1]), 2)
+        self.assertEqual(len(lists2[2]), 2)
         lists3 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=3))
-        self.assertEquals(len(lists3), 2)
-        self.assertEquals(len(lists3[0]), 3)
-        self.assertEquals(len(lists3[1]), 3)
+        self.assertEqual(len(lists3), 2)
+        self.assertEqual(len(lists3[0]), 3)
+        self.assertEqual(len(lists3[1]), 3)
         lists4 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=4))
-        self.assertEquals(len(lists4), 2)
-        self.assertEquals(len(lists4[0]), 4)
-        self.assertEquals(len(lists4[1]), 2)
+        self.assertEqual(len(lists4), 2)
+        self.assertEqual(len(lists4[0]), 4)
+        self.assertEqual(len(lists4[1]), 2)
         lists5 = list(get_tokens_paginated_generator(serial_wildcard="S*", psize=6))
-        self.assertEquals(len(lists5), 1)
-        self.assertEquals(len(lists5[0]), 6)
-        self.assertEquals(set([t.token.id for t in all_matching_tokens]), set(flatten_tokens(lists1)))
-        self.assertEquals(flatten_tokens(lists1), flatten_tokens(lists2))
-        self.assertEquals(flatten_tokens(lists2), flatten_tokens(lists3))
-        self.assertEquals(flatten_tokens(lists3), flatten_tokens(lists4))
-        self.assertEquals(flatten_tokens(lists4), flatten_tokens(lists5))
+        self.assertEqual(len(lists5), 1)
+        self.assertEqual(len(lists5[0]), 6)
+        self.assertEqual(set([t.token.id for t in all_matching_tokens]), set(flatten_tokens(lists1)))
+        self.assertEqual(flatten_tokens(lists1), flatten_tokens(lists2))
+        self.assertEqual(flatten_tokens(lists2), flatten_tokens(lists3))
+        self.assertEqual(flatten_tokens(lists3), flatten_tokens(lists4))
+        self.assertEqual(flatten_tokens(lists4), flatten_tokens(lists5))
 
         lists6 = list(get_tokens_paginated_generator(serial_wildcard="*DOESNOTEXIST*"))
-        self.assertEquals(lists6, [])
+        self.assertEqual(lists6, [])
 
     def test_56_get_tokens_paginated_generator_removal(self):
         all_serials = set(t.token.serial for t in get_tokens(serial_wildcard="S*"))
@@ -1478,7 +1517,7 @@ class TokenTestCase(MyTestCase):
         remove_token(list1[0].token.serial)
         list2 = next(gen)
         # Check that we did not miss any tokens
-        self.assertEquals(set(t.token.serial for t in list1 + list2), all_serials)
+        self.assertEqual(set(t.token.serial for t in list1 + list2), all_serials)
 
     def test_0057_check_invalid_serial(self):
         # This is an invalid serial, which will trigger an exception
@@ -1771,3 +1810,172 @@ class TokenFailCounterTestCase(MyTestCase):
         delete_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY)
         remove_token("test07")
 
+
+class PINChangeTestCase(MyTestCase):
+    """
+    Test the check_token_list from lib.token on an interface level
+    """
+
+    def test_00_create_realms(self):
+        self.setUp_user_realms()
+        # Set a policy to change the pin every 10d
+        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(ACTION.CHANGE_PIN_EVERY))
+        # set policy for chalresp
+        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        # Change PIN via validate
+        set_policy("viaValidate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+
+    def test_01_successfully_change_pin(self):
+        """
+        Authentication per challenge response with an HOTP token and then
+        do a successful PIN reset
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+
+        # Trigger the first auth challenge by sending the PIN
+        r, reply_dict = check_token_list([tok, tok2], "test", user=user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual('please enter otp: ', reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the correct OTP value
+        r, reply_dict = check_token_list([tok, tok2], self.valid_otp_values[1], user=user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN
+        newpin = "test2"
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter the new PIN again", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the new PIN a 2nd time
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertTrue(r)
+        self.assertEqual("PIN successfully set.", reply_dict.get("message"))
+
+        self.assertFalse(tok.is_pin_change())
+
+        # Run an authentication with the new PIN
+        r, reply_dict = check_token_list([tok, tok2], "{0!s}{1!s}".format(newpin, self.valid_otp_values[2]),
+                                         user=user_obj, options={"g": g})
+        self.assertTrue(r)
+        self.assertFalse(reply_dict.get("pin_change"))
+        self.assertTrue("next_pin_change" in reply_dict)
+
+    def test_02_failed_change_pin(self):
+        """
+        Authentication with an HOTP token and then fail to
+        change pin, since we present two different PINs.
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+
+        # successfully authenticate, but thus trigger a PIN change
+        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+                                         user=user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN
+        newpin = "test2"
+        r, reply_dict = check_token_list([tok, tok2], newpin, user=user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter the new PIN again", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send the new PIN a 2nd time
+        r, reply_dict = check_token_list([tok, tok2], "falsePIN", user=user_obj,
+                                         options={"transaction_id": transaction_id,
+                                                  "g": g})
+        self.assertFalse(r)
+        self.assertEqual("PINs do not match", reply_dict.get("message"))
+
+        # The PIN still needs to be changed!
+        self.assertTrue(tok.is_pin_change())
+
+    def test_03_failed_change_pin(self):
+        """
+        Authentication with an HOTP token and then fail to
+        change pin, since we do not comply to the PIN policies :-)
+        """
+        g = FakeFlaskG()
+        g.client_ip = "10.0.0.1"
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        user_obj = User("cornelius", realm=self.realm1)
+        # remove all tokens of cornelius
+        remove_token(user=user_obj)
+        tok = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "test",
+                          "serial": "PINCHANGE"}, tokenrealms=["r1"], user=user_obj)
+        tok2 = init_token({"type": "hotp",
+                          "otpkey": self.otpkey, "pin": "fail",
+                          "serial": "NOTNEEDED"}, tokenrealms=["r1"], user=user_obj)
+        # Set, that the token needs to change the pin
+        tok.set_next_pin_change("-1d")
+        # Check it
+        self.assertTrue(tok.is_pin_change())
+        # Require minimum length of 5
+        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(ACTION.OTPPINMINLEN))
+
+        # successfully authenticate, but thus trigger a PIN change
+        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+                                         user=user_obj, options={"g": g})
+        self.assertFalse(r)
+        self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
+        transaction_id = reply_dict.get("transaction_id")
+
+        # Now send a new PIN, which has only length 4 :-/
+        newpin = "test"
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                PolicyError, "The minimum OTP PIN length is 5", check_token_list,
+                [tok, tok2], newpin, user=user_obj,
+                options={"transaction_id": transaction_id,
+                         "g": g})
+
+        delete_policy("minpin")

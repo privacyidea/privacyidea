@@ -66,40 +66,43 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
 import logging
-import string
 
 from OpenSSL import crypto
 
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
-from privacyidea.lib.policy import Match
+from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
+from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type)
-from privacyidea.lib.utils import (get_client_ip,
-                                   parse_timedelta, is_true, check_pin_policy, get_module_class,
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
+from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
+                                   check_pin_contents, get_module_class,
                                    determine_logged_in_userparams)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
+from privacyidea.lib.config import (get_token_class)
 import functools
 import jwt
 import re
 import importlib
 
 # Token specific imports!
-from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse, AUTHENTICATOR_ATTACHMENT_TYPES,
-                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS, ATTESTATION_FORMS)
-from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
+                                             AUTHENTICATOR_ATTACHMENT_TYPES,
+                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
+                                             ATTESTATION_FORMS)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM, WebAuthnTokenClass,
-                                                  DEFAULT_CHALLENGE_TEXT_AUTH, DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL,
                                                   is_webauthn_assertion_response)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
@@ -153,6 +156,22 @@ class prepolicy(object):
         return policy_wrapper
 
 
+def _generate_pin_from_policy(policy, size=6):
+    """
+    This helper function creates a string of allowed characters from the value of a pincontents policy.
+
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_contents).
+    :param size: The desired length of the generated pin
+    :return: The generated PIN
+    """
+
+    charlists_dict = generate_charlists_from_pin_policy(policy)
+
+    pin = generate_password(size=size, characters=charlists_dict['base'],
+                      requirements=charlists_dict['requirements'])
+    return pin
+
+
 def set_random_pin(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API setrandompin function
@@ -182,8 +201,23 @@ def set_random_pin(request=None, action=None):
         raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
                               "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
     elif len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = get_token_type(request.all_data.get("serial"))
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
     return True
 
@@ -194,8 +228,8 @@ def init_random_pin(request=None, action=None):
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM to set a random OTP
-    PIN during Token enrollment
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM and ACTION.OTPPINCONTENTS
+    to set a random OTP PIN during Token enrollment
     """
     params = request.all_data
     user_object = get_user_from_param(params)
@@ -203,8 +237,23 @@ def init_random_pin(request=None, action=None):
     pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
                           user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = request.all_data.get("type", "hotp")
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
         handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
@@ -286,40 +335,37 @@ def check_otp_pin(request=None, action=None):
             tokentype = tokensobject_list[0].token.tokentype
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
-    # get the policies for minimum length, maximum length and PIN contents
-    # first try to get a token specific policy - otherwise fall back to
-    # default policy
-    pol_minlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
-                                     user_obj=request.User).action_values(unique=True)
-    if not pol_minlen:
-        pol_minlen = Match.admin_or_user(g, action=ACTION.OTPPINMINLEN,
-                                         user_obj=request.User).action_values(unique=True)
-    pol_maxlen = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
-                                     user_obj=request.User).action_values(unique=True)
-    if not pol_maxlen:
-        pol_maxlen = Match.admin_or_user(g, action=ACTION.OTPPINMAXLEN,
-                                         user_obj=request.User).action_values(unique=True)
-    pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
-                                       user_obj=request.User).action_values(unique=True)
-    if not pol_contents:
-        pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
-                                           user_obj=request.User).action_values(unique=True)
+    check_pin(g, pin, tokentype, request.User)
+    return True
 
-    if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
-        # check the minimum length requirement
-        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                          list(pol_minlen)[0]))
 
-    if len(pol_maxlen) == 1 and len(pin) > int(list(pol_maxlen)[0]):
-        # check the maximum length requirement
-        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                          list(pol_maxlen)[0]))
+def check_application_tokentype(request=None, action=None):
+    """
+    This pre policy checks if the request is allowed to specify the tokentype.
+    If the policy is not set, a possibly set parameter "type" is removed
+    from the request.
 
-    if len(pol_contents) == 1:
-        # check the contents requirement
-        r, comment = check_pin_policy(pin, list(pol_contents)[0])
-        if r is False:
-            raise PolicyError(comment)
+    Check ACTION.APPLICATION_TOKENTYPE
+
+    This decorator should wrap
+        /validate/check, /validate/samlcheck and /validate/triggerchallenge.
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    application_allowed = Match.generic(g, scope=SCOPE.AUTHZ,
+                                        action=ACTION.APPLICATION_TOKENTYPE,
+                                        user_object=request.User,
+                                        active=True).any()
+
+    # if the application is not allowed, we remove the tokentype
+    if not application_allowed and "type" in request.all_data:
+        log.info("Removing parameter 'type' from request, "
+                 "since application is not allowed to authenticate by token type.")
+        del request.all_data["type"]
 
     return True
 
@@ -561,7 +607,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     to ``request.all_data``, that is:
 
      * ``{type}_2step_serversize`` is written to ``2step_serversize``
-     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize``
      * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
 
     If no policy matches, the value passed by the user is kept.
@@ -616,9 +662,16 @@ def check_max_token_user(request=None, action=None):
     ERROR_ACTIVE = "The number of active tokens for this user is limited!"
     ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
+    serial = getParam(params, "serial")
+    tokentype = getParam(params, "type")
     user_object = get_user_from_param(params)
+    if user_object.is_empty() and serial:
+        try:
+            user_object = get_token_owner(serial) or User()
+        except ResourceNotFoundError:
+            # in case of token init the token does not yet exist in the db
+            pass
     if user_object.login:
-        serial = getParam(params, "serial")
         tokentype = getParam(params, "type")
         if not tokentype:
             if serial:
@@ -953,10 +1006,11 @@ def check_base_action(request=None, action=None, anonymous=False):
     """
     This decorator function takes the request and verifies the given action
     for the SCOPE ADMIN or USER.
+
     :param request:
     :param action:
     :param anonymous: If set to True, the user data is taken from the request
-        parameters.
+                      parameters.
     :return: True otherwise raises an Exception
     """
     ERROR = {"user": "User actions are defined, but the action %s is not "
@@ -1160,7 +1214,10 @@ def is_remote_user_allowed(req):
                                      action=ACTION.REMOTE_USER,
                                      user=loginname,
                                      realm=realm).action_values(unique=False)
-        res = bool(ruser_active)
+        # there should be only one action value here
+        if ruser_active:
+            if list(ruser_active)[0] == REMOTE_USER.ACTIVE:
+                res = True
 
     return res
 
@@ -1378,7 +1435,7 @@ def indexedsecret_force_attribute(request, action):
 
     return True
 
-  
+
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
@@ -1516,7 +1573,7 @@ def webauthntoken_authz(request, action):
     :param action:
     :type action:
     :return:
-    :rtype
+    :rtype:
     """
 
     # If a WebAuthn token is being authorized.

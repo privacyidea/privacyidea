@@ -97,7 +97,13 @@ def _compare_matches(left, comparator, right):
     :return: True or False
     """
     try:
-        return re.match("^" + right + "$", left) is not None
+        # check for regex modes
+        m = re.match(r'^(\(\?[a-zA-Z]+\))(.+)$', right)
+        if m and len(m.groups()) == 2:
+            regex = m.group(1) + r'^' + m.group(2) + r'$'
+        else:
+            regex = r"^" + right + r"$"
+        return re.match(regex, left) is not None
     except re.error as e:
         raise CompareError(u"Error during matching: {!r}".format(e))
 

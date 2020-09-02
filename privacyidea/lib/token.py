@@ -96,6 +96,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               config_lost_token,
                                               reset_all_user_tokens)
+from privacyidea.lib.challengeresponsedecorators import generic_challenge_response_reset_pin
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from dateutil.tz import tzlocal
@@ -425,7 +426,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None, allowed_realms=None):
+                page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -457,13 +458,15 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type page: int
     :param allowed_realms: A list of realms, that the admin is allowed to see
     :type allowed_realms: list
+    :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
+        is a key/value dictionary
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                 assigned=assigned, user=user,
                                 serial_wildcard=serial, active=active,
-                                resolver=resolver,
+                                resolver=resolver, tokeninfo=tokeninfo,
                                 rollout_state=rollout_state,
                                 description=description, userid=userid,
                                 allowed_realms=allowed_realms)
@@ -1884,11 +1887,16 @@ def lost_token(serial, new_serial=None, password=None,
 
 
 @log_with(log)
-def check_realm_pass(realm, passw, options=None):
+def check_realm_pass(realm, passw, options=None,
+                     include_types=None, exclude_types=None):
     """
     This function checks, if the given passw matches any token in the given
     realm. This can be used for the 4-eyes token.
     Only tokens that are assigned are tested.
+
+    The options dictionary may contain a key/value pair 'exclude_types' or
+    'include_types' with the value containing a list of token types to
+    exclude/include from/in the search.
 
     It returns the res True/False and a reply_dict, which contains the
     serial number of the matching token.
@@ -1897,23 +1905,37 @@ def check_realm_pass(realm, passw, options=None):
     :param passw: The password containing PIN+OTP
     :param options: Additional options that are passed to the tokens
     :type options: dict
+    :param include_types: List of token types to use for the check
+    :type include_types: list or str
+    :param exclude_types: List to token types *not* to use for the check
+    :type exclude_types: list or str
     :return: tuple of bool and dict
     """
-    res = False
     reply_dict = {}
     # since an attacker does not know, which token is tested, we restrict to
     # only active tokens. He would not guess that the given OTP value is that
     #  of an inactive token.
     tokenobject_list = get_tokens(realm=realm, assigned=True, active=True)
     if not tokenobject_list:
-        res = False
-        reply_dict["message"] = "There is no active and assigned token in " \
-                                "this realm"
+        reply_dict["message"] = "There is no active and assigned token in this realm"
+        return False, reply_dict
     else:
-        res, reply_dict = check_token_list(tokenobject_list, passw,
-                                           options=options,
-                                           allow_reset_all_tokens=False)
-    return res, reply_dict
+        # reduce tokens by type
+        if include_types:
+            incl = include_types if isinstance(include_types, list) else [include_types]
+            tokenobject_list = [tok for tok in tokenobject_list if tok.type in incl]
+        elif exclude_types:
+            excl = exclude_types if isinstance(exclude_types, list) else [exclude_types]
+            tokenobject_list = [tok for tok in tokenobject_list if tok.type not in excl]
+
+        if not tokenobject_list:
+            reply_dict["message"] = 'There is no active and assigned token in ' \
+                                    'this realm, included types: {0!s}, excluded '\
+                                    'types: {1!s}'.format(include_types, exclude_types)
+            return False, reply_dict
+
+        return check_token_list(tokenobject_list, passw, options=options,
+                                allow_reset_all_tokens=False)
 
 
 @log_with(log)
@@ -1985,7 +2007,8 @@ def check_user_pass(user, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    tokenobject_list = get_tokens(user=user)
+    token_type = options.pop("token_type", None)
+    tokenobject_list = get_tokens(user=user, tokentype=token_type)
     reply_dict = {}
     if not tokenobject_list:
         # The user has no tokens assigned
@@ -2057,6 +2080,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
 
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
+@libpolicy(generic_challenge_response_reset_pin)
 def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
     this takes a list of token objects and tries to find the matching token
@@ -2221,6 +2245,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # The RESPONSE for a previous request of a challenge response token was
         # found.
         matching_challenge = False
+        further_challenge = False
         for tokenobject in challenge_response_token_list:
             if tokenobject.check_challenge_response(passw=passw,
                                                     options=options) >= 0:
@@ -2239,20 +2264,37 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
                     reply_dict["message"] = "Found matching challenge"
+                    # If exist, add next pin and next password change
+                    next_pin = tokenobject.get_tokeninfo("next_pin_change")
+                    if next_pin:
+                        reply_dict["next_pin_change"] = next_pin
+                        reply_dict["pin_change"] = tokenobject.is_pin_change()
+                    next_passw = tokenobject.get_tokeninfo("next_password_change")
+                    if next_passw:
+                        reply_dict["next_password_change"] = next_passw
+                        reply_dict["password_change"] = tokenobject.is_pin_change(password=True)
                     tokenobject.challenge_janitor()
-                    # clean up all other challenges from other tokens. I.e.
+                    if tokenobject.has_further_challenge(options):
+                        # The token creates further challenges, so create the new challenge
+                        # and new transaction_id
+                        create_challenges_from_tokens([tokenobject], reply_dict, options)
+                        further_challenge = True
+                        res = False
+                    else:
+                        # This was the last successful challenge, so
+                        # reset the fail counter of the challenge response token
+                        tokenobject.reset()
+
+                    # clean up all challenges from this and other tokens. I.e.
                     # all challenges with this very transaction_id!
                     transaction_id = options.get("transaction_id") or \
                                      options.get("state")
                     Challenge.query.filter(Challenge.transaction_id == u'' +
                                            transaction_id).delete()
-
-                    # Reset the fail counter of the challenge response token
-                    tokenobject.reset()
                     # We have one successful authentication, so we bail out
                     break
 
-        if not res:
+        if not res and not further_challenge:
             # We did not find any successful response, so we need to increase the
             # failcounters
             for token_obj in challenge_response_token_list:

@@ -38,7 +38,7 @@ from ..lib.policy import ACTION
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
-                                                     delete_smsgateway_option,
+                                                     delete_smsgateway_key_generic,
                                                      delete_smsgateway,
                                                      get_sms_provider_class)
 
@@ -90,18 +90,23 @@ def set_gateway():
     :jsonparam description: An optional description of the definition
     :jsonparam option.*: Additional options for the provider module (module
         specific)
+    :jsonparam header.*: Additional headers for the provider module (module
+        specific)
     """
     param = request.all_data
     identifier = getParam(param, "name", optional=False)
     providermodule = getParam(param, "module", optional=False)
     description = getParam(param, "description", optional=True)
     options = {}
+    headers = {}
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
+        elif k.startswith("header."):
+            headers[k[7:]] = v
 
     res = set_smsgateway(identifier, providermodule, description,
-                         options=options)
+                         options=options, headers=headers)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)
@@ -124,21 +129,22 @@ def delete_gateway(identifier=None):
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/option/<gwid>/<option>', methods=['DELETE'])
+@smsgateway_blueprint.route('/option/<gwid>/<key>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
-def delete_gateway_option(gwid=None, option=None):
+def delete_gateway_option(gwid=None, key=None):
     """
     this function deletes an option of a gateway definition
 
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    if option.startswith("option."):
-        option = option[7:]
+    type = "option"
+    if "." in key:
+        type, key = key.split(".", 1)
 
-    res = delete_smsgateway_option(gwid, option)
+    res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,
-                        "info": u"{0!s}/{1!s}".format(gwid, option)})
+                        "info": u"{0!s}/{1!s}".format(gwid, key)})
 
     return send_result(res)

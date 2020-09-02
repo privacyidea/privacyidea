@@ -68,6 +68,20 @@ class Audit(AuditBase):
         for module in self.write_modules:
             module.log(param)
 
+    def add_to_log(self, param, add_with_comma=False):
+        """
+        Call the add_to_log method for all writeable modules
+        """
+        for module in self.write_modules:
+            module.add_to_log(param, add_with_comma)
+
+    def add_policy(self, policyname):
+        """
+        Call the add_policy method for all writeable modules
+        """
+        for module in self.write_modules:
+            module.add_policy(policyname)
+
     def search(self, search_dict, page_size=15, page=1, sortorder="asc",
                timelimit=None):
         """
@@ -81,6 +95,13 @@ class Audit(AuditBase):
         Call the count method for the one readable module
         """
         return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
+
+    def csv_generator(self, param=None, user=None, timelimit=None):
+        """
+        Call the csv_generator method for the one readable module
+        """
+        return self.read_module.csv_generator(param=param, user=user,
+                                              timelimit=timelimit)
 
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """

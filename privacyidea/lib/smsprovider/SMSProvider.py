@@ -26,7 +26,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__="""This is the base class for SMS Modules, that can send SMS via
+__doc__ = """This is the base class for SMS Modules, that can send SMS via
 different means.
 The function get_sms_provider_class loads an SMS Provider Module dynamically
 and returns an instance.
@@ -34,6 +34,7 @@ and returns an instance.
 The code is tested in tests/test_lib_smsprovider
 """
 
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 import logging
@@ -45,7 +46,8 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
     "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
-    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider"]
+    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
+    "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"]
 
 
 class SMSError(Exception):
@@ -122,6 +124,7 @@ class ISMSProvider(object):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       "PARAMETER1": {
                           "required": True,
@@ -160,7 +163,7 @@ def get_sms_provider_class(packageName, className):
 
 
 def set_smsgateway(identifier, providermodule, description=None,
-                   options=None):
+                   options=None, headers=None):
 
     """
     Set an SMS Gateway configuration
@@ -173,12 +176,14 @@ def set_smsgateway(identifier, providermodule, description=None,
     :type providermodule: basestring
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
+    :param headers: Headers for this module
     :type options: dict
+    :type headers: dict
     :return: The id of the event.
     """
     smsgateway = SMSGateway(identifier, providermodule,
                             description=description,
-                            options=options)
+                            options=options, headers=headers)
     create_sms_instance(identifier).check_configuration()
     return smsgateway.id
 
@@ -201,7 +206,30 @@ def delete_smsgateway_option(id, option_key):
     :param option_key: The identifier/key of the option
     :return: True
     """
-    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
+    return delete_smsgateway_key_generic(id, option_key, Type="option")
+
+
+def delete_smsgateway_header(id, header_key):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param header_key: The identifier/key of the header
+    :return: True
+    """
+    return delete_smsgateway_key_generic(id, header_key, Type="header")
+
+
+def delete_smsgateway_key_generic(id, key, Type="option"):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param key: The identifier/key
+    :param type: The type of the key
+    :return: True
+    """
+    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=key, Type=Type).delete()
 
 
 def get_smsgateway(identifier=None, id=None, gwtype=None):
@@ -241,10 +269,13 @@ def create_sms_instance(identifier):
     :param identifier: The name of the SMS gateway configuration
     :return: SMS Provider object
     """
-    gateway_definition = get_smsgateway(identifier)[0]
-    package_name, class_name = gateway_definition.providermodule.rsplit(".", 1)
+    gateway_definition = get_smsgateway(identifier)
+    if not gateway_definition:
+        raise ConfigAdminError('Could not find gateway definition with '
+                               'identifier "{0!s}"'.format(identifier))
+    package_name, class_name = gateway_definition[0].providermodule.rsplit(".", 1)
     sms_klass = get_sms_provider_class(package_name, class_name)
-    sms_object = sms_klass(smsgateway=gateway_definition)
+    sms_object = sms_klass(smsgateway=gateway_definition[0])
     return sms_object
 
 

@@ -14,7 +14,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    parse_time_offset_from_now, censor_connect_string,
                                    parse_timedelta, to_unicode,
                                    parse_int, convert_column_to_unicode,
-                                   truncate_comma_list, check_pin_policy,
+                                   truncate_comma_list, check_pin_contents, CHARLIST_CONTENTPOLICY,
                                    get_module_class, decode_base32check,
                                    get_client_ip, sanity_name_check, to_utf8,
                                    to_byte_string, hexlify_and_unicode,
@@ -23,7 +23,9 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid, determine_logged_in_userparams)
+                                   check_serial_valid, determine_logged_in_userparams,
+                                   to_list)
+from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -534,15 +536,17 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(censor_connect_string("mysql://pi@localhost/pi"),
                          "mysql://pi@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
-                         "mysql://pi:xxxx@localhost/pi")
+                         "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi@localhost/pi"),
                          "psql+odbc://pi@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
-                         "psql+odbc://pi:xxxx@localhost/pi")
+                         "psql+odbc://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
-                         "mysql://pi:xxxx@localhost/pi")
+                         "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
-                         u"mysql://knöbel:xxxx@localhost/pi")
+                         u"mysql://knöbel:***@localhost/pi")
+        self.assertEqual(censor_connect_string(u"oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
+                         u"oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
@@ -565,87 +569,93 @@ class UtilsTestCase(MyTestCase):
 
     def test_20_pin_policy(self):
         # Unspecified character specifier
-        self.assertRaises(PolicyError, check_pin_policy, "1234", "+o")
+        self.assertRaises(PolicyError, check_pin_contents, "1234", "+o")
 
-        r, c = check_pin_policy("1234", "n")
+        r, c = check_pin_contents("1234", "n")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("[[[", "n")
+        r, c = check_pin_contents(r"[[[", "n")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "c")
+        r, c = check_pin_contents(r"[[[", "c")
         self.assertFalse(r)
 
-        r, c = check_pin_policy("[[[", "s")
+        r, c = check_pin_contents(r"[[[", "s")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("abc", "nc")
-        self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: [0-9]", c)
+        # check the validation of a generated password with square brackets
+        password = generate_password(size=3, requirements=['[', '[', '['])
+        r, c = check_pin_contents(password, "s")
+        self.assertTrue(r)
 
-        r, c = check_pin_policy("123", "nc")
+        r, c = check_pin_contents("abc", "nc")
         self.assertFalse(r)
-        self.assertEqual(r"Missing character in PIN: [a-zA-Z]", c)
+        self.assertEqual("Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['n']), c)
 
-        r, c = check_pin_policy("123", "ncs")
+        r, c = check_pin_contents("123", "nc")
         self.assertFalse(r)
-        self.assertTrue(r"Missing character in PIN: [a-zA-Z]" in c, c)
-        self.assertTrue(r"Missing character in PIN: [\[\].:,;_<>+*!/()=?$§%&#~^-]" in c, c)
+        self.assertEqual(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c']), c)
 
-        r, c = check_pin_policy("1234", "")
+        r, c = check_pin_contents("123", "ncs")
+        self.assertFalse(r)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c'] in c), c)
+        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['s'] in c), c)
+
+        r, c = check_pin_contents("1234", "")
         self.assertFalse(r)
         self.assertEqual(c, "No policy given.")
 
         # check for either number or character
-        r, c = check_pin_policy("1234", "+cn")
+        r, c = check_pin_contents("1234", "+cn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("1234xxxx", "+cn")
+        r, c = check_pin_contents("1234xxxx", "+cn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("xxxx", "+cn")
+        r, c = check_pin_contents("xxxx", "+cn")
         self.assertTrue(r)
-        self.assertTrue(check_pin_policy("test1234", "+cn")[0])
-        self.assertTrue(check_pin_policy("test12$$", "+cn")[0])
-        self.assertTrue(check_pin_policy("test12", "+cn")[0])
-        self.assertTrue(check_pin_policy("1234", "+cn")[0])
+        self.assertTrue(check_pin_contents("test1234", "+cn")[0])
+        self.assertTrue(check_pin_contents("test12$$", "+cn")[0])
+        self.assertTrue(check_pin_contents("test12", "+cn")[0])
+        self.assertTrue(check_pin_contents("1234", "+cn")[0])
 
-        r, c = check_pin_policy("@@@@", "+cn")
+        r, c = check_pin_contents("@@@@", "+cn")
         self.assertFalse(r)
-        self.assertEqual(c, "Missing character in PIN: [a-zA-Z]|[0-9]")
+        self.assertEqual(c, "Missing character in PIN: {}{}".format(CHARLIST_CONTENTPOLICY['c'],
+                                                                    CHARLIST_CONTENTPOLICY['n']))
 
         # check for exclusion
         # No special character
-        r, c = check_pin_policy("1234", "-s")
+        r, c = check_pin_contents("1234", "-s")
         self.assertTrue(r)
-        r, c = check_pin_policy("1234aaaa", "-s")
+        r, c = check_pin_contents("1234aaaa", "-s")
         self.assertTrue(r)
-        r, c = check_pin_policy("1234aaaa//", "-s")
+        r, c = check_pin_contents("1234aaaa//", "-s")
         self.assertFalse(r)
 
         # A pin that falsely contains a number
-        r, c = check_pin_policy("1234aaa", "-sn")
+        r, c = check_pin_contents("1234aaa", "-sn")
         self.assertFalse(r)
         self.assertEqual(c, "Not allowed character in PIN!")
-        r, c = check_pin_policy("///aaa", "-sn")
+        r, c = check_pin_contents("///aaa", "-sn")
         self.assertFalse(r)
         # A pin without a number and without a special
-        r, c = check_pin_policy("xxxx", "-sn")
+        r, c = check_pin_contents("xxxx", "-sn")
         self.assertTrue(r)
 
-        r, c = check_pin_policy("1234@@@@", "-c")
+        r, c = check_pin_contents("1234@@@@", "-c")
         self.assertTrue(r)
 
         # A pin with only digits allowed
-        r, c = check_pin_policy("1234", "-cs")
+        r, c = check_pin_contents("1234", "-cs")
         self.assertTrue(r)
-        r, c = check_pin_policy("a1234", "-cs")
+        r, c = check_pin_contents("a1234", "-cs")
         self.assertFalse(r)
 
         # A pin with only a specified list of chars
-        r, c = check_pin_policy("1234111", "[1234]")
+        r, c = check_pin_contents("1234111", "[1234]")
         self.assertTrue(r)
-        r, c = check_pin_policy("12345", "[1234]")
+        r, c = check_pin_contents("12345", "[1234]")
         self.assertFalse(r)
 
     def test_21_get_module_class(self):
@@ -747,40 +757,40 @@ class UtilsTestCase(MyTestCase):
     def test_25_encodings(self):
         u = u'Hello Wörld'
         b = b'Hello World'
-        self.assertEquals(to_utf8(None), None)
-        self.assertEquals(to_utf8(u), u.encode('utf8'))
-        self.assertEquals(to_utf8(b), b)
+        self.assertEqual(to_utf8(None), None)
+        self.assertEqual(to_utf8(u), u.encode('utf8'))
+        self.assertEqual(to_utf8(b), b)
 
-        self.assertEquals(to_unicode(u), u)
-        self.assertEquals(to_unicode(b), b.decode('utf8'))
-        self.assertEquals(to_unicode(None), None)
-        self.assertEquals(to_unicode(10), 10)
+        self.assertEqual(to_unicode(u), u)
+        self.assertEqual(to_unicode(b), b.decode('utf8'))
+        self.assertEqual(to_unicode(None), None)
+        self.assertEqual(to_unicode(10), 10)
 
-        self.assertEquals(to_bytes(u), u.encode('utf8'))
-        self.assertEquals(to_bytes(b), b)
-        self.assertEquals(to_bytes(10), 10)
+        self.assertEqual(to_bytes(u), u.encode('utf8'))
+        self.assertEqual(to_bytes(b), b)
+        self.assertEqual(to_bytes(10), 10)
 
-        self.assertEquals(to_byte_string(u), u.encode('utf8'))
-        self.assertEquals(to_byte_string(b), b)
-        self.assertEquals(to_byte_string(10), b'10')
+        self.assertEqual(to_byte_string(u), u.encode('utf8'))
+        self.assertEqual(to_byte_string(b), b)
+        self.assertEqual(to_byte_string(10), b'10')
 
     def test_26_conversions(self):
-        self.assertEquals(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
-        self.assertEquals(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
-        self.assertEquals(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
+        self.assertEqual(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
 
-        self.assertEquals(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
-        self.assertEquals(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
-        self.assertEquals(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
+        self.assertEqual(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
 
-        self.assertEquals(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEquals(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEquals(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
 
-        self.assertEquals(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
-        self.assertEquals(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
+        self.assertEqual(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
                           u'-vv8_f7_')
 
     def test_27_images(self):
@@ -794,28 +804,28 @@ class UtilsTestCase(MyTestCase):
                   u'kJ6u7UYKZ7fE1Z3mq5phmJ1DMLYrcPL9/J6VII7oEkKclaH1dR6CsB6wPkvWU' \
                   u'JH8LuvZI1Qw5CMgg8hmRzyOEq7nPWZCa+3uY9rWpZsi+r12O+pVjwojKTOP/a' \
                   u'51yyimn9kL9ACOsApMnN2KuAAAAAElFTkSuQmCC'
-        self.assertEquals(b64encode_and_unicode(create_png('Hallo')), png_b64)
-        self.assertEquals(create_img('Hello', raw=True),
+        self.assertEqual(b64encode_and_unicode(create_png('Hallo')), png_b64)
+        self.assertEqual(create_img('Hello', raw=True),
                           u'data:image/png;base64,SGVsbG8=')
-        self.assertEquals(create_img('Hallo'),
+        self.assertEqual(create_img('Hallo'),
                           u'data:image/png;base64,{0!s}'.format(png_b64))
 
     def test_28_yubikey_utils(self):
-        self.assertEquals(modhex_encode(b'\x47'), 'fi')
-        self.assertEquals(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
-        self.assertEquals(modhex_encode(binascii.unhexlify('0123456789abcdef')),
+        self.assertEqual(modhex_encode(b'\x47'), 'fi')
+        self.assertEqual(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
+        self.assertEqual(modhex_encode(binascii.unhexlify('0123456789abcdef')),
                           'cbdefghijklnrtuv')
-        self.assertEquals(modhex_encode('Hallo'), 'fjhbhrhrhv')
+        self.assertEqual(modhex_encode('Hallo'), 'fjhbhrhrhv')
         # and the other way around
-        self.assertEquals(modhex_decode('fi'), b'\x47')
-        self.assertEquals(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
-        self.assertEquals(modhex_decode('cbdefghijklnrtuv'),
+        self.assertEqual(modhex_decode('fi'), b'\x47')
+        self.assertEqual(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
+        self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
                           binascii.unhexlify('0123456789abcdef'))
-        self.assertEquals(modhex_decode('fjhbhrhrhv'), b'Hallo')
+        self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
 
         # now test the crc function
-        self.assertEquals(checksum(b'\x01\x02\x03\x04'), 0xc66e)
-        self.assertEquals(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
+        self.assertEqual(checksum(b'\x01\x02\x03\x04'), 0xc66e)
+        self.assertEqual(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
 
     def test_29_check_ip(self):
         found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "1.1.1.1"])
@@ -951,3 +961,15 @@ class UtilsTestCase(MyTestCase):
         # Wrong entry, that cannot be processed
         self.assertRaises(Exception, compare_generic_condition,
                           "b!~100", mock_attribute, "Error {0!s}")
+
+    def test_34_to_list(self):
+        # Simple string
+        self.assertEqual(["Hallo"], to_list("Hallo"))
+        # check for a list
+        r = to_list(["Hallo", "Du", "da"])
+        self.assertIsInstance(r, list)
+        self.assertEqual(3, len(r))
+        # Check for a set
+        r = to_list({"Hallo", "Du", "da"})
+        self.assertIsInstance(r, list)
+        self.assertEqual(3, len(r))

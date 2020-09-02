@@ -48,55 +48,60 @@ def read_counter_file(import_file):
     return update_list
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config",
-                    help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                    required=True)
-parser.add_argument('file',
-                    help='The CSV file with the updated counters. The file should contain one '
-                         'serial and counter per line split by a comma. '
-                         'You can specify "-" to read from stdin.',
-                    type=argparse.FileType())
-parser.add_argument("-i", "--increase-only",
-                    help="Only update the token counter, if the new counter value "
-                         "is bigger than the existing in the database.",
-                    action='store_const', const=True)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-c", "--config",
+                        help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+                        required=True)
+    parser.add_argument('file',
+                        help='The CSV file with the updated counters. The file should contain one '
+                             'serial and counter per line split by a comma. '
+                             'You can specify "-" to read from stdin.',
+                        type=argparse.FileType())
+    parser.add_argument("-i", "--increase-only",
+                        help="Only update the token counter, if the new counter value "
+                             "is bigger than the existing in the database.",
+                        action='store_const', const=True)
+    args = parser.parse_args()
 
-# Parse data
+    # Parse data
 
-SQL_URI = get_privacyidea_uri(args.config)
-counters = read_counter_file(args.file)
+    SQL_URI = get_privacyidea_uri(args.config)
+    counters = read_counter_file(args.file)
 
-# Start DB stuff
+    # Start DB stuff
 
-privacyidea_engine = create_engine(SQL_URI)
-privacyidea_session = sessionmaker(bind=privacyidea_engine)()
+    privacyidea_engine = create_engine(SQL_URI)
+    privacyidea_session = sessionmaker(bind=privacyidea_engine)()
 
-print("Starting updating {0!s} counters:".format(len(counters)))
-updated = 0
-not_found = 0
-processed = 0
-for count in counters:
-    processed += 1
-    if args.increase_only:
-        r = privacyidea_session.query(Token).filter_by(serial=count[0]).first()
-        if r and r.count >= count[1]:
-            # The counter in the database is bigger
-            continue
-    sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
-    r = privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
-    if r > 0:
-        # r==0, if the token was not found!
-        updated += 1
-    else:
-        not_found += 1
-    # Depending on the time of running, we might do the session.commit after each update to avoid
-    # blocking the Token table.
+    print("Starting updating {0!s} counters:".format(len(counters)))
+    updated = 0
+    not_found = 0
+    processed = 0
+    for count in counters:
+        processed += 1
+        if args.increase_only:
+            r = privacyidea_session.query(Token).filter_by(serial=count[0]).first()
+            if r and r.count >= count[1]:
+                # The counter in the database is bigger
+                continue
+        sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
+        r = privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
+        if r > 0:
+            # r==0, if the token was not found!
+            updated += 1
+        else:
+            not_found += 1
+        # Depending on the time of running, we might do the session.commit after each update to avoid
+        # blocking the Token table.
 
-privacyidea_session.commit()
+    privacyidea_session.commit()
 
-print()
-print("{0!s:6} tokens processed.".format(processed))
-print("{0!s:6} counters updated.".format(updated))
-print("{0!s:6} tokens not found.".format(not_found))
+    print()
+    print("{0!s:6} tokens processed.".format(processed))
+    print("{0!s:6} counters updated.".format(updated))
+    print("{0!s:6} tokens not found.".format(not_found))
+
+
+if __name__ == '__main__':
+    main()

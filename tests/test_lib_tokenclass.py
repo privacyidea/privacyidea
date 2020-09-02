@@ -3,7 +3,6 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
@@ -14,6 +13,7 @@ from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
+from privacyidea.lib.error import TokenAdminError
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
@@ -306,18 +306,27 @@ class TokenBaseTestCase(MyTestCase):
         token.set_validity_period_end("2014-12-30T16:00+0400")
         end = token.get_validity_period_end()
         self.assertTrue(end == "2014-12-30T16:00+0400", end)
-        self.assertRaises(Exception,
+        self.assertRaises(TokenAdminError,
                           token.set_validity_period_end, "wrong date")
         # handle validity start date
         token.set_validity_period_start("2014-12-30T16:00+0400")
         start = token.get_validity_period_start()
         self.assertTrue(start == "2014-12-30T16:00+0400", start)
-        self.assertRaises(Exception,
+        self.assertRaises(TokenAdminError,
                           token.set_validity_period_start, "wrong date")
         
         self.assertFalse(token.check_validity_period())
-        # THe token is valid till 2021, this should be enough!
-        token.set_validity_period_end("2021-12-30T16:00+0200")
+        # delete the validity period end by passing an empty string
+        token.set_validity_period_end('')
+        end = token.get_validity_period_end()
+        self.assertTrue(end == "", end)
+        self.assertTrue(token.check_validity_period())
+
+        # try the same for the validity period start
+        start_date_5d = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
+        token.set_validity_period_start(start_date_5d.strftime(DATE_FORMAT))
+        self.assertFalse(token.check_validity_period())
+        token.set_validity_period_start('')
         self.assertTrue(token.check_validity_period())
 
         token.set_validity_period_end("2015-05-22T22:00:00.000Z")
@@ -886,3 +895,10 @@ class TokenBaseTestCase(MyTestCase):
         # sha512
         r = TokenClass.get_import_csv(["ser1", geturandom(64, True), "totp", "8"])
         self.assertEqual(r["hashlib"], "sha512")
+
+    def test_42_has_further_challenge(self):
+        db_token = Token("furhterchallenge", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        self.assertFalse(token_obj.has_further_challenge())
+        token_obj.delete_token()

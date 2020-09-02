@@ -74,6 +74,14 @@ or::
 
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
 
+.. note:: While the link http://lancelot.netknights.it/community/ and its
+   subdirectories are browsable, it is only available via http! Most browsers
+   will automatically redirect you to https, which will result in a 404 error,
+   since the link http**s**://lancelot.netknights.it/community/ does not
+   exist. So if you want to browse the repository, take care to do this via http.
+   This is OK. The apt program fetches all packages via http.
+   If you still fail to fetch packages, you might most probably need to check
+   your firewall and proxy settings.
 
 Installation of privacyIDEA 3.x
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

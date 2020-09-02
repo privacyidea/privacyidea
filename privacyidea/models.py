@@ -381,11 +381,7 @@ class Token(MethodsMixin, db.Model):
         log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(hPin, pin,
                                                                 self.pin_seed))
         return hPin
-    
-    def check_hashed_pin(self, pin):
-        hp = self.get_hashed_pin(pin)
-        return hp == self.pin_hash
-        
+
     @log_with(log)
     def set_description(self, desc):
         if desc is None:
@@ -424,7 +420,7 @@ class Token(MethodsMixin, db.Model):
                     mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin
-                if (mypHash == self.pin_hash):
+                if (mypHash == (self.pin_hash or u"")):
                     res = True
     
         return res
@@ -449,7 +445,7 @@ class Token(MethodsMixin, db.Model):
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
-            pin = self.pin_hash
+            pin = self.pin_hash or u""
         if pin.startswith("@@"):
             ret = True
         return ret
@@ -1221,7 +1217,7 @@ class Challenge(MethodsMixin, db.Model):
     session = db.Column(db.Unicode(512), default=u'', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default=u'', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
@@ -1234,11 +1230,11 @@ class Challenge(MethodsMixin, db.Model):
         self.challenge = challenge
         self.serial = serial
         self.data = data
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.utcnow()
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = datetime.now() + timedelta(seconds=validitytime)
+        self.expiration = datetime.utcnow() + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):
@@ -1251,8 +1247,8 @@ class Challenge(MethodsMixin, db.Model):
         :rtype: bool
         """
         ret = False
-        c_now = datetime.now()
-        if c_now < self.expiration:
+        c_now = datetime.utcnow()
+        if self.timestamp <= c_now < self.expiration:
             ret = True
         return ret
 
@@ -1341,7 +1337,7 @@ def cleanup_challenges():
 
     :return: None
     """
-    c_now = datetime.now()
+    c_now = datetime.utcnow()
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
 
@@ -1373,6 +1369,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     adminrealm = db.Column(db.Unicode(256), default=u"")
     adminuser = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(256), default=u"")
+    pinode = db.Column(db.Unicode(256), default=u"")
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
@@ -1391,7 +1388,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
-                 resolver="", user="", client="", time="", priority=1,
+                 resolver="", user="", client="", time="", pinode="", priority=1,
                  check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
@@ -1403,6 +1400,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.adminrealm = adminrealm
         self.adminuser = adminuser
         self.resolver = resolver
+        self.pinode = pinode
         self.user = user
         self.client = client
         self.time = time
@@ -1462,6 +1460,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "adminrealm": self._split_string(self.adminrealm),
              "adminuser": self._split_string(self.adminuser),
              "resolver": self._split_string(self.resolver),
+             "pinode": self._split_string(self.pinode),
              "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
@@ -2070,9 +2069,10 @@ class SMSGateway(MethodsMixin, db.Model):
                               backref='smsgw')
 
     def __init__(self, identifier, providermodule, description=None,
-                 options=None):
+                 options=None, headers=None):
 
         options = options or {}
+        headers = headers or {}
         sql = SMSGateway.query.filter_by(identifier=identifier).first()
         if sql:
             self.id = sql.id
@@ -2081,16 +2081,20 @@ class SMSGateway(MethodsMixin, db.Model):
         self.description = description
         self.save()
         # delete non existing options in case of update
+        opts = {"option": options, "header": headers}
         if sql:
-            for option in sql.option_dict.keys():
-                # iterate through all existing options
-                if option not in options:
-                    # if the option is not contained anymore
-                    SMSGatewayOption.query.filter_by(gateway_id=self.id,
-                                                     Key=option).delete()
-        # add the options to the SMS Gateway
-        for k, v in options.items():
-            SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
+            sql_opts = {"option": sql.option_dict, "header": sql.header_dict}
+            for typ, vals in opts.items():
+                for key in sql_opts[typ].keys():
+                    # iterate through all existing options/headers
+                    if key not in vals:
+                        # if the option is not contained anymore
+                        SMSGatewayOption.query.filter_by(gateway_id=self.id,
+                                                         Key=key, Type=typ).delete()
+        # add the options and headers to the SMS Gateway
+        for typ, vals in opts.items():
+            for k, v in vals.items():
+                SMSGatewayOption(gateway_id=self.id, Key=k, Value=v, Type=typ).save()
 
     def save(self):
         if self.id is None:
@@ -2131,7 +2135,21 @@ class SMSGateway(MethodsMixin, db.Model):
         """
         res = {}
         for option in self.options:
-            res[option.Key] = option.Value
+            if option.Type == "option" or not option.Type:
+                res[option.Key] = option.Value
+        return res
+
+    @property
+    def header_dict(self):
+        """
+        Return all connected headers as a dictionary
+
+        :return: dict
+        """
+        res = {}
+        for option in self.options:
+            if option.Type == "header":
+                res[option.Key] = option.Value
         return res
 
     def as_dict(self):
@@ -2145,24 +2163,25 @@ class SMSGateway(MethodsMixin, db.Model):
              "name": self.identifier,
              "providermodule": self.providermodule,
              "description": self.description,
-             "options": self.option_dict}
+             "options": self.option_dict,
+             "headers": self.header_dict}
 
         return d
 
 
 class SMSGatewayOption(MethodsMixin, db.Model):
     """
-    This table stores the options and parameters for an SMS Gateway definition.
+    This table stores the options, parameters and headers for an SMS Gateway definition.
     """
     __tablename__ = 'smsgatewayoption'
     id = db.Column(db.Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.UnicodeText(), default=u'')
-    Type = db.Column(db.Unicode(100), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'option')
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
     __table_args__ = (db.UniqueConstraint('gateway_id',
-                                          'Key',
+                                          'Key', 'Type',
                                           name='sgix_1'),
                       {'mysql_row_format': 'DYNAMIC'})
 
@@ -2178,9 +2197,10 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         self.save()
 
     def save(self):
-        # See, if there is this option for this this gateway
+        # See, if there is this option or header for this this gateway
+        # The first match takes precedence
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                               Key=self.Key).first()
+                                               Key=self.Key, Type=self.Type).first()
         if go is None:
             # create a new one
             db.session.add(self)
@@ -2189,7 +2209,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         else:
             # update
             SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                              Key=self.Key
+                                              Key=self.Key, Type=self.Type
                                               ).update({'Value': self.Value,
                                                         'Type': self.Type})
             ret = go.id

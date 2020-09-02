@@ -34,9 +34,7 @@ FAIL_BODY = {"detail": {"message": "wrong otp value"},
 
 class ApacheTestCase(MyTestCase):
 
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt("test100001",
-                                                rounds=ROUNDS,
-                                                salt_size=SALT_SIZE)
+    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS, salt_size=SALT_SIZE).hash("test100001")
 
     @redismock.activate
     @responses.activate
@@ -70,4 +68,3 @@ class ApacheTestCase(MyTestCase):
 
         r = check_password({}, "cornelius", "test100002")
         self.assertEqual(r, UNAUTHORIZED)
-

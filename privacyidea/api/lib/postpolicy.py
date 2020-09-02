@@ -44,9 +44,9 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
@@ -496,9 +496,12 @@ def get_webui_settings(request, response):
                                             user=loginname, realm=realm).action_values(unique=True)
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
                                            user=loginname, realm=realm).action_values(unique=True)
-        token_wizard_2nd = (role == ROLE.USER and
-                            Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
+        token_wizard_2nd = (role == ROLE.USER
+                            and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
                                           user=loginname, realm=realm).policies())
+        admin_dashboard = (role == ROLE.ADMIN
+                           and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.ADMIN_DASHBOARD,
+                                         user=loginname, realm=realm).any())
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
@@ -577,6 +580,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
+        content["result"]["value"]["admin_dashboard"] = admin_dashboard
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
@@ -733,3 +737,27 @@ def mangle_challenge_response(request, response):
 
     return response
 
+
+def is_authorized(request, response):
+    """
+    This policy decorator is used in the AUTHZ scope to
+    decorate the /validate/check and /validate/triggerchallenge endpoint.
+    I will cause authentication to fail, if the policy
+    authorized=deny_access is set.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    if not response.is_json:
+        # This can happen with the validate/radiuscheck endpoint
+        return response
+
+    authorized_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHORIZED,
+                                user_object=request.User).action_values(unique=True, allow_white_space_in_action=True)
+
+    if authorized_pol:
+        if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            raise ValidateError("User is not authorized to authenticate under these conditions.")
+
+    return response

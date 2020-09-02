@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
-
 from .base import MyApiTestCase
 import mock
 import six
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    SYSCONF)
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
+                                    delete_policy)
 from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib.event import set_event, delete_event
+from privacyidea.lib.eventhandler.base import CONDITION
+from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.user import User
+
+
+PWFILE = "tests/testdata/passwd-duplicate-name"
 
 
 class AuthApiTestCase(MyApiTestCase):
@@ -422,3 +431,249 @@ class AuthApiTestCase(MyApiTestCase):
 
         # reset 'splitAtSign' to default value
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+
+    def test_04_remote_user_auth(self):
+        self.setUp_user_realms()
+        # first check that without a remote_user policy the login fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('message'),
+                             'Authentication failure. Wrong credentials', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+
+        # now check that with a disabled remote_user policy the login fails
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.DISABLE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('message'),
+                             'Authentication failure. Wrong credentials', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # And now check that with an enabled remote_user policy the login succeeds
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"},
+                                           environ_base={"REMOTE_USER": "cornelius"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # check that a remote user with "@" works as well
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@realm1"},
+                                           environ_base={"REMOTE_USER": "cornelius@realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # bind the remote user policy to an unknown realm
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@realm1"},
+                                           environ_base={"REMOTE_USER": "cornelius@realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
+        self.assertEqual(aentry['policies'], '', aentry)
+
+        # check split@sign is working correctly
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user@test"},
+                                           environ_base={"REMOTE_USER": "user@test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(result.get("value").get('role'), 'user', result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 1, aentry)
+        self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        delete_policy(name='remote')
+        set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
+
+
+class DuplicateUserApiTestCase(MyApiTestCase):
+
+    def test_01_admin_and_user_same_name(self):
+        # Test the logging, if admin and user have the same name (testamdin/testpw)
+        # Now create a default realm, that contains the used "testadmin"
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm1,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        set_default_realm(self.realm1)
+
+        # If the admin logs in, everything is fine
+        with mock.patch("logging.Logger.info") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'admin'
+                self.assertEqual('admin', result['value']['role'], result)
+            mock_log.assert_called_with("Local admin 'testadmin' successfully logged in.")
+
+        # If a user logs in, with the same name as the admin, this event is logged in warning
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'user'
+                self.assertEqual('user', result['value']['role'], result)
+            # check if we have this log entry
+            mock_log.assert_called_with("A user 'testadmin' exists as local admin and as user "
+                                        "in your default realm!")
+
+
+class AAPreEventHandlerTest(MyApiTestCase):
+
+    def test_01_setup_eventhandlers(self):
+        # This test create an HOTP token with C/R with a pre-event handler
+        # and the user uses this HOTP token to directly login to /auth
+
+        # Setup realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm1,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        set_default_realm(self.realm1)
+
+        # set a policy to authenticate against privacyIDEA
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+        # set a policy to for otppin=userstore
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN))
+        # Set a policy to do C/R with HOTP tokens
+        set_policy("crhotp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+
+        # Create an event handler, that creates HOTP token on /auth with default OTP key
+        eid = set_event("createtoken", event=["auth"], handlermodule="Token",
+                        action="enroll", position="pre",
+                        conditions={CONDITION.USER_TOKEN_NUMBER: 0},
+                        options={"tokentype": "hotp", "user": "1",
+                                 "additional_params": {
+                                     'otpkey': self.otpkey,
+                                     # We need to set gekey=0, otherwise the Tokenhandler will
+                                     # generate a random otpkey
+                                     'genkey': 0}})
+        # cleanup tokens
+        remove_token(user=User("someuser", self.realm1))
+
+        # user tries to log in with his userstore password and gets a transaction_id
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "someuser",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            detail = res.json.get("detail")
+            self.assertEqual("please enter otp: ", detail.get("message"))
+            transaction_id = detail.get("transaction_id")
+
+        # Check if the token was enrolled
+        toks = get_tokens(user=User("someuser", self.realm1))
+        self.assertEqual(len(toks), 1)
+        self.assertEqual(toks[0].token.tokentype, "hotp")
+        serial = toks[0].token.serial
+        # Check if the correct otpkey was used
+        hotptoken = toks[0]
+        r = hotptoken.check_otp(self.valid_otp_values[1])
+        self.assertTrue(r >= 0)
+
+        # Now the user logs in with the second step of C/R with OTP value of new token
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "someuser",
+                                                 "transaction_id": transaction_id,
+                                                 "password": self.valid_otp_values[2]}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # Check that there is still only one token
+        toks = get_tokens(user=User("someuser", self.realm1))
+        self.assertEqual(len(toks), 1)
+        self.assertEqual(toks[0].token.tokentype, "hotp")
+        self.assertEqual(serial, toks[0].token.serial)
+
+        # cleanup
+        delete_policy("piLogin")
+        delete_policy("otppin")
+        delete_policy("crhotp")
+        delete_event(eid)
+        remove_token(hotptoken.token.serial)

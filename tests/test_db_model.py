@@ -79,7 +79,7 @@ class TokenModelTestCase(MyTestCase):
         up = t.get_user_pin()
         self.assertTrue(up.getPin() == userpin.encode('utf8'))
 
-        self.assertTrue(t.check_hashed_pin("1234"))
+        self.assertTrue(t.check_pin("1234"))
 
         t.set_user_pin(b'HalloDuDa')
         self.assertTrue(t.get_user_pin().getPin() == b'HalloDuDa')
@@ -88,10 +88,24 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t.get_user_pin().getPin().decode('utf8') == u'HelloWörld')
 
         t.set_hashed_pin(b'1234')
-        self.assertTrue(t.check_hashed_pin(b'1234'))
+        self.assertTrue(t.check_pin(b'1234'))
 
         t.set_hashed_pin(u'HelloWörld')
-        self.assertTrue(t.check_hashed_pin(u'HelloWörld'))
+        self.assertTrue(t.check_pin(u'HelloWörld'))
+
+        t.pin_hash = None
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin(None))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.pin_hash = ''
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.set_hashed_pin('')
+        self.assertTrue(len(t.pin_hash) > 0)
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
 
         # Delete the token
         t1.delete()
@@ -383,13 +397,16 @@ class TokenModelTestCase(MyTestCase):
         p.resolver = "*"
         p.client = "0.0.0.0"
         p.time = "anytime"
+        p.pinode = "pinode1, pinode2"
         p.save()
         self.assertTrue(p.user == "cornelius", p.user)
+        self.assertEqual(p.pinode, "pinode1, pinode2")
 
         # save admin policy
         p3 = Policy("pol3", active="false", scope="admin",
-                    adminrealm='superuser', action="*")
+                    adminrealm='superuser', action="*", pinode="pinode3")
         self.assertEqual(p3.adminrealm, "superuser")
+        self.assertEqual(p3.pinode, "pinode3")
         p3.save()
 
         # set conditions
@@ -413,6 +430,7 @@ class TokenModelTestCase(MyTestCase):
 
         # Check that the change has been persisted to the database
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
+        self.assertEqual(p3_reloaded1.get()["pinode"], ["pinode3"])
         self.assertEqual(p3_reloaded1.get()["conditions"],
                          [("userinfo", "type", "==", "baz", True)])
         self.assertEqual(len(p3_reloaded1.conditions), 1)

@@ -225,6 +225,12 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },
+        getPINodes: function (callback) {
+            // Return the definitions for policy conditions
+            $http.get(policyUrl + "/defs/pinodes", {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
         getResolvers: function (callback) {
             $http.get(resolverUrl + "/", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}

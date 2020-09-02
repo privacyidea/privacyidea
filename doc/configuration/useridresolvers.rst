@@ -26,6 +26,7 @@ user stores:
  * LDAP resolver,
  * SQL resolver,
  * SCIM resolver.
+ * HTTP resolver.
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
@@ -354,6 +355,62 @@ The available attributes for the ``Attribute mapping`` are:
  * mobile,
  * email.
 
+.. _httpresolver:
+
+HTTP resolver
+.............
+
+.. index:: HTTP resolver, resolver, api, http
+
+Starting with version 3.4 the HTTP resolver is available to retrieve user information from any kind
+of web service API. privacyIDEA issues a request to the target service and expects a JSON object in return.
+The configuration of the HTTP resolver sets the details of the request in the ``Request Mapping`` as well as the
+mapping of the obtained information as a ``Response Mapping``.
+
+.. figure:: images/http_resolver.png
+   :width: 500
+
+The ``Request Mapping`` is used to build the request issued to the remote API from privacyIDEA's user information.
+For example an endpoint definition::
+
+   POST /get-user
+   customerId=<user_id>&accessKey="secr3t!"
+
+will require a request mapping
+
+.. code-block:: json
+
+   { "customerId": "{userid}", "accessKey": "secr3t!" }
+
+The ``Response Mapping`` follows the same rules as the attribute mapping of the SQL resolver. The known attributes are
+
+ * username *(mandatory)*,
+ * givenname,
+ * surname,
+ * phone,
+ * mobile,
+ * email.
+
+Nested attributes are also supported using `pydash deep path <https://pydash.readthedocs.io/en/latest/deeppath.html>`_
+for parsing, e.g.
+
+.. code-block:: json
+
+   { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone} }
+
+For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
+the request as unsuccessful if the response contains certain content.
+
+The above configuration image will throw an error for a response
+
+.. code-block:: json
+
+   { "success": false, "message": "There was an error!" }
+
+because privacyIDEA will match ``{ "success": false }``.
+
+.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
+
 .. _usercache:
 
 User Cache
@@ -397,7 +454,7 @@ However, cache entries are removed at some defined events:
 
 .. rubric:: Footnotes
 
-.. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
-.. [#osiam] http://www.osiam.org
-.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
-.. [#ldapschema] http://ldap3.readthedocs.io/schema.html
+.. [#adreferrals] https://techcommunity.microsoft.com/t5/azure-active-directory-identity/referral-chasing/ba-p/243177
+.. [#osiam] http://osiam.github.io
+.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/server.rst#server-pool
+.. [#ldapschema] https://ldap3.readthedocs.io/en/latest/schema.html

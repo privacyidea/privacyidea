@@ -133,6 +133,9 @@ def before_request():
     # from the Form data or from JSON in the request body.
     ensure_no_config_object()
     request.all_data = get_all_params(request.values, request.data)
+    # get additional request information such as parameters in the
+    # call path from the view_args
+    request.all_data.update(request.view_args)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.
@@ -257,7 +260,6 @@ def after_request(response):
 @eventhandling_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
 @monitoring_blueprint.app_errorhandler(AuthError)
-@postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
         message = ''
@@ -292,7 +294,7 @@ def auth_error(error):
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
 @monitoring_blueprint.app_errorhandler(PolicyError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
@@ -314,7 +316,7 @@ def policy_error(error):
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
 @subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(ResourceNotFoundError)
 def resource_not_found_error(error):
     """
     This function is called when an ResourceNotFoundError occurs.
@@ -341,7 +343,7 @@ def resource_not_found_error(error):
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
 @monitoring_blueprint.app_errorhandler(privacyIDEAError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(privacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.
@@ -369,7 +371,7 @@ def privacyidea_error(error):
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
 @monitoring_blueprint.app_errorhandler(500)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

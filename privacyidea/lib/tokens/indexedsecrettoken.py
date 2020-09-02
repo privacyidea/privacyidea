@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #  2020-02-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Inial write. Allow tokens to be initialized with an otpkey
+#             Initial write. Allow tokens to be initialized with an otpkey
 #
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
@@ -195,10 +195,15 @@ class IndexedSecretTokenClass(TokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or DEFAULT_CHALLENGE_TEXT
-        position_count = int(get_action_values_from_options(SCOPE.AUTH,
-                                                            "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                                 PIIXACTION.COUNT),
-                                                            options) or DEFAULT_POSITION_COUNT)
+
+        if self.get_tokeninfo("multichallenge"):
+            # In case of multichallenge we ask only once.
+            position_count = 1
+        else:
+            position_count = int(get_action_values_from_options(SCOPE.AUTH,
+                                                                "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                                     PIIXACTION.COUNT),
+                                                                options) or DEFAULT_POSITION_COUNT)
 
         attributes = {'state': transactionid}
         validity = 120
@@ -274,7 +279,9 @@ class IndexedSecretTokenClass(TokenClass):
                         expected_answer = "".join([secret_string[x - 1] for x in options["data"]])
                         if passw == expected_answer:
                             r_success = 1
-                            challengeobject.delete()
+                            # Set valid OTP to true. We must not delete the challenge now,
+                            # Since we need it for further mutlichallenges
+                            challengeobject.set_otp_status(True)
                             log.debug("The presented answer was correct.")
                             break
                         else:
@@ -303,3 +310,29 @@ class IndexedSecretTokenClass(TokenClass):
         :return: returns true or false
         """
         return self.check_pin(passw, user=user, options=options)
+
+    @log_with(log)
+    def has_further_challenge(self, options=None):
+        """
+        Check if we should do multi challenge at all and
+        then if there are further positions to query.
+
+        :param options: Options dict
+        :return: True, if further challenge is required.
+        """
+        if self.get_tokeninfo("multichallenge"):
+            transaction_id = options.get('transaction_id')
+            challengeobject_list = get_challenges(serial=self.token.serial,
+                                                  transaction_id=transaction_id)
+
+            position_count = int(get_action_values_from_options(SCOPE.AUTH,
+                                                                "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                                     PIIXACTION.COUNT),
+                                                                options) or DEFAULT_POSITION_COUNT)
+            if len(challengeobject_list) == 1:
+                session = int(challengeobject_list[0].session or "0") + 1
+                options["session"] = u"{0!s}".format(session)
+                if session < position_count:
+                    return True
+
+        return False
