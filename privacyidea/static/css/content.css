@@ -83,3 +83,8 @@ input[type="checkbox"] {
     display: table;
     margin: auto;
 }
+
+/* for YubiKey otplen input */
+input[type=number]#otplen {
+    width: 3em;
+}
