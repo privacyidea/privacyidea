@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.3.1\n"
+"X-Generator: Poedit 2.4.1\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -318,14 +318,12 @@ msgid "Active"
 msgstr "Actief"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:128
-#, fuzzy
 msgid "Active Events"
-msgstr "Actief"
+msgstr "Actieve gebeurtenissen"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:92
-#, fuzzy
 msgid "Active Policies"
-msgstr "Elk Beleid"
+msgstr "Actief beleid"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
@@ -356,14 +354,12 @@ msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:59
-#, fuzzy
 msgid "Administration"
-msgstr "beheerder"
+msgstr "Beheerder"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:65
-#, fuzzy
 msgid "Administrator"
-msgstr "beheerder"
+msgstr "Beheerder"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
@@ -500,13 +496,12 @@ msgid "Authentication failed."
 msgstr "Authenticatie mislukt."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:39
-#, fuzzy
 msgid "Authentications"
-msgstr "Authenticatie mislukt."
+msgstr "Authenticaties"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:41
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Authenticaties in de laatste 24 uur"
 
 #: privacyidea/static/components/config/views/config.system.html:147
 msgid "Auto resync timeout"
@@ -820,17 +815,16 @@ msgid "Create a new Event Handler"
 msgstr "Maak een nieuwe event handler"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:5
-#, fuzzy
 msgid "Create a new HTTP Resolver"
-msgstr "Maak een nieuwe LDAP resolver"
+msgstr "Maak een nieuwe HTTP-resolver"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
 msgid "Create a new LDAP Resolver"
-msgstr "Maak een nieuwe LDAP resolver"
+msgstr "Maak een nieuwe LDAP-resolver"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:7
 msgid "Create a new Local CA Connector"
-msgstr "Maak een nieuwe lokale CA connector"
+msgstr "Maak een nieuwe lokale CA-connector"
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
@@ -915,7 +909,7 @@ msgstr "DN van een nieuw aangemaakt gebruikersobject"
 
 #: privacyidea/static/templates/menu.html:39
 msgid "Dashboard"
-msgstr ""
+msgstr "Dashboard"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:59
 msgid "Database"
@@ -927,7 +921,7 @@ msgstr "Database encodering"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:64
 msgid "Date"
-msgstr ""
+msgstr "Datum"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:5
 msgid "Default"
@@ -1015,9 +1009,8 @@ msgid "Detach"
 msgstr "Ontkoppel"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:67
-#, fuzzy
 msgid "Detail"
-msgstr "Ontkoppel"
+msgstr "Detail"
 
 #: privacyidea/static/components/machine/views/machine.details.html:2
 msgid ""
@@ -1120,9 +1113,8 @@ msgid "Edit Event Handler {{ eventid }}"
 msgstr "Bewerk event handler {{ eventid }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:3
-#, fuzzy
 msgid "Edit HTTP Resolver {{ resolvername }}"
-msgstr "Bewerk resolver {{ resolvername }}"
+msgstr "Bewerk HTTP-resolver {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:3
 msgid ""
@@ -1240,11 +1232,11 @@ msgstr "Schakel token in"
 
 #: privacyidea/static/components/token/views/token.details.html:228
 msgid "End Date before Start Date!"
-msgstr ""
+msgstr "Einddatum voor startdatum!"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:19
 msgid "Endpoint (URL)"
-msgstr ""
+msgstr "Eindpunt (URL)"
 
 #: privacyidea/static/components/user/views/user.details.html:122
 msgid "Enroll New Token"
@@ -1505,7 +1497,7 @@ msgstr "Afhandelingsmodule"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:17
 msgid "Hardware"
-msgstr ""
+msgstr "Hardware"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:60
 #: privacyidea/static/components/token/views/token.enroll.totp.html:69
@@ -1514,11 +1506,11 @@ msgstr "Hash algoritme"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:117
 msgid "Headers"
-msgstr ""
+msgstr "Kopteksten"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:46
 msgid "Headers (JSON format)"
-msgstr ""
+msgstr "Kopteksten (JSON formaat)"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:8
 msgid ""
@@ -1706,12 +1698,11 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:140
 msgid "Inactive Events"
-msgstr ""
+msgstr "Niet-actieve gebeurtenissen"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:104
-#, fuzzy
 msgid "Inactive Policies"
-msgstr "Beleidsregels"
+msgstr "Niet actieve beleidsregels"
 
 #: privacyidea/static/components/config/views/config.system.html:133
 msgid "Include SAML attributes even if the user failed to authenticate."
@@ -1936,7 +1927,7 @@ msgstr "Maximaal aantal gelukte authenticaties"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:27
 msgid "Method"
-msgstr ""
+msgstr "Methode"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:92
 msgid "Microsoft Internet Explorer is not supported."
@@ -2577,7 +2568,7 @@ msgstr "Herhaal wachtwoord"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:38
 msgid "Request Mapping (JSON format)"
-msgstr ""
+msgstr "Koppelingsverzoek (JSON formaat)"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:66
 msgid "Request to remote privacyIDEA server successful."
@@ -2638,10 +2629,12 @@ msgid ""
 "Response Mapping\n"
 "                (JSON format)"
 msgstr ""
+"Antwoord koppeling\n"
+"                (JSON formaat)"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:69
 msgid "Response contains (JSON format):"
-msgstr ""
+msgstr "Antwoord bevat (JSON format):"
 
 #: privacyidea/static/components/token/views/token.details.html:346
 msgid "Resync Token"
@@ -2963,7 +2956,7 @@ msgstr "Limiet grootte"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:21
 msgid "Software"
-msgstr ""
+msgstr "Software"
 
 #: privacyidea/static/components/token/views/token.enroll.html:31
 msgid "Some nice words..."
@@ -2974,6 +2967,8 @@ msgid ""
 "Special Error\n"
 "                Handling"
 msgstr ""
+"Speciale fout\n"
+"              Afhandeling"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
@@ -3074,9 +3069,8 @@ msgid "Test Email sent successfully."
 msgstr "Test e-mail met succes verzonden."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:86
-#, fuzzy
 msgid "Test HTTP Resolver"
-msgstr "Test LDAP-resolver"
+msgstr "Test HTTP-resolver"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:327
@@ -4321,7 +4315,7 @@ msgstr "Tokens voor gebruiker {{ username }}"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:11
 msgid "Total"
-msgstr ""
+msgstr "Totaal"
 
 #: privacyidea/static/components/token/views/token.challenges.html:1
 msgid "Total Challenges:"
@@ -4377,14 +4371,12 @@ msgid "Unassign User"
 msgstr "Gebruiker niet meer toewijzen"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:25
-#, fuzzy
 msgid "Unassigned Hardware"
-msgstr "Gebruiker niet meer toewijzen"
+msgstr "Niet toegewezen hardware"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:29
-#, fuzzy
 msgid "Unassigned Software"
-msgstr "Token niet meer toewijzen"
+msgstr "Niet toegewezen software"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:22
 msgid "Upload Certificate"
@@ -4627,7 +4619,7 @@ msgid ""
 "            You can also change the realms of each token later."
 msgstr ""
 "Je kunt een realm selecteren waarin de tokens geïmporteerd moeten worden.\n"
-"        Je kunt de realm van elk token ook later wijzigen. "
+"        Je kunt de realm van elk token ook later wijzigen."
 
 #: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
@@ -4840,9 +4832,8 @@ msgid "failcounter"
 msgstr "teller mislukte aanmeldingen"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:49
-#, fuzzy
 msgid "failed"
-msgstr "Max mislukt"
+msgstr "mislukt"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:291
 msgid "filter action..."
@@ -4918,9 +4909,8 @@ msgid "policies"
 msgstr "beleid"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:221
-#, fuzzy
 msgid "privacyIDEA Node"
-msgstr "privacyIDEA-servers"
+msgstr "privacyIDEA Node"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:76
 msgid "privacyIDEA Server Config saved."
@@ -4954,7 +4944,7 @@ msgid ""
 "    pi.cfg."
 msgstr ""
 "privacyIDEA loopt in DEBUG modus. Je kunt het debug-niveau wijzigen in\n"
-"    pi.cfg"
+"    pi.cfg."
 
 #: privacyidea/static/components/config/views/config.system.html:39
 msgid "privacyIDEA servers"
@@ -5068,7 +5058,7 @@ msgid ""
 "            ocrasuite are optional."
 msgstr ""
 "type (standaard hotp), otplen (standaard 6), tijdstap (standaard 30) en \n"
-"     ocrasuite zijn optioneel"
+"     ocrasuite zijn optioneel."
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:23
 msgid "use VASCO Serial"
