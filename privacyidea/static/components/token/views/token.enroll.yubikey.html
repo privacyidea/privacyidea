@@ -1,12 +1,16 @@
 <p class="help-block" translate>
     The Yubikey Token is an USB device that emits an event based One Time
-    Password. You can initialize the Yubikey using the tool ykpersonalize.
-    Paste the secret hex key here.
-    For tokens compatible with the Yubico cloud service check "emit a public ID".
-    When programming the token the prefix must be 6 bytes, which will give
-    you a UID with 12 characters.
-    You also need to choose, if the Yubikey emits the additional UID, which
-    is either 12 or 16 characters long. You can check this in the test field.
+    Password. You can initialize the Yubikey using the YubiKey personalization
+    tools.
+
+    The secret hex key and the final OTP length are needed here.
+    For tokens compatible with the Yubico cloud service the OTP length must be
+    44 (12 characters UID and 32 characters OTP).
+    When programming the token for the Yubico cloud service, the Public Identity
+    Length must be 6 bytes, which will give you a UID with 12 characters.
+
+    The current OTP length of a programmed YubiKey can automatically be
+    determined by inserting it in the test field.
 </p>
 
 <h4 translate>Token data</h4>
@@ -14,27 +18,12 @@
 <div class="form-group">
     <label for="yubikeyTest" translate>Test Yubikey</label>
     <input type="text"
+           id="yubikeyTest"
            autofocus
            class="form-control"
            placeholder="{{ 'Push Yubikey button here...'|translate }}"
            ng-model="tempData.yubikeyTest" name="yubikeyTest"
            ng-change="yubikeyGetLen()">
-</div>
-
-<div class="form-group">
-    <input type="checkbox" ng-model="tempData.yubikeyUid"
-           name="yubikeyUID" id="yubikeyUID">
-    <label for="yubikeyUID" translate>emit a public UID</label>
-
-    <div ng-show="tempData.yubikeyUid">
-    <label for="yubikeyUidLen" translate>Length of UID</label>
-    <select id="yubikeyUidLen"
-            ng-model="tempData.yubikeyUidLen"
-            name="yubikeyUidLen"
-            ng-options="val for val in ykuidlen">
-        <option value="">-- please choose --</option>
-    </select>
-        </div>
 </div>
 
 <div class="form-group">
@@ -50,10 +39,9 @@
 </div>
 <div class="form-group">
     <label for="otplen" translate>OTP length</label>
-    <select class="form-control"
-            id="otplen"
-            ng-model="form.otplen"
-            ng-options="val for val in ykotplen">
-        <option value="" selected>-- please choose --</option>
-    </select>
+    <input type="number"
+           id="otplen"
+           max="99" min="32"
+           ng-model="form.otplen"
+           required />
 </div>

@@ -200,8 +200,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.questions = [];
     $scope.num_questions = 5;
     $scope.fileVersionSuffix = versioningSuffixProvider.$get();
-    $scope.ykuidlen = [12, 16];
-    $scope.ykotplen = [32, 44, 48];
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -297,9 +295,17 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.form.genkey = true;
         }
         if ($scope.form.type === "yubikey") {
-            delete $scope.form.otplen;
+            // save the original otp length
+            $scope.old_otplen = $scope.form.otplen;
+            // set the default otp length for yubikeys in AES mode to 44
+            // (12 characters (6 bytes) UID and 32 characters (16 bytes) OTP)
+            $scope.form.otplen = 44;
         } else {
-            $scope.form.otplen = 6;
+            // restore old otp length if available
+            if (typeof $scope.old_otplen != "undefined") {
+                $scope.form.otplen = $scope.old_otplen;
+                delete $scope.old_otplen;
+            }
         }
 
         $scope.preset_indexedsecret();
@@ -530,18 +536,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
     $scope.yubikeyGetLen = function () {
         let yktestdatalen = $scope.tempData.yubikeyTest.trim().length;
-        if ($scope.ykotplen.includes(yktestdatalen)) {
+        if (yktestdatalen >= 32) {
             $scope.form.otplen = yktestdatalen;
-            let yktestuidlen = yktestdatalen - 32;
-            if ($scope.ykuidlen.includes(yktestuidlen)) {
-                $scope.tempData.yubikeyUid = true;
-                $scope.tempData.yubikeyUidLen = yktestuidlen;
-            } else {
-                delete $scope.tempData.yubikeyUidLen;
-            }
-        } else {
-            delete $scope.form.otplen;
-            delete $scope.tempData.yubikeyUidLen;
         }
     };
 
