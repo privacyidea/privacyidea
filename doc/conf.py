@@ -17,7 +17,7 @@
 # built documents.
 #
 # The short X.Y version.
-version = '3.3.3'
+version = '3.4dev7'
 # The full version, including alpha/beta/rc tags.
 #release = '2.16dev5'
 release = version
