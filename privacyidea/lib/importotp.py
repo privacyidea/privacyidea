@@ -519,7 +519,18 @@ def parsePSKCdata(xml_data,
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
-                secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
+
+                key = binascii.unhexlify(preshared_key_hex)
+
+                # TODO Check mac
+                #  calculate MAC
+                #       - mac key
+                #       - secret
+                #  check if own mac fits mac from xml
+                #  IF true THEN pass ELSE throw Exception
+                mac_key = xml.keycontainer # TODO Get macvalue
+
+                secret = aes_decrypt_b64(key, enc_data)
                 if token["type"].lower() in ["hotp", "totp"]:
                     token["otpkey"] = hexlify_and_unicode(secret)
                 elif token["type"].lower() in ["pw"]:
