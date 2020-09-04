@@ -3,7 +3,7 @@
 This test file tests the lib.importotp
 
 """
-
+import pytest
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
@@ -338,8 +338,7 @@ sccTokenType: eToken-PASS-TS
 sccTokenData: sccKey=535CC2CB9DEA0B55B0A2D585EAB648EBCE73AC8B;sccMode=T;sccPwLen=6;sccVer=6.20;sccTick=30;sccPrTime=2013/03/12 00:00:00
 sccSignature: MC4CFQDju23MCRqmkWC7Z9sVDB0y0TeEOwIVAOIibmqMFxhPiY7mLlkt5qmRT/xn        '''
 
-
-YUBIKEYCSV= '''
+YUBIKEYCSV = '''
         Static Password: Scan Code,17.04.12 12:25,1,051212172c092728,,,,,0,0,0,0,0,0,0,0,0,0
         Static Password: Scan Code,17.04.12 12:27,1,282828051212172c092728,,,,,0,0,0,0,0,0,0,0,0,0
         LOGGING START,17.04.12 12:29
@@ -637,6 +636,14 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
         # password token
         self.assertEqual(tokens.get("t4").get("otpkey"), u"lässig")
+
+    def test_07_import_pskc_aes_fail(self):
+        encryption_key_hex = "12345678901234567890123456789012"
+
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        with pytest.raises(ImportException):
+            parsePSKCdata(xml_wrong_mac,
+                          preshared_key_hex=encryption_key_hex)
 
 
 class GPGTestCase(MyTestCase):
