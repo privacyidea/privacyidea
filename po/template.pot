@@ -534,8 +534,8 @@ msgid ""
 "                after minutes"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:17
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:17
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:20
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:20
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
@@ -577,8 +577,8 @@ msgstr ""
 msgid "Client ID"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:41
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:41
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:44
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:44
 msgid "Client Part"
 msgstr ""
 
@@ -1071,8 +1071,8 @@ msgid "Enroll New Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:120
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:46
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:46
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
 msgstr ""
@@ -1089,7 +1089,7 @@ msgid "Enter OTP + PIN to check the token."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:42
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:45
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:36
 msgid "Enter OTP key..."
 msgstr ""
 
@@ -1503,7 +1503,7 @@ msgstr ""
 msgid "Issuer"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.push.html:19
+#: privacyidea/static/components/token/views/token.enrolled.push.html:20
 msgid "It will send the missing registration data to the configured endpoint."
 msgstr ""
 
@@ -1530,10 +1530,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:119
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
-msgid "Length of UID"
 msgstr ""
 
 #. level of subscription
@@ -1826,7 +1822,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:38
 #: privacyidea/static/components/token/views/token.enroll.motp.html:23
 #: privacyidea/static/components/token/views/token.enroll.totp.html:38
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:40
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
 msgid "OTP Key"
 msgstr ""
 
@@ -1845,7 +1841,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:47
 #: privacyidea/static/components/token/views/token.enroll.totp.html:47
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:50
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:41
 msgid "OTP length"
 msgstr ""
 
@@ -2012,7 +2008,7 @@ msgstr ""
 msgid "Please confirm with one of these tokens:"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.push.html:3
+#: privacyidea/static/components/token/views/token.enrolled.push.html:4
 msgid "Please note, that your smartphone needs internet access during the authentication process."
 msgstr ""
 
@@ -2026,12 +2022,12 @@ msgstr ""
 msgid "Please provide the base URL of the privacyIDEA server."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.push.html:8
+#: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid "Please scan the QR code with the privacyIDEA Authenticator App"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:36
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:36
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:39
 msgid ""
 "Please scan the QR code with the privacyIDEA authenticator app and enter\n"
 "            the generated code below."
@@ -2135,7 +2131,7 @@ msgstr ""
 msgid "Providermodule"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:24
 msgid "Push Yubikey button here..."
 msgstr ""
 
@@ -2247,8 +2243,8 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:27
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:30
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:30
 msgid "Regenerate QR Code"
 msgstr ""
 
@@ -2808,7 +2804,7 @@ msgstr ""
 msgid "Test SQL Resolver"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:15
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
 msgid "Test Yubikey"
 msgstr ""
 
@@ -2892,9 +2888,9 @@ msgid ""
 "        the HSM and reload this page."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:10
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:10
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:10
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:13
 msgid "The OTP key"
 msgstr ""
 
@@ -2910,8 +2906,8 @@ msgid ""
 "    after the other."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:22
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:22
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:25
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:25
 msgid ""
 "The QR Code contains the secret key of your token. You need to\n"
 "            protect it. <b>If you are in doubt, that someone else saw it, please\n"
@@ -3088,13 +3084,17 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
 msgid ""
 "The Yubikey Token is an USB device that emits an event based One Time\n"
-"    Password. You can initialize the Yubikey using the tool ykpersonalize.\n"
-"    Paste the secret hex key here.\n"
-"    For tokens compatible with the Yubico cloud service check \"emit a public ID\".\n"
-"    When programming the token the prefix must be 6 bytes, which will give\n"
-"    you a UID with 12 characters.\n"
-"    You also need to choose, if the Yubikey emits the additional UID, which\n"
-"    is either 12 or 16 characters long. You can check this in the test field."
+"    Password. You can initialize the Yubikey using the YubiKey personalization\n"
+"    tools.\n"
+"\n"
+"    The secret hex key and the final OTP length are needed here.\n"
+"    For tokens compatible with the Yubico cloud service the OTP length must be\n"
+"    44 (12 characters UID and 32 characters OTP).\n"
+"    When programming the token for the Yubico cloud service, the Public Identity\n"
+"    Length must be 6 bytes, which will give you a UID with 12 characters.\n"
+"\n"
+"    The current OTP length of a programmed YubiKey can automatically be\n"
+"    determined by inserting it in the test field."
 msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:102
@@ -3628,7 +3628,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.totp.html:12
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:12
+#: privacyidea/static/components/token/views/token.enroll.yubikey.html:16
 msgid "Token data"
 msgstr ""
 
@@ -4035,9 +4035,9 @@ msgid ""
 "                for token {{ pin_change_serial }}."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enrolled.hotp.html:33
-#: privacyidea/static/components/token/views/token.enrolled.push.html:16
-#: privacyidea/static/components/token/views/token.enrolled.totp.html:33
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:36
+#: privacyidea/static/components/token/views/token.enrolled.push.html:17
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:36
 msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
 msgstr ""
 
@@ -4128,10 +4128,6 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enroll.yubikey.html:27
-msgid "emit a public UID"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
