@@ -1,5 +1,20 @@
 # Update Notes
 
+## Update from 3.3 to 3.4
+
+* Policies can now contain the privacyIDEA node as condition.
+
+  Be sure to run the schema updates in you pip installation.
+  Ubuntu or CentOS installations will run the schema update automatically.
+
+* The SMS Gateway database tables have been enhanced with an additional
+  constraint on the type of the options.
+
+  The data in the column "Type" of the database table "smsgatewayoption"
+  will be migrated by the schema update script.
+  If you are using SMS Gateways, check your gateway configurtion
+  after the update.
+
 ## Update from 3.2 to 3.3
 
 * Admin policies now do have a destinct admin username field.
