@@ -979,7 +979,7 @@ def set_default(realm):
 @realm_manager.command
 def clear_default():
     """
-    Set the given realm to default
+    Unset the default realm
     """
     from privacyidea.lib.realm import set_default_realm
     set_default_realm(None)
