@@ -1,4 +1,4 @@
-Version 3.4dev8, 2020-09-06
+Version 3.4, 2020-09-08
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
