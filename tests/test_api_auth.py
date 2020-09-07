@@ -7,12 +7,13 @@ from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
                                     delete_policy)
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.realm import set_realm, set_default_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.user import User
+from . import ldap3mock
 
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
@@ -677,3 +678,47 @@ class AAPreEventHandlerTest(MyApiTestCase):
         delete_policy("crhotp")
         delete_event(eid)
         remove_token(hotptoken.token.serial)
+
+    @ldap3mock.activate
+    def test_02_failing_resolver(self):
+        ldap3mock.setLDAPDirectory([])
+        # define, that we want to get an exception
+        ldap3mock.set_exception()
+        # Create an LDAP Realm as default realm
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "ldap1",
+                  "type": "ldapresolver"}
+        save_resolver(params)
+        set_realm("ldap1", ["ldap1"])
+        set_default_realm("ldap1")
+
+        # Try to login as internal admin with a failing LDAP resolver
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'admin'
+                self.assertEqual('admin', result['value']['role'], result)
+                mock_log.assert_called_once_with("Problem resolving user testadmin in realm ldap1: LDAP request failed.")
+
+        delete_realm("ldap1")
+        delete_resolver("ldap1")
+        ldap3mock.set_exception(False)
